@@ -176,6 +176,7 @@ describe('TelemetryService Integration Tests', () => {
             const result = service.track('test.event', { data: largeData });
 
             expect(result.success).toBe(false);
+            expect(result.error).toBe('INVALID_PROPERTIES');
         });
     });
 

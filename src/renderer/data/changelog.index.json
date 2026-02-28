@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-27T12:16:18.274Z",
+  "generatedAt": "2026-02-28T04:05:50.745Z",
   "locales": [
     "en",
     "tr",
@@ -12,6 +12,123 @@
     "ar"
   ],
   "entries": [
+    {
+      "id": "2026-02-27-preload-modularization-refinement",
+      "date": "2026-02-27",
+      "channel": "stable",
+      "type": "refactor",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Preload",
+        "OrchestratorBridge",
+        "ProjectAgentBridge",
+        "McpMarketplaceBridge",
+        "IPC"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Preload Modularization Refinement & Type Safety Overhaul",
+          "summary": "Completed the modularization of Electron preload scripts, resolved critical type mismatches in agent bridges, and eliminated forbidden 'any' types across the bridge layer.",
+          "items": [
+            "- **Modularization Alignment**: Synchronized all domain-specific preload bridges (Code, Settings, MCP, etc.) with main process IPC handlers to ensure complete API coverage.",
+            "- **Type Safety Hardening**: Eliminated forbidden `any` usages in `ProjectAgentBridge`, `McpMarketplaceBridge`, and `AdvancedMemoryBridge`, replacing them with strictly defined interfaces or `unknown` records.",
+            "- **Bug Fixes**: Resolved a critical timestamp type mismatch in `OrchestratorBridge` that was causing state normalization failures.",
+            "- **IPC Contract Correction**: Updated code intelligence and sandbox bridges to use positional arguments, aligning with validated IPC handler expectations.",
+            "- **Test Reliability**: Fixed a broken mock in `db.integration.test.ts` where a missing `send` method on the mock event was causing project creation tests to fail (Boy Scout Rule).",
+            "- **Hygiene**: Cleaned up unused imports and refined listener types across multiple preload domains to pass strict TypeScript and ESLint checks."
+          ]
+        },
+        "tr": {
+          "title": "Preload Modülerleştirme İyileştirmesi ve Tip Güvenliği Revizyonu",
+          "summary": "Electron preload script'lerinin modülerleştirilmesi tamamlandı, ajan bridge'lerindeki kritik tip uyuşmazlıkları giderildi ve bridge katmanındaki yasaklanmış 'any' tipleri temizlendi.",
+          "items": [
+            "- **Modülerleştirme Uyumu**: Tüm alana özgü preload bridge'leri (Code, Settings, MCP, vb.), ana süreç IPC handler'ları ile senkronize edildi.",
+            "- **Tip Güvenliği Sertleştirmesi**: ProjectAgentBridge, McpMarketplaceBridge ve AdvancedMemoryBridge içindeki yasaklanmış `any` kullanımları kaldırılarak yerine kesin tanımlanmış arayüzler veya `unknown` kayıtları eklendi.",
+            "- **Hata Düzeltmeleri**: OrchestratorBridge'deki durum normalleştirme hatalarına neden olan kritik zaman damgası tip uyuşmazlığı giderildi.",
+            "- **IPC Kontrat Düzeltmesi**: Kod zekası ve sandbox bridge'leri, doğrulanan IPC handler beklentilerine uygun olarak pozisyonel argümanlar kullanacak şekilde güncellendi.",
+            "- **Test Güvenilirliği**: db.integration.test.ts dosyasındaki bozuk mock düzeltildi; mock event üzerindeki eksik `send` yöntemi nedeniyle başarısız olan proje oluşturma testleri onarıldı (İzci Kuralı).",
+            "- **Hijyen**: Sıkı TypeScript ve ESLint kontrollerini geçmek için birden fazla preload alanında kullanılmayan import'lar temizlendi ve listener tipleri rafine edildi."
+          ]
+        },
+        "de": {
+          "title": "Preload-Modularisierung & Typsicherheit-Refinement",
+          "summary": "Modularisierung der Electron-Preload-Skripte abgeschlossen, kritische Typ-Mismatches in Agent-Bridges behoben und verbotene 'any'-Typen aus der Bridge-Schicht entfernt.",
+          "items": [
+            "- **Modularisierungs-Abgleich**: Synchronisierung aller domänenspezifischen Preload-Bridges (Code, Settings, MCP etc.) mit den IPC-Handlern des Hauptprozesses zur Sicherstellung vollständiger API-Abdeckung.",
+            "- **Härtung der Typsicherheit**: Eliminierung verbotener `any`-Verwendungen in `ProjectAgentBridge`, `McpMarketplaceBridge` und `AdvancedMemoryBridge`, ersetzt durch strikt definierte Interfaces oder `unknown`-Records.",
+            "- **Fehlerbehebungen**: Korrektur eines kritischen Zeitstempel-Typ-Mismatches in der `OrchestratorBridge`, der zu Fehlern bei der Zustands-Normalisierung führte.",
+            "- **IPC-Vertragskorrektur**: Aktualisierung der Code-Intelligence- und Sandbox-Bridges auf positionale Argumente, um sie an die Validierungserwartungen der IPC-Handler anzupassen.",
+            "- **Test-Zuverlässigkeit**: Behebung eines defekten Mocks in `db.integration.test.ts`, bei dem eine fehlende `send`-Methode am Mock-Event zum Scheitern der Projekt-Erstellungs-Tests führte (Boy Scout Rule).",
+            "- **Hygiene**: Bereinigung nicht verwendeter Imports und Verfeinerung von Listener-Typen in mehreren Preload-Domänen zur Einhaltung strenger TypeScript- und ESLint-Prüfungen."
+          ]
+        },
+        "fr": {
+          "title": "Affinage de la modularisation du préchargement et révision de la sécurité des types",
+          "summary": "Modularisation des scripts de préchargement Electron terminée, résolution des incohérences de types critiques dans les ponts d'agents et suppression des types 'any' interdits.",
+          "items": [
+            "- **Alignement de la modularisation**: Synchronisation de tous les ponts de préchargement spécifiques au domaine avec les gestionnaires IPC du processus principal.",
+            "- **Renforcement de la sécurité des types**: Élimination des usages de `any` dans `ProjectAgentBridge`, `McpMarketplaceBridge` et `AdvancedMemoryBridge`.",
+            "- **Corrections de bugs**: Résolution d'un décalage de type de tampon temporel dans `OrchestratorBridge`.",
+            "- **Correction du contrat IPC**: Mise à jour des ponts d'intelligence de code et de bac à sable pour utiliser des arguments positionnels.",
+            "- **Fiabilité des tests**: Correction d'un mock cassé dans `db.integration.test.ts`.",
+            "- **Hygiène**: Nettoyage des importations inutilisées et affinage des types d'auditeurs."
+          ]
+        },
+        "es": {
+          "title": "Refinamiento de la modularización de precarga y revisión de la seguridad de tipos",
+          "summary": "Finalizada la modularización de los scripts de precarga de Electron, resueltos los desajustes de tipos críticos en los puentes de agentes y eliminados los tipos 'any' prohibidos.",
+          "items": [
+            "- **Alineación de modularización**: Sincronización de todos los puentes de precarga específicos del dominio con los controladores IPC del proceso principal.",
+            "- **Refuerzo de la seguridad de tipos**: Eliminación de usos de `any` en `ProjectAgentBridge`, `McpMarketplaceBridge` y `AdvancedMemoryBridge`.",
+            "- **Corrección de errores**: Resuelto un desajuste de tipos de marca de tiempo en `OrchestratorBridge`.",
+            "- **Corrección del contrato IPC**: Actualización de los puentes de inteligencia de código y sandbox para usar argumentos posicionales.",
+            "- **Fiabilidad de las pruebas**: Corregido un mock roto en `db.integration.test.ts`.",
+            "- **Higiene**: Limpieza de importaciones no utilizadas y refinamiento de tipos de oyentes."
+          ]
+        },
+        "ja": {
+          "title": "プリロードのモジュール化の洗練と型安全性の見直し",
+          "summary": "Electronプリロードスクリプトのモジュール化が完了し、エージェントブリッジの重大な型の不一致を解決し、ブリッジレイヤーから禁止されている'any'型を排除しました。",
+          "items": [
+            "- **モジュール化の調整**: すべてのドメイン固有のプリロードブリッジをメインプロセスのIPCハンドラーと同期させました。",
+            "- **型安全性の強化**: `ProjectAgentBridge`、`McpMarketplaceBridge`、および`AdvancedMemoryBridge`での`any`の使用を廃止しました。",
+            "- **バグ修正**: `OrchestratorBridge`におけるタイムスタンプの型の不一致を解決しました。",
+            "- **IPCコントラクトの修正**: コードインテリジェンスとサンドボックスブリッジを位置引数を使用するように更新しました。",
+            "- **テストの信頼性**: `db.integration.test.ts`の壊れたモックを修正しました。",
+            "- **クリーンアップ**: 未使用のインポートの削除とリスナー型の洗練を行いました。"
+          ]
+        },
+        "zh": {
+          "title": "预加载模块化优化与类型安全重构",
+          "summary": "完成了 Electron 预加载脚本的模块化，解决了代理桥中的关键类型不匹配问题，并消除了桥接层中禁用的 'any' 类型。",
+          "items": [
+            "- **模块化对齐**: 将所有特定领域的预加载桥与主进程 IPC 处理程序同步。",
+            "- **类型安全强化**: 消除了 `ProjectAgentBridge`、`McpMarketplaceBridge` 和 `AdvancedMemoryBridge` 中的 `any` 使用。",
+            "- **错误修复**: 解决了 `OrchestratorBridge` 中时间戳类型不匹配的问题。",
+            "- **IPC 合同更正**: 更新了代码智能和沙箱桥以使用位置参数。",
+            "- **测试可靠性**: 修复了 `db.integration.test.ts` 中损坏的模拟。",
+            "- **卫生**: 清理了未使用的导入并优化了监听器类型。"
+          ]
+        },
+        "ar": {
+          "title": "تحسين نمطية التحميل المسبق ومراجعة سلامة الأنواع",
+          "summary": "تم الانتهاء من نمطية سكربتات التحميل المسبق لـ Electron، وحل تعارضات الأنواع الحرجة في جسور الوكلاء، وإزالة أنواع 'any' المحظورة.",
+          "items": [
+            "- **محاذاة النمطية**: مزامنة جميع جسور التحميل المسبق الخاصة بالمجال مع معالجات IPC للعملية الرئيسية.",
+            "- **تقوية سلامة الأنواع**: التخلص من استخدامات `any` في `ProjectAgentBridge` و`McpMarketplaceBridge` و`AdvancedMemoryBridge`.",
+            "- **إصلاح الأخطاء**: حل تعارض في نوع الطابع الزمني في `OrchestratorBridge`.",
+            "- **تصحيح عقد IPC**: تحديث جسور ذكاء الكود والبيئة المعزولة لاستخدام الوسائط الموضعية.",
+            "- **موثوقية الاختبار**: إصلاح محاكاة معطلة في `db.integration.test.ts`.",
+            "- **النظافة**: تنظيف الاستيرادات غير المستخدمة وتحسين أنواع المستمعين."
+          ]
+        }
+      }
+    },
     {
       "id": "2026-02-27-project-wizard-redesign",
       "date": "2026-02-27",

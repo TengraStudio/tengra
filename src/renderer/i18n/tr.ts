@@ -120,7 +120,59 @@ export const tr = {
     "errors": {
         "unexpected": "Üzgünüz, bir hata oluştu.",
         "somethingWentWrong": "Bir şeyler yanlış gitti:",
-        "rootNotFound": "Kök öğe bulunamadı"
+        "rootNotFound": "Kök öğe bulunamadı",
+        "rateLimitWarning": "Hız sınırı uyarısı ({{provider}}): {{remaining}}/{{limit}} kalan",
+        "rateLimit": {
+            "exceeded": "Hız sınırı aşıldı. Lütfen bekleyip tekrar deneyin.",
+            "retryAfterSeconds": "Hız sınırı aşıldı. Lütfen {{seconds}} saniye sonra tekrar deneyin.",
+            "requestThrottled": "{{provider}} için istek kısıtlandı. Çok fazla istek gönderildi.",
+            "limitReset": "Hız sınırı {{minutes}} dakika içinde sıfırlanacak.",
+            "waitExceeded": "{{provider}} için hız sınırı bekleme süresi aşıldı. Lütfen daha sonra tekrar deneyin.",
+            "serviceNotInitialized": "Hız sınırı servisi başlatılmadı.",
+            "tokenRejected": "{{provider}} için istek hız sınırlaması nedeniyle reddedildi.",
+            "configUpdated": "{{provider}} için hız sınırı yapılandırması güncellendi.",
+            "providerLimited": "{{provider}} şu anda hız sınırına ulaştı. {{remaining}}/{{limit}} istek hakkı kaldı.",
+            "tooManyRequests": "Çok fazla istek. Lütfen yavaşlayın."
+        },
+        "proxy": {
+            "started": "Proxy {{port}} portunda başarıyla başlatıldı.",
+            "stopped": "Proxy durduruldu.",
+            "startFailed": "Proxy servisi başlatılamadı.",
+            "stopFailed": "Proxy servisi durdurulamadı.",
+            "connectionFailed": "Proxy bağlantısı başarısız oldu. Lütfen proxy'nin çalıştığını kontrol edin.",
+            "requestFailed": "Proxy isteği başarısız oldu.",
+            "portInUse": "{{port}} portu zaten kullanımda.",
+            "binaryNotFound": "Proxy çalıştırılabilir dosyası bulunamadı. Lütfen yeniden derleyin veya kurun.",
+            "notInitialized": "Proxy servisi başlatılmadı.",
+            "invalidConfig": "Geçersiz proxy yapılandırması.",
+            "authFailed": "Proxy kimlik doğrulaması başarısız oldu.",
+            "timeout": "Proxy isteği zaman aşımına uğradı.",
+            "portRequired": "Port gereklidir.",
+            "portInvalid": "Port 1 ile 65535 arasında geçerli bir tam sayı olmalıdır.",
+            "urlRequired": "Proxy URL'si gereklidir.",
+            "urlInvalid": "Proxy URL'si geçerli bir http veya https URL'si olmalıdır.",
+            "tokenRequired": "API anahtarı gereklidir.",
+            "tokenInvalid": "API anahtarı boş olmayan bir metin olmalıdır.",
+            "providerRequired": "Sağlayıcı gereklidir.",
+            "providerInvalid": "Sağlayıcı boş olmayan bir metin olmalıdır.",
+            "quotaFetchFailed": "Kullanım kotası bilgisi alınamadı.",
+            "quotaExceeded": "Kullanım kotası aşıldı."
+        },
+        "quota": {
+            "exceeded": "Kota aşıldı. Lütfen sıfırlanma süresini bekleyin.",
+            "limitApproaching": "{{provider}} için kota sınırına yaklaşılıyor: {{remaining}} / {{limit}} kalan.",
+            "usageWarning": "{{provider}} kotanızın %{{percentage}} kadarını kullandınız.",
+            "authExpired": "Kimlik doğrulama süresi doldu. Kotayı kontrol etmek için lütfen tekrar giriş yapın.",
+            "fetchFailed": "Kota bilgisi alınamadı. Lütfen tekrar deneyin.",
+            "noAccounts": "Bağlı hesap bulunamadı. Kotayı görüntülemek için bir hesap bağlayın.",
+            "invalidSessionKey": "Geçersiz oturum anahtarı. Lütfen geçerli bir oturum anahtarı girin.",
+            "invalidInput": "Kota işlemi için geçersiz giriş sağlandı.",
+            "parseFailed": "Sağlayıcıdan gelen kota yanıtı ayrıştırılamadı.",
+            "refreshFailed": "Kota bilgisi yenilenemedi.",
+            "accountLocked": "Hesap kilitli. Lütfen destek ile iletişime geçin.",
+            "resetIn": "Kota {{time}} içinde sıfırlanacak.",
+            "limitReached": "{{provider}} için kota sınırına ulaşıldı. Lütfen {{resetTime}} zamanına kadar bekleyin."
+        }
     },
     "languages": {
         "tr": "Türkçe",
@@ -1254,6 +1306,8 @@ export const tr = {
         "streaming": "Yazıyor...",
         "clear": "Temizle",
         "error": "Hata",
+        "quotaExceeded": "Kota veya hız sınırı aşıldı. Bu, hız sınırlaması (çok fazla istek) veya kota tükenmesinden kaynaklanıyor olabilir. Lütfen birkaç dakika bekleyip tekrar deneyin.",
+        "rateLimitExceeded": "Hız sınırı veya kota aşıldı. Lütfen birkaç dakika bekleyip tekrar deneyin.",
         "modelComparison": "Model Karşılaştırması",
         "readMore": "Devamını oku",
         "searchMessages": "Mesajları ara...",
@@ -1485,7 +1539,19 @@ export const tr = {
         "autoUpdateDesc": "Güncellemeleri otomatik olarak kontrol et",
         "checkOnStartupDesc": "Başlangıçta güncellemeleri kontrol edin",
         "privacySafety": "Gizlilik ve Güvenlik",
-        "privacySafetyDesc": "Veri gizliliği ayarlarını yönetin"
+        "privacySafetyDesc": "Veri gizliliği ayarlarını yönetin",
+        "defaultTerminalBackendDesc": "Yeni terminal oturumları oluşturulurken kullanılacak varsayılan altyapıyı seçin.",
+        "inlineSuggestions": "Satır İçi Öneriler",
+        "inlineSuggestionsDesc": "Monaco editörlerinde yazarken hayalet metin önerileri göster.",
+        "inlineSuggestionsSource": "Öneri Kaynağı",
+        "inlineSuggestionsSourceCopilot": "GitHub Copilot",
+        "inlineSuggestionsSourceCustom": "Özel Model",
+        "inlineSuggestionsProvider": "Sağlayıcı",
+        "inlineSuggestionsProviderPlaceholder": "openai",
+        "inlineSuggestionsModel": "Model",
+        "inlineSuggestionsModelPlaceholder": "gpt-4o-mini",
+        "inlineSuggestionsCopilotAccount": "Copilot Hesabı",
+        "inlineSuggestionsCopilotAccountPlaceholder": "Aktif hesabı kullan"
     },
     "appearance": {
         "themeDesc": "Uygulamanın renk temasını değiştirin.",
@@ -1597,7 +1663,14 @@ export const tr = {
         "claudeTitle": "Anthropic Claude",
         "codexTitle": "ChatGPT Codex",
         "copilotTitle": "GitHub Copilot",
-        "usageOverview": "Kullanıma Genel Bakış"
+        "usageOverview": "Kullanıma Genel Bakış",
+        "statusExpired": "Süresi Dolmuş",
+        "statusExceeded": "Aşıldı",
+        "statusLocked": "Kilitli",
+        "quotaRemaining": "{{total}} üzerinden {{remaining}} kalan",
+        "quotaResetTime": "{{time}} sıfırlanacak",
+        "noQuotaData": "Kota verisi mevcut değil",
+        "quotaLoading": "Kota bilgisi yükleniyor..."
     },
     "about": {
         "description": "Tengra, yerel ve bulut tabanlı yapay zeka modellerini tek bir arayüzde birleştiren, geliştiriciler için tasarlanmış yeni nesil bir AI IDE asistanıdır.",
@@ -2119,6 +2192,7 @@ export const tr = {
         "blur": "Bulanıklık",
         "exportTheme": "Dışa Aktar",
         "importTheme": "İçe Aktar",
+        "failedImportThemeInvalidJson": "Tema içe aktarılamadı: Geçersiz JSON dosyası",
         "galleryView": "Galeri Görünümü",
         "exitGalleryView": "Galeriden Çık",
         "floatTerminal": "Terminali Yüzdür",
@@ -2976,7 +3050,58 @@ export const tr = {
         "enabled": "Etkinleştirilmiş",
         "noTriggers": "Tanımlanmış tetikleyici yok",
         "noSteps": "Tanımlanmış adım yok",
-        "editorNote": "Tetikleyicilerin ve adımların gelişmiş yapılandırması için JSON modunu kullanın."
+        "editorNote": "Tetikleyicilerin ve adımların gelişmiş yapılandırması için JSON modunu kullanın.",
+        "switchToForm": "Forma Geç",
+        "switchToJson": "JSON'a Geç",
+        "execution": {
+            "started": "\"{{name}}\" iş akışı başlatıldı",
+            "completed": "\"{{name}}\" iş akışı başarıyla tamamlandı",
+            "failed": "İş akışı yürütme başarısız oldu",
+            "stepCompleted": "\"{{stepName}}\" adımı tamamlandı",
+            "stepFailed": "\"{{stepName}}\" adımı başarısız oldu",
+            "stepNotFound": "Adım bulunamadı: {{stepId}}",
+            "retrying": "\"{{stepName}}\" adımı yeniden deneniyor (deneme {{attempt}}/{{maxRetries}})",
+            "nonCriticalStepFailed": "Kritik olmayan adım başarısız oldu (devam ediyor): {{stepName}}",
+            "noHandler": "Eylem türü için işleyici kayıtlı değil: {{actionType}}",
+            "executedSuccessfully": "{{workflowId}} iş akışı başarıyla yürütüldü"
+        },
+        "errors": {
+            "loadFailed": "İş akışları yüklenemedi",
+            "saveFailed": "İş akışları kaydedilemedi",
+            "createFailed": "İş akışı oluşturulamadı",
+            "updateFailed": "İş akışı güncellenemedi",
+            "deleteFailed": "İş akışı silinemedi",
+            "toggleFailed": "İş akışı değiştirilemedi",
+            "executeFailed": "İş akışı yürütülemedi"
+        },
+        "validation": {
+            "nameRequired": "İş akışı adı boş olmayan bir dize olmalıdır",
+            "nameMaxLength": "İş akışı adı en fazla {{max}} karakter olmalıdır",
+            "descriptionMaxLength": "Açıklama en fazla {{max}} karakter olmalıdır",
+            "maxTriggers": "İş akışında en fazla {{max}} tetikleyici olabilir",
+            "maxSteps": "İş akışında en fazla {{max}} adım olabilir",
+            "uniqueStepIds": "İş akışı adımlarının benzersiz kimlikleri olmalıdır",
+            "uniqueTriggerIds": "İş akışı tetikleyicilerinin benzersiz kimlikleri olmalıdır",
+            "triggerIdRequired": "Tetikleyici kimliği boş olmayan bir dize olmalıdır",
+            "actionIdRequired": "Eylem kimliği boş olmayan bir dize olmalıdır",
+            "stepIdRequired": "Adım kimliği boş olmayan bir dize olmalıdır",
+            "stepNameRequired": "Adım adı boş olmayan bir dize olmalıdır",
+            "maxConfigKeys": "Yapılandırma en fazla {{max}} anahtar içerebilir",
+            "idRequired": "Kimlik boş olmayan bir dize olmalıdır"
+        },
+        "templates": {
+            "title": "İş Akışı Şablonları",
+            "name": "Şablon Adı",
+            "json": "İş Akışı JSON",
+            "save": "İş Akışını Kaydet",
+            "noTemplates": "Henüz iş akışı şablonu yok.",
+            "share": "İş Akışı Paylaşımı",
+            "sharePlaceholder": "Paylaşım kodunu yapıştırın veya kopyalayın",
+            "import": "İş Akışını İçe Aktar"
+        },
+        "defaultName": "Yeni İş Akışı",
+        "defaultDescription": "İş akışı açıklaması",
+        "id": "Kimlik: {{id}}"
     },
     "agentCollaboration": {
         "error": {
@@ -3017,6 +3142,84 @@ export const tr = {
         "noLogs": "Henüz log kaydı yok",
         "noExtensionSelected": "Eklenti Seçilmedi",
         "selectExtensionPrompt": "Logları görüntülemek ve durumu yönetmek için yan menüden bir eklenti seçin."
+    },
+    "voice": {
+        "notSupported": "Bu tarayıcıda ses kontrolü desteklenmiyor",
+        "startListening": "Dinlemeye başla",
+        "stopListening": "Dinlemeyi durdur",
+        "start": "Başlat",
+        "stop": "Durdur",
+        "showCommands": "Ses komutlarını göster",
+        "lastHeard": "Son duyulan",
+        "status": {
+            "idle": "Hazır",
+            "listening": "Dinleniyor...",
+            "processing": "İşleniyor...",
+            "speaking": "Konuşuyor...",
+            "error": "Hata"
+        },
+        "feedback": {
+            "navigating": "{{target}} hedefine gidiliyor",
+            "commandExecuted": "Komut yürütüldü",
+            "notRecognized": "Komut tanınmadı"
+        },
+        "settings": {
+            "enableVoice": "Ses Kontrolünü Etkinleştir",
+            "enableVoiceDescription": "Uygulamayı ses komutlarıyla kontrol edin",
+            "wakeWord": "Uyandırma Kelimesi",
+            "wakeWordLabel": "Uyandırma kelimesi",
+            "continuousListening": "Sürekli dinleme modu",
+            "speech": "Konuşma Ayarları",
+            "voice": "Ses",
+            "selectVoice": "Bir ses seçin",
+            "speechRate": "Konuşma hızı",
+            "speechPitch": "Konuşma tonu",
+            "speechVolume": "Konuşma ses düzeyi",
+            "feedback": "Geri Bildirim Ayarları",
+            "audioFeedback": "Sesli geri bildirim",
+            "visualFeedback": "Görsel geri bildirim",
+            "accessibilityMode": "Erişilebilirlik modu",
+            "customCommands": "Özel Komutlar",
+            "commandPhrase": "Komut ifadesi",
+            "commandAction": "Eylem"
+        },
+        "commands": {
+            "title": "Ses Komutları",
+            "aliases": "Takma adlar",
+            "categories": {
+                "navigation": "Gezinme",
+                "actions": "Eylemler",
+                "chat": "Sohbet",
+                "settings": "Ayarlar",
+                "accessibility": "Erişilebilirlik",
+                "custom": "Özel"
+            }
+        }
+    },
+    "featureFlag": {
+        "enabled": "Özellik etkinleştirildi: {{featureId}}",
+        "disabled": "Özellik devre dışı bırakıldı: {{featureId}}",
+        "notFound": "\"{{featureId}}\" özellik bayrağı bulunamadı",
+        "evaluationFailed": "Özellik bayrağı değerlendirmesi başarısız oldu, varsayılan olarak devre dışı",
+        "overrideSet": "{{featureId}} için geçersiz kılma ayarlandı: {{value}}",
+        "overrideCleared": "{{featureId}} için geçersiz kılma temizlendi",
+        "flagsLoaded": "Özellik bayrakları yüklendi",
+        "loadFailed": "Özellik bayrakları yüklenemedi",
+        "saveFailed": "Özellik bayrakları kaydedilemedi",
+        "error": {
+            "invalidId": "Özellik bayrağı kimliği boş olmayan bir dize olmalıdır",
+            "blankId": "Özellik bayrağı kimliği boş olamaz",
+            "idTooLong": "Özellik bayrağı kimliği maksimum {{maxLength}} uzunluğunu aşıyor",
+            "invalidIdChars": "Özellik bayrağı kimliği geçersiz karakterler içeriyor",
+            "invalidContext": "Değerlendirme bağlamı düz bir nesne olmalıdır",
+            "invalidOverride": "Geçersiz kılma değeri bir boolean olmalıdır",
+            "fieldEmpty": "{{fieldName}} boş olmayan bir dize olmalıdır",
+            "fieldTooLong": "{{fieldName}} maksimum {{maxLength}} uzunluğunu aşıyor",
+            "attributesNotObject": "Öznitelikler düz bir nesne olmalıdır",
+            "attributesTooMany": "Öznitelikler maksimum {{maxCount}} girişi aşıyor",
+            "attributeInvalidType": "\"{{key}}\" özniteliği dize, sayı veya boolean olmalıdır",
+            "attributeTooLong": "\"{{key}}\" özniteliği maksimum {{maxLength}} uzunluğunu aşıyor"
+        }
     }
 };
 

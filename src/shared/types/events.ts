@@ -50,6 +50,7 @@ export interface SystemEvents {
     'orchestrator:update': OrchestratorState
     'sd-cpp:progress': { downloaded: number; total: number; filename: string }
     'sd-cpp:status': { state: 'installing' | 'ready' | 'failed'; error?: string }
+    'image:schedule-alert': { taskId: string; status: 'completed' | 'failed' | 'canceled'; prompt: string; error?: string; timestamp: number }
     // Model Registry Cache & Telemetry
     'model-registry.cache.update.started': { provider?: string }
     'model-registry.cache.update.completed': { provider?: string; count: number }

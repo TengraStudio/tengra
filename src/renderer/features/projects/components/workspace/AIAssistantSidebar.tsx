@@ -1,12 +1,12 @@
 import { MessageBubble } from '@renderer/features/chat/components/MessageBubble';
-import { ModelSelector } from '@/components/shared/ModelSelector';
-import type { GroupedModels } from '@/types';
 import { AgentTaskHistoryItem } from '@shared/types/project-agent';
 import { ArrowLeft, Check, ClipboardList, Play, Users } from 'lucide-react';
 import React from 'react';
 
+import { ModelSelector } from '@/components/shared/ModelSelector';
 import { Language } from '@/i18n';
 import { motion } from '@/lib/framer-motion-compat';
+import type { GroupedModels } from '@/types';
 import { AppSettings, CodexUsage, Message, QuotaResponse } from '@/types';
 
 interface AIAssistantSidebarProps {

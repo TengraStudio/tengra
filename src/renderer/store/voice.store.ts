@@ -42,6 +42,9 @@ function createVoiceStore(): VoiceStore {
 
 // Singleton store instance
 const store = createVoiceStore();
+let sessionRevision = 0;
+let cachedSessionRevision = -1;
+let cachedSessionSnapshot: VoiceSessionState = { ...store.session };
 
 /** Subscribe to store changes */
 function subscribe(listener: () => void): () => void {
@@ -61,6 +64,7 @@ function subscribeToEvents(listener: (event: VoiceEvent) => void): () => void {
 
 /** Notify all listeners of state change */
 function notifyListeners(): void {
+    sessionRevision += 1;
     store.listeners.forEach((listener) => listener());
 }
 
@@ -71,7 +75,11 @@ function notifyEventListeners(event: VoiceEvent): void {
 
 /** Get current snapshot */
 function getSnapshot(): VoiceSessionState {
-    return { ...store.session };
+    if (cachedSessionRevision !== sessionRevision) {
+        cachedSessionSnapshot = { ...store.session };
+        cachedSessionRevision = sessionRevision;
+    }
+    return cachedSessionSnapshot;
 }
 
 /** Get current settings */

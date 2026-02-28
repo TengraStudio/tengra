@@ -1,7 +1,7 @@
 import React from 'react';
 
-import type { GroupedModels } from '@/types';
 import { Language } from '@/i18n';
+import type { GroupedModels } from '@/types';
 import { AppSettings, CodexUsage, Message, QuotaResponse } from '@/types';
 
 import { AIAssistantSidebar } from './AIAssistantSidebar';

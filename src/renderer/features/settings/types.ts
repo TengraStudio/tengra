@@ -52,6 +52,8 @@ export interface ImagePresetEntry {
 export interface ImageScheduleEntry {
     id: string;
     runAt: number;
+    priority: 'low' | 'normal' | 'high';
+    resourceProfile: 'balanced' | 'quality' | 'speed';
     status: string;
     options: {
         prompt: string;
@@ -60,11 +62,34 @@ export interface ImageScheduleEntry {
 
 export interface ImageComparisonResult {
     ids: string[];
+    comparedAt?: number;
+    entries?: Array<{
+        id: string;
+        path: string;
+        width: number;
+        height: number;
+        steps: number;
+        cfgScale: number;
+        seed: number;
+        prompt: string;
+        fileSizeBytes: number;
+        bytesPerPixel: number;
+    }>;
     summary: {
         averageFileSizeBytes: number;
+        averageBytesPerPixel?: number;
         smallestFileId?: string;
         largestFileId?: string;
     };
+}
+
+export interface ImageWorkflowTemplateEntry {
+    id: string;
+    name: string;
+    description?: string;
+    workflow: Record<string, unknown>;
+    createdAt: number;
+    updatedAt: number;
 }
 
 export * from './types/props';

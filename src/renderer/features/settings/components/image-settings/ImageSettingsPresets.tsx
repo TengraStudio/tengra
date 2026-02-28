@@ -9,8 +9,12 @@ interface ImageSettingsPresetsProps {
     setPresetName: (name: string) => void;
     presetPromptPrefix: string;
     setPresetPromptPrefix: (prefix: string) => void;
+    presetShareCode: string;
+    setPresetShareCode: (code: string) => void;
     handleSavePreset: () => Promise<void>;
     handleDeletePreset: (id: string) => Promise<void>;
+    handleExportPresetShare: (id: string) => Promise<void>;
+    handleImportPresetShare: () => Promise<void>;
     t: (key: string) => string | undefined;
 }
 
@@ -20,8 +24,12 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
     setPresetName,
     presetPromptPrefix,
     setPresetPromptPrefix,
+    presetShareCode,
+    setPresetShareCode,
     handleSavePreset,
     handleDeletePreset,
+    handleExportPresetShare,
+    handleImportPresetShare,
     t,
 }) => {
     return (
@@ -56,12 +64,34 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                     presetEntries.map(preset => (
                         <div key={preset.id} className="flex items-center justify-between rounded border border-white/10 bg-black/10 px-2 py-1 text-xs">
                             <span className="truncate">{preset.name}</span>
-                            <button onClick={() => { void handleDeletePreset(preset.id); }} className="text-destructive">
-                                <XCircle className="h-3.5 w-3.5" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => { void handleExportPresetShare(preset.id); }}
+                                    className="rounded border border-white/15 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                                >
+                                    {t('settings.images.presetShare') || 'Share'}
+                                </button>
+                                <button onClick={() => { void handleDeletePreset(preset.id); }} className="text-destructive">
+                                    <XCircle className="h-3.5 w-3.5" />
+                                </button>
+                            </div>
                         </div>
                     ))
                 )}
+            </div>
+            <div className="mt-3 rounded-lg border border-white/10 bg-black/10 p-2">
+                <textarea
+                    value={presetShareCode}
+                    onChange={event => setPresetShareCode(event.target.value)}
+                    placeholder={t('settings.images.presetShareCode') || 'Preset share code'}
+                    className="min-h-[58px] w-full rounded-md border border-white/10 bg-black/10 px-2 py-1.5 font-mono text-[10px]"
+                />
+                <button
+                    onClick={() => { void handleImportPresetShare(); }}
+                    className="mt-2 rounded-lg border border-primary/35 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary"
+                >
+                    {t('settings.images.presetImport') || 'Import Preset'}
+                </button>
             </div>
         </div>
     );

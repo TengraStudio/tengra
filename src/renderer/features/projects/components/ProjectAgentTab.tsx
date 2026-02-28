@@ -2,8 +2,8 @@ import { Bot, ChevronRight } from 'lucide-react';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
-import type { GroupedModels } from '@/types';
 import { Language } from '@/i18n';
+import type { GroupedModels } from '@/types';
 import { AppSettings, CodexUsage, Project, QuotaResponse, WorkspaceDashboardTab } from '@/types';
 
 import { useAgentEvents } from '../hooks/useAgentEvents';

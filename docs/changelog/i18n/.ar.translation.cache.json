@@ -2762,5 +2762,10 @@
   "- Added input validation guards, standardized retry/fallback paths, and component error codes": "- تمت إضافة حراس التحقق من صحة الإدخال، ومسارات إعادة المحاولة/fallback الموحدة، ورموز خطأ المكونات",
   "- Added component health telemetry stores with explicit performance budgets": "- تمت إضافة مخازن قياس صحة المكونات مع ميزانيات أداء واضحة",
   "- Improved loading/empty/failure UX handling in language prompt, MCP settings tab, and code editor": "- تحسين التعامل مع التحميل/الفارغ/الفشل UX في موجه اللغة، وعلامة تبويب إعدادات MCP، ومحرر التعليمات البرمجية",
-  "- Added runbook, threat model, and performance budget documentation under docs/ with mirrored .codex copies": "- تمت إضافة دليل التشغيل ونموذج التهديد ووثائق ميزانية الأداء ضمن المستندات/ مع نسخ مخطوطة معكوسة"
+  "- Added runbook, threat model, and performance budget documentation under docs/ with mirrored .codex copies": "- تمت إضافة دليل التشغيل ونموذج التهديد ووثائق ميزانية الأداء ضمن المستندات/ مع نسخ مخطوطة معكوسة",
+  "Proxy and Agent Service Test Failure Resolution": "حل فشل اختبار خدمة الوكيل والوكيل",
+  "Resolved failing unit and integration tests in the proxy performance and agent checkpoint test suites by fixing mocks, imports, and enum bounds.": "تم حل اختبارات الوحدة والتكامل الفاشلة في مجموعات اختبار أداء الوكيل ونقطة تفتيش الوكيل عن طريق إصلاح المحاكاة والواردات وحدود التعداد.",
+  "- **Proxy Performance Tests**: Fixed brittle mock implementation for `performance.now()` in `startEmbeddedProxy` timing tests.": "- **اختبارات أداء الوكيل**: تم إصلاح التنفيذ الوهمي الهش لـ `performance.now()` في اختبارات التوقيت `startEmbeddedProxy`.",
+  "- **Proxy Service Contract Tests**: Updated quota performance budget keys check and `QuotaErrorCode` bounds handling to support newly added error codes.": "- **اختبارات عقد خدمة الوكيل**: التحقق من مفاتيح ميزانية أداء الحصة المحدثة ومعالجة الحدود `QuotaErrorCode` لدعم رموز الخطأ المضافة حديثًا.",
+  "- **Agent Checkpoint Service**: Resolved a fatal TypeScript runtime ReferenceError caused by importing `AgentCheckpointTelemetryEvent` with a `type` modifier rather than as a value, which broke tracking assertions.": "- **Agent Checkpoint Service**: تم حل الخطأ الفادح TypeScript runtime ReferenceError الناتج عن استيراد `AgentCheckpointTelemetryEvent` باستخدام مُعدِّل `type` بدلاً من اعتباره قيمة، مما أدى إلى تعطيل تأكيدات التتبع."
 }

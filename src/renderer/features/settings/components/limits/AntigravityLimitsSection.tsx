@@ -1,8 +1,8 @@
 import { Percent } from 'lucide-react';
 import React from 'react';
 
-import type { ModelInfo } from '@/types';
 import { useTranslation } from '@/i18n';
+import type { ModelInfo } from '@/types';
 
 interface AntigravityLimitsSectionProps {
     antigravityModels: ModelInfo[]

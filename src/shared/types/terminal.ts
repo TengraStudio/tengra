@@ -15,3 +15,25 @@ export interface TerminalTab {
     metadata?: Record<string, unknown>;
     bootstrapCommand?: string;
 }
+
+export interface TerminalCommandHistoryEntry {
+    command: string;
+    shell?: string;
+    cwd?: string;
+    timestamp: number;
+    sessionId: string;
+}
+
+export interface ExplainErrorResult {
+    summary: string;
+    cause: string;
+    solution: string;
+    steps?: string[];
+}
+
+export interface FixErrorResult {
+    suggestedCommand: string;
+    explanation: string;
+    confidence: 'low' | 'medium' | 'high';
+    alternativeCommands?: string[];
+}

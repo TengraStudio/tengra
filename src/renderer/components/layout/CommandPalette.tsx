@@ -14,10 +14,10 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
-import type { ModelInfo } from '@/types';
 import { SettingsCategory } from '@/features/settings/types';
 import { useDebounce } from '@/hooks/useDebounce';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
+import type { ModelInfo } from '@/types';
 import { Chat, Project } from '@/types';
 
 export interface CommandItem {

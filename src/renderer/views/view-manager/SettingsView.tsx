@@ -1,8 +1,8 @@
-import type { GroupedModels, ModelInfo } from '@/types';
 import React, { lazy, Suspense, useCallback } from 'react';
 
 import { LoadingState } from '@/components/ui/LoadingState';
 import { SettingsCategory } from '@/features/settings/types';
+import type { GroupedModels, ModelInfo } from '@/types';
 
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
 

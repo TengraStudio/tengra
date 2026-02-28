@@ -72,7 +72,7 @@ describe('Database IPC Handlers', () => {
     let mockEmbeddingService: MockEmbeddingService;
     let mockAuditLogService: MockAuditLogService;
     let registeredHandlers: Map<string, any>;
-    const mockEvent = { sender: { id: 1 } } as any;
+    const mockEvent = { sender: { id: 1, send: vi.fn() } } as any;
 
 
     beforeEach(() => {

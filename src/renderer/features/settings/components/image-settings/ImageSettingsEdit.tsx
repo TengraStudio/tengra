@@ -11,6 +11,10 @@ interface ImageSettingsEditProps {
     setEditPrompt: (prompt: string) => void;
     editMode: 'img2img' | 'inpaint' | 'outpaint' | 'style-transfer';
     setEditMode: (mode: 'img2img' | 'inpaint' | 'outpaint' | 'style-transfer') => void;
+    editStrength: number;
+    setEditStrength: (strength: number) => void;
+    editPresetId: 'balanced' | 'detail' | 'stylize';
+    handleApplyEditPreset: (presetId: 'balanced' | 'detail' | 'stylize') => void;
     handleRunEdit: () => Promise<void>;
     t: (key: string) => string | undefined;
 }
@@ -25,6 +29,10 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
     setEditPrompt,
     editMode,
     setEditMode,
+    editStrength,
+    setEditStrength,
+    editPresetId,
+    handleApplyEditPreset,
     handleRunEdit,
     t,
 }) => {
@@ -63,6 +71,15 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                     className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
                 />
                 <select
+                    value={editPresetId}
+                    onChange={event => handleApplyEditPreset(event.target.value as 'balanced' | 'detail' | 'stylize')}
+                    className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
+                >
+                    <option value="balanced">{t('settings.images.editPresetBalanced') || 'Preset: Balanced'}</option>
+                    <option value="detail">{t('settings.images.editPresetDetail') || 'Preset: Detail Recovery'}</option>
+                    <option value="stylize">{t('settings.images.editPresetStylize') || 'Preset: Stylize'}</option>
+                </select>
+                <select
                     value={editMode}
                     onChange={event => setEditMode(event.target.value as 'img2img' | 'inpaint' | 'outpaint' | 'style-transfer')}
                     className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
@@ -72,6 +89,15 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                     <option value="outpaint">outpaint</option>
                     <option value="style-transfer">style-transfer</option>
                 </select>
+                <input
+                    type="number"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={editStrength}
+                    onChange={event => setEditStrength(Number(event.target.value))}
+                    className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
+                />
             </div>
             <button
                 onClick={() => { void handleRunEdit(); }}

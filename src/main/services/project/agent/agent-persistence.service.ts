@@ -134,6 +134,10 @@ export class AgentPersistenceService extends BaseService {
 
         try {
             await this.runMigrations();
+            const staleTasks = await this.scanStaleTasks();
+            if (staleTasks.length > 0) {
+                this.logWarn(`Found ${staleTasks.length} stale task(s) on startup: ${staleTasks.join(', ')}`);
+            }
             this.logInfo('Agent persistence initialized successfully');
         } catch (error) {
             this.logError('Failed to initialize agent persistence', error as Error);
@@ -784,6 +788,58 @@ export class AgentPersistenceService extends BaseService {
                 endedAt: p.endedAt ? new Date(p.endedAt) : undefined
             }))
         };
+    }
+
+    // ========================================================================
+    // Stale Task Detection
+    // ========================================================================
+
+    /**
+     * Scans for tasks that appear stale (no checkpoint update within timeout).
+     * Called on app startup to detect tasks that were interrupted.
+     * @param timeoutMs Maximum age in ms before a running task is considered stale (default: 5 min)
+     * @returns Array of stale task IDs
+     */
+    async scanStaleTasks(timeoutMs: number = 300_000): Promise<string[]> {
+        this.logInfo('Scanning for stale tasks...');
+
+        try {
+            const db = this.databaseService.getDatabase();
+            const activeStates = ['executing', 'waiting_llm', 'waiting_tool', 'recovering', 'rotating_provider', 'fallback'];
+            const placeholders = activeStates.map(() => '?').join(', ');
+            const cutoff = new Date(Date.now() - timeoutMs).toISOString();
+
+            const rows = await db.prepare(
+                `SELECT t.id, t.state, t.updated_at,
+                        (SELECT MAX(c.created_at) FROM agent_checkpoints c WHERE c.task_id = t.id) as last_checkpoint_at
+                 FROM agent_tasks t
+                 WHERE t.state IN (${placeholders})
+                 ORDER BY t.updated_at ASC`
+            ).all(...activeStates) as Array<{
+                id: string;
+                state: string;
+                updated_at: string;
+                last_checkpoint_at: string | null;
+            }>;
+
+            const staleIds: string[] = [];
+
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const latestActivity = row.last_checkpoint_at ?? row.updated_at;
+
+                if (latestActivity < cutoff) {
+                    staleIds.push(row.id);
+                    this.logWarn(`Stale task detected: ${row.id} (state=${row.state}, lastActivity=${latestActivity})`);
+                }
+            }
+
+            this.logInfo(`Stale task scan complete: ${staleIds.length} stale out of ${rows.length} active`);
+            return staleIds;
+        } catch (error) {
+            this.logError('Failed to scan for stale tasks', error as Error);
+            return [];
+        }
     }
 
     // ========================================================================

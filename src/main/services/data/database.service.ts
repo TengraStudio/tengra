@@ -179,6 +179,38 @@ interface ShardingConfig {
     shardCount: number;
 }
 
+/**
+ * Standardized error codes for DatabaseService
+ */
+export enum DatabaseServiceErrorCode {
+    INVALID_ID = 'DB_INVALID_ID',
+    INVALID_QUERY = 'DB_INVALID_QUERY',
+    NOT_INITIALIZED = 'DB_NOT_INITIALIZED',
+    OPERATION_FAILED = 'DB_OPERATION_FAILED',
+    CONNECTION_FAILED = 'DB_CONNECTION_FAILED'
+}
+
+export enum DatabaseServiceTelemetryEvent {
+    QUERY_EXECUTED = 'db_query_executed',
+    QUERY_FAILED = 'db_query_failed',
+    BATCH_EXECUTED = 'db_batch_executed',
+    BACKUP_CREATED = 'db_backup_created',
+    BACKUP_RESTORED = 'db_backup_restored',
+    MIGRATION_RUN = 'db_migration_run',
+    CONNECTION_OPENED = 'db_connection_opened',
+    CONNECTION_CLOSED = 'db_connection_closed'
+}
+
+export const DATABASE_PERFORMANCE_BUDGETS = {
+    QUERY_MS: 5000,
+    BATCH_MS: 10000,
+    BACKUP_MS: 30000,
+    RESTORE_MS: 30000,
+    MIGRATION_MS: 60000,
+    INITIALIZE_MS: 10000,
+    CLEANUP_MS: 5000
+} as const;
+
 export class DatabaseService extends BaseService {
     private initPromise: Promise<void> | null = null;
     private initError: Error | null = null;
@@ -219,6 +251,27 @@ export class DatabaseService extends BaseService {
         private timeTracking: TimeTrackingService
     ) {
         super('DatabaseService');
+    }
+
+    /** Validates that a value is a non-empty string, throwing with the given label if not. */
+    private validateId(value: unknown, label: string): asserts value is string {
+        if (typeof value !== 'string' || value.trim().length === 0) {
+            throw new Error(`[${DatabaseServiceErrorCode.INVALID_ID}] ${label} must be a non-empty string`);
+        }
+    }
+
+    /** Validates that a value is a string (used for SQL statements). */
+    private validateSql(value: unknown): asserts value is string {
+        if (typeof value !== 'string' || value.trim().length === 0) {
+            throw new Error(`[${DatabaseServiceErrorCode.INVALID_QUERY}] SQL statement must be a non-empty string`);
+        }
+    }
+
+    /** Validates that a value is an array. */
+    private validateArray(value: unknown, label: string): asserts value is unknown[] {
+        if (!Array.isArray(value)) {
+            throw new Error(`[${DatabaseServiceErrorCode.OPERATION_FAILED}] ${label} must be an array`);
+        }
     }
 
     override async initialize(): Promise<void> {
@@ -273,16 +326,19 @@ export class DatabaseService extends BaseService {
     }
 
     public async query<T = unknown>(sql: string, params?: SqlParams) {
+        this.validateSql(sql);
         const adapter = await this.ensureDb();
         return adapter.query<T>(sql, params);
     }
 
     public async exec(sql: string) {
+        this.validateSql(sql);
         const adapter = await this.ensureDb();
         await adapter.exec(sql);
     }
 
     public async prepare(sql: string) {
+        this.validateSql(sql);
         const adapter = await this.ensureDb();
         return adapter.prepare(sql);
     }
@@ -449,6 +505,9 @@ export class DatabaseService extends BaseService {
     }
 
     setConnectionPoolConfig(config: { maxSockets?: number; maxFreeSockets?: number; maxPendingRequests?: number }): void {
+        if (config === null || typeof config !== 'object') {
+            throw new Error(`[${DatabaseServiceErrorCode.OPERATION_FAILED}] config must be a non-null object`);
+        }
         this.dbClient.setPoolLimits(config);
     }
 
@@ -465,6 +524,7 @@ export class DatabaseService extends BaseService {
     }
 
     async analyzeQueryPlan(sql: string, params?: SqlParams): Promise<unknown[]> {
+        this.validateSql(sql);
         const explainSql = `EXPLAIN ${sql}`;
         const res = await this.query(explainSql, params);
         return res.rows as unknown[];
@@ -473,6 +533,7 @@ export class DatabaseService extends BaseService {
     async executeBatch(
         statements: Array<{ sql: string; params?: SqlParams }>
     ): Promise<Array<{ success: boolean; error?: string }>> {
+        this.validateArray(statements, 'statements');
         const results: Array<{ success: boolean; error?: string }> = [];
         for (const statement of statements) {
             try {
@@ -770,6 +831,7 @@ export class DatabaseService extends BaseService {
     }
 
     async queryAcrossShards(sql: string, params?: SqlParams): Promise<Array<{ shard: number; rows: unknown[] }>> {
+        this.validateSql(sql);
         const shards = Math.max(1, this.shardingConfig.shardCount);
         const rows: Array<{ shard: number; rows: unknown[] }> = [];
         for (let shard = 0; shard < shards; shard += 1) {
@@ -853,13 +915,17 @@ export class DatabaseService extends BaseService {
     async archiveProject(id: string, isArchived: boolean): Promise<Project | undefined> { return this._projects.updateProject(id, { status: isArchived ? 'archived' : 'active' }); }
 
     async bulkDeleteProjects(ids: string[], deleteFiles: boolean = false) {
+        this.validateArray(ids, 'ids');
         for (const id of ids) {
+            this.validateId(id, 'projectId');
             await this.deleteProject(id, deleteFiles);
         }
     }
 
     async bulkArchiveProjects(ids: string[], isArchived: boolean) {
+        this.validateArray(ids, 'ids');
         for (const id of ids) {
+            this.validateId(id, 'projectId');
             await this.archiveProject(id, isArchived);
         }
     }
@@ -877,13 +943,17 @@ export class DatabaseService extends BaseService {
     async deleteAllChats() { return this._chats.deleteAllChats(); }
     async deleteChatsByTitle(title: string) { return this._chats.deleteChatsByTitle(title); }
     async bulkDeleteChats(ids: string[]) {
+        this.validateArray(ids, 'ids');
         for (const id of ids) {
+            this.validateId(id, 'chatId');
             await this.deleteChat(id);
         }
     }
 
     async bulkArchiveChats(ids: string[], isArchived: boolean) {
+        this.validateArray(ids, 'ids');
         for (const id of ids) {
+            this.validateId(id, 'chatId');
             await this.archiveChat(id, isArchived);
         }
     }
@@ -1128,8 +1198,10 @@ export class DatabaseService extends BaseService {
     }
 
     async unarchiveChats(ids: string[]): Promise<{ updated: number }> {
+        this.validateArray(ids, 'ids');
         let updated = 0;
         for (const id of ids) {
+            this.validateId(id, 'chatId');
             const result = await this.archiveChat(id, false);
             if (result?.success) {
                 updated += 1;
@@ -1165,8 +1237,12 @@ export class DatabaseService extends BaseService {
     async updateMessage(id: string, updates: JsonObject) { return this._chats.updateMessage(id, updates); }
     async deleteMessage(id: string) { return this._chats.deleteMessage(id); }
     async deleteMessages(ids: string[]) {
+        this.validateArray(ids, 'ids');
         const db = await this.ensureDb();
-        for (const id of ids) { await db.prepare('DELETE FROM messages WHERE id = ?').run(id); }
+        for (const id of ids) {
+            this.validateId(id, 'messageId');
+            await db.prepare('DELETE FROM messages WHERE id = ?').run(id);
+        }
         return { success: true };
     }
     async deleteMessagesByChatId(chatId: string) { return this._chats.deleteMessagesByChatId(chatId); }

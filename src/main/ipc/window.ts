@@ -4,6 +4,8 @@ import * as path from 'path';
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { RateLimiter } from '@main/utils/rate-limiter.util';
+import { validateCommandArgs } from '@main/utils/shell-command-policy.util';
 import { resolveWindowsCommand } from '@main/utils/windows-command.util';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
@@ -48,6 +50,13 @@ const RUN_COMMAND_ALLOWED_EXECUTABLES = new Set([
     'docker',
     'kubectl'
 ]);
+
+/** AUD-2026-02-27-03: Rate limiter for shell:runCommand — 30 executions per minute */
+const runCommandRateLimiter = new RateLimiter({
+    maxTokens: 30,
+    refillRate: 30,
+    refillIntervalMs: 60_000,
+});
 
 interface DetachedTerminalWindowOptions {
     sessionId: string;
@@ -483,6 +492,19 @@ function registerShellHandlers(getMainWindow: () => BrowserWindow | null, allowe
         if (cwd && !isPathAllowed(cwd, allowedRoots)) {
             appLogger.warn('WindowIPC', `Blocked shell:runCommand cwd outside allowed roots: ${cwd}`);
             return { stdout: '', stderr: 'Working directory is not allowed', code: 1, error: 'Command validation failed' };
+        }
+
+        // AUD-2026-02-27-03: Per-command argument validation (path traversal, injection)
+        const argPolicy = validateCommandArgs(executable, args);
+        if (!argPolicy.allowed) {
+            appLogger.warn('WindowIPC', `Blocked shell:runCommand args: ${argPolicy.reason}`);
+            return { stdout: '', stderr: argPolicy.reason ?? 'Argument policy violation', code: 1, error: 'Command validation failed' };
+        }
+
+        // AUD-2026-02-27-03: Rate limiting for execution attempts
+        if (!runCommandRateLimiter.tryAcquire()) {
+            appLogger.warn('WindowIPC', 'shell:runCommand rate limit exceeded');
+            return { stdout: '', stderr: 'Rate limit exceeded', code: 1, error: 'Rate limit exceeded' };
         }
 
         return new Promise(resolve => {

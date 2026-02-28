@@ -96,6 +96,30 @@ export class DatabaseClientService extends BaseService {
         });
     }
 
+    /** Validates that a value is a non-empty string safe for URL path segments. */
+    private validatePathId(value: unknown, label: string): asserts value is string {
+        if (typeof value !== 'string' || value.trim().length === 0) {
+            throw new Error(`${label} must be a non-empty string`);
+        }
+        if (!/^[\w\-.:]+$/.test(value)) {
+            throw new Error(`${label} contains invalid characters`);
+        }
+    }
+
+    /** Validates that a value is a non-empty string. */
+    private validateRequiredString(value: unknown, label: string): asserts value is string {
+        if (typeof value !== 'string' || value.trim().length === 0) {
+            throw new Error(`${label} must be a non-empty string`);
+        }
+    }
+
+    /** Validates that a value is an array. */
+    private validateArray(value: unknown, label: string): asserts value is unknown[] {
+        if (!Array.isArray(value)) {
+            throw new Error(`${label} must be an array`);
+        }
+    }
+
     /**
      * Initialize the database client
      */
@@ -400,6 +424,7 @@ export class DatabaseClientService extends BaseService {
     }
 
     async getChat(id: string): Promise<DbChat | null> {
+        this.validatePathId(id, 'chatId');
         const response = await this.apiCall<DbChat | null>('GET', `/api/v1/chats/${id}`);
         return response.data ?? null;
     }
@@ -407,6 +432,7 @@ export class DatabaseClientService extends BaseService {
     async createChat(
         req: DbCreateChatRequest
     ): Promise<{ success: boolean; chat?: DbChat; error?: string }> {
+        this.validateRequiredString(req.title, 'title');
         const response = await this.apiCall<DbChat>('POST', '/api/v1/chats', req);
         return {
             success: response.success,
@@ -416,11 +442,13 @@ export class DatabaseClientService extends BaseService {
     }
 
     async updateChat(id: string, updates: DbUpdateChatRequest): Promise<boolean> {
+        this.validatePathId(id, 'chatId');
         const response = await this.apiCall<boolean>('PUT', `/api/v1/chats/${id}`, updates);
         return response.data ?? false;
     }
 
     async deleteChat(id: string): Promise<boolean> {
+        this.validatePathId(id, 'chatId');
         const response = await this.apiCall<boolean>('DELETE', `/api/v1/chats/${id}`);
         return response.data ?? false;
     }
@@ -430,6 +458,7 @@ export class DatabaseClientService extends BaseService {
     // ========================================================================
 
     async getMessages(chatId: string): Promise<DbMessage[]> {
+        this.validatePathId(chatId, 'chatId');
         const response = await this.apiCall<DbMessage[]>('GET', `/api/v1/chats/${chatId}/messages`);
         return response.data ?? [];
     }
@@ -437,6 +466,8 @@ export class DatabaseClientService extends BaseService {
     async addMessage(
         req: DbCreateMessageRequest
     ): Promise<{ success: boolean; message?: DbMessage; error?: string }> {
+        this.validateRequiredString(req.chat_id, 'chat_id');
+        this.validateRequiredString(req.role, 'role');
         const response = await this.apiCall<DbMessage>('POST', '/api/v1/messages', req);
         return {
             success: response.success,
@@ -446,11 +477,13 @@ export class DatabaseClientService extends BaseService {
     }
 
     async updateMessage(id: string, updates: DbUpdateMessageRequest): Promise<boolean> {
+        this.validatePathId(id, 'messageId');
         const response = await this.apiCall<boolean>('PUT', `/api/v1/messages/${id}`, updates);
         return response.data ?? false;
     }
 
     async deleteMessage(id: string): Promise<boolean> {
+        this.validatePathId(id, 'messageId');
         const response = await this.apiCall<boolean>('DELETE', `/api/v1/messages/${id}`);
         return response.data ?? false;
     }
@@ -465,6 +498,7 @@ export class DatabaseClientService extends BaseService {
     }
 
     async getProject(id: string): Promise<DbProject | null> {
+        this.validatePathId(id, 'projectId');
         const response = await this.apiCall<DbProject | null>('GET', `/api/v1/projects/${id}`);
         return response.data ?? null;
     }
@@ -472,6 +506,8 @@ export class DatabaseClientService extends BaseService {
     async createProject(
         req: DbCreateProjectRequest
     ): Promise<{ success: boolean; project?: DbProject; error?: string }> {
+        this.validateRequiredString(req.title, 'title');
+        this.validateRequiredString(req.path, 'path');
         const response = await this.apiCall<DbProject>('POST', '/api/v1/projects', req);
         return {
             success: response.success,
@@ -481,11 +517,13 @@ export class DatabaseClientService extends BaseService {
     }
 
     async updateProject(id: string, updates: DbUpdateProjectRequest): Promise<boolean> {
+        this.validatePathId(id, 'projectId');
         const response = await this.apiCall<boolean>('PUT', `/api/v1/projects/${id}`, updates);
         return response.data ?? false;
     }
 
     async deleteProject(id: string): Promise<boolean> {
+        this.validatePathId(id, 'projectId');
         const response = await this.apiCall<boolean>('DELETE', `/api/v1/projects/${id}`);
         return response.data ?? false;
     }
@@ -502,6 +540,7 @@ export class DatabaseClientService extends BaseService {
     async createFolder(
         req: DbCreateFolderRequest
     ): Promise<{ success: boolean; folder?: DbFolder; error?: string }> {
+        this.validateRequiredString(req.name, 'name');
         const response = await this.apiCall<DbFolder>('POST', '/api/v1/folders', req);
         return {
             success: response.success,
@@ -511,11 +550,13 @@ export class DatabaseClientService extends BaseService {
     }
 
     async updateFolder(id: string, updates: DbUpdateFolderRequest): Promise<boolean> {
+        this.validatePathId(id, 'folderId');
         const response = await this.apiCall<boolean>('PUT', `/api/v1/folders/${id}`, updates);
         return response.data ?? false;
     }
 
     async deleteFolder(id: string): Promise<boolean> {
+        this.validatePathId(id, 'folderId');
         const response = await this.apiCall<boolean>('DELETE', `/api/v1/folders/${id}`);
         return response.data ?? false;
     }
@@ -532,6 +573,8 @@ export class DatabaseClientService extends BaseService {
     async createPrompt(
         req: DbCreatePromptRequest
     ): Promise<{ success: boolean; prompt?: DbPrompt; error?: string }> {
+        this.validateRequiredString(req.title, 'title');
+        this.validateRequiredString(req.content, 'content');
         const response = await this.apiCall<DbPrompt>('POST', '/api/v1/prompts', req);
         return {
             success: response.success,
@@ -541,11 +584,13 @@ export class DatabaseClientService extends BaseService {
     }
 
     async updatePrompt(id: string, updates: DbUpdatePromptRequest): Promise<boolean> {
+        this.validatePathId(id, 'promptId');
         const response = await this.apiCall<boolean>('PUT', `/api/v1/prompts/${id}`, updates);
         return response.data ?? false;
     }
 
     async deletePrompt(id: string): Promise<boolean> {
+        this.validatePathId(id, 'promptId');
         const response = await this.apiCall<boolean>('DELETE', `/api/v1/prompts/${id}`);
         return response.data ?? false;
     }
@@ -555,10 +600,14 @@ export class DatabaseClientService extends BaseService {
     // ========================================================================
 
     async storeCodeSymbol(req: DbStoreCodeSymbolRequest): Promise<void> {
+        this.validateRequiredString(req.name, 'name');
+        this.validateRequiredString(req.project_path, 'project_path');
+        this.validateRequiredString(req.file_path, 'file_path');
         await this.apiCall<void>('POST', '/api/v1/knowledge/symbols', req);
     }
 
     async searchCodeSymbols(req: DbVectorSearchRequest): Promise<DbCodeSymbol[]> {
+        this.validateArray(req.embedding, 'embedding');
         const response = await this.apiCall<DbCodeSymbol[]>(
             'POST',
             '/api/v1/knowledge/symbols/search',
@@ -568,10 +617,15 @@ export class DatabaseClientService extends BaseService {
     }
 
     async storeSemanticFragment(req: DbStoreSemanticFragmentRequest): Promise<void> {
+        this.validateRequiredString(req.content, 'content');
+        this.validateRequiredString(req.source, 'source');
+        this.validateRequiredString(req.source_id, 'source_id');
+        this.validateArray(req.embedding, 'embedding');
         await this.apiCall<void>('POST', '/api/v1/knowledge/fragments', req);
     }
 
     async searchSemanticFragments(req: DbVectorSearchRequest): Promise<DbSemanticFragment[]> {
+        this.validateArray(req.embedding, 'embedding');
         const response = await this.apiCall<DbSemanticFragment[]>(
             'POST',
             '/api/v1/knowledge/fragments/search',
@@ -600,6 +654,10 @@ export class DatabaseClientService extends BaseService {
     // ========================================================================
 
     async executeQuery(req: DbQueryRequest): Promise<DbQueryResponse> {
+        this.validateRequiredString(req.sql, 'sql');
+        if (req.params !== undefined) {
+            this.validateArray(req.params, 'params');
+        }
         const response = await this.apiCall<DbQueryResponse>('POST', '/api/v1/query', req);
         return response.data ?? { rows: [], affected_rows: 0 };
     }
@@ -625,6 +683,7 @@ export class DatabaseClientService extends BaseService {
     async upsertMarketplaceModels(
         req: DbUpsertMarketplaceModelsRequest
     ): Promise<{ success: boolean; count: number; error?: string }> {
+        this.validateArray(req.models, 'models');
         const response = await this.apiCall<{ count: number }>(
             'POST',
             '/api/v1/marketplace/models',
@@ -640,6 +699,7 @@ export class DatabaseClientService extends BaseService {
     async searchMarketplaceModels(
         req: DbSearchMarketplaceModelsRequest
     ): Promise<DbMarketplaceModel[]> {
+        this.validateRequiredString(req.query, 'query');
         const response = await this.apiCall<{ models: DbMarketplaceModel[]; total: number }>(
             'POST',
             '/api/v1/marketplace/models/search',

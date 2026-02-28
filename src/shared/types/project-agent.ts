@@ -314,6 +314,16 @@ export interface ModelRoutingRule {
     priority: number; // Higher priority = preferred
 }
 
+/** MARCH1-MODEL-GOV-001: Per-task model governance configuration */
+export interface ModelGovernanceConfig {
+    /** Models explicitly allowed for this task (empty array = all allowed) */
+    allowedModels: string[];
+    /** Models explicitly blocked for this task */
+    blockedModels: string[];
+    /** Whether to enforce governance on fallback routing too */
+    enforceOnFallback: boolean;
+}
+
 /** AGT-COL-05: Collaboration intent for inter-agent protocol */
 export type AgentCollaborationIntent =
     | 'REQUEST_HELP'

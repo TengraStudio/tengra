@@ -60,7 +60,18 @@ export enum AppErrorCode {
     DB_CONSTRAINT_VIOLATION = 'DB_CONSTRAINT_VIOLATION',
     DB_NOT_INITIALIZED = 'DB_NOT_INITIALIZED',
     DB_SHARDING_ERROR = 'DB_SHARDING_ERROR',
-    DB_COMPRESSION_ERROR = 'DB_COMPRESSION_ERROR'
+    DB_COMPRESSION_ERROR = 'DB_COMPRESSION_ERROR',
+    // Proxy Service Error Codes (BACKLOG-0414)
+    PROXY_NOT_INITIALIZED = 'PROXY_NOT_INITIALIZED',
+    PROXY_START_FAILED = 'PROXY_START_FAILED',
+    PROXY_STOP_FAILED = 'PROXY_STOP_FAILED',
+    PROXY_AUTH_FAILED = 'PROXY_AUTH_FAILED',
+    PROXY_REQUEST_FAILED = 'PROXY_REQUEST_FAILED',
+    PROXY_INVALID_CONFIG = 'PROXY_INVALID_CONFIG',
+    PROXY_CONNECTION_FAILED = 'PROXY_CONNECTION_FAILED',
+    PROXY_TIMEOUT = 'PROXY_TIMEOUT',
+    PROXY_PORT_IN_USE = 'PROXY_PORT_IN_USE',
+    PROXY_BINARY_NOT_FOUND = 'PROXY_BINARY_NOT_FOUND'
 }
 
 export class TengraError extends Error {
@@ -150,6 +161,23 @@ export class AuthenticationError extends UnauthorizedTengraError {
     }
 }
 
+/**
+ * Proxy-specific error with typed error code for startup/connection/request failures.
+ */
+export class ProxyServiceError extends TengraError {
+    public readonly retryable: boolean;
+
+    constructor(
+        message: string,
+        code: string = AppErrorCode.PROXY_REQUEST_FAILED,
+        retryable: boolean = true,
+        context?: Record<string, unknown>
+    ) {
+        super(message, code, context);
+        this.retryable = retryable;
+    }
+}
+
 export interface ErrorRecoveryStrategy {
     code: string;
     retryable: boolean;
@@ -206,7 +234,18 @@ const RECOVERY_BY_CODE: Record<string, ErrorRecoveryStrategy> = {
     [AppErrorCode.DB_CONSTRAINT_VIOLATION]: { code: AppErrorCode.DB_CONSTRAINT_VIOLATION, retryable: false, userAction: 'check-input' },
     [AppErrorCode.DB_NOT_INITIALIZED]: { code: AppErrorCode.DB_NOT_INITIALIZED, retryable: true, userAction: 'retry' },
     [AppErrorCode.DB_SHARDING_ERROR]: { code: AppErrorCode.DB_SHARDING_ERROR, retryable: false, userAction: 'contact-support' },
-    [AppErrorCode.DB_COMPRESSION_ERROR]: { code: AppErrorCode.DB_COMPRESSION_ERROR, retryable: true, userAction: 'retry' }
+    [AppErrorCode.DB_COMPRESSION_ERROR]: { code: AppErrorCode.DB_COMPRESSION_ERROR, retryable: true, userAction: 'retry' },
+    // Proxy Error Recovery Strategies (BACKLOG-0414)
+    [AppErrorCode.PROXY_NOT_INITIALIZED]: { code: AppErrorCode.PROXY_NOT_INITIALIZED, retryable: true, userAction: 'retry' },
+    [AppErrorCode.PROXY_START_FAILED]: { code: AppErrorCode.PROXY_START_FAILED, retryable: true, userAction: 'retry' },
+    [AppErrorCode.PROXY_STOP_FAILED]: { code: AppErrorCode.PROXY_STOP_FAILED, retryable: true, userAction: 'retry' },
+    [AppErrorCode.PROXY_AUTH_FAILED]: { code: AppErrorCode.PROXY_AUTH_FAILED, retryable: false, userAction: 'reauthenticate' },
+    [AppErrorCode.PROXY_REQUEST_FAILED]: { code: AppErrorCode.PROXY_REQUEST_FAILED, retryable: true, userAction: 'retry' },
+    [AppErrorCode.PROXY_INVALID_CONFIG]: { code: AppErrorCode.PROXY_INVALID_CONFIG, retryable: false, userAction: 'check-input' },
+    [AppErrorCode.PROXY_CONNECTION_FAILED]: { code: AppErrorCode.PROXY_CONNECTION_FAILED, retryable: true, userAction: 'retry' },
+    [AppErrorCode.PROXY_TIMEOUT]: { code: AppErrorCode.PROXY_TIMEOUT, retryable: true, userAction: 'retry' },
+    [AppErrorCode.PROXY_PORT_IN_USE]: { code: AppErrorCode.PROXY_PORT_IN_USE, retryable: true, userAction: 'check-input' },
+    [AppErrorCode.PROXY_BINARY_NOT_FOUND]: { code: AppErrorCode.PROXY_BINARY_NOT_FOUND, retryable: false, userAction: 'contact-support' }
 };
 
 export function getErrorRecoveryStrategy(error: unknown): ErrorRecoveryStrategy {

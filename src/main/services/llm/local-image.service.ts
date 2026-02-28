@@ -16,6 +16,7 @@ import { getErrorMessage } from '@shared/utils/error.util';
 import axios from 'axios';
 import { app } from 'electron';
 import { v4 as uuidv4 } from 'uuid';
+import WebSocket from 'ws';
 
 interface AntigravityUpstreamQuotaResponse {
     models: Record<string, QuotaModel>;
@@ -67,6 +68,9 @@ export interface ImageGenerationRecord {
     source?: 'generate' | 'edit' | 'schedule' | 'batch'
 }
 
+export type ImageSchedulePriority = 'low' | 'normal' | 'high'
+export type ImageResourceProfile = 'balanced' | 'quality' | 'speed'
+
 export interface ImageGenerationPreset {
     id: string
     name: string
@@ -80,10 +84,21 @@ export interface ImageGenerationPreset {
     updatedAt: number
 }
 
+export interface ComfyWorkflowTemplate {
+    id: string
+    name: string
+    description?: string
+    workflow: Record<string, unknown>
+    createdAt: number
+    updatedAt: number
+}
+
 export interface ImageScheduleTask {
     id: string
     runAt: number
     options: ImageGenerationOptions
+    priority: ImageSchedulePriority
+    resourceProfile: ImageResourceProfile
     status: 'scheduled' | 'running' | 'completed' | 'failed' | 'canceled'
     createdAt: number
     updatedAt: number
@@ -104,9 +119,11 @@ export interface ImageComparisonResult {
         seed: number
         prompt: string
         fileSizeBytes: number
+        bytesPerPixel: number
     }>
     summary: {
         averageFileSizeBytes: number
+        averageBytesPerPixel: number
         largestFileId?: string
         smallestFileId?: string
     }
@@ -155,18 +172,24 @@ export class LocalImageService extends BaseService {
     private readonly historyPath: string = path.join(this.storageRoot, 'generation-history.json');
     private readonly presetsPath: string = path.join(this.storageRoot, 'generation-presets.json');
     private readonly schedulePath: string = path.join(this.storageRoot, 'generation-schedule.json');
+    private readonly workflowTemplatesPath: string = path.join(this.storageRoot, 'comfy-workflow-templates.json');
     private generationHistory: ImageGenerationRecord[] = [];
     private generationPresets: ImageGenerationPreset[] = [];
+    private comfyWorkflowTemplates: ComfyWorkflowTemplate[] = [];
     private scheduleTasks: ImageScheduleTask[] = [];
     private scheduleTimers: Map<string, NodeJS.Timeout> = new Map();
     private generationQueue: Array<{
         id: string;
         options: ImageGenerationOptions;
         source: 'batch' | 'schedule';
+        priority: ImageSchedulePriority;
+        resourceProfile: ImageResourceProfile;
+        enqueuedAt: number;
         resolve: (value: string) => void;
         reject: (error: Error) => void;
     }> = [];
     private queueRunning = false;
+    private generationDurationsMs: number[] = [];
     private settingsService: SettingsService;
     private eventBusService?: EventBusService;
     private authService?: AuthService;
@@ -247,23 +270,29 @@ export class LocalImageService extends BaseService {
         if (!(await this.pathExists(this.schedulePath))) {
             await fs.promises.writeFile(this.schedulePath, JSON.stringify([], null, 2), 'utf-8');
         }
+        if (!(await this.pathExists(this.workflowTemplatesPath))) {
+            await fs.promises.writeFile(this.workflowTemplatesPath, JSON.stringify([], null, 2), 'utf-8');
+        }
     }
 
     private async loadImageState(): Promise<void> {
         try {
-            const [historyRaw, presetsRaw, scheduleRaw] = await Promise.all([
+            const [historyRaw, presetsRaw, scheduleRaw, workflowRaw] = await Promise.all([
                 fs.promises.readFile(this.historyPath, 'utf-8'),
                 fs.promises.readFile(this.presetsPath, 'utf-8'),
-                fs.promises.readFile(this.schedulePath, 'utf-8')
+                fs.promises.readFile(this.schedulePath, 'utf-8'),
+                fs.promises.readFile(this.workflowTemplatesPath, 'utf-8')
             ]);
             this.generationHistory = JSON.parse(historyRaw) as ImageGenerationRecord[];
             this.generationPresets = JSON.parse(presetsRaw) as ImageGenerationPreset[];
-            this.scheduleTasks = JSON.parse(scheduleRaw) as ImageScheduleTask[];
+            this.scheduleTasks = this.normalizeScheduleTasks(JSON.parse(scheduleRaw) as ImageScheduleTask[]);
+            this.comfyWorkflowTemplates = JSON.parse(workflowRaw) as ComfyWorkflowTemplate[];
         } catch (error) {
             this.logWarn('Failed to load image state, resetting to defaults', error as Error);
             this.generationHistory = [];
             this.generationPresets = [];
             this.scheduleTasks = [];
+            this.comfyWorkflowTemplates = [];
         }
     }
 
@@ -272,8 +301,21 @@ export class LocalImageService extends BaseService {
         await Promise.all([
             fs.promises.writeFile(this.historyPath, JSON.stringify(this.generationHistory.slice(-1000), null, 2), 'utf-8'),
             fs.promises.writeFile(this.presetsPath, JSON.stringify(this.generationPresets.slice(-300), null, 2), 'utf-8'),
-            fs.promises.writeFile(this.schedulePath, JSON.stringify(this.scheduleTasks.slice(-500), null, 2), 'utf-8')
+            fs.promises.writeFile(this.schedulePath, JSON.stringify(this.scheduleTasks.slice(-500), null, 2), 'utf-8'),
+            fs.promises.writeFile(
+                this.workflowTemplatesPath,
+                JSON.stringify(this.comfyWorkflowTemplates.slice(-120), null, 2),
+                'utf-8'
+            )
         ]);
+    }
+
+    private normalizeScheduleTasks(tasks: ImageScheduleTask[]): ImageScheduleTask[] {
+        return tasks.map(task => ({
+            ...task,
+            priority: task.priority ?? 'normal',
+            resourceProfile: task.resourceProfile ?? 'balanced'
+        }));
     }
 
     private emitStatus(state: 'installing' | 'ready' | 'failed', error?: string): void {
@@ -303,7 +345,9 @@ export class LocalImageService extends BaseService {
         options: ImageGenerationOptions,
         source: 'generate' | 'edit' | 'schedule' | 'batch' = 'generate'
     ): Promise<string> {
-        this.assertNonEmptyText(options.prompt, 'Prompt');
+        const startedAt = Date.now();
+        const normalizedOptions = this.normalizeGenerationOptions(options);
+        this.assertNonEmptyText(normalizedOptions.prompt, 'Prompt');
         const settings = this.settingsService.getSettings();
         const preferredProvider = (settings.images?.provider ?? 'antigravity') as ImageProvider;
 
@@ -312,7 +356,7 @@ export class LocalImageService extends BaseService {
         // Try Antigravity first if available
         let generatedPath: string | null = null;
         if (this.authService && this.llmService && this.quotaService) {
-            const result = await this.tryGenerateWithAntigravity(options);
+            const result = await this.tryGenerateWithAntigravity(normalizedOptions);
             if (result) {
                 generatedPath = result;
             }
@@ -322,7 +366,7 @@ export class LocalImageService extends BaseService {
             // Fallback to preferred provider or Pollinations
             this.logInfo(`Falling back to ${preferredProvider === 'antigravity' ? 'pollinations' : preferredProvider}`);
             try {
-                generatedPath = await this.generateWithProvider(preferredProvider, options);
+                generatedPath = await this.generateWithProvider(preferredProvider, normalizedOptions);
             } catch (error) {
                 if (preferredProvider === 'sd-cpp') {
                     this.logWarn('SD-CPP generation failed, falling back to Pollinations', error as Error);
@@ -330,7 +374,7 @@ export class LocalImageService extends BaseService {
                         errorCode: LocalImageService.ERROR_CODES.SDCPP_FALLBACK_TRIGGERED,
                         error: getErrorMessage(error as Error),
                     });
-                    generatedPath = await this.generateWithPollinations(options);
+                    generatedPath = await this.generateWithPollinations(normalizedOptions);
                 } else {
                     throw error;
                 }
@@ -339,11 +383,57 @@ export class LocalImageService extends BaseService {
 
         await this.recordGeneration({
             provider: preferredProvider,
-            options,
+            options: normalizedOptions,
             imagePath: generatedPath,
             source
         });
+        this.recordGenerationDuration(Date.now() - startedAt);
         return generatedPath;
+    }
+
+    private normalizeGenerationOptions(options: ImageGenerationOptions): ImageGenerationOptions {
+        const width = options.width ?? 1024;
+        const height = options.height ?? 1024;
+        const maxPixels = this.getMaxPixelBudget();
+        const currentPixels = width * height;
+        if (currentPixels <= maxPixels) {
+            return options;
+        }
+
+        const scale = Math.sqrt(maxPixels / currentPixels);
+        const normalizedWidth = Math.max(256, Math.floor(width * scale / 64) * 64);
+        const normalizedHeight = Math.max(256, Math.floor(height * scale / 64) * 64);
+        this.trackSdCppMetric('image-resolution-normalized', {
+            originalWidth: width,
+            originalHeight: height,
+            normalizedWidth,
+            normalizedHeight
+        });
+
+        return {
+            ...options,
+            width: normalizedWidth,
+            height: normalizedHeight
+        };
+    }
+
+    private getMaxPixelBudget(): number {
+        const imagesSettings = this.settingsService.getSettings().images as Record<string, unknown> | undefined;
+        const configured = imagesSettings?.maxPixels;
+        if (typeof configured === 'number' && Number.isFinite(configured) && configured > 100_000) {
+            return configured;
+        }
+        return 2_359_296; // 1536x1536
+    }
+
+    private recordGenerationDuration(durationMs: number): void {
+        if (!Number.isFinite(durationMs) || durationMs <= 0) {
+            return;
+        }
+        this.generationDurationsMs.push(durationMs);
+        if (this.generationDurationsMs.length > 100) {
+            this.generationDurationsMs = this.generationDurationsMs.slice(-100);
+        }
     }
 
     private async generateWithProvider(provider: string, options: ImageGenerationOptions): Promise<string> {
@@ -639,7 +729,7 @@ export class LocalImageService extends BaseService {
     private async generateWithComfyUI(options: ImageGenerationOptions): Promise<string> {
         const settings = this.settingsService.getSettings();
         const baseUrl = settings.images?.comfyUIUrl ?? 'http://127.0.0.1:8188';
-        const workflow = this.buildComfyWorkflow(options);
+        const workflow = this.resolveComfyWorkflow(options);
 
         interface ComfyPromptResponse {
             prompt_id?: string;
@@ -653,7 +743,13 @@ export class LocalImageService extends BaseService {
             throw new Error('ComfyUI did not return prompt_id');
         }
 
-        const imageRef = await this.waitForComfyImage(baseUrl, promptId);
+        let imageRef: { filename: string; subfolder: string; type: string };
+        try {
+            imageRef = await this.waitForComfyImageViaWebSocket(baseUrl, promptId);
+        } catch (error) {
+            this.logWarn(`ComfyUI WebSocket tracking failed, falling back to history polling: ${getErrorMessage(error as Error)}`);
+            imageRef = await this.waitForComfyImage(baseUrl, promptId);
+        }
         const imageResponse = await axios.get<ArrayBuffer>(`${baseUrl}/view`, {
             params: {
                 filename: imageRef.filename,
@@ -664,6 +760,81 @@ export class LocalImageService extends BaseService {
         });
 
         return this.saveTempImage(Buffer.from(imageResponse.data));
+    }
+
+    private resolveComfyWorkflow(options: ImageGenerationOptions): Record<string, unknown> {
+        const settingsImages = this.settingsService.getSettings().images as Record<string, unknown> | undefined;
+        const selectedTemplateId =
+            typeof settingsImages?.comfyUIWorkflowTemplateId === 'string'
+                ? settingsImages.comfyUIWorkflowTemplateId
+                : undefined;
+        const selectedTemplate = selectedTemplateId
+            ? this.comfyWorkflowTemplates.find(template => template.id === selectedTemplateId)
+            : undefined;
+
+        if (selectedTemplate) {
+            return this.applyComfyWorkflowPlaceholders(selectedTemplate.workflow, options);
+        }
+
+        if (typeof settingsImages?.comfyUIWorkflowJson === 'string' && settingsImages.comfyUIWorkflowJson.trim()) {
+            try {
+                const parsed = JSON.parse(settingsImages.comfyUIWorkflowJson) as Record<string, unknown>;
+                return this.applyComfyWorkflowPlaceholders(parsed, options);
+            } catch (error) {
+                this.logWarn(`Invalid custom ComfyUI workflow JSON, using default template: ${getErrorMessage(error as Error)}`);
+            }
+        }
+
+        return this.buildComfyWorkflow(options);
+    }
+
+    private applyComfyWorkflowPlaceholders(
+        workflow: Record<string, unknown>,
+        options: ImageGenerationOptions
+    ): Record<string, unknown> {
+        const seed = typeof options.seed === 'number' ? options.seed : Math.floor(Math.random() * 1_000_000);
+        const replacements: Record<string, string | number> = {
+            prompt: options.prompt,
+            negative_prompt: options.negativePrompt ?? 'low quality, blurry, artifacts',
+            width: options.width ?? 1024,
+            height: options.height ?? 1024,
+            steps: options.steps ?? 24,
+            cfg_scale: options.cfgScale ?? 7,
+            seed,
+            batch_size: Math.max(1, Math.min(options.count ?? 1, 8))
+        };
+
+        const clone = JSON.parse(JSON.stringify(workflow)) as Record<string, unknown>;
+        return this.replaceWorkflowTokens(clone, replacements) as Record<string, unknown>;
+    }
+
+    private replaceWorkflowTokens(
+        value: unknown,
+        replacements: Record<string, string | number>
+    ): unknown {
+        if (typeof value === 'string') {
+            const exact = value.match(/^{{([a-z_]+)}}$/);
+            if (exact?.[1] && replacements[exact[1]] !== undefined) {
+                return replacements[exact[1]];
+            }
+            let updated = value;
+            Object.entries(replacements).forEach(([key, replacement]) => {
+                updated = updated.split(`{{${key}}}`).join(String(replacement));
+            });
+            return updated;
+        }
+        if (Array.isArray(value)) {
+            return value.map(item => this.replaceWorkflowTokens(item, replacements));
+        }
+        if (value && typeof value === 'object') {
+            const objectValue = value as Record<string, unknown>;
+            const next: Record<string, unknown> = {};
+            Object.entries(objectValue).forEach(([key, nestedValue]) => {
+                next[key] = this.replaceWorkflowTokens(nestedValue, replacements);
+            });
+            return next;
+        }
+        return value;
     }
 
     private buildComfyWorkflow(options: ImageGenerationOptions): Record<string, unknown> {
@@ -773,6 +944,106 @@ export class LocalImageService extends BaseService {
         }
 
         throw new Error('Timed out waiting for ComfyUI result');
+    }
+
+    private getComfyWebSocketUrl(baseUrl: string): string {
+        const parsed = new URL(baseUrl);
+        const protocol = parsed.protocol === 'https:' ? 'wss:' : 'ws:';
+        return `${protocol}//${parsed.host}/ws`;
+    }
+
+    private async waitForComfyImageViaWebSocket(
+        baseUrl: string,
+        promptId: string
+    ): Promise<{ filename: string; subfolder: string; type: string }> {
+        interface ComfyWsOutputImage {
+            filename?: string;
+            subfolder?: string;
+            type?: string;
+        }
+        interface ComfyWsOutput {
+            images?: ComfyWsOutputImage[];
+        }
+        interface ComfyWsPayload {
+            type?: string;
+            data?: {
+                prompt_id?: string;
+                output?: ComfyWsOutput;
+            };
+        }
+
+        const webSocketUrl = this.getComfyWebSocketUrl(baseUrl);
+        const timeoutMs = 90_000;
+        const socket = new WebSocket(webSocketUrl);
+
+        return await new Promise((resolve, reject) => {
+            let settled = false;
+            const timeout = setTimeout(() => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                socket.close();
+                reject(new Error('Timed out waiting for ComfyUI WebSocket result'));
+            }, timeoutMs);
+
+            const resolveImage = (image: ComfyWsOutputImage): void => {
+                if (settled || !image.filename) {
+                    return;
+                }
+                settled = true;
+                clearTimeout(timeout);
+                socket.close();
+                resolve({
+                    filename: image.filename,
+                    subfolder: image.subfolder ?? '',
+                    type: image.type ?? 'output'
+                });
+            };
+
+            socket.on('error', (error: Error) => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                clearTimeout(timeout);
+                reject(error);
+            });
+
+            socket.on('message', (rawMessage: WebSocket.RawData) => {
+                if (settled) {
+                    return;
+                }
+
+                const rawText = Buffer.isBuffer(rawMessage)
+                    ? rawMessage.toString()
+                    : Array.isArray(rawMessage)
+                        ? Buffer.concat(rawMessage).toString()
+                        : rawMessage.toString();
+
+                let payload: ComfyWsPayload;
+                try {
+                    payload = JSON.parse(rawText) as ComfyWsPayload;
+                } catch {
+                    return;
+                }
+
+                if (payload.type !== 'executed') {
+                    return;
+                }
+
+                if (payload.data?.prompt_id !== promptId) {
+                    return;
+                }
+
+                const image = payload.data?.output?.images?.[0];
+                if (!image?.filename) {
+                    return;
+                }
+
+                resolveImage(image);
+            });
+        });
     }
 
     private async generateWithSDCpp(options: ImageGenerationOptions): Promise<string> {
@@ -924,6 +1195,25 @@ export class LocalImageService extends BaseService {
         return this.generationHistory.slice(-bounded).reverse();
     }
 
+    searchGenerationHistory(query: string, limit: number = 100): ImageGenerationRecord[] {
+        const trimmed = query.trim().toLowerCase();
+        if (!trimmed) {
+            return this.getGenerationHistory(limit);
+        }
+        const bounded = Math.max(1, Math.min(limit, 1000));
+        return this.generationHistory
+            .filter(entry => {
+                return (
+                    entry.prompt.toLowerCase().includes(trimmed) ||
+                    (entry.negativePrompt ?? '').toLowerCase().includes(trimmed) ||
+                    entry.provider.toLowerCase().includes(trimmed) ||
+                    (entry.source ?? '').toLowerCase().includes(trimmed)
+                );
+            })
+            .slice(-bounded)
+            .reverse();
+    }
+
     async regenerateFromHistory(id: string): Promise<string> {
         this.assertNonEmptyText(id, 'Generation history id');
         const entry = this.generationHistory.find(item => item.id === id);
@@ -941,36 +1231,111 @@ export class LocalImageService extends BaseService {
         });
     }
 
-    async exportGenerationHistory(): Promise<string> {
-        return JSON.stringify(this.generationHistory, null, 2);
+    async exportGenerationHistory(format: 'json' | 'csv' = 'json'): Promise<string> {
+        if (format === 'json') {
+            return JSON.stringify(this.generationHistory, null, 2);
+        }
+        const header = [
+            'id',
+            'provider',
+            'prompt',
+            'negativePrompt',
+            'width',
+            'height',
+            'steps',
+            'cfgScale',
+            'seed',
+            'imagePath',
+            'source',
+            'createdAt'
+        ];
+        const rows = this.generationHistory.map(entry => {
+            const row = [
+                entry.id,
+                entry.provider,
+                entry.prompt,
+                entry.negativePrompt ?? '',
+                String(entry.width),
+                String(entry.height),
+                String(entry.steps),
+                String(entry.cfgScale),
+                String(entry.seed),
+                entry.imagePath,
+                entry.source ?? '',
+                String(entry.createdAt)
+            ];
+            return row.map(value => `"${value.replace(/"/g, '""')}"`).join(',');
+        });
+        return [header.join(','), ...rows].join('\n');
     }
 
     getImageAnalytics(): {
         totalGenerated: number;
         byProvider: Record<string, number>;
         averageSteps: number;
+        bySource: Record<string, number>;
+        averageDurationMs: number;
+        editModeCounts: Record<string, number>;
     } {
         const byProvider: Record<string, number> = {};
+        const bySource: Record<string, number> = {};
+        const editModeCounts: Record<string, number> = {};
         let totalSteps = 0;
         this.generationHistory.forEach(entry => {
             byProvider[entry.provider] = (byProvider[entry.provider] ?? 0) + 1;
+            bySource[entry.source ?? 'generate'] = (bySource[entry.source ?? 'generate'] ?? 0) + 1;
+            const editMode = this.extractEditMode(entry.prompt);
+            if (entry.source === 'edit' && editMode) {
+                editModeCounts[editMode] = (editModeCounts[editMode] ?? 0) + 1;
+            }
             totalSteps += entry.steps;
         });
+        const averageDurationMs = this.generationDurationsMs.length > 0
+            ? Math.round(this.generationDurationsMs.reduce((sum, value) => sum + value, 0) / this.generationDurationsMs.length)
+            : 0;
         return {
             totalGenerated: this.generationHistory.length,
             byProvider,
+            bySource,
             averageSteps: this.generationHistory.length > 0
                 ? Math.round(totalSteps / this.generationHistory.length)
-                : 0
+                : 0,
+            averageDurationMs,
+            editModeCounts
         };
     }
 
+    private extractEditMode(prompt: string): string | null {
+        const lower = prompt.toLowerCase();
+        if (lower.startsWith('style transfer:')) {
+            return 'style-transfer';
+        }
+        if (lower.startsWith('inpaint:')) {
+            return 'inpaint';
+        }
+        if (lower.startsWith('outpaint:')) {
+            return 'outpaint';
+        }
+        if (lower.startsWith('image to image:')) {
+            return 'img2img';
+        }
+        return null;
+    }
+
     listGenerationPresets(): ImageGenerationPreset[] {
-        return [...this.generationPresets].sort((left, right) => right.updatedAt - left.updatedAt);
+        const defaults = this.getDefaultGenerationPresets();
+        const merged = [...this.generationPresets];
+        defaults.forEach(defaultPreset => {
+            if (!merged.some(item => item.id === defaultPreset.id)) {
+                merged.push(defaultPreset);
+            }
+        });
+        return merged.sort((left, right) => right.updatedAt - left.updatedAt);
     }
 
     async saveGenerationPreset(input: Omit<ImageGenerationPreset, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Promise<ImageGenerationPreset> {
         this.assertNonEmptyText(input.name, 'Preset name');
+        this.validateGenerationPreset(input);
         const now = Date.now();
         const existingIndex = input.id
             ? this.generationPresets.findIndex(preset => preset.id === input.id)
@@ -994,6 +1359,208 @@ export class LocalImageService extends BaseService {
         }
         await this.persistImageState();
         return next;
+    }
+
+    private validateGenerationPreset(input: {
+        width: number;
+        height: number;
+        steps: number;
+        cfgScale: number;
+    }): void {
+        if (!Number.isFinite(input.width) || input.width < 256 || input.width > 4096) {
+            throw new Error('Preset width must be between 256 and 4096');
+        }
+        if (!Number.isFinite(input.height) || input.height < 256 || input.height > 4096) {
+            throw new Error('Preset height must be between 256 and 4096');
+        }
+        if (!Number.isFinite(input.steps) || input.steps < 1 || input.steps > 120) {
+            throw new Error('Preset steps must be between 1 and 120');
+        }
+        if (!Number.isFinite(input.cfgScale) || input.cfgScale < 1 || input.cfgScale > 30) {
+            throw new Error('Preset cfgScale must be between 1 and 30');
+        }
+    }
+
+    private getDefaultGenerationPresets(): ImageGenerationPreset[] {
+        const now = Date.now();
+        return [
+            {
+                id: 'style-cinematic',
+                name: 'Style: Cinematic',
+                promptPrefix: 'cinematic lighting, rich colors, dramatic composition',
+                width: 1024,
+                height: 1024,
+                steps: 28,
+                cfgScale: 7.5,
+                createdAt: now,
+                updatedAt: now
+            },
+            {
+                id: 'size-wide-hd',
+                name: 'Size: Wide HD',
+                width: 1536,
+                height: 896,
+                steps: 24,
+                cfgScale: 7,
+                createdAt: now,
+                updatedAt: now
+            },
+            {
+                id: 'quality-draft-fast',
+                name: 'Quality: Draft Fast',
+                width: 896,
+                height: 896,
+                steps: 14,
+                cfgScale: 6,
+                createdAt: now,
+                updatedAt: now
+            }
+        ];
+    }
+
+    exportGenerationPresetShareCode(id: string): string {
+        this.assertNonEmptyText(id, 'Preset id');
+        const preset = this.listGenerationPresets().find(item => item.id === id);
+        if (!preset) {
+            throw new Error('Preset not found');
+        }
+        const payload = {
+            version: 1,
+            exportedAt: Date.now(),
+            preset
+        };
+        return Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64');
+    }
+
+    async importGenerationPresetShareCode(code: string): Promise<ImageGenerationPreset> {
+        this.assertNonEmptyText(code, 'Preset share code');
+        let parsed: {
+            preset?: Omit<ImageGenerationPreset, 'id' | 'createdAt' | 'updatedAt'> & { name: string };
+        };
+        try {
+            const decoded = Buffer.from(code, 'base64').toString('utf-8');
+            parsed = JSON.parse(decoded) as {
+                preset?: Omit<ImageGenerationPreset, 'id' | 'createdAt' | 'updatedAt'> & { name: string };
+            };
+        } catch (error) {
+            throw new Error(`Invalid preset share code: ${getErrorMessage(error as Error)}`);
+        }
+        if (!parsed.preset) {
+            throw new Error('Preset payload missing');
+        }
+        return this.saveGenerationPreset(parsed.preset);
+    }
+
+    getPresetAnalytics(): {
+        totalPresets: number;
+        providerCounts: Record<string, number>;
+        customPresets: number;
+    } {
+        const presets = this.listGenerationPresets();
+        const providerCounts: Record<string, number> = {};
+        presets.forEach(preset => {
+            const provider = preset.provider ?? 'all';
+            providerCounts[provider] = (providerCounts[provider] ?? 0) + 1;
+        });
+        return {
+            totalPresets: presets.length,
+            providerCounts,
+            customPresets: presets.filter(preset => !preset.id.startsWith('style-') && !preset.id.startsWith('size-') && !preset.id.startsWith('quality-')).length
+        };
+    }
+
+    listComfyWorkflowTemplates(): ComfyWorkflowTemplate[] {
+        return [...this.comfyWorkflowTemplates].sort((left, right) => right.updatedAt - left.updatedAt);
+    }
+
+    async saveComfyWorkflowTemplate(input: {
+        id?: string;
+        name: string;
+        description?: string;
+        workflow: Record<string, unknown>;
+    }): Promise<ComfyWorkflowTemplate> {
+        this.assertNonEmptyText(input.name, 'Workflow template name');
+        if (!input.workflow || Object.keys(input.workflow).length === 0) {
+            throw new Error('Workflow template must contain at least one node');
+        }
+
+        const now = Date.now();
+        const existingIndex = input.id
+            ? this.comfyWorkflowTemplates.findIndex(template => template.id === input.id)
+            : -1;
+        const template: ComfyWorkflowTemplate = {
+            id: input.id ?? uuidv4(),
+            name: input.name.trim(),
+            description: input.description?.trim() || undefined,
+            workflow: input.workflow,
+            createdAt: existingIndex >= 0 ? this.comfyWorkflowTemplates[existingIndex].createdAt : now,
+            updatedAt: now
+        };
+
+        if (existingIndex >= 0) {
+            this.comfyWorkflowTemplates[existingIndex] = template;
+        } else {
+            this.comfyWorkflowTemplates.push(template);
+        }
+        await this.persistImageState();
+        return template;
+    }
+
+    async deleteComfyWorkflowTemplate(id: string): Promise<boolean> {
+        this.assertNonEmptyText(id, 'Workflow template id');
+        const filtered = this.comfyWorkflowTemplates.filter(template => template.id !== id);
+        if (filtered.length === this.comfyWorkflowTemplates.length) {
+            return false;
+        }
+        this.comfyWorkflowTemplates = filtered;
+        await this.persistImageState();
+        return true;
+    }
+
+    exportComfyWorkflowTemplateShareCode(id: string): string {
+        this.assertNonEmptyText(id, 'Workflow template id');
+        const template = this.comfyWorkflowTemplates.find(item => item.id === id);
+        if (!template) {
+            throw new Error('Workflow template not found');
+        }
+        const payload = {
+            version: 1,
+            exportedAt: Date.now(),
+            template
+        };
+        return Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64');
+    }
+
+    async importComfyWorkflowTemplateShareCode(code: string): Promise<ComfyWorkflowTemplate> {
+        this.assertNonEmptyText(code, 'Workflow template share code');
+        let parsed: {
+            template?: {
+                id?: string;
+                name: string;
+                description?: string;
+                workflow: Record<string, unknown>;
+            };
+        };
+        try {
+            parsed = JSON.parse(Buffer.from(code, 'base64').toString('utf-8')) as {
+                template?: {
+                    id?: string;
+                    name: string;
+                    description?: string;
+                    workflow: Record<string, unknown>;
+                };
+            };
+        } catch (error) {
+            throw new Error(`Invalid workflow template share code: ${getErrorMessage(error as Error)}`);
+        }
+        if (!parsed.template) {
+            throw new Error('Workflow template payload missing');
+        }
+        return this.saveComfyWorkflowTemplate({
+            name: parsed.template.name,
+            description: parsed.template.description,
+            workflow: parsed.template.workflow
+        });
     }
 
     async deleteGenerationPreset(id: string): Promise<boolean> {
@@ -1025,7 +1592,11 @@ export class LocalImageService extends BaseService {
         };
     }
 
-    async scheduleGeneration(runAt: number, options: ImageGenerationOptions): Promise<ImageScheduleTask> {
+    async scheduleGeneration(
+        runAt: number,
+        options: ImageGenerationOptions,
+        scheduling?: { priority?: ImageSchedulePriority; resourceProfile?: ImageResourceProfile }
+    ): Promise<ImageScheduleTask> {
         if (!Number.isFinite(runAt)) {
             throw new Error('runAt must be a finite timestamp');
         }
@@ -1034,6 +1605,8 @@ export class LocalImageService extends BaseService {
             id: uuidv4(),
             runAt,
             options,
+            priority: scheduling?.priority ?? 'normal',
+            resourceProfile: scheduling?.resourceProfile ?? 'balanced',
             status: 'scheduled',
             createdAt: Date.now(),
             updatedAt: Date.now()
@@ -1061,6 +1634,7 @@ export class LocalImageService extends BaseService {
             clearTimeout(timer);
             this.scheduleTimers.delete(id);
         }
+        this.emitScheduleAlert(task.id, 'canceled', task.options.prompt);
         await this.persistImageState();
         return true;
     }
@@ -1075,17 +1649,21 @@ export class LocalImageService extends BaseService {
         const delayMs = Math.max(0, task.runAt - Date.now());
         const timer = setTimeout(() => {
             this.scheduleTimers.delete(task.id);
-            void this.enqueueGeneration(task.options, 'schedule')
+            task.status = 'running';
+            task.updatedAt = Date.now();
+            void this.enqueueGeneration(task.options, 'schedule', task.priority, task.resourceProfile)
                 .then(async imagePath => {
                     task.status = 'completed';
                     task.resultPath = imagePath;
                     task.updatedAt = Date.now();
+                    this.emitScheduleAlert(task.id, 'completed', task.options.prompt);
                     await this.persistImageState();
                 })
                 .catch(async error => {
                     task.status = 'failed';
                     task.error = getErrorMessage(error as Error);
                     task.updatedAt = Date.now();
+                    this.emitScheduleAlert(task.id, 'failed', task.options.prompt, task.error);
                     await this.persistImageState();
                 });
         }, delayMs);
@@ -1096,23 +1674,36 @@ export class LocalImageService extends BaseService {
         for (const request of requests) {
             this.assertNonEmptyText(request.prompt, 'Prompt');
         }
-        const jobs = requests.slice(0, 20).map(request => this.enqueueGeneration(request, 'batch'));
+        const jobs = requests.slice(0, 20).map(request => this.enqueueGeneration(request, 'batch', 'normal', 'balanced'));
         return Promise.all(jobs);
     }
 
-    getQueueStats(): { queued: number; running: boolean } {
+    getQueueStats(): { queued: number; running: boolean; byPriority: Record<string, number> } {
+        const byPriority: Record<string, number> = {};
+        this.generationQueue.forEach(item => {
+            byPriority[item.priority] = (byPriority[item.priority] ?? 0) + 1;
+        });
         return {
             queued: this.generationQueue.length,
-            running: this.queueRunning
+            running: this.queueRunning,
+            byPriority
         };
     }
 
-    private async enqueueGeneration(options: ImageGenerationOptions, source: 'batch' | 'schedule'): Promise<string> {
+    private async enqueueGeneration(
+        options: ImageGenerationOptions,
+        source: 'batch' | 'schedule',
+        priority: ImageSchedulePriority,
+        resourceProfile: ImageResourceProfile
+    ): Promise<string> {
         return new Promise<string>((resolve, reject) => {
             this.generationQueue.push({
                 id: uuidv4(),
                 options,
                 source,
+                priority,
+                resourceProfile,
+                enqueuedAt: Date.now(),
                 resolve,
                 reject
             });
@@ -1125,18 +1716,88 @@ export class LocalImageService extends BaseService {
     private async processGenerationQueue(): Promise<void> {
         this.queueRunning = true;
         while (this.generationQueue.length > 0) {
+            this.generationQueue.sort((left, right) => {
+                const weightDelta = this.getPriorityWeight(right.priority) - this.getPriorityWeight(left.priority);
+                if (weightDelta !== 0) {
+                    return weightDelta;
+                }
+                return left.enqueuedAt - right.enqueuedAt;
+            });
             const next = this.generationQueue.shift();
             if (!next) {
                 continue;
             }
             try {
-                const imagePath = await this.generateImage(next.options, next.source);
+                const effectiveOptions = this.applyResourceProfile(next.options, next.resourceProfile);
+                const imagePath = await this.generateImage(effectiveOptions, next.source);
                 next.resolve(imagePath);
             } catch (error) {
                 next.reject(error as Error);
             }
         }
         this.queueRunning = false;
+    }
+
+    private getPriorityWeight(priority: ImageSchedulePriority): number {
+        if (priority === 'high') {
+            return 3;
+        }
+        if (priority === 'normal') {
+            return 2;
+        }
+        return 1;
+    }
+
+    private applyResourceProfile(
+        options: ImageGenerationOptions,
+        resourceProfile: ImageResourceProfile
+    ): ImageGenerationOptions {
+        if (resourceProfile === 'speed') {
+            return {
+                ...options,
+                steps: Math.max(8, Math.min(options.steps ?? 24, 18)),
+                cfgScale: Math.max(5, Math.min(options.cfgScale ?? 7, 8))
+            };
+        }
+        if (resourceProfile === 'quality') {
+            return {
+                ...options,
+                steps: Math.min(60, Math.max(options.steps ?? 24, 32)),
+                cfgScale: Math.min(14, Math.max(options.cfgScale ?? 7, 8))
+            };
+        }
+        return options;
+    }
+
+    private emitScheduleAlert(taskId: string, status: 'completed' | 'failed' | 'canceled', prompt: string, error?: string): void {
+        if (!this.eventBusService) {
+            return;
+        }
+        this.eventBusService.emit('image:schedule-alert', {
+            taskId,
+            status,
+            prompt,
+            error,
+            timestamp: Date.now()
+        });
+    }
+
+    getScheduleAnalytics(): {
+        total: number;
+        byStatus: Record<string, number>;
+        byPriority: Record<string, number>;
+    } {
+        const byStatus: Record<string, number> = {};
+        const byPriority: Record<string, number> = {};
+        this.scheduleTasks.forEach(task => {
+            byStatus[task.status] = (byStatus[task.status] ?? 0) + 1;
+            byPriority[task.priority] = (byPriority[task.priority] ?? 0) + 1;
+        });
+        return {
+            total: this.scheduleTasks.length,
+            byStatus,
+            byPriority
+        };
     }
 
     async compareGenerations(ids: string[]): Promise<ImageComparisonResult> {
@@ -1162,7 +1823,8 @@ export class LocalImageService extends BaseService {
                 cfgScale: record.cfgScale,
                 seed: record.seed,
                 prompt: record.prompt,
-                fileSizeBytes: stats.size
+                fileSizeBytes: stats.size,
+                bytesPerPixel: Number((stats.size / Math.max(1, record.width * record.height)).toFixed(4))
             };
         }));
 
@@ -1170,6 +1832,15 @@ export class LocalImageService extends BaseService {
         const averageFileSizeBytes = Math.round(
             entries.reduce((sum, entry) => sum + entry.fileSizeBytes, 0) / entries.length
         );
+        const averageBytesPerPixel = Number(
+            (entries.reduce((sum, entry) => sum + entry.bytesPerPixel, 0) / entries.length).toFixed(4)
+        );
+
+        this.trackSdCppMetric('image-comparison-run', {
+            comparedCount: entries.length,
+            averageFileSizeBytes,
+            averageBytesPerPixel
+        });
 
         return {
             ids: records.map(record => record.id),
@@ -1177,10 +1848,45 @@ export class LocalImageService extends BaseService {
             entries,
             summary: {
                 averageFileSizeBytes,
+                averageBytesPerPixel,
                 smallestFileId: sortedBySize[0]?.id,
                 largestFileId: sortedBySize[sortedBySize.length - 1]?.id
             }
         };
+    }
+
+    async exportComparison(ids: string[], format: 'json' | 'csv' = 'json'): Promise<string> {
+        const comparison = await this.compareGenerations(ids);
+        if (format === 'json') {
+            return JSON.stringify(comparison, null, 2);
+        }
+        const header = ['id', 'path', 'width', 'height', 'steps', 'cfgScale', 'seed', 'fileSizeBytes', 'bytesPerPixel', 'prompt'];
+        const rows = comparison.entries.map(entry => {
+            const cells = [
+                entry.id,
+                entry.path,
+                String(entry.width),
+                String(entry.height),
+                String(entry.steps),
+                String(entry.cfgScale),
+                String(entry.seed),
+                String(entry.fileSizeBytes),
+                String(entry.bytesPerPixel),
+                entry.prompt
+            ];
+            return cells.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',');
+        });
+        return [header.join(','), ...rows].join('\n');
+    }
+
+    async shareComparison(ids: string[]): Promise<string> {
+        const comparison = await this.compareGenerations(ids);
+        const payload = {
+            version: 1,
+            generatedAt: Date.now(),
+            comparison
+        };
+        return Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64');
     }
 
     private trackSdCppMetric(name: string, properties?: Record<string, unknown>): void {
@@ -1229,10 +1935,14 @@ export class LocalImageService extends BaseService {
         queueDepth: number;
         scheduledTaskCount: number;
         historyCount: number;
+        averageGenerationDurationMs: number;
     }> {
         const status = await this.getSDCppStatus();
         const provider = this.settingsService.getSettings().images?.provider ?? 'antigravity';
         const uiState = status === 'failed' ? 'failure' : status === 'ready' ? 'ready' : 'empty';
+        const averageGenerationDurationMs = this.generationDurationsMs.length > 0
+            ? Math.round(this.generationDurationsMs.reduce((sum, value) => sum + value, 0) / this.generationDurationsMs.length)
+            : 0;
         return {
             status: status === 'failed' ? 'degraded' : 'healthy',
             uiState,
@@ -1243,6 +1953,7 @@ export class LocalImageService extends BaseService {
             queueDepth: this.generationQueue.length,
             scheduledTaskCount: this.scheduleTasks.length,
             historyCount: this.generationHistory.length,
+            averageGenerationDurationMs,
         };
     }
 

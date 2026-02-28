@@ -15,8 +15,8 @@ import {
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ModelSelector as FullModelSelector } from '@/components/shared/ModelSelector';
-import type { GroupedModels } from '@/types';
 import { cn } from '@/lib/utils';
+import type { GroupedModels } from '@/types';
 import { AppSettings, CodexUsage, QuotaResponse } from '@/types';
 
 const getAvailableModels = (

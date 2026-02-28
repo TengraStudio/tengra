@@ -93,6 +93,26 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
     }));
 
     /**
+     * Find references for a symbol
+     */
+    ipcMain.handle('code:findReferences', createValidatedIpcHandler('code:findReferences', async (_, rootPath: string, symbol: string) => {
+        return await codeIntelligenceService.findReferences(rootPath, symbol);
+    }, {
+        defaultValue: [],
+        argsSchema: z.tuple([RootPathSchema, QuerySchema])
+    }));
+
+    /**
+     * Find implementations for a symbol
+     */
+    ipcMain.handle('code:findImplementations', createValidatedIpcHandler('code:findImplementations', async (_, rootPath: string, symbol: string) => {
+        return await codeIntelligenceService.findImplementations(rootPath, symbol);
+    }, {
+        defaultValue: [],
+        argsSchema: z.tuple([RootPathSchema, QuerySchema])
+    }));
+
+    /**
      * Get related files/symbols for a given symbol
      */
     ipcMain.handle('code:getSymbolRelationships', createValidatedIpcHandler('code:getSymbolRelationships', async (_, rootPath: string, symbol: string, maxItems?: number) => {
@@ -100,6 +120,16 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
     }, {
         defaultValue: [],
         argsSchema: z.tuple([RootPathSchema, QuerySchema, z.number().optional()])
+    }));
+
+    /**
+     * Query indexed symbols semantically
+     */
+    ipcMain.handle('code:queryIndexedSymbols', createValidatedIpcHandler('code:queryIndexedSymbols', async (_, query: string) => {
+        return await codeIntelligenceService.queryIndexedSymbols(query);
+    }, {
+        defaultValue: [],
+        argsSchema: z.tuple([QuerySchema])
     }));
 
     /**
@@ -125,10 +155,50 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
     /**
      * Get code quality analysis
      */
-    ipcMain.handle('code:getQualityAnalysis', createValidatedIpcHandler('code:getQualityAnalysis', async (_, rootPath: string) => {
-        return await codeIntelligenceService.analyzeCodeQuality(rootPath);
+    ipcMain.handle('code:analyzeQuality', createValidatedIpcHandler('code:analyzeQuality', async (_, rootPath: string, maxFiles?: number) => {
+        return await codeIntelligenceService.analyzeCodeQuality(rootPath, maxFiles);
     }, {
         defaultValue: null,
-        argsSchema: z.tuple([RootPathSchema])
+        argsSchema: z.tuple([RootPathSchema, z.number().optional()])
+    }));
+
+    /**
+     * Preview symbol rename
+     */
+    ipcMain.handle('code:previewRenameSymbol', createValidatedIpcHandler('code:previewRenameSymbol', async (_, rootPath: string, symbol: string, newSymbol: string, maxFiles?: number) => {
+        return await codeIntelligenceService.renameSymbol(rootPath, symbol, newSymbol, false, maxFiles);
+    }, {
+        defaultValue: { success: false, applied: false, symbol: '', newSymbol: '', totalFiles: 0, totalOccurrences: 0, changes: [], updatedFiles: [], errors: [] },
+        argsSchema: z.tuple([RootPathSchema, QuerySchema, QuerySchema, z.number().optional()])
+    }));
+
+    /**
+     * Apply symbol rename
+     */
+    ipcMain.handle('code:applyRenameSymbol', createValidatedIpcHandler('code:applyRenameSymbol', async (_, rootPath: string, symbol: string, newSymbol: string, maxFiles?: number) => {
+        return await codeIntelligenceService.renameSymbol(rootPath, symbol, newSymbol, true, maxFiles);
+    }, {
+        defaultValue: { success: false, applied: false, symbol: '', newSymbol: '', totalFiles: 0, totalOccurrences: 0, changes: [], updatedFiles: [], errors: [] },
+        argsSchema: z.tuple([RootPathSchema, QuerySchema, QuerySchema, z.number().optional()])
+    }));
+
+    /**
+     * Generate file documentation
+     */
+    ipcMain.handle('code:generateFileDocumentation', createValidatedIpcHandler('code:generateFileDocumentation', async (_, filePath: string, format?: 'markdown' | 'jsdoc-comments') => {
+        return await codeIntelligenceService.generateFileDocumentation(filePath, format);
+    }, {
+        defaultValue: null,
+        argsSchema: z.tuple([z.string().min(1), z.enum(['markdown', 'jsdoc-comments']).optional()])
+    }));
+
+    /**
+     * Generate project documentation
+     */
+    ipcMain.handle('code:generateProjectDocumentation', createValidatedIpcHandler('code:generateProjectDocumentation', async (_, rootPath: string, maxFiles?: number) => {
+        return await codeIntelligenceService.generateProjectDocumentation(rootPath, maxFiles);
+    }, {
+        defaultValue: null,
+        argsSchema: z.tuple([RootPathSchema, z.number().optional()])
     }));
 }

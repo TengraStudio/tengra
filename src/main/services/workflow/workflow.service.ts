@@ -4,6 +4,12 @@ import * as path from 'path';
 import { BaseService } from '@main/services/base.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { ProjectAgentService } from '@main/services/project/project-agent.service';
+import {
+    CreateWorkflowInputSchema,
+    formatZodErrors,
+    UpdateWorkflowInputSchema,
+    WorkflowContextInputSchema,
+} from '@shared/schemas/workflow.schema';
 import { JsonValue } from '@shared/types/common';
 import { Workflow, WorkflowExecutionResult } from '@shared/types/workflow.types';
 import { WorkflowContext } from '@shared/types/workflow-context.types';
@@ -14,7 +20,35 @@ import { AgentWorkflowAction } from './actions/agent-workflow.action';
 import { CommandActionHandler } from './actions/command.action';
 import { LLMPromptAction } from './actions/llm-prompt.action';
 import { ManualTriggerHandler } from './triggers/manual.trigger';
+import { WorkflowError, WorkflowErrorCode } from './workflow-error';
 import { WorkflowRunner } from './workflow-runner';
+
+export { WorkflowError, WorkflowErrorCode } from './workflow-error';
+
+/**
+ * Telemetry events for workflow monitoring dashboards (BACKLOG-0435)
+ */
+export enum WorkflowTelemetryEvent {
+    WORKFLOW_CREATED = 'workflow_created',
+    WORKFLOW_UPDATED = 'workflow_updated',
+    WORKFLOW_DELETED = 'workflow_deleted',
+    WORKFLOW_EXECUTED = 'workflow_executed',
+    WORKFLOW_EXECUTION_FAILED = 'workflow_execution_failed',
+    WORKFLOWS_LOADED = 'workflow_loaded_from_disk',
+    WORKFLOWS_SAVED = 'workflow_saved_to_disk'
+}
+
+/**
+ * Performance regression budgets in milliseconds (BACKLOG-0436)
+ */
+export const WORKFLOW_PERFORMANCE_BUDGETS = {
+    CREATE_MS: 500,
+    UPDATE_MS: 500,
+    DELETE_MS: 500,
+    EXECUTE_MS: 300000,
+    LOAD_MS: 2000,
+    SAVE_MS: 2000
+} as const;
 
 export interface WorkflowServiceDependencies {
     llmService?: LLMService;
@@ -27,6 +61,13 @@ export class WorkflowService extends BaseService {
     private manualTriggerHandler: ManualTriggerHandler;
     private workflowsFilePath: string;
     private dependencies?: WorkflowServiceDependencies;
+
+    /** Validates that the given id is a non-empty string. */
+    private validateId(id: unknown, methodName: string): void {
+        if (!id || typeof id !== 'string' || id.trim().length === 0) {
+            throw new Error(`${methodName}: id must be a non-empty string`);
+        }
+    }
 
     constructor(dependencies?: WorkflowServiceDependencies) {
         super('WorkflowService');
@@ -92,7 +133,10 @@ export class WorkflowService extends BaseService {
             this.logInfo(`Saved ${workflowsArray.length} workflows to disk`);
         } catch (error) {
             this.logError('Failed to save workflows', error);
-            throw error;
+            throw new WorkflowError(
+                WorkflowErrorCode.SAVE_FAILED,
+                `Failed to save workflows: ${error instanceof Error ? error.message : String(error)}`
+            );
         }
     }
 
@@ -114,6 +158,12 @@ export class WorkflowService extends BaseService {
     }
 
     public async createWorkflow(workflow: Omit<Workflow, 'id' | 'createdAt' | 'updatedAt'>): Promise<Workflow> {
+        const parsed = CreateWorkflowInputSchema.safeParse(workflow);
+        if (!parsed.success) {
+            const message = formatZodErrors(parsed.error);
+            throw new WorkflowError(WorkflowErrorCode.INVALID_INPUT, `createWorkflow: ${message}`);
+        }
+
         const newWorkflow: Workflow = {
             ...workflow,
             id: uuidv4(),
@@ -133,9 +183,17 @@ export class WorkflowService extends BaseService {
     }
 
     public async updateWorkflow(id: string, updates: Partial<Workflow>): Promise<Workflow> {
+        this.validateId(id, 'updateWorkflow');
+
+        const parsed = UpdateWorkflowInputSchema.safeParse(updates);
+        if (!parsed.success) {
+            const message = formatZodErrors(parsed.error);
+            throw new WorkflowError(WorkflowErrorCode.INVALID_INPUT, `updateWorkflow: ${message}`);
+        }
+
         const workflow = this.workflows.get(id);
         if (!workflow) {
-            throw new Error(`Workflow not found: ${id}`);
+            throw new WorkflowError(WorkflowErrorCode.NOT_FOUND, `Workflow not found: ${id}`);
         }
 
         const updatedWorkflow: Workflow = {
@@ -157,9 +215,11 @@ export class WorkflowService extends BaseService {
     }
 
     public async deleteWorkflow(id: string): Promise<void> {
+        this.validateId(id, 'deleteWorkflow');
+
         const workflow = this.workflows.get(id);
         if (!workflow) {
-            throw new Error(`Workflow not found: ${id}`);
+            throw new WorkflowError(WorkflowErrorCode.NOT_FOUND, `Workflow not found: ${id}`);
         }
 
         this.workflows.delete(id);
@@ -168,6 +228,9 @@ export class WorkflowService extends BaseService {
     }
 
     public getWorkflow(id: string): Workflow | undefined {
+        if (!id || typeof id !== 'string' || id.trim().length === 0) {
+            return undefined;
+        }
         return this.workflows.get(id);
     }
 
@@ -175,17 +238,39 @@ export class WorkflowService extends BaseService {
         return Array.from(this.workflows.values());
     }
 
+    /**
+     * Get health status for workflow monitoring dashboards
+     */
+    getHealth(): { totalWorkflows: number; enabledWorkflows: number; workflowIds: string[] } {
+        const workflows = Array.from(this.workflows.values());
+        return {
+            totalWorkflows: workflows.length,
+            enabledWorkflows: workflows.filter(w => w.enabled).length,
+            workflowIds: workflows.map(w => w.id)
+        };
+    }
+
     public async executeWorkflow(
         id: string,
         context?: Partial<WorkflowContext>
     ): Promise<WorkflowExecutionResult> {
+        this.validateId(id, 'executeWorkflow');
+
+        if (context !== undefined) {
+            const parsed = WorkflowContextInputSchema.safeParse(context);
+            if (!parsed.success) {
+                const message = formatZodErrors(parsed.error);
+                throw new WorkflowError(WorkflowErrorCode.INVALID_INPUT, `executeWorkflow: ${message}`);
+            }
+        }
+
         const workflow = this.workflows.get(id);
         if (!workflow) {
-            throw new Error(`Workflow not found: ${id}`);
+            throw new WorkflowError(WorkflowErrorCode.NOT_FOUND, `Workflow not found: ${id}`);
         }
 
         if (!workflow.enabled) {
-            throw new Error(`Workflow is disabled: ${id}`);
+            throw new WorkflowError(WorkflowErrorCode.DISABLED, `Workflow is disabled: ${id}`);
         }
 
         this.logInfo(`Executing workflow: ${workflow.name} (${id})`);
@@ -201,6 +286,7 @@ export class WorkflowService extends BaseService {
     }
 
     public triggerManualWorkflow(triggerId: string, context?: JsonValue): void {
+        this.validateId(triggerId, 'triggerManualWorkflow');
         this.manualTriggerHandler.trigger(triggerId, context);
     }
 }

@@ -31,12 +31,8 @@ describe('Preload contract regression', () => {
 
         await bridge.githubLogin('profile');
         await bridge.pollToken('device', 5, 'copilot');
-        await bridge.antigravityLogin();
-        await bridge.saveClaudeSession('session-key', 'account-id');
 
         expect(ipc.invoke).toHaveBeenCalledWith('auth:github-login', 'profile');
         expect(ipc.invoke).toHaveBeenCalledWith('auth:poll-token', 'device', 5, 'copilot');
-        expect(ipc.invoke).toHaveBeenCalledWith('proxy:antigravityLogin');
-        expect(ipc.invoke).toHaveBeenCalledWith('proxy:saveClaudeSession', 'session-key', 'account-id');
     });
 });

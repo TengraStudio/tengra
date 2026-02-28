@@ -22,6 +22,12 @@ export function categorizeModel(modelId: string, providerHint?: string): ModelDe
 
     const type = detectModelType(lower);
 
+    // Strong ID signal overrides generic OpenAI-compatible hints.
+    // Some providers expose OpenAI-compatible APIs but model IDs still encode the true source.
+    if (lower.includes('nvidia/') || lower.startsWith('nv-')) {
+        return createDefinition(modelId, 'nvidia', type);
+    }
+
     // STRICT: If hint is a known provider, use it directly. No heuristics.
     if (hint && VALID_PROVIDERS.has(hint)) {
         return createDefinition(modelId, hint as ModelProvider, type);
@@ -43,6 +49,14 @@ function detectModelType(lowerId: string): 'chat' | 'image' | 'video' {
 }
 
 function detectProvider(lowerId: string): ModelProvider {
+    // GGUF alone is not a reliable signal for Ollama.
+    // Many remote/community catalogs include GGUF models that are not locally installed.
+    if (lowerId.startsWith('ollama/')) {
+        return 'ollama';
+    }
+    if (lowerId.includes('nvidia/') || lowerId.startsWith('nv-')) {
+        return 'nvidia';
+    }
     if (lowerId.includes('codex') || lowerId.startsWith('gpt-5') || lowerId.startsWith('o1') || lowerId.startsWith('o3')) {
         return 'codex';
     }
@@ -57,9 +71,6 @@ function detectProvider(lowerId: string): ModelProvider {
     }
     if (lowerId.startsWith('opencode-')) {
         return 'opencode';
-    }
-    if (lowerId.includes('nvidia/')) {
-        return 'nvidia';
     }
     return 'custom';
 }

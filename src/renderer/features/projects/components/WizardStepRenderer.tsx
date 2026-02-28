@@ -22,6 +22,7 @@ interface FormData {
     description: string;
     category: string;
     goal: string;
+    customPath: string;
 }
 
 interface SshFormData {

@@ -2,6 +2,19 @@
 
 ## [2026-02-27]
 
+### Preload Modularization Refinement & Type Safety Overhaul
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Completed the modularization of Electron preload scripts, resolved critical type mismatches in agent bridges, and eliminated forbidden 'any' types across the bridge layer.
+
+- **Modularization Alignment**: Synchronized all domain-specific preload bridges (Code, Settings, MCP, etc.) with main process IPC handlers to ensure complete API coverage.
+- **Type Safety Hardening**: Eliminated forbidden `any` usages in `ProjectAgentBridge`, `McpMarketplaceBridge`, and `AdvancedMemoryBridge`, replacing them with strictly defined interfaces or `unknown` records.
+- **Bug Fixes**: Resolved a critical timestamp type mismatch in `OrchestratorBridge` that was causing state normalization failures.
+- **IPC Contract Correction**: Updated code intelligence and sandbox bridges to use positional arguments, aligning with validated IPC handler expectations.
+- **Test Reliability**: Fixed a broken mock in `db.integration.test.ts` where a missing `send` method on the mock event was causing project creation tests to fail (Boy Scout Rule).
+- **Hygiene**: Cleaned up unused imports and refined listener types across multiple preload domains to pass strict TypeScript and ESLint checks.
+
 ### Premium Project Wizard: Redesigned UX & Motion Integration
 
 - **Type**: feature

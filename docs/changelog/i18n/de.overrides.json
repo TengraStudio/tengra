@@ -1,4 +1,16 @@
 {
+  "2026-02-27-preload-modularization-refinement": {
+    "title": "Preload-Modularisierung & Typsicherheit-Refinement",
+    "summary": "Modularisierung der Electron-Preload-Skripte abgeschlossen, kritische Typ-Mismatches in Agent-Bridges behoben und verbotene 'any'-Typen aus der Bridge-Schicht entfernt.",
+    "items": [
+      "- **Modularisierungs-Abgleich**: Synchronisierung aller domänenspezifischen Preload-Bridges (Code, Settings, MCP etc.) mit den IPC-Handlern des Hauptprozesses zur Sicherstellung vollständiger API-Abdeckung.",
+      "- **Härtung der Typsicherheit**: Eliminierung verbotener `any`-Verwendungen in `ProjectAgentBridge`, `McpMarketplaceBridge` und `AdvancedMemoryBridge`, ersetzt durch strikt definierte Interfaces oder `unknown`-Records.",
+      "- **Fehlerbehebungen**: Korrektur eines kritischen Zeitstempel-Typ-Mismatches in der `OrchestratorBridge`, der zu Fehlern bei der Zustands-Normalisierung führte.",
+      "- **IPC-Vertragskorrektur**: Aktualisierung der Code-Intelligence- und Sandbox-Bridges auf positionale Argumente, um sie an die Validierungserwartungen der IPC-Handler anzupassen.",
+      "- **Test-Zuverlässigkeit**: Behebung eines defekten Mocks in `db.integration.test.ts`, bei dem eine fehlende `send`-Methode am Mock-Event zum Scheitern der Projekt-Erstellungs-Tests führte (Boy Scout Rule).",
+      "- **Hygiene**: Bereinigung nicht verwendeter Imports und Verfeinerung von Listener-Typen in mehreren Preload-Domänen zur Einhaltung strenger TypeScript- und ESLint-Prüfungen."
+    ]
+  },
   "2026-02-26-quick-wins-refactor": {
     "title": "NASA Power of Ten: Quick-Wins-Refactoring",
     "summary": "Überarbeitung mehrerer überdimensionaler Dateien zur Einhaltung der NASA Power of Ten-Regel #3 (60-Zeilen-Funktionslimit) und Verbesserung der Code-Modularität.",
@@ -3922,8 +3934,7 @@
       "- **Eingabeverfeinerung**: Polierte Formularelemente mit eleganten Rändern, Fokuszuständen und klaren animierten Fehlermeldungen für bessere Benutzerfreundlichkeit.",
       "- **Motion Design**: Integrierte Mikroanimationen für Übergänge und interaktive Zustände, um eine reaktionsfähigere und lebendigere Benutzeroberfläche zu schaffen."
     ]
-  }
-,
+  },
   "2025-07-25-service-threat-model": {
     "title": "Umfassende Service-Bedrohungsmodell- und Missbrauchsfall-Überprüfung",
     "summary": "docs/guides/SERVICE_THREAT_MODEL.md erstellt mit Bedrohungsanalyse für alle 12 Backend-Services inkl. Bedrohungsvektoren, Gegenmaßnahmen und Missbrauchsszenarien.",
@@ -3932,6 +3943,15 @@
       "- 30+ Bedrohungsvektoren mit T-Codes, Beschreibungen und vorhandenen Gegenmaßnahmen pro Service dokumentiert",
       "- 24+ Missbrauchsfälle identifiziert: Prompt-Injection, Ressourcenerschöpfung, Befehlsinjektion, Pfadtraversierung und Credential-Diebstahl",
       "- Zusammenfassende Risikomatrix und 6 umsetzbare Sicherheitsempfehlungen hinzugefügt"
+    ]
+  },
+  "2026-03-01-proxy-agent-test-resolution": {
+    "title": "Fehlerbehebung bei Proxy- und Agent-Diensttests",
+    "summary": "Fehlschlagende Unit- und Integrationstests in den Proxy-Performance- und Agent-Checkpoint-Testsuiten wurden behoben, indem Mocks, Importe und Enum-Grenzen behoben wurden.",
+    "items": [
+      "- **Proxy-Leistungstests**: Die spröde Mock-Implementierung für `performance.now()` in `startEmbeddedProxy`-Timing-Tests wurde behoben.",
+      "- **Proxy-Service-Vertragstests**: Die Überprüfung der Kontingentleistungsbudgetschlüssel und die Handhabung von `QuotaErrorCode`-Grenzen wurden aktualisiert, um neu hinzugefügte Fehlercodes zu unterstützen.",
+      "- **Agent Checkpoint Service**: Es wurde ein schwerwiegender TypeScript runtime-Referenzfehler behoben, der durch den Import von `AgentCheckpointTelemetryEvent` mit einem `type`-Modifikator statt als Wert verursacht wurde, wodurch Tracking-Assertionen unterbrochen wurden."
     ]
   }
 }

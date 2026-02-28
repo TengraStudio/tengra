@@ -6,6 +6,45 @@ interface RateLimitConfig {
     maxBurst?: number;
 }
 
+/**
+ * Standardized error codes for RateLimitService
+ */
+export enum RateLimitErrorCode {
+    INVALID_PROVIDER = 'RATE_LIMIT_INVALID_PROVIDER',
+    INVALID_CONFIG = 'RATE_LIMIT_INVALID_CONFIG',
+    WAIT_EXCEEDED = 'RATE_LIMIT_WAIT_EXCEEDED',
+    SERVICE_NOT_INITIALIZED = 'RATE_LIMIT_NOT_INITIALIZED'
+}
+
+/**
+ * Telemetry events for rate limit monitoring dashboards
+ */
+export enum RateLimitTelemetryEvent {
+    TOKEN_ACQUIRED = 'rate_limit_token_acquired',
+    TOKEN_REJECTED = 'rate_limit_token_rejected',
+    WAIT_STARTED = 'rate_limit_wait_started',
+    WAIT_COMPLETED = 'rate_limit_wait_completed',
+    WAIT_EXCEEDED = 'rate_limit_wait_exceeded',
+    BUCKET_CLEANUP = 'rate_limit_bucket_cleanup',
+    LIMIT_SET = 'rate_limit_limit_set'
+}
+
+/**
+ * Performance regression budgets (in milliseconds) for rate limit operations
+ */
+export const RATE_LIMIT_PERFORMANCE_BUDGETS = {
+    TRY_ACQUIRE_MS: 1,
+    WAIT_FOR_TOKEN_MS: 60000,
+    SET_LIMIT_MS: 1,
+    CLEANUP_MS: 100
+} as const;
+
+/** Maximum allowed provider key length */
+const MAX_PROVIDER_LENGTH = 256;
+
+/** Upper bound for requestsPerMinute to prevent misconfigurations */
+const MAX_REQUESTS_PER_MINUTE = 100_000;
+
 export class RateLimitService extends BaseService {
     // Simple Token Bucket state: provider -> { tokens: number, lastRefill: number }
     private buckets: Map<string, { tokens: number; lastRefill: number; config: RateLimitConfig }> =
@@ -14,6 +53,95 @@ export class RateLimitService extends BaseService {
 
     constructor() {
         super('RateLimitService');
+    }
+
+    /**
+     * Checks if an operation exceeded its performance budget and logs a warning.
+     * @param operation - Name of the operation being measured
+     * @param durationMs - Actual duration in milliseconds
+     * @param budgetMs - Maximum allowed duration in milliseconds
+     */
+    private checkPerformanceBudget(operation: string, durationMs: number, budgetMs: number): void {
+        if (durationMs > budgetMs) {
+            appLogger.warn(
+                'RateLimitService',
+                `Performance budget exceeded for ${operation}: ${durationMs.toFixed(2)}ms (budget: ${budgetMs}ms)`
+            );
+        }
+    }
+
+    /**
+     * Validates a provider key string.
+     * Must be a non-empty, non-whitespace-only string within length bounds.
+     * @param provider - The provider key to validate
+     * @throws {Error} If provider is invalid, with code INVALID_PROVIDER
+     */
+    private validateProvider(provider: string): void {
+        if (!provider || typeof provider !== 'string' || provider.trim().length === 0) {
+            const error = new Error(
+                'Provider must be a non-empty string that is not purely whitespace'
+            ) as Error & { code?: string };
+            error.code = RateLimitErrorCode.INVALID_PROVIDER;
+            throw error;
+        }
+
+        if (provider.length > MAX_PROVIDER_LENGTH) {
+            const error = new Error(
+                `Provider key exceeds maximum length of ${MAX_PROVIDER_LENGTH} characters`
+            ) as Error & { code?: string };
+            error.code = RateLimitErrorCode.INVALID_PROVIDER;
+            throw error;
+        }
+    }
+
+    /**
+     * Validates a RateLimitConfig object.
+     * Ensures requestsPerMinute is a finite positive number and maxBurst is a finite non-negative number.
+     * @param config - The rate limit configuration to validate
+     * @throws {Error} If config is null/undefined or contains invalid values, with code INVALID_CONFIG
+     */
+    private validateConfig(config: RateLimitConfig): void {
+        if (config == null || typeof config !== 'object') {
+            const error = new Error(
+                'Rate limit config must be a non-null object'
+            ) as Error & { code?: string };
+            error.code = RateLimitErrorCode.INVALID_CONFIG;
+            throw error;
+        }
+
+        if (
+            typeof config.requestsPerMinute !== 'number' ||
+            !Number.isFinite(config.requestsPerMinute) ||
+            config.requestsPerMinute <= 0
+        ) {
+            const error = new Error(
+                'requestsPerMinute must be a finite positive number'
+            ) as Error & { code?: string };
+            error.code = RateLimitErrorCode.INVALID_CONFIG;
+            throw error;
+        }
+
+        if (config.requestsPerMinute > MAX_REQUESTS_PER_MINUTE) {
+            const error = new Error(
+                `requestsPerMinute exceeds maximum of ${MAX_REQUESTS_PER_MINUTE}`
+            ) as Error & { code?: string };
+            error.code = RateLimitErrorCode.INVALID_CONFIG;
+            throw error;
+        }
+
+        if (config.maxBurst !== undefined) {
+            if (
+                typeof config.maxBurst !== 'number' ||
+                !Number.isFinite(config.maxBurst) ||
+                config.maxBurst < 0
+            ) {
+                const error = new Error(
+                    'maxBurst must be a finite non-negative number'
+                ) as Error & { code?: string };
+                error.code = RateLimitErrorCode.INVALID_CONFIG;
+                throw error;
+            }
+        }
     }
 
     /**
@@ -92,6 +220,7 @@ export class RateLimitService extends BaseService {
      * Clean up old unused buckets
      */
     private cleanupOldBuckets(): void {
+        const start = performance.now();
         const now = Date.now();
         const maxAge = 30 * 60 * 1000; // 30 minutes
 
@@ -100,14 +229,30 @@ export class RateLimitService extends BaseService {
                 this.buckets.delete(provider);
             }
         }
+
+        this.checkPerformanceBudget('cleanupOldBuckets', performance.now() - start, RATE_LIMIT_PERFORMANCE_BUDGETS.CLEANUP_MS);
     }
 
-    setLimit(provider: string, config: RateLimitConfig) {
+    /**
+     * Sets the rate limit configuration for a given provider.
+     * Creates or replaces the token bucket with the specified config.
+     * @param provider - Unique identifier for the rate-limited provider
+     * @param config - Rate limit configuration with requestsPerMinute and optional maxBurst
+     * @throws {Error} If provider is not a non-empty string or config values are invalid
+     */
+    setLimit(provider: string, config: RateLimitConfig): void {
+        const start = performance.now();
+
+        this.validateProvider(provider);
+        this.validateConfig(config);
+
         this.buckets.set(provider, {
             tokens: config.maxBurst ?? config.requestsPerMinute,
             lastRefill: Date.now(),
             config,
         });
+
+        this.checkPerformanceBudget('setLimit', performance.now() - start, RATE_LIMIT_PERFORMANCE_BUDGETS.SET_LIMIT_MS);
     }
 
     /**
@@ -115,12 +260,13 @@ export class RateLimitService extends BaseService {
      * Throws an error if the wait time would be excessive.
      */
     async waitForToken(provider: string): Promise<void> {
-        if (!provider || typeof provider !== 'string') {
-            throw new Error('Provider must be a non-empty string');
-        }
+        const start = performance.now();
+
+        this.validateProvider(provider);
 
         const bucket = this.buckets.get(provider);
         if (!bucket) {
+            this.checkPerformanceBudget('waitForToken', performance.now() - start, RATE_LIMIT_PERFORMANCE_BUDGETS.WAIT_FOR_TOKEN_MS);
             return;
         } // No limit set
 
@@ -132,6 +278,7 @@ export class RateLimitService extends BaseService {
 
             if (bucket.tokens >= 1) {
                 bucket.tokens -= 1;
+                this.checkPerformanceBudget('waitForToken', performance.now() - start, RATE_LIMIT_PERFORMANCE_BUDGETS.WAIT_FOR_TOKEN_MS);
                 return;
             }
 
@@ -142,9 +289,11 @@ export class RateLimitService extends BaseService {
             iterations++;
         }
 
-        throw new Error(
+        const error = new Error(
             `Rate limit wait exceeded maximum iterations (${MAX_WAIT_ITERATIONS}) for ${provider}`
-        );
+        ) as Error & { code?: string };
+        error.code = RateLimitErrorCode.WAIT_EXCEEDED;
+        throw error;
     }
 
     /**
@@ -153,23 +302,18 @@ export class RateLimitService extends BaseService {
      * Does not wait.
      */
     tryAcquire(provider: string): boolean {
+        const start = performance.now();
+
+        this.validateProvider(provider);
+
         if (!this.buckets.has(provider)) {
+            this.checkPerformanceBudget('tryAcquire', performance.now() - start, RATE_LIMIT_PERFORMANCE_BUDGETS.TRY_ACQUIRE_MS);
             return true; // No limit set, allow
         }
 
-        // We can't await refillBucket here since this must be synchronous-ish/non-blocking
-        // But refillBucket uses Date.now() so it doesn't actually block.
-        // We'll trust the lastRefill vs now math.
-
-        // Actually refillBucket IS synchronous in implementation (just async signature in typical generic services,
-        // but here it returns void and uses no awaits).
-        // Let's copy the logic or fix refillBucket signature if possible.
-        // Looking at the file, refillBucket is private async refillBucket(provider: string)
-        // BUT it doesn't await anything.
-        // Let's just implement the logic inline for safety or cast call.
-
         const bucket = this.buckets.get(provider);
         if (!bucket) {
+            this.checkPerformanceBudget('tryAcquire', performance.now() - start, RATE_LIMIT_PERFORMANCE_BUDGETS.TRY_ACQUIRE_MS);
             return true;
         }
 
@@ -184,12 +328,26 @@ export class RateLimitService extends BaseService {
             bucket.lastRefill = now;
         }
 
+        let result: boolean;
         if (bucket.tokens >= 1) {
             bucket.tokens -= 1;
-            return true;
+            result = true;
+        } else {
+            result = false;
         }
 
-        return false;
+        this.checkPerformanceBudget('tryAcquire', performance.now() - start, RATE_LIMIT_PERFORMANCE_BUDGETS.TRY_ACQUIRE_MS);
+        return result;
+    }
+
+    /**
+     * Get health status for rate limit monitoring dashboards
+     */
+    getHealth(): { activeBuckets: number; providers: string[] } {
+        return {
+            activeBuckets: this.buckets.size,
+            providers: Array.from(this.buckets.keys())
+        };
     }
 
     private async refillBucket(provider: string) {

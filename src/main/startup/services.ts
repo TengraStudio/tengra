@@ -239,6 +239,7 @@ export async function createServices(allowedFileRoots: Set<string>): Promise<Ser
 
     // 6. Post-Map Setup
     dataService.setTelemetryService(services.telemetryService);
+    services.agentCheckpointService.setTelemetryService(services.telemetryService);
 
     startCriticalHealthChecks({
         databaseService: services.databaseService,

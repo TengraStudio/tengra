@@ -8,13 +8,23 @@ import { promisify } from 'util';
 
 import { appLogger } from '@main/logging/logger';
 import { DataService } from '@main/services/data/data.service';
+import { validatePort } from '@main/services/proxy/proxy-validation.util';
 import { AuthService } from '@main/services/security/auth.service';
 import { AuthAPIService } from '@main/services/security/auth-api.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { JsonObject } from '@shared/types/common';
-import { getErrorMessage } from '@shared/utils/error.util';
+import { AppErrorCode, getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { app } from 'electron';
+
+/**
+ * Performance budgets in milliseconds for ProxyProcessManager operations
+ */
+export const PROXY_PROCESS_PERFORMANCE_BUDGETS = {
+    CONFIG_GENERATION_MS: 2000,
+    START_MS: 10000,
+    STOP_MS: 5000
+} as const;
 
 export interface ProxyEmbedStatus {
     running: boolean;
@@ -23,6 +33,7 @@ export interface ProxyEmbedStatus {
     configPath?: string;
     binaryPath?: string;
     error?: string;
+    errorCode?: string;
 }
 
 export class ProxyProcessManager {
@@ -41,8 +52,17 @@ export class ProxyProcessManager {
     ) { }
 
     async start(options?: { port?: number; persistent?: boolean }): Promise<ProxyEmbedStatus> {
+        const startTime = performance.now();
         if (this.child) {
             return this.getStatus();
+        }
+
+        if (options?.port !== undefined) {
+            const portError = validatePort(options.port);
+            if (portError) {
+                appLogger.error('Proxy', `Invalid port: ${portError}`);
+                return { running: false, error: portError, errorCode: AppErrorCode.PROXY_INVALID_CONFIG };
+            }
         }
 
         const binaryPath = this.getBinaryPath();
@@ -52,7 +72,7 @@ export class ProxyProcessManager {
             await this.ensureBinary();
         } catch (e) {
             appLogger.error('Proxy', `Failed to ensure binary: ${getErrorMessage(e)}`);
-            return { running: false, error: `Failed to build or find binary: ${getErrorMessage(e)}` };
+            return { running: false, error: `Failed to build or find binary: ${getErrorMessage(e)}`, errorCode: AppErrorCode.PROXY_BINARY_NOT_FOUND };
         }
 
         this.currentPort = options?.port ?? 8317;
@@ -74,7 +94,7 @@ export class ProxyProcessManager {
                     'Proxy',
                     `Port ${this.currentPort} is occupied by another process and could not be freed.`
                 );
-                return { running: false, error: `Port ${this.currentPort} is already in use.` };
+                return { running: false, error: `Port ${this.currentPort} is already in use.`, errorCode: AppErrorCode.PROXY_PORT_IN_USE };
             }
         }
 
@@ -82,7 +102,7 @@ export class ProxyProcessManager {
         const authAPIPort = this.setupAuthAPI();
         if (authAPIPort === 0) {
             appLogger.error('Proxy', 'AuthAPIService not initialized - port is 0');
-            return { running: false, error: 'AuthAPIService not initialized' };
+            return { running: false, error: 'AuthAPIService not initialized', errorCode: AppErrorCode.PROXY_NOT_INITIALIZED };
         }
 
         // Generate YAML config
@@ -92,6 +112,12 @@ export class ProxyProcessManager {
         this.spawnProxyProcess(binaryPath, proxyConfigPath, authAPIPort, options?.persistent);
 
         this.isProxyRunning = true;
+
+        const elapsed = performance.now() - startTime;
+        if (elapsed > PROXY_PROCESS_PERFORMANCE_BUDGETS.START_MS) {
+            appLogger.warn('Proxy', `start exceeded budget: ${elapsed.toFixed(1)}ms > ${PROXY_PROCESS_PERFORMANCE_BUDGETS.START_MS}ms`);
+        }
+
         return this.getStatus();
     }
 
@@ -190,6 +216,7 @@ export class ProxyProcessManager {
     }
 
     async stop(force: boolean = false): Promise<ProxyEmbedStatus> {
+        const start = performance.now();
         if (this.child) {
             appLogger.info('Proxy', `Stopping proxy (PID: ${this.child.pid})...`);
             this.child.kill();
@@ -201,6 +228,12 @@ export class ProxyProcessManager {
         }
 
         this.isProxyRunning = false;
+
+        const elapsed = performance.now() - start;
+        if (elapsed > PROXY_PROCESS_PERFORMANCE_BUDGETS.STOP_MS) {
+            appLogger.warn('Proxy', `stop exceeded budget: ${elapsed.toFixed(1)}ms > ${PROXY_PROCESS_PERFORMANCE_BUDGETS.STOP_MS}ms`);
+        }
+
         return this.getStatus();
     }
 
@@ -409,6 +442,12 @@ export class ProxyProcessManager {
      * This is SEPARATE from settings.json to avoid corruption.
      */
     async generateProxyConfigFile(port: number): Promise<string> {
+        const start = performance.now();
+        const portError = validatePort(port);
+        if (portError) {
+            throw new Error(`Invalid proxy config port: ${portError}`);
+        }
+
         const settings = this.settingsService.getSettings();
         const proxyKey = settings.proxy?.key ?? '';
         const authDir = this.dataService.getPath('auth');
@@ -442,6 +481,11 @@ logging-to-file: false
                 authStoreKey: settings.proxy?.authStoreKey,
             },
         });
+
+        const elapsed = performance.now() - start;
+        if (elapsed > PROXY_PROCESS_PERFORMANCE_BUDGETS.CONFIG_GENERATION_MS) {
+            appLogger.warn('Proxy', `generateProxyConfigFile exceeded budget: ${elapsed.toFixed(1)}ms > ${PROXY_PROCESS_PERFORMANCE_BUDGETS.CONFIG_GENERATION_MS}ms`);
+        }
 
         return configPath;
     }

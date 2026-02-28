@@ -166,3 +166,5 @@ docs/changelog/i18n/.tr.translation.cache.json
 # Binaries
 reports/**
 .claude/settings.local.json
+
+website/appendonlydir

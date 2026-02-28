@@ -2781,5 +2781,10 @@
   "- Added input validation guards, standardized retry/fallback paths, and component error codes": "- 添加了输入验证防护、标准化重试/fallback 路径和组件错误代码",
   "- Added component health telemetry stores with explicit performance budgets": "- 添加了具有明确性能预算的组件运行状况遥测存储",
   "- Improved loading/empty/failure UX handling in language prompt, MCP settings tab, and code editor": "- 改进了语言提示、MCP 设置选项卡和代码编辑器中的加载/清空/失败 UX 处理",
-  "- Added runbook, threat model, and performance budget documentation under docs/ with mirrored .codex copies": "- 在 docs/ 下添加了运行手册、威胁模型和性能预算文档以及镜像 .codex 副本"
+  "- Added runbook, threat model, and performance budget documentation under docs/ with mirrored .codex copies": "- 在 docs/ 下添加了运行手册、威胁模型和性能预算文档以及镜像 .codex 副本",
+  "Proxy and Agent Service Test Failure Resolution": "代理和代理服务测试失败解决方案",
+  "Resolved failing unit and integration tests in the proxy performance and agent checkpoint test suites by fixing mocks, imports, and enum bounds.": "通过修复模拟、导入和枚举边界，解决了代理性能和代理检查点测试套件中失败的单元和集成测试。",
+  "- **Proxy Performance Tests**: Fixed brittle mock implementation for `performance.now()` in `startEmbeddedProxy` timing tests.": "- **代理性能测试**：修复了 `startEmbeddedProxy` 计时测试中 `performance.now()` 的脆弱模拟实现。",
+  "- **Proxy Service Contract Tests**: Updated quota performance budget keys check and `QuotaErrorCode` bounds handling to support newly added error codes.": "- **代理服务合同测试**：更新了配额性能预算密钥检查和 `QuotaErrorCode` 边界处理以支持新添加的错误代码。",
+  "- **Agent Checkpoint Service**: Resolved a fatal TypeScript runtime ReferenceError caused by importing `AgentCheckpointTelemetryEvent` with a `type` modifier rather than as a value, which broke tracking assertions.": "- **代理检查点服务**：解决了由于使用 `type` 修饰符而不是作为值导入 `AgentCheckpointTelemetryEvent` 导致的致命 TypeScript runtime 引用错误，该错误破坏了跟踪断言。"
 }

@@ -15,11 +15,25 @@ export interface WorkflowAction {
     config: Record<string, JsonValue>;
 }
 
+/** Retry policy for individual workflow steps. */
+export interface StepRetryPolicy {
+    /** Maximum number of retries (0 = no retries). */
+    maxRetries: number;
+    /** Base delay in ms before the first retry; doubles each attempt. */
+    baseDelayMs: number;
+    /** Optional upper-bound on delay in ms. */
+    maxDelayMs?: number;
+}
+
 export interface WorkflowStep {
     id: string;
     name: string;
     action: WorkflowAction;
     nextStepId?: string; // For linear workflows, or handling branching later
+    /** When false, a failure in this step will not halt the workflow. Default: true. */
+    critical?: boolean;
+    /** Optional retry policy for transient failures. */
+    retryPolicy?: StepRetryPolicy;
 }
 
 export interface Workflow {

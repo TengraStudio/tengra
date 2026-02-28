@@ -1,6 +1,6 @@
 import { TimeTrackingService } from '@main/services/analysis/time-tracking.service';
 import { DataService } from '@main/services/data/data.service';
-import { DatabaseService } from '@main/services/data/database.service';
+import { DatabaseService, DatabaseServiceErrorCode } from '@main/services/data/database.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -183,6 +183,57 @@ describe('DatabaseService', () => {
         });
     });
 
+    describe('DatabaseServiceErrorCode enum', () => {
+        it('should have all expected error code values', () => {
+            expect(DatabaseServiceErrorCode.INVALID_ID).toBe('DB_INVALID_ID');
+            expect(DatabaseServiceErrorCode.INVALID_QUERY).toBe('DB_INVALID_QUERY');
+            expect(DatabaseServiceErrorCode.NOT_INITIALIZED).toBe('DB_NOT_INITIALIZED');
+            expect(DatabaseServiceErrorCode.OPERATION_FAILED).toBe('DB_OPERATION_FAILED');
+            expect(DatabaseServiceErrorCode.CONNECTION_FAILED).toBe('DB_CONNECTION_FAILED');
+        });
+    });
+
+    describe('analyzeQueryPlan validation', () => {
+        it('should reject empty SQL string', async () => {
+            await expect(service.analyzeQueryPlan('')).rejects.toThrow(DatabaseServiceErrorCode.INVALID_QUERY);
+        });
+
+        it('should reject non-string input', async () => {
+            await expect(service.analyzeQueryPlan(123 as unknown as string)).rejects.toThrow(DatabaseServiceErrorCode.INVALID_QUERY);
+        });
+    });
+
+    describe('executeBatch validation', () => {
+        it('should reject non-array input', async () => {
+            await expect(service.executeBatch('not-array' as unknown as Array<{ sql: string }>)).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
+        });
+
+        it('should return empty results for empty array', async () => {
+            const results = await service.executeBatch([]);
+            expect(results).toEqual([]);
+        });
+    });
+
+    describe('bulkDeleteChats validation', () => {
+        it('should reject non-array input', async () => {
+            await expect(service.bulkDeleteChats('not-array' as unknown as string[])).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
+        });
+
+        it('should reject array with invalid id', async () => {
+            await expect(service.bulkDeleteChats(['valid-id', ''])).rejects.toThrow(DatabaseServiceErrorCode.INVALID_ID);
+        });
+    });
+
+    describe('bulkDeleteProjects validation', () => {
+        it('should reject non-array input', async () => {
+            await expect(service.bulkDeleteProjects('not-array' as unknown as string[])).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
+        });
+
+        it('should reject array with invalid id', async () => {
+            await expect(service.bulkDeleteProjects(['valid-id', ''])).rejects.toThrow(DatabaseServiceErrorCode.INVALID_ID);
+        });
+    });
+
     describe('DBSVC data archiving', () => {
         it('should archive old chats by cutoff', async () => {
             const now = Date.now();
@@ -210,6 +261,84 @@ describe('DatabaseService', () => {
 
             expect(result.archived).toBe(1);
             expect(archiveSpy).toHaveBeenCalledWith('old-chat', true);
+        });
+    });
+
+    describe('query / exec / prepare SQL validation', () => {
+        it('query rejects empty SQL', async () => {
+            await expect(service.query('')).rejects.toThrow(DatabaseServiceErrorCode.INVALID_QUERY);
+        });
+
+        it('query rejects non-string SQL', async () => {
+            await expect(service.query(42 as unknown as string)).rejects.toThrow(DatabaseServiceErrorCode.INVALID_QUERY);
+        });
+
+        it('exec rejects empty SQL', async () => {
+            await expect(service.exec('')).rejects.toThrow(DatabaseServiceErrorCode.INVALID_QUERY);
+        });
+
+        it('exec rejects whitespace-only SQL', async () => {
+            await expect(service.exec('   ')).rejects.toThrow(DatabaseServiceErrorCode.INVALID_QUERY);
+        });
+
+        it('prepare rejects empty SQL', async () => {
+            await expect(service.prepare('')).rejects.toThrow(DatabaseServiceErrorCode.INVALID_QUERY);
+        });
+    });
+
+    describe('bulkArchiveChats validation', () => {
+        it('rejects non-array input', async () => {
+            await expect(service.bulkArchiveChats('bad' as unknown as string[], true)).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
+        });
+
+        it('rejects array with empty id', async () => {
+            await expect(service.bulkArchiveChats(['valid', ''], true)).rejects.toThrow(DatabaseServiceErrorCode.INVALID_ID);
+        });
+    });
+
+    describe('bulkArchiveProjects validation', () => {
+        it('rejects non-array input', async () => {
+            await expect(service.bulkArchiveProjects('bad' as unknown as string[], false)).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
+        });
+
+        it('rejects array with empty id', async () => {
+            await expect(service.bulkArchiveProjects(['valid', ''], false)).rejects.toThrow(DatabaseServiceErrorCode.INVALID_ID);
+        });
+    });
+
+    describe('deleteMessages validation', () => {
+        it('rejects non-array input', async () => {
+            await expect(service.deleteMessages('bad' as unknown as string[])).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
+        });
+
+        it('rejects array with empty id', async () => {
+            await expect(service.deleteMessages(['ok', ''])).rejects.toThrow(DatabaseServiceErrorCode.INVALID_ID);
+        });
+    });
+
+    describe('unarchiveChats validation', () => {
+        it('rejects non-array input', async () => {
+            await expect(service.unarchiveChats('bad' as unknown as string[])).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
+        });
+
+        it('rejects array with empty id', async () => {
+            await expect(service.unarchiveChats(['ok', ''])).rejects.toThrow(DatabaseServiceErrorCode.INVALID_ID);
+        });
+    });
+
+    describe('setConnectionPoolConfig validation', () => {
+        it('rejects null config', () => {
+            expect(() => service.setConnectionPoolConfig(null as unknown as { maxSockets?: number })).toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
+        });
+
+        it('rejects non-object config', () => {
+            expect(() => service.setConnectionPoolConfig('bad' as unknown as { maxSockets?: number })).toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
+        });
+
+        it('accepts valid config', () => {
+            const mockClient = (service as unknown as { dbClient: { setPoolLimits: ReturnType<typeof vi.fn> } }).dbClient;
+            mockClient.setPoolLimits = vi.fn();
+            expect(() => service.setConnectionPoolConfig({ maxSockets: 5 })).not.toThrow();
         });
     });
 });

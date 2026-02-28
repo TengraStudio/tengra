@@ -91,7 +91,8 @@ export const fr = {
     "errors": {
         "unexpected": "Désolé, une erreur est survenue.",
         "somethingWentWrong": "Quelque chose s’est mal passé :",
-        "rootNotFound": "Élément racine introuvable"
+        "rootNotFound": "Élément racine introuvable",
+        "rateLimitWarning": "Avertissement de limite de débit ({{provider}}) : {{remaining}}/{{limit}} restants"
     },
     "languages": {
         "tr": "Turc",
@@ -501,7 +502,10 @@ export const fr = {
         "dangerZone": "Zone dangereuse",
         "consensusThreshold": "Seuil de consensus",
         "councilAI": "Conseil IA",
-        "councilAIDesc": "Choisissez quels agents participent au conseil."
+        "councilAIDesc": "Choisissez quels agents participent au conseil.",
+        "systemHealth": "Santé du système",
+        "healthStatus": "État de santé",
+        "totalFailures": "Échecs totaux"
     },
     "projectWizard": {
         "title": "Assistant de projet",
@@ -1022,6 +1026,7 @@ export const fr = {
         "blur": "Se brouiller",
         "exportTheme": "Exporter",
         "importTheme": "Importer",
+        "failedImportThemeInvalidJson": "Échec de l'importation du thème : fichier JSON invalide",
         "galleryView": "Vue Galerie",
         "exitGalleryView": "Quitter la vue Galerie",
         "floatTerminal": "Terminal flottant",
@@ -1160,6 +1165,8 @@ export const fr = {
         "scrollToBottomWithCount": "Aller en bas ({{count}} nouveaux messages)",
         "clear": "Clair",
         "error": "Erreur",
+        "quotaExceeded": "Quota ou limite de débit dépassé. Cela peut être dû à une limitation du débit (trop de requêtes) ou à un épuisement du quota. Veuillez patienter quelques minutes et réessayer.",
+        "rateLimitExceeded": "Limite de débit ou quota dépassé. Veuillez patienter quelques minutes et réessayer.",
         "modelComparison": "Comparaison des modèles",
         "readMore": "En savoir plus",
         "searchMessages": "Rechercher des messages...",
@@ -1192,7 +1199,33 @@ export const fr = {
             "from": "De: {{provider}}/{{model}}",
             "selectModelError": "Veuillez sélectionner au moins un modèle",
             "runFailed": "Échec de l'exécution de la collaboration",
-            "remove": "Retirer"
+            "remove": "Retirer",
+            "sharedContext": "Contexte partagé",
+            "sharedContextPlaceholder": "Ajouter du contexte pour tous les collaborateurs...",
+            "sharedMemory": "Mémoire partagée",
+            "memoryPlaceholder": "Ajouter une note de mémoire partagée",
+            "memoryUpdated": "Mémoire partagée mise à jour",
+            "presence": "Présence",
+            "guestsAllowed": "Invités autorisés",
+            "guestsBlocked": "Invités bloqués",
+            "guestPolicyChanged": "Politique d'accès des invités mise à jour",
+            "cursorMarkers": "Marqueurs de curseur",
+            "addMarker": "Ajouter un marqueur",
+            "cursorMarked": "Marqueur de curseur ajouté",
+            "promptArea": "Zone de saisie",
+            "latestResponse": "Dernière réponse",
+            "changeAnnotations": "Annotations de modifications",
+            "annotate": "Annoter",
+            "annotationTemplate": "Modifications de contexte synchronisées pour les collaborateurs.",
+            "annotationRecorded": "Annotation de modification enregistrée",
+            "responseSynchronized": "Réponse IA synchronisée avec les membres de la session.",
+            "startRecording": "Démarrer l'enregistrement",
+            "stopRecording": "Arrêter l'enregistrement",
+            "recordingToggled": "État d'enregistrement de la session modifié",
+            "generateShareLink": "Générer un lien de partage",
+            "linkGenerated": "Lien de partage de session généré",
+            "contextUpdated": "Contexte partagé mis à jour",
+            "collaborationRunFinished": "Exécution de la collaboration terminée"
         }
     },
     "welcome": {
@@ -1386,6 +1419,18 @@ export const fr = {
         "checkOnStartupDesc": "Rechercher des mises à jour au démarrage",
         "privacySafety": "Confidentialité et sécurité",
         "privacySafetyDesc": "Gérer les paramètres de confidentialité des données",
+        "defaultTerminalBackendDesc": "Sélectionnez le backend par défaut pour les nouvelles sessions terminal.",
+        "inlineSuggestions": "Suggestions en ligne",
+        "inlineSuggestionsDesc": "Affiche des suggestions en texte fantôme pendant la saisie dans les éditeurs Monaco.",
+        "inlineSuggestionsSource": "Source des suggestions",
+        "inlineSuggestionsSourceCopilot": "GitHub Copilot",
+        "inlineSuggestionsSourceCustom": "Modèle personnalisé",
+        "inlineSuggestionsProvider": "Fournisseur",
+        "inlineSuggestionsProviderPlaceholder": "openai",
+        "inlineSuggestionsModel": "Modèle",
+        "inlineSuggestionsModelPlaceholder": "gpt-4o-mini",
+        "inlineSuggestionsCopilotAccount": "Compte Copilot",
+        "inlineSuggestionsCopilotAccountPlaceholder": "Utiliser le compte actif",
         "startup": "Démarrer"
     },
     "appearance": {
@@ -2554,7 +2599,19 @@ export const fr = {
         "cfg": "CFG",
         "seed": "Seed",
         "noResults": "Aucune image ne correspond à votre recherche",
-        "searchPlaceholder": "Rechercher des images, des invites, des modèles..."
+        "searchPlaceholder": "Rechercher des images, des invites, des modèles...",
+        "selectImage": "Sélectionner une image",
+        "selectedCount": "{{count}} sélectionné(s)",
+        "selectedCount_one": "1 sélectionné",
+        "selectedCount_other": "{{count}} sélectionnés",
+        "clearSelection": "Effacer la sélection",
+        "downloadSelected": "Télécharger la sélection",
+        "downloadingSelected": "Téléchargement en cours...",
+        "openPreview": "Ouvrir l'aperçu",
+        "zoomIn": "Zoom avant",
+        "zoomOut": "Zoom arrière",
+        "resetView": "Réinitialiser la vue",
+        "closePreview": "Fermer l'aperçu"
     },
     "build": {
         "buildCommandPlaceholder": "npm run build",
@@ -2899,7 +2956,150 @@ export const fr = {
         "enabled": "Activé",
         "noTriggers": "Aucun déclencheur défini",
         "noSteps": "Aucune étape définie",
-        "editorNote": "Utilisez le mode JSON pour une configuration avancée des déclencheurs et des étapes."
+        "editorNote": "Utilisez le mode JSON pour une configuration avancée des déclencheurs et des étapes.",
+        "switchToForm": "Passer au formulaire",
+        "switchToJson": "Passer au JSON"
+    },
+    "serviceHealth": {
+        "modelRegistry": {
+            "ready": "serviceHealth.modelRegistry.ready",
+            "empty": "serviceHealth.modelRegistry.empty",
+            "failure": "serviceHealth.modelRegistry.failure"
+        },
+        "llm": {
+            "ready": "serviceHealth.llm.ready",
+            "empty": "serviceHealth.llm.empty",
+            "failure": "serviceHealth.llm.failure"
+        },
+        "localImage": {
+            "ready": "serviceHealth.localImage.ready",
+            "empty": "serviceHealth.localImage.empty",
+            "failure": "serviceHealth.localImage.failure"
+        },
+        "settings": {
+            "ready": "serviceHealth.settings.ready",
+            "empty": "serviceHealth.settings.empty",
+            "failure": "serviceHealth.settings.failure"
+        },
+        "token": {
+            "ready": "serviceHealth.token.ready",
+            "empty": "serviceHealth.token.empty",
+            "failure": "serviceHealth.token.failure"
+        }
+    },
+    "advancedMemory": {
+        "health": {
+            "ready": "Le service de mémoire est opérationnel.",
+            "empty": "Le service de mémoire est prêt et en attente d'activité.",
+            "failure": "Le service de mémoire est dégradé. Réessayez ou consultez les journaux."
+        }
+    },
+    "contextRetrieval": {
+        "health": {
+            "ready": "La récupération de contexte est opérationnelle.",
+            "empty": "La récupération de contexte est prête et en attente de requêtes.",
+            "failure": "La récupération de contexte est dégradée. Réessayez ou consultez les journaux."
+        }
+    },
+    "embedding": {
+        "health": {
+            "ready": "Le service d'embedding est opérationnel.",
+            "empty": "Le service d'embedding est prêt et en attente de requêtes.",
+            "failure": "Le service d'embedding est dégradé. Réessayez ou consultez les journaux."
+        }
+    },
+    "extensionDev": {
+        "devtools": "Outils de développement d'extensions",
+        "extensions": "Extensions",
+        "activate": "Activer",
+        "deactivate": "Désactiver",
+        "reload": "Recharger",
+        "searchLogs": "Rechercher dans les journaux...",
+        "clearLogs": "Effacer les journaux",
+        "noLogs": "Aucune entrée de journal pour le moment",
+        "noExtensionSelected": "Aucune extension sélectionnée",
+        "selectExtensionPrompt": "Sélectionnez une extension dans la barre latérale pour afficher les journaux et gérer le statut."
+    },
+    "voice": {
+        "notSupported": "Le contrôle vocal n'est pas pris en charge dans ce navigateur",
+        "startListening": "Commencer l'écoute",
+        "stopListening": "Arrêter l'écoute",
+        "start": "Démarrer",
+        "stop": "Arrêter",
+        "showCommands": "Afficher les commandes vocales",
+        "lastHeard": "Dernier entendu",
+        "status": {
+            "idle": "Prêt",
+            "listening": "Écoute en cours...",
+            "processing": "Traitement en cours...",
+            "speaking": "Parle...",
+            "error": "Erreur"
+        },
+        "feedback": {
+            "navigating": "Navigation vers {{target}}",
+            "commandExecuted": "Commande exécutée",
+            "notRecognized": "Commande non reconnue"
+        },
+        "settings": {
+            "enableVoice": "Activer le contrôle vocal",
+            "enableVoiceDescription": "Contrôler l'application avec des commandes vocales",
+            "wakeWord": "Mot d'activation",
+            "wakeWordLabel": "Mot d'activation",
+            "continuousListening": "Mode d'écoute continue",
+            "speech": "Paramètres de parole",
+            "voice": "Voix",
+            "selectVoice": "Sélectionner une voix",
+            "speechRate": "Vitesse de parole",
+            "speechPitch": "Tonalité de parole",
+            "speechVolume": "Volume de parole",
+            "feedback": "Paramètres de retour",
+            "audioFeedback": "Retour audio",
+            "visualFeedback": "Retour visuel",
+            "accessibilityMode": "Mode d'accessibilité",
+            "customCommands": "Commandes personnalisées",
+            "commandPhrase": "Phrase de commande",
+            "commandAction": "Action"
+        },
+        "commands": {
+            "title": "Commandes vocales",
+            "aliases": "Alias",
+            "categories": {
+                "navigation": "Navigation",
+                "actions": "Actions",
+                "chat": "Discussion",
+                "settings": "Paramètres",
+                "accessibility": "Accessibilité",
+                "custom": "Personnalisé"
+            }
+        }
+    },
+    "agentCollaboration": {
+        "error": {
+            "invalidRoutingRules": "Règles de routage fournies invalides",
+            "votingSessionNotFound": "Session de vote non trouvée",
+            "votingSessionInvalid": "Impossible de créer une session de vote valide",
+            "debateSessionNotFound": "Session de débat non trouvée",
+            "invalidDebateArgument": "Argument de débat invalide"
+        },
+        "voting": {
+            "created": "Session de vote créée : {{question}}",
+            "voteSubmitted": "Vote soumis : {{modelId}} a voté \"{{decision}}\"",
+            "resolved": "Vote résolu : \"{{winner}}\"",
+            "deadlocked": "Vote bloqué : {{decisions}}"
+        },
+        "debate": {
+            "created": "Session de débat créée : {{topic}}",
+            "argumentSubmitted": "Argument soumis par {{agentId}}",
+            "resolved": "Débat résolu avec le camp gagnant : {{side}}"
+        }
+    },
+    "agentCheckpoint": {
+        "error": {
+            "saveFailed": "Échec de la sauvegarde du point de contrôle de l'agent",
+            "serializationFailed": "Échec de la sérialisation de l'instantané de l'état de l'agent",
+            "checkpointNotFound": "Point de contrôle {{id}} non trouvé"
+        },
+        "saved": "Point de contrôle sauvegardé pour la tâche {{taskId}}"
     }
 };
 

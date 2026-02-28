@@ -3,7 +3,6 @@ import { useChat } from '@renderer/context/ChatContext';
 import { useModel } from '@renderer/context/ModelContext';
 import { useProject } from '@renderer/context/ProjectContext';
 import { ChatTemplate } from '@renderer/features/chat/types';
-import type { GroupedModels } from '@/types';
 import React, { lazy, Suspense, useEffect, useMemo } from 'react';
 
 import { LoadingState } from '@/components/ui/LoadingState';
@@ -17,6 +16,7 @@ import {
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 import { trackAnimationEvent } from '@/store/animation-analytics.store';
+import type { GroupedModels } from '@/types';
 
 // Lazy load feature modules
 

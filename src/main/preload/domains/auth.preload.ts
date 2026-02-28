@@ -12,9 +12,16 @@ export interface AuthBridge {
         deviceCode: string,
         interval: number,
         appId?: 'profile' | 'copilot'
-    ) => Promise<{ success: boolean; token?: string; error?: string }>;
-    antigravityLogin: () => Promise<{ url: string; state: string }>;
-    saveClaudeSession: (sessionKey: string, accountId?: string) => Promise<{ success: boolean; error?: string }>;
+    ) => Promise<{
+        success: boolean;
+        account?: {
+            provider: string;
+            email?: string;
+            displayName?: string;
+            avatarUrl?: string;
+        };
+        error?: string;
+    }>;
 }
 
 export function createAuthBridge(ipc: IpcRenderer): AuthBridge {
@@ -22,8 +29,5 @@ export function createAuthBridge(ipc: IpcRenderer): AuthBridge {
         githubLogin: (appId?: 'profile' | 'copilot') => ipc.invoke('auth:github-login', appId),
         pollToken: (deviceCode: string, interval: number, appId?: 'profile' | 'copilot') =>
             ipc.invoke('auth:poll-token', deviceCode, interval, appId),
-        antigravityLogin: () => ipc.invoke('proxy:antigravityLogin'),
-        saveClaudeSession: (sessionKey: string, accountId?: string) =>
-            ipc.invoke('proxy:saveClaudeSession', sessionKey, accountId),
     };
 }

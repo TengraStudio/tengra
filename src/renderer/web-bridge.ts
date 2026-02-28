@@ -1,4 +1,8 @@
 import type { ElectronAPI } from '@renderer/electron.d';
+import type {
+    InlineSuggestionRequest,
+    InlineSuggestionResponse,
+} from '@shared/schemas/inline-suggestions.schema';
 import type { AdvancedSemanticFragment, PendingMemory } from '@shared/types/advanced-memory';
 import type { Chat, Folder, Message, ToolCall, ToolResult } from '@shared/types/chat';
 import type { IpcValue } from '@shared/types/common';
@@ -44,7 +48,15 @@ export const webElectronMock: ElectronAPI = {
     }),
     pollToken: async (_deviceCode: string, _interval: number, _appId?: 'profile' | 'copilot') => ({
         success: true,
-        token: 'mock-token',
+        account: {
+            id: 'mock-id',
+            provider: _appId === 'copilot' ? 'copilot' : 'github',
+            email: 'mock@example.com',
+            displayName: 'Mock Account',
+            avatarUrl: undefined,
+            isActive: true,
+            createdAt: Date.now(),
+        },
     }),
     antigravityLogin: async () => ({ url: 'http://localhost', state: 'mock-state' }),
 
@@ -227,6 +239,12 @@ export const webElectronMock: ElectronAPI = {
         analyzeIdentity: async (_projectPath: string) => ({ suggestedPrompts: [], colors: [] }),
         applyLogo: async (_projectPath: string, _tempLogoPath: string) => '',
         getCompletion: async (_text: string) => '',
+        getInlineSuggestion: async (
+            _request: InlineSuggestionRequest
+        ): Promise<InlineSuggestionResponse> => ({
+            suggestion: null,
+            source: 'custom',
+        }),
         improveLogoPrompt: async (_prompt: string) => '',
         uploadLogo: async (_projectPath: string) => null,
         analyzeDirectory: async (_dirPath: string) => ({
@@ -378,7 +396,12 @@ export const webElectronMock: ElectronAPI = {
             totalGenerated: 0,
             byProvider: {},
             averageSteps: 0,
+            bySource: {},
+            averageDurationMs: 0,
+            editModeCounts: {},
         }),
+        getPresetAnalytics: async () => ({ totalPresets: 0, providerCounts: {}, customPresets: 0 }),
+        getScheduleAnalytics: async () => ({ total: 0, byStatus: {}, byPriority: {} }),
         listPresets: async () => [],
         savePreset: async (_preset: {
             id?: string;
@@ -391,8 +414,22 @@ export const webElectronMock: ElectronAPI = {
             provider?: 'antigravity' | 'ollama' | 'sd-webui' | 'comfyui' | 'pollinations' | 'sd-cpp';
         }) => ({}),
         deletePreset: async (_id: string) => true,
+        exportPresetShare: async (_id: string) => '',
+        importPresetShare: async (_code: string) => ({}),
+        listWorkflowTemplates: async () => [],
+        saveWorkflowTemplate: async (_payload: {
+            id?: string;
+            name: string;
+            description?: string;
+            workflow: Record<string, unknown>;
+        }) => ({}),
+        deleteWorkflowTemplate: async (_id: string) => true,
+        exportWorkflowTemplateShare: async (_id: string) => '',
+        importWorkflowTemplateShare: async (_code: string) => ({}),
         schedule: async (_payload: {
             runAt: number;
+            priority?: 'low' | 'normal' | 'high';
+            resourceProfile?: 'balanced' | 'quality' | 'speed';
             options: {
                 prompt: string;
                 negativePrompt?: string;
@@ -407,6 +444,8 @@ export const webElectronMock: ElectronAPI = {
         listSchedules: async () => [],
         cancelSchedule: async (_id: string) => true,
         compare: async (_ids: string[]) => ({}),
+        exportComparison: async (_payload: { ids: string[]; format?: 'json' | 'csv' }) => '',
+        shareComparison: async (_ids: string[]) => '',
         batchGenerate: async (_requests: Array<{
             prompt: string;
             negativePrompt?: string;
@@ -417,7 +456,9 @@ export const webElectronMock: ElectronAPI = {
             seed?: number;
             count?: number;
         }>) => [],
-        getQueueStats: async () => ({ queued: 0, running: false }),
+        getQueueStats: async () => ({ queued: 0, running: false, byPriority: {} }),
+        searchHistory: async (_query: string, _limit?: number) => [],
+        exportHistory: async (_format?: 'json' | 'csv') => '[]',
         edit: async (_options: {
             sourceImage: string;
             mode: 'img2img' | 'inpaint' | 'outpaint' | 'style-transfer';

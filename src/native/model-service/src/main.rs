@@ -587,17 +587,6 @@ fn get_copilot_model_metadata(id: &str) -> (Option<Vec<String>>, Option<Pricing>
         ),
 
         // Anthropic Claude models
-        "claude-haiku-4.5" | "claude-4.5-haiku" => (
-            Some(vec!["low".into(), "medium".into(), "high".into()]),
-            Some(Pricing {
-                input: 1.00,
-                cached_input: Some(0.10),
-                cache_write_5m: Some(1.25),
-                cache_write_1h: Some(2.00),
-                output: 5.00,
-            }),
-            Some("Claude 4.5 Haiku - fast with extended thinking support".into()),
-        ),
         "claude-sonnet-4" | "claude-4-sonnet" => (
             Some(vec!["low".into(), "medium".into(), "high".into()]),
             Some(Pricing {
@@ -609,17 +598,6 @@ fn get_copilot_model_metadata(id: &str) -> (Option<Vec<String>>, Option<Pricing>
             }),
             Some("Claude 4 Sonnet - deep reasoning and debugging".into()),
         ),
-        "claude-sonnet-4.5" | "claude-4.5-sonnet" => (
-            Some(vec!["low".into(), "medium".into(), "high".into()]),
-            Some(Pricing {
-                input: 3.00,
-                cached_input: Some(0.30),
-                cache_write_5m: Some(3.75),
-                cache_write_1h: Some(6.00),
-                output: 15.00,
-            }),
-            Some("Claude 4.5 Sonnet - general-purpose coding and agent tasks".into()),
-        ),
         "claude-opus-4.1" | "claude-4.1-opus" => (
             Some(vec!["low".into(), "medium".into(), "high".into()]),
             Some(Pricing {
@@ -630,28 +608,6 @@ fn get_copilot_model_metadata(id: &str) -> (Option<Vec<String>>, Option<Pricing>
                 output: 75.00,
             }),
             Some("Claude 4.1 Opus - deep reasoning and debugging".into()),
-        ),
-        "claude-opus-4.5" | "claude-4.5-opus" => (
-            Some(vec!["low".into(), "medium".into(), "high".into()]),
-            Some(Pricing {
-                input: 5.00,
-                cached_input: Some(0.50),
-                cache_write_5m: Some(6.25),
-                cache_write_1h: Some(10.00),
-                output: 25.00,
-            }),
-            Some("Claude 4.5 Opus - premium intelligence with practical performance".into()),
-        ),
-        "claude-opus-4.6" | "claude-4.6-opus" => (
-            Some(vec!["low".into(), "medium".into(), "high".into()]),
-            Some(Pricing {
-                input: 5.00,
-                cached_input: Some(0.50),
-                cache_write_5m: Some(6.25),
-                cache_write_1h: Some(10.00),
-                output: 25.00,
-            }),
-            Some("Claude 4.6 Opus - excels in agentic coding and hard tasks".into()),
         ),
 
         // Google Gemini models
@@ -1079,18 +1035,6 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             reset: None,
             quota_info: None,
         },
-        ModelInfo {
-            id: "gpt-5.3-codex".into(),
-            name: "GPT 5.3 Codex".into(),
-            provider: "codex".into(),
-            description: Some("Stable version of GPT 5.3 Codex, optimized for coding and agentic tasks.".into()),
-            downloads: None,
-            thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into(), "xhigh".into()]),
-            pricing: Some(Pricing { input: 1.75, cached_input: Some(0.175), cache_write_5m: None, cache_write_1h: None, output: 14.00 }),
-            percentage: None,
-            reset: None,
-            quota_info: None,
-        },
 
         // Standard Models
         ModelInfo {
@@ -1196,7 +1140,7 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             id: "o1-mini".into(),
             name: "OpenAI o1-mini".into(),
             provider: "codex".into(),
-            description: Some("Faster reasoning model".into()),
+            description: Some("DEPRECATED/RETIRED: Faster reasoning model. Replacement: o3-mini.".into()),
             downloads: None,
             thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
             pricing: Some(Pricing { input: 1.10, cached_input: Some(0.55), cache_write_5m: None, cache_write_1h: None, output: 4.40 }),
@@ -1322,62 +1266,6 @@ async fn fetch_claude(_client: &Client, _port: Option<u16>, _key: Option<String>
     let models = vec![
         // Claude 4 Series
         ModelInfo {
-            id: "claude-haiku-4-5-20251001".into(),
-            name: "Claude 4.5 Haiku".into(),
-            provider: "claude".into(),
-            description: None,
-            downloads: None,
-            thinking_levels: None,
-            pricing: Some(Pricing {
-                input: 1.00,
-                cache_write_5m: Some(1.25),
-                cache_write_1h: Some(2.00),
-                cached_input: Some(0.10),
-                output: 5.00,
-            }),
-            percentage: None,
-            reset: None,
-            quota_info: None,
-        },
-        ModelInfo {
-            id: "claude-sonnet-4-5-20250929".into(),
-            name: "Claude 4.5 Sonnet".into(),
-            provider: "claude".into(),
-            description: None,
-            downloads: None,
-            thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
-            pricing: Some(Pricing {
-                input: 3.00,
-                cache_write_5m: Some(3.75),
-                cache_write_1h: Some(6.00),
-                cached_input: Some(0.30),
-                output: 15.00,
-            }),
-            percentage: None,
-            reset: None,
-            quota_info: None,
-        },
-        ModelInfo {
-            id: "claude-opus-4-5-20251101".into(),
-            name: "Claude 4.5 Opus".into(),
-            provider: "claude".into(),
-            description: Some(
-                "Premium model combining maximum intelligence with practical performance".into(),
-            ),
-            downloads: None,
-            thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
-            pricing: Some(Pricing {
-                input: 5.00,
-                cache_write_5m: Some(6.25),
-                cache_write_1h: Some(10.00),
-                cached_input: Some(0.50),
-                output: 25.00,
-            }),
-            percentage: None,
-            reset: None,
-            quota_info: None,
-        },
-        ModelInfo {
             id: "claude-opus-4-1-20250805".into(),
             name: "Claude 4.1 Opus".into(),
             provider: "claude".into(),
@@ -1436,7 +1324,7 @@ async fn fetch_claude(_client: &Client, _port: Option<u16>, _key: Option<String>
             id: "claude-3-7-sonnet-20250219".into(),
             name: "Claude 3.7 Sonnet".into(),
             provider: "claude".into(),
-            description: None,
+            description: Some("DEPRECATED/RETIRED: Retired on 2026-02-19. Replacement: claude-opus-4-6.".into()),
             downloads: None,
             thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
             pricing: Some(Pricing {
@@ -1454,7 +1342,7 @@ async fn fetch_claude(_client: &Client, _port: Option<u16>, _key: Option<String>
             id: "claude-3-5-sonnet-20241022".into(),
             name: "Claude 3.5 Sonnet".into(),
             provider: "claude".into(),
-            description: Some("Anthropic's most intelligent model".into()),
+            description: Some("DEPRECATED/RETIRED: Retired on 2025-10-28. Replacement: claude-opus-4-6.".into()),
             downloads: None,
             thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
             pricing: Some(Pricing {
@@ -1472,7 +1360,7 @@ async fn fetch_claude(_client: &Client, _port: Option<u16>, _key: Option<String>
             id: "claude-3-5-haiku-20241022".into(),
             name: "Claude 3.5 Haiku".into(),
             provider: "claude".into(),
-            description: Some("Anthropic's fastest model".into()),
+            description: Some("DEPRECATED/RETIRED: Retired on 2026-02-19. Replacement: claude-haiku-4-5-20251001.".into()),
             downloads: None,
             thinking_levels: None,
             pricing: Some(Pricing {
@@ -1490,7 +1378,7 @@ async fn fetch_claude(_client: &Client, _port: Option<u16>, _key: Option<String>
             id: "claude-3-opus-20240229".into(),
             name: "Claude 3 Opus".into(),
             provider: "claude".into(),
-            description: Some("Top-level performance for complex tasks".into()),
+            description: Some("DEPRECATED/RETIRED: Retired on 2026-01-05. Replacement: claude-opus-4-6.".into()),
             downloads: None,
             thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
             pricing: Some(Pricing {
@@ -1499,6 +1387,24 @@ async fn fetch_claude(_client: &Client, _port: Option<u16>, _key: Option<String>
                 cache_write_1h: Some(30.00),
                 cached_input: Some(1.50),
                 output: 75.00,
+            }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
+        },
+        ModelInfo {
+            id: "claude-3-haiku-20240307".into(),
+            name: "Claude 3 Haiku".into(),
+            provider: "claude".into(),
+            description: Some("DEPRECATED: Retirement date 2026-04-20. Replacement: claude-haiku-4-5-20251001.".into()),
+            downloads: None,
+            thinking_levels: None,
+            pricing: Some(Pricing {
+                input: 0.25,
+                cache_write_5m: Some(0.30),
+                cache_write_1h: Some(0.50),
+                cached_input: Some(0.03),
+                output: 1.25,
             }),
             percentage: None,
             reset: None,

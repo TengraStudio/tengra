@@ -91,7 +91,8 @@ export const es = {
     "errors": {
         "unexpected": "Lo sentimos, ocurrió un error.",
         "somethingWentWrong": "Algo salió mal:",
-        "rootNotFound": "Elemento raíz no encontrado"
+        "rootNotFound": "Elemento raíz no encontrado",
+        "rateLimitWarning": "Advertencia de límite de velocidad ({{provider}}): {{remaining}}/{{limit}} restantes"
     },
     "languages": {
         "tr": "Turco",
@@ -501,7 +502,10 @@ export const es = {
         "dangerZone": "Zona de peligro",
         "consensusThreshold": "Umbral de consenso",
         "councilAI": "Consejo IA",
-        "councilAIDesc": "Elija qué agentes participan en el consejo."
+        "councilAIDesc": "Elija qué agentes participan en el consejo.",
+        "systemHealth": "Salud del sistema",
+        "healthStatus": "Estado de salud",
+        "totalFailures": "Fallos totales"
     },
     "projectWizard": {
         "title": "Asistente de proyecto",
@@ -1203,6 +1207,7 @@ export const es = {
         "blur": "Difuminar",
         "exportTheme": "Exportar",
         "importTheme": "Importar",
+        "failedImportThemeInvalidJson": "Error al importar el tema: archivo JSON no válido",
         "galleryView": "Vista de galería",
         "exitGalleryView": "Salir de la vista de galería",
         "floatTerminal": "Terminal flotante",
@@ -1341,6 +1346,8 @@ export const es = {
         "scrollToBottomWithCount": "Desplazar al final ({{count}} mensajes nuevos)",
         "clear": "Claro",
         "error": "Error",
+        "quotaExceeded": "Cuota o límite de velocidad excedido. Esto podría deberse a la limitación de velocidad (demasiadas solicitudes) o al agotamiento de la cuota. Espere unos minutos e inténtelo de nuevo.",
+        "rateLimitExceeded": "Límite de velocidad o cuota excedido. Espere unos minutos e inténtelo de nuevo.",
         "modelComparison": "Comparación de modelos",
         "readMore": "Leer más",
         "searchMessages": "Buscar mensajes...",
@@ -1373,7 +1380,33 @@ export const es = {
             "from": "De: {{provider}}/{{model}}",
             "selectModelError": "Por favor seleccione al menos un modelo",
             "runFailed": "No se pudo ejecutar la colaboración",
-            "remove": "Eliminar"
+            "remove": "Eliminar",
+            "sharedContext": "Contexto compartido",
+            "sharedContextPlaceholder": "Agregar contexto para todos los colaboradores...",
+            "sharedMemory": "Memoria compartida",
+            "memoryPlaceholder": "Agregar una nota de memoria compartida",
+            "memoryUpdated": "Memoria compartida actualizada",
+            "presence": "Presencia",
+            "guestsAllowed": "Invitados permitidos",
+            "guestsBlocked": "Invitados bloqueados",
+            "guestPolicyChanged": "Política de acceso de invitados actualizada",
+            "cursorMarkers": "Marcadores de cursor",
+            "addMarker": "Agregar marcador",
+            "cursorMarked": "Marcador de cursor agregado",
+            "promptArea": "Área de entrada",
+            "latestResponse": "Última respuesta",
+            "changeAnnotations": "Anotaciones de cambios",
+            "annotate": "Anotar",
+            "annotationTemplate": "Cambios de contexto sincronizados para los colaboradores.",
+            "annotationRecorded": "Anotación de cambio registrada",
+            "responseSynchronized": "Respuesta de IA sincronizada con los miembros de la sesión.",
+            "startRecording": "Iniciar grabación",
+            "stopRecording": "Detener grabación",
+            "recordingToggled": "Estado de grabación de sesión cambiado",
+            "generateShareLink": "Generar enlace para compartir",
+            "linkGenerated": "Enlace para compartir sesión generado",
+            "contextUpdated": "Contexto compartido actualizado",
+            "collaborationRunFinished": "Ejecución de colaboración completada"
         }
     },
     "welcome": {
@@ -1874,6 +1907,18 @@ export const es = {
         "checkOnStartupDesc": "Buscar actualizaciones al iniciar",
         "privacySafety": "Privacidad y seguridad",
         "privacySafetyDesc": "Administrar la configuración de privacidad de datos",
+        "defaultTerminalBackendDesc": "Selecciona el backend predeterminado para las nuevas sesiones de terminal.",
+        "inlineSuggestions": "Sugerencias en línea",
+        "inlineSuggestionsDesc": "Muestra sugerencias de texto fantasma mientras escribes en los editores Monaco.",
+        "inlineSuggestionsSource": "Fuente de sugerencias",
+        "inlineSuggestionsSourceCopilot": "GitHub Copilot",
+        "inlineSuggestionsSourceCustom": "Modelo personalizado",
+        "inlineSuggestionsProvider": "Proveedor",
+        "inlineSuggestionsProviderPlaceholder": "openai",
+        "inlineSuggestionsModel": "Modelo",
+        "inlineSuggestionsModelPlaceholder": "gpt-4o-mini",
+        "inlineSuggestionsCopilotAccount": "Cuenta de Copilot",
+        "inlineSuggestionsCopilotAccountPlaceholder": "Usar la cuenta activa",
         "autoUpdate": "Actualización automática",
         "checkOnStartup": "Verificar el inicio",
         "checkForUpdates": "Buscar actualizaciones",
@@ -2540,7 +2585,19 @@ export const es = {
         "cfg": "CFG",
         "seed": "Semilla",
         "noResults": "Ninguna imagen coincide con tu búsqueda",
-        "searchPlaceholder": "Busca imágenes, indicaciones, modelos..."
+        "searchPlaceholder": "Busca imágenes, indicaciones, modelos...",
+        "selectImage": "Seleccionar imagen",
+        "selectedCount": "{{count}} seleccionados",
+        "selectedCount_one": "1 seleccionado",
+        "selectedCount_other": "{{count}} seleccionados",
+        "clearSelection": "Borrar selección",
+        "downloadSelected": "Descargar seleccionados",
+        "downloadingSelected": "Descargando...",
+        "openPreview": "Abrir vista previa",
+        "zoomIn": "Acercar",
+        "zoomOut": "Alejar",
+        "resetView": "Restablecer vista",
+        "closePreview": "Cerrar vista previa"
     },
     "build": {
         "buildCommandPlaceholder": "npm run build",
@@ -2885,7 +2942,150 @@ export const es = {
         "enabled": "Activado",
         "noTriggers": "No se han definido desencadenantes",
         "noSteps": "No hay pasos definidos",
-        "editorNote": "Utilice el modo JSON para la configuración avanzada de activadores y pasos."
+        "editorNote": "Utilice el modo JSON para la configuración avanzada de activadores y pasos.",
+        "switchToForm": "Cambiar a formulario",
+        "switchToJson": "Cambiar a JSON"
+    },
+    "serviceHealth": {
+        "modelRegistry": {
+            "ready": "serviceHealth.modelRegistry.ready",
+            "empty": "serviceHealth.modelRegistry.empty",
+            "failure": "serviceHealth.modelRegistry.failure"
+        },
+        "llm": {
+            "ready": "serviceHealth.llm.ready",
+            "empty": "serviceHealth.llm.empty",
+            "failure": "serviceHealth.llm.failure"
+        },
+        "localImage": {
+            "ready": "serviceHealth.localImage.ready",
+            "empty": "serviceHealth.localImage.empty",
+            "failure": "serviceHealth.localImage.failure"
+        },
+        "settings": {
+            "ready": "serviceHealth.settings.ready",
+            "empty": "serviceHealth.settings.empty",
+            "failure": "serviceHealth.settings.failure"
+        },
+        "token": {
+            "ready": "serviceHealth.token.ready",
+            "empty": "serviceHealth.token.empty",
+            "failure": "serviceHealth.token.failure"
+        }
+    },
+    "advancedMemory": {
+        "health": {
+            "ready": "El servicio de memoria está operativo.",
+            "empty": "El servicio de memoria está listo y esperando actividad.",
+            "failure": "El servicio de memoria está degradado. Reintente o revise los registros."
+        }
+    },
+    "contextRetrieval": {
+        "health": {
+            "ready": "La recuperación de contexto está operativa.",
+            "empty": "La recuperación de contexto está lista y esperando solicitudes.",
+            "failure": "La recuperación de contexto está degradada. Reintente o revise los registros."
+        }
+    },
+    "embedding": {
+        "health": {
+            "ready": "El servicio de embedding está operativo.",
+            "empty": "El servicio de embedding está listo y esperando solicitudes.",
+            "failure": "El servicio de embedding está degradado. Reintente o revise los registros."
+        }
+    },
+    "extensionDev": {
+        "devtools": "Herramientas de desarrollo de extensiones",
+        "extensions": "Extensiones",
+        "activate": "Activar",
+        "deactivate": "Desactivar",
+        "reload": "Recargar",
+        "searchLogs": "Buscar en registros...",
+        "clearLogs": "Borrar registros",
+        "noLogs": "Sin entradas de registro aún",
+        "noExtensionSelected": "Ninguna extensión seleccionada",
+        "selectExtensionPrompt": "Seleccione una extensión de la barra lateral para ver registros y gestionar el estado."
+    },
+    "voice": {
+        "notSupported": "El control por voz no está soportado en este navegador",
+        "startListening": "Comenzar a escuchar",
+        "stopListening": "Dejar de escuchar",
+        "start": "Iniciar",
+        "stop": "Detener",
+        "showCommands": "Mostrar comandos de voz",
+        "lastHeard": "Último escuchado",
+        "status": {
+            "idle": "Listo",
+            "listening": "Escuchando...",
+            "processing": "Procesando...",
+            "speaking": "Hablando...",
+            "error": "Error"
+        },
+        "feedback": {
+            "navigating": "Navegando a {{target}}",
+            "commandExecuted": "Comando ejecutado",
+            "notRecognized": "Comando no reconocido"
+        },
+        "settings": {
+            "enableVoice": "Activar control por voz",
+            "enableVoiceDescription": "Controlar la aplicación con comandos de voz",
+            "wakeWord": "Palabra de activación",
+            "wakeWordLabel": "Palabra de activación",
+            "continuousListening": "Modo de escucha continua",
+            "speech": "Ajustes de voz",
+            "voice": "Voz",
+            "selectVoice": "Seleccionar una voz",
+            "speechRate": "Velocidad de habla",
+            "speechPitch": "Tono de voz",
+            "speechVolume": "Volumen de voz",
+            "feedback": "Ajustes de retroalimentación",
+            "audioFeedback": "Retroalimentación de audio",
+            "visualFeedback": "Retroalimentación visual",
+            "accessibilityMode": "Modo de accesibilidad",
+            "customCommands": "Comandos personalizados",
+            "commandPhrase": "Frase de comando",
+            "commandAction": "Acción"
+        },
+        "commands": {
+            "title": "Comandos de voz",
+            "aliases": "Alias",
+            "categories": {
+                "navigation": "Navegación",
+                "actions": "Acciones",
+                "chat": "Chat",
+                "settings": "Ajustes",
+                "accessibility": "Accesibilidad",
+                "custom": "Personalizado"
+            }
+        }
+    },
+    "agentCollaboration": {
+        "error": {
+            "invalidRoutingRules": "Reglas de enrutamiento proporcionadas inválidas",
+            "votingSessionNotFound": "Sesión de votación no encontrada",
+            "votingSessionInvalid": "No se pudo crear una sesión de votación válida",
+            "debateSessionNotFound": "Sesión de debate no encontrada",
+            "invalidDebateArgument": "Argumento de debate inválido"
+        },
+        "voting": {
+            "created": "Sesión de votación creada: {{question}}",
+            "voteSubmitted": "Voto enviado: {{modelId}} votó \"{{decision}}\"",
+            "resolved": "Votación resuelta: \"{{winner}}\"",
+            "deadlocked": "Votación bloqueada: {{decisions}}"
+        },
+        "debate": {
+            "created": "Sesión de debate creada: {{topic}}",
+            "argumentSubmitted": "Argumento enviado por {{agentId}}",
+            "resolved": "Debate resuelto con el bando ganador: {{side}}"
+        }
+    },
+    "agentCheckpoint": {
+        "error": {
+            "saveFailed": "No se pudo guardar el punto de control del agente",
+            "serializationFailed": "Error al serializar la instantánea del estado del agente",
+            "checkpointNotFound": "Punto de control {{id}} no encontrado"
+        },
+        "saved": "Punto de control guardado para la tarea {{taskId}}"
     }
 };
 

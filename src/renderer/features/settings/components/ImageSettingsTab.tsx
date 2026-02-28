@@ -12,6 +12,7 @@ import { ImageSettingsPresets } from './image-settings/ImageSettingsPresets';
 import { ImageSettingsProvider } from './image-settings/ImageSettingsProvider';
 import { ImageSettingsRuntime } from './image-settings/ImageSettingsRuntime';
 import { ImageSettingsSchedules } from './image-settings/ImageSettingsSchedules';
+import { ImageSettingsWorkflow } from './image-settings/ImageSettingsWorkflow';
 
 /**
  * ImageSettingsTab component for managing image generation settings.
@@ -73,10 +74,17 @@ export const ImageSettingsTab: React.FC<SettingsSharedProps> = ({ settings, hand
                 <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
                     <ImageSettingsHistory
                         historyEntries={h.historyEntries}
+                        historySearchQuery={h.historySearchQuery}
+                        setHistorySearchQuery={h.setHistorySearchQuery}
+                        imageAnalytics={h.imageAnalytics}
                         selectedCompareIds={h.selectedCompareIds}
                         toggleCompareSelection={h.toggleCompareSelection}
                         handleRegenerate={h.handleRegenerate}
+                        handleExportHistory={h.handleExportHistory}
                         handleRunComparison={h.handleRunComparison}
+                        handleExportComparison={h.handleExportComparison}
+                        handleShareComparison={h.handleShareComparison}
+                        comparisonShareCode={h.comparisonShareCode}
                         setSelectedCompareIds={h.setSelectedCompareIds}
                         comparisonResult={h.comparisonResult}
                         t={t}
@@ -88,8 +96,12 @@ export const ImageSettingsTab: React.FC<SettingsSharedProps> = ({ settings, hand
                         setPresetName={h.setPresetName}
                         presetPromptPrefix={h.presetPromptPrefix}
                         setPresetPromptPrefix={h.setPresetPromptPrefix}
+                        presetShareCode={h.presetShareCode}
+                        setPresetShareCode={h.setPresetShareCode}
                         handleSavePreset={h.handleSavePreset}
                         handleDeletePreset={h.handleDeletePreset}
+                        handleExportPresetShare={h.handleExportPresetShare}
+                        handleImportPresetShare={h.handleImportPresetShare}
                         t={t}
                     />
 
@@ -98,6 +110,10 @@ export const ImageSettingsTab: React.FC<SettingsSharedProps> = ({ settings, hand
                         setSchedulePrompt={h.setSchedulePrompt}
                         scheduleAt={h.scheduleAt}
                         setScheduleAt={h.setScheduleAt}
+                        schedulePriority={h.schedulePriority}
+                        setSchedulePriority={h.setSchedulePriority}
+                        scheduleResourceProfile={h.scheduleResourceProfile}
+                        setScheduleResourceProfile={h.setScheduleResourceProfile}
                         handleCreateSchedule={h.handleCreateSchedule}
                         queueStats={h.queueStats}
                         scheduleEntries={h.scheduleEntries}
@@ -115,7 +131,26 @@ export const ImageSettingsTab: React.FC<SettingsSharedProps> = ({ settings, hand
                         setEditPrompt={h.setEditPrompt}
                         editMode={h.editMode}
                         setEditMode={h.setEditMode}
+                        editStrength={h.editStrength}
+                        setEditStrength={h.setEditStrength}
+                        editPresetId={h.editPresetId}
+                        handleApplyEditPreset={h.handleApplyEditPreset}
                         handleRunEdit={h.handleRunEdit}
+                        t={t}
+                    />
+
+                    <ImageSettingsWorkflow
+                        workflowTemplates={h.workflowTemplates}
+                        workflowTemplateName={h.workflowTemplateName}
+                        setWorkflowTemplateName={h.setWorkflowTemplateName}
+                        workflowTemplateJson={h.workflowTemplateJson}
+                        setWorkflowTemplateJson={h.setWorkflowTemplateJson}
+                        workflowShareCode={h.workflowShareCode}
+                        setWorkflowShareCode={h.setWorkflowShareCode}
+                        handleSaveWorkflowTemplate={h.handleSaveWorkflowTemplate}
+                        handleDeleteWorkflowTemplate={h.handleDeleteWorkflowTemplate}
+                        handleExportWorkflowTemplateShare={h.handleExportWorkflowTemplateShare}
+                        handleImportWorkflowTemplateShare={h.handleImportWorkflowTemplateShare}
                         t={t}
                     />
                 </div>

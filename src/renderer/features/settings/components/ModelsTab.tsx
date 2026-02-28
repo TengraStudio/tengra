@@ -1,8 +1,8 @@
 ﻿import React, { useMemo, useState } from 'react';
 
 import { ModelExplorer } from '@/features/models/components/ModelExplorer';
-import type { ModelInfo } from '@/types';
 import { cn } from '@/lib/utils';
+import type { ModelInfo } from '@/types';
 import { AppSettings } from '@/types/settings';
 
 import { InstalledModelsList } from './models/InstalledModelsList';

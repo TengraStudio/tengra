@@ -2,6 +2,19 @@
 
 ## [2026-02-27]
 
+### 预加载模块化优化与类型安全重构
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: 完成了 Electron 预加载脚本的模块化，解决了代理桥中的关键类型不匹配问题，并消除了桥接层中禁用的 'any' 类型。
+
+- **模块化对齐**: 将所有特定领域的预加载桥与主进程 IPC 处理程序同步。
+- **类型安全强化**: 消除了 `ProjectAgentBridge`、`McpMarketplaceBridge` 和 `AdvancedMemoryBridge` 中的 `any` 使用。
+- **错误修复**: 解决了 `OrchestratorBridge` 中时间戳类型不匹配的问题。
+- **IPC 合同更正**: 更新了代码智能和沙箱桥以使用位置参数。
+- **测试可靠性**: 修复了 `db.integration.test.ts` 中损坏的模拟。
+- **卫生**: 清理了未使用的导入并优化了监听器类型。
+
 ### 高级项目向导：重新设计的 UX 和运动集成
 
 - **Type**: feature

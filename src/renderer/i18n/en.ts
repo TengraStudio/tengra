@@ -1,4 +1,5 @@
 export const en = {
+    /** @context Shared UI elements - buttons, labels, and common actions used across the app */
     common: {
         select: 'Select',
         more: 'More',
@@ -86,20 +87,76 @@ export const en = {
         healthy: 'Healthy',
         degraded: 'Degraded',
     },
+    /** @context Loading state indicators shown while content is being fetched */
     loading: {
 
         codeEditor: 'Loading code editor',
         chart: 'Loading chart',
     },
+    /** @context Application metadata - name and version displayed in UI chrome */
     app: {
         name: 'Tengra',
         versionShort: 'V {{version}}',
     },
+    /** @context Error messages shown to users when operations fail */
     errors: {
         unexpected: 'Sorry, there was an error.',
         somethingWentWrong: 'Something went wrong:',
         rootNotFound: 'Root element not found',
+        rateLimitWarning: 'Rate limit warning ({{provider}}): {{remaining}}/{{limit}} remaining',
+        rateLimit: {
+            exceeded: 'Rate limit exceeded. Please wait and try again.',
+            retryAfterSeconds: 'Rate limit exceeded. Please retry after {{seconds}} seconds.',
+            requestThrottled: 'Request throttled. Too many requests for {{provider}}.',
+            limitReset: 'Rate limit will reset in {{minutes}} minutes.',
+            waitExceeded: 'Rate limit wait time exceeded for {{provider}}. Please try again later.',
+            serviceNotInitialized: 'Rate limit service is not initialized.',
+            tokenRejected: 'Request denied for {{provider}} due to rate limiting.',
+            configUpdated: 'Rate limit configuration updated for {{provider}}.',
+            providerLimited: '{{provider}} is currently rate limited. {{remaining}}/{{limit}} requests remaining.',
+            tooManyRequests: 'Too many requests. Please slow down.',
+        },
+        proxy: {
+            started: 'Proxy started successfully on port {{port}}.',
+            stopped: 'Proxy stopped.',
+            startFailed: 'Failed to start proxy service.',
+            stopFailed: 'Failed to stop proxy service.',
+            connectionFailed: 'Proxy connection failed. Please check if the proxy is running.',
+            requestFailed: 'Proxy request failed.',
+            portInUse: 'Port {{port}} is already in use.',
+            binaryNotFound: 'Proxy binary not found. Please rebuild or reinstall.',
+            notInitialized: 'Proxy service is not initialized.',
+            invalidConfig: 'Invalid proxy configuration.',
+            authFailed: 'Proxy authentication failed.',
+            timeout: 'Proxy request timed out.',
+            portRequired: 'Port is required.',
+            portInvalid: 'Port must be a valid integer between 1 and 65535.',
+            urlRequired: 'Proxy URL is required.',
+            urlInvalid: 'Proxy URL must be a valid http or https URL.',
+            tokenRequired: 'API token is required.',
+            tokenInvalid: 'API token must be a non-empty string.',
+            providerRequired: 'Provider is required.',
+            providerInvalid: 'Provider must be a non-empty string.',
+            quotaFetchFailed: 'Failed to retrieve usage quota.',
+            quotaExceeded: 'Usage quota has been exceeded.',
+        },
+        quota: {
+            exceeded: 'Quota has been exceeded. Please wait for the reset period.',
+            limitApproaching: 'Quota limit approaching for {{provider}}: {{remaining}} of {{limit}} remaining.',
+            usageWarning: 'You have used {{percentage}}% of your {{provider}} quota.',
+            authExpired: 'Authentication has expired. Please re-authenticate to check quota.',
+            fetchFailed: 'Failed to retrieve quota information. Please try again.',
+            noAccounts: 'No linked accounts found. Please connect an account to view quota.',
+            invalidSessionKey: 'Invalid session key. Please provide a valid session key.',
+            invalidInput: 'Invalid input provided for quota operation.',
+            parseFailed: 'Failed to parse quota response from provider.',
+            refreshFailed: 'Failed to refresh quota information.',
+            accountLocked: 'Account is locked. Please contact support.',
+            resetIn: 'Quota will reset in {{time}}.',
+            limitReached: 'Quota limit reached for {{provider}}. Please wait until {{resetTime}}.',
+        },
     },
+    /** @context Backend service health status indicators in system diagnostics */
     serviceHealth: {
         modelRegistry: {
             ready: 'serviceHealth.modelRegistry.ready',
@@ -127,6 +184,7 @@ export const en = {
             failure: 'serviceHealth.token.failure',
         },
     },
+    /** @context Language names shown in the language selector dropdown */
     languages: {
         tr: 'Turkish',
         en: 'English',
@@ -147,6 +205,7 @@ export const en = {
     tasks: {
         createNew: 'Create New Task',
     },
+    /** @context Theme marketplace - browsing and applying visual themes */
     themeStore: {
 
         title: 'Theme Store',
@@ -195,6 +254,7 @@ export const en = {
             },
         },
     },
+    /** @context AI model selector dropdown - model search and provider grouping */
     modelSelector: {
         searchModels: 'Search Models...',
         image: 'Image',
@@ -224,6 +284,7 @@ export const en = {
             openai: 'OpenAI',
         },
     },
+    /** @context AI provider brand names shown in model selection and chat headers */
     assistantIdentity: {
         openai: 'OpenAI',
         anthropic: 'Anthropic',
@@ -237,6 +298,7 @@ export const en = {
         qwen: 'Qwen',
         phi: 'Phi',
     },
+    /** @context Settings page - tab labels, section headers, and configuration options */
     settings: {
         tabs: {
             general: 'General',
@@ -434,6 +496,7 @@ export const en = {
             editRun: 'Run Edit',
         },
     },
+    /** @context Project management - creation, listing, and configuration of projects */
     projects: {
         newProject: 'New Project',
         subtitle: 'Hub for collective intelligence and complex task management.',
@@ -788,6 +851,7 @@ export const en = {
         cancel: 'Cancel',
         error: 'An error occurred',
     },
+    /** @context SSH connection manager - remote server profiles and tunnels */
     ssh: {
         title: 'SSH Manager',
         newConnection: 'New Connection',
@@ -1068,6 +1132,7 @@ export const en = {
             claude: 'Claude',
         },
     },
+    /** @context Voice and speech settings - TTS voice selection and voice cloning */
     speech: {
         title: 'Voice & Speech',
         subtitle: 'Configure voice settings for assistant responses.',
@@ -1103,6 +1168,7 @@ export const en = {
         title: 'DROP THE ORDER',
         description: 'Send files to the center for analysis.',
     },
+    /** @context Navigation sidebar - chat list, project list, and sidebar controls */
     sidebar: {
         chats: 'Chats',
         projects: 'Projects',
@@ -1170,6 +1236,7 @@ export const en = {
         council: 'Council',
         mcp: 'MCP Management',
     },
+    /** @context MCP (Model Context Protocol) plugin management and marketplace */
     mcp: {
         management: 'MCP Management',
         myServers: 'My Servers',
@@ -1224,6 +1291,7 @@ export const en = {
         installedTools: 'Installed Tools',
         availableTools: 'Available Tools',
     },
+    /** @context Memory inspector - viewing and managing AI knowledge base */
     memory: {
         title: 'Memory Inspector',
         subtitle: 'Visualize and manage what Tengra knows and remembers.',
@@ -1379,6 +1447,7 @@ export const en = {
             failure: 'Embedding service is degraded. Retry or check logs.'
         }
     },
+    /** @context Integrated terminal - local shell, SSH, and Docker terminal tabs */
     terminal: {
         title: 'Terminal',
         renamePrompt: 'Enter new name:',
@@ -1412,6 +1481,7 @@ export const en = {
         blur: 'Blur',
         exportTheme: 'Export',
         importTheme: 'Import',
+        failedImportThemeInvalidJson: 'Failed to import theme: Invalid JSON file',
         galleryView: 'Gallery View',
         exitGalleryView: 'Exit Gallery View',
         floatTerminal: 'Float Terminal',
@@ -1546,11 +1616,14 @@ export const en = {
     },
     expand: 'Expand Sidebar',
     collapse: 'Collapse Sidebar',
+    /** @context Chat interface - message display, streaming status, and actions */
     chat: {
         placeholder: 'Type a message...',
         streaming: 'Typing...',
         clear: 'Clear',
         error: 'Error',
+        quotaExceeded: 'Quota or rate limit exceeded. This could be due to rate limiting (too many requests) or quota exhaustion. Please wait a few minutes and try again.',
+        rateLimitExceeded: 'Rate limit or quota exceeded. Please wait a few minutes and try again.',
         modelComparison: 'Model Comparison',
         readMore: 'Read more',
         searchMessages: 'Search messages...',
@@ -1625,6 +1698,7 @@ export const en = {
         title: 'Tengra',
         tagline: 'Intelligence meets elegance.',
     },
+    /** @context Chat input area - message composer, attachments, and voice input */
     input: {
         placeholder: {
             copilot: 'Ask Copilot to generate code...',
@@ -1698,6 +1772,7 @@ export const en = {
         image: 'Image',
         document: 'Document',
     },
+    /** @context Chat message bubble - copy, bookmark, and metadata labels */
     messageBubble: {
         secondsShort: 's',
         tokensPerSecond: 'tokens/s',
@@ -1751,6 +1826,7 @@ export const en = {
         actions: 'Message actions',
         multiModelResponse: 'Responses from multiple models',
     },
+    /** @context Settings page - General tab content and system preferences */
     general: {
         projectBasics: 'Project Basics',
         projectBasicsDesc: 'Core project setttings',
@@ -1762,6 +1838,18 @@ export const en = {
         checkOnStartupDesc: 'Check for updates on startup',
         privacySafety: 'Privacy & Safety',
         privacySafetyDesc: 'Manage data privacy settings',
+        defaultTerminalBackendDesc: 'Select the default backend used when creating new terminal sessions.',
+        inlineSuggestions: 'Inline Suggestions',
+        inlineSuggestionsDesc: 'Show ghost text suggestions while you type in Monaco editors.',
+        inlineSuggestionsSource: 'Suggestion Source',
+        inlineSuggestionsSourceCopilot: 'GitHub Copilot',
+        inlineSuggestionsSourceCustom: 'Custom Model',
+        inlineSuggestionsProvider: 'Provider',
+        inlineSuggestionsProviderPlaceholder: 'openai',
+        inlineSuggestionsModel: 'Model',
+        inlineSuggestionsModelPlaceholder: 'gpt-4o-mini',
+        inlineSuggestionsCopilotAccount: 'Copilot Account',
+        inlineSuggestionsCopilotAccountPlaceholder: 'Use active account',
         turkish: 'Turkish',
         english: 'English',
         german: 'German',
@@ -1786,6 +1874,7 @@ export const en = {
         workAtBackground: 'Run in background',
         workAtBackgroundDesc: 'Keep Tengra running in the background after closing the window.',
     },
+    /** @context Settings page - Appearance tab for themes, fonts, and layout */
     appearance: {
         themeDesc: 'Change the application color theme.',
         themesFolder: 'Themes Folder',
@@ -1897,6 +1986,13 @@ export const en = {
         claudeTitle: 'Anthropic Claude',
         codexTitle: 'ChatGPT Codex',
         copilotTitle: 'GitHub Copilot',
+        statusExpired: 'Expired',
+        statusExceeded: 'Exceeded',
+        statusLocked: 'Locked',
+        quotaRemaining: '{{remaining}} of {{total}} remaining',
+        quotaResetTime: 'Resets {{time}}',
+        noQuotaData: 'No quota data available',
+        quotaLoading: 'Loading quota information...',
     },
     about: {
         description:
@@ -1996,6 +2092,7 @@ export const en = {
         dontShowAgain: "Don't show again",
         gotIt: 'Got it',
     },
+    /** @context AI agent council - multi-agent collaboration and task planning */
     agents: {
         planner: 'Planner',
         plannerRole: 'Lead Architect',
@@ -2208,6 +2305,7 @@ export const en = {
         changelogTitle: 'Application Changes',
         changelogEmpty: 'No changelog entries found.',
     },
+    /** @context Authentication flows - login, API keys, and session management */
     auth: {
         authError: 'Authentication Error',
         goToAccounts: 'Go to Accounts',
@@ -2395,6 +2493,7 @@ export const en = {
         logs: 'Logs',
         stats: 'Stats',
     },
+    /** @context First-time user onboarding wizard and feature tour */
     onboarding: {
         language: {
             title: 'Choose your language',
@@ -2455,6 +2554,7 @@ export const en = {
         currentPlan: 'Current Plan',
         selectSession: 'Select a session or create a new one to begin.',
     },
+    /** @context AI idea generation - brainstorming and market research feature */
     ideas: {
         title: 'Project Ideas',
         subtitle: 'AI-powered project idea generation with market research',
@@ -2771,6 +2871,7 @@ export const en = {
         startCommandPlaceholder: 'npm run dev',
         portPlaceholder: '3000',
     },
+    /** @context Autonomous agent execution - plan approval, tool calls, and checkpoints */
     agent: {
         allStepsFinished: 'All steps finished. Ready for new instructions.',
         readyForInstructions: 'Ready for instructions',
@@ -3072,6 +3173,7 @@ export const en = {
         progress: 'Downloaded {{downloaded}} of {{total}}',
         pathHint: 'Leave empty to use default locations in AppData.',
     },
+    /** @context Workflow automation - custom workflow creation and execution */
     workflows: {
         title: 'Workflows',
         subtitle: 'Automate repetitive tasks with custom workflows',
@@ -3096,7 +3198,59 @@ export const en = {
         noTriggers: 'No triggers defined',
         noSteps: 'No steps defined',
         editorNote: 'Use the JSON mode for advanced configuration of triggers and steps.',
+        switchToForm: 'Switch to Form',
+        switchToJson: 'Switch to JSON',
+        execution: {
+            started: 'Workflow "{{name}}" started',
+            completed: 'Workflow "{{name}}" completed successfully',
+            failed: 'Workflow execution failed',
+            stepCompleted: 'Step "{{stepName}}" completed',
+            stepFailed: 'Step "{{stepName}}" failed',
+            stepNotFound: 'Step not found: {{stepId}}',
+            retrying: 'Retrying step "{{stepName}}" (attempt {{attempt}}/{{maxRetries}})',
+            nonCriticalStepFailed: 'Non-critical step failed (continuing): {{stepName}}',
+            noHandler: 'No handler registered for action type: {{actionType}}',
+            executedSuccessfully: 'Workflow {{workflowId}} executed successfully',
+        },
+        errors: {
+            loadFailed: 'Failed to load workflows',
+            saveFailed: 'Failed to save workflows',
+            createFailed: 'Failed to create workflow',
+            updateFailed: 'Failed to update workflow',
+            deleteFailed: 'Failed to delete workflow',
+            toggleFailed: 'Failed to toggle workflow',
+            executeFailed: 'Failed to execute workflow',
+        },
+        validation: {
+            nameRequired: 'Workflow name must be a non-empty string',
+            nameMaxLength: 'Workflow name must be at most {{max}} characters',
+            descriptionMaxLength: 'Description must be at most {{max}} characters',
+            maxTriggers: 'Workflow can have at most {{max}} triggers',
+            maxSteps: 'Workflow can have at most {{max}} steps',
+            uniqueStepIds: 'Workflow steps must have unique ids',
+            uniqueTriggerIds: 'Workflow triggers must have unique ids',
+            triggerIdRequired: 'Trigger id must be a non-empty string',
+            actionIdRequired: 'Action id must be a non-empty string',
+            stepIdRequired: 'Step id must be a non-empty string',
+            stepNameRequired: 'Step name must be a non-empty string',
+            maxConfigKeys: 'Config must have at most {{max}} keys',
+            idRequired: 'ID must be a non-empty string',
+        },
+        templates: {
+            title: 'Workflow Templates',
+            name: 'Template Name',
+            json: 'Workflow JSON',
+            save: 'Save Workflow',
+            noTemplates: 'No workflow templates yet.',
+            share: 'Workflow Share',
+            sharePlaceholder: 'Paste or copy share code',
+            import: 'Import Workflow',
+        },
+        defaultName: 'New Workflow',
+        defaultDescription: 'Workflow description',
+        id: 'ID: {{id}}',
     },
+    /** @context Voice command system - spoken feedback and voice control settings */
     voice: {
         notSupported: 'Voice control is not supported in this browser',
         startListening: 'Start listening',
@@ -3177,6 +3331,32 @@ export const en = {
             checkpointNotFound: 'Checkpoint {{id}} not found',
         },
         saved: 'Saved checkpoint for task {{taskId}}',
+    },
+    /** @context Feature flag management messages and errors */
+    featureFlag: {
+        enabled: 'Feature enabled: {{featureId}}',
+        disabled: 'Feature disabled: {{featureId}}',
+        notFound: 'Feature flag "{{featureId}}" not found',
+        evaluationFailed: 'Feature flag evaluation failed, defaulting to disabled',
+        overrideSet: 'Override set for {{featureId}}: {{value}}',
+        overrideCleared: 'Override cleared for {{featureId}}',
+        flagsLoaded: 'Feature flags loaded',
+        loadFailed: 'Failed to load feature flags',
+        saveFailed: 'Failed to save feature flags',
+        error: {
+            invalidId: 'Feature flag ID must be a non-empty string',
+            blankId: 'Feature flag ID must not be blank',
+            idTooLong: 'Feature flag ID exceeds maximum length of {{maxLength}}',
+            invalidIdChars: 'Feature flag ID contains invalid characters',
+            invalidContext: 'Evaluation context must be a plain object',
+            invalidOverride: 'Override value must be a boolean',
+            fieldEmpty: '{{fieldName}} must be a non-empty string',
+            fieldTooLong: '{{fieldName}} exceeds maximum length of {{maxLength}}',
+            attributesNotObject: 'Attributes must be a plain object',
+            attributesTooMany: 'Attributes exceeds maximum of {{maxCount}} entries',
+            attributeInvalidType: 'Attribute "{{key}}" must be string, number, or boolean',
+            attributeTooLong: 'Attribute "{{key}}" exceeds maximum length of {{maxLength}}',
+        },
     }
 };
 

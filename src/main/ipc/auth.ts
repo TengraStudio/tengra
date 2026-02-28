@@ -104,7 +104,7 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
             };
 
             appLogger.info('AuthIPC', `Linking ${provider} account for identity: ${email ?? 'unknown'}`);
-            await authService.linkAccount(provider, tokenData);
+            const linkedAccount = await authService.linkAccount(provider, tokenData);
             await auditLogService?.logAuthenticationEvent('auth.poll-token.link-account', true, {
                 provider,
                 email
@@ -114,14 +114,10 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
                 copilotService.setGithubToken(token);
             }
 
+            // Return only public account metadata — never expose tokens to renderer
             return {
                 success: true,
-                account: {
-                    provider,
-                    email,
-                    displayName,
-                    avatarUrl
-                }
+                account: linkedAccount
             };
         } catch (error) {
             await auditLogService?.logAuthenticationEvent('auth.poll-token.link-account', false, {

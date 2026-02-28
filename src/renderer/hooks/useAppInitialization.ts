@@ -1,13 +1,18 @@
 import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech';
 import { Language, useLanguage } from '@renderer/i18n';
 import { themeRegistry } from '@renderer/themes/theme-registry.service';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { appLogger } from '@/utils/renderer-logger';
 
 export function useAppInitialization() {
     const { language, setLanguage } = useLanguage();
     const { speak: handleSpeak } = useTextToSpeech();
+    const setLanguageRef = useRef(setLanguage);
+
+    useEffect(() => {
+        setLanguageRef.current = setLanguage;
+    }, [setLanguage]);
 
     useEffect(() => {
         window.TengraSpeak = handleSpeak;
@@ -52,7 +57,7 @@ export function useAppInitialization() {
                 const browserLang = window.navigator.language.split('-')[0];
                 const supported = ['tr', 'en', 'de', 'fr', 'es', 'ja', 'zh', 'ar'];
                 if (supported.includes(browserLang)) {
-                    void setLanguage(browserLang as Language);
+                    void setLanguageRef.current(browserLang as Language);
                 }
             }
         };
@@ -61,7 +66,7 @@ export function useAppInitialization() {
         return () => {
             abortController.abort();
         };
-    }, [setLanguage]);
+    }, []);
 
 
     return {};

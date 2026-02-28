@@ -1,35 +1,14 @@
 import { WorkflowService } from '@main/services/workflow/workflow.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import {
+    CreateWorkflowInputSchema,
+    UpdateWorkflowInputSchema,
+    WorkflowContextInputSchema,
+} from '@shared/schemas/workflow.schema';
 import { JsonValue } from '@shared/types/common';
 import { Workflow } from '@shared/types/workflow.types';
 import { ipcMain } from 'electron';
 import { z } from 'zod';
-
-const WorkflowSchema = z.object({
-    id: z.string().optional(),
-    name: z.string(),
-    description: z.string().optional(),
-    enabled: z.boolean(),
-    triggers: z.array(z.object({
-        id: z.string(),
-        type: z.enum(['manual', 'app_start', 'interval', 'event']),
-        config: z.record(z.string(), z.any())
-    })),
-    steps: z.array(z.object({
-        id: z.string(),
-        name: z.string(),
-        action: z.object({
-            id: z.string(),
-            type: z.enum(['command', 'log', 'http_request', 'llm_prompt', 'delay']),
-            config: z.record(z.string(), z.any())
-        }),
-        nextStepId: z.string().optional()
-    })),
-    createdAt: z.number().optional(),
-    updatedAt: z.number().optional(),
-    lastRunAt: z.number().optional(),
-    lastRunStatus: z.enum(['success', 'failure']).optional()
-});
 
 export function registerWorkflowIpc(workflowService: WorkflowService): void {
     ipcMain.handle('workflow:getAll', createValidatedIpcHandler(
@@ -52,7 +31,7 @@ export function registerWorkflowIpc(workflowService: WorkflowService): void {
         async (_event, workflow: Omit<Workflow, 'id' | 'createdAt' | 'updatedAt'>) => {
             return await workflowService.createWorkflow(workflow);
         },
-        { argsSchema: z.tuple([WorkflowSchema.omit({ id: true, createdAt: true, updatedAt: true })]) }
+        { argsSchema: z.tuple([CreateWorkflowInputSchema]) }
     ));
 
     ipcMain.handle('workflow:update', createValidatedIpcHandler(
@@ -60,7 +39,7 @@ export function registerWorkflowIpc(workflowService: WorkflowService): void {
         async (_event, id: string, updates: Partial<Workflow>) => {
             return await workflowService.updateWorkflow(id, updates);
         },
-        { argsSchema: z.tuple([z.string(), WorkflowSchema.partial()]) }
+        { argsSchema: z.tuple([z.string(), UpdateWorkflowInputSchema]) }
     ));
 
     ipcMain.handle('workflow:delete', createValidatedIpcHandler(
@@ -76,7 +55,7 @@ export function registerWorkflowIpc(workflowService: WorkflowService): void {
         async (_event, id: string, context?: Record<string, unknown>) => {
             return await workflowService.executeWorkflow(id, context);
         },
-        { argsSchema: z.tuple([z.string(), z.any().optional()]) }
+        { argsSchema: z.tuple([z.string(), WorkflowContextInputSchema]) }
     ));
 
     ipcMain.handle('workflow:triggerManual', createValidatedIpcHandler(
@@ -84,6 +63,6 @@ export function registerWorkflowIpc(workflowService: WorkflowService): void {
         async (_event, triggerId: string, context?: Record<string, unknown>) => {
             workflowService.triggerManualWorkflow(triggerId, context as JsonValue);
         },
-        { argsSchema: z.tuple([z.string(), z.any().optional()]) }
+        { argsSchema: z.tuple([z.string(), z.record(z.string(), z.unknown()).optional()]) }
     ));
 }

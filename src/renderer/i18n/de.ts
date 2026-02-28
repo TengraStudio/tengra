@@ -91,7 +91,8 @@ export const de = {
     "errors": {
         "unexpected": "Entschuldigung, es ist ein Fehler aufgetreten.",
         "somethingWentWrong": "Etwas ist schiefgelaufen:",
-        "rootNotFound": "Root-Element nicht gefunden"
+        "rootNotFound": "Root-Element nicht gefunden",
+        "rateLimitWarning": "Ratenlimit-Warnung ({{provider}}): {{remaining}}/{{limit}} verbleibend"
     },
     "languages": {
         "tr": "Türkisch",
@@ -501,7 +502,10 @@ export const de = {
         "dangerZone": "Gefahrenzone",
         "consensusThreshold": "Konsensschwelle",
         "councilAI": "Rats-KI",
-        "councilAIDesc": "Wählen Sie aus, welche Agenten am Rat teilnehmen."
+        "councilAIDesc": "Wählen Sie aus, welche Agenten am Rat teilnehmen.",
+        "systemHealth": "Systemgesundheit",
+        "healthStatus": "Gesundheitsstatus",
+        "totalFailures": "Gesamte Fehler"
     },
     "projectWizard": {
         "title": "Projekt-Assistent",
@@ -1203,6 +1207,7 @@ export const de = {
         "blur": "Verwischen",
         "exportTheme": "Export",
         "importTheme": "Import",
+        "failedImportThemeInvalidJson": "Theme-Import fehlgeschlagen: Ungültige JSON-Datei",
         "galleryView": "Galerieansicht",
         "exitGalleryView": "Verlassen Sie die Galerieansicht",
         "floatTerminal": "Float-Terminal",
@@ -1341,6 +1346,8 @@ export const de = {
         "scrollToBottomWithCount": "Nach unten scrollen ({{count}} neue Nachrichten)",
         "clear": "Klar",
         "error": "Fehler",
+        "quotaExceeded": "Kontingent oder Ratenlimit überschritten. Dies könnte auf Ratenbegrenzung (zu viele Anfragen) oder Kontingenterschöpfung zurückzuführen sein. Bitte warten Sie einige Minuten und versuchen Sie es erneut.",
+        "rateLimitExceeded": "Ratenlimit oder Kontingent überschritten. Bitte warten Sie einige Minuten und versuchen Sie es erneut.",
         "modelComparison": "Modellvergleich",
         "readMore": "Mehr lesen",
         "searchMessages": "Nachrichten durchsuchen...",
@@ -1373,7 +1380,33 @@ export const de = {
             "from": "Von: {{provider}}/{{model}}",
             "selectModelError": "Bitte wählen Sie mindestens ein Modell aus",
             "runFailed": "Die Zusammenarbeit konnte nicht ausgeführt werden",
-            "remove": "Entfernen"
+            "remove": "Entfernen",
+            "sharedContext": "Geteilter Kontext",
+            "sharedContextPlaceholder": "Kontext für alle Teilnehmer hinzufügen...",
+            "sharedMemory": "Geteilter Speicher",
+            "memoryPlaceholder": "Eine geteilte Notiz hinzufügen",
+            "memoryUpdated": "Geteilter Speicher aktualisiert",
+            "presence": "Anwesenheit",
+            "guestsAllowed": "Gäste erlaubt",
+            "guestsBlocked": "Gäste blockiert",
+            "guestPolicyChanged": "Gastzugriffsrichtlinie aktualisiert",
+            "cursorMarkers": "Cursor-Markierungen",
+            "addMarker": "Markierung hinzufügen",
+            "cursorMarked": "Cursor-Markierung hinzugefügt",
+            "promptArea": "Eingabebereich",
+            "latestResponse": "Neueste Antwort",
+            "changeAnnotations": "Änderungsanmerkungen",
+            "annotate": "Anmerken",
+            "annotationTemplate": "Synchronisierte Kontextänderungen für Teilnehmer.",
+            "annotationRecorded": "Änderungsanmerkung aufgezeichnet",
+            "responseSynchronized": "KI-Antwort mit Sitzungsteilnehmern synchronisiert.",
+            "startRecording": "Aufnahme starten",
+            "stopRecording": "Aufnahme beenden",
+            "recordingToggled": "Sitzungsaufnahmestatus geändert",
+            "generateShareLink": "Freigabelink generieren",
+            "linkGenerated": "Sitzungs-Freigabelink generiert",
+            "contextUpdated": "Geteilter Kontext aktualisiert",
+            "collaborationRunFinished": "Zusammenarbeitslauf abgeschlossen"
         }
     },
     "welcome": {
@@ -1945,6 +1978,18 @@ export const de = {
         "checkOnStartupDesc": "Suchen Sie beim Start nach Updates",
         "privacySafety": "Datenschutz und Sicherheit",
         "privacySafetyDesc": "Datenschutzeinstellungen verwalten",
+        "defaultTerminalBackendDesc": "Wählen Sie das Standard-Backend für neue Terminalsitzungen aus.",
+        "inlineSuggestions": "Inline-Vorschläge",
+        "inlineSuggestionsDesc": "Zeigt Ghost-Text-Vorschlaege beim Tippen in Monaco-Editoren an.",
+        "inlineSuggestionsSource": "Vorschlagsquelle",
+        "inlineSuggestionsSourceCopilot": "GitHub Copilot",
+        "inlineSuggestionsSourceCustom": "Benutzerdefiniertes Modell",
+        "inlineSuggestionsProvider": "Anbieter",
+        "inlineSuggestionsProviderPlaceholder": "openai",
+        "inlineSuggestionsModel": "Modell",
+        "inlineSuggestionsModelPlaceholder": "gpt-4o-mini",
+        "inlineSuggestionsCopilotAccount": "Copilot-Konto",
+        "inlineSuggestionsCopilotAccountPlaceholder": "Aktives Konto verwenden",
         "startup": "Start-up"
     },
     "appearance": {
@@ -2447,7 +2492,19 @@ export const de = {
         "cfg": "CFG",
         "seed": "Seed",
         "noResults": "Keine Bilder entsprechen Ihrer Suche",
-        "searchPlaceholder": "Suchen Sie nach Bildern, Eingabeaufforderungen, Modellen ..."
+        "searchPlaceholder": "Suchen Sie nach Bildern, Eingabeaufforderungen, Modellen ...",
+        "selectImage": "Bild auswählen",
+        "selectedCount": "{{count}} ausgewählt",
+        "selectedCount_one": "1 ausgewählt",
+        "selectedCount_other": "{{count}} ausgewählt",
+        "clearSelection": "Auswahl aufheben",
+        "downloadSelected": "Ausgewählte herunterladen",
+        "downloadingSelected": "Wird heruntergeladen...",
+        "openPreview": "Vorschau öffnen",
+        "zoomIn": "Vergrößern",
+        "zoomOut": "Verkleinern",
+        "resetView": "Ansicht zurücksetzen",
+        "closePreview": "Vorschau schließen"
     },
     "docker": {
         "title": "Docker-Verwaltung",
@@ -2885,7 +2942,150 @@ export const de = {
         "enabled": "Ermöglicht",
         "noTriggers": "Keine Auslöser definiert",
         "noSteps": "Keine Schritte definiert",
-        "editorNote": "Verwenden Sie den Modus JSON für die erweiterte Konfiguration von Triggern und Schritten."
+        "editorNote": "Verwenden Sie den Modus JSON für die erweiterte Konfiguration von Triggern und Schritten.",
+        "switchToForm": "Zum Formular wechseln",
+        "switchToJson": "Zu JSON wechseln"
+    },
+    "serviceHealth": {
+        "modelRegistry": {
+            "ready": "serviceHealth.modelRegistry.ready",
+            "empty": "serviceHealth.modelRegistry.empty",
+            "failure": "serviceHealth.modelRegistry.failure"
+        },
+        "llm": {
+            "ready": "serviceHealth.llm.ready",
+            "empty": "serviceHealth.llm.empty",
+            "failure": "serviceHealth.llm.failure"
+        },
+        "localImage": {
+            "ready": "serviceHealth.localImage.ready",
+            "empty": "serviceHealth.localImage.empty",
+            "failure": "serviceHealth.localImage.failure"
+        },
+        "settings": {
+            "ready": "serviceHealth.settings.ready",
+            "empty": "serviceHealth.settings.empty",
+            "failure": "serviceHealth.settings.failure"
+        },
+        "token": {
+            "ready": "serviceHealth.token.ready",
+            "empty": "serviceHealth.token.empty",
+            "failure": "serviceHealth.token.failure"
+        }
+    },
+    "advancedMemory": {
+        "health": {
+            "ready": "Speicherdienst ist betriebsbereit.",
+            "empty": "Speicherdienst ist bereit und wartet auf Aktivität.",
+            "failure": "Speicherdienst ist beeinträchtigt. Erneut versuchen oder Protokolle prüfen."
+        }
+    },
+    "contextRetrieval": {
+        "health": {
+            "ready": "Kontextabfrage ist betriebsbereit.",
+            "empty": "Kontextabfrage ist bereit und wartet auf Anfragen.",
+            "failure": "Kontextabfrage ist beeinträchtigt. Erneut versuchen oder Protokolle prüfen."
+        }
+    },
+    "embedding": {
+        "health": {
+            "ready": "Einbettungsdienst ist betriebsbereit.",
+            "empty": "Einbettungsdienst ist bereit und wartet auf Anfragen.",
+            "failure": "Einbettungsdienst ist beeinträchtigt. Erneut versuchen oder Protokolle prüfen."
+        }
+    },
+    "extensionDev": {
+        "devtools": "Erweiterungs-Entwicklerwerkzeuge",
+        "extensions": "Erweiterungen",
+        "activate": "Aktivieren",
+        "deactivate": "Deaktivieren",
+        "reload": "Neu laden",
+        "searchLogs": "Protokolle durchsuchen...",
+        "clearLogs": "Protokolle löschen",
+        "noLogs": "Noch keine Protokolleinträge",
+        "noExtensionSelected": "Keine Erweiterung ausgewählt",
+        "selectExtensionPrompt": "Wählen Sie eine Erweiterung in der Seitenleiste aus, um Protokolle anzuzeigen und den Status zu verwalten."
+    },
+    "voice": {
+        "notSupported": "Sprachsteuerung wird in diesem Browser nicht unterstützt",
+        "startListening": "Zuhören starten",
+        "stopListening": "Zuhören beenden",
+        "start": "Starten",
+        "stop": "Stoppen",
+        "showCommands": "Sprachbefehle anzeigen",
+        "lastHeard": "Zuletzt gehört",
+        "status": {
+            "idle": "Bereit",
+            "listening": "Hört zu...",
+            "processing": "Wird verarbeitet...",
+            "speaking": "Spricht...",
+            "error": "Fehler"
+        },
+        "feedback": {
+            "navigating": "Navigiere zu {{target}}",
+            "commandExecuted": "Befehl ausgeführt",
+            "notRecognized": "Befehl nicht erkannt"
+        },
+        "settings": {
+            "enableVoice": "Sprachsteuerung aktivieren",
+            "enableVoiceDescription": "Die App mit Sprachbefehlen steuern",
+            "wakeWord": "Aktivierungswort",
+            "wakeWordLabel": "Aktivierungswort",
+            "continuousListening": "Kontinuierlicher Hörmodus",
+            "speech": "Spracheinstellungen",
+            "voice": "Stimme",
+            "selectVoice": "Stimme auswählen",
+            "speechRate": "Sprechgeschwindigkeit",
+            "speechPitch": "Tonhöhe",
+            "speechVolume": "Lautstärke",
+            "feedback": "Feedback-Einstellungen",
+            "audioFeedback": "Audio-Feedback",
+            "visualFeedback": "Visuelles Feedback",
+            "accessibilityMode": "Barrierefreiheitsmodus",
+            "customCommands": "Benutzerdefinierte Befehle",
+            "commandPhrase": "Befehlsphrase",
+            "commandAction": "Aktion"
+        },
+        "commands": {
+            "title": "Sprachbefehle",
+            "aliases": "Aliase",
+            "categories": {
+                "navigation": "Navigation",
+                "actions": "Aktionen",
+                "chat": "Chat",
+                "settings": "Einstellungen",
+                "accessibility": "Barrierefreiheit",
+                "custom": "Benutzerdefiniert"
+            }
+        }
+    },
+    "agentCollaboration": {
+        "error": {
+            "invalidRoutingRules": "Ungültige Routing-Regeln angegeben",
+            "votingSessionNotFound": "Abstimmungssitzung nicht gefunden",
+            "votingSessionInvalid": "Gültige Abstimmungssitzung konnte nicht erstellt werden",
+            "debateSessionNotFound": "Debattensitzung nicht gefunden",
+            "invalidDebateArgument": "Ungültiges Debattenargument"
+        },
+        "voting": {
+            "created": "Abstimmungssitzung erstellt: {{question}}",
+            "voteSubmitted": "Stimme abgegeben: {{modelId}} hat \"{{decision}}\" gewählt",
+            "resolved": "Abstimmung entschieden: \"{{winner}}\"",
+            "deadlocked": "Abstimmung blockiert: {{decisions}}"
+        },
+        "debate": {
+            "created": "Debattensitzung erstellt: {{topic}}",
+            "argumentSubmitted": "Argument von {{agentId}} eingereicht",
+            "resolved": "Debatte mit Gewinnerseite entschieden: {{side}}"
+        }
+    },
+    "agentCheckpoint": {
+        "error": {
+            "saveFailed": "Agenten-Prüfpunkt konnte nicht gespeichert werden",
+            "serializationFailed": "Serialisierung des Agentenstatus-Snapshots fehlgeschlagen",
+            "checkpointNotFound": "Prüfpunkt {{id}} nicht gefunden"
+        },
+        "saved": "Prüfpunkt für Aufgabe {{taskId}} gespeichert"
     }
 };
 

@@ -1133,17 +1133,17 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - (x) **WEBSEC-P2-002**: Add retention/deletion policy tooling for analytics data (privacy controls and compliance workflows).
 
 ### Security Audit Findings (2026-02-27)
-- ( ) **AUD-2026-02-27-01**: Remove access-token exposure from auth IPC response (`auth:poll-token` returns raw token).
-  - ( ) Return account metadata only; never return `access_token` to renderer.
-  - ( ) Add regression test to assert token is not present in IPC payload.
-  - ( ) Verify Copilot/GitHub link flow still works after response contract change.
-- ( ) **AUD-2026-02-27-02**: Harden local API token handling in `ApiServerService`.
-  - ( ) Remove query-string token fallback (`?token=`) to prevent token leakage in logs/history.
-  - ( ) Deprecate or gate `/api/auth/token` behind explicit one-time consent/nonce handshake.
-  - ( ) Add tests covering denied query token and local-only endpoint abuse attempts.
-- ( ) **AUD-2026-02-27-03**: Restrict `shell:runCommand` IPC surface with allowlist + policy layer.
-  - ( ) Enforce executable allowlist and per-command argument schema.
-  - ( ) Add blocked-command audit logs and rate limiting for execution attempts.
-  - ( ) Add security tests for path traversal and arbitrary executable invocation.
+- [x] **AUD-2026-02-27-01**: Remove access-token exposure from auth IPC response (`auth:poll-token` returns raw token).
+  - [x] Return account metadata only; never return `access_token` to renderer.
+  - [x] Add regression test to assert token is not present in IPC payload.
+  - [x] Verify Copilot/GitHub link flow still works after response contract change.
+- [x] **AUD-2026-02-27-02**: Harden local API token handling in `ApiServerService`.
+  - [x] Remove query-string token fallback (`?token=`) to prevent token leakage in logs/history.
+  - [x] Deprecate or gate `/api/auth/token` behind explicit one-time consent/nonce handshake.
+  - [x] Add tests covering denied query token and local-only endpoint abuse attempts.
+- [x] **AUD-2026-02-27-03**: Restrict `shell:runCommand` IPC surface with allowlist + policy layer.
+  - [x] Enforce executable allowlist and per-command argument schema.
+  - [x] Add blocked-command audit logs and rate limiting for execution attempts.
+  - [x] Add security tests for path traversal and arbitrary executable invocation.
 
 

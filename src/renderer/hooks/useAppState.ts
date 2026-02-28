@@ -81,9 +81,12 @@ export function useAppState(): AppState {
     }, [persistedSidebarCollapsed]);
 
     const setIsSidebarCollapsed = useCallback((collapsed: boolean) => {
+        if (collapsed === isSidebarCollapsed) {
+            return;
+        }
         setIsSidebarCollapsedState(collapsed);
         setAppShellState({ sidebarCollapsed: collapsed });
-    }, []);
+    }, [isSidebarCollapsed]);
 
     // Toast notifications (shared notification center)
     const activeNotifications = useNotificationCenterStore(snapshot => snapshot.active);

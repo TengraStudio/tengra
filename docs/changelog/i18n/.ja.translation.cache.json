@@ -2768,5 +2768,10 @@
   "- Added input validation guards, standardized retry/fallback paths, and component error codes": "- 入力検証ガード、標準化された再試行/fallback パス、およびコンポーネント エラー コードを追加しました。",
   "- Added component health telemetry stores with explicit performance budgets": "- 明示的なパフォーマンス バジェットを備えたコンポーネント ヘルス テレメトリ ストアを追加しました",
   "- Improved loading/empty/failure UX handling in language prompt, MCP settings tab, and code editor": "- 言語プロンプト、MCP 設定タブ、およびコード エディターでのロード/空/失敗 UX の処理を​​改善しました。",
-  "- Added runbook, threat model, and performance budget documentation under docs/ with mirrored .codex copies": "- ミラーリングされた .codex コピーを含む docs/ の下に Runbook、脅威モデル、およびパフォーマンス バジェットのドキュメントを追加しました"
+  "- Added runbook, threat model, and performance budget documentation under docs/ with mirrored .codex copies": "- ミラーリングされた .codex コピーを含む docs/ の下に Runbook、脅威モデル、およびパフォーマンス バジェットのドキュメントを追加しました",
+  "Proxy and Agent Service Test Failure Resolution": "プロキシおよびエージェント サービス テストの失敗の解決",
+  "Resolved failing unit and integration tests in the proxy performance and agent checkpoint test suites by fixing mocks, imports, and enum bounds.": "モック、インポート、および列挙の境界を修正することで、プロキシ パフォーマンスおよびエージェント チェックポイント テスト スイートでの単体テストと統合テストの失敗を解決しました。",
+  "- **Proxy Performance Tests**: Fixed brittle mock implementation for `performance.now()` in `startEmbeddedProxy` timing tests.": "- **プロキシ パフォーマンス テスト**: `startEmbeddedProxy` タイミング テストにおける `performance.now()` の脆弱なモック実装を修正しました。",
+  "- **Proxy Service Contract Tests**: Updated quota performance budget keys check and `QuotaErrorCode` bounds handling to support newly added error codes.": "- **プロキシ サービス コントラクト テスト**: 新しく追加されたエラー コードをサポートするために、クォータ パフォーマンス バジェット キー チェックと `QuotaErrorCode` 境界処理を更新しました。",
+  "- **Agent Checkpoint Service**: Resolved a fatal TypeScript runtime ReferenceError caused by importing `AgentCheckpointTelemetryEvent` with a `type` modifier rather than as a value, which broke tracking assertions.": "- **エージェント チェックポイント サービス**: 値としてではなく `type` 修飾子を使用して `AgentCheckpointTelemetryEvent` をインポートすることによって発生し、追跡アサーションを中断する致命的な TypeScript runtime ReferenceError を解決しました。"
 }

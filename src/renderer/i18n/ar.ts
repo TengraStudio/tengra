@@ -95,7 +95,8 @@ export const ar = {
     "errors": {
         "unexpected": "عذراً، حدث خطأ.",
         "somethingWentWrong": "حدث خطأ ما:",
-        "rootNotFound": "لم يتم العثور على العنصر الجذر"
+        "rootNotFound": "لم يتم العثور على العنصر الجذر",
+        "rateLimitWarning": "تحذير حد المعدل ({{provider}}): {{remaining}}/{{limit}} متبقي"
     },
     "languages": {
         "tr": "التركية",
@@ -492,7 +493,10 @@ export const ar = {
         "dangerZone": "منطقة الخطر",
         "consensusThreshold": "عتبة الإجماع",
         "councilAI": "المجلس منظمة العفو الدولية",
-        "councilAIDesc": "اختر الوكلاء المشاركين في المجلس."
+        "councilAIDesc": "اختر الوكلاء المشاركين في المجلس.",
+        "systemHealth": "صحة النظام",
+        "healthStatus": "حالة الصحة",
+        "totalFailures": "إجمالي الإخفاقات"
     },
     "projectWizard": {
         "title": "معالج المشروع",
@@ -1194,6 +1198,7 @@ export const ar = {
         "blur": "طمس",
         "exportTheme": "يصدّر",
         "importTheme": "يستورد",
+        "failedImportThemeInvalidJson": "فشل استيراد السمة: ملف JSON غير صالح",
         "galleryView": "عرض المعرض",
         "exitGalleryView": "الخروج من عرض المعرض",
         "floatTerminal": "تعويم المحطة",
@@ -1332,6 +1337,8 @@ export const ar = {
         "scrollToBottomWithCount": "التمرير إلى الأسفل ({{count}} رسالة جديدة)",
         "clear": "واضح",
         "error": "خطأ",
+        "quotaExceeded": "تم تجاوز الحصة أو حد المعدل. قد يكون هذا بسبب تحديد المعدل (طلبات كثيرة جداً) أو نفاد الحصة. يرجى الانتظار بضع دقائق والمحاولة مرة أخرى.",
+        "rateLimitExceeded": "تم تجاوز حد المعدل أو الحصة. يرجى الانتظار بضع دقائق والمحاولة مرة أخرى.",
         "modelComparison": "مقارنة النماذج",
         "readMore": "اقرأ المزيد",
         "searchMessages": "بحث في الرسائل...",
@@ -1364,7 +1371,33 @@ export const ar = {
             "from": "من: {{provider}}/{{model}}",
             "selectModelError": "الرجاء تحديد نموذج واحد على الأقل",
             "runFailed": "فشل تشغيل التعاون",
-            "remove": "يزيل"
+            "remove": "يزيل",
+            "sharedContext": "سياق مشترك",
+            "sharedContextPlaceholder": "إضافة سياق لجميع المتعاونين...",
+            "sharedMemory": "ذاكرة مشتركة",
+            "memoryPlaceholder": "إضافة ملاحظة ذاكرة مشتركة",
+            "memoryUpdated": "تم تحديث الذاكرة المشتركة",
+            "presence": "الحضور",
+            "guestsAllowed": "مسموح للضيوف",
+            "guestsBlocked": "الضيوف محظورون",
+            "guestPolicyChanged": "تم تحديث سياسة وصول الضيوف",
+            "cursorMarkers": "علامات المؤشر",
+            "addMarker": "إضافة علامة",
+            "cursorMarked": "تمت إضافة علامة المؤشر",
+            "promptArea": "منطقة الإدخال",
+            "latestResponse": "أحدث استجابة",
+            "changeAnnotations": "تعليقات التغييرات",
+            "annotate": "إضافة تعليق",
+            "annotationTemplate": "تم مزامنة تغييرات السياق للمتعاونين.",
+            "annotationRecorded": "تم تسجيل تعليق التغيير",
+            "responseSynchronized": "تمت مزامنة استجابة الذكاء الاصطناعي مع أعضاء الجلسة.",
+            "startRecording": "بدء التسجيل",
+            "stopRecording": "إيقاف التسجيل",
+            "recordingToggled": "تم تغيير حالة تسجيل الجلسة",
+            "generateShareLink": "إنشاء رابط مشاركة",
+            "linkGenerated": "تم إنشاء رابط مشاركة الجلسة",
+            "contextUpdated": "تم تحديث السياق المشترك",
+            "collaborationRunFinished": "اكتمل تشغيل التعاون"
         }
     },
     "welcome": {
@@ -1632,6 +1665,18 @@ export const ar = {
         "checkOnStartupDesc": "التحقق من وجود تحديثات عند بدء التشغيل",
         "privacySafety": "الخصوصية والأمان",
         "privacySafetyDesc": "إدارة إعدادات خصوصية البيانات",
+        "defaultTerminalBackendDesc": "اختر الواجهة الخلفية الافتراضية لجلسات الطرفية الجديدة.",
+        "inlineSuggestions": "اقتراحات مضمنة",
+        "inlineSuggestionsDesc": "اعرض اقتراحات النص الشبح أثناء الكتابة داخل محررات Monaco.",
+        "inlineSuggestionsSource": "مصدر الاقتراحات",
+        "inlineSuggestionsSourceCopilot": "GitHub Copilot",
+        "inlineSuggestionsSourceCustom": "نموذج مخصص",
+        "inlineSuggestionsProvider": "المزوّد",
+        "inlineSuggestionsProviderPlaceholder": "openai",
+        "inlineSuggestionsModel": "النموذج",
+        "inlineSuggestionsModelPlaceholder": "gpt-4o-mini",
+        "inlineSuggestionsCopilotAccount": "حساب Copilot",
+        "inlineSuggestionsCopilotAccountPlaceholder": "استخدام الحساب النشط",
         "autoUpdate": "التحديث التلقائي",
         "checkOnStartup": "التحقق من بدء التشغيل",
         "checkForUpdates": "التحقق من وجود تحديثات",
@@ -1805,6 +1850,18 @@ export const ar = {
         "imageCount_other": "{{count}} صور",
         "noResults": "لا توجد صور تطابق بحثك",
         "searchPlaceholder": "البحث عن الصور والمطالبات والنماذج ...",
+        "selectImage": "اختيار صورة",
+        "selectedCount": "{{count}} محدد",
+        "selectedCount_one": "1 محدد",
+        "selectedCount_other": "{{count}} محدد",
+        "clearSelection": "مسح التحديد",
+        "downloadSelected": "تنزيل المحدد",
+        "downloadingSelected": "جارٍ التنزيل...",
+        "openPreview": "فتح المعاينة",
+        "zoomIn": "تكبير",
+        "zoomOut": "تصغير",
+        "resetView": "إعادة تعيين العرض",
+        "closePreview": "إغلاق المعاينة",
         "prompt": "اِسْتَدْعَى",
         "viewPrompt": "عرض موجه",
         "steps": "خطوات",
@@ -2889,7 +2946,150 @@ export const ar = {
         "enabled": "ممكّن",
         "noTriggers": "لم يتم تحديد أي مشغلات",
         "noSteps": "لم يتم تحديد أي خطوات",
-        "editorNote": "استخدم الوضع JSON للتكوين المتقدم للمشغلات والخطوات."
+        "editorNote": "استخدم الوضع JSON للتكوين المتقدم للمشغلات والخطوات.",
+        "switchToForm": "التبديل إلى النموذج",
+        "switchToJson": "التبديل إلى JSON"
+    },
+    "serviceHealth": {
+        "modelRegistry": {
+            "ready": "serviceHealth.modelRegistry.ready",
+            "empty": "serviceHealth.modelRegistry.empty",
+            "failure": "serviceHealth.modelRegistry.failure"
+        },
+        "llm": {
+            "ready": "serviceHealth.llm.ready",
+            "empty": "serviceHealth.llm.empty",
+            "failure": "serviceHealth.llm.failure"
+        },
+        "localImage": {
+            "ready": "serviceHealth.localImage.ready",
+            "empty": "serviceHealth.localImage.empty",
+            "failure": "serviceHealth.localImage.failure"
+        },
+        "settings": {
+            "ready": "serviceHealth.settings.ready",
+            "empty": "serviceHealth.settings.empty",
+            "failure": "serviceHealth.settings.failure"
+        },
+        "token": {
+            "ready": "serviceHealth.token.ready",
+            "empty": "serviceHealth.token.empty",
+            "failure": "serviceHealth.token.failure"
+        }
+    },
+    "advancedMemory": {
+        "health": {
+            "ready": "خدمة الذاكرة تعمل بشكل سليم.",
+            "empty": "خدمة الذاكرة جاهزة وبانتظار النشاط.",
+            "failure": "خدمة الذاكرة متدهورة. أعد المحاولة أو تحقق من السجلات."
+        }
+    },
+    "contextRetrieval": {
+        "health": {
+            "ready": "استرجاع السياق يعمل بشكل سليم.",
+            "empty": "استرجاع السياق جاهز وبانتظار الطلبات.",
+            "failure": "استرجاع السياق متدهور. أعد المحاولة أو تحقق من السجلات."
+        }
+    },
+    "embedding": {
+        "health": {
+            "ready": "خدمة التضمين تعمل بشكل سليم.",
+            "empty": "خدمة التضمين جاهزة وبانتظار الطلبات.",
+            "failure": "خدمة التضمين متدهورة. أعد المحاولة أو تحقق من السجلات."
+        }
+    },
+    "extensionDev": {
+        "devtools": "أدوات تطوير الإضافات",
+        "extensions": "الإضافات",
+        "activate": "تفعيل",
+        "deactivate": "إلغاء التفعيل",
+        "reload": "إعادة تحميل",
+        "searchLogs": "البحث في السجلات...",
+        "clearLogs": "مسح السجلات",
+        "noLogs": "لا توجد إدخالات سجل بعد",
+        "noExtensionSelected": "لم يتم اختيار إضافة",
+        "selectExtensionPrompt": "اختر إضافة من الشريط الجانبي لعرض السجلات وإدارة الحالة."
+    },
+    "voice": {
+        "notSupported": "التحكم الصوتي غير مدعوم في هذا المتصفح",
+        "startListening": "بدء الاستماع",
+        "stopListening": "إيقاف الاستماع",
+        "start": "بدء",
+        "stop": "إيقاف",
+        "showCommands": "عرض الأوامر الصوتية",
+        "lastHeard": "آخر ما تم سماعه",
+        "status": {
+            "idle": "جاهز",
+            "listening": "يستمع...",
+            "processing": "جارٍ المعالجة...",
+            "speaking": "يتحدث...",
+            "error": "خطأ"
+        },
+        "feedback": {
+            "navigating": "جارٍ الانتقال إلى {{target}}",
+            "commandExecuted": "تم تنفيذ الأمر",
+            "notRecognized": "لم يتم التعرف على الأمر"
+        },
+        "settings": {
+            "enableVoice": "تفعيل التحكم الصوتي",
+            "enableVoiceDescription": "التحكم بالتطبيق باستخدام الأوامر الصوتية",
+            "wakeWord": "كلمة التنبيه",
+            "wakeWordLabel": "كلمة التنبيه",
+            "continuousListening": "وضع الاستماع المستمر",
+            "speech": "إعدادات الكلام",
+            "voice": "الصوت",
+            "selectVoice": "اختيار صوت",
+            "speechRate": "سرعة الكلام",
+            "speechPitch": "حدة الصوت",
+            "speechVolume": "مستوى الصوت",
+            "feedback": "إعدادات التغذية الراجعة",
+            "audioFeedback": "تغذية راجعة صوتية",
+            "visualFeedback": "تغذية راجعة بصرية",
+            "accessibilityMode": "وضع إمكانية الوصول",
+            "customCommands": "أوامر مخصصة",
+            "commandPhrase": "عبارة الأمر",
+            "commandAction": "الإجراء"
+        },
+        "commands": {
+            "title": "الأوامر الصوتية",
+            "aliases": "الأسماء المستعارة",
+            "categories": {
+                "navigation": "التنقل",
+                "actions": "الإجراءات",
+                "chat": "المحادثة",
+                "settings": "الإعدادات",
+                "accessibility": "إمكانية الوصول",
+                "custom": "مخصص"
+            }
+        }
+    },
+    "agentCollaboration": {
+        "error": {
+            "invalidRoutingRules": "قواعد التوجيه المقدمة غير صالحة",
+            "votingSessionNotFound": "لم يتم العثور على جلسة التصويت",
+            "votingSessionInvalid": "فشل إنشاء جلسة تصويت صالحة",
+            "debateSessionNotFound": "لم يتم العثور على جلسة النقاش",
+            "invalidDebateArgument": "حجة نقاش غير صالحة"
+        },
+        "voting": {
+            "created": "تم إنشاء جلسة تصويت: {{question}}",
+            "voteSubmitted": "تم إرسال التصويت: {{modelId}} صوّت بـ \"{{decision}}\"",
+            "resolved": "تم حل التصويت: \"{{winner}}\"",
+            "deadlocked": "تعادل في التصويت: {{decisions}}"
+        },
+        "debate": {
+            "created": "تم إنشاء جلسة نقاش: {{topic}}",
+            "argumentSubmitted": "تم تقديم حجة من {{agentId}}",
+            "resolved": "تم حل النقاش مع الجانب الفائز: {{side}}"
+        }
+    },
+    "agentCheckpoint": {
+        "error": {
+            "saveFailed": "فشل حفظ نقطة فحص الوكيل",
+            "serializationFailed": "فشل تسلسل لقطة حالة الوكيل",
+            "checkpointNotFound": "نقطة الفحص {{id}} غير موجودة"
+        },
+        "saved": "تم حفظ نقطة الفحص للمهمة {{taskId}}"
     }
 };
 

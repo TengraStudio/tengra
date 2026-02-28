@@ -6,6 +6,10 @@ import { CodeIntelligenceService } from '@main/services/project/code-intelligenc
 import { ProjectService } from '@main/services/project/project.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import {
+    inlineSuggestionRequestSchema,
+    inlineSuggestionResponseSchema,
+} from '@shared/schemas/inline-suggestions.schema';
 import { dialog, ipcMain } from 'electron';
 import { z } from 'zod';
 
@@ -257,7 +261,23 @@ export const registerProjectIpc = (
             },
             {
                 argsSchema: z.tuple([z.string()]),
+                responseSchema: z.string(),
                 wrapResponse: true
+            }
+        )
+    );
+
+    ipcMain.handle(
+        'project:getInlineSuggestion',
+        createValidatedIpcHandler(
+            'project:getInlineSuggestion',
+            async (_event, request: z.infer<typeof inlineSuggestionRequestSchema>) => {
+                return await logoService.getInlineSuggestion(request);
+            },
+            {
+                argsSchema: z.tuple([inlineSuggestionRequestSchema]),
+                responseSchema: inlineSuggestionResponseSchema,
+                wrapResponse: true,
             }
         )
     );

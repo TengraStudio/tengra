@@ -1,3 +1,10 @@
+import {
+    terminalCreateResponseSchema,
+    terminalKillResponseSchema,
+    terminalResizeResponseSchema,
+    terminalWriteResponseSchema
+} from '@shared/schemas/terminal.schema';
+import type { TerminalIpcContract } from '@shared/terminal-ipc';
 import { ProjectId, toProjectId, toTerminalSessionId } from '@shared/types/ids';
 import { useCallback, useEffect, useRef } from 'react';
 import { Terminal } from 'xterm';
@@ -8,13 +15,6 @@ import { getTerminalTheme } from '@/lib/terminal-theme';
 import { useSettingsStore } from '@/store/settings.store';
 import { appLogger } from '@/utils/renderer-logger';
 
-import {
-    terminalCreateResponseSchema,
-    TerminalIpcContract,
-    terminalKillResponseSchema,
-    terminalResizeResponseSchema,
-    terminalWriteResponseSchema
-} from '../../terminal/utils/terminal-ipc';
 import { loadHistory, saveHistory } from '../utils/terminal-history';
 
 const initializedTerminals = new Set<string>();

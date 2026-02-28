@@ -2,6 +2,19 @@
 
 ## [2026-02-27]
 
+### Preload Modülerleştirme İyileştirmesi ve Tip Güvenliği Revizyonu
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Electron preload script'lerinin modülerleştirilmesi tamamlandı, ajan bridge'lerindeki kritik tip uyuşmazlıkları giderildi ve bridge katmanındaki yasaklanmış 'any' tipleri temizlendi.
+
+- **Modülerleştirme Uyumu**: Tüm alana özgü preload bridge'leri (Code, Settings, MCP, vb.), ana süreç IPC handler'ları ile senkronize edildi.
+- **Tip Güvenliği Sertleştirmesi**: ProjectAgentBridge, McpMarketplaceBridge ve AdvancedMemoryBridge içindeki yasaklanmış `any` kullanımları kaldırılarak yerine kesin tanımlanmış arayüzler veya `unknown` kayıtları eklendi.
+- **Hata Düzeltmeleri**: OrchestratorBridge'deki durum normalleştirme hatalarına neden olan kritik zaman damgası tip uyuşmazlığı giderildi.
+- **IPC Kontrat Düzeltmesi**: Kod zekası ve sandbox bridge'leri, doğrulanan IPC handler beklentilerine uygun olarak pozisyonel argümanlar kullanacak şekilde güncellendi.
+- **Test Güvenilirliği**: db.integration.test.ts dosyasındaki bozuk mock düzeltildi; mock event üzerindeki eksik `send` yöntemi nedeniyle başarısız olan proje oluşturma testleri onarıldı (İzci Kuralı).
+- **Hijyen**: Sıkı TypeScript ve ESLint kontrollerini geçmek için birden fazla preload alanında kullanılmayan import'lar temizlendi ve listener tipleri rafine edildi.
+
 ### Üst Düzey Proje Sihirbazı: Yenilenen UX ve Hareket Entegrasyonu
 
 - **Type**: feature

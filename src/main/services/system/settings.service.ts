@@ -53,6 +53,10 @@ const DEFAULT_SETTINGS: AppSettings = {
         agentHardDeadlineMs: 25000,
         agentRequireLocalForActions: true,
         agentAllowLateSuggestions: true,
+        inlineSuggestionsEnabled: true,
+        inlineSuggestionsSource: 'custom',
+        inlineSuggestionsProvider: 'openai',
+        inlineSuggestionsModel: 'gpt-4o-mini',
         hiddenModels: [],
     },
     github: {

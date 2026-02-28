@@ -144,6 +144,11 @@ export class ApiServerService extends BaseService {
                 }
 
                 this.httpServer.listen(this.port, '127.0.0.1', () => {
+                    // Capture the actual bound port (needed when port 0 is used)
+                    const addr = this.httpServer?.address();
+                    if (addr && typeof addr === 'object') {
+                        this.port = addr.port;
+                    }
                     appLogger.info(
                         this.name,
                         `API server listening on http://localhost:${this.port}`
@@ -204,6 +209,17 @@ export class ApiServerService extends BaseService {
         const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
         const pathname = url.pathname;
         const method = req.method ?? 'GET';
+
+        // AUD-2026-02-27-02: Reject query-string tokens to prevent leakage via logs/browser history
+        if (url.searchParams.has('token') || url.searchParams.has('api_token') || url.searchParams.has('apiToken')) {
+            appLogger.warn(this.name, 'Rejected request with query-string token (security policy)');
+            this.sendJson(res, 400, {
+                success: false,
+                error: 'Bad Request',
+                message: 'Token via query string is not allowed. Use Authorization header instead.'
+            });
+            return;
+        }
 
         // Handle public/unauthenticated routes
         if (this.handlePublicRoutes(pathname, method, req, res)) {
@@ -370,6 +386,11 @@ export class ApiServerService extends BaseService {
         return true;
     }
 
+    /**
+     * Extract the bearer token from request headers only.
+     * AUD-2026-02-27-02: Query-string tokens are intentionally NOT supported
+     * to prevent token leakage via server logs and browser history.
+     */
     private extractTokenFromRequest(req: IncomingMessage): string | null {
         const authHeader = req.headers.authorization;
         if (authHeader?.startsWith('Bearer ')) {
@@ -785,6 +806,13 @@ export class ApiServerService extends BaseService {
         }
 
         this.wsServer.on('connection', (ws, req) => {
+            // AUD-2026-02-27-02: Reject WebSocket connections with query-string tokens
+            const wsUrl = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
+            if (wsUrl.searchParams.has('token') || wsUrl.searchParams.has('api_token') || wsUrl.searchParams.has('apiToken')) {
+                ws.close(1008, 'Token via query string is not allowed');
+                return;
+            }
+
             const requestToken = this.extractTokenFromRequest(req);
             if (!requestToken || requestToken !== this.apiToken || !this.isStrictLocalRequest(req)) {
                 ws.close(1008, 'Unauthorized');

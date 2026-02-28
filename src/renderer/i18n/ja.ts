@@ -91,7 +91,8 @@ export const ja = {
     "errors": {
         "unexpected": "申し訳ありません。エラーが発生しました。",
         "somethingWentWrong": "問題が発生しました:",
-        "rootNotFound": "ルート要素が見つかりません"
+        "rootNotFound": "ルート要素が見つかりません",
+        "rateLimitWarning": "レート制限警告（{{provider}}）：残り {{remaining}}/{{limit}}"
     },
     "languages": {
         "tr": "トルコ語",
@@ -488,7 +489,10 @@ export const ja = {
         "dangerZone": "危険地帯",
         "consensusThreshold": "コンセンサス閾値",
         "councilAI": "評議会AI",
-        "councilAIDesc": "カウンシルに参加するエージェントを選択します。"
+        "councilAIDesc": "カウンシルに参加するエージェントを選択します。",
+        "systemHealth": "システムの健全性",
+        "healthStatus": "健全性ステータス",
+        "totalFailures": "合計障害数"
     },
     "projectWizard": {
         "title": "プロジェクトウィザード",
@@ -1190,6 +1194,7 @@ export const ja = {
         "blur": "ぼかし",
         "exportTheme": "輸出",
         "importTheme": "輸入",
+        "failedImportThemeInvalidJson": "テーマのインポートに失敗しました：無効なJSONファイル",
         "galleryView": "ギャラリービュー",
         "exitGalleryView": "ギャラリービューを終了する",
         "floatTerminal": "フロート端子",
@@ -1328,6 +1333,8 @@ export const ja = {
         "scrollToBottomWithCount": "一番下へスクロール（{{count}}件の新着）",
         "clear": "クリア",
         "error": "エラー",
+        "quotaExceeded": "クォータまたはレート制限を超過しました。レート制限（リクエスト過多）またはクォータの枯渇が原因の可能性があります。数分待ってから再試行してください。",
+        "rateLimitExceeded": "レート制限またはクォータを超過しました。数分待ってから再試行してください。",
         "modelComparison": "モデルの比較",
         "readMore": "続きを読む",
         "searchMessages": "メッセージを検索...",
@@ -1360,7 +1367,33 @@ export const ja = {
             "from": "送信者: {{provider}}/{{model}}",
             "selectModelError": "少なくとも 1 つのモデルを選択してください",
             "runFailed": "コラボレーションの実行に失敗しました",
-            "remove": "取り除く"
+            "remove": "取り除く",
+            "sharedContext": "共有コンテキスト",
+            "sharedContextPlaceholder": "すべてのコラボレーターのコンテキストを追加...",
+            "sharedMemory": "共有メモリ",
+            "memoryPlaceholder": "共有メモリノートを追加",
+            "memoryUpdated": "共有メモリが更新されました",
+            "presence": "プレゼンス",
+            "guestsAllowed": "ゲスト許可",
+            "guestsBlocked": "ゲストブロック",
+            "guestPolicyChanged": "ゲストアクセスポリシーが更新されました",
+            "cursorMarkers": "カーソルマーカー",
+            "addMarker": "マーカーを追加",
+            "cursorMarked": "カーソルマーカーが追加されました",
+            "promptArea": "プロンプトエリア",
+            "latestResponse": "最新の応答",
+            "changeAnnotations": "変更注釈",
+            "annotate": "注釈を付ける",
+            "annotationTemplate": "コラボレーターのコンテキスト変更を同期しました。",
+            "annotationRecorded": "変更注釈が記録されました",
+            "responseSynchronized": "AI応答がセッションメンバーと同期されました。",
+            "startRecording": "録画を開始",
+            "stopRecording": "録画を停止",
+            "recordingToggled": "セッション録画状態が変更されました",
+            "generateShareLink": "共有リンクを生成",
+            "linkGenerated": "セッション共有リンクが生成されました",
+            "contextUpdated": "共有コンテキストが更新されました",
+            "collaborationRunFinished": "コラボレーション実行が完了しました"
         }
     },
     "welcome": {
@@ -1628,6 +1661,18 @@ export const ja = {
         "checkOnStartupDesc": "起動時にアップデートを確認する",
         "privacySafety": "プライバシーと安全性",
         "privacySafetyDesc": "データプライバシー設定を管理する",
+        "defaultTerminalBackendDesc": "新しいターミナルセッションで使用する既定のバックエンドを選択します。",
+        "inlineSuggestions": "インライン提案",
+        "inlineSuggestionsDesc": "Monaco エディターで入力中にゴーストテキストの提案を表示します。",
+        "inlineSuggestionsSource": "提案ソース",
+        "inlineSuggestionsSourceCopilot": "GitHub Copilot",
+        "inlineSuggestionsSourceCustom": "カスタムモデル",
+        "inlineSuggestionsProvider": "プロバイダー",
+        "inlineSuggestionsProviderPlaceholder": "openai",
+        "inlineSuggestionsModel": "モデル",
+        "inlineSuggestionsModelPlaceholder": "gpt-4o-mini",
+        "inlineSuggestionsCopilotAccount": "Copilot アカウント",
+        "inlineSuggestionsCopilotAccountPlaceholder": "アクティブなアカウントを使う",
         "autoUpdate": "自動更新",
         "checkOnStartup": "起動時の確認",
         "checkForUpdates": "アップデートをチェックする",
@@ -1805,7 +1850,19 @@ export const ja = {
         "viewPrompt": "プロンプトを表示",
         "steps": "ステップ",
         "cfg": "CFG",
-        "seed": "シード"
+        "seed": "シード",
+        "selectImage": "画像を選択",
+        "selectedCount": "{{count}}件選択中",
+        "selectedCount_one": "1件選択中",
+        "selectedCount_other": "{{count}}件選択中",
+        "clearSelection": "選択を解除",
+        "downloadSelected": "選択をダウンロード",
+        "downloadingSelected": "ダウンロード中...",
+        "openPreview": "プレビューを開く",
+        "zoomIn": "拡大",
+        "zoomOut": "縮小",
+        "resetView": "表示をリセット",
+        "closePreview": "プレビューを閉じる"
     },
     "advanced": {
         "systemInfo": "システム情報",
@@ -2885,7 +2942,150 @@ export const ja = {
         "enabled": "有効",
         "noTriggers": "トリガーが定義されていません",
         "noSteps": "ステップが定義されていません",
-        "editorNote": "トリガーとステップの高度な構成には、JSON モードを使用します。"
+        "editorNote": "トリガーとステップの高度な構成には、JSON モードを使用します。",
+        "switchToForm": "フォームに切り替え",
+        "switchToJson": "JSONに切り替え"
+    },
+    "serviceHealth": {
+        "modelRegistry": {
+            "ready": "serviceHealth.modelRegistry.ready",
+            "empty": "serviceHealth.modelRegistry.empty",
+            "failure": "serviceHealth.modelRegistry.failure"
+        },
+        "llm": {
+            "ready": "serviceHealth.llm.ready",
+            "empty": "serviceHealth.llm.empty",
+            "failure": "serviceHealth.llm.failure"
+        },
+        "localImage": {
+            "ready": "serviceHealth.localImage.ready",
+            "empty": "serviceHealth.localImage.empty",
+            "failure": "serviceHealth.localImage.failure"
+        },
+        "settings": {
+            "ready": "serviceHealth.settings.ready",
+            "empty": "serviceHealth.settings.empty",
+            "failure": "serviceHealth.settings.failure"
+        },
+        "token": {
+            "ready": "serviceHealth.token.ready",
+            "empty": "serviceHealth.token.empty",
+            "failure": "serviceHealth.token.failure"
+        }
+    },
+    "advancedMemory": {
+        "health": {
+            "ready": "メモリサービスは正常です。",
+            "empty": "メモリサービスは準備完了で、アクティビティを待機中です。",
+            "failure": "メモリサービスが低下しています。再試行するかログを確認してください。"
+        }
+    },
+    "contextRetrieval": {
+        "health": {
+            "ready": "コンテキスト取得は正常です。",
+            "empty": "コンテキスト取得は準備完了で、リクエストを待機中です。",
+            "failure": "コンテキスト取得が低下しています。再試行するかログを確認してください。"
+        }
+    },
+    "embedding": {
+        "health": {
+            "ready": "埋め込みサービスは正常です。",
+            "empty": "埋め込みサービスは準備完了で、リクエストを待機中です。",
+            "failure": "埋め込みサービスが低下しています。再試行するかログを確認してください。"
+        }
+    },
+    "extensionDev": {
+        "devtools": "拡張機能開発ツール",
+        "extensions": "拡張機能",
+        "activate": "有効化",
+        "deactivate": "無効化",
+        "reload": "リロード",
+        "searchLogs": "ログを検索...",
+        "clearLogs": "ログをクリア",
+        "noLogs": "まだログエントリがありません",
+        "noExtensionSelected": "拡張機能が選択されていません",
+        "selectExtensionPrompt": "サイドバーから拡張機能を選択して、ログの表示とステータスの管理を行います。"
+    },
+    "voice": {
+        "notSupported": "このブラウザでは音声制御はサポートされていません",
+        "startListening": "リスニングを開始",
+        "stopListening": "リスニングを停止",
+        "start": "開始",
+        "stop": "停止",
+        "showCommands": "音声コマンドを表示",
+        "lastHeard": "最後に聞いた内容",
+        "status": {
+            "idle": "準備完了",
+            "listening": "リスニング中...",
+            "processing": "処理中...",
+            "speaking": "発話中...",
+            "error": "エラー"
+        },
+        "feedback": {
+            "navigating": "{{target}}に移動中",
+            "commandExecuted": "コマンドが実行されました",
+            "notRecognized": "コマンドが認識されませんでした"
+        },
+        "settings": {
+            "enableVoice": "音声制御を有効にする",
+            "enableVoiceDescription": "音声コマンドでアプリを操作する",
+            "wakeWord": "ウェイクワード",
+            "wakeWordLabel": "ウェイクワード",
+            "continuousListening": "連続リスニングモード",
+            "speech": "音声設定",
+            "voice": "音声",
+            "selectVoice": "音声を選択",
+            "speechRate": "話速",
+            "speechPitch": "ピッチ",
+            "speechVolume": "音量",
+            "feedback": "フィードバック設定",
+            "audioFeedback": "音声フィードバック",
+            "visualFeedback": "視覚フィードバック",
+            "accessibilityMode": "アクセシビリティモード",
+            "customCommands": "カスタムコマンド",
+            "commandPhrase": "コマンドフレーズ",
+            "commandAction": "アクション"
+        },
+        "commands": {
+            "title": "音声コマンド",
+            "aliases": "エイリアス",
+            "categories": {
+                "navigation": "ナビゲーション",
+                "actions": "アクション",
+                "chat": "チャット",
+                "settings": "設定",
+                "accessibility": "アクセシビリティ",
+                "custom": "カスタム"
+            }
+        }
+    },
+    "agentCollaboration": {
+        "error": {
+            "invalidRoutingRules": "無効なルーティングルールが指定されました",
+            "votingSessionNotFound": "投票セッションが見つかりません",
+            "votingSessionInvalid": "有効な投票セッションを作成できませんでした",
+            "debateSessionNotFound": "ディベートセッションが見つかりません",
+            "invalidDebateArgument": "無効なディベート引数"
+        },
+        "voting": {
+            "created": "投票セッションを作成しました: {{question}}",
+            "voteSubmitted": "投票が送信されました: {{modelId}}が\"{{decision}}\"に投票",
+            "resolved": "投票が解決しました: \"{{winner}}\"",
+            "deadlocked": "投票がデッドロック: {{decisions}}"
+        },
+        "debate": {
+            "created": "ディベートセッションを作成しました: {{topic}}",
+            "argumentSubmitted": "{{agentId}}から引数が送信されました",
+            "resolved": "ディベートが勝者側で解決しました: {{side}}"
+        }
+    },
+    "agentCheckpoint": {
+        "error": {
+            "saveFailed": "エージェントチェックポイントの保存に失敗しました",
+            "serializationFailed": "エージェント状態スナップショットのシリアル化に失敗しました",
+            "checkpointNotFound": "チェックポイント{{id}}が見つかりません"
+        },
+        "saved": "タスク{{taskId}}のチェックポイントを保存しました"
     }
 };
 

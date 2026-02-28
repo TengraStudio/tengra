@@ -5,6 +5,7 @@ import { Virtuoso } from 'react-virtuoso';
 import { cn } from '@/lib/utils';
 
 import { ModelCategory, ModelListItem } from '../../types';
+import { scoreModelForMode } from '../../utils/model-selector-metadata';
 import { ModelSelectorItem } from '../ModelSelectorItem';
 
 export type SelectorChatMode = 'instant' | 'thinking' | 'agent';
@@ -204,9 +205,11 @@ interface ModelSelectorCategoryListProps {
     selectedModels: Array<{ provider: string; model: string }>;
     selectedModel: string;
     selectedProvider: string;
+    chatMode: SelectorChatMode;
     onSelect: (provider: string, id: string, isMultiSelect: boolean) => void;
     toggleFavorite?: (modelId: string) => void;
     t: (key: string) => string;
+    compactRows?: boolean;
 }
 
 const CategoryRow: React.FC<{
@@ -219,12 +222,12 @@ const CategoryRow: React.FC<{
     t: (key: string) => string;
 }> = ({ category, selectedModels, selectedModel, selectedProvider, onSelect, toggleFavorite, t }) => (
     <div className="border-b border-border/30 last:border-b-0">
-        <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 bg-muted/20">
+        <div className="sticky top-0 z-10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 bg-popover/95 backdrop-blur-md">
             <category.icon className={cn('w-3.5 h-3.5', category.color)} />
             <span>{category.name}</span>
             <span className="text-muted-foreground/50 font-normal">({category.models.length})</span>
         </div>
-        <div className="p-2 grid grid-cols-1 sm:grid-cols-2 gap-1">
+        <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
             {category.models.map(model => (
                 <ModelSelectorItem
                     key={`${category.id}-${model.provider}-${model.id}`}
@@ -253,15 +256,80 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
     selectedModels,
     selectedModel,
     selectedProvider,
+    chatMode,
     onSelect,
     toggleFavorite,
     t,
+    compactRows: _compactRows,
 }) => {
     const shouldVirtualize = filteredCategories.length > 5;
 
+    const modeFilteredCategories = filteredCategories
+        .map(category => ({
+            ...category,
+            models: [...category.models]
+                .sort((a, b) => scoreModelForMode(b, chatMode) - scoreModelForMode(a, chatMode) || a.label.localeCompare(b.label))
+        }))
+        .filter(category => category.models.length > 0);
+
+    const allModels = modeFilteredCategories.flatMap(category => category.models);
+    const dedupe = (models: ModelListItem[]): ModelListItem[] => {
+        const seen = new Set<string>();
+        return models.filter(model => {
+            const key = `${model.provider}:${model.id}`;
+            if (seen.has(key)) {
+                return false;
+            }
+            seen.add(key);
+            return true;
+        });
+    };
+
+    const recommendedModels = dedupe(
+        [...allModels]
+            .filter(model => model.lifecycle !== 'retired')
+            .sort((a, b) => scoreModelForMode(b, chatMode) - scoreModelForMode(a, chatMode))
+            .slice(0, 8)
+    );
+    const connectedModels = dedupe(
+        allModels.filter(model => !model.disabled && model.lifecycle !== 'retired').slice(0, 20)
+    );
+    const deprecatedModels = dedupe(
+        allModels.filter(model => model.lifecycle === 'deprecated' || model.lifecycle === 'retired')
+    );
+    const showCuratedSections = searchQuery.trim() === '';
+
     return (
         <>
-            {!searchQuery && favoriteModels.length > 0 && (
+            {showCuratedSections && recommendedModels.length > 0 && (
+                <ModelSection
+                    title="Recommended"
+                    icon={<Sparkles className="w-3.5 h-3.5 text-primary" />}
+                    models={recommendedModels}
+                    selectedModels={selectedModels}
+                    selectedModel={selectedModel}
+                    selectedProvider={selectedProvider}
+                    onSelect={onSelect}
+                    toggleFavorite={toggleFavorite}
+                    t={t}
+                />
+            )}
+
+            {showCuratedSections && connectedModels.length > 0 && (
+                <ModelSection
+                    title="Connected"
+                    icon={<Clock className="w-3.5 h-3.5 text-success" />}
+                    models={connectedModels}
+                    selectedModels={selectedModels}
+                    selectedModel={selectedModel}
+                    selectedProvider={selectedProvider}
+                    onSelect={onSelect}
+                    toggleFavorite={toggleFavorite}
+                    t={t}
+                />
+            )}
+
+            {showCuratedSections && favoriteModels.length > 0 && (
                 <ModelSection
                     title={t('common.favorites')}
                     icon={<Star className="w-3.5 h-3.5 text-warning" />}
@@ -275,7 +343,7 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
                 />
             )}
 
-            {!searchQuery && recentModelItems.length > 0 && (
+            {showCuratedSections && recentModelItems.length > 0 && (
                 <ModelSection
                     title={t('modelSelector.recentModels')}
                     icon={<Clock className="w-3.5 h-3.5 text-muted-foreground" />}
@@ -289,7 +357,27 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
                 />
             )}
 
-            {filteredCategories.length === 0 ? (
+            {showCuratedSections && deprecatedModels.length > 0 && (
+                <ModelSection
+                    title="Deprecated"
+                    icon={<Brain className="w-3.5 h-3.5 text-warning" />}
+                    models={deprecatedModels}
+                    selectedModels={selectedModels}
+                    selectedModel={selectedModel}
+                    selectedProvider={selectedProvider}
+                    onSelect={onSelect}
+                    toggleFavorite={toggleFavorite}
+                    t={t}
+                />
+            )}
+
+            {showCuratedSections && (
+                <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/20 border-b border-border/30">
+                    All Models
+                </div>
+            )}
+
+            {modeFilteredCategories.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground">
                     <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
                     <p>{t('modelSelector.noModelsFound')}</p>
@@ -297,7 +385,7 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
             ) : shouldVirtualize ? (
                 <Virtuoso
                     style={{ height: '100%' }}
-                    data={filteredCategories}
+                    data={modeFilteredCategories}
                     itemContent={(_, category) => (
                         <CategoryRow
                             category={category}
@@ -311,7 +399,7 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
                     )}
                 />
             ) : (
-                filteredCategories.map(category => (
+                modeFilteredCategories.map(category => (
                     <CategoryRow
                         key={category.id}
                         category={category}

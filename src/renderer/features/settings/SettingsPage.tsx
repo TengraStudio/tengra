@@ -5,7 +5,6 @@ import { memo, useCallback, useMemo, useState } from 'react';
 
 // Tab Components
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
-import type { GroupedModels, ModelInfo } from '@/types';
 import { SettingsTabContent } from '@/features/settings/components';
 import {
     normalizeSettingsSearchQuery,
@@ -15,6 +14,7 @@ import {
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { recordSettingsPageHealthEvent } from '@/store/settings-page-health.store';
+import type { GroupedModels, ModelInfo } from '@/types';
 
 import { ManualSessionModal } from './components/ManualSessionModal';
 

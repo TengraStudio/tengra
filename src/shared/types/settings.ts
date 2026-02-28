@@ -1,3 +1,5 @@
+import { InlineSuggestionSource } from '@shared/schemas/inline-suggestions.schema';
+
 import { JsonValue } from '@/types/common';
 
 export type AppSettings = {
@@ -53,11 +55,17 @@ export type AppSettings = {
         responseFormat?: 'auto' | 'structured' | 'steps';
         customInstructions?: string;
         contextMessageLimit?: number;
+        projectsBasePath?: string;
         agentMode?: 'adaptive' | 'speed' | 'accuracy';
         agentSoftDeadlineMs?: number;
         agentHardDeadlineMs?: number;
         agentRequireLocalForActions?: boolean;
         agentAllowLateSuggestions?: boolean;
+        inlineSuggestionsEnabled?: boolean;
+        inlineSuggestionsSource?: InlineSuggestionSource;
+        inlineSuggestionsProvider?: string;
+        inlineSuggestionsModel?: string;
+        inlineSuggestionsCopilotAccountId?: string;
         favoriteModels?: string[];
         recentModels?: string[];
         hiddenModels?: string[];

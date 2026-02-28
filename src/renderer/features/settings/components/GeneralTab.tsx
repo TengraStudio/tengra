@@ -1,21 +1,20 @@
 import { Language } from '@renderer/i18n';
+import { terminalGetBackendsResponseSchema } from '@shared/schemas/terminal.schema';
+import type { TerminalIpcContract } from '@shared/terminal-ipc';
 import { Activity, Database, Download, Globe, RefreshCw } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { SelectDropdown } from '@/components/ui/SelectDropdown';
 import { Switch } from '@/components/ui/switch';
-import {
-    terminalGetBackendsResponseSchema,
-    TerminalIpcContract} from '@/features/terminal/utils/terminal-ipc';
 import { invokeTypedIpc } from '@/lib/ipc-client';
 import { AppSettings } from '@/types/settings';
 
-interface GeneralTabProps {
-    settings: AppSettings | null;
-    updateGeneral: (patch: Partial<AppSettings['general']>) => void;
-    handleSave: (settings: AppSettings) => Promise<void>;
-    t: (key: string) => string;
-}
+import type { SettingsSharedProps } from '../types';
+
+type GeneralTabProps = Pick<
+    SettingsSharedProps,
+    'settings' | 'updateGeneral' | 'handleSave' | 't' | 'linkedAccounts'
+>;
 
 type TerminalBackendOption = {
     id: string;
@@ -54,6 +53,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
     settings,
     updateGeneral,
     handleSave,
+    linkedAccounts,
     t,
 }) => {
     const [isLoadingTerminalBackends, setIsLoadingTerminalBackends] = useState(false);
@@ -133,6 +133,34 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
         downloadAutomatically: false,
         notifyOnly: false,
     };
+    const inlineSuggestionSource = settings?.general.inlineSuggestionsSource ?? 'custom';
+    const inlineSuggestionProvider = settings?.general.inlineSuggestionsProvider ?? 'openai';
+    const inlineSuggestionModel = settings?.general.inlineSuggestionsModel ?? 'gpt-4o-mini';
+    const inlineSuggestionAccountId = settings?.general.inlineSuggestionsCopilotAccountId ?? '';
+    const inlineSuggestionSourceOptions = useMemo(
+        () => [
+            {
+                value: 'copilot',
+                label: t('general.inlineSuggestionsSourceCopilot'),
+            },
+            {
+                value: 'custom',
+                label: t('general.inlineSuggestionsSourceCustom'),
+            },
+        ],
+        [t]
+    );
+    const copilotAccountOptions = useMemo(() => {
+        return linkedAccounts.accounts
+            .filter(account => account.provider === 'copilot')
+            .map(account => ({
+                value: account.id,
+                label:
+                    account.displayName?.trim()
+                    || account.email?.trim()
+                    || account.id,
+            }));
+    }, [linkedAccounts.accounts]);
 
     return (
         <div className="space-y-6">
@@ -160,7 +188,9 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                         <SelectDropdown
                             value={settings?.general.language ?? 'en'}
                             options={languageOptions}
-                            onChange={val => updateGeneral({ language: val as Language })}
+                            onChange={val => {
+                                void updateGeneral({ language: val as Language });
+                            }}
                             className="w-full"
                         />
                     </div>
@@ -171,10 +201,27 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                         <input
                             type="number"
                             value={settings?.general.contextMessageLimit ?? 50}
-                            onChange={e =>
-                                updateGeneral({ contextMessageLimit: parseInt(e.target.value) })
-                            }
+                            onChange={e => {
+                                const nextLimit = Number.parseInt(e.target.value, 10);
+                                void updateGeneral({
+                                    contextMessageLimit: Number.isNaN(nextLimit) ? 0 : nextLimit,
+                                });
+                            }}
                             className="w-full bg-muted/5 border border-border/40 rounded-xl px-4 py-3 text-sm font-mono text-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
+                            {t('projectWizard.selectFolder')}
+                        </label>
+                        <input
+                            type="text"
+                            value={settings?.general.projectsBasePath ?? ''}
+                            onChange={event => {
+                                void updateGeneral({ projectsBasePath: event.target.value });
+                            }}
+                            className="w-full bg-muted/5 border border-border/40 rounded-xl px-4 py-3 text-sm font-mono text-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            placeholder={t('projectWizard.selectRootDesc')}
                         />
                     </div>
                     <div className="space-y-2 md:col-span-2">
@@ -184,13 +231,15 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                         <SelectDropdown
                             value={settings?.general.defaultTerminalBackend ?? 'node-pty'}
                             options={terminalBackendOptions}
-                            onChange={value => updateGeneral({ defaultTerminalBackend: value })}
+                            onChange={value => {
+                                void updateGeneral({ defaultTerminalBackend: value });
+                            }}
                             className="w-full"
                         />
                         <div className="text-[11px] text-muted-foreground/70 px-1">
                             {isLoadingTerminalBackends
                                 ? t('common.loading')
-                                : 'Select the default backend used when creating new terminal sessions.'}
+                                : t('general.defaultTerminalBackendDesc')}
                         </div>
                     </div>
                 </div>
@@ -234,11 +283,111 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                             </div>
                         </div>
                         <button
-                            onClick={() => updateGeneral({ onboardingCompleted: false })}
+                            onClick={() => {
+                                void updateGeneral({ onboardingCompleted: false });
+                            }}
                             className="px-5 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-black uppercase rounded-xl border border-primary/20 transition-all shadow-sm"
                         >
                             {t('general.startTour')}
                         </button>
+                    </div>
+                </div>
+
+                <div className="rounded-2xl border border-border/40 bg-muted/5 p-5 space-y-4">
+                    <div>
+                        <div className="text-sm font-black text-foreground uppercase tracking-tight">
+                            {t('general.inlineSuggestions')}
+                        </div>
+                        <div className="text-xs font-medium text-muted-foreground/70">
+                            {t('general.inlineSuggestionsDesc')}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <ToggleSwitch
+                            enabled={settings?.general.inlineSuggestionsEnabled ?? true}
+                            onToggle={() =>
+                                void updateGeneral({
+                                    inlineSuggestionsEnabled:
+                                        !(settings?.general.inlineSuggestionsEnabled ?? true),
+                                })
+                            }
+                            title={t('general.inlineSuggestions')}
+                            description={t('general.inlineSuggestionsDesc')}
+                        />
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
+                                {t('general.inlineSuggestionsSource')}
+                            </label>
+                            <SelectDropdown
+                                value={inlineSuggestionSource}
+                                options={inlineSuggestionSourceOptions}
+                                onChange={value =>
+                                    void updateGeneral({
+                                        inlineSuggestionsSource: value as 'copilot' | 'custom',
+                                        inlineSuggestionsCopilotAccountId:
+                                            value === 'copilot'
+                                                ? settings?.general.inlineSuggestionsCopilotAccountId
+                                                : '',
+                                    })
+                                }
+                                className="w-full"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
+                                {t('general.inlineSuggestionsModel')}
+                            </label>
+                            <input
+                                type="text"
+                                value={inlineSuggestionModel}
+                                onChange={event =>
+                                    void updateGeneral({
+                                        inlineSuggestionsModel: event.target.value,
+                                    })
+                                }
+                                className="w-full bg-muted/5 border border-border/40 rounded-xl px-4 py-3 text-sm font-mono text-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                placeholder={t('general.inlineSuggestionsModelPlaceholder')}
+                            />
+                        </div>
+
+                        {inlineSuggestionSource === 'copilot' ? (
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
+                                    {t('general.inlineSuggestionsCopilotAccount')}
+                                </label>
+                                <SelectDropdown
+                                    value={inlineSuggestionAccountId}
+                                    options={copilotAccountOptions}
+                                    onChange={value =>
+                                        void updateGeneral({
+                                            inlineSuggestionsCopilotAccountId: value,
+                                        })
+                                    }
+                                    placeholder={t('general.inlineSuggestionsCopilotAccountPlaceholder')}
+                                    className="w-full"
+                                />
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
+                                    {t('general.inlineSuggestionsProvider')}
+                                </label>
+                                <input
+                                    type="text"
+                                    value={inlineSuggestionProvider}
+                                    onChange={event =>
+                                        void updateGeneral({
+                                            inlineSuggestionsProvider: event.target.value,
+                                        })
+                                    }
+                                    className="w-full bg-muted/5 border border-border/40 rounded-xl px-4 py-3 text-sm font-mono text-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                    placeholder={t('general.inlineSuggestionsProviderPlaceholder')}
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

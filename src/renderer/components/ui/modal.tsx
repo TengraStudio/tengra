@@ -4,7 +4,7 @@ import React, { useEffect, useId, useRef } from 'react';
 interface ModalProps {
     isOpen: boolean
     onClose: () => void
-    title: string
+    title?: string
     children: React.ReactNode
     footer?: React.ReactNode
     preventClose?: boolean
@@ -194,7 +194,7 @@ const ModalBase: React.FC<ModalProps> = ({
                             <X className="w-4 h-4" aria-hidden="true" />
                         </button>
                     )}
-                    <h3 id={titleId} className="font-black leading-none tracking-tight text-2xl text-foreground uppercase">{title}</h3>
+                    {title && <h3 id={titleId} className="font-black leading-none tracking-tight text-2xl text-foreground uppercase">{title}</h3>}
                 </div>
                 <p id={descriptionId} className="sr-only">
                     Modal content for {title}

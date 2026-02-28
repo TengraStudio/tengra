@@ -4,6 +4,7 @@ export interface ModelListItem {
     id: string;
     label: string;
     disabled: boolean;
+    disabledReason?: string;
     provider: string;
     type: string;
     contextWindow?: number;
@@ -14,6 +15,13 @@ export interface ModelListItem {
     pinned?: boolean;
     thinkingLevels?: string[];
     description?: string;
+    isLocal?: boolean;
+    isFree?: boolean;
+    supportsReasoning?: boolean;
+    lifecycle?: 'active' | 'deprecated' | 'retired';
+    replacementModelId?: string;
+    sunsetDate?: string;
+    score?: number;
 }
 
 export interface ModelCategory {

@@ -14,8 +14,8 @@ import {
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 
+import { ToolOutputVirtualizer } from '@/components/shared/ToolOutputVirtualizer';
 import { Button } from '@/components/ui/button';
-import { ToolOutputVirtualizer } from '@/features/chat/components/ToolOutputVirtualizer';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -70,8 +70,8 @@ const SimpleDiff = ({ oldText, newText }: SimpleDiffProps) => {
                         line.type === 'added'
                             ? 'bg-success/10 text-success'
                             : line.type === 'removed'
-                              ? 'bg-destructive/10 text-destructive'
-                              : 'text-muted-foreground/50'
+                                ? 'bg-destructive/10 text-destructive'
+                                : 'text-muted-foreground/50'
                     )}
                 >
                     <span className="shrink-0 w-3 opacity-50">
@@ -356,8 +356,8 @@ const LogEntry = React.memo(({ log, expandedTools, toggleTool }: LogEntryProps) 
                             log.role === 'user'
                                 ? 'text-info'
                                 : log.role === 'assistant'
-                                  ? 'text-primary'
-                                  : 'text-warning'
+                                    ? 'text-primary'
+                                    : 'text-warning'
                         )}
                     >
                         {t(`projectAgent.roles.${log.role}`)}

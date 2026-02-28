@@ -34,6 +34,16 @@ export enum ThemeErrorCode {
     CORRUPT_THEME_FILE = 'THEME_CORRUPT_FILE'
 }
 
+export enum ThemeTelemetryEvent {
+    THEME_LOADED = 'theme_loaded',
+    THEME_INSTALLED = 'theme_installed',
+    THEME_UNINSTALLED = 'theme_uninstalled',
+    THEME_LOAD_FAILED = 'theme_load_failed',
+    THEME_INSTALL_FAILED = 'theme_install_failed',
+    THEMES_SCANNED = 'theme_themes_scanned',
+    BUILTIN_INSTALLED = 'theme_builtin_installed'
+}
+
 interface ThemeOperationMetrics {
     operations: number;
     successes: number;

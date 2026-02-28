@@ -7,7 +7,7 @@ import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 
-import { ThemeService } from '@main/services/theme/theme.service';
+import { ThemeErrorCode, ThemeService, ThemeTelemetryEvent } from '@main/services/theme/theme.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock the entire module to have full control
@@ -270,6 +270,64 @@ describe('ThemeService Integration Tests', () => {
 
         const result = await themeService.uninstallTheme('definitely-does-not-exist-999');
         expect(result).toBe(false);
+    });
+});
+
+describe('ThemeService Enums and Metrics', () => {
+    let themeService: ThemeService;
+
+    beforeEach(async () => {
+        vi.clearAllMocks();
+        const tempDir = path.join(os.tmpdir(), `theme-enums-test-${Date.now()}`);
+        await fs.mkdir(tempDir, { recursive: true });
+
+        vi.mocked(fs.access).mockResolvedValue(undefined);
+        vi.mocked(fs.readFile).mockImplementation(async filePath => {
+            const pathStr = String(filePath);
+            if (pathStr.includes('black')) {
+                return JSON.stringify({
+                    id: 'black', name: 'black', displayName: 'Black', version: '1.0.0', type: 'dark',
+                    colors: { background: '0 0% 0%', foreground: '0 0% 100%', primary: '', secondary: '', accent: '', muted: '', destructive: '', border: '', input: '', ring: '', card: '', cardForeground: '', popover: '', popoverForeground: '', primaryForeground: '', secondaryForeground: '', accentForeground: '', destructiveForeground: '', mutedForeground: '' }
+                });
+            }
+            return JSON.stringify({
+                id: 'white', name: 'white', displayName: 'White', version: '1.0.0', type: 'light',
+                colors: { background: '0 0% 100%', foreground: '0 0% 0%', primary: '', secondary: '', accent: '', muted: '', destructive: '', border: '', input: '', ring: '', card: '', cardForeground: '', popover: '', popoverForeground: '', primaryForeground: '', secondaryForeground: '', accentForeground: '', destructiveForeground: '', mutedForeground: '' }
+            });
+        });
+        vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+        vi.mocked(fs.readdir).mockResolvedValue(['black.theme.json', 'white.theme.json'] as never);
+        vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+        vi.mocked(fs.unlink).mockResolvedValue(undefined);
+        vi.mocked(fs.rename).mockResolvedValue(undefined);
+
+        const { DataService } = await import('@main/services/data/data.service');
+        const dataService = new DataService();
+        vi.mocked(dataService.getPath).mockReturnValue(tempDir);
+
+        themeService = new ThemeService(dataService);
+        await themeService.initialize();
+    });
+
+    it('should have valid error codes', () => {
+        expect(ThemeErrorCode.THEME_NOT_FOUND).toBeDefined();
+        expect(ThemeErrorCode.INVALID_MANIFEST).toBeDefined();
+        expect(ThemeErrorCode.INSTALL_FAILED).toBeDefined();
+    });
+
+    it('should have valid telemetry events', () => {
+        expect(ThemeTelemetryEvent.THEME_LOADED).toBeDefined();
+        expect(ThemeTelemetryEvent.THEME_INSTALLED).toBeDefined();
+        expect(ThemeTelemetryEvent.THEMES_SCANNED).toBeDefined();
+    });
+
+    it('should return metrics as an object', () => {
+        const metrics = themeService.getMetrics();
+        expect(typeof metrics).toBe('object');
+    });
+
+    it('should return themes directory as a string', () => {
+        expect(typeof themeService.getThemesDirectory()).toBe('string');
     });
 });
 

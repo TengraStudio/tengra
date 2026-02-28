@@ -76,6 +76,9 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
     const modalRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [activeFilters, setActiveFilters] = useState<Array<'local' | 'cloud' | 'free' | 'reasoning' | 'deprecated'>>([]);
+    const [compactRows, setCompactRows] = useState(false);
+    const [internalChatMode, setInternalChatMode] = useState<SelectorChatMode>(chatMode);
     const [activeTab, setActiveTab] = useState<'models' | 'reasoning'>('models');
     const [pendingModel, setPendingModel] = useState<{ provider: string; id: string } | null>(null);
     const [modalStyle, setModalStyle] = useState<React.CSSProperties>({});
@@ -122,6 +125,10 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
         };
     }, [isOpen]);
     const [pendingThinkingLevel, setPendingThinkingLevel] = useState<string | null>(null);
+
+    useEffect(() => {
+        setInternalChatMode(chatMode);
+    }, [chatMode]);
 
     // Check if pending model requires reasoning level selection
     const pendingModelThinkingLevels = useMemo(() => {
@@ -273,20 +280,28 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
 
     // Filter categories based on search
     const filteredCategories = useMemo(() => {
-        if (!searchQuery.trim()) {
-            return categories.filter(c => c.id !== 'favorites');
-        }
-        const query = searchQuery.toLowerCase();
+        const query = searchQuery.toLowerCase().trim();
+        const applyFilters = (model: ModelListItem) => {
+            if (activeFilters.includes('local') && !model.isLocal) { return false; }
+            if (activeFilters.includes('cloud') && model.isLocal) { return false; }
+            if (activeFilters.includes('free') && !model.isFree) { return false; }
+            if (activeFilters.includes('reasoning') && !model.supportsReasoning) { return false; }
+            if (!activeFilters.includes('deprecated') && (model.lifecycle === 'deprecated' || model.lifecycle === 'retired')) { return false; }
+            return true;
+        };
         return categories
             .filter(c => c.id !== 'favorites')
             .map(cat => ({
                 ...cat,
                 models: Array.isArray(cat.models)
-                    ? cat.models.filter(m => m.label.toLowerCase().includes(query) || m.id.toLowerCase().includes(query))
+                    ? cat.models.filter(m =>
+                        (query === '' || m.label.toLowerCase().includes(query) || m.id.toLowerCase().includes(query)) &&
+                        applyFilters(m)
+                    )
                     : [],
             }))
             .filter(cat => cat.models.length > 0);
-    }, [categories, searchQuery]);
+    }, [categories, searchQuery, activeFilters]);
 
     const handleSelect = useCallback(
         (provider: string, id: string, isMulti: boolean) => {
@@ -376,8 +391,11 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
 
                 <ModelSelectorModeTabs
                     modeLabel={t('modelSelector.mode')}
-                    chatMode={chatMode}
-                    onChatModeChange={onChatModeChange}
+                    chatMode={internalChatMode}
+                    onChatModeChange={(mode) => {
+                        setInternalChatMode(mode);
+                        onChatModeChange?.(mode);
+                    }}
                     activeTab={activeTab}
                     onTabChange={setActiveTab}
                     showReasoningTab={
@@ -386,12 +404,56 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                 />
 
                 {activeTab === 'models' && (
-                    <ModelSelectorSearch
-                        searchQuery={searchQuery}
-                        onSearchQueryChange={setSearchQuery}
-                        searchInputRef={searchInputRef}
-                        placeholder={t('modelSelector.searchModels')}
-                    />
+                    <>
+                        <ModelSelectorSearch
+                            searchQuery={searchQuery}
+                            onSearchQueryChange={setSearchQuery}
+                            searchInputRef={searchInputRef}
+                            placeholder={t('modelSelector.searchModels')}
+                        />
+                        <div className="px-4 pb-2 flex flex-wrap gap-2 border-b border-border/50">
+                            {([
+                                ['local', 'Local'],
+                                ['cloud', 'Cloud'],
+                                ['free', 'Free'],
+                                ['reasoning', 'Reasoning'],
+                                ['deprecated', 'Deprecated']
+                            ] as const).map(([key, label]) => {
+                                const active = activeFilters.includes(key);
+                                return (
+                                    <button
+                                        key={key}
+                                        onClick={() => {
+                                            setActiveFilters(prev =>
+                                                prev.includes(key)
+                                                    ? prev.filter(f => f !== key)
+                                                    : [...prev, key]
+                                            );
+                                        }}
+                                        className={cn(
+                                            'px-2.5 py-1 rounded-full text-xxs font-semibold border transition-colors',
+                                            active
+                                                ? 'bg-primary/15 text-primary border-primary/40'
+                                                : 'bg-muted/30 text-muted-foreground border-border/40 hover:text-foreground'
+                                        )}
+                                    >
+                                        {label}
+                                    </button>
+                                );
+                            })}
+                            <button
+                                onClick={() => setCompactRows(prev => !prev)}
+                                className={cn(
+                                    'px-2.5 py-1 rounded-full text-xs border transition-colors ml-auto',
+                                    compactRows
+                                        ? 'bg-primary/15 text-primary border-primary/30'
+                                        : 'bg-muted/30 text-muted-foreground border-border/40 hover:bg-muted/50'
+                                )}
+                            >
+                                {compactRows ? 'Detailed' : 'Compact'}
+                            </button>
+                        </div>
+                    </>
                 )}
 
                 {/* Content - Scrollable */}
@@ -508,9 +570,11 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                             selectedModels={selectedModels}
                             selectedModel={selectedModel}
                             selectedProvider={selectedProvider}
+                            chatMode={internalChatMode}
                             onSelect={handleSelect}
                             toggleFavorite={toggleFavorite}
                             t={t}
+                            compactRows={compactRows}
                         />
                     ) : null}
                 </div>

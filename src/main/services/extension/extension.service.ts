@@ -111,6 +111,7 @@ export class ExtensionService extends BaseService {
         ipcMain.handle('extension:publish', this.handlePublish.bind(this));
         ipcMain.handle('extension:get-profile', this.handleGetProfile.bind(this));
         ipcMain.handle('extension:validate', this.handleValidate.bind(this));
+        ipcMain.handle('extension:get-state', this.handleGetState.bind(this));
     }
 
     /** Remove IPC handlers */
@@ -128,6 +129,7 @@ export class ExtensionService extends BaseService {
         ipcMain.removeHandler('extension:publish');
         ipcMain.removeHandler('extension:get-profile');
         ipcMain.removeHandler('extension:validate');
+        ipcMain.removeHandler('extension:get-state');
     }
 
     // IPC Handlers
@@ -225,7 +227,30 @@ export class ExtensionService extends BaseService {
         if (!instance) {
             return { success: false };
         }
+
+        // Update memory usage (approximate for demo/debugging purposes)
+        instance.profileData.memoryUsage = process.memoryUsage().heapUsed;
+
         return { success: true, profile: instance.profileData };
+    }
+
+    private handleGetState(_event: Electron.IpcMainInvokeEvent, extensionId: string): { success: boolean; state?: { global: Record<string, unknown>, workspace: Record<string, unknown> } } {
+        const instance = this.state.extensions.get(extensionId);
+        if (!instance) {
+            return { success: false };
+        }
+
+        const globalState: Record<string, unknown> = {};
+        for (const key of instance.context.globalState.keys()) {
+            globalState[key] = instance.context.globalState.get(key);
+        }
+
+        const workspaceState: Record<string, unknown> = {};
+        for (const key of instance.context.workspaceState.keys()) {
+            workspaceState[key] = instance.context.workspaceState.get(key);
+        }
+
+        return { success: true, state: { global: globalState, workspace: workspaceState } };
     }
 
     private handleValidate(_event: Electron.IpcMainInvokeEvent, manifest: unknown): { valid: boolean; errors: string[] } {
@@ -539,6 +564,11 @@ export class ExtensionService extends BaseService {
     /** Get profile data */
     getProfile(extensionId: string): { success: boolean; profile?: ExtensionProfileData } {
         return this.handleGetProfile({} as Electron.IpcMainInvokeEvent, extensionId);
+    }
+
+    /** Get state data */
+    getState(extensionId: string): { success: boolean; state?: { global: Record<string, unknown>, workspace: Record<string, unknown> } } {
+        return this.handleGetState({} as Electron.IpcMainInvokeEvent, extensionId);
     }
 
     /** Create configuration accessor */

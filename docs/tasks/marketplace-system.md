@@ -150,10 +150,10 @@ Location: `src/renderer/features/marketplace/`
   - (x) Create API playground
   - (x) Add interactive examples
 
-- [/] **MKT-DEV-03**: Local extension development mode
-  - [/] Hot reload for local extensions
-  - [/] Debug logging and inspection
-  - [/] Extension DevTools panel
+- [x] **MKT-DEV-03**: Local extension development mode
+  - [x] Hot reload for local extensions
+  - [x] Debug logging and inspection
+  - [x] Extension DevTools panel
   - (x) Add extension reload shortcut
   - (x) Implement extension state inspection
   - (x) Add performance profiling

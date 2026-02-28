@@ -5,6 +5,13 @@ export type JsonArray = JsonValue[];
 // IpcValue is essentially the same as JsonValue, as IPC args must be serializable
 export type IpcValue = JsonValue | undefined;
 
+export interface IpcContractEntry<Args extends readonly IpcValue[] = readonly IpcValue[], Response = unknown> {
+    args: Args;
+    response: Response;
+}
+
+export type IpcContractMap = Record<string, IpcContractEntry>;
+
 // Type for Error objects in catch blocks
 export interface ErrorMessageLike {
     message?: string;

@@ -4,6 +4,7 @@ import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
 import { ProxyEmbedStatus, ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
+import { validateInterval, validatePort, validateProvider, validateToken } from '@main/services/proxy/proxy-validation.util';
 import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { SecurityService } from '@main/services/security/security.service';
@@ -13,7 +14,7 @@ import { LocalAuthServer } from '@main/utils/local-auth-server.util';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { ClaudeQuota, CodexUsage, CopilotQuota, ModelQuotaItem, QuotaInfo, QuotaResponse } from '@shared/types/quota';
 import { AuthenticationError } from '@shared/utils/error.util';
-import { getErrorMessage } from '@shared/utils/error.util';
+import { AppErrorCode, getErrorMessage, ProxyServiceError } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { net } from 'electron';
 
@@ -54,6 +55,51 @@ export type ProxyRequestResponse = JsonObject | {
     queued: number;
   };
 }
+
+/**
+ * Standardized error codes for ProxyService.
+ * Maps to AppErrorCode values for consistency with the global error system.
+ */
+export const ProxyErrorCode = {
+  NOT_INITIALIZED: AppErrorCode.PROXY_NOT_INITIALIZED,
+  START_FAILED: AppErrorCode.PROXY_START_FAILED,
+  STOP_FAILED: AppErrorCode.PROXY_STOP_FAILED,
+  AUTH_FAILED: AppErrorCode.PROXY_AUTH_FAILED,
+  REQUEST_FAILED: AppErrorCode.PROXY_REQUEST_FAILED,
+  INVALID_CONFIG: AppErrorCode.PROXY_INVALID_CONFIG,
+  CONNECTION_FAILED: AppErrorCode.PROXY_CONNECTION_FAILED,
+  TIMEOUT: AppErrorCode.PROXY_TIMEOUT,
+  PORT_IN_USE: AppErrorCode.PROXY_PORT_IN_USE,
+  BINARY_NOT_FOUND: AppErrorCode.PROXY_BINARY_NOT_FOUND
+} as const;
+
+/**
+ * Telemetry events emitted by ProxyService
+ */
+export enum ProxyTelemetryEvent {
+  PROXY_STARTED = 'proxy_started',
+  PROXY_STOPPED = 'proxy_stopped',
+  REQUEST_SENT = 'proxy_request_sent',
+  REQUEST_FAILED = 'proxy_request_failed',
+  AUTH_INITIATED = 'proxy_auth_initiated',
+  AUTH_COMPLETED = 'proxy_auth_completed',
+  AUTH_FAILED = 'proxy_auth_failed',
+  HEALTH_CHECK = 'proxy_health_check'
+}
+
+/**
+ * Performance budgets in milliseconds for ProxyService operations
+ */
+export const PROXY_PERFORMANCE_BUDGETS = {
+  START_MS: 10000,
+  STOP_MS: 5000,
+  REQUEST_MS: 30000,
+  AUTH_MS: 30000,
+  HEALTH_CHECK_MS: 5000,
+  INITIALIZE_MS: 10000,
+  CONFIG_GENERATION_MS: 2000,
+  GET_MODELS_MS: 15000
+} as const;
 
 export interface DeviceCodeResponse {
   device_code: string;
@@ -146,6 +192,7 @@ export class ProxyService extends BaseService {
   get eventBus(): EventBusService { return this.options.eventBus; }
 
   override async initialize(): Promise<void> {
+    const start = performance.now();
     await super.initialize();
 
     // Listen for token refreshes (no longer syncs files, but logs it)
@@ -157,6 +204,10 @@ export class ProxyService extends BaseService {
     await this.ensureProxyKey();
     this.initializeProviderRateLimits();
 
+    const elapsed = performance.now() - start;
+    if (elapsed > PROXY_PERFORMANCE_BUDGETS.INITIALIZE_MS) {
+      this.logWarn(`initialize exceeded budget: ${elapsed.toFixed(1)}ms > ${PROXY_PERFORMANCE_BUDGETS.INITIALIZE_MS}ms`);
+    }
   }
 
   override async cleanup(): Promise<void> {
@@ -405,6 +456,11 @@ export class ProxyService extends BaseService {
   }
 
   setProviderRateLimitConfig(providerRaw: string, config: Partial<ProviderRateLimitConfig>): ProviderRateLimitConfig {
+    const providerError = validateProvider(providerRaw);
+    if (providerError) {
+      throw new Error(`setProviderRateLimitConfig: ${providerError}`);
+    }
+
     const provider = this.normalizeProviderForRateLimit(providerRaw);
     const current = this.getProviderConfig(provider);
     const merged: ProviderRateLimitConfig = {
@@ -450,6 +506,15 @@ export class ProxyService extends BaseService {
   }
 
   async waitForGitHubToken(deviceCode: string, interval: number, appId: 'profile' | 'copilot' = 'profile'): Promise<TokenResponse> {
+    const codeError = validateToken(deviceCode, 'Device code');
+    if (codeError) {
+      throw new Error(`waitForGitHubToken: ${codeError}`);
+    }
+    const intervalError = validateInterval(interval);
+    if (intervalError) {
+      throw new Error(`waitForGitHubToken: ${intervalError}`);
+    }
+
     await this.waitForRateLimit('github', { priority: 3 });
     return new Promise((resolve, reject) => {
       const client = GITHUB_CLIENTS[appId];
@@ -572,12 +637,42 @@ export class ProxyService extends BaseService {
 
 
   async startEmbeddedProxy(options?: { port?: number }): Promise<ProxyEmbedStatus> {
+    const start = performance.now();
+    if (options?.port !== undefined) {
+      const portError = validatePort(options.port);
+      if (portError) {
+        this.logError(`startEmbeddedProxy: ${portError}`);
+        return { running: false, error: portError, errorCode: AppErrorCode.PROXY_INVALID_CONFIG };
+      }
+    }
     this.currentPort = options?.port ?? 8317;
-    return this.processManager.start(options);
+    const status = await this.processManager.start(options);
+    if (!status.running && status.error) {
+      this.logError(`Proxy startup failed: [${status.errorCode ?? AppErrorCode.PROXY_START_FAILED}] ${status.error}`);
+      return { ...status, errorCode: status.errorCode ?? AppErrorCode.PROXY_START_FAILED };
+    }
+    const elapsed = performance.now() - start;
+    if (elapsed > PROXY_PERFORMANCE_BUDGETS.START_MS) {
+      this.logWarn(`startEmbeddedProxy exceeded budget: ${elapsed.toFixed(1)}ms > ${PROXY_PERFORMANCE_BUDGETS.START_MS}ms`);
+    }
+    return status;
   }
 
   async stopEmbeddedProxy(): Promise<void> {
-    await this.processManager.stop();
+    const start = performance.now();
+    try {
+      await this.processManager.stop();
+    } catch (e) {
+      throw new ProxyServiceError(
+        `Failed to stop proxy: ${getErrorMessage(e)}`,
+        AppErrorCode.PROXY_STOP_FAILED,
+        true
+      );
+    }
+    const elapsed = performance.now() - start;
+    if (elapsed > PROXY_PERFORMANCE_BUDGETS.STOP_MS) {
+      this.logWarn(`stopEmbeddedProxy exceeded budget: ${elapsed.toFixed(1)}ms > ${PROXY_PERFORMANCE_BUDGETS.STOP_MS}ms`);
+    }
   }
 
   getEmbeddedProxyStatus(): ProxyEmbedStatus {
@@ -587,7 +682,22 @@ export class ProxyService extends BaseService {
   }
 
   async generateConfig(port?: number): Promise<void> {
-    return this.processManager.generateConfig(port ?? this.currentPort);
+    const start = performance.now();
+    const effectivePort = port ?? this.currentPort;
+    const portError = validatePort(effectivePort);
+    if (portError) {
+      throw new ProxyServiceError(
+        `generateConfig: ${portError}`,
+        AppErrorCode.PROXY_INVALID_CONFIG,
+        false,
+        { port: effectivePort }
+      );
+    }
+    await this.processManager.generateConfig(effectivePort);
+    const elapsed = performance.now() - start;
+    if (elapsed > PROXY_PERFORMANCE_BUDGETS.CONFIG_GENERATION_MS) {
+      this.logWarn(`generateConfig exceeded budget: ${elapsed.toFixed(1)}ms > ${PROXY_PERFORMANCE_BUDGETS.CONFIG_GENERATION_MS}ms`);
+    }
   }
 
   async getQuota(): Promise<{ accounts: Array<QuotaResponse & { accountId?: string; email?: string }> } | null> {
@@ -617,6 +727,7 @@ export class ProxyService extends BaseService {
   }
 
   async getModels(): Promise<ProxyModelResponse> {
+    const start = performance.now();
     const apiKey = await this.getProxyKey();
     const proxyData = await this.getProxyModels(apiKey);
 
@@ -645,6 +756,11 @@ export class ProxyService extends BaseService {
 
     const merged = this.mergeModels(proxyData, extra);
     const finalData = merged.map((m: ModelItem) => this.enrichModelWithQuota(m, quotas));
+
+    const elapsed = performance.now() - start;
+    if (elapsed > PROXY_PERFORMANCE_BUDGETS.GET_MODELS_MS) {
+      this.logWarn(`getModels exceeded budget: ${elapsed.toFixed(1)}ms > ${PROXY_PERFORMANCE_BUDGETS.GET_MODELS_MS}ms`);
+    }
 
     return { data: finalData, antigravityError };
   }
@@ -820,6 +936,7 @@ export class ProxyService extends BaseService {
     body?: unknown,
     rateLimit?: { provider: string; priority?: number; isPremiumBypass?: boolean }
   ): Promise<ProxyRequestResponse> {
+    const requestStart = performance.now();
     return new Promise((resolve, reject) => {
       const run = async () => {
         const snapshot = rateLimit
@@ -857,6 +974,10 @@ export class ProxyService extends BaseService {
           let d = '';
           res.on('data', chunk => d += chunk);
           res.on('end', () => {
+            const requestElapsed = performance.now() - requestStart;
+            if (requestElapsed > PROXY_PERFORMANCE_BUDGETS.REQUEST_MS) {
+              appLogger.warn('ProxyService', `makeRequest exceeded budget: ${requestElapsed.toFixed(1)}ms > ${PROXY_PERFORMANCE_BUDGETS.REQUEST_MS}ms (${method} ${path})`);
+            }
             const rateLimitInfo = snapshot ? {
               provider: snapshot.provider,
               limit: snapshot.limit,
@@ -882,7 +1003,21 @@ export class ProxyService extends BaseService {
           });
         });
 
-        request.on('error', err => reject(err));
+        request.on('error', err => {
+          const isConnectionError = 'code' in err && (
+            (err as NodeJS.ErrnoException).code === 'ECONNREFUSED' ||
+            (err as NodeJS.ErrnoException).code === 'ECONNRESET'
+          );
+          const code = isConnectionError
+            ? AppErrorCode.PROXY_CONNECTION_FAILED
+            : AppErrorCode.PROXY_REQUEST_FAILED;
+          reject(new ProxyServiceError(
+            err.message,
+            code,
+            isConnectionError,
+            { path, method }
+          ));
+        });
         if (body) {
           request.write(JSON.stringify(body));
         }
@@ -963,6 +1098,12 @@ export class ProxyService extends BaseService {
   }
 
   async fetchGitHubProfile(accessToken: string): Promise<{ email?: string; displayName?: string; avatarUrl?: string; login?: string }> {
+    const tokenError = validateToken(accessToken, 'Access token');
+    if (tokenError) {
+      this.logError(`fetchGitHubProfile: ${tokenError}`);
+      return {};
+    }
+
     await this.waitForRateLimit('github', { priority: 2 });
     appLogger.info('ProxyService', 'Fetching GitHub user profile...');
     return new Promise((resolve) => {
@@ -1006,6 +1147,12 @@ export class ProxyService extends BaseService {
   }
 
   async fetchGitHubEmails(accessToken: string): Promise<string | undefined> {
+    const tokenError = validateToken(accessToken, 'Access token');
+    if (tokenError) {
+      this.logError(`fetchGitHubEmails: ${tokenError}`);
+      return undefined;
+    }
+
     await this.waitForRateLimit('github', { priority: 2 });
     appLogger.info('ProxyService', 'Fetching GitHub user emails...');
     return new Promise((resolve) => {

@@ -1,6 +1,7 @@
 import { createHash } from 'crypto';
 import { gunzipSync, gzipSync } from 'zlib';
 
+import { TelemetryService } from '@main/services/analysis/telemetry.service';
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import {
@@ -29,6 +30,28 @@ export class AgentCheckpointError extends Error {
     }
 }
 
+/** Telemetry events emitted by AgentCheckpointService */
+export enum AgentCheckpointTelemetryEvent {
+    CHECKPOINT_SAVED = 'agent_checkpoint_saved',
+    CHECKPOINT_RESTORED = 'agent_checkpoint_restored',
+    CHECKPOINT_DELETED = 'agent_checkpoint_deleted',
+    ROLLBACK_STARTED = 'agent_checkpoint_rollback_started',
+    ROLLBACK_COMPLETED = 'agent_checkpoint_rollback_completed',
+    CHECKPOINT_COMPRESSED = 'agent_checkpoint_compressed',
+    CHECKPOINT_LIMIT_REACHED = 'agent_checkpoint_limit_reached'
+}
+
+/** Performance regression budgets (in milliseconds) for checkpoint operations */
+export const AGENT_CHECKPOINT_PERFORMANCE_BUDGETS = {
+    SAVE_CHECKPOINT_MS: 2000,
+    RESTORE_CHECKPOINT_MS: 2000,
+    DELETE_CHECKPOINT_MS: 500,
+    ROLLBACK_MS: 5000,
+    COMPRESS_MS: 1000,
+    LIST_CHECKPOINTS_MS: 500,
+    INITIALIZE_MS: 100
+} as const;
+
 interface RollbackPreparation {
     resumedCheckpoint: AgentCheckpointItem;
     preRollbackCheckpointId: string;
@@ -47,8 +70,22 @@ const CHECKPOINT_SNAPSHOT_PREFIX = 'gzip:';
 const MAX_CHECKPOINTS_PER_TASK = 200;
 
 export class AgentCheckpointService extends BaseService {
+    private telemetryService: TelemetryService | null = null;
+
     constructor(private databaseService: DatabaseService) {
         super('AgentCheckpointService');
+    }
+
+    /** Set the telemetry service dependency */
+    setTelemetryService(service: TelemetryService): void {
+        this.telemetryService = service;
+    }
+
+    /** Track telemetry event if service is available */
+    private trackEvent(eventName: AgentCheckpointTelemetryEvent, properties?: Record<string, unknown>): void {
+        if (this.telemetryService) {
+            this.telemetryService.track(eventName, properties);
+        }
     }
 
     async initialize(): Promise<void> {
@@ -62,6 +99,7 @@ export class AgentCheckpointService extends BaseService {
         trigger: AgentCheckpointTrigger = 'manual_snapshot'
     ): Promise<string> {
         if (!taskId) {throw new AgentCheckpointError('taskId is required', 'MISSING_TASK_ID');}
+        const startTime = Date.now();
 
         try {
             // Validate state before saving
@@ -80,9 +118,18 @@ export class AgentCheckpointService extends BaseService {
                 snapshot
             );
             await this.databaseService.uac.trimCheckpoints(taskId, MAX_CHECKPOINTS_PER_TASK);
+            const durationMs = Date.now() - startTime;
             this.logInfo(`Saved checkpoint ${checkpointId} for task ${taskId} (trigger: ${trigger})`);
+            this.trackEvent(AgentCheckpointTelemetryEvent.CHECKPOINT_SAVED, {
+                taskId, checkpointId, trigger, stepIndex, durationMs
+            });
             return checkpointId;
         } catch (error) {
+            const durationMs = Date.now() - startTime;
+            this.trackEvent(AgentCheckpointTelemetryEvent.CHECKPOINT_SAVED, {
+                taskId, trigger, stepIndex, durationMs, success: false,
+                error: (error as Error).message
+            });
             throw new AgentCheckpointError('Failed to save checkpoint', 'SAVE_FAILED', { error, taskId });
         }
     }
@@ -117,12 +164,17 @@ export class AgentCheckpointService extends BaseService {
     }
 
     async loadCheckpoint(checkpointId: string): Promise<AgentCheckpointItem | null> {
+        const startTime = Date.now();
         const row = await this.databaseService.uac.getCheckpoint(checkpointId);
         if (!row) {
             return null;
         }
 
         const parsed = this.parseSnapshot(row.snapshot, row.trigger, row.created_at);
+        const durationMs = Date.now() - startTime;
+        this.trackEvent(AgentCheckpointTelemetryEvent.CHECKPOINT_RESTORED, {
+            checkpointId, taskId: row.task_id, trigger: row.trigger, durationMs
+        });
         return {
             id: row.id,
             taskId: row.task_id,
@@ -151,6 +203,11 @@ export class AgentCheckpointService extends BaseService {
     }
 
     async prepareRollback(checkpointId: string, currentState: AgentTaskState): Promise<RollbackPreparation> {
+        const startTime = Date.now();
+        this.trackEvent(AgentCheckpointTelemetryEvent.ROLLBACK_STARTED, {
+            checkpointId, taskId: currentState.taskId
+        });
+
         const checkpoint = await this.loadCheckpoint(checkpointId);
         if (!checkpoint?.state) {
             throw new Error(`Checkpoint ${checkpointId} not found`);
@@ -162,6 +219,12 @@ export class AgentCheckpointService extends BaseService {
             currentState,
             'pre_rollback'
         );
+
+        const durationMs = Date.now() - startTime;
+        this.trackEvent(AgentCheckpointTelemetryEvent.ROLLBACK_COMPLETED, {
+            checkpointId, preRollbackCheckpointId,
+            taskId: currentState.taskId, durationMs
+        });
 
         return {
             resumedCheckpoint: checkpoint,

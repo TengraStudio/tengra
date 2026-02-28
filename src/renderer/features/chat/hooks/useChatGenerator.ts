@@ -214,7 +214,7 @@ export const useChatGenerator = (
                 });
             } else {
                 // Single model: use existing stream logic
-                const tools = allTools.filter(tDefinition => {
+                const tools = systemMode === 'agent' ? allTools.filter(tDefinition => {
                     if (!tDefinition.function.name) {
                         return false;
                     }
@@ -225,7 +225,7 @@ export const useChatGenerator = (
                         return true;
                     }
                     return tDefinition.function.name === 'generate_image';
-                });
+                }) : [];
 
                 const { presetOptions } = prepareMessages({
                     chatId,
@@ -244,6 +244,8 @@ export const useChatGenerator = (
                     ...presetOptions,
                     projectRoot: activeWorkspacePath,
                     systemMode,
+                    thinking: systemMode === 'thinking',
+                    agentToolsEnabled: systemMode === 'agent',
                     reasoningEffort,
                 };
                 await executeToolTurnLoop({
@@ -633,7 +635,7 @@ async function orchestrationMultiModelStreams(params: OrchestrationParams) {
 
             const reasoningEffort = getReasoningEffort(modelInfo.model, appSettings);
 
-            const tools = allTools.filter((tDefinition: ToolDefinition) => {
+            const tools = systemMode === 'agent' ? allTools.filter((tDefinition: ToolDefinition) => {
                 if (!tDefinition.function.name) {
                     return false;
                 }
@@ -644,7 +646,7 @@ async function orchestrationMultiModelStreams(params: OrchestrationParams) {
                     tDefinition.function.name === 'generate_image' &&
                     modelInfo.provider === 'antigravity'
                 );
-            });
+            }) : [];
 
             const stream = chatStream({
                 messages: allMessages,
@@ -655,6 +657,8 @@ async function orchestrationMultiModelStreams(params: OrchestrationParams) {
                     ...presetOptions,
                     projectRoot: activeWorkspacePath,
                     systemMode,
+                    thinking: systemMode === 'thinking',
+                    agentToolsEnabled: systemMode === 'agent',
                     reasoningEffort,
                 },
                 chatId: streamId,

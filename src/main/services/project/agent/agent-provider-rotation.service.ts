@@ -10,6 +10,7 @@ import { AuthService } from '@main/services/security/auth.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { ModelOption, ProviderConfig } from '@shared/types/agent-state';
+import { ModelGovernanceConfig } from '@shared/types/project-agent';
 import { AppSettings } from '@shared/types/settings';
 
 /**
@@ -552,6 +553,42 @@ export class AgentProviderRotationService extends BaseService {
     resetProviderStats(provider: string): void {
         this.accountHealth.delete(provider);
         this.logInfo(`Reset stats for provider: ${provider}`);
+    }
+
+    // ========================================================================
+    // Model Governance (MARCH1-MODEL-GOV-001)
+    // ========================================================================
+
+    /**
+     * MARCH1-MODEL-GOV-001: Check if a model is allowed by governance policy.
+     * Returns true if the model passes governance checks, false if blocked.
+     */
+    isModelAllowedByGovernance(
+        model: string,
+        governance: ModelGovernanceConfig | undefined,
+        taskId?: string
+    ): boolean {
+        if (!governance) {
+            return true;
+        }
+
+        // Check blocklist first
+        if (governance.blockedModels.length > 0 && governance.blockedModels.includes(model)) {
+            this.logWarn(
+                `Model blocked by governance policy: model=${model}, taskId=${taskId ?? 'unknown'}, reason=blocked_by_denylist`
+            );
+            return false;
+        }
+
+        // Check allowlist (empty = all allowed)
+        if (governance.allowedModels.length > 0 && !governance.allowedModels.includes(model)) {
+            this.logWarn(
+                `Model blocked by governance policy: model=${model}, taskId=${taskId ?? 'unknown'}, reason=not_in_allowlist`
+            );
+            return false;
+        }
+
+        return true;
     }
 
     // ========================================================================

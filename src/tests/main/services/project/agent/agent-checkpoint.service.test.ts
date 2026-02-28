@@ -1,6 +1,9 @@
 import { gzipSync } from 'zlib';
 
-import { AgentCheckpointService } from '@main/services/project/agent/agent-checkpoint.service';
+import {
+    AgentCheckpointService,
+    AgentCheckpointTelemetryEvent,
+} from '@main/services/project/agent/agent-checkpoint.service';
 import { AgentTaskState } from '@shared/types/agent-state';
 import { ProjectStep } from '@shared/types/project-agent';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -95,6 +98,10 @@ describe('AgentCheckpointService', () => {
         getLatestPlanVersion: vi.fn()
     };
 
+    const mockTelemetryService = {
+        track: vi.fn().mockReturnValue({ success: true })
+    };
+
     const mockDatabaseService = {
         uac: mockUac
     };
@@ -104,6 +111,7 @@ describe('AgentCheckpointService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         service = new AgentCheckpointService(mockDatabaseService as never);
+        service.setTelemetryService(mockTelemetryService as never);
     });
 
     it('hydrates checkpoint snapshots with Date fields', async () => {
@@ -235,5 +243,121 @@ describe('AgentCheckpointService', () => {
         expect(versions).toHaveLength(1);
         expect(versions[0]?.plan[0]?.text).toBe('Plan');
         expect(versions[0]?.reason).toBe('proposed');
+    });
+
+    describe('telemetry events', () => {
+        it('emits CHECKPOINT_SAVED on successful save', async () => {
+            const state = createMockTaskState();
+            mockUac.createCheckpoint.mockResolvedValue('cp-new');
+
+            await service.saveCheckpoint('task-123', 2, state, 'manual_snapshot');
+
+            expect(mockTelemetryService.track).toHaveBeenCalledWith(
+                AgentCheckpointTelemetryEvent.CHECKPOINT_SAVED,
+                expect.objectContaining({
+                    taskId: 'task-123',
+                    checkpointId: 'cp-new',
+                    trigger: 'manual_snapshot',
+                    stepIndex: 2,
+                    durationMs: expect.any(Number)
+                })
+            );
+        });
+
+        it('emits CHECKPOINT_SAVED with failure details on save error', async () => {
+            const state = createMockTaskState();
+            mockUac.createCheckpoint.mockRejectedValue(new Error('DB write failed'));
+
+            await expect(service.saveCheckpoint('task-123', 2, state)).rejects.toThrow();
+
+            expect(mockTelemetryService.track).toHaveBeenCalledWith(
+                AgentCheckpointTelemetryEvent.CHECKPOINT_SAVED,
+                expect.objectContaining({
+                    taskId: 'task-123',
+                    success: false,
+                    error: expect.any(String),
+                    durationMs: expect.any(Number)
+                })
+            );
+        });
+
+        it('emits CHECKPOINT_RESTORED on successful load', async () => {
+            const state = createMockTaskState();
+            const snapshot = JSON.stringify({
+                schemaVersion: 1,
+                trigger: 'manual_snapshot',
+                createdAt: 1739008800000,
+                state
+            });
+
+            mockUac.getCheckpoint.mockResolvedValue({
+                id: 'cp-1',
+                task_id: 'task-123',
+                step_index: 2,
+                trigger: 'manual_snapshot',
+                snapshot,
+                created_at: 1739008800000
+            });
+
+            await service.loadCheckpoint('cp-1');
+
+            expect(mockTelemetryService.track).toHaveBeenCalledWith(
+                AgentCheckpointTelemetryEvent.CHECKPOINT_RESTORED,
+                expect.objectContaining({
+                    checkpointId: 'cp-1',
+                    taskId: 'task-123',
+                    trigger: 'manual_snapshot',
+                    durationMs: expect.any(Number)
+                })
+            );
+        });
+
+        it('emits ROLLBACK_STARTED and ROLLBACK_COMPLETED on prepareRollback', async () => {
+            const state = createMockTaskState();
+            const snapshot = JSON.stringify({
+                schemaVersion: 1,
+                trigger: 'manual_snapshot',
+                createdAt: Date.now(),
+                state
+            });
+
+            mockUac.getCheckpoint.mockResolvedValue({
+                id: 'cp-target',
+                task_id: 'task-123',
+                step_index: 2,
+                trigger: 'manual_snapshot',
+                snapshot,
+                created_at: Date.now()
+            });
+            mockUac.createCheckpoint.mockResolvedValue('cp-pre');
+
+            await service.prepareRollback('cp-target', state);
+
+            expect(mockTelemetryService.track).toHaveBeenCalledWith(
+                AgentCheckpointTelemetryEvent.ROLLBACK_STARTED,
+                expect.objectContaining({
+                    checkpointId: 'cp-target',
+                    taskId: 'task-123'
+                })
+            );
+            expect(mockTelemetryService.track).toHaveBeenCalledWith(
+                AgentCheckpointTelemetryEvent.ROLLBACK_COMPLETED,
+                expect.objectContaining({
+                    checkpointId: 'cp-target',
+                    preRollbackCheckpointId: 'cp-pre',
+                    taskId: 'task-123',
+                    durationMs: expect.any(Number)
+                })
+            );
+        });
+
+        it('does not throw when telemetry service is not set', async () => {
+            const serviceWithoutTelemetry = new AgentCheckpointService(mockDatabaseService as never);
+            const state = createMockTaskState();
+            mockUac.createCheckpoint.mockResolvedValue('cp-no-tel');
+
+            const id = await serviceWithoutTelemetry.saveCheckpoint('task-123', 0, state);
+            expect(id).toBe('cp-no-tel');
+        });
     });
 });

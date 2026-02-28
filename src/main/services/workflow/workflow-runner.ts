@@ -1,9 +1,12 @@
 import { BaseService } from '@main/services/base.service';
+import { withRetry } from '@main/utils/retry.util';
+import { JsonValue } from '@shared/types/common';
 import { Workflow, WorkflowExecutionResult } from '@shared/types/workflow.types';
 import { WorkflowContext, WorkflowStepResult } from '@shared/types/workflow-context.types';
 
 import { IWorkflowActionHandler } from './actions/action.interface';
 import { IWorkflowTriggerHandler } from './triggers/trigger.interface';
+import { WorkflowError, WorkflowErrorCode } from './workflow-error';
 
 export class WorkflowRunner extends BaseService {
     private actionHandlers: Map<string, IWorkflowActionHandler> = new Map();
@@ -45,7 +48,10 @@ export class WorkflowRunner extends BaseService {
             while (currentStepId) {
                 const step = workflow.steps.find(s => s.id === currentStepId);
                 if (!step) {
-                    throw new Error(`Step not found: ${currentStepId}`);
+                    throw new WorkflowError(
+                        WorkflowErrorCode.STEP_NOT_FOUND,
+                        `Step not found: ${currentStepId}`
+                    );
                 }
 
                 logs.push(`Executing step: ${step.name}`);
@@ -53,13 +59,36 @@ export class WorkflowRunner extends BaseService {
 
                 const handler = this.actionHandlers.get(step.action.type);
                 if (!handler) {
-                    throw new Error(`No handler registered for action type: ${step.action.type}`);
+                    throw new WorkflowError(
+                        WorkflowErrorCode.HANDLER_NOT_FOUND,
+                        `No handler registered for action type: ${step.action.type}`
+                    );
                 }
 
                 const stepStartTime = Date.now();
                 try {
-                    // Execute action with context
-                    const output = await handler.execute(step.action, context);
+                    let output: JsonValue | void;
+
+                    if (step.retryPolicy) {
+                        const policy = step.retryPolicy;
+                        output = await withRetry(
+                            () => handler.execute(step.action, context),
+                            {
+                                maxRetries: policy.maxRetries,
+                                baseDelayMs: policy.baseDelayMs,
+                                maxDelayMs: policy.maxDelayMs,
+                                shouldRetry: () => true,
+                                onRetry: (_err, attempt, delay) => {
+                                    const msg = `Retrying step "${step.name}" (attempt ${attempt + 1}/${policy.maxRetries}) after ${delay}ms`;
+                                    logs.push(msg);
+                                    this.logInfo(msg);
+                                },
+                            }
+                        );
+                    } else {
+                        output = await handler.execute(step.action, context);
+                    }
+
                     const stepEndTime = Date.now();
 
                     logs.push(`Completed step: ${step.name}`);
@@ -80,7 +109,19 @@ export class WorkflowRunner extends BaseService {
                         duration: stepEndTime - stepStartTime,
                     });
 
-                    throw error; // Re-throw to fail the workflow
+                    // Non-critical steps: log and continue to the next step
+                    if (step.critical === false) {
+                        const fallbackMsg = `Non-critical step failed (continuing): ${step.name} - ${errorMessage}`;
+                        logs.push(fallbackMsg);
+                        this.logWarn(fallbackMsg);
+                        currentStepId = step.nextStepId;
+                        continue;
+                    }
+
+                    throw new WorkflowError(
+                        WorkflowErrorCode.STEP_FAILED,
+                        errorMessage
+                    );
                 }
 
                 currentStepId = step.nextStepId;

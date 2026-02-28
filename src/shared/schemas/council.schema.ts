@@ -90,6 +90,16 @@ export const AgentStreamEventSchema = CouncilEventEnvelopeSchema.extend({
     data: z.record(z.string(), z.unknown()),
 });
 
+/** MARCH1-MODEL-GOV-001: Zod schema for per-task model governance configuration */
+export const ModelGovernanceConfigSchema = z.object({
+    /** Models explicitly allowed for this task (empty array = all allowed) */
+    allowedModels: z.array(z.string()),
+    /** Models explicitly blocked for this task */
+    blockedModels: z.array(z.string()),
+    /** Whether to enforce governance on fallback routing too */
+    enforceOnFallback: z.boolean(),
+});
+
 export const QuotaInterruptEventSchema = CouncilEventEnvelopeSchema.extend({
     success: z.boolean(),
     interruptId: z.string().min(1),

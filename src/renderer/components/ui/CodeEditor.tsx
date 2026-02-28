@@ -1,15 +1,100 @@
 import type { Monaco, OnChange } from '@monaco-editor/react';
+import type {
+    InlineSuggestionRequest,
+    InlineSuggestionSource,
+} from '@shared/schemas/inline-suggestions.schema';
 import { Loader2 } from 'lucide-react';
 import type { editor } from 'monaco-editor';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useTheme } from '@/hooks/useTheme';
 import { Language, useTranslation } from '@/i18n';
+import { useSettingsStore } from '@/store/settings.store';
+import type { AppSettings } from '@/types/settings';
 import { normalizeLanguage } from '@/utils/language-map';
 import { ensureMonacoInitialized } from '@/utils/monaco-loader.util';
 import { initTextMateSupport } from '@/utils/textmate-loader';
 
 type MonacoEditorInstance = editor.IStandaloneCodeEditor;
+
+export interface MonacoEditorComponentProps {
+    height: string;
+    defaultLanguage: string;
+    language: string;
+    value: string;
+    onChange?: OnChange;
+    theme: string;
+    onMount: (editorInstance: MonacoEditorInstance, monacoInstance: Monaco) => void;
+    loading: React.ReactNode;
+    options: editor.IStandaloneEditorConstructionOptions;
+}
+
+export interface InlineSuggestionConfig {
+    enabled?: boolean;
+    source: InlineSuggestionSource;
+    model?: string;
+    provider?: string;
+    accountId?: string;
+    maxTokens?: number;
+}
+
+export const DEFAULT_INLINE_SUGGESTION_CONFIG: InlineSuggestionConfig = {
+    enabled: true,
+    source: 'custom',
+    provider: 'openai',
+    model: 'gpt-4o-mini',
+    maxTokens: 128,
+};
+
+function resolveInlineSuggestionConfig(
+    settingsConfig: Partial<InlineSuggestionConfig>,
+    inlineSuggestionConfig: InlineSuggestionConfig | null
+): InlineSuggestionConfig {
+    const source =
+        inlineSuggestionConfig?.source
+        ?? settingsConfig.source
+        ?? DEFAULT_INLINE_SUGGESTION_CONFIG.source;
+    const sourceDefaults: InlineSuggestionConfig =
+        source === 'copilot'
+            ? {
+                enabled: DEFAULT_INLINE_SUGGESTION_CONFIG.enabled,
+                source,
+                model: 'gpt-4o-copilot',
+                maxTokens: DEFAULT_INLINE_SUGGESTION_CONFIG.maxTokens,
+            }
+            : { ...DEFAULT_INLINE_SUGGESTION_CONFIG, source };
+
+    return {
+        ...sourceDefaults,
+        ...settingsConfig,
+        ...(inlineSuggestionConfig ?? {}),
+    };
+}
+
+function buildInlineSuggestionConfigFromSettings(
+    settings: AppSettings | null
+): Partial<InlineSuggestionConfig> {
+    const general = settings?.general;
+    if (!general) {
+        return {};
+    }
+
+    const source = general.inlineSuggestionsSource ?? DEFAULT_INLINE_SUGGESTION_CONFIG.source;
+    const model = general.inlineSuggestionsModel?.trim() || undefined;
+    const accountId = general.inlineSuggestionsCopilotAccountId?.trim() || undefined;
+    const provider =
+        source === 'custom'
+            ? general.inlineSuggestionsProvider?.trim() || DEFAULT_INLINE_SUGGESTION_CONFIG.provider
+            : undefined;
+
+    return {
+        enabled: general.inlineSuggestionsEnabled ?? DEFAULT_INLINE_SUGGESTION_CONFIG.enabled,
+        source,
+        model,
+        provider,
+        accountId,
+    };
+}
 
 const loadMonaco = async () => {
     const [{ default: Editor }, monaco] = await Promise.all([
@@ -21,6 +106,14 @@ const loadMonaco = async () => {
 
 function rgbChannelToHex(channel: number): string {
     return channel.toString(16).padStart(2, '0');
+}
+
+export function toError(error: Error | null | undefined): Error {
+    if (error instanceof Error) {
+        return error;
+    }
+
+    return new Error('Unknown error');
 }
 
 function toHexColorFromComputedColor(colorValue: string): string | null {
@@ -127,7 +220,6 @@ export interface CodeEditorProps {
     value?: string;
     language?: string;
     onChange?: OnChange;
-    theme?: string;
     readOnly?: boolean;
     className?: string;
     showMinimap?: boolean;
@@ -139,6 +231,7 @@ export interface CodeEditorProps {
     performanceMode?: boolean;
     aiSafetyFilterEnabled?: boolean;
     aiContextLimit?: number;
+    inlineSuggestionConfig?: InlineSuggestionConfig | null;
     initialPosition?: { lineNumber: number; column: number } | null;
     initialScrollTop?: number | null;
     onCursorPositionChange?: (position: { lineNumber: number; column: number }) => void;
@@ -150,7 +243,7 @@ let textMateInitializing = false;
 
 const useMonacoLoader = () => {
     const [monacoComponents, setMonacoComponents] = useState<{
-        Editor: React.ComponentType<Record<string, unknown>>;
+        Editor: React.ComponentType<MonacoEditorComponentProps>;
         monaco: Monaco;
     } | null>(null);
     const [loading, setLoading] = useState(true);
@@ -158,18 +251,66 @@ const useMonacoLoader = () => {
         loadMonaco()
             .then(({ Editor, monaco }) => {
                 setMonacoComponents({
-                    Editor: Editor as React.ComponentType<Record<string, unknown>>,
+                    Editor: Editor as React.ComponentType<MonacoEditorComponentProps>,
                     monaco,
                 });
                 setLoading(false);
             })
             .catch(e => {
-                window.electron.log.error('Failed to load Monaco', e);
+                window.electron.log.error('Failed to load Monaco', toError(e instanceof Error ? e : undefined));
                 setLoading(false);
             });
     }, []);
     return { monacoComponents, loading };
 };
+
+function buildInlineSuggestionRequest(
+    model: editor.ITextModel,
+    position: { lineNumber: number; column: number },
+    language: string,
+    aiSafetyFilterEnabled: boolean,
+    aiContextLimit: number,
+    inlineSuggestionConfig: InlineSuggestionConfig
+): InlineSuggestionRequest | null {
+    const prefix = model.getValueInRange({
+        startLineNumber: 1,
+        startColumn: 1,
+        endLineNumber: position.lineNumber,
+        endColumn: position.column,
+    });
+
+    if (prefix.trim().length === 0 || prefix.length > aiContextLimit) {
+        return null;
+    }
+
+    if (
+        aiSafetyFilterEnabled
+        && /api[_-]?key|private[_-]?key|token\s*=|password\s*=/i.test(prefix)
+    ) {
+        return null;
+    }
+
+    const lastSuffixLine = Math.min(model.getLineCount(), position.lineNumber + 20);
+    const suffix = model.getValueInRange({
+        startLineNumber: position.lineNumber,
+        startColumn: position.column,
+        endLineNumber: lastSuffixLine,
+        endColumn: model.getLineMaxColumn(lastSuffixLine),
+    });
+
+    return {
+        prefix,
+        suffix: suffix.slice(0, Math.min(aiContextLimit, 4000)),
+        language,
+        cursorLine: position.lineNumber,
+        cursorColumn: position.column,
+        source: inlineSuggestionConfig.source,
+        model: inlineSuggestionConfig.model,
+        provider: inlineSuggestionConfig.provider,
+        accountId: inlineSuggestionConfig.accountId,
+        maxTokens: inlineSuggestionConfig.maxTokens,
+    };
+}
 
 const useEditorDecorations = (monaco: Monaco | null, t: (key: string) => string) => {
     const decorationRef = useRef<string[]>([]);
@@ -213,10 +354,12 @@ const useInlineCompletions = (
     normalizedLanguage: string,
     hasMonaco: boolean,
     aiSafetyFilterEnabled: boolean,
-    aiContextLimit: number
+    aiContextLimit: number,
+    inlineSuggestionConfig: InlineSuggestionConfig,
+    readOnly: boolean
 ) => {
     useEffect(() => {
-        if (!monacoRef.current || !hasMonaco) {
+        if (!monacoRef.current || !hasMonaco || !inlineSuggestionConfig.enabled || readOnly) {
             return;
         }
         const monaco = monacoRef.current;
@@ -225,33 +368,27 @@ const useInlineCompletions = (
                 model: editor.ITextModel,
                 pos: { lineNumber: number; column: number }
             ) => {
-                const before = model.getValueInRange({
-                    startLineNumber: 1,
-                    startColumn: 1,
-                    endLineNumber: pos.lineNumber,
-                    endColumn: pos.column,
-                });
-                if (before.trim().length === 0) {
+                const request = buildInlineSuggestionRequest(
+                    model,
+                    pos,
+                    normalizedLanguage,
+                    aiSafetyFilterEnabled,
+                    aiContextLimit,
+                    inlineSuggestionConfig
+                );
+                if (!request) {
                     return { items: [] };
                 }
-                if (before.length > aiContextLimit) {
-                    return { items: [] };
-                }
-                if (
-                    aiSafetyFilterEnabled
-                    && /api[_-]?key|private[_-]?key|token\s*=|password\s*=/i.test(before)
-                ) {
-                    return { items: [] };
-                }
+
                 try {
-                    const sug = await window.electron.project.getCompletion(before);
-                    if (!sug) {
+                    const response = await window.electron.project.getInlineSuggestion(request);
+                    if (!response.suggestion) {
                         return { items: [] };
                     }
                     return {
                         items: [
                             {
-                                insertText: sug,
+                                insertText: response.suggestion,
                                 range: {
                                     startLineNumber: pos.lineNumber,
                                     startColumn: pos.column,
@@ -265,13 +402,21 @@ const useInlineCompletions = (
                     return { items: [] };
                 }
             },
-            freeInlineCompletions: () => {},
-            handleItemDidShow: () => {},
+            freeInlineCompletions: () => { },
+            handleItemDidShow: () => { },
         });
         return () => {
             prov.dispose();
         };
-    }, [normalizedLanguage, hasMonaco, monacoRef, aiSafetyFilterEnabled, aiContextLimit]);
+    }, [
+        aiContextLimit,
+        aiSafetyFilterEnabled,
+        hasMonaco,
+        inlineSuggestionConfig,
+        monacoRef,
+        normalizedLanguage,
+        readOnly,
+    ]);
 };
 
 const useEditorLifecycle = (
@@ -295,7 +440,7 @@ const useEditorLifecycle = (
                 } catch (e) {
                     window.electron.log.warn(
                         '[CodeEditor] TextMate initialization failed',
-                        e as Error
+                        toError(e instanceof Error ? e : undefined)
                     );
                 } finally {
                     textMateInitializing = false;
@@ -375,7 +520,7 @@ const useEditorInitialLine = (
 };
 
 const EditorContainer: React.FC<{
-    Editor: React.ComponentType<Record<string, unknown>>;
+    Editor: React.ComponentType<MonacoEditorComponentProps>;
     normalizedLanguage: string;
     value: string;
     onChange?: OnChange;
@@ -395,20 +540,20 @@ const EditorContainer: React.FC<{
     options,
     className,
 }) => (
-    <div className={`relative w-full h-full overflow-hidden ${className}`}>
-        <Editor
-            height="100%"
-            defaultLanguage={normalizedLanguage}
-            language={normalizedLanguage}
-            value={value}
-            onChange={onChange}
-            theme={theme}
-            onMount={onMount}
-            loading={loading}
-            options={options}
-        />
-    </div>
-);
+        <div className={`relative w-full h-full overflow-hidden ${className}`}>
+            <Editor
+                height="100%"
+                defaultLanguage={normalizedLanguage}
+                language={normalizedLanguage}
+                value={value}
+                onChange={onChange}
+                theme={theme}
+                onMount={onMount}
+                loading={loading}
+                options={options}
+            />
+        </div>
+    );
 
 export const CodeEditor: React.FC<CodeEditorProps> = ({
     value,
@@ -425,6 +570,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     performanceMode = false,
     aiSafetyFilterEnabled = true,
     aiContextLimit = 8000,
+    inlineSuggestionConfig = null,
     initialPosition = null,
     initialScrollTop = null,
     onCursorPositionChange,
@@ -434,16 +580,28 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     const { t } = useTranslation(appLanguage);
     const editorRef = useRef<MonacoEditorInstance | null>(null);
     const monacoRef = useRef<Monaco | null>(null);
+    const settings = useSettingsStore(snapshot => snapshot.settings);
     const { monacoComponents, loading } = useMonacoLoader();
     const updateDecorations = useEditorDecorations(monacoComponents?.monaco ?? null, t);
     const normalizedLanguage = normalizeLanguage(language);
+    const settingsInlineSuggestionConfig = useMemo(
+        () => buildInlineSuggestionConfigFromSettings(settings),
+        [settings]
+    );
+    const resolvedInlineSuggestionConfig = useMemo(
+        (): InlineSuggestionConfig =>
+            resolveInlineSuggestionConfig(settingsInlineSuggestionConfig, inlineSuggestionConfig),
+        [inlineSuggestionConfig, settingsInlineSuggestionConfig]
+    );
 
     useInlineCompletions(
         monacoRef,
         normalizedLanguage,
         !!monacoComponents,
         aiSafetyFilterEnabled,
-        aiContextLimit
+        aiContextLimit,
+        resolvedInlineSuggestionConfig,
+        readOnly
     );
     useEditorInitialLine(editorRef, initialLine);
 
@@ -486,8 +644,19 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             fixedOverflowWidgets: true,
             codeLens: enableCodeLens && !performanceMode,
             inlayHints: { enabled: enableInlayHints && !performanceMode ? 'on' : 'off' },
+            inlineSuggest: {
+                enabled: resolvedInlineSuggestionConfig.enabled && !readOnly,
+            },
         }),
-        [showMinimap, fontSize, readOnly, enableCodeLens, performanceMode, enableInlayHints]
+        [
+            showMinimap,
+            fontSize,
+            readOnly,
+            enableCodeLens,
+            performanceMode,
+            enableInlayHints,
+            resolvedInlineSuggestionConfig.enabled,
+        ]
     );
 
     if (loading || !monacoComponents) {

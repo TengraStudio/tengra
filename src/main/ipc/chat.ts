@@ -541,6 +541,48 @@ class ChatIpcManager {
             }
         }
     }
+
+    /**
+     * Replays the last user message before a given assistant message using a different model.
+     * Enables "regenerate with different model" functionality.
+     */
+    async handleRetryWithModel(event: IpcMainInvokeEvent, params: { chatId: string, messageId: string, model: string, provider: string }) {
+        const { chatId, messageId, model, provider } = params;
+
+        const dbMessages = await this.options.databaseService.chats.getMessages(chatId);
+        if (!dbMessages || dbMessages.length === 0) {
+            throw new Error('No messages found for the given chat');
+        }
+
+        const assistantIdx = dbMessages.findIndex(m => String(m.id) === messageId);
+        if (assistantIdx < 0) {
+            throw new Error(`Message ${messageId} not found in chat ${chatId}`);
+        }
+
+        const precedingMessages = dbMessages.slice(0, assistantIdx);
+        const lastUserMsg = [...precedingMessages].reverse().find(m => m.role === 'user');
+        if (!lastUserMsg) {
+            throw new Error('No preceding user message found to retry');
+        }
+
+        const contextMessages: Message[] = precedingMessages.map(m => ({
+            id: String(m.id),
+            role: m.role as Message['role'],
+            content: String(m.content),
+            timestamp: new Date(Number(m.timestamp)),
+        }));
+
+        appLogger.info('Chat', `[RetryWithModel] Retrying chat ${chatId} message ${messageId} with ${provider}/${model}`);
+
+        await this.handleChatStream(event, {
+            messages: contextMessages,
+            model: sanitizeString(model, { maxLength: 200, allowNewlines: false }),
+            provider: sanitizeString(provider, { maxLength: 50, allowNewlines: false }),
+            chatId,
+            optionsJson: undefined,
+            tools: undefined,
+        });
+    }
 }
 
 
@@ -577,6 +619,13 @@ const StreamChatSchema = OpenAIChatSchema.extend({
     optionsJson: z.record(z.string(), z.unknown()).optional()
 });
 
+const RetryWithModelSchema = z.object({
+    chatId: z.string(),
+    messageId: z.string(),
+    model: z.string(),
+    provider: z.string(),
+});
+
 export function registerChatIpc(options: ChatIpcOptions) {
     const manager = new ChatIpcManager(options);
 
@@ -596,5 +645,11 @@ export function registerChatIpc(options: ChatIpcOptions) {
         const res = await options.copilotService.chat(messages, model);
         return { content: parseAIResponseContent(res?.content as JsonValue), role: 'assistant' };
     }));
+
+    ipcMain.handle('chat:retry-with-model', createValidatedIpcHandler(
+        'chat:retry-with-model',
+        (event, args) => manager.handleRetryWithModel(event, args as unknown as Parameters<ChatIpcManager['handleRetryWithModel']>[1]),
+        { argsSchema: z.tuple([RetryWithModelSchema]) }
+    ));
 }
 

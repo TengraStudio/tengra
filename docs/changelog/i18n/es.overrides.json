@@ -1,4 +1,16 @@
 {
+  "2026-02-27-preload-modularization-refinement": {
+    "title": "Refinamiento de la modularización de precarga y revisión de la seguridad de tipos",
+    "summary": "Finalizada la modularización de los scripts de precarga de Electron, resueltos los desajustes de tipos críticos en los puentes de agentes y eliminados los tipos 'any' prohibidos.",
+    "items": [
+      "- **Alineación de modularización**: Sincronización de todos los puentes de precarga específicos del dominio con los controladores IPC del proceso principal.",
+      "- **Refuerzo de la seguridad de tipos**: Eliminación de usos de `any` en `ProjectAgentBridge`, `McpMarketplaceBridge` y `AdvancedMemoryBridge`.",
+      "- **Corrección de errores**: Resuelto un desajuste de tipos de marca de tiempo en `OrchestratorBridge`.",
+      "- **Corrección del contrato IPC**: Actualización de los puentes de inteligencia de código y sandbox para usar argumentos posicionales.",
+      "- **Fiabilidad de las pruebas**: Corregido un mock roto en `db.integration.test.ts`.",
+      "- **Higiene**: Limpieza de importaciones no utilizadas y refinamiento de tipos de oyentes."
+    ]
+  },
   "2026-02-26-quick-wins-refactor": {
     "title": "NASA Power of Ten: Refactorización Quick-Wins",
     "summary": "Refactorización de varios archivos de gran tamaño para cumplir con la regla n.º 3 de NASA Power of Ten (límite de 60 líneas por función) y mejorar la modularidad del código.",
@@ -3922,8 +3934,7 @@
       "- **Refinamiento de entrada**: elementos de formulario pulidos con bordes elegantes, estados de enfoque y mensajes de error animados distintos para una mejor usabilidad.",
       "- **Motion Design**: Microanimaciones integradas para transiciones y estados interactivos para crear una interfaz más responsiva y viva."
     ]
-  }
-,
+  },
   "2025-07-25-service-threat-model": {
     "title": "Modelo de Amenazas y Revisión de Casos de Abuso para Servicios",
     "summary": "Creado docs/guides/SERVICE_THREAT_MODEL.md con análisis de amenazas para los 12 servicios backend con vectores de amenaza, mitigaciones y escenarios de abuso.",
@@ -3932,6 +3943,15 @@
       "- 30+ vectores de amenaza documentados con códigos T, descripciones y mitigaciones existentes por servicio",
       "- 24+ casos de abuso identificados: inyección de prompt, agotamiento de recursos, inyección de comandos, traversal de ruta y robo de credenciales",
       "- Matriz de riesgo resumida y 6 recomendaciones de seguridad accionables añadidas"
+    ]
+  },
+  "2026-03-01-proxy-agent-test-resolution": {
+    "title": "Resolución de fallas en la prueba del servicio de proxy y agente",
+    "summary": "Se resolvieron pruebas unitarias y de integración fallidas en los conjuntos de pruebas de rendimiento del proxy y puntos de control del agente mediante la corrección de simulacros, importaciones y límites de enumeración.",
+    "items": [
+      "- **Pruebas de rendimiento de proxy**: Se corrigió la frágil implementación simulada para `performance.now()` en las pruebas de sincronización `startEmbeddedProxy`.",
+      "- **Pruebas de contrato de servicio de proxy**: verificación de claves de presupuesto de rendimiento de cuota actualizadas y manejo de límites `QuotaErrorCode` para admitir códigos de error recién agregados.",
+      "- **Servicio de punto de control del agente**: se resolvió un error fatal de referencia TypeScript runtime causado al importar `AgentCheckpointTelemetryEvent` con un modificador `type` en lugar de como un valor, lo que rompió las aserciones de seguimiento."
     ]
   }
 }

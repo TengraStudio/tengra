@@ -91,7 +91,8 @@ export const zh = {
     "errors": {
         "unexpected": "抱歉，发生了错误。",
         "somethingWentWrong": "出了点问题：",
-        "rootNotFound": "未找到根元素"
+        "rootNotFound": "未找到根元素",
+        "rateLimitWarning": "速率限制警告（{{provider}}）：剩余 {{remaining}}/{{limit}}"
     },
     "languages": {
         "tr": "土耳其语",
@@ -488,7 +489,10 @@ export const zh = {
         "dangerZone": "危险区",
         "consensusThreshold": "共识门槛",
         "councilAI": "理事会人工智能",
-        "councilAIDesc": "选择哪些代理参与理事会。"
+        "councilAIDesc": "选择哪些代理参与理事会。",
+        "systemHealth": "系统健康",
+        "healthStatus": "健康状态",
+        "totalFailures": "总失败数"
     },
     "projectWizard": {
         "title": "项目向导",
@@ -1190,6 +1194,7 @@ export const zh = {
         "blur": "模糊",
         "exportTheme": "出口",
         "importTheme": "进口",
+        "failedImportThemeInvalidJson": "主题导入失败：无效的 JSON 文件",
         "galleryView": "画廊视图",
         "exitGalleryView": "退出图库视图",
         "floatTerminal": "浮动码头",
@@ -1328,6 +1333,8 @@ export const zh = {
         "scrollToBottomWithCount": "滚动到底部（{{count}} 条新消息）",
         "clear": "清除",
         "error": "错误",
+        "quotaExceeded": "配额或速率限制已超出。这可能是由于速率限制（请求过多）或配额耗尽造成的。请等待几分钟后重试。",
+        "rateLimitExceeded": "速率限制或配额已超出。请等待几分钟后重试。",
         "modelComparison": "型号对比",
         "readMore": "阅读更多",
         "searchMessages": "搜索消息...",
@@ -1360,7 +1367,33 @@ export const zh = {
             "from": "来自：{{provider}}/{{model}}",
             "selectModelError": "请至少选择一种型号",
             "runFailed": "无法运行协作",
-            "remove": "消除"
+            "remove": "消除",
+            "sharedContext": "共享上下文",
+            "sharedContextPlaceholder": "为所有协作者添加上下文...",
+            "sharedMemory": "共享内存",
+            "memoryPlaceholder": "添加共享内存备注",
+            "memoryUpdated": "共享内存已更新",
+            "presence": "在线状态",
+            "guestsAllowed": "允许访客",
+            "guestsBlocked": "已阻止访客",
+            "guestPolicyChanged": "访客访问策略已更新",
+            "cursorMarkers": "光标标记",
+            "addMarker": "添加标记",
+            "cursorMarked": "光标标记已添加",
+            "promptArea": "提示区域",
+            "latestResponse": "最新响应",
+            "changeAnnotations": "变更注释",
+            "annotate": "注释",
+            "annotationTemplate": "已为协作者同步上下文变更。",
+            "annotationRecorded": "变更注释已记录",
+            "responseSynchronized": "AI响应已与会话成员同步。",
+            "startRecording": "开始录制",
+            "stopRecording": "停止录制",
+            "recordingToggled": "会话录制状态已更改",
+            "generateShareLink": "生成共享链接",
+            "linkGenerated": "会话共享链接已生成",
+            "contextUpdated": "共享上下文已更新",
+            "collaborationRunFinished": "协作运行已完成"
         }
     },
     "welcome": {
@@ -1628,6 +1661,18 @@ export const zh = {
         "checkOnStartupDesc": "启动时检查更新",
         "privacySafety": "隐私与安全",
         "privacySafetyDesc": "管理数据隐私设置",
+        "defaultTerminalBackendDesc": "选择新终端会话使用的默认后端。",
+        "inlineSuggestions": "行内建议",
+        "inlineSuggestionsDesc": "在 Monaco 编辑器中输入时显示幽灵文本建议。",
+        "inlineSuggestionsSource": "建议来源",
+        "inlineSuggestionsSourceCopilot": "GitHub Copilot",
+        "inlineSuggestionsSourceCustom": "自定义模型",
+        "inlineSuggestionsProvider": "提供商",
+        "inlineSuggestionsProviderPlaceholder": "openai",
+        "inlineSuggestionsModel": "模型",
+        "inlineSuggestionsModelPlaceholder": "gpt-4o-mini",
+        "inlineSuggestionsCopilotAccount": "Copilot 账户",
+        "inlineSuggestionsCopilotAccountPlaceholder": "使用活动账户",
         "autoUpdate": "自动更新",
         "checkOnStartup": "检查启动情况",
         "checkForUpdates": "检查更新",
@@ -1805,7 +1850,19 @@ export const zh = {
         "viewPrompt": "查看提示",
         "steps": "步骤",
         "cfg": "CFG",
-        "seed": "种子"
+        "seed": "种子",
+        "selectImage": "选择图像",
+        "selectedCount": "已选择{{count}}个",
+        "selectedCount_one": "已选择1个",
+        "selectedCount_other": "已选择{{count}}个",
+        "clearSelection": "清除选择",
+        "downloadSelected": "下载选中项",
+        "downloadingSelected": "下载中...",
+        "openPreview": "打开预览",
+        "zoomIn": "放大",
+        "zoomOut": "缩小",
+        "resetView": "重置视图",
+        "closePreview": "关闭预览"
     },
     "advanced": {
         "systemInfo": "系统信息",
@@ -2885,7 +2942,150 @@ export const zh = {
         "enabled": "启用",
         "noTriggers": "没有定义触发器",
         "noSteps": "没有定义步骤",
-        "editorNote": "使用 JSON 模式进行触发器和步骤的高级配置。"
+        "editorNote": "使用 JSON 模式进行触发器和步骤的高级配置。",
+        "switchToForm": "切换到表单",
+        "switchToJson": "切换到 JSON"
+    },
+    "serviceHealth": {
+        "modelRegistry": {
+            "ready": "serviceHealth.modelRegistry.ready",
+            "empty": "serviceHealth.modelRegistry.empty",
+            "failure": "serviceHealth.modelRegistry.failure"
+        },
+        "llm": {
+            "ready": "serviceHealth.llm.ready",
+            "empty": "serviceHealth.llm.empty",
+            "failure": "serviceHealth.llm.failure"
+        },
+        "localImage": {
+            "ready": "serviceHealth.localImage.ready",
+            "empty": "serviceHealth.localImage.empty",
+            "failure": "serviceHealth.localImage.failure"
+        },
+        "settings": {
+            "ready": "serviceHealth.settings.ready",
+            "empty": "serviceHealth.settings.empty",
+            "failure": "serviceHealth.settings.failure"
+        },
+        "token": {
+            "ready": "serviceHealth.token.ready",
+            "empty": "serviceHealth.token.empty",
+            "failure": "serviceHealth.token.failure"
+        }
+    },
+    "advancedMemory": {
+        "health": {
+            "ready": "内存服务运行正常。",
+            "empty": "内存服务已就绪，等待活动。",
+            "failure": "内存服务已降级。请重试或检查日志。"
+        }
+    },
+    "contextRetrieval": {
+        "health": {
+            "ready": "上下文检索运行正常。",
+            "empty": "上下文检索已就绪，等待请求。",
+            "failure": "上下文检索已降级。请重试或检查日志。"
+        }
+    },
+    "embedding": {
+        "health": {
+            "ready": "嵌入服务运行正常。",
+            "empty": "嵌入服务已就绪，等待请求。",
+            "failure": "嵌入服务已降级。请重试或检查日志。"
+        }
+    },
+    "extensionDev": {
+        "devtools": "扩展开发工具",
+        "extensions": "扩展",
+        "activate": "激活",
+        "deactivate": "停用",
+        "reload": "重新加载",
+        "searchLogs": "搜索日志...",
+        "clearLogs": "清除日志",
+        "noLogs": "暂无日志条目",
+        "noExtensionSelected": "未选择扩展",
+        "selectExtensionPrompt": "从侧边栏选择一个扩展以查看日志和管理状态。"
+    },
+    "voice": {
+        "notSupported": "此浏览器不支持语音控制",
+        "startListening": "开始监听",
+        "stopListening": "停止监听",
+        "start": "开始",
+        "stop": "停止",
+        "showCommands": "显示语音命令",
+        "lastHeard": "最后听到的",
+        "status": {
+            "idle": "就绪",
+            "listening": "正在监听...",
+            "processing": "处理中...",
+            "speaking": "正在播报...",
+            "error": "错误"
+        },
+        "feedback": {
+            "navigating": "正在导航到{{target}}",
+            "commandExecuted": "命令已执行",
+            "notRecognized": "命令未识别"
+        },
+        "settings": {
+            "enableVoice": "启用语音控制",
+            "enableVoiceDescription": "使用语音命令控制应用",
+            "wakeWord": "唤醒词",
+            "wakeWordLabel": "唤醒词",
+            "continuousListening": "连续监听模式",
+            "speech": "语音设置",
+            "voice": "语音",
+            "selectVoice": "选择语音",
+            "speechRate": "语速",
+            "speechPitch": "音调",
+            "speechVolume": "音量",
+            "feedback": "反馈设置",
+            "audioFeedback": "音频反馈",
+            "visualFeedback": "视觉反馈",
+            "accessibilityMode": "无障碍模式",
+            "customCommands": "自定义命令",
+            "commandPhrase": "命令短语",
+            "commandAction": "操作"
+        },
+        "commands": {
+            "title": "语音命令",
+            "aliases": "别名",
+            "categories": {
+                "navigation": "导航",
+                "actions": "操作",
+                "chat": "聊天",
+                "settings": "设置",
+                "accessibility": "无障碍",
+                "custom": "自定义"
+            }
+        }
+    },
+    "agentCollaboration": {
+        "error": {
+            "invalidRoutingRules": "提供的路由规则无效",
+            "votingSessionNotFound": "未找到投票会话",
+            "votingSessionInvalid": "无法创建有效的投票会话",
+            "debateSessionNotFound": "未找到辩论会话",
+            "invalidDebateArgument": "无效的辩论论点"
+        },
+        "voting": {
+            "created": "已创建投票会话：{{question}}",
+            "voteSubmitted": "已提交投票：{{modelId}}投票\"{{decision}}\"",
+            "resolved": "投票已解决：\"{{winner}}\"",
+            "deadlocked": "投票僵局：{{decisions}}"
+        },
+        "debate": {
+            "created": "已创建辩论会话：{{topic}}",
+            "argumentSubmitted": "{{agentId}}已提交论点",
+            "resolved": "辩论已解决，获胜方：{{side}}"
+        }
+    },
+    "agentCheckpoint": {
+        "error": {
+            "saveFailed": "无法保存代理检查点",
+            "serializationFailed": "无法序列化代理状态快照",
+            "checkpointNotFound": "未找到检查点{{id}}"
+        },
+        "saved": "已保存任务{{taskId}}的检查点"
     }
 };
 

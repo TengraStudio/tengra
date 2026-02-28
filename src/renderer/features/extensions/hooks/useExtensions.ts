@@ -41,6 +41,7 @@ interface UseExtensionsReturn extends UseExtensionsState {
     runTests: (options: ExtensionTestOptions) => Promise<ExtensionTestResult>;
     publish: (options: ExtensionPublishOptions) => Promise<ExtensionPublishResult>;
     getProfile: (extensionId: string) => Promise<{ success: boolean; profile?: ExtensionProfileData }>;
+    getState: (extensionId: string) => Promise<{ success: boolean; state?: { global: Record<string, unknown>, workspace: Record<string, unknown> } }>;
 }
 
 function useExtensionState() {
@@ -243,14 +244,24 @@ function useExtensionTools() {
     /** Get profile data */
     const getProfile = useCallback(async (extensionId: string): Promise<{ success: boolean; profile?: ExtensionProfileData }> => {
         try {
-            const result = await window.electron.extension?.getProfile(extensionId);
+            const result = await (window.electron.extension as any)?.getProfile(extensionId);
             return result ?? { success: false };
         } catch {
             return { success: false };
         }
     }, []);
 
-    return { runTests, publish, getProfile };
+    /** Get state data */
+    const getState = useCallback(async (extensionId: string): Promise<{ success: boolean; state?: { global: Record<string, unknown>, workspace: Record<string, unknown> } }> => {
+        try {
+            const result = await (window.electron.extension as any)?.getState(extensionId);
+            return result ?? { success: false };
+        } catch {
+            return { success: false };
+        }
+    }, []);
+
+    return { runTests, publish, getProfile, getState };
 }
 
 /**
@@ -260,7 +271,7 @@ export function useExtensions(): UseExtensionsReturn {
     const { state, refresh } = useExtensionState();
     const { install, uninstall, activate, deactivate } = useExtensionActions(refresh);
     const { startDev, stopDev, reload } = useExtensionDev(refresh);
-    const { runTests, publish, getProfile } = useExtensionTools();
+    const { runTests, publish, getProfile, getState } = useExtensionTools();
 
     return {
         ...state,
@@ -275,5 +286,6 @@ export function useExtensions(): UseExtensionsReturn {
         runTests,
         publish,
         getProfile,
+        getState,
     };
 }

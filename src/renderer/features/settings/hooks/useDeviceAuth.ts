@@ -51,13 +51,14 @@ export function useDeviceAuth(
                 data.interval,
                 'profile'
             );
-            if (pollResult.success && pollResult.token) {
+            if (pollResult.success) {
                 const updated: AppSettings = {
                     ...settings,
                     github: {
                         username:
-                            (settings.github as { username?: string }).username ?? 'GitHub User',
-                        token: pollResult.token,
+                            (settings.github as { username?: string }).username ??
+                            pollResult.account?.displayName ??
+                            'GitHub User',
                     },
                 };
                 await updateSettings(updated, true);
@@ -110,13 +111,12 @@ export function useDeviceAuth(
                 data.interval,
                 'copilot'
             );
-            if (pollResult.success && pollResult.token) {
+            if (pollResult.success) {
                 const updated: AppSettings = {
                     ...settings,
                     copilot: {
                         ...(settings.copilot ?? { connected: false }),
                         connected: true,
-                        token: pollResult.token,
                     },
                 };
                 await updateSettings(updated, true);

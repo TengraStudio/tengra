@@ -258,15 +258,49 @@ function registerChatHandlers(databaseService: DatabaseService, validateSender: 
  * Registers IPC handlers for project-related operations.
  */
 function registerProjectHandlers(databaseService: DatabaseService, validateSender: (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => void) {
+    const normalizePathKey = (value: string): string => value.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
+
+    const extractMountKeys = (project: Project): string[] => {
+        if (Array.isArray(project.mounts) && project.mounts.length > 0) {
+            return project.mounts
+                .map(mount => {
+                    if (mount.type === 'ssh') {
+                        const host = mount.ssh?.host?.toLowerCase() ?? '';
+                        const user = mount.ssh?.username?.toLowerCase() ?? '';
+                        const port = mount.ssh?.port ?? 22;
+                        return `ssh:${user}@${host}:${port}:${normalizePathKey(mount.rootPath)}`;
+                    }
+                    return `local:${normalizePathKey(mount.rootPath)}`;
+                });
+        }
+        return [`local:${normalizePathKey(project.path)}`];
+    };
+
     ipcMain.handle('db:createProject', createValidatedIpcHandler('db:createProject', async (event, project: Project) => {
         validateSender(event);
-        return await withRateLimit('db', () => databaseService.projects.createProject(
+        const existingProjects = await databaseService.projects.getProjects();
+        const existingMountKeys = new Set<string>();
+        for (const existingProject of existingProjects) {
+            for (const key of extractMountKeys(existingProject)) {
+                existingMountKeys.add(key);
+            }
+        }
+
+        for (const key of extractMountKeys(project)) {
+            if (existingMountKeys.has(key)) {
+                throw new Error('Invalid input');
+            }
+        }
+
+        const createdProject = await withRateLimit('db', () => databaseService.projects.createProject(
             project.title,
             project.path,
             project.description,
             project.mounts ? JSON.stringify(project.mounts) : undefined,
             project.councilConfig ? JSON.stringify(project.councilConfig) : undefined
         ));
+        event.sender.send('project:updated', { id: createdProject.id });
+        return createdProject;
     }, {
         defaultValue: null,
         argsSchema: z.tuple([ProjectSchema])

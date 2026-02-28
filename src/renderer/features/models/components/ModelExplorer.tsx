@@ -2,7 +2,6 @@ import { ModelCard } from '@renderer/features/models/components/ModelCard';
 import { ModelDetailsPanel } from '@renderer/features/models/components/ModelDetailsPanel';
 import { useModelExplorer } from '@renderer/features/models/hooks/useModelExplorer';
 import { HFModel, OllamaLibraryModel } from '@renderer/features/models/types';
-import type { ModelInfo } from '@/types';
 import { Box, ChevronLeft, ChevronRight, Database, Loader2, Search, X } from 'lucide-react';
 import React from 'react';
 
@@ -11,6 +10,7 @@ import type { Language } from '@/i18n';
 import { useTranslation } from '@/i18n';
 import { AnimatePresence } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
+import type { ModelInfo } from '@/types';
 
 interface ModelExplorerProps {
     onClose?: () => void

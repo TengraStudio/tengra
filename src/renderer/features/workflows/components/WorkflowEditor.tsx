@@ -69,7 +69,7 @@ export const WorkflowEditor: React.FC<WorkflowEditorProps> = ({
                         <button
                             onClick={() => setJsonMode(!jsonMode)}
                             className={`p-2 rounded-lg transition-colors ${jsonMode ? 'bg-primary/20 text-primary' : 'hover:bg-muted/50 text-muted-foreground'}`}
-                            title={jsonMode ? 'Switch to Form' : 'Switch to JSON'}
+                            title={jsonMode ? t('workflows.switchToForm') : t('workflows.switchToJson')}
                         >
                             <Code className="w-5 h-5" />
                         </button>

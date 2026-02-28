@@ -69,7 +69,6 @@ export const MonacoBlock = memo<MonacoBlockProps>(
                         language={normalizeLanguage(language)}
                         readOnly={true}
                         showMinimap={lines > 25}
-                        theme="vs-dark"
                         fontSize={13}
                         className="bg-card"
                     />

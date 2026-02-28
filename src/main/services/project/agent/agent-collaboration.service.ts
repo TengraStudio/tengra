@@ -10,6 +10,7 @@
 import { randomUUID } from 'crypto';
 
 import { appLogger } from '@main/logging/logger';
+import { TelemetryService } from '@main/services/analysis/telemetry.service';
 import { BaseService } from '@main/services/base.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import {
@@ -55,6 +56,31 @@ export class AgentCollaborationError extends Error {
         this.name = 'AgentCollaborationError';
     }
 }
+
+/** Telemetry events for agent collaboration monitoring (BACKLOG-0335) */
+export enum AgentCollaborationTelemetryEvent {
+    AGENT_JOINED = 'agent_collab_agent_joined',
+    TASK_ASSIGNED = 'agent_collab_task_assigned',
+    RESULT_MERGED = 'agent_collab_result_merged',
+    CONFLICT_DETECTED = 'agent_collab_conflict_detected',
+    VOTING_SESSION_CREATED = 'agent_collab_voting_session_created',
+    VOTING_COMPLETED = 'agent_collab_voting_completed',
+    CONSENSUS_REACHED = 'agent_collab_consensus_reached',
+    CONSENSUS_FAILED = 'agent_collab_consensus_failed',
+    MODEL_ROUTED = 'agent_collab_model_routed',
+    DEBATE_STARTED = 'agent_collab_debate_started',
+    DEBATE_COMPLETED = 'agent_collab_debate_completed'
+}
+
+/** Performance regression budgets in milliseconds (BACKLOG-0336) */
+export const AGENT_COLLABORATION_PERFORMANCE_BUDGETS = {
+    CREATE_VOTING_SESSION_MS: 500,
+    EXECUTE_VOTING_MS: 30000,
+    BUILD_CONSENSUS_MS: 30000,
+    ROUTE_MODEL_MS: 100,
+    DEBATE_SESSION_MS: 60000,
+    INITIALIZE_MS: 1000
+} as const;
 
 /** Default model routing rules based on task type */
 const DEFAULT_ROUTING_RULES: ModelRoutingRule[] = [
@@ -221,8 +247,26 @@ export class AgentCollaborationService extends BaseService {
         consensusAligned: number;
     }>();
 
+    private telemetryService: TelemetryService | null = null;
+
     constructor(private deps: AgentCollaborationDependencies) {
         super('AgentCollaborationService');
+    }
+
+    /**
+     * Set the telemetry service dependency for event tracking
+     */
+    setTelemetryService(service: TelemetryService): void {
+        this.telemetryService = service;
+    }
+
+    /**
+     * Track a telemetry event if the service is available
+     */
+    private trackEvent(eventName: AgentCollaborationTelemetryEvent, properties?: Record<string, unknown>): void {
+        if (this.telemetryService) {
+            this.telemetryService.track(eventName, properties);
+        }
     }
 
     // ===== AGT-COL-01: Per-Step Model Assignment =====
@@ -232,6 +276,12 @@ export class AgentCollaborationService extends BaseService {
      */
     assignModelToStep(step: ProjectStep, provider: string, model: string, reason?: string): ProjectStep {
         appLogger.info('AgentCollaboration', `Assigning ${provider}/${model} to step: ${step.text.substring(0, 50)}...`);
+        this.trackEvent(AgentCollaborationTelemetryEvent.TASK_ASSIGNED, {
+            stepId: step.id,
+            provider,
+            model,
+            reason: reason ?? 'manual_assignment'
+        });
 
         return {
             ...step,
@@ -286,6 +336,12 @@ export class AgentCollaborationService extends BaseService {
 
         if (matchingRules.length > 0) {
             const bestRule = matchingRules[0];
+            this.trackEvent(AgentCollaborationTelemetryEvent.MODEL_ROUTED, {
+                taskType,
+                provider: bestRule.provider,
+                model: bestRule.model,
+                priority: bestRule.priority
+            });
             return {
                 provider: bestRule.provider,
                 model: bestRule.model,
@@ -365,6 +421,12 @@ export class AgentCollaborationService extends BaseService {
             VotingSessionSchema.parse(session);
             this.votingSessions.set(session.id, session);
             appLogger.info('AgentCollaboration', `Created voting session: ${session.id} - "${question}"`);
+            this.trackEvent(AgentCollaborationTelemetryEvent.VOTING_SESSION_CREATED, {
+                sessionId: session.id,
+                taskId,
+                stepIndex,
+                optionCount: options.length
+            });
             return session;
         } catch (error) {
             throw new AgentCollaborationError('Failed to create valid voting session', 'VOTING_SESSION_INVALID', { error });
@@ -520,6 +582,11 @@ Respond with a JSON object:
         if (topDecisions.length > 1) {
             session.status = 'deadlocked';
             appLogger.warn('AgentCollaboration', `Voting deadlock: ${topDecisions.map(d => d[0]).join(' vs ')}`);
+            this.trackEvent(AgentCollaborationTelemetryEvent.CONFLICT_DETECTED, {
+                sessionId,
+                conflictType: 'voting_deadlock',
+                decisionCount: topDecisions.length
+            });
         } else {
             session.status = 'resolved';
             session.finalDecision = winner;
@@ -527,6 +594,12 @@ Respond with a JSON object:
             session.overrideReason = undefined;
             session.resolvedAt = Date.now();
             appLogger.info('AgentCollaboration', `Voting resolved: "${winner}"`);
+            this.trackEvent(AgentCollaborationTelemetryEvent.VOTING_COMPLETED, {
+                sessionId,
+                finalDecision: winner,
+                voteCount: session.votes.length,
+                resolutionSource: 'automatic'
+            });
         }
 
         return session;
@@ -668,6 +741,10 @@ Respond with a JSON object:
 
         // If all outputs are very similar, return the first one
         if (similarities.every(s => s > 0.8)) {
+            this.trackEvent(AgentCollaborationTelemetryEvent.CONSENSUS_REACHED, {
+                modelCount: outputs.length,
+                resolutionMethod: 'unanimous'
+            });
             return {
                 agreed: true,
                 mergedOutput: outputs[0].output,
@@ -678,6 +755,10 @@ Respond with a JSON object:
         // If majority are similar, use majority approach
         const majorityOutput = this.findMajorityOutput(outputs);
         if (majorityOutput) {
+            this.trackEvent(AgentCollaborationTelemetryEvent.CONSENSUS_REACHED, {
+                modelCount: outputs.length,
+                resolutionMethod: 'majority'
+            });
             return {
                 agreed: true,
                 mergedOutput: majorityOutput,
@@ -687,10 +768,18 @@ Respond with a JSON object:
 
         // Outputs conflict - need arbitration
         const conflictingPoints = this.identifyConflicts(outputs);
+        this.trackEvent(AgentCollaborationTelemetryEvent.CONFLICT_DETECTED, {
+            conflictType: 'output_disagreement',
+            modelCount: outputs.length
+        });
 
         // Try to merge using an arbitrator model
         const mergedOutput = await this.arbitrate(outputs);
         if (mergedOutput) {
+            this.trackEvent(AgentCollaborationTelemetryEvent.RESULT_MERGED, {
+                modelCount: outputs.length,
+                resolutionMethod: 'arbitration'
+            });
             return {
                 agreed: true,
                 mergedOutput,
@@ -699,6 +788,10 @@ Respond with a JSON object:
             };
         }
 
+        this.trackEvent(AgentCollaborationTelemetryEvent.CONSENSUS_FAILED, {
+            modelCount: outputs.length,
+            resolutionMethod: 'manual'
+        });
         return {
             agreed: false,
             conflictingPoints,
@@ -729,6 +822,12 @@ Respond with a JSON object:
 
         this.debateSessions.set(session.id, session);
         appLogger.info('AgentCollaboration', `Created debate session: ${session.id}`);
+        this.trackEvent(AgentCollaborationTelemetryEvent.DEBATE_STARTED, {
+            sessionId: session.id,
+            taskId,
+            stepIndex,
+            topic: topic.substring(0, 100)
+        });
         return session;
     }
 
@@ -782,6 +881,12 @@ Respond with a JSON object:
         session.summary = this.createDebateSummaryText(session);
         session.status = 'resolved';
         session.resolvedAt = Date.now();
+        this.trackEvent(AgentCollaborationTelemetryEvent.DEBATE_COMPLETED, {
+            sessionId,
+            argumentCount: session.arguments.length,
+            consensusDetected: session.consensus.detected,
+            winningSide: session.consensus.winningSide ?? 'none'
+        });
         return session;
     }
 
@@ -916,6 +1021,7 @@ Respond with a JSON object:
 
         const perTask = this.workerAvailability.get(input.taskId) ?? new Map<string, WorkerAvailabilityRecord>();
         const previous = perTask.get(input.agentId);
+        const isNewAgent = !previous;
         const now = Date.now();
         const nextRecord: WorkerAvailabilityRecord = {
             taskId: input.taskId,
@@ -939,6 +1045,15 @@ Respond with a JSON object:
 
         perTask.set(input.agentId, nextRecord);
         this.workerAvailability.set(input.taskId, perTask);
+
+        if (isNewAgent && input.status === 'available') {
+            this.trackEvent(AgentCollaborationTelemetryEvent.AGENT_JOINED, {
+                taskId: input.taskId,
+                agentId: input.agentId,
+                skillCount: nextRecord.skills.length
+            });
+        }
+
         return nextRecord;
     }
 

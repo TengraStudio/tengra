@@ -1,3 +1,7 @@
+import type {
+    InlineSuggestionRequest,
+    InlineSuggestionResponse,
+} from '@shared/schemas/inline-suggestions.schema';
 import { IpcRendererEvent } from 'electron';
 
 import {
@@ -892,10 +896,19 @@ export interface ElectronAPI {
     project: {
         analyze: (rootPath: string, projectId: string) => Promise<ProjectAnalysis>;
         analyzeIdentity: (rootPath: string) => Promise<{ suggestedPrompts: string[]; colors: string[] }>;
-        generateLogo: (projectPath: string, options: unknown) => Promise<string[]>;
-        analyzeDirectory: (dirPath: string) => Promise<unknown>;
+        generateLogo: (
+            projectPath: string,
+            options: { prompt: string; style: string; model: string; count: number }
+        ) => Promise<string[]>;
+        analyzeDirectory: (dirPath: string) => Promise<{
+            hasPackageJson: boolean;
+            pkg: Record<string, IpcValue>;
+            readme: string | null;
+            stats: { fileCount: number; totalSize: number };
+        }>;
         applyLogo: (projectPath: string, tempLogoPath: string) => Promise<string>;
         getCompletion: (text: string) => Promise<string>;
+        getInlineSuggestion: (request: InlineSuggestionRequest) => Promise<InlineSuggestionResponse>;
         improveLogoPrompt: (prompt: string) => Promise<string>;
         uploadLogo: (projectPath: string) => Promise<string | null>;
         watch: (rootPath: string) => Promise<boolean>;

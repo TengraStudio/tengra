@@ -2,6 +2,19 @@
 
 ## [2026-02-27]
 
+### Preload-Modularisierung & Typsicherheit-Refinement
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Modularisierung der Electron-Preload-Skripte abgeschlossen, kritische Typ-Mismatches in Agent-Bridges behoben und verbotene 'any'-Typen aus der Bridge-Schicht entfernt.
+
+- **Modularisierungs-Abgleich**: Synchronisierung aller domänenspezifischen Preload-Bridges (Code, Settings, MCP etc.) mit den IPC-Handlern des Hauptprozesses zur Sicherstellung vollständiger API-Abdeckung.
+- **Härtung der Typsicherheit**: Eliminierung verbotener `any`-Verwendungen in `ProjectAgentBridge`, `McpMarketplaceBridge` und `AdvancedMemoryBridge`, ersetzt durch strikt definierte Interfaces oder `unknown`-Records.
+- **Fehlerbehebungen**: Korrektur eines kritischen Zeitstempel-Typ-Mismatches in der `OrchestratorBridge`, der zu Fehlern bei der Zustands-Normalisierung führte.
+- **IPC-Vertragskorrektur**: Aktualisierung der Code-Intelligence- und Sandbox-Bridges auf positionale Argumente, um sie an die Validierungserwartungen der IPC-Handler anzupassen.
+- **Test-Zuverlässigkeit**: Behebung eines defekten Mocks in `db.integration.test.ts`, bei dem eine fehlende `send`-Methode am Mock-Event zum Scheitern der Projekt-Erstellungs-Tests führte (Boy Scout Rule).
+- **Hygiene**: Bereinigung nicht verwendeter Imports und Verfeinerung von Listener-Typen in mehreren Preload-Domänen zur Einhaltung strenger TypeScript- und ESLint-Prüfungen.
+
 ### Premium-Projektassistent: Neu gestaltete UX- und Motion-Integration
 
 - **Type**: feature

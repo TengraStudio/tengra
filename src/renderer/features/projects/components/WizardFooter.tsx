@@ -43,9 +43,9 @@ export const WizardFooter: React.FC<WizardFooterProps> = ({
             return <Loader2 className="w-4 h-4 animate-spin" />;
         }
         if (step === 'ssh-browser') {
-            return <Check className="w-4 h-4" />;
+            return <Check className="w-5 h-5" />;
         }
-        return <ArrowRight className="w-4 h-4" />;
+        return <ArrowRight className="w-5 h-5" />;
     };
 
     const getButtonLabel = () => {
@@ -60,33 +60,36 @@ export const WizardFooter: React.FC<WizardFooterProps> = ({
 
     const getButtonColor = () => {
         if (step === 'ssh-connection') {
-            return "bg-purple text-foreground shadow-purple-500/20";
+            return "bg-purple text-foreground shadow-purple-500/30";
         }
-        return "bg-primary text-primary-foreground shadow-primary/20";
+        return "bg-primary text-primary-foreground shadow-primary/30 hover:shadow-primary/50";
     };
 
     return (
-        <div className="flex justify-between items-center pt-6 border-t border-border/20 mt-auto">
+        <div className="flex justify-between items-center pt-6 border-t border-border/30 mt-6 bg-card/50 backdrop-blur-sm -mx-8 px-8 pb-2">
             <button
                 onClick={onBack}
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+                className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-all group px-4 py-2 rounded-xl hover:bg-muted/30 border border-transparent hover:border-border/40"
             >
-                <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                {backLabel}
+                <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-200" />
+                <span>{backLabel}</span>
             </button>
 
-            <div className="flex gap-3">
+            <div className="flex gap-4">
                 {step !== 'selection' && (
                     <button
                         onClick={onNext}
                         disabled={isNextDisabled}
                         className={cn(
-                            "px-6 py-2.5 rounded-xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2 shadow-lg",
+                            'px-8 py-3 rounded-xl font-bold text-sm tracking-tight transition-all disabled:opacity-40 disabled:grayscale flex items-center gap-3 shadow-lg relative overflow-hidden group/btn hover:brightness-105 active:scale-[0.98]',
                             getButtonColor()
                         )}
                     >
-                        {getButtonContent()}
-                        {getButtonLabel()}
+                        <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+                        <span className="relative z-10">{getButtonLabel()}</span>
+                        <div className="relative z-10 p-1.5 bg-black/10 rounded-xl group-hover/btn:translate-x-1 transition-all duration-300">
+                            {getButtonContent()}
+                        </div>
                     </button>
                 )}
             </div>

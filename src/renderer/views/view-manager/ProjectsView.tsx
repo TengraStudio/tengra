@@ -1,9 +1,9 @@
-import type { GroupedModels } from '@/types';
 import { AppSettings, CodexUsage, QuotaResponse } from '@shared/types';
 import React, { lazy, Suspense } from 'react';
 
 import { LoadingState } from '@/components/ui/LoadingState';
 import { Language } from '@/i18n';
+import type { GroupedModels } from '@/types';
 import { Message, Project, TerminalTab } from '@/types';
 
 const ProjectsPage = lazy(() => import('@/features/projects/ProjectsPage').then(m => ({ default: m.ProjectsPage })));

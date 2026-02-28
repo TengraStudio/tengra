@@ -4,7 +4,7 @@ import {
     type IpcContractVersionInfo,
     isIpcContractCompatible,
 } from '@shared/constants/ipc-contract';
-import { IpcValue } from '@shared/types/common';
+import { IpcContractEntry,IpcContractMap, IpcValue } from '@shared/types/common';
 import { z, ZodError, ZodType } from 'zod';
 
 const DEFAULT_MAX_ATTEMPTS = 3;
@@ -18,12 +18,7 @@ const ipcContractInfoSchema = z.object({
 });
 let contractCompatibilityPromise: Promise<void> | null = null;
 
-export interface IpcContractEntry<Args extends readonly IpcValue[] = readonly IpcValue[], Response = unknown> {
-    args: Args;
-    response: Response;
-}
-
-export type IpcContractMap = Record<string, IpcContractEntry>;
+export type { IpcContractEntry, IpcContractMap };
 
 export interface IpcInvokeOptions<T> {
     argsSchema?: z.ZodTuple<[z.ZodTypeAny, ...z.ZodTypeAny[]]> | z.ZodTuple<[]>;

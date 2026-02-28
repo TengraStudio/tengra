@@ -1,4 +1,5 @@
 import type { ModelListItem } from '@renderer/features/models/types';
+
 import type { ModelInfo } from '@/types';
 
 export type SelectorChatMode = 'instant' | 'thinking' | 'agent';

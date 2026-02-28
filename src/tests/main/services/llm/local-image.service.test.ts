@@ -24,6 +24,7 @@ vi.mock('fs', async (importOriginal) => {
             access: vi.fn().mockResolvedValue(undefined),
             mkdir: vi.fn().mockResolvedValue(undefined),
             writeFile: vi.fn().mockResolvedValue(undefined),
+            stat: vi.fn().mockResolvedValue({ size: 1024 }),
             unlink: vi.fn().mockResolvedValue(undefined),
             rename: vi.fn().mockResolvedValue(undefined),
         }
@@ -201,6 +202,217 @@ describe('LocalImageService Integration', () => {
             const failureMetrics = await service.getHealthMetrics();
             expect(failureMetrics.uiState).toBe('failure');
             expect(en.serviceHealth.localImage.failure).toBe(failureMetrics.messageKey);
+        });
+    });
+
+    describe('Workflow Templates', () => {
+        it('should save, list, export, and import workflow templates', async () => {
+            const template = await service.saveComfyWorkflowTemplate({
+                name: 'Workflow A',
+                workflow: { '1': { class_type: 'CLIPTextEncode', inputs: { text: '{{prompt}}' } } },
+            });
+
+            const list = service.listComfyWorkflowTemplates();
+            expect(list.length).toBe(1);
+            expect(list[0].id).toBe(template.id);
+
+            const shareCode = service.exportComfyWorkflowTemplateShareCode(template.id);
+            expect(shareCode.length).toBeGreaterThan(10);
+
+            const imported = await service.importComfyWorkflowTemplateShareCode(shareCode);
+            expect(imported.name).toBe('Workflow A');
+            expect(service.listComfyWorkflowTemplates().length).toBe(2);
+        });
+    });
+
+    describe('History And Export', () => {
+        it('should search history entries by prompt text', () => {
+            const now = Date.now();
+            (service as never as { generationHistory: unknown }).generationHistory = [
+                {
+                    id: '1',
+                    provider: 'sd-cpp',
+                    prompt: 'mountain landscape',
+                    width: 1024,
+                    height: 1024,
+                    steps: 24,
+                    cfgScale: 7,
+                    seed: 1,
+                    imagePath: '/tmp/1.png',
+                    createdAt: now,
+                    source: 'generate'
+                },
+                {
+                    id: '2',
+                    provider: 'pollinations',
+                    prompt: 'city skyline at night',
+                    width: 1024,
+                    height: 1024,
+                    steps: 24,
+                    cfgScale: 7,
+                    seed: 2,
+                    imagePath: '/tmp/2.png',
+                    createdAt: now + 1,
+                    source: 'generate'
+                }
+            ];
+
+            const result = service.searchGenerationHistory('mountain', 20);
+            expect(result.length).toBe(1);
+            expect(result[0].id).toBe('1');
+        });
+
+        it('should export generation history in CSV format', async () => {
+            const now = Date.now();
+            (service as never as { generationHistory: unknown }).generationHistory = [
+                {
+                    id: 'row-1',
+                    provider: 'sd-cpp',
+                    prompt: 'test prompt',
+                    width: 512,
+                    height: 512,
+                    steps: 20,
+                    cfgScale: 7,
+                    seed: 42,
+                    imagePath: '/tmp/image.png',
+                    createdAt: now,
+                    source: 'generate'
+                }
+            ];
+
+            const csv = await service.exportGenerationHistory('csv');
+            expect(csv).toContain('provider');
+            expect(csv).toContain('test prompt');
+        });
+    });
+
+    describe('Preset Features', () => {
+        it('should validate generation preset bounds', async () => {
+            await expect(service.saveGenerationPreset({
+                name: 'bad preset',
+                width: 10,
+                height: 10,
+                steps: 0,
+                cfgScale: 0,
+            })).rejects.toThrow('Preset width must be between 256 and 4096');
+        });
+
+        it('should export and import preset share code', async () => {
+            const preset = await service.saveGenerationPreset({
+                name: 'share preset',
+                width: 1024,
+                height: 1024,
+                steps: 30,
+                cfgScale: 8,
+                provider: 'sd-cpp'
+            });
+
+            const shareCode = service.exportGenerationPresetShareCode(preset.id);
+            expect(shareCode.length).toBeGreaterThan(10);
+
+            const imported = await service.importGenerationPresetShareCode(shareCode);
+            expect(imported.name).toBe('share preset');
+        });
+    });
+
+    describe('Scheduling Enhancements', () => {
+        it('should persist scheduling priority and resource profile', async () => {
+            const future = Date.now() + 60_000;
+            const schedule = await service.scheduleGeneration(
+                future,
+                { prompt: 'scheduled prompt', width: 1024, height: 1024, steps: 24, cfgScale: 7 },
+                { priority: 'high', resourceProfile: 'quality' }
+            );
+
+            expect(schedule.priority).toBe('high');
+            expect(schedule.resourceProfile).toBe('quality');
+        });
+
+        it('should return schedule analytics summary', async () => {
+            const future = Date.now() + 120_000;
+            await service.scheduleGeneration(future, { prompt: 'one' }, { priority: 'normal', resourceProfile: 'balanced' });
+            await service.scheduleGeneration(future + 1000, { prompt: 'two' }, { priority: 'high', resourceProfile: 'speed' });
+
+            const analytics = service.getScheduleAnalytics();
+            expect(analytics.total).toBeGreaterThanOrEqual(2);
+            expect(analytics.byPriority.high).toBeGreaterThanOrEqual(1);
+        });
+    });
+
+    describe('Comparison Features', () => {
+        it('should compute bytes-per-pixel and comparison summary', async () => {
+            const now = Date.now();
+            (service as never as { generationHistory: unknown }).generationHistory = [
+                {
+                    id: 'cmp-1',
+                    provider: 'sd-cpp',
+                    prompt: 'first',
+                    width: 512,
+                    height: 512,
+                    steps: 20,
+                    cfgScale: 7,
+                    seed: 1,
+                    imagePath: '/tmp/a.png',
+                    createdAt: now,
+                    source: 'generate'
+                },
+                {
+                    id: 'cmp-2',
+                    provider: 'sd-cpp',
+                    prompt: 'second',
+                    width: 512,
+                    height: 512,
+                    steps: 20,
+                    cfgScale: 7,
+                    seed: 2,
+                    imagePath: '/tmp/b.png',
+                    createdAt: now + 1,
+                    source: 'generate'
+                }
+            ];
+
+            const result = await service.compareGenerations(['cmp-1', 'cmp-2']);
+            expect(result.summary.averageFileSizeBytes).toBeGreaterThan(0);
+            expect(result.summary.averageBytesPerPixel).toBeGreaterThan(0);
+            expect(result.entries[0].bytesPerPixel).toBeGreaterThan(0);
+        });
+
+        it('should export and share comparison results', async () => {
+            const now = Date.now();
+            (service as never as { generationHistory: unknown }).generationHistory = [
+                {
+                    id: 'cmp-x',
+                    provider: 'sd-cpp',
+                    prompt: 'x',
+                    width: 256,
+                    height: 256,
+                    steps: 12,
+                    cfgScale: 6,
+                    seed: 11,
+                    imagePath: '/tmp/x.png',
+                    createdAt: now,
+                    source: 'generate'
+                },
+                {
+                    id: 'cmp-y',
+                    provider: 'sd-cpp',
+                    prompt: 'y',
+                    width: 256,
+                    height: 256,
+                    steps: 12,
+                    cfgScale: 6,
+                    seed: 12,
+                    imagePath: '/tmp/y.png',
+                    createdAt: now + 1,
+                    source: 'generate'
+                }
+            ];
+
+            const csv = await service.exportComparison(['cmp-x', 'cmp-y'], 'csv');
+            expect(csv).toContain('bytesPerPixel');
+
+            const share = await service.shareComparison(['cmp-x', 'cmp-y']);
+            expect(share.length).toBeGreaterThan(10);
         });
     });
 });

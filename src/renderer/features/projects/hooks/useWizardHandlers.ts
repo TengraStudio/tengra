@@ -15,6 +15,7 @@ interface FormData {
     description: string;
     category: string;
     goal: string;
+    customPath: string;
 }
 
 interface SSHConnectOptions {
@@ -47,12 +48,30 @@ interface SSHBrowserNextOptions {
 export const useSSHConnectHandler = (options: SSHConnectOptions) => {
     const { sshForm, setIsLoading, setError, setStep, setSshConnectionId, loadRemoteDirectory } = options;
     const handleSSHConnect = async () => {
+        if (!sshForm.host.trim() || !sshForm.username.trim()) {
+            setError('Invalid input');
+            return;
+        }
         setIsLoading(true);
         setError(null);
         try {
+            const testResult = await window.electron.ssh.testProfile({
+                host: sshForm.host,
+                port: parseInt(sshForm.port, 10) || 22,
+                username: sshForm.username,
+                authType: sshForm.authType,
+                password: sshForm.authType === 'password' ? sshForm.password : undefined,
+                privateKey: sshForm.authType === 'key' ? sshForm.privateKey : undefined,
+                passphrase: sshForm.authType === 'key' ? sshForm.passphrase : undefined
+            });
+            if (!testResult.success) {
+                setError(testResult.error ?? 'Connection failed');
+                return;
+            }
+
             const result = await window.electron.ssh.connect({
                 host: sshForm.host,
-                port: parseInt(sshForm.port),
+                port: parseInt(sshForm.port, 10) || 22,
                 username: sshForm.username,
                 password: sshForm.password,
                 privateKey: sshForm.privateKey,
@@ -88,8 +107,11 @@ export const useCreateProjectHandler = (options: CreateProjectOptions) => {
 
         try {
             const userData = await window.electron.getUserDataPath();
-            const projectsDir = `${userData}\\projects`;
-            const projectPath = `${projectsDir}\\${formData.name.replace(/[^a-zA-Z0-9-_]/g, '-')}`;
+            const settings = await window.electron.getSettings();
+            const configuredBasePath = settings.general.projectsBasePath?.trim() ?? '';
+            const projectsDir = formData.customPath.trim() || configuredBasePath || `${userData}\\projects`;
+            const safeProjectName = formData.name.replace(/[^a-zA-Z0-9-_]/g, '-');
+            const projectPath = `${projectsDir}\\${safeProjectName}`;
 
             await window.electron.createDirectory(projectsDir);
             await window.electron.createDirectory(projectPath);
@@ -163,7 +185,8 @@ export const useSSHBrowserNextHandler = (options: SSHBrowserNextOptions) => {
                 passphrase: sshForm.authType === 'key' ? sshForm.passphrase : undefined
             }
         };
-        onProjectCreated(sshPath, formData.name || sshMount.name, formData.description, [sshMount]);
+        const remoteProjectPath = `ssh://${sshForm.username}@${sshForm.host}:${parseInt(sshForm.port, 10) || 22}${sshPath}`;
+        onProjectCreated(remoteProjectPath, formData.name || sshMount.name, formData.description, [sshMount]);
         onClose();
     };
 

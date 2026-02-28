@@ -10,6 +10,8 @@ import { v4 as uuidv4 } from 'uuid';
 export enum TelemetryErrorCode {
     TELEMETRY_DISABLED = 'TELEMETRY_DISABLED',
     INVALID_EVENT_NAME = 'INVALID_EVENT_NAME',
+    INVALID_PROPERTIES = 'INVALID_PROPERTIES',
+    INVALID_BATCH = 'INVALID_BATCH',
     QUEUE_OVERFLOW = 'QUEUE_OVERFLOW',
     FLUSH_FAILED = 'FLUSH_FAILED',
     SETTINGS_ERROR = 'SETTINGS_ERROR'
@@ -29,6 +31,11 @@ const MAX_EVENT_NAME_LENGTH = 256;
  * Maximum properties object size (JSON stringified)
  */
 const MAX_PROPERTIES_SIZE = 100000; // 100KB
+
+/**
+ * Maximum number of events in a single batch
+ */
+export const MAX_BATCH_SIZE = 500;
 
 /**
  * Performance budgets for telemetry operations (in milliseconds)
@@ -113,10 +120,10 @@ export class TelemetryService extends BaseService {
         try {
             const size = JSON.stringify(properties).length;
             if (size > MAX_PROPERTIES_SIZE) {
-                return { valid: false, error: TelemetryErrorCode.INVALID_EVENT_NAME };
+                return { valid: false, error: TelemetryErrorCode.INVALID_PROPERTIES };
             }
         } catch {
-            return { valid: false, error: TelemetryErrorCode.INVALID_EVENT_NAME };
+            return { valid: false, error: TelemetryErrorCode.INVALID_PROPERTIES };
         }
 
         return { valid: true };
@@ -160,16 +167,32 @@ export class TelemetryService extends BaseService {
         return this.totalFlushedEvents;
     }
 
+    /**
+     * Logs a warning if an operation exceeds its performance budget.
+     * @param operation - Name of the operation
+     * @param durationMs - Actual duration in milliseconds
+     * @param budgetMs - Budget threshold in milliseconds
+     */
+    private checkPerformanceBudget(operation: string, durationMs: number, budgetMs: number): void {
+        if (durationMs > budgetMs) {
+            appLogger.warn('TelemetryService', `Performance budget exceeded for ${operation}: ${durationMs.toFixed(2)}ms (budget: ${budgetMs}ms)`);
+        }
+    }
+
     override async initialize(): Promise<void> {
+        const start = performance.now();
         this.logInfo('Initializing Telemetry Service...');
         this.startFlushing();
+        this.checkPerformanceBudget('initialize', performance.now() - start, TELEMETRY_PERFORMANCE_BUDGETS.initialize);
     }
 
     override async cleanup(): Promise<void> {
+        const start = performance.now();
         if (this.flushInterval) {
             clearInterval(this.flushInterval);
         }
         await this.flush();
+        this.checkPerformanceBudget('cleanup', performance.now() - start, TELEMETRY_PERFORMANCE_BUDGETS.cleanup);
     }
 
     private isTelemetryEnabled(): boolean {
@@ -184,6 +207,8 @@ export class TelemetryService extends BaseService {
      * @param properties - Optional properties object (max 100KB when stringified)
      */
     track(name: string, properties?: Record<string, unknown>): { success: boolean; error?: TelemetryErrorCode } {
+        const start = performance.now();
+
         if (!this.isTelemetryEnabled()) {
             return { success: false, error: TelemetryErrorCode.TELEMETRY_DISABLED };
         }
@@ -222,7 +247,52 @@ export class TelemetryService extends BaseService {
         // Use logger for debug visibility
         appLogger.debug('Telemetry', `Tracked event: ${name}`, properties as JsonObject);
 
+        this.checkPerformanceBudget('track', performance.now() - start, TELEMETRY_PERFORMANCE_BUDGETS.track);
+
         return { success: true };
+    }
+
+    /**
+     * Tracks a batch of telemetry events.
+     * Validates the batch size and each individual event before queueing.
+     * @param events - Array of events with name and optional properties
+     * @returns Result with per-event success/failure details
+     */
+    trackBatch(
+        events: ReadonlyArray<{ name: string; properties?: Record<string, unknown> }>
+    ): { success: boolean; error?: TelemetryErrorCode; results?: Array<{ success: boolean; error?: TelemetryErrorCode }> } {
+        const start = performance.now();
+
+        if (!Array.isArray(events)) {
+            return { success: false, error: TelemetryErrorCode.INVALID_BATCH };
+        }
+
+        if (events.length === 0) {
+            return { success: false, error: TelemetryErrorCode.INVALID_BATCH };
+        }
+
+        if (events.length > MAX_BATCH_SIZE) {
+            appLogger.warn('Telemetry', 'Batch too large', { size: events.length, max: MAX_BATCH_SIZE });
+            return { success: false, error: TelemetryErrorCode.INVALID_BATCH };
+        }
+
+        const results: Array<{ success: boolean; error?: TelemetryErrorCode }> = [];
+        let allSucceeded = true;
+
+        for (let i = 0; i < events.length; i++) {
+            const event = events[i];
+            const result = this.track(event.name, event.properties);
+            results.push(result);
+            if (!result.success) {
+                allSucceeded = false;
+            }
+        }
+
+        const durationMs = performance.now() - start;
+        const batchBudgetMs = TELEMETRY_PERFORMANCE_BUDGETS.track * events.length;
+        this.checkPerformanceBudget('trackBatch', durationMs, batchBudgetMs);
+
+        return { success: allSucceeded, results };
     }
 
     private startFlushing() {
@@ -276,6 +346,9 @@ export class TelemetryService extends BaseService {
      * Manually triggers a flush of the telemetry queue
      */
     async flush(): Promise<boolean> {
-        return this.flushWithRetry();
+        const start = performance.now();
+        const result = await this.flushWithRetry();
+        this.checkPerformanceBudget('flush', performance.now() - start, TELEMETRY_PERFORMANCE_BUDGETS.flush);
+        return result;
     }
 }

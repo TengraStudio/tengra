@@ -16,6 +16,29 @@ interface ThemeStoreData {
     preset: ThemePreset | null
 }
 
+/** Structured telemetry event emitted by ThemeService */
+export interface ThemeTelemetryEvent {
+    action: string;
+    themeId?: string;
+    previousThemeId?: string;
+    presetId?: string;
+    source?: string;
+    success: boolean;
+    durationMs?: number;
+    timestamp: number;
+}
+
+/** Health snapshot for ThemeService */
+export interface ThemeServiceHealth {
+    initialized: boolean;
+    currentTheme: string;
+    customThemeCount: number;
+    favoriteCount: number;
+    historySize: number;
+    hasActivePreset: boolean;
+    storePath: string;
+}
+
 const DEFAULT_THEME_STORE: ThemeStoreData = {
     currentTheme: 'graphite',
     customThemes: [],
@@ -28,10 +51,39 @@ export class ThemeService extends BaseService {
     private storePath: string;
     private store: ThemeStoreData = { ...DEFAULT_THEME_STORE };
     private initialized = false;
+    private readonly telemetryLog: ThemeTelemetryEvent[] = [];
+    private static readonly MAX_TELEMETRY_LOG = 200;
 
     constructor() {
         super('ThemeService');
         this.storePath = path.join(app.getPath('userData'), 'theme-store.json');
+    }
+
+    /** Emits a structured telemetry event and logs it via appLogger. */
+    private emitTelemetry(event: ThemeTelemetryEvent): void {
+        this.telemetryLog.push(event);
+        if (this.telemetryLog.length > ThemeService.MAX_TELEMETRY_LOG) {
+            this.telemetryLog.shift();
+        }
+        this.logInfo(`Telemetry: ${event.action}`, event as unknown as JsonObject);
+    }
+
+    /** Returns a copy of the recent telemetry event log. */
+    getTelemetryLog(): ReadonlyArray<ThemeTelemetryEvent> {
+        return [...this.telemetryLog];
+    }
+
+    /** Returns a health snapshot of the theme service. */
+    getHealth(): ThemeServiceHealth {
+        return {
+            initialized: this.initialized,
+            currentTheme: this.store.currentTheme,
+            customThemeCount: this.store.customThemes.length,
+            favoriteCount: this.store.favorites.length,
+            historySize: this.store.history.length,
+            hasActivePreset: this.store.preset !== null,
+            storePath: this.storePath,
+        };
     }
 
     async initialize(): Promise<void> {
@@ -84,9 +136,11 @@ export class ThemeService extends BaseService {
     }
 
     async setTheme(themeId: string): Promise<boolean> {
+        const start = Date.now();
         const theme = getThemeById(themeId) ?? this.store.customThemes.find(t => t.id === themeId);
         if (!theme) {
             this.logWarn(`Theme not found: ${themeId}`);
+            this.emitTelemetry({ action: 'theme.switch', themeId, success: false, timestamp: Date.now() });
             return false;
         }
 
@@ -106,6 +160,14 @@ export class ThemeService extends BaseService {
 
         await this.saveStore();
         this.logInfo(`Theme changed to: ${themeId}`);
+        this.emitTelemetry({
+            action: 'theme.switch',
+            themeId,
+            previousThemeId: previousTheme,
+            success: true,
+            durationMs: Date.now() - start,
+            timestamp: Date.now(),
+        });
         return true;
     }
 
@@ -141,6 +203,7 @@ export class ThemeService extends BaseService {
     }
 
     async addCustomTheme(theme: Omit<CustomTheme, 'id' | 'createdAt' | 'modifiedAt'>): Promise<CustomTheme> {
+        const start = Date.now();
         const customTheme: CustomTheme = {
             ...theme,
             id: `custom-${Date.now()}`,
@@ -150,6 +213,14 @@ export class ThemeService extends BaseService {
         this.store.customThemes.push(customTheme);
         await this.saveStore();
         this.logInfo(`Custom theme added: ${customTheme.id}`);
+        this.emitTelemetry({
+            action: 'theme.custom.create',
+            themeId: customTheme.id,
+            source: theme.source,
+            success: true,
+            durationMs: Date.now() - start,
+            timestamp: Date.now(),
+        });
         return customTheme;
     }
 
@@ -175,6 +246,7 @@ export class ThemeService extends BaseService {
         const index = this.store.customThemes.findIndex(t => t.id === id);
         if (index === -1) {
             this.logWarn(`Custom theme not found for deletion: ${id}`);
+            this.emitTelemetry({ action: 'theme.custom.delete', themeId: id, success: false, timestamp: Date.now() });
             return false;
         }
 
@@ -186,6 +258,7 @@ export class ThemeService extends BaseService {
 
         await this.saveStore();
         this.logInfo(`Custom theme deleted: ${id}`);
+        this.emitTelemetry({ action: 'theme.custom.delete', themeId: id, success: true, timestamp: Date.now() });
         return true;
     }
 
@@ -231,12 +304,20 @@ export class ThemeService extends BaseService {
         const preset = this.getPreset(presetId);
         if (!preset) {
             this.logWarn(`Preset not found: ${presetId}`);
+            this.emitTelemetry({ action: 'theme.preset.apply', presetId, success: false, timestamp: Date.now() });
             return false;
         }
 
         this.store.preset = preset;
         await this.setTheme(preset.themeId);
         this.logInfo(`Preset applied: ${presetId}`);
+        this.emitTelemetry({
+            action: 'theme.preset.apply',
+            presetId,
+            themeId: preset.themeId,
+            success: true,
+            timestamp: Date.now(),
+        });
         return true;
     }
 
@@ -252,6 +333,7 @@ export class ThemeService extends BaseService {
     exportTheme(themeId: string): string | null {
         const theme = this.getThemeDetails(themeId);
         if (!theme) {
+            this.emitTelemetry({ action: 'theme.export', themeId, success: false, timestamp: Date.now() });
             return null;
         }
 
@@ -260,10 +342,12 @@ export class ThemeService extends BaseService {
             exportedAt: new Date().toISOString(),
             theme
         };
+        this.emitTelemetry({ action: 'theme.export', themeId, success: true, timestamp: Date.now() });
         return JSON.stringify(exportData, null, 2);
     }
 
     async importTheme(jsonString: string): Promise<CustomTheme | null> {
+        const start = Date.now();
         try {
             const data = safeJsonParse<JsonObject>(jsonString, {});
             if (data.version !== '1.0' || !data.theme) {
@@ -273,13 +357,23 @@ export class ThemeService extends BaseService {
             const themeObject = data.theme as JsonObject;
             this.validateImportedTheme(themeObject);
 
-            return await this.addCustomTheme({
+            const imported = await this.addCustomTheme({
                 ...(themeObject as unknown as CustomTheme),
                 isCustom: true,
                 source: 'imported'
             });
+            this.emitTelemetry({
+                action: 'theme.import',
+                themeId: imported.id,
+                source: 'imported',
+                success: true,
+                durationMs: Date.now() - start,
+                timestamp: Date.now(),
+            });
+            return imported;
         } catch (error) {
             this.logError('Failed to import theme', error);
+            this.emitTelemetry({ action: 'theme.import', success: false, durationMs: Date.now() - start, timestamp: Date.now() });
             return null;
         }
     }

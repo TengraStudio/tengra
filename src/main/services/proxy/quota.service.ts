@@ -5,7 +5,7 @@ import { TokenService } from '@main/services/security/token.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { ClaudeQuota, CodexUsage, CopilotQuota, ModelQuotaItem, QuotaInfo, QuotaResponse } from '@shared/types/quota';
-import { getErrorMessage } from '@shared/utils/error.util';
+import { getErrorMessage, TengraError } from '@shared/utils/error.util';
 
 import { AntigravityHandler } from './quota/antigravity-handler';
 import { ClaudeHandler } from './quota/claude-handler';
@@ -20,6 +20,57 @@ export interface QuotaModel {
         totalQuota?: number;
     }
 }
+
+/**
+ * Standardized error codes for QuotaService
+ */
+export enum QuotaErrorCode {
+    INVALID_SESSION_KEY = 'QUOTA_INVALID_SESSION_KEY',
+    INVALID_INPUT = 'QUOTA_INVALID_INPUT',
+    FETCH_FAILED = 'QUOTA_FETCH_FAILED',
+    AUTH_EXPIRED = 'QUOTA_AUTH_EXPIRED',
+    NO_ACCOUNTS = 'QUOTA_NO_ACCOUNTS',
+    PARSE_FAILED = 'QUOTA_PARSE_FAILED',
+    QUOTA_EXCEEDED = 'QUOTA_EXCEEDED',
+    REFRESH_FAILED = 'QUOTA_REFRESH_FAILED',
+    ACCOUNT_LOCKED = 'QUOTA_ACCOUNT_LOCKED'
+}
+
+/**
+ * Typed error class for all QuotaService failures.
+ */
+export class QuotaError extends TengraError {
+    public readonly quotaCode: QuotaErrorCode;
+
+    constructor(message: string, code: QuotaErrorCode, context?: Record<string, unknown>) {
+        super(message, code, context);
+        this.quotaCode = code;
+        Object.setPrototypeOf(this, new.target.prototype);
+    }
+}
+
+/**
+ * Telemetry events emitted by QuotaService for health dashboards
+ */
+export enum QuotaTelemetryEvent {
+    QUOTA_FETCHED = 'quota_fetched',
+    QUOTA_FETCH_FAILED = 'quota_fetch_failed',
+    CODEX_USAGE_FETCHED = 'quota_codex_usage_fetched',
+    CLAUDE_QUOTA_FETCHED = 'quota_claude_quota_fetched',
+    COPILOT_QUOTA_FETCHED = 'quota_copilot_quota_fetched',
+    AUTH_EXPIRED = 'quota_auth_expired'
+}
+
+/**
+ * Performance regression budgets (in ms) for QuotaService operations
+ */
+export const QUOTA_PERFORMANCE_BUDGETS = {
+    FETCH_QUOTA_MS: 10000,
+    FETCH_CODEX_USAGE_MS: 10000,
+    FETCH_CLAUDE_QUOTA_MS: 10000,
+    FETCH_COPILOT_QUOTA_MS: 10000,
+    SAVE_SESSION_MS: 1000
+} as const;
 
 export class QuotaService {
     private antigravityHandler: AntigravityHandler;
@@ -47,9 +98,42 @@ export class QuotaService {
         });
     }
 
+    // --- Validation helpers ---
+
+    /** Validates that a port number is a safe positive integer. */
+    private static isValidPort(port: unknown): port is number {
+        return typeof port === 'number' && Number.isFinite(port) && Number.isInteger(port) && port > 0 && port <= 65535;
+    }
+
+    /** Validates that a value is a non-empty string after trimming. */
+    private static isNonEmptyString(value: unknown): value is string {
+        return typeof value === 'string' && value.trim().length > 0;
+    }
+
+    /** Validates a LinkedAccount has the minimum required fields. */
+    private static isValidAccount(account: unknown): account is LinkedAccount {
+        if (!account || typeof account !== 'object') { return false; }
+        const acc = account as Record<string, unknown>;
+        return QuotaService.isNonEmptyString(acc.id) && QuotaService.isNonEmptyString(acc.provider);
+    }
+
     // --- Core API ---
 
-    async getQuota(_proxyPort: number, _proxyKey: string): Promise<{ accounts: Array<QuotaResponse & { accountId?: string; email?: string }> } | null> {
+    /**
+     * Fetches quota information for all antigravity/google accounts.
+     * @param proxyPort - Proxy port number (1–65535).
+     * @param proxyKey - Non-empty proxy authentication key.
+     */
+    async getQuota(proxyPort: number, proxyKey: string): Promise<{ accounts: Array<QuotaResponse & { accountId?: string; email?: string }> } | null> {
+        if (!QuotaService.isValidPort(proxyPort)) {
+            appLogger.warn('QuotaService', `getQuota: invalid proxyPort "${String(proxyPort)}"`);
+            return null;
+        }
+        if (!QuotaService.isNonEmptyString(proxyKey)) {
+            appLogger.warn('QuotaService', 'getQuota: proxyKey must be a non-empty string');
+            return null;
+        }
+
         try {
             const allAccounts = await this.authService.getAllAccountsFull();
             const antigravityAccounts = allAccounts.filter(a => a.provider.startsWith('antigravity') || a.provider.startsWith('google'));
@@ -65,8 +149,9 @@ export class QuotaService {
             }
             return { accounts: results };
         } catch (e) {
-            appLogger.error('QuotaService', `Failed to get quota: ${getErrorMessage(e)}`);
-            return null;
+            const msg = getErrorMessage(e);
+            appLogger.error('QuotaService', `Failed to get quota: ${msg}`);
+            throw new QuotaError(`Failed to get quota: ${msg}`, QuotaErrorCode.FETCH_FAILED, { originalError: msg });
         }
     }
 
@@ -79,7 +164,15 @@ export class QuotaService {
         return this.fetchAntigravityQuotaForToken(account);
     }
 
+    /**
+     * Fetches upstream model data for a specific antigravity account.
+     * @param account - A valid LinkedAccount with id and provider.
+     */
     public async fetchAntigravityUpstreamForToken(account: LinkedAccount): Promise<unknown> {
+        if (!QuotaService.isValidAccount(account)) {
+            appLogger.warn('QuotaService', 'fetchAntigravityUpstreamForToken: invalid account');
+            return null;
+        }
         return this.antigravityHandler.fetchAntigravityUpstreamForToken(account);
     }
 
@@ -90,8 +183,18 @@ export class QuotaService {
                 return this.antigravityHandler.parseQuotaResponse(data as { models?: Record<string, { displayName?: string; quotaInfo?: QuotaInfo }> });
             }
         } catch (error) {
+            if (error instanceof QuotaError && error.quotaCode === QuotaErrorCode.AUTH_EXPIRED) {
+                return { success: false, authExpired: true, status: 'Expired', next_reset: '-', models: [] };
+            }
             if (error instanceof Error && error.message === 'AUTH_EXPIRED') {
                 return { success: false, authExpired: true, status: 'Expired', next_reset: '-', models: [] };
+            }
+            if (error instanceof QuotaError && error.quotaCode === QuotaErrorCode.QUOTA_EXCEEDED) {
+                return { success: false, authExpired: false, status: 'Exceeded', next_reset: '-', models: [] };
+            }
+            if (error instanceof QuotaError && error.quotaCode === QuotaErrorCode.ACCOUNT_LOCKED) {
+                appLogger.warn('QuotaService', `Account locked: ${getErrorMessage(error)}`);
+                return { success: false, authExpired: false, status: 'Locked', next_reset: '-', models: [] };
             }
         }
         return null;
@@ -143,7 +246,14 @@ export class QuotaService {
         return this.codexHandler.fetchCodexUsage();
     }
 
+    /**
+     * Extracts structured CodexUsage from raw WHAM API data.
+     * @param data - Non-null JSON value from the WHAM API.
+     */
     extractCodexUsageFromWham(data: JsonValue): CodexUsage | null {
+        if (data === null || data === undefined || typeof data !== 'object') {
+            return null;
+        }
         return this.codexHandler.extractCodexUsageFromWham(data);
     }
 
@@ -167,7 +277,18 @@ export class QuotaService {
         return this.claudeHandler.fetchClaudeQuotaForToken(account);
     }
 
-    public async saveClaudeSession(sessionKey: string, accountId?: string): Promise<{ success: boolean; error?: string }> {
+    /**
+     * Validates and saves a Claude session key.
+     * @param sessionKey - Non-empty session key string.
+     * @param accountId - Optional account identifier (must be a non-empty string if provided).
+     */
+    public async saveClaudeSession(sessionKey: string, accountId?: string): Promise<{ success: boolean; error?: string; code?: QuotaErrorCode }> {
+        if (!sessionKey || typeof sessionKey !== 'string' || sessionKey.trim().length === 0) {
+            return { success: false, error: 'Session key must be a non-empty string', code: QuotaErrorCode.INVALID_SESSION_KEY };
+        }
+        if (accountId !== undefined && !QuotaService.isNonEmptyString(accountId)) {
+            return { success: false, error: 'accountId must be a non-empty string when provided', code: QuotaErrorCode.INVALID_INPUT };
+        }
         return this.claudeHandler.saveClaudeSession(sessionKey, accountId);
     }
 
@@ -193,6 +314,7 @@ export class QuotaService {
     }
 
     private deduplicateCopilotAccounts(accounts: LinkedAccount[]): LinkedAccount[] {
+        if (!Array.isArray(accounts)) { return []; }
         const unique: LinkedAccount[] = [];
         const seen = new Set<string>();
 

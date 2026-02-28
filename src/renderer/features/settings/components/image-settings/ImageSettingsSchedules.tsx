@@ -8,8 +8,12 @@ interface ImageSettingsSchedulesProps {
     setSchedulePrompt: (prompt: string) => void;
     scheduleAt: string;
     setScheduleAt: (at: string) => void;
+    schedulePriority: 'low' | 'normal' | 'high';
+    setSchedulePriority: (priority: 'low' | 'normal' | 'high') => void;
+    scheduleResourceProfile: 'balanced' | 'quality' | 'speed';
+    setScheduleResourceProfile: (profile: 'balanced' | 'quality' | 'speed') => void;
     handleCreateSchedule: () => Promise<void>;
-    queueStats: { queued: number; running: boolean };
+    queueStats: { queued: number; running: boolean; byPriority?: Record<string, number> };
     scheduleEntries: ImageScheduleEntry[];
     handleCancelSchedule: (id: string) => Promise<void>;
     t: (key: string, options?: Record<string, string | number>) => string | undefined;
@@ -20,6 +24,10 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
     setSchedulePrompt,
     scheduleAt,
     setScheduleAt,
+    schedulePriority,
+    setSchedulePriority,
+    scheduleResourceProfile,
+    setScheduleResourceProfile,
     handleCreateSchedule,
     queueStats,
     scheduleEntries,
@@ -45,6 +53,24 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                     onChange={event => setScheduleAt(event.target.value)}
                     className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
                 />
+                <select
+                    value={schedulePriority}
+                    onChange={event => setSchedulePriority(event.target.value as 'low' | 'normal' | 'high')}
+                    className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
+                >
+                    <option value="low">{t('settings.images.priorityLow') || 'Priority: Low'}</option>
+                    <option value="normal">{t('settings.images.priorityNormal') || 'Priority: Normal'}</option>
+                    <option value="high">{t('settings.images.priorityHigh') || 'Priority: High'}</option>
+                </select>
+                <select
+                    value={scheduleResourceProfile}
+                    onChange={event => setScheduleResourceProfile(event.target.value as 'balanced' | 'quality' | 'speed')}
+                    className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
+                >
+                    <option value="balanced">{t('settings.images.resourceBalanced') || 'Resource: Balanced'}</option>
+                    <option value="quality">{t('settings.images.resourceQuality') || 'Resource: Quality'}</option>
+                    <option value="speed">{t('settings.images.resourceSpeed') || 'Resource: Speed'}</option>
+                </select>
             </div>
             <button
                 onClick={() => { void handleCreateSchedule(); }}
@@ -57,6 +83,11 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                 <div className="font-semibold text-foreground/90">{t('settings.images.queueTitle')}</div>
                 <div>{t('settings.images.queueStatus')}: {queueStats.running ? t('settings.images.queueRunning') || 'Running' : t('settings.images.queueIdle') || 'Idle'}</div>
                 <div>{queueStats.queued} {t('common.pending')}</div>
+                {queueStats.byPriority && (
+                    <div className="text-[10px]">
+                        high: {queueStats.byPriority.high ?? 0} · normal: {queueStats.byPriority.normal ?? 0} · low: {queueStats.byPriority.low ?? 0}
+                    </div>
+                )}
             </div>
 
             <div className="mt-3 space-y-1.5">
@@ -68,7 +99,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                             <div className="min-w-0">
                                 <div className="truncate">{entry.options.prompt}</div>
                                 <div className="text-[10px] text-muted-foreground/80">
-                                    {new Date(entry.runAt).toLocaleString(t('common.locale'))} • {entry.status}
+                                    {new Date(entry.runAt).toLocaleString(t('common.locale'))} • {entry.status} • {entry.priority} • {entry.resourceProfile}
                                 </div>
                             </div>
                             {entry.status === 'scheduled' && (

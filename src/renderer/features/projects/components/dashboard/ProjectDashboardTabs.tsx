@@ -7,8 +7,8 @@ import { ProjectTodoTab } from '@renderer/features/projects/components/ProjectTo
 import { FileSearchResult } from '@shared/types/common';
 import React from 'react';
 
-import type { GroupedModels } from '@/types';
 import { Language } from '@/i18n';
+import type { GroupedModels } from '@/types';
 import { AgentDefinition, AppSettings, CodexUsage, Project, ProjectAnalysis, ProjectDashboardTab, ProjectStats, QuotaResponse } from '@/types';
 
 import { OpenFile } from '../../hooks/useProjectDashboard';

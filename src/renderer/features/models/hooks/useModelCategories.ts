@@ -1,11 +1,11 @@
 import { Box, BrainCircuit, Code2, LayoutGrid, Server, Sparkles, Zap } from 'lucide-react';
 import { useMemo } from 'react';
 
+import type { GroupedModels, ModelInfo } from '@/types';
 import { AppSettings } from '@/types';
 
 import { ModelCategory, ModelListItem } from '../types';
 import { getModelLifecycleMeta } from '../utils/model-selector-metadata';
-import type { GroupedModels, ModelInfo } from '@/types';
 
 interface UseModelCategoriesProps {
     groupedModels?: GroupedModels;

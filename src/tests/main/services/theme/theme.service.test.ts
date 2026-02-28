@@ -3,7 +3,7 @@
  * Comprehensive unit tests for edge cases in ThemeService
  */
 
-import { ThemeService } from '@main/services/theme/theme.service';
+import { ThemeErrorCode, ThemeService } from '@main/services/theme/theme.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock dependencies
@@ -416,6 +416,138 @@ describe('ThemeService Edge Cases', () => {
 
             expect(typeof result1).toBe('boolean');
             expect(typeof result2).toBe('boolean');
+        });
+    });
+});
+
+describe('ThemeService Additional Edge Cases', () => {
+    let themeService: ThemeService;
+
+    beforeEach(async () => {
+        vi.clearAllMocks();
+        const { DataService } = await import('@main/services/data/data.service');
+        const dataService = new DataService();
+        themeService = new ThemeService(dataService as unknown as import('@main/services/data/data.service').DataService);
+        await themeService.initialize();
+    });
+
+    describe('getTheme edge cases', () => {
+        it('should return undefined for empty string id', async () => {
+            const theme = await themeService.getTheme('');
+            expect(theme).toBeUndefined();
+        });
+
+        it('should return undefined for overly long id (>256 chars)', async () => {
+            const longId = 'x'.repeat(257);
+            const theme = await themeService.getTheme(longId);
+            expect(theme).toBeUndefined();
+        });
+
+        it('should return undefined for unknown id', async () => {
+            const theme = await themeService.getTheme('completely-unknown-theme');
+            expect(theme).toBeUndefined();
+        });
+    });
+
+    describe('uninstallTheme edge cases', () => {
+        it('should return false for id with special characters', async () => {
+            const result = await themeService.uninstallTheme('theme@#$%!');
+            expect(result).toBe(false);
+        });
+
+        it('should return false for built-in theme black', async () => {
+            const result = await themeService.uninstallTheme('black');
+            expect(result).toBe(false);
+        });
+
+        it('should return false for built-in theme white', async () => {
+            const result = await themeService.uninstallTheme('white');
+            expect(result).toBe(false);
+        });
+
+        it('should return false for empty id', async () => {
+            const result = await themeService.uninstallTheme('');
+            expect(result).toBe(false);
+        });
+    });
+
+    describe('validateManifest via installTheme', () => {
+        const validColors = {
+            background: '0 0% 0%', foreground: '0 0% 100%', primary: '0 0% 50%',
+            secondary: '0 0% 20%', accent: '0 0% 30%', muted: '0 0% 10%',
+            destructive: '0 0% 50%', border: '0 0% 20%', input: '0 0% 20%',
+            ring: '0 0% 50%', card: '0 0% 5%', cardForeground: '0 0% 100%',
+            popover: '0 0% 5%', popoverForeground: '0 0% 100%',
+            primaryForeground: '0 0% 100%', secondaryForeground: '0 0% 100%',
+            accentForeground: '0 0% 100%', destructiveForeground: '0 0% 100%',
+            mutedForeground: '0 0% 60%'
+        };
+
+        it('should reject manifest without id', async () => {
+            const manifest = { name: 'test', displayName: 'Test', version: '1.0.0', type: 'dark', colors: validColors };
+            await expect(themeService.installTheme(manifest as unknown as import('@shared/types/theme').ThemeManifest)).rejects.toThrow('THEME_INVALID_MANIFEST');
+        });
+
+        it('should reject manifest without name', async () => {
+            const manifest = { id: 'test', displayName: 'Test', version: '1.0.0', type: 'dark', colors: validColors };
+            await expect(themeService.installTheme(manifest as unknown as import('@shared/types/theme').ThemeManifest)).rejects.toThrow('THEME_INVALID_MANIFEST');
+        });
+
+        it('should reject manifest without displayName', async () => {
+            const manifest = { id: 'test', name: 'test', version: '1.0.0', type: 'dark', colors: validColors };
+            await expect(themeService.installTheme(manifest as unknown as import('@shared/types/theme').ThemeManifest)).rejects.toThrow('THEME_INVALID_MANIFEST');
+        });
+
+        it('should reject manifest without version', async () => {
+            const manifest = { id: 'test', name: 'test', displayName: 'Test', type: 'dark', colors: validColors };
+            await expect(themeService.installTheme(manifest as unknown as import('@shared/types/theme').ThemeManifest)).rejects.toThrow('THEME_INVALID_MANIFEST');
+        });
+
+        it('should reject manifest with invalid type', async () => {
+            const manifest = { id: 'test', name: 'test', displayName: 'Test', version: '1.0.0', type: 'neon', colors: validColors };
+            await expect(themeService.installTheme(manifest as unknown as import('@shared/types/theme').ThemeManifest)).rejects.toThrow('THEME_INVALID_MANIFEST');
+        });
+
+        it('should reject manifest without colors', async () => {
+            const manifest = { id: 'test', name: 'test', displayName: 'Test', version: '1.0.0', type: 'dark' };
+            await expect(themeService.installTheme(manifest as unknown as import('@shared/types/theme').ThemeManifest)).rejects.toThrow('THEME_INVALID_MANIFEST');
+        });
+
+        it('should reject manifest with missing required color', async () => {
+            const incompleteColors = { ...validColors };
+            delete (incompleteColors as Record<string, string>)['ring'];
+            const manifest = { id: 'test', name: 'test', displayName: 'Test', version: '1.0.0', type: 'dark', colors: incompleteColors };
+            await expect(themeService.installTheme(manifest as unknown as import('@shared/types/theme').ThemeManifest)).rejects.toThrow('THEME_INVALID_MANIFEST');
+        });
+    });
+
+    describe('ThemeErrorCode enum', () => {
+        it('should have all expected error code values', () => {
+            expect(ThemeErrorCode.INVALID_MANIFEST).toBe('THEME_INVALID_MANIFEST');
+            expect(ThemeErrorCode.THEME_NOT_FOUND).toBe('THEME_NOT_FOUND');
+            expect(ThemeErrorCode.INSTALL_FAILED).toBe('THEME_INSTALL_FAILED');
+            expect(ThemeErrorCode.UNINSTALL_FAILED).toBe('THEME_UNINSTALL_FAILED');
+            expect(ThemeErrorCode.UNINSTALL_BUILTIN).toBe('THEME_UNINSTALL_BUILTIN');
+            expect(ThemeErrorCode.VALIDATION_FAILED).toBe('THEME_VALIDATION_FAILED');
+            expect(ThemeErrorCode.PERMISSION_DENIED).toBe('THEME_PERMISSION_DENIED');
+            expect(ThemeErrorCode.DISK_FULL).toBe('THEME_DISK_FULL');
+            expect(ThemeErrorCode.CORRUPT_THEME_FILE).toBe('THEME_CORRUPT_FILE');
+        });
+    });
+
+    describe('getMetrics', () => {
+        it('should return correct structure', () => {
+            const metrics = themeService.getMetrics();
+            expect(typeof metrics).toBe('object');
+            expect(metrics).not.toBeNull();
+        });
+    });
+
+    describe('getThemesDirectory', () => {
+        it('should return a non-empty string', () => {
+            const dir = themeService.getThemesDirectory();
+            expect(typeof dir).toBe('string');
+            expect(dir.length).toBeGreaterThan(0);
         });
     });
 });

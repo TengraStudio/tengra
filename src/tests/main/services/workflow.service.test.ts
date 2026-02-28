@@ -1,6 +1,6 @@
 import * as fs from 'fs/promises';
 
-import { WorkflowService } from '@main/services/workflow/workflow.service';
+import { WorkflowErrorCode,WorkflowService } from '@main/services/workflow/workflow.service';
 import { Workflow, WorkflowExecutionResult } from '@shared/types/workflow.types';
 import { WorkflowContext } from '@shared/types/workflow-context.types';
 import { v4 as uuidv4 } from 'uuid';
@@ -100,5 +100,130 @@ describe('WorkflowService', () => {
             `Workflow is disabled: ${disabledWorkflow.id}`
         );
         expect(executeWorkflowMock).not.toHaveBeenCalled();
+    });
+
+    describe('WorkflowErrorCode enum', () => {
+        it('has expected error code values', () => {
+            expect(WorkflowErrorCode.NOT_FOUND).toBe('WORKFLOW_NOT_FOUND');
+            expect(WorkflowErrorCode.DISABLED).toBe('WORKFLOW_DISABLED');
+            expect(WorkflowErrorCode.INVALID_INPUT).toBe('WORKFLOW_INVALID_INPUT');
+            expect(WorkflowErrorCode.SAVE_FAILED).toBe('WORKFLOW_SAVE_FAILED');
+            expect(WorkflowErrorCode.LOAD_FAILED).toBe('WORKFLOW_LOAD_FAILED');
+            expect(WorkflowErrorCode.EXECUTION_FAILED).toBe('WORKFLOW_EXECUTION_FAILED');
+        });
+    });
+
+    describe('createWorkflow input validation', () => {
+        it('rejects workflow with empty name', async () => {
+            const service = new WorkflowService();
+            const input = { ...createWorkflowInput(), name: '' };
+            await expect(service.createWorkflow(input)).rejects.toThrow(/name must be a non-empty string/i);
+        });
+
+        it('rejects workflow with missing triggers array', async () => {
+            const service = new WorkflowService();
+            const input = { ...createWorkflowInput() };
+             
+            delete (input as Record<string, unknown>)['triggers'];
+            await expect(service.createWorkflow(input as Parameters<typeof service.createWorkflow>[0])).rejects.toThrow(
+                /createWorkflow/
+            );
+        });
+
+        it('rejects workflow with missing steps array', async () => {
+            const service = new WorkflowService();
+            const input = { ...createWorkflowInput() };
+            delete (input as Record<string, unknown>)['steps'];
+            await expect(service.createWorkflow(input as Parameters<typeof service.createWorkflow>[0])).rejects.toThrow(
+                /createWorkflow/
+            );
+        });
+    });
+
+    describe('updateWorkflow input validation', () => {
+        it('rejects empty id', async () => {
+            const service = new WorkflowService();
+            await expect(service.updateWorkflow('', { name: 'New' })).rejects.toThrow(
+                'id must be a non-empty string'
+            );
+        });
+
+        it('throws NOT_FOUND with error code for unknown id', async () => {
+            const service = new WorkflowService();
+            try {
+                await service.updateWorkflow('nonexistent-id', { name: 'New' });
+                expect.unreachable('should have thrown');
+            } catch (err) {
+                expect((err as Error).message).toContain('Workflow not found');
+                expect((err as Error & { code?: string }).code).toBe(WorkflowErrorCode.NOT_FOUND);
+            }
+        });
+    });
+
+    describe('deleteWorkflow input validation', () => {
+        it('rejects empty id', async () => {
+            const service = new WorkflowService();
+            await expect(service.deleteWorkflow('')).rejects.toThrow('id must be a non-empty string');
+        });
+
+        it('throws NOT_FOUND with error code for unknown id', async () => {
+            const service = new WorkflowService();
+            try {
+                await service.deleteWorkflow('nonexistent-id');
+                expect.unreachable('should have thrown');
+            } catch (err) {
+                expect((err as Error).message).toContain('Workflow not found');
+                expect((err as Error & { code?: string }).code).toBe(WorkflowErrorCode.NOT_FOUND);
+            }
+        });
+    });
+
+    describe('executeWorkflow input validation', () => {
+        it('rejects empty id', async () => {
+            const service = new WorkflowService();
+            await expect(service.executeWorkflow('')).rejects.toThrow('id must be a non-empty string');
+        });
+
+        it('throws NOT_FOUND with error code for unknown id', async () => {
+            const service = new WorkflowService();
+            try {
+                await service.executeWorkflow('nonexistent-id');
+                expect.unreachable('should have thrown');
+            } catch (err) {
+                expect((err as Error).message).toContain('Workflow not found');
+                expect((err as Error & { code?: string }).code).toBe(WorkflowErrorCode.NOT_FOUND);
+            }
+        });
+
+        it('throws DISABLED with error code for disabled workflow', async () => {
+            const service = new WorkflowService();
+            const workflow = await service.createWorkflow({ ...createWorkflowInput(), enabled: false });
+            try {
+                await service.executeWorkflow(workflow.id);
+                expect.unreachable('should have thrown');
+            } catch (err) {
+                expect((err as Error).message).toContain('Workflow is disabled');
+                expect((err as Error & { code?: string }).code).toBe(WorkflowErrorCode.DISABLED);
+            }
+        });
+    });
+
+    describe('getWorkflow input validation', () => {
+        it('returns undefined for empty string id', () => {
+            const service = new WorkflowService();
+            expect(service.getWorkflow('')).toBeUndefined();
+        });
+
+        it('returns undefined for whitespace-only id', () => {
+            const service = new WorkflowService();
+            expect(service.getWorkflow('   ')).toBeUndefined();
+        });
+    });
+
+    describe('triggerManualWorkflow input validation', () => {
+        it('rejects empty triggerId', () => {
+            const service = new WorkflowService();
+            expect(() => service.triggerManualWorkflow('')).toThrow('id must be a non-empty string');
+        });
     });
 });

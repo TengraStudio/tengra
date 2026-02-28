@@ -4,8 +4,8 @@ import { Activity, Clock, MessageSquare, RefreshCw, Sliders, Thermometer, Zap } 
 import React, { useCallback, useMemo, useState } from 'react';
 
 import { SelectDropdown } from '@/components/ui/SelectDropdown';
-import type { ModelInfo } from '@/types';
 import { cn } from '@/lib/utils';
+import type { ModelInfo } from '@/types';
 
 interface BenchmarkResult {
     tokensPerSec: number

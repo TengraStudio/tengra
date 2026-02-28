@@ -2,6 +2,19 @@
 
 ## [2026-02-27]
 
+### Refinamiento de la modularización de precarga y revisión de la seguridad de tipos
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Finalizada la modularización de los scripts de precarga de Electron, resueltos los desajustes de tipos críticos en los puentes de agentes y eliminados los tipos 'any' prohibidos.
+
+- **Alineación de modularización**: Sincronización de todos los puentes de precarga específicos del dominio con los controladores IPC del proceso principal.
+- **Refuerzo de la seguridad de tipos**: Eliminación de usos de `any` en `ProjectAgentBridge`, `McpMarketplaceBridge` y `AdvancedMemoryBridge`.
+- **Corrección de errores**: Resuelto un desajuste de tipos de marca de tiempo en `OrchestratorBridge`.
+- **Corrección del contrato IPC**: Actualización de los puentes de inteligencia de código y sandbox para usar argumentos posicionales.
+- **Fiabilidad de las pruebas**: Corregido un mock roto en `db.integration.test.ts`.
+- **Higiene**: Limpieza de importaciones no utilizadas y refinamiento de tipos de oyentes.
+
 ### Asistente de proyectos premium: UX rediseñado e integración de movimiento
 
 - **Type**: feature

@@ -5,13 +5,23 @@
 
 import { useCallback, useEffect } from 'react';
 
-import { useChat } from '@/context/ChatContext';
-import { useAppState } from '@/hooks/useAppState';
 import { useTranslation } from '@/i18n';
 
-export function useVoiceActions() {
-    const { setCurrentView, addToast } = useAppState();
-    const { createNewChat, handleSend, setInput } = useChat();
+interface UseVoiceActionsParams {
+    setCurrentView: (view: 'chat' | 'projects' | 'settings' | 'models') => void
+    addToast: (toast: { type: 'info'; message: string }) => void
+    createNewChat: () => void
+    handleSend: () => Promise<void> | void
+    setInput: (value: string) => void
+}
+
+export function useVoiceActions({
+    setCurrentView,
+    addToast,
+    createNewChat,
+    handleSend,
+    setInput,
+}: UseVoiceActionsParams) {
     const { t } = useTranslation();
 
     const handleNavigate = useCallback((event: Event) => {

@@ -2,13 +2,13 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+import { ToolOutputVirtualizer } from '@/components/shared/ToolOutputVirtualizer';
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { ToolResult } from '@/types';
 import { JsonObject, JsonValue } from '@/types/common';
 
 import { TerminalView } from './TerminalView';
-import { ToolOutputVirtualizer } from './ToolOutputVirtualizer';
 
 interface CommandExecutionResult {
     stdout?: string;

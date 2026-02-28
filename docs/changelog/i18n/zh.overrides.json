@@ -1,4 +1,16 @@
 {
+  "2026-02-27-preload-modularization-refinement": {
+    "title": "预加载模块化优化与类型安全重构",
+    "summary": "完成了 Electron 预加载脚本的模块化，解决了代理桥中的关键类型不匹配问题，并消除了桥接层中禁用的 'any' 类型。",
+    "items": [
+      "- **模块化对齐**: 将所有特定领域的预加载桥与主进程 IPC 处理程序同步。",
+      "- **类型安全强化**: 消除了 `ProjectAgentBridge`、`McpMarketplaceBridge` 和 `AdvancedMemoryBridge` 中的 `any` 使用。",
+      "- **错误修复**: 解决了 `OrchestratorBridge` 中时间戳类型不匹配的问题。",
+      "- **IPC 合同更正**: 更新了代码智能和沙箱桥以使用位置参数。",
+      "- **测试可靠性**: 修复了 `db.integration.test.ts` 中损坏的模拟。",
+      "- **卫生**: 清理了未使用的导入并优化了监听器类型。"
+    ]
+  },
   "2026-02-26-quick-wins-refactor": {
     "title": "NASA Power of Ten: 快速获胜重构",
     "summary": "重构了多个大型文件，以符合 NASA Power of Ten 规则 #3（每函数 60 行限制）并提高代码模块化程度。",
@@ -3922,8 +3934,7 @@
       "- **输入细化**：改进的表单元素具有优雅的边框、焦点状态和独特的动画错误消息，以提高可用性。",
       "- **运动设计**：集成微动画用于过渡和交互状态，以创建响应更快、更生动的界面。"
     ]
-  }
-,
+  },
   "2025-07-25-service-threat-model": {
     "title": "全面的服务威胁模型与滥用案例审查",
     "summary": "创建 docs/guides/SERVICE_THREAT_MODEL.md，涵盖所有12个后端服务的威胁分析、缓解措施和滥用场景。",
@@ -3932,6 +3943,15 @@
       "- 为每个服务记录了30+威胁向量，包含T代码、描述和现有缓解措施",
       "- 识别了24+滥用案例，涵盖提示注入、资源耗尽、命令注入、路径遍历和凭据窃取",
       "- 添加了风险矩阵摘要和6项可操作的安全建议"
+    ]
+  },
+  "2026-03-01-proxy-agent-test-resolution": {
+    "title": "代理和代理服务测试失败解决方案",
+    "summary": "通过修复模拟、导入和枚举边界，解决了代理性能和代理检查点测试套件中失败的单元和集成测试。",
+    "items": [
+      "- **代理性能测试**：修复了 `startEmbeddedProxy` 计时测试中 `performance.now()` 的脆弱模拟实现。",
+      "- **代理服务合同测试**：更新了配额性能预算密钥检查和 `QuotaErrorCode` 边界处理以支持新添加的错误代码。",
+      "- **代理检查点服务**：解决了由于使用 `type` 修饰符而不是作为值导入 `AgentCheckpointTelemetryEvent` 导致的致命 TypeScript runtime 引用错误，该错误破坏了跟踪断言。"
     ]
   }
 }

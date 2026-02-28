@@ -35,7 +35,15 @@ export const registerSdCppIpc = (localImageService: LocalImageService) => {
 
     ipcMain.handle('sd-cpp:getAnalytics', createSafeIpcHandler('sd-cpp:getAnalytics', async () => {
         return localImageService.getImageAnalytics();
-    }, { totalGenerated: 0, byProvider: {}, averageSteps: 0 }));
+    }, { totalGenerated: 0, byProvider: {}, averageSteps: 0, bySource: {}, averageDurationMs: 0, editModeCounts: {} }));
+
+    ipcMain.handle('sd-cpp:getPresetAnalytics', createSafeIpcHandler('sd-cpp:getPresetAnalytics', async () => {
+        return localImageService.getPresetAnalytics();
+    }, { totalPresets: 0, providerCounts: {}, customPresets: 0 }));
+
+    ipcMain.handle('sd-cpp:getScheduleAnalytics', createSafeIpcHandler('sd-cpp:getScheduleAnalytics', async () => {
+        return localImageService.getScheduleAnalytics();
+    }, { total: 0, byStatus: {}, byPriority: {} }));
 
     ipcMain.handle('sd-cpp:listPresets', createSafeIpcHandler('sd-cpp:listPresets', async () => {
         return localImageService.listGenerationPresets();
@@ -58,8 +66,43 @@ export const registerSdCppIpc = (localImageService: LocalImageService) => {
         return localImageService.deleteGenerationPreset(id);
     }, false));
 
+    ipcMain.handle('sd-cpp:exportPresetShare', createSafeIpcHandler('sd-cpp:exportPresetShare', async (_event, id: string) => {
+        return localImageService.exportGenerationPresetShareCode(id);
+    }, ''));
+
+    ipcMain.handle('sd-cpp:importPresetShare', createSafeIpcHandler('sd-cpp:importPresetShare', async (_event, code: string) => {
+        return localImageService.importGenerationPresetShareCode(code);
+    }, null));
+
+    ipcMain.handle('sd-cpp:listWorkflowTemplates', createSafeIpcHandler('sd-cpp:listWorkflowTemplates', async () => {
+        return localImageService.listComfyWorkflowTemplates();
+    }, []));
+
+    ipcMain.handle('sd-cpp:saveWorkflowTemplate', createSafeIpcHandler('sd-cpp:saveWorkflowTemplate', async (_event, payload: {
+        id?: string;
+        name: string;
+        description?: string;
+        workflow: Record<string, unknown>;
+    }) => {
+        return localImageService.saveComfyWorkflowTemplate(payload);
+    }, null));
+
+    ipcMain.handle('sd-cpp:deleteWorkflowTemplate', createSafeIpcHandler('sd-cpp:deleteWorkflowTemplate', async (_event, id: string) => {
+        return localImageService.deleteComfyWorkflowTemplate(id);
+    }, false));
+
+    ipcMain.handle('sd-cpp:exportWorkflowTemplateShare', createSafeIpcHandler('sd-cpp:exportWorkflowTemplateShare', async (_event, id: string) => {
+        return localImageService.exportComfyWorkflowTemplateShareCode(id);
+    }, ''));
+
+    ipcMain.handle('sd-cpp:importWorkflowTemplateShare', createSafeIpcHandler('sd-cpp:importWorkflowTemplateShare', async (_event, code: string) => {
+        return localImageService.importComfyWorkflowTemplateShareCode(code);
+    }, null));
+
     ipcMain.handle('sd-cpp:schedule', createSafeIpcHandler('sd-cpp:schedule', async (_event, payload: {
         runAt: number;
+        priority?: 'low' | 'normal' | 'high';
+        resourceProfile?: 'balanced' | 'quality' | 'speed';
         options: {
             prompt: string;
             negativePrompt?: string;
@@ -71,7 +114,10 @@ export const registerSdCppIpc = (localImageService: LocalImageService) => {
             count?: number;
         };
     }) => {
-        return localImageService.scheduleGeneration(payload.runAt, payload.options);
+        return localImageService.scheduleGeneration(payload.runAt, payload.options, {
+            priority: payload.priority,
+            resourceProfile: payload.resourceProfile
+        });
     }, null));
 
     ipcMain.handle('sd-cpp:listSchedules', createSafeIpcHandler('sd-cpp:listSchedules', async () => {
@@ -85,6 +131,17 @@ export const registerSdCppIpc = (localImageService: LocalImageService) => {
     ipcMain.handle('sd-cpp:compare', createSafeIpcHandler('sd-cpp:compare', async (_event, ids: string[]) => {
         return localImageService.compareGenerations(ids);
     }, null));
+
+    ipcMain.handle('sd-cpp:exportComparison', createSafeIpcHandler('sd-cpp:exportComparison', async (
+        _event,
+        payload: { ids: string[]; format?: 'json' | 'csv' }
+    ) => {
+        return localImageService.exportComparison(payload.ids, payload.format ?? 'json');
+    }, ''));
+
+    ipcMain.handle('sd-cpp:shareComparison', createSafeIpcHandler('sd-cpp:shareComparison', async (_event, ids: string[]) => {
+        return localImageService.shareComparison(ids);
+    }, ''));
 
     ipcMain.handle('sd-cpp:batchGenerate', createSafeIpcHandler('sd-cpp:batchGenerate', async (_event, requests: Array<{
         prompt: string;
@@ -101,7 +158,15 @@ export const registerSdCppIpc = (localImageService: LocalImageService) => {
 
     ipcMain.handle('sd-cpp:getQueueStats', createSafeIpcHandler('sd-cpp:getQueueStats', async () => {
         return localImageService.getQueueStats();
-    }, { queued: 0, running: false }));
+    }, { queued: 0, running: false, byPriority: {} }));
+
+    ipcMain.handle('sd-cpp:searchHistory', createSafeIpcHandler('sd-cpp:searchHistory', async (_event, query: string, limit?: number) => {
+        return localImageService.searchGenerationHistory(query, limit);
+    }, []));
+
+    ipcMain.handle('sd-cpp:exportHistory', createSafeIpcHandler('sd-cpp:exportHistory', async (_event, format?: 'json' | 'csv') => {
+        return localImageService.exportGenerationHistory(format ?? 'json');
+    }, '[]'));
 
     ipcMain.handle('sd-cpp:edit', createSafeIpcHandler('sd-cpp:edit', async (_event, options: {
         sourceImage: string;

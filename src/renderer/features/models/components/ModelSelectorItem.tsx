@@ -1,20 +1,12 @@
+import { ModelLifecycleBadge } from '@renderer/features/models/components/model-selector/ModelLifecycleBadge';
+import type { ModelListItem } from '@renderer/features/models/types';
 import { Check, ImageIcon, Info, Pin } from 'lucide-react';
 import React from 'react';
 
 import { cn } from '@/lib/utils';
 
-interface ModelItem {
-    id: string;
-    label: string;
-    disabled: boolean;
-    provider: string;
-    type: string;
-    contextWindow?: number;
-    pinned?: boolean;
-}
-
 interface ModelSelectorItemProps {
-    model: ModelItem;
+    model: ModelListItem;
     isSelected: boolean;
     isPrimary: boolean;
     onSelect: (provider: string, model: string, isMultiSelect: boolean) => void;
@@ -23,8 +15,8 @@ interface ModelSelectorItemProps {
     t: (key: string) => string;
 }
 
-const ModelLabelSection: React.FC<{ model: ModelItem }> = ({ model }) => (
-    <span className="truncate flex-1 flex items-center gap-2">
+const ModelLabelSection: React.FC<{ model: ModelListItem }> = ({ model }) => (
+    <span className="truncate flex-1 flex items-center gap-2 font-semibold">
         {model.label}
         {model.type === 'image' && <ImageIcon className="w-3.5 h-3.5 text-success" />}
         {(model.contextWindow ?? 0) > 0 && (
@@ -35,24 +27,36 @@ const ModelLabelSection: React.FC<{ model: ModelItem }> = ({ model }) => (
     </span>
 );
 
-const ModelInfoBadges: React.FC<{ model: ModelItem, t: (k: string) => string }> = ({ model, t }) => (
+const ModelInfoBadges: React.FC<{ model: ModelListItem, t: (k: string) => string }> = ({ model, t }) => (
     <>
+        <ModelLifecycleBadge model={model} />
+        {model.isLocal ? (
+            <span className="text-xxxs font-black text-info bg-info/10 px-1.5 py-0.5 rounded leading-none mr-1">Local</span>
+        ) : (
+            <span className="text-xxxs font-black text-muted-foreground bg-muted/30 px-1.5 py-0.5 rounded leading-none mr-1">Cloud</span>
+        )}
+        {model.supportsReasoning && (
+            <span className="text-xxxs font-black text-accent bg-accent/10 px-1.5 py-0.5 rounded leading-none mr-1">Reasoning</span>
+        )}
+        {model.isFree && (
+            <span className="text-xxxs font-black text-success bg-success/10 px-1.5 py-0.5 rounded leading-none mr-1">Free</span>
+        )}
         {model.type === 'image' && (
             <span className="text-xxxs font-black text-success bg-success/10 px-1.5 py-0.5 rounded leading-none mr-1">
                 {t('modelSelector.image')}
             </span>
         )}
         {model.disabled && (
-            <span className="text-xxxs font-black text-destructive flex items-center gap-1 bg-destructive/10 px-1.5 py-0.5 rounded leading-none">
+            <span className="text-xxxs font-black text-destructive flex items-center gap-1 bg-destructive/10 px-1.5 py-0.5 rounded leading-none" title={model.disabledReason ?? t('modelSelector.limit')}>
                 <Info className="w-2.5 h-2.5" />
-                {t('modelSelector.limit')}
+                {model.disabledReason ?? t('modelSelector.limit')}
             </span>
         )}
     </>
 );
 
 const ModelActions: React.FC<{
-    model: ModelItem;
+    model: ModelListItem;
     isSelected: boolean;
     isPrimary: boolean;
     toggleFavorite?: (modelId: string) => void;
@@ -98,10 +102,14 @@ export const ModelSelectorItem: React.FC<ModelSelectorItemProps> = ({
                 onSelect(model.provider, model.id, e.shiftKey);
             }}
             className={cn(
-                "w-full flex items-center gap-2 px-3 py-1.5 rounded-md transition-all text-left text-sm group relative my-0.5",
+                "w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-left text-sm group relative my-0.5 border",
                 isSelected
-                    ? "bg-primary/20 text-foreground font-bold border-l-2 border-primary"
-                    : (model.disabled ? "opacity-30 cursor-not-allowed grayscale" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground")
+                    ? "bg-primary/15 text-foreground border-primary/40"
+                    : (model.disabled
+                        ? "opacity-50 cursor-not-allowed border-border/20"
+                        : model.lifecycle && model.lifecycle !== 'active'
+                            ? "text-muted-foreground/80 hover:bg-warning/5 hover:text-foreground border-warning/25"
+                            : "text-muted-foreground hover:bg-muted/50 hover:text-foreground border-border/30")
             )}
             disabled={model.disabled}
         >

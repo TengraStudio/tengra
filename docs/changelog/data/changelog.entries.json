@@ -4,6 +4,52 @@
   "generatedAt": "2026-02-20T09:15:00Z",
   "entries": [
     {
+      "id": "2026-02-27-preload-modularization-refinement",
+      "date": "2026-02-27",
+      "channel": "stable",
+      "type": "refactor",
+      "category": "quality",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Preload",
+        "OrchestratorBridge",
+        "ProjectAgentBridge",
+        "McpMarketplaceBridge",
+        "IPC"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Preload Modularization Refinement & Type Safety Overhaul",
+          "summary": "Completed the modularization of Electron preload scripts, resolved critical type mismatches in agent bridges, and eliminated forbidden 'any' types across the bridge layer.",
+          "items": [
+            "- **Modularization Alignment**: Synchronized all domain-specific preload bridges (Code, Settings, MCP, etc.) with main process IPC handlers to ensure complete API coverage.",
+            "- **Type Safety Hardening**: Eliminated forbidden `any` usages in `ProjectAgentBridge`, `McpMarketplaceBridge`, and `AdvancedMemoryBridge`, replacing them with strictly defined interfaces or `unknown` records.",
+            "- **Bug Fixes**: Resolved a critical timestamp type mismatch in `OrchestratorBridge` that was causing state normalization failures.",
+            "- **IPC Contract Correction**: Updated code intelligence and sandbox bridges to use positional arguments, aligning with validated IPC handler expectations.",
+            "- **Test Reliability**: Fixed a broken mock in `db.integration.test.ts` where a missing `send` method on the mock event was causing project creation tests to fail (Boy Scout Rule).",
+            "- **Hygiene**: Cleaned up unused imports and refined listener types across multiple preload domains to pass strict TypeScript and ESLint checks."
+          ]
+        },
+        "tr": {
+          "title": "Preload Modülerleştirme İyileştirmesi ve Tip Güvenliği Revizyonu",
+          "summary": "Electron preload script'lerinin modülerleştirilmesi tamamlandı, ajan bridge'lerindeki kritik tip uyuşmazlıkları giderildi ve bridge katmanındaki yasaklanmış 'any' tipleri temizlendi.",
+          "items": [
+            "- **Modülerleştirme Uyumu**: Tüm alana özgü preload bridge'leri (Code, Settings, MCP, vb.), ana süreç IPC handler'ları ile senkronize edildi.",
+            "- **Tip Güvenliği Sertleştirmesi**: ProjectAgentBridge, McpMarketplaceBridge ve AdvancedMemoryBridge içindeki yasaklanmış `any` kullanımları kaldırılarak yerine kesin tanımlanmış arayüzler veya `unknown` kayıtları eklendi.",
+            "- **Hata Düzeltmeleri**: OrchestratorBridge'deki durum normalleştirme hatalarına neden olan kritik zaman damgası tip uyuşmazlığı giderildi.",
+            "- **IPC Kontrat Düzeltmesi**: Kod zekası ve sandbox bridge'leri, doğrulanan IPC handler beklentilerine uygun olarak pozisyonel argümanlar kullanacak şekilde güncellendi.",
+            "- **Test Güvenilirliği**: db.integration.test.ts dosyasındaki bozuk mock düzeltildi; mock event üzerindeki eksik `send` yöntemi nedeniyle başarısız olan proje oluşturma testleri onarıldı (İzci Kuralı).",
+            "- **Hijyen**: Sıkı TypeScript ve ESLint kontrollerini geçmek için birden fazla preload alanında kullanılmayan import'lar temizlendi ve listener tipleri rafine edildi."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-27-project-wizard-redesign",
       "date": "2026-02-27",
       "channel": "stable",

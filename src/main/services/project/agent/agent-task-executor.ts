@@ -317,10 +317,14 @@ export class AgentTaskExecutor {
         }
 
         // Record the revision as a new plan version
-        void this.recordPlanVersion('manual');
+        void this.recordPlanVersion('manual').catch(err => {
+            this.logWarn(`Failed to record plan version: ${err instanceof Error ? err.message : String(err)}`);
+        });
 
         // Sync to DB and emit update
-        void this.syncTaskSteps(this.taskId, this.state.plan);
+        void this.syncTaskSteps(this.taskId, this.state.plan).catch(err => {
+            this.logWarn(`Failed to sync task steps: ${err instanceof Error ? err.message : String(err)}`);
+        });
         this.emitUpdate();
 
         this.logInfo(`Plan revision applied: ${reason}`);
@@ -842,8 +846,12 @@ export class AgentTaskExecutor {
         step.text = newText;
         this.logInfo(`Step edited by user: "${oldText}" -> "${newText}"`);
 
-        void this.recordPlanVersion('manual');
-        void this.syncTaskSteps(this.taskId, this.state.plan);
+        void this.recordPlanVersion('manual').catch(err => {
+            this.logWarn(`Failed to record plan version: ${err instanceof Error ? err.message : String(err)}`);
+        });
+        void this.syncTaskSteps(this.taskId, this.state.plan).catch(err => {
+            this.logWarn(`Failed to sync task steps: ${err instanceof Error ? err.message : String(err)}`);
+        });
         await this.saveState();
         this.emitUpdate();
     }
@@ -896,8 +904,12 @@ export class AgentTaskExecutor {
         this.state.plan.splice(afterIndex + 1, 0, interventionStep);
         this.logInfo(`Intervention point inserted after step "${this.state.plan[afterIndex].text}"`);
 
-        void this.recordPlanVersion('manual');
-        void this.syncTaskSteps(this.taskId, this.state.plan);
+        void this.recordPlanVersion('manual').catch(err => {
+            this.logWarn(`Failed to record plan version: ${err instanceof Error ? err.message : String(err)}`);
+        });
+        void this.syncTaskSteps(this.taskId, this.state.plan).catch(err => {
+            this.logWarn(`Failed to sync task steps: ${err instanceof Error ? err.message : String(err)}`);
+        });
         await this.saveState();
         this.emitUpdate();
     }
@@ -2171,7 +2183,9 @@ ${content}`;
             if (retryCount < AgentTaskExecutor.MAX_AUTO_RETRIES) {
                 this.stepRetryCount.set(step.id, retryCount + 1);
                 this.logInfo(`Auto-retrying step ${stepIndex} (attempt ${retryCount + 1}/${AgentTaskExecutor.MAX_AUTO_RETRIES})`);
-                void this.autoRetryStepWithAlternative(stepIndex, retryCount + 1);
+                void this.autoRetryStepWithAlternative(stepIndex, retryCount + 1).catch(err => {
+                    this.logWarn(`Auto-retry failed for step ${stepIndex}: ${err instanceof Error ? err.message : String(err)}`);
+                });
                 return; // Don't save checkpoint yet, we're retrying
             }
             this.logWarn(`Step ${stepIndex} exhausted all retry attempts (${AgentTaskExecutor.MAX_AUTO_RETRIES})`);
@@ -2195,8 +2209,12 @@ ${content}`;
 
         if (status === 'completed') {
             // AGT-TST-01: Run tests after step completion if configured
-            void this.runTestsAfterStep(stepIndex);
-            void this.autoCommitStep(stepIndex);
+            void this.runTestsAfterStep(stepIndex).catch(err => {
+                this.logWarn(`Failed to run tests after step ${stepIndex}: ${err instanceof Error ? err.message : String(err)}`);
+            });
+            void this.autoCommitStep(stepIndex).catch(err => {
+                this.logWarn(`Failed to auto-commit step ${stepIndex}: ${err instanceof Error ? err.message : String(err)}`);
+            });
         }
     }
 

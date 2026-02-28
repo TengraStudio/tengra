@@ -9,6 +9,7 @@ const baseFormData = {
     description: 'Demo project',
     category: 'web',
     goal: '',
+    customPath: '',
 };
 
 const baseSshForm = {

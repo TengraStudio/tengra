@@ -124,7 +124,13 @@ function MainApp() {
     const [settingsSearchQuery, setSettingsSearchQuery] = useState('');
 
     // Initialize global voice actions
-    useVoiceActions();
+    useVoiceActions({
+        setCurrentView: (view) => setCurrentView(view),
+        addToast: (toast) => addToast(toast),
+        createNewChat,
+        handleSend,
+        setInput: (value) => setInput(value),
+    });
     const [showExtensionModal, setShowExtensionModal] = useState(false);
     const [showLanguagePrompt, setShowLanguagePrompt] = useState(() => {
         // Show prompt only on first run if language wasn't explicitly selected
@@ -135,10 +141,10 @@ function MainApp() {
 
     // Auto-collapse sidebar when entering projects view or selecting a project
     useEffect(() => {
-        if (currentView === 'projects' || selectedProject) {
+        if (!isSidebarCollapsed && (currentView === 'projects' || selectedProject)) {
             setIsSidebarCollapsed(true);
         }
-    }, [currentView, selectedProject, setIsSidebarCollapsed]);
+    }, [currentView, selectedProject, isSidebarCollapsed, setIsSidebarCollapsed]);
 
     useEffect(() => {
         trackResponsiveBreakpoint({
@@ -147,10 +153,10 @@ function MainApp() {
             height: window.innerHeight,
         });
         document.documentElement.setAttribute('data-breakpoint', breakpoint);
-        if (breakpoint === 'mobile') {
+        if (breakpoint === 'mobile' && !isSidebarCollapsed) {
             setIsSidebarCollapsed(true);
         }
-    }, [breakpoint, setIsSidebarCollapsed]);
+    }, [breakpoint, isSidebarCollapsed, setIsSidebarCollapsed]);
 
     const handleScrollToBottom = () => {
         const ref = appState.messagesEndRef.current;
@@ -248,7 +254,7 @@ function MainApp() {
                 const limit = typeof data.limit === 'number' ? data.limit : 0;
                 addToast({
                     type: 'warning',
-                    message: `Rate limit warning (${provider}): ${remaining}/${limit} remaining`
+                    message: t('errors.rateLimitWarning', { provider, remaining, limit })
                 });
             }
         );
@@ -257,7 +263,7 @@ function MainApp() {
                 remove();
             }
         };
-    }, [addToast]);
+    }, [addToast, t]);
 
     useEffect(() => {
         if (selectedModel) {

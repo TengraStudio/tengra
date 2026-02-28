@@ -1,6 +1,7 @@
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { HuggingFaceService } from '@main/services/llm/huggingface.service';
+import { resolveContextWindowForModel } from '@main/services/llm/model-context-window.data';
 import { RegionalPreferenceService } from '@main/services/llm/regional-preference.service';
 import { getTokenEstimationService } from '@main/services/llm/token-estimation.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
@@ -262,7 +263,7 @@ export class ModelRegistryService extends BaseService {
                         id,
                         provider: mappedProvider,
                     };
-                    return this.ensureModelCapabilities(normalizedModel);
+                    return this.enrichModelMetadata(normalizedModel);
                 });
             }
         } catch (e) {
@@ -372,6 +373,18 @@ export class ModelRegistryService extends BaseService {
         return {
             ...model,
             capabilities,
+        };
+    }
+
+    private enrichModelMetadata(model: ModelProviderInfo): ModelProviderInfo {
+        const withCapabilities = this.ensureModelCapabilities(model);
+        const resolvedContextWindow = resolveContextWindowForModel(withCapabilities);
+        if (!resolvedContextWindow) {
+            return withCapabilities;
+        }
+        return {
+            ...withCapabilities,
+            contextWindow: resolvedContextWindow,
         };
     }
 
@@ -508,7 +521,16 @@ export class ModelRegistryService extends BaseService {
             tags: ['local', 'image-gen', 'sd-cpp']
         });
 
-        const allModels = Array.from(unique.values());
+        const allModels = Array.from(unique.values()).map(model => this.enrichModelMetadata(model));
+        const missingContext = allModels.filter(
+            model => (model.capabilities?.text_generation ?? true) && !model.contextWindow
+        );
+        if (missingContext.length > 0) {
+            appLogger.info(
+                'ModelRegistry',
+                `Context window unresolved for ${missingContext.length}/${allModels.length} models`
+            );
+        }
         const settings = this.deps.settingsService.getSettings();
         const locale = settings.general?.language ?? 'en';
 
@@ -588,14 +610,20 @@ export class ModelRegistryService extends BaseService {
                 id: 'openai/dall-e-3',
                 name: 'DALL-E 3',
                 provider: 'openai',
-                description: 'The latest DALL-E model from OpenAI.',
+                description: 'DEPRECATED: OpenAI sunset 2026-04-30. Replacement: gpt-image-1.',
+                deprecated: true,
+                retired: false,
+                replacement: 'gpt-image-1',
                 capabilities: { image_generation: true },
             },
             {
                 id: 'openai/dall-e-2',
                 name: 'DALL-E 2',
                 provider: 'openai',
-                description: 'Previous generation DALL-E model.',
+                description: 'DEPRECATED: OpenAI sunset 2026-04-30. Replacement: gpt-image-1.',
+                deprecated: true,
+                retired: false,
+                replacement: 'gpt-image-1',
                 capabilities: { image_generation: true },
             },
         ];

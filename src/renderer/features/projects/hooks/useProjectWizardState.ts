@@ -17,6 +17,7 @@ interface FormData {
     description: string;
     category: string;
     goal: string;
+    customPath: string;
 }
 
 interface UseProjectWizardStateReturn {
@@ -41,7 +42,7 @@ interface UseProjectWizardStateReturn {
 
 export const useProjectWizardState = (isOpen: boolean): UseProjectWizardStateReturn => {
     const [step, setStep] = useState<'selection' | 'details' | 'ssh-connection' | 'ssh-browser' | 'creating'>('selection');
-    const [formData, setFormData] = useState<FormData>({ name: '', description: '', category: 'web', goal: '' });
+    const [formData, setFormData] = useState<FormData>({ name: '', description: '', category: 'web', goal: '', customPath: '' });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [sshForm, setSshForm] = useState<SSHForm>({
@@ -58,8 +59,8 @@ export const useProjectWizardState = (isOpen: boolean): UseProjectWizardStateRet
     const [sshFiles, setSshFiles] = useState<SSHFile[]>([]);
 
     const resetWizardState = useCallback(() => {
-        setStep('details');
-        setFormData({ name: '', description: '', category: 'web', goal: '' });
+        setStep('selection');
+        setFormData({ name: '', description: '', category: 'web', goal: '', customPath: '' });
         setSshForm({ host: '', port: '22', username: '', authType: 'password', password: '', privateKey: '', passphrase: '' });
         setSshConnectionId(null);
         setSshPath('/');

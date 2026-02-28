@@ -21,10 +21,10 @@ import React, { memo, useMemo, useState } from 'react';
 
 import type { LinkedAccountInfo } from '@/electron';
 import { cn } from '@/lib/utils';
+import type { GroupedModels, ModelInfo } from '@/types';
 import type { AppSettings } from '@/types/settings';
 
 import type { ProviderAccounts, ProviderQuotas } from '../pages/ModelsPage';
-import type { GroupedModels, ModelInfo } from '@/types';
 
 interface InstalledModelsGridProps {
     groupedModels: GroupedModels;

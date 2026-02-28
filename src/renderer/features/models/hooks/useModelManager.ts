@@ -1,9 +1,9 @@
 import { fetchModels, groupModels } from '@renderer/features/models/utils/model-fetcher';
-import type { GroupedModels, ModelInfo } from '@/types';
 import { getModelLifecycleMeta } from '@renderer/features/models/utils/model-selector-metadata';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { pushNotification } from '@/store/notification-center.store';
+import type { GroupedModels, ModelInfo } from '@/types';
 import { AppSettings } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 

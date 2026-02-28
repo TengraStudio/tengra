@@ -1,8 +1,8 @@
 import { ProjectAgentTab } from '@renderer/features/projects/components/ProjectAgentTab';
 import React from 'react';
 
-import type { GroupedModels } from '@/types';
 import { Language } from '@/i18n';
+import type { GroupedModels } from '@/types';
 import { AgentDefinition, AppSettings, CodexUsage, Project, QuotaResponse } from '@/types';
 
 interface AgentTabProps {

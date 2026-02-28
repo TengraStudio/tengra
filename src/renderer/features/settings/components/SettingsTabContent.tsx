@@ -1,7 +1,6 @@
 import React from 'react';
 
-import { GalleryView } from '@/features/chat/components/GalleryView';
-import type { GroupedModels, ModelInfo } from '@/types';
+import { GalleryView } from '@/components/shared/GalleryView';
 import {
     AboutTab,
     AccountsTab,
@@ -18,6 +17,7 @@ import {
     StatisticsTab,
     VoiceSettingsTab
 } from '@/features/settings/components';
+import type { GroupedModels, ModelInfo } from '@/types';
 
 import { SettingsSharedProps } from '../types';
 

@@ -1,4 +1,8 @@
 import type { IpcContractVersionInfo } from '@shared/constants/ipc-contract';
+import type {
+    InlineSuggestionRequest,
+    InlineSuggestionResponse,
+} from '@shared/schemas/inline-suggestions.schema';
 import type { IpcRendererEvent } from 'electron';
 
 // Marketplace model from database
@@ -63,7 +67,6 @@ import {
     ProjectAnalysis,
     ProjectIdea,
     ProjectState,
-    ProjectStats,
     ProjectStep,
     QuotaResponse,
     ResearchData,
@@ -242,7 +245,11 @@ export interface ElectronAPI {
         deviceCode: string,
         interval: number,
         appId?: 'profile' | 'copilot'
-    ) => Promise<{ success: boolean; token?: string; error?: string }>;
+    ) => Promise<{
+        success: boolean;
+        account?: LinkedAccountInfo;
+        error?: string;
+    }>;
 
     /**
      * Initiates Antigravity OAuth login flow.
@@ -493,13 +500,14 @@ export interface ElectronAPI {
         ) => Promise<{ suggestedPrompts: string[]; colors: string[] }>;
         applyLogo: (projectPath: string, tempLogoPath: string) => Promise<string>;
         getCompletion: (text: string) => Promise<string>;
+        getInlineSuggestion: (request: InlineSuggestionRequest) => Promise<InlineSuggestionResponse>;
         improveLogoPrompt: (prompt: string) => Promise<string>;
         uploadLogo: (projectPath: string) => Promise<string | null>;
         analyzeDirectory: (dirPath: string) => Promise<{
             hasPackageJson: boolean;
             pkg: Record<string, IpcValue>;
             readme: string | null;
-            stats: ProjectStats;
+            stats: { fileCount: number; totalSize: number };
         }>;
         watch: (rootPath: string) => Promise<boolean>;
         unwatch: (rootPath: string) => Promise<boolean>;
@@ -780,6 +788,19 @@ export interface ElectronAPI {
             totalGenerated: number;
             byProvider: Record<string, number>;
             averageSteps: number;
+            bySource?: Record<string, number>;
+            averageDurationMs?: number;
+            editModeCounts?: Record<string, number>;
+        }>;
+        getPresetAnalytics: () => Promise<{
+            totalPresets: number;
+            providerCounts: Record<string, number>;
+            customPresets: number;
+        }>;
+        getScheduleAnalytics: () => Promise<{
+            total: number;
+            byStatus: Record<string, number>;
+            byPriority: Record<string, number>;
         }>;
         listPresets: () => Promise<Array<{
             id: string;
@@ -804,8 +825,29 @@ export interface ElectronAPI {
             provider?: 'antigravity' | 'ollama' | 'sd-webui' | 'comfyui' | 'pollinations' | 'sd-cpp';
         }) => Promise<unknown>;
         deletePreset: (id: string) => Promise<boolean>;
+        exportPresetShare: (id: string) => Promise<string>;
+        importPresetShare: (code: string) => Promise<unknown>;
+        listWorkflowTemplates: () => Promise<Array<{
+            id: string;
+            name: string;
+            description?: string;
+            workflow: Record<string, unknown>;
+            createdAt: number;
+            updatedAt: number;
+        }>>;
+        saveWorkflowTemplate: (payload: {
+            id?: string;
+            name: string;
+            description?: string;
+            workflow: Record<string, unknown>;
+        }) => Promise<unknown>;
+        deleteWorkflowTemplate: (id: string) => Promise<boolean>;
+        exportWorkflowTemplateShare: (id: string) => Promise<string>;
+        importWorkflowTemplateShare: (code: string) => Promise<unknown>;
         schedule: (payload: {
             runAt: number;
+            priority?: 'low' | 'normal' | 'high';
+            resourceProfile?: 'balanced' | 'quality' | 'speed';
             options: {
                 prompt: string;
                 negativePrompt?: string;
@@ -820,6 +862,8 @@ export interface ElectronAPI {
         listSchedules: () => Promise<unknown[]>;
         cancelSchedule: (id: string) => Promise<boolean>;
         compare: (ids: string[]) => Promise<unknown>;
+        exportComparison: (payload: { ids: string[]; format?: 'json' | 'csv' }) => Promise<string>;
+        shareComparison: (ids: string[]) => Promise<string>;
         batchGenerate: (requests: Array<{
             prompt: string;
             negativePrompt?: string;
@@ -830,7 +874,22 @@ export interface ElectronAPI {
             seed?: number;
             count?: number;
         }>) => Promise<string[]>;
-        getQueueStats: () => Promise<{ queued: number; running: boolean }>;
+        getQueueStats: () => Promise<{ queued: number; running: boolean; byPriority?: Record<string, number> }>;
+        searchHistory: (query: string, limit?: number) => Promise<Array<{
+            id: string;
+            provider: string;
+            prompt: string;
+            negativePrompt?: string;
+            width: number;
+            height: number;
+            steps: number;
+            cfgScale: number;
+            seed: number;
+            imagePath: string;
+            createdAt: number;
+            source?: string;
+        }>>;
+        exportHistory: (format?: 'json' | 'csv') => Promise<string>;
         edit: (options: {
             sourceImage: string;
             mode: 'img2img' | 'inpaint' | 'outpaint' | 'style-transfer';

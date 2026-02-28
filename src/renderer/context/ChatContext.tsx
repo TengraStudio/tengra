@@ -33,27 +33,27 @@ type ChatContextType = ReturnType<typeof useChatManager> & {
 
 const ChatContext = createContext<ChatContextType | null>(null);
 
-function formatRateLimitError(message: string): string {
+function formatRateLimitError(message: string, t: (key: string) => string): string {
     try {
         const jsonMatch = message.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
             const errData = safeJsonParse<{ error?: { message?: string }; message?: string }>(jsonMatch[0], {});
             const errorMsg = errData.error?.message ?? errData.message ?? message;
             if (errorMsg.includes('Resource has been exhausted') || errorMsg.includes('quota')) {
-                return 'Quota or rate limit exceeded. This could be due to rate limiting (too many requests) or quota exhaustion. Please wait a few minutes and try again.';
+                return t('chat.quotaExceeded');
             }
         }
     } catch {
         // Not JSON
     }
-    return 'Rate limit or quota exceeded. Please wait a few minutes and try again.';
+    return t('chat.rateLimitExceeded');
 }
 
-function handleChatError(e: CatchError): string {
+function handleChatError(e: CatchError, t: (key: string) => string): string {
     if (!(e instanceof Error)) { return String(e ?? 'Unknown error'); }
     const message = e.message;
     const isRateLimit = message.includes('429') || message.includes('RESOURCE_EXHAUSTED') || message.includes('rate limit') || message.includes('quota');
-    return isRateLimit ? formatRateLimitError(message) : message;
+    return isRateLimit ? formatRateLimitError(message, t) : message;
 }
 
 function isEditableElement(): boolean {
@@ -152,7 +152,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         appSettings: appSettings ?? undefined,
         autoReadEnabled: false,
         handleSpeak: handleSpeakAdapter,
-        formatChatError: handleChatError,
+        formatChatError: (e: CatchError) => handleChatError(e, t),
         t,
         projectId: selectedProject?.id,
         activeWorkspacePath: selectedProject?.path

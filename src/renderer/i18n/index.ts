@@ -150,7 +150,12 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const language = useMemo(() => getInitialLanguage(), [getInitialLanguage]);
 
     const setLanguage = useCallback(async (lang: Language) => {
-        if (!settings) { return; }
+        if (!settings) {
+            return;
+        }
+        if (settings.general.language === lang) {
+            return;
+        }
         const updated = { ...settings, general: { ...settings.general, language: lang } };
         await updateSettings(updated, true);
     }, [settings, updateSettings]);

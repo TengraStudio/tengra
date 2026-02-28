@@ -15,7 +15,6 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { GroupedModels } from '@/types';
 import { Message } from '@shared/types/chat';
 import {
     AgentProfile,
@@ -51,13 +50,14 @@ import {
 } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
+import { ModelSelector } from '@/components/shared/ModelSelector';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useModel } from '@/context/ModelContext';
-import { ModelSelector } from '@/components/shared/ModelSelector';
 import { LogConsole } from '@/features/project-agent/components/LogConsole';
 import { useProjectManager } from '@/features/projects/hooks/useProjectManager';
 import { useLanguage } from '@/i18n';
 import { cn } from '@/lib/utils';
+import type { GroupedModels } from '@/types';
 import { Project } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 

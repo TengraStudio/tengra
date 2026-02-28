@@ -3,10 +3,11 @@ import React, { useCallback } from 'react';
 
 import { Modal } from '@/components/ui/modal';
 import { Language, useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 import { WorkspaceMount } from '@/types';
 
 import { useProjectWizardState } from '../hooks/useProjectWizardState';
-import { useCreateProjectHandler, useImportLocalHandler, useSSHBrowserNextHandler,useSSHConnectHandler } from '../hooks/useWizardHandlers';
+import { useCreateProjectHandler, useSSHBrowserNextHandler, useSSHConnectHandler } from '../hooks/useWizardHandlers';
 
 import { WizardFooter } from './WizardFooter';
 import { WizardLoadingOverlay } from './WizardLoadingOverlay';
@@ -82,15 +83,26 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
         loadRemoteDirectory
     });
 
-    const handleImportLocal = useImportLocalHandler(
-        formData,
-        setIsLoading,
-        setError,
-        onProjectCreated,
-        onClose
-    );
+    const handleImportLocalSelection = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const result = await window.electron.selectDirectory();
+            if (result.success && result.path) {
+                const dirName = result.path.split(/[/\\]/).pop() ?? 'Project';
+                setFormData(p => ({ ...p, name: p.name || dirName }));
+                setSshConnectionId(null);
+                setSshPath(result.path); // Use as local path
+                setStep('details');
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to select directory');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [setIsLoading, setError, setFormData, setStep, setSshPath, setSshConnectionId]);
 
-    const handleCreate = useCreateProjectHandler({
+    const handleCreateFinal = useCreateProjectHandler({
         formData,
         setIsLoading,
         setError,
@@ -98,6 +110,23 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
         onProjectCreated,
         onClose
     });
+
+    const handleImportFinal = useCallback(() => {
+        const mounts: WorkspaceMount[] = [{
+            id: `local-${Date.now()}`,
+            name: formData.name,
+            type: 'local',
+            rootPath: sshPath
+        }];
+        onProjectCreated(sshPath, formData.name, formData.description, mounts);
+        onClose();
+    }, [formData, sshPath, onProjectCreated, onClose]);
+
+    const handleCreateNewSelection = useCallback(() => {
+        setSshConnectionId(null);
+        setSshPath('');
+        setStep('details');
+    }, [setStep, setSshConnectionId, setSshPath]);
 
     const handleSSHBrowserNext = useSSHBrowserNextHandler({
         sshConnectionId,
@@ -113,17 +142,28 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
             if (!formData.name) {
                 return;
             }
-            setStep('selection');
+
+            if (sshConnectionId) {
+                handleSSHBrowserNext();
+            } else if (sshPath && !sshConnectionId) {
+                handleImportFinal();
+            } else {
+                void handleCreateFinal();
+            }
         } else if (step === 'ssh-connection') {
             void handleSSHConnect();
         } else if (step === 'ssh-browser') {
-            handleSSHBrowserNext();
+            setStep('details');
         }
-    }, [step, formData.name, handleSSHConnect, handleSSHBrowserNext, setStep]);
+    }, [step, formData.name, sshConnectionId, sshPath, handleSSHConnect, handleSSHBrowserNext, handleImportFinal, handleCreateFinal, setStep]);
 
     const handleBack = useCallback(() => {
-        if (step === 'selection') {
-            setStep('details');
+        if (step === 'details') {
+            if (sshConnectionId) {
+                setStep('ssh-browser');
+            } else {
+                setStep('selection');
+            }
         } else if (step === 'ssh-connection') {
             setStep('selection');
         } else if (step === 'ssh-browser') {
@@ -131,7 +171,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
         } else {
             onClose();
         }
-    }, [step, setStep, onClose]);
+    }, [step, sshConnectionId, setStep, onClose]);
 
     const renderStep = () => {
         return (
@@ -148,16 +188,44 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                 sshFiles={sshFiles}
                 sshConnectionId={sshConnectionId}
                 loadRemoteDirectory={loadRemoteDirectory}
-                onImportLocal={() => void handleImportLocal()}
+                onImportLocal={() => void handleImportLocalSelection()}
                 onSSHConnect={() => setStep('ssh-connection')}
-                onCreateNew={() => void handleCreate()}
+                onCreateNew={handleCreateNewSelection}
             />
         );
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={t('projectWizard.title')} size="3xl">
-            <div className="relative min-h-[500px] flex flex-col">
+        <Modal isOpen={isOpen} onClose={onClose} size="3xl" className="!p-0 overflow-hidden">
+            <div className="relative min-h-[620px] flex flex-col p-8 pt-5 bg-gradient-to-b from-background to-muted/10">
+                <div className="mb-7 space-y-3">
+                    <h2 className="text-3xl font-black tracking-tight text-foreground">{t('projectWizard.title')}</h2>
+                    <div className="flex gap-2 h-1.5 px-0.5">
+                    {['selection', 'ssh-connection', 'ssh-browser', 'details', 'creating'].map((s, i) => {
+                        const stepOrder = ['selection', 'ssh-connection', 'ssh-browser', 'details', 'creating'];
+                        const currentIndex = stepOrder.indexOf(step);
+                        const isActive = i <= currentIndex;
+                        const isCurrent = i === currentIndex;
+
+                        // Hide SSH steps if we are in local flow
+                        if (!sshConnectionId && (s === 'ssh-connection' || s === 'ssh-browser') && step !== 'ssh-connection' && step !== 'ssh-browser') {
+                            return null;
+                        }
+
+                        return (
+                            <div
+                                key={s}
+                                className={cn(
+                                    'flex-1 rounded-full transition-all duration-500',
+                                    isActive ? 'bg-primary/90' : 'bg-border/40',
+                                    isCurrent ? 'shadow-[0_0_14px_rgba(var(--primary),0.45)]' : ''
+                                )}
+                            />
+                        );
+                    })}
+                    </div>
+                </div>
+
                 <WizardLoadingOverlay
                     isLoading={isLoading}
                     step={step}
@@ -165,7 +233,9 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                     loadingLabel={t('common.loading')}
                 />
 
-                {renderStep()}
+                <div className="flex-1 flex flex-col overflow-hidden rounded-2xl border border-border/50 bg-card/40 backdrop-blur-sm p-6">
+                    {renderStep()}
+                </div>
 
                 <WizardFooter
                     step={step}

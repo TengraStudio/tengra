@@ -1,0 +1,90 @@
+import { IpcRenderer } from 'electron';
+
+export interface VoiceBridge {
+    detectWakeWord: (payload: { transcript: string; wakeWord?: string }) => Promise<{
+        activated: boolean;
+        wakeWord: string;
+        intent: 'none' | 'new_chat' | 'open_settings' | 'stop_speaking' | 'send_message' | 'search_workspace';
+        commandText: string;
+        confidence: number;
+    }>;
+    startSession: (payload?: { wakeWord?: string; locale?: string }) => Promise<{
+        id: string;
+        wakeWord: string;
+        locale: string;
+        state: 'listening' | 'speaking' | 'idle';
+        turnCount: number;
+        startedAt: number;
+        updatedAt: number;
+    }>;
+    submitUtterance: (payload: {
+        sessionId: string;
+        transcript: string;
+        assistantSpeaking?: boolean;
+    }) => Promise<{
+        session: {
+            id: string;
+            wakeWord: string;
+            locale: string;
+            state: 'listening' | 'speaking' | 'idle';
+            turnCount: number;
+            startedAt: number;
+            updatedAt: number;
+        };
+        interruptAssistant: boolean;
+        intent: 'none' | 'new_chat' | 'open_settings' | 'stop_speaking' | 'send_message' | 'search_workspace';
+        commandText: string;
+        responseMode: 'listen' | 'speak' | 'idle';
+    }>;
+    endSession: (sessionId: string) => Promise<{ success: true }>;
+    createNote: (payload: { title?: string; transcript: string }) => Promise<{
+        id: string;
+        title: string;
+        transcript: string;
+        summary: string;
+        keyPoints: string[];
+        actionItems: string[];
+        highlights: Array<{ timestampSec: number; text: string; speaker: string }>;
+        speakers: string[];
+        createdAt: number;
+        updatedAt: number;
+    }>;
+    listNotes: () => Promise<{
+        notes: Array<{
+            id: string;
+            title: string;
+            transcript: string;
+            summary: string;
+            keyPoints: string[];
+            actionItems: string[];
+            highlights: Array<{ timestampSec: number; text: string; speaker: string }>;
+            speakers: string[];
+            createdAt: number;
+            updatedAt: number;
+        }>
+    }>;
+    getNote: (noteId: string) => Promise<{
+        id: string;
+        title: string;
+        transcript: string;
+        summary: string;
+        keyPoints: string[];
+        actionItems: string[];
+        highlights: Array<{ timestampSec: number; text: string; speaker: string }>;
+        speakers: string[];
+        createdAt: number;
+        updatedAt: number;
+    }>;
+}
+
+export function createVoiceBridge(ipc: IpcRenderer): VoiceBridge {
+    return {
+        detectWakeWord: payload => ipc.invoke('voice:detect-wake-word', payload),
+        startSession: payload => ipc.invoke('voice:start-session', payload),
+        submitUtterance: payload => ipc.invoke('voice:submit-utterance', payload),
+        endSession: sessionId => ipc.invoke('voice:end-session', sessionId),
+        createNote: payload => ipc.invoke('voice:create-note', payload),
+        listNotes: () => ipc.invoke('voice:list-notes'),
+        getNote: noteId => ipc.invoke('voice:get-note', noteId),
+    };
+}

@@ -3,6 +3,7 @@ import * as path from 'path';
 
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
+import { TengraError } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 
@@ -13,13 +14,81 @@ export interface FeatureFlag {
     rolloutPercentage?: number; // Future use
 }
 
+export interface EvaluationContext {
+    userId?: string;
+    environment?: string;
+    attributes?: Record<string, string | number | boolean>;
+}
+
+/**
+ * Standardized error codes for FeatureFlagService
+ */
+export enum FeatureFlagErrorCode {
+    INVALID_FEATURE_ID = 'FEATURE_FLAG_INVALID_ID',
+    LOAD_FAILED = 'FEATURE_FLAG_LOAD_FAILED',
+    SAVE_FAILED = 'FEATURE_FLAG_SAVE_FAILED',
+    NOT_FOUND = 'FEATURE_FLAG_NOT_FOUND',
+    INVALID_CONTEXT = 'FEATURE_FLAG_INVALID_CONTEXT',
+    INVALID_OVERRIDE = 'FEATURE_FLAG_INVALID_OVERRIDE',
+    EVALUATION_FAILED = 'FEATURE_FLAG_EVALUATION_FAILED'
+}
+
+/**
+ * Typed error class for FeatureFlagService operations.
+ * Carries a FeatureFlagErrorCode for programmatic error handling.
+ */
+export class FeatureFlagError extends TengraError {
+    public readonly featureFlagCode: FeatureFlagErrorCode;
+
+    constructor(message: string, code: FeatureFlagErrorCode, context?: Record<string, unknown>) {
+        super(message, code, context);
+        this.featureFlagCode = code;
+        Object.setPrototypeOf(this, new.target.prototype);
+    }
+}
+
+export enum FeatureFlagTelemetryEvent {
+    FLAG_CHECKED = 'feature_flag_checked',
+    FLAG_ENABLED = 'feature_flag_enabled',
+    FLAG_DISABLED = 'feature_flag_disabled',
+    FLAGS_LOADED = 'feature_flag_loaded',
+    FLAGS_SAVED = 'feature_flag_saved',
+    FLAGS_LOAD_FAILED = 'feature_flag_load_failed'
+}
+
+export const FEATURE_FLAG_PERFORMANCE_BUDGETS = {
+    IS_ENABLED_MS: 1,
+    ENABLE_MS: 100,
+    DISABLE_MS: 100,
+    LOAD_FLAGS_MS: 500,
+    SAVE_FLAGS_MS: 500,
+    GET_ALL_FLAGS_MS: 10
+} as const;
+
+/** Maximum allowed length for feature flag identifiers */
+const MAX_FLAG_ID_LENGTH = 256;
+
+/** Pattern for valid feature flag IDs: alphanumeric, dots, hyphens, underscores */
+const FLAG_ID_PATTERN = /^[a-zA-Z0-9._-]+$/;
+
+/** Maximum number of attributes in an evaluation context */
+const MAX_CONTEXT_ATTRIBUTES = 50;
+
+/** Maximum length for context attribute string values */
+const MAX_CONTEXT_VALUE_LENGTH = 512;
+
 export class FeatureFlagService extends BaseService {
     private flags: Map<string, FeatureFlag> = new Map();
+    private overrides: Map<string, boolean> = new Map();
     private configPath: string;
 
-    // Default flags
+    /** Default feature flags for council modules */
     private defaults: FeatureFlag[] = [
-        // Flags removed (DEBT-01): new_agent_engine, event_sourcing_ui, experimental_models
+        { id: 'council.planning', enabled: true, description: 'Enable council plan generation' },
+        { id: 'council.routing', enabled: true, description: 'Enable quota-aware routing' },
+        { id: 'council.teamwork', enabled: true, description: 'Enable multi-agent teamwork/reassignment' },
+        { id: 'council.recovery', enabled: true, description: 'Enable crash-safe recovery' },
+        { id: 'council.governance', enabled: true, description: 'Enable model governance enforcement' }
     ];
 
 
@@ -77,11 +146,23 @@ export class FeatureFlagService extends BaseService {
     }
 
     isEnabled(featureId: string): boolean {
+        if (!featureId || typeof featureId !== 'string' || featureId.trim().length === 0) {
+            return false;
+        }
+        if (featureId.length > MAX_FLAG_ID_LENGTH || !FLAG_ID_PATTERN.test(featureId)) {
+            return false;
+        }
+        const override = this.overrides.get(featureId);
+        if (override !== undefined) {
+            return override;
+        }
         const flag = this.flags.get(featureId);
         return flag ? flag.enabled : false;
     }
 
-    enable(featureId: string) {
+    /** Enables a feature flag by its identifier and persists the change. */
+    enable(featureId: string): void {
+        this.validateFeatureId(featureId);
         const flag = this.flags.get(featureId);
         if (flag) {
             flag.enabled = true;
@@ -91,7 +172,9 @@ export class FeatureFlagService extends BaseService {
         }
     }
 
-    disable(featureId: string) {
+    /** Disables a feature flag by its identifier and persists the change. */
+    disable(featureId: string): void {
+        this.validateFeatureId(featureId);
         const flag = this.flags.get(featureId);
         if (flag) {
             flag.enabled = false;
@@ -101,7 +184,178 @@ export class FeatureFlagService extends BaseService {
         }
     }
 
+    /**
+     * Evaluates a feature flag with an optional context.
+     * Always returns a safe default (false) on error — never throws.
+     * Context is validated for future targeting and rollout use.
+     */
+    evaluate(featureId: string, context?: EvaluationContext): boolean {
+        try {
+            this.validateFeatureId(featureId);
+            if (context !== undefined) {
+                this.validateEvaluationContext(context);
+            }
+            const override = this.overrides.get(featureId);
+            if (override !== undefined) {
+                return override;
+            }
+            const flag = this.flags.get(featureId);
+            return flag ? flag.enabled : false;
+        } catch (error) {
+            this.logWarn('evaluate fallback to false', error as Error);
+            return false;
+        }
+    }
+
+    /**
+     * Sets a local override for a feature flag evaluation.
+     * @throws FeatureFlagError with INVALID_OVERRIDE code if value is not a boolean
+     */
+    setOverride(featureId: string, enabled: boolean): void {
+        this.validateFeatureId(featureId);
+        if (typeof enabled !== 'boolean') {
+            throw new FeatureFlagError(
+                'Override value must be a boolean',
+                FeatureFlagErrorCode.INVALID_OVERRIDE,
+                { featureId }
+            );
+        }
+        this.overrides.set(featureId, enabled);
+        this.logInfo(`Override set for ${featureId}: ${String(enabled)}`);
+    }
+
+    /** Clears a local override for a feature flag. */
+    clearOverride(featureId: string): void {
+        this.validateFeatureId(featureId);
+        this.overrides.delete(featureId);
+        this.logInfo(`Override cleared for ${featureId}`);
+    }
+
     getAllFlags(): FeatureFlag[] {
         return Array.from(this.flags.values());
+    }
+
+    /**
+     * Validates a feature flag identifier for mutation operations.
+     * @throws FeatureFlagError with INVALID_FEATURE_ID code for invalid identifiers
+     */
+    private validateFeatureId(featureId: string): void {
+        if (!featureId || typeof featureId !== 'string') {
+            throw new FeatureFlagError(
+                'Feature flag ID must be a non-empty string',
+                FeatureFlagErrorCode.INVALID_FEATURE_ID,
+                { featureId: String(featureId) }
+            );
+        }
+        if (featureId.trim().length === 0) {
+            throw new FeatureFlagError(
+                'Feature flag ID must not be blank',
+                FeatureFlagErrorCode.INVALID_FEATURE_ID,
+                { featureId }
+            );
+        }
+        if (featureId.length > MAX_FLAG_ID_LENGTH) {
+            throw new FeatureFlagError(
+                `Feature flag ID exceeds maximum length of ${MAX_FLAG_ID_LENGTH}`,
+                FeatureFlagErrorCode.INVALID_FEATURE_ID,
+                { featureId: featureId.slice(0, 50), length: featureId.length }
+            );
+        }
+        if (!FLAG_ID_PATTERN.test(featureId)) {
+            throw new FeatureFlagError(
+                'Feature flag ID contains invalid characters',
+                FeatureFlagErrorCode.INVALID_FEATURE_ID,
+                { featureId }
+            );
+        }
+    }
+
+    /**
+     * Validates an evaluation context object.
+     * @throws FeatureFlagError with INVALID_CONTEXT code for invalid contexts
+     */
+    private validateEvaluationContext(context: EvaluationContext): void {
+        if (context === null || typeof context !== 'object' || Array.isArray(context)) {
+            throw new FeatureFlagError(
+                'Evaluation context must be a plain object',
+                FeatureFlagErrorCode.INVALID_CONTEXT
+            );
+        }
+        this.validateContextField(context.userId, 'userId');
+        this.validateContextField(context.environment, 'environment');
+        if (context.attributes !== undefined) {
+            this.validateContextAttributes(context.attributes);
+        }
+    }
+
+    /** Validates a single string field on an evaluation context. */
+    private validateContextField(value: string | undefined, name: string): void {
+        if (value === undefined) {
+            return;
+        }
+        if (typeof value !== 'string' || value.trim().length === 0) {
+            throw new FeatureFlagError(
+                `${name} must be a non-empty string`,
+                FeatureFlagErrorCode.INVALID_CONTEXT,
+                { field: name }
+            );
+        }
+        if (value.length > MAX_CONTEXT_VALUE_LENGTH) {
+            throw new FeatureFlagError(
+                `${name} exceeds maximum length of ${MAX_CONTEXT_VALUE_LENGTH}`,
+                FeatureFlagErrorCode.INVALID_CONTEXT,
+                { field: name, length: value.length }
+            );
+        }
+    }
+
+    /** Validates the attributes map on an evaluation context. */
+    private validateContextAttributes(
+        attributes: Record<string, string | number | boolean>
+    ): void {
+        if (attributes === null || typeof attributes !== 'object' || Array.isArray(attributes)) {
+            throw new FeatureFlagError(
+                'attributes must be a plain object',
+                FeatureFlagErrorCode.INVALID_CONTEXT
+            );
+        }
+        const keys = Object.keys(attributes);
+        if (keys.length > MAX_CONTEXT_ATTRIBUTES) {
+            throw new FeatureFlagError(
+                `attributes exceeds maximum of ${MAX_CONTEXT_ATTRIBUTES} entries`,
+                FeatureFlagErrorCode.INVALID_CONTEXT,
+                { count: keys.length }
+            );
+        }
+        for (const key of keys) {
+            const value = attributes[key];
+            const valueType = typeof value;
+            if (valueType !== 'string' && valueType !== 'number' && valueType !== 'boolean') {
+                throw new FeatureFlagError(
+                    `attribute "${key}" must be string, number, or boolean`,
+                    FeatureFlagErrorCode.INVALID_CONTEXT,
+                    { attribute: key }
+                );
+            }
+            if (valueType === 'string' && (value as string).length > MAX_CONTEXT_VALUE_LENGTH) {
+                throw new FeatureFlagError(
+                    `attribute "${key}" exceeds maximum length of ${MAX_CONTEXT_VALUE_LENGTH}`,
+                    FeatureFlagErrorCode.INVALID_CONTEXT,
+                    { attribute: key, length: (value as string).length }
+                );
+            }
+        }
+    }
+
+    /**
+     * Get health status for feature flag monitoring dashboards
+     */
+    getHealth(): { totalFlags: number; enabledFlags: number; flagIds: string[] } {
+        const flags = Array.from(this.flags.values());
+        return {
+            totalFlags: flags.length,
+            enabledFlags: flags.filter(f => f.enabled).length,
+            flagIds: flags.map(f => f.id)
+        };
     }
 }

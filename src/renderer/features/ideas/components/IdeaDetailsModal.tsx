@@ -133,7 +133,7 @@ const IdeaHeader: React.FC<IdeaHeaderProps> = ({ idea, selectedName, setSelected
                         type="text"
                         value={selectedName}
                         onChange={(e) => setSelectedName(e.target.value)}
-                        className="bg-transparent border-none p-0 text-2xl font-black text-foreground placeholder:text-muted-foreground/20 focus:ring-0 outline-none w-full max-w-md"
+                        className="bg-transparent border-none p-0 text-2xl font-black text-foreground placeholder:text-muted-foreground/20 outline-none w-full max-w-md"
                         placeholder={t('ideas.details.projectNamePlaceholder')}
                     />
                     {selectedName !== idea.title && (
