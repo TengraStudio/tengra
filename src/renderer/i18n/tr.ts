@@ -172,6 +172,79 @@ export const tr = {
             "accountLocked": "Hesap kilitli. Lütfen destek ile iletişime geçin.",
             "resetIn": "Kota {{time}} içinde sıfırlanacak.",
             "limitReached": "{{provider}} için kota sınırına ulaşıldı. Lütfen {{resetTime}} zamanına kadar bekleyin."
+        },
+        "monitoring": {
+            "initFailed": "İzleme servisi başlatılamadı.",
+            "metricCollectionFailed": "Metrik toplanamadı: {{metricName}}.",
+            "thresholdExceeded": "{{metricName}} için kritik eşik aşıldı: {{value}}{{unit}}.",
+            "memoryWarning": "Sistem bellek kullanımı %{{percentage}} seviyesinde.",
+            "gcNotAvailable": "Çöp toplama kullanılamıyor.",
+            "gcForced": "Zorla çöp toplama yapıldı.",
+            "snapshotFailed": "Performans anlık görüntüsü alınamadı.",
+            "alertTriggered": "İzleme uyarısı tetiklendi: {{alertName}}.",
+            "serviceUnavailable": "İzleme servisi kullanılamıyor.",
+            "invalidMetric": "Geçersiz metrik adı sağlandı.",
+            "exportFailed": "İzleme verileri dışa aktarılamadı."
+        },
+        "telemetry": {
+            "disabled": "Telemetri devre dışı.",
+            "invalidEventName": "Geçersiz olay adı sağlandı.",
+            "invalidProperties": "Geçersiz olay özellikleri.",
+            "invalidBatch": "Geçersiz telemetri grubu.",
+            "queueOverflow": "Telemetri kuyruğu taştı. Olaylar kaybedilebilir.",
+            "flushFailed": "Telemetri olayları gönderilemedi.",
+            "settingsError": "Telemetri ayarları yüklenemedi.",
+            "sendFailed": "Telemetri verileri gönderilemedi.",
+            "consentRequired": "Veri toplamadan önce telemetri izni gereklidir.",
+            "rateLimited": "Telemetri raporlama hızı sınırlandı."
+        },
+        "theme": {
+            "invalidManifest": "Geçersiz tema bildirimi: {{filename}}.",
+            "notFound": "\"{{themeId}}\" teması bulunamadı.",
+            "installFailed": "Tema yüklenemedi.",
+            "uninstallFailed": "Tema kaldırılamadı.",
+            "uninstallBuiltin": "Yerleşik tema kaldırılamaz: {{themeId}}.",
+            "validationFailed": "Tema doğrulaması başarısız oldu.",
+            "permissionDenied": "Tema dosyalarına erişim izni reddedildi.",
+            "diskFull": "Tema yüklemek için yeterli disk alanı yok.",
+            "corruptFile": "Tema dosyası bozuk veya okunamıyor.",
+            "scanFailed": "Tema dizini taranamadı.",
+            "loadFailed": "Tema yüklenemedi: {{filename}}.",
+            "invalidIdFormat": "Geçersiz tema kimliği biçimi.",
+            "saveFailed": "Tema yapılandırması kaydedilemedi."
+        },
+        "data": {
+            "initFailed": "Veri servisi başlatılamadı.",
+            "directoryCreateFailed": "Veri dizinleri oluşturulamadı.",
+            "migrationFailed": "{{path}} için veri taşıma başarısız oldu.",
+            "migrationPathInvalid": "Geçersiz taşıma yolu.",
+            "pathTypeInvalid": "Geçersiz veri türü: {{type}}.",
+            "fileOperationFailed": "Dosya işlemi başarısız oldu.",
+            "permissionDenied": "Veri dosyalarına erişim izni reddedildi.",
+            "importFailed": "Veri içe aktarılamadı.",
+            "exportFailed": "Veri dışa aktarılamadı.",
+            "importSuccess": "Veri başarıyla içe aktarıldı.",
+            "exportSuccess": "Veri başarıyla dışa aktarıldı.",
+            "corruptData": "Veri dosyası bozuk veya okunamıyor.",
+            "cleanupFailed": "Eski veriler temizlenemedi."
+        },
+        "database": {
+            "connectionFailed": "Veritabanına bağlanılamadı.",
+            "queryFailed": "Veritabanı sorgusu başarısız oldu.",
+            "migrationFailed": "Veritabanı taşıma işlemi başarısız oldu.",
+            "migrationSuccess": "Veritabanı taşıma işlemi başarıyla tamamlandı.",
+            "initFailed": "Veritabanı başlatılamadı.",
+            "notInitialized": "Veritabanı başlatılmadı.",
+            "transactionFailed": "Veritabanı işlemi başarısız oldu.",
+            "constraintViolation": "Veritabanı kısıtlama ihlali.",
+            "timeout": "Veritabanı işlemi zaman aşımına uğradı.",
+            "diskFull": "Veritabanı işlemi için yeterli disk alanı yok.",
+            "corruptDatabase": "Veritabanı bozuk. Lütfen yedekten geri yükleyin.",
+            "backupFailed": "Veritabanı yedeği oluşturulamadı.",
+            "backupSuccess": "Veritabanı yedeği başarıyla oluşturuldu.",
+            "restoreFailed": "Veritabanı yedekten geri yüklenemedi.",
+            "restoreSuccess": "Veritabanı başarıyla geri yüklendi.",
+            "slowQuery": "Yavaş sorgu tespit edildi: {{duration}}ms."
         }
     },
     "languages": {
@@ -1349,6 +1422,11 @@ export const tr = {
             "from": "Kaynak: {{provider}}/{{model}}",
             "selectModelError": "Lütfen en az bir model seçin",
             "runFailed": "İşbirliği çalıştırılamadı",
+            "retry": "Tekrar Dene",
+            "dismiss": "Kapat",
+            "emptyStateTitle": "Model Seçilmedi",
+            "emptyStateDescription": "Çoklu model işbirliği oturumu başlatmak için en az iki AI modeli ekleyin.",
+            "noModelsAvailable": "Şu anda kullanılabilir model yok. Lütfen Ayarlar'dan AI sağlayıcılarını yapılandırın.",
             "remove": "Kaldır",
             "sharedContext": "Paylaşılan Bağlam",
             "sharedContextPlaceholder": "Tüm katılımcılar için bağlam ekleyin...",
@@ -3127,7 +3205,9 @@ export const tr = {
         "error": {
             "saveFailed": "Ajan kontrol noktası kaydedilemedi",
             "serializationFailed": "Ajan durum anlık görüntüsü serileştirilemedi",
-            "checkpointNotFound": "Kontrol noktası {{id}} bulunamadı"
+            "checkpointNotFound": "Kontrol noktası {{id}} bulunamadı",
+            "loadFailed": "Kontrol noktası verileri yüklenemedi",
+            "rollbackFailed": "Geri alma hazırlığı başarısız oldu"
         },
         "saved": "{{taskId}} görevi için kontrol noktası kaydedildi"
     },
@@ -3219,6 +3299,169 @@ export const tr = {
             "attributesTooMany": "Öznitelikler maksimum {{maxCount}} girişi aşıyor",
             "attributeInvalidType": "\"{{key}}\" özniteliği dize, sayı veya boolean olmalıdır",
             "attributeTooLong": "\"{{key}}\" özniteliği maksimum {{maxLength}} uzunluğunu aşıyor"
+        }
+    },
+    "monitoring": {
+        "title": "İzleme",
+        "subtitle": "Sistem performansı ve sağlık metrikleri",
+        "status": {
+            "healthy": "Tüm sistemler sağlıklı",
+            "degraded": "Performans düşük",
+            "critical": "Kritik sorunlar tespit edildi",
+            "unknown": "Durum bilinmiyor"
+        },
+        "metrics": {
+            "cpuUsage": "İşlemci Kullanımı",
+            "memoryUsage": "Bellek Kullanımı",
+            "diskUsage": "Disk Kullanımı",
+            "networkLatency": "Ağ Gecikmesi",
+            "ipcLatency": "IPC Gecikmesi",
+            "uptime": "Çalışma Süresi",
+            "responseTime": "Yanıt Süresi",
+            "requestsPerSecond": "İstek/sn",
+            "errorRate": "Hata Oranı",
+            "activeConnections": "Aktif Bağlantılar"
+        },
+        "actions": {
+            "refresh": "Metrikleri Yenile",
+            "exportReport": "Rapor Dışa Aktar",
+            "clearAlerts": "Uyarıları Temizle",
+            "configureAlerts": "Uyarıları Yapılandır",
+            "viewHistory": "Geçmişi Görüntüle"
+        },
+        "alerts": {
+            "title": "Uyarılar",
+            "noAlerts": "Aktif uyarı yok",
+            "critical": "Kritik",
+            "warning": "Uyarı",
+            "info": "Bilgi",
+            "acknowledged": "Uyarı onaylandı"
+        },
+        "summary": {
+            "title": "Performans Özeti",
+            "uptimeLabel": "Çalışma süresi: {{duration}}",
+            "memoryLabel": "Bellek: {{used}} / {{total}}",
+            "avgLatency": "Ortalama Gecikme: {{value}}ms",
+            "peakLatency": "En Yüksek Gecikme: {{value}}ms"
+        }
+    },
+    "telemetry": {
+        "title": "Telemetri",
+        "subtitle": "Kullanım analitiği ve tanılama",
+        "status": {
+            "enabled": "Telemetri etkin",
+            "disabled": "Telemetri devre dışı",
+            "paused": "Telemetri duraklatıldı"
+        },
+        "settings": {
+            "enableTelemetry": "Telemetriyi Etkinleştir",
+            "enableDescription": "Anonim kullanım verileri göndererek Tengra'nın geliştirilmesine yardımcı olun.",
+            "dataCollection": "Veri Toplama",
+            "crashReports": "Çökme Raporları",
+            "usageStatistics": "Kullanım İstatistikleri",
+            "performanceData": "Performans Verileri"
+        },
+        "events": {
+            "queued": "{{count}} olay kuyruğa alındı",
+            "sent": "{{count}} olay gönderildi",
+            "dropped": "{{count}} olay kaybedildi",
+            "flushing": "Telemetri verileri gönderiliyor...",
+            "flushSuccess": "Telemetri verileri başarıyla gönderildi.",
+            "flushFailed": "Telemetri verileri gönderilemedi. Daha sonra tekrar denenecek.",
+            "retrying": "Telemetri gönderimi yeniden deneniyor (deneme {{attempt}}/{{max}})."
+        },
+        "consent": {
+            "title": "Telemetri İzni",
+            "description": "Uygulamayı geliştirmek için anonim kullanım verileri topluyoruz.",
+            "accept": "Kabul Et",
+            "decline": "Reddet",
+            "learnMore": "Daha Fazla Bilgi"
+        }
+    },
+    "themeService": {
+        "initialized": "Tema servisi başlatıldı.",
+        "loadedCount": "{{count}} tema yüklendi.",
+        "installed": "\"{{name}}\" teması başarıyla yüklendi.",
+        "uninstalled": "\"{{name}}\" teması kaldırıldı.",
+        "applied": "\"{{name}}\" teması uygulandı.",
+        "resetToDefault": "Tema varsayılana sıfırlandı.",
+        "validation": {
+            "invalidId": "Tema kimliği geçersiz veya eksik.",
+            "invalidName": "Tema adı geçersiz veya eksik.",
+            "invalidVersion": "Tema sürümü geçersiz veya eksik.",
+            "colorsRequired": "Tema renkleri bir nesne olmalıdır.",
+            "invalidColorType": "Tema tanımında geçersiz renk türü."
+        }
+    },
+    "dataService": {
+        "title": "Veri Yönetimi",
+        "subtitle": "Uygulama verileri ve depolama yönetimi",
+        "initialized": "Veri servisi {{duration}}ms içinde başlatıldı.",
+        "status": {
+            "ready": "Veri servisi hazır",
+            "migrating": "Veri taşıma işlemi devam ediyor...",
+            "error": "Veri servisi hatası"
+        },
+        "migration": {
+            "checking": "Veri taşıma işlemleri kontrol ediliyor...",
+            "inProgress": "Veri taşınıyor: {{file}}",
+            "completed": "Veri taşıma işlemi tamamlandı.",
+            "skipped": "Taşıma gerekli değil.",
+            "legacyCleanup": "Eski veri klasörü temizleniyor."
+        },
+        "importExport": {
+            "importTitle": "Veri İçe Aktar",
+            "exportTitle": "Veri Dışa Aktar",
+            "importDescription": "Dosyadan veri içe aktarın.",
+            "exportDescription": "Verileri dosyaya dışa aktarın.",
+            "selectFile": "Dosya Seç",
+            "importing": "Veriler içe aktarılıyor...",
+            "exporting": "Veriler dışa aktarılıyor..."
+        },
+        "storage": {
+            "usage": "Kullanılan depolama: {{used}} / {{total}}",
+            "cleanCache": "Önbelleği Temizle",
+            "cacheCleaned": "Önbellek başarıyla temizlendi.",
+            "cacheCleanFailed": "Önbellek temizlenemedi."
+        }
+    },
+    "databaseService": {
+        "title": "Veritabanı",
+        "subtitle": "Veritabanı yönetimi ve sağlık durumu",
+        "status": {
+            "connected": "Veritabanı bağlı",
+            "disconnected": "Veritabanı bağlantısı kesildi",
+            "migrating": "Taşıma işlemleri çalışıyor...",
+            "error": "Veritabanı hatası",
+            "healthy": "Veritabanı sağlıklı"
+        },
+        "actions": {
+            "backup": "Yedek Oluştur",
+            "restore": "Yedeği Geri Yükle",
+            "optimize": "Veritabanını Optimize Et",
+            "vacuum": "Veritabanını Sıkıştır",
+            "resetDatabase": "Veritabanını Sıfırla",
+            "viewStats": "İstatistikleri Görüntüle"
+        },
+        "stats": {
+            "totalRecords": "Toplam Kayıt: {{count}}",
+            "databaseSize": "Veritabanı Boyutu: {{size}}",
+            "lastBackup": "Son Yedekleme: {{date}}",
+            "queryCount": "Yürütülen Sorgular: {{count}}",
+            "avgQueryTime": "Ort. Sorgu Süresi: {{duration}}ms",
+            "slowQueries": "Yavaş Sorgular: {{count}}"
+        },
+        "migration": {
+            "running": "{{name}} taşıma işlemi çalışıyor...",
+            "completed": "{{name}} taşıma işlemi tamamlandı.",
+            "failed": "{{name}} taşıma işlemi başarısız oldu.",
+            "rollback": "{{name}} taşıma işlemi geri alınıyor...",
+            "upToDate": "Veritabanı güncel."
+        },
+        "confirmation": {
+            "resetTitle": "Veritabanını Sıfırla",
+            "resetMessage": "Veritabanını sıfırlamak istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+            "backupBeforeReset": "Sıfırlamadan önce yedek oluştur"
         }
     }
 };

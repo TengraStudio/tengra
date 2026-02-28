@@ -1,4 +1,4 @@
-import { Check, Clock, Hash, Play, RotateCcw } from 'lucide-react';
+import { AlertTriangle, Check, Clock, Hash, Play, RefreshCw, RotateCcw } from 'lucide-react';
 import React, { useState } from 'react';
 
 import { CheckpointItem } from '@/features/projects/hooks/useAgentHistory';
@@ -8,6 +8,8 @@ interface CheckpointListProps {
     onResume: (checkpointId: string) => void;
     onRollback: (checkpointId: string) => void;
     isLoading?: boolean;
+    error?: string | null;
+    onRetry?: () => void;
     formatTime: (date: Date) => string;
     t: (key: string, options?: Record<string, string | number>) => string;
 }
@@ -17,6 +19,8 @@ export const CheckpointList: React.FC<CheckpointListProps> = ({
     onResume,
     onRollback,
     isLoading,
+    error,
+    onRetry,
     formatTime,
     t,
 }) => {
@@ -26,6 +30,24 @@ export const CheckpointList: React.FC<CheckpointListProps> = ({
         return (
             <div className="p-4 text-center text-muted-foreground text-sm">
                 {t('common.loading')}...
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-4 text-center text-sm">
+                <AlertTriangle className="w-5 h-5 text-destructive mx-auto mb-2" />
+                <p className="text-destructive mb-2">{error}</p>
+                {onRetry && (
+                    <button
+                        onClick={onRetry}
+                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                    >
+                        <RefreshCw className="w-3 h-3" />
+                        {t('common.retry')}
+                    </button>
+                )}
             </div>
         );
     }
