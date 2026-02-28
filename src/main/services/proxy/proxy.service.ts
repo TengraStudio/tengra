@@ -478,6 +478,7 @@ export class ProxyService extends BaseService {
 
 
   async initiateGitHubAuth(appId: 'profile' | 'copilot' = 'profile'): Promise<DeviceCodeResponse> {
+    this.eventBus.emitCustom(ProxyTelemetryEvent.AUTH_INITIATED, { provider: 'github', appId });
     await this.waitForRateLimit('github', { priority: 2 });
     return new Promise((resolve, reject) => {
       const client = GITHUB_CLIENTS[appId];
@@ -497,10 +498,14 @@ export class ProxyService extends BaseService {
             expires_in: 0,
             interval: 0
           });
+          this.eventBus.emitCustom(ProxyTelemetryEvent.AUTH_COMPLETED, { provider: 'github', appId });
           resolve(result);
         });
       });
-      request.on('error', (err) => reject(err));
+      request.on('error', (err) => {
+        this.eventBus.emitCustom(ProxyTelemetryEvent.AUTH_FAILED, { provider: 'github', appId, error: err.message });
+        reject(err);
+      });
       request.end();
     });
   }
@@ -674,11 +679,13 @@ export class ProxyService extends BaseService {
     if (elapsed > PROXY_PERFORMANCE_BUDGETS.STOP_MS) {
       this.logWarn(`stopEmbeddedProxy exceeded budget: ${elapsed.toFixed(1)}ms > ${PROXY_PERFORMANCE_BUDGETS.STOP_MS}ms`);
     }
+    this.eventBus.emitCustom(ProxyTelemetryEvent.PROXY_STOPPED, { elapsedMs: elapsed });
   }
 
   getEmbeddedProxyStatus(): ProxyEmbedStatus {
     const status = this.processManager.getStatus();
     if (status.running && status.port) { this.currentPort = status.port; }
+    this.eventBus.emitCustom(ProxyTelemetryEvent.HEALTH_CHECK, { running: status.running, port: status.port });
     return status;
   }
 
@@ -979,6 +986,7 @@ export class ProxyService extends BaseService {
             if (requestElapsed > PROXY_PERFORMANCE_BUDGETS.REQUEST_MS) {
               appLogger.warn('ProxyService', `makeRequest exceeded budget: ${requestElapsed.toFixed(1)}ms > ${PROXY_PERFORMANCE_BUDGETS.REQUEST_MS}ms (${method} ${path})`);
             }
+            this.eventBus.emitCustom(ProxyTelemetryEvent.REQUEST_SENT, { method, path, elapsedMs: requestElapsed, statusCode: res.statusCode });
             const rateLimitInfo = snapshot ? {
               provider: snapshot.provider,
               limit: snapshot.limit,
@@ -1005,6 +1013,7 @@ export class ProxyService extends BaseService {
         });
 
         request.on('error', err => {
+          this.eventBus.emitCustom(ProxyTelemetryEvent.REQUEST_FAILED, { method, path, error: err.message });
           const isConnectionError = 'code' in err && (
             (err as NodeJS.ErrnoException).code === 'ECONNREFUSED' ||
             (err as NodeJS.ErrnoException).code === 'ECONNRESET'

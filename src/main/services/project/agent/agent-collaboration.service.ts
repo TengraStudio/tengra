@@ -328,6 +328,7 @@ export class AgentCollaborationService extends BaseService {
      * Route to the best model for a task type
      */
     routeByTaskType(taskType: TaskType, availableProviders: string[]): StepModelConfig {
+        const startMs = Date.now();
         // Find matching rules sorted by priority
         const matchingRules = this.routingRules
             .filter(rule => rule.taskType === taskType)
@@ -342,6 +343,7 @@ export class AgentCollaborationService extends BaseService {
                 model: bestRule.model,
                 priority: bestRule.priority
             });
+            this.warnIfOverBudget('routeByTaskType', startMs, AGENT_COLLABORATION_PERFORMANCE_BUDGETS.ROUTE_MODEL_MS);
             return {
                 provider: bestRule.provider,
                 model: bestRule.model,
@@ -351,6 +353,7 @@ export class AgentCollaborationService extends BaseService {
 
         // Fallback to first available provider
         const fallbackProvider = availableProviders[0] ?? 'openai';
+        this.warnIfOverBudget('routeByTaskType', startMs, AGENT_COLLABORATION_PERFORMANCE_BUDGETS.ROUTE_MODEL_MS);
         return {
             provider: fallbackProvider,
             model: fallbackProvider === 'anthropic' ? 'claude-3-5-sonnet-20241022' : 'gpt-4o',
@@ -403,6 +406,7 @@ export class AgentCollaborationService extends BaseService {
         question: string,
         options: string[]
     ): VotingSession {
+        const startMs = Date.now();
         if (!taskId) {throw new AgentCollaborationError('taskId is required', 'MISSING_TASK_ID');}
         if (options.length < 2) {throw new AgentCollaborationError('At least 2 options required', 'INVALID_OPTIONS');}
 
@@ -427,6 +431,7 @@ export class AgentCollaborationService extends BaseService {
                 stepIndex,
                 optionCount: options.length
             });
+            this.warnIfOverBudget('createVotingSession', startMs, AGENT_COLLABORATION_PERFORMANCE_BUDGETS.CREATE_VOTING_SESSION_MS);
             return session;
         } catch (error) {
             throw new AgentCollaborationError('Failed to create valid voting session', 'VOTING_SESSION_INVALID', { error });
@@ -721,6 +726,7 @@ Respond with a JSON object:
     async buildConsensus(
         outputs: Array<{ modelId: string; provider: string; output: string }>
     ): Promise<ConsensusResult> {
+        const startMs = Date.now();
         if (outputs.length === 0) {
             return {
                 agreed: false,
@@ -780,6 +786,7 @@ Respond with a JSON object:
                 modelCount: outputs.length,
                 resolutionMethod: 'arbitration'
             });
+            this.warnIfOverBudget('buildConsensus', startMs, AGENT_COLLABORATION_PERFORMANCE_BUDGETS.BUILD_CONSENSUS_MS);
             return {
                 agreed: true,
                 mergedOutput,
@@ -792,6 +799,7 @@ Respond with a JSON object:
             modelCount: outputs.length,
             resolutionMethod: 'manual'
         });
+        this.warnIfOverBudget('buildConsensus', startMs, AGENT_COLLABORATION_PERFORMANCE_BUDGETS.BUILD_CONSENSUS_MS);
         return {
             agreed: false,
             conflictingPoints,
@@ -802,6 +810,7 @@ Respond with a JSON object:
     // ===== AGENT-13: Multi-Agent Debate =====
 
     createDebateSession(taskId: string, stepIndex: number, topic: string): DebateSession {
+        const startMs = Date.now();
         if (!taskId) {throw new AgentCollaborationError('taskId is required', 'MISSING_TASK_ID');}
         if (!topic) {throw new AgentCollaborationError('topic is required', 'MISSING_TOPIC');}
 
@@ -828,6 +837,7 @@ Respond with a JSON object:
             stepIndex,
             topic: topic.substring(0, 100)
         });
+        this.warnIfOverBudget('createDebateSession', startMs, AGENT_COLLABORATION_PERFORMANCE_BUDGETS.CREATE_VOTING_SESSION_MS);
         return session;
     }
 
@@ -1693,6 +1703,63 @@ Merged output:`;
         } catch (error) {
             appLogger.error('AgentCollaboration', 'Arbitration failed', error as Error);
             return null;
+        }
+    }
+
+    // ===== BACKLOG-0335: Health Dashboard Metrics =====
+
+    /**
+     * Get aggregated health dashboard metrics for monitoring.
+     * Combines voting analytics, teamwork health signals, and session counts.
+     */
+    getHealthDashboardMetrics(): {
+        activeVotingSessions: number;
+        activeDebateSessions: number;
+        deadlockedSessions: number;
+        agentHealthSummary: { healthy: number; warning: number; critical: number };
+        overallHealthStatus: 'healthy' | 'warning' | 'critical';
+        updatedAt: number;
+    } {
+        const votingAnalytics = this.getVotingAnalytics();
+        const teamwork = this.getTeamworkAnalytics();
+
+        const agentHealthSummary = { healthy: 0, warning: 0, critical: 0 };
+        for (const signal of teamwork.healthSignals) {
+            agentHealthSummary[signal.status]++;
+        }
+
+        const openDebates = Array.from(this.debateSessions.values())
+            .filter(s => s.status === 'open').length;
+
+        const overallHealthStatus: 'healthy' | 'warning' | 'critical' =
+            agentHealthSummary.critical > 0 || votingAnalytics.deadlockedSessions > 2
+                ? 'critical'
+                : agentHealthSummary.warning > 0 || votingAnalytics.deadlockedSessions > 0
+                    ? 'warning'
+                    : 'healthy';
+
+        return {
+            activeVotingSessions: votingAnalytics.pendingSessions,
+            activeDebateSessions: openDebates,
+            deadlockedSessions: votingAnalytics.deadlockedSessions,
+            agentHealthSummary,
+            overallHealthStatus,
+            updatedAt: Date.now()
+        };
+    }
+
+    // ===== BACKLOG-0336: Performance Budget Checks =====
+
+    /**
+     * Log a warning if an operation exceeded its performance budget.
+     */
+    private warnIfOverBudget(operation: string, startMs: number, budgetMs: number): void {
+        const elapsed = Date.now() - startMs;
+        if (elapsed > budgetMs) {
+            appLogger.warn(
+                'AgentCollaboration',
+                `Performance budget exceeded: ${operation} took ${elapsed}ms (budget: ${budgetMs}ms)`
+            );
         }
     }
 }

@@ -1,4 +1,4 @@
-import { sanitizeCodeEditorLanguage } from '@renderer/features/projects/components/ide/code-editor-validation';
+import { sanitizeCodeEditorLanguage } from './code-editor-validation';
 import {
     recordCodeEditorFailure,
     recordCodeEditorFallback,
@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from '@/i18n';
 import { appLogger } from '@/utils/renderer-logger';
 
-interface CodeEditorProps {
+interface CodeMirrorEditorProps {
     content: string
     language?: string | undefined
     onChange?: ((value: string) => void) | undefined
@@ -21,7 +21,11 @@ interface CodeEditorProps {
 // Dynamic import type
 type EditorView = import('@codemirror/view').EditorView
 
-export const CodeEditor = ({ content, language = 'javascript', onChange, readonly = false }: CodeEditorProps) => {
+/**
+ * A CodeMirror-based code editor component.
+ * Recommended for smaller snippets or when Monaco is too heavy.
+ */
+export const CodeMirrorEditor = ({ content, language = 'javascript', onChange, readonly = false }: CodeMirrorEditorProps) => {
     const { t } = useTranslation();
     const editorRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
@@ -39,7 +43,7 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
             const normalizedLanguage = sanitizeCodeEditorLanguage(language);
             setCodeEditorUiState('loading');
             try {
-                // Dynamic imports to avoid fully mixing meta-package and scoped packages (though we now strictly use scoped)
+                // Dynamic imports to avoid fully mixing meta-package and scoped packages
                 const [
                     { EditorState },
                     { EditorView, lineNumbers, highlightActiveLineGutter, drawSelection, dropCursor, keymap, hoverTooltip, highlightActiveLine },
@@ -81,7 +85,6 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
                     }
                 };
 
-                // Minimal setup equivalent to basicSetup but safe
                 const minimalSetup = [
                     lineNumbers(),
                     highlightActiveLineGutter(),
@@ -117,7 +120,6 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
                                 onChange(update.state.doc.toString());
                             }
                         }),
-                        // Simple LSP Hover
                         hoverTooltip(async (view, pos) => {
                             const { from, to, text } = view.state.doc.lineAt(pos);
                             let start = pos, end = pos;
@@ -156,11 +158,11 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
                 try {
                     await Promise.resolve();
                     recordCodeEditorFallback();
-                    appLogger.warn('CodeEditor', 'Retrying CodeMirror initialization');
+                    appLogger.warn('CodeMirrorEditor', 'Retrying CodeMirror initialization');
                 } catch {
-                    // No-op fallback branch for future backoff hooks.
+                    // No-op
                 }
-                appLogger.error('CodeEditor', 'Failed to initialize CodeMirror', err as Error);
+                appLogger.error('CodeMirrorEditor', 'Failed to initialize CodeMirror', err as Error);
                 recordCodeEditorFailure('CODE_EDITOR_INIT_FAILED', performance.now() - startedAt);
                 setCodeEditorUiState('failure');
                 setError(err instanceof Error ? err.message : t('projectDashboard.editor.failed'));
@@ -176,7 +178,6 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
                 view.destroy();
             }
         };
-        // Note: content and onChange are intentionally excluded to avoid recreating editor on every change
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [language, readonly]);
 

@@ -5,6 +5,7 @@ import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { withRetry } from '@main/utils/retry.util';
 import { ServiceResponse } from '@shared/types';
+import { JsonObject } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 
 /**
@@ -578,7 +579,7 @@ export class MonitoringService extends BaseService {
      * @param event - The telemetry event name
      * @param metadata - Optional metadata for the event
      */
-    private emitTelemetry(event: MonitoringTelemetryEvent, metadata?: Record<string, unknown>): void {
+    private emitTelemetry(event: MonitoringTelemetryEvent, metadata?: JsonObject): void {
         if (!this.telemetryEnabled) {
             return;
         }

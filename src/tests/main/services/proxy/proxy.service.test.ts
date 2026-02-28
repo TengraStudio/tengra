@@ -87,6 +87,7 @@ describe('ProxyService', () => {
             on: vi.fn(),
             off: vi.fn(),
             emit: vi.fn(),
+            emitCustom: vi.fn(),
         } as unknown as EventBusService;
 
         const mockAuthService = { saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn() } as unknown as AuthService;
@@ -257,7 +258,7 @@ describe('ProxyService input validation', () => {
             processManager: mockProcessManager,
             quotaService: {} as unknown as QuotaService,
             authService: mockAuthService,
-            eventBus: { on: vi.fn(), off: vi.fn(), emit: vi.fn() } as unknown as EventBusService,
+            eventBus: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), emitCustom: vi.fn() } as unknown as EventBusService,
         });
     });
 

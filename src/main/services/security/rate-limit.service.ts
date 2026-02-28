@@ -7,6 +7,16 @@ interface RateLimitConfig {
 }
 
 /**
+ * Status of a provider's rate limit bucket for UX indicators.
+ */
+export interface RateLimitProviderStatus {
+    configured: boolean;
+    tokensRemaining: number;
+    tokensMax: number;
+    msUntilNextToken: number;
+}
+
+/**
  * Standardized error codes for RateLimitService
  */
 export enum RateLimitErrorCode {
@@ -223,13 +233,18 @@ export class RateLimitService extends BaseService {
         const start = performance.now();
         const now = Date.now();
         const maxAge = 30 * 60 * 1000; // 30 minutes
+        let removedCount = 0;
 
         for (const [provider, bucket] of this.buckets) {
             if (now - bucket.lastRefill > maxAge) {
                 this.buckets.delete(provider);
+                removedCount++;
             }
         }
 
+        if (removedCount > 0) {
+            appLogger.info('RateLimitService', RateLimitTelemetryEvent.BUCKET_CLEANUP, { removedCount });
+        }
         this.checkPerformanceBudget('cleanupOldBuckets', performance.now() - start, RATE_LIMIT_PERFORMANCE_BUDGETS.CLEANUP_MS);
     }
 
@@ -252,6 +267,7 @@ export class RateLimitService extends BaseService {
             config,
         });
 
+        appLogger.debug('RateLimitService', RateLimitTelemetryEvent.LIMIT_SET, { provider, requestsPerMinute: config.requestsPerMinute });
         this.checkPerformanceBudget('setLimit', performance.now() - start, RATE_LIMIT_PERFORMANCE_BUDGETS.SET_LIMIT_MS);
     }
 
@@ -278,8 +294,15 @@ export class RateLimitService extends BaseService {
 
             if (bucket.tokens >= 1) {
                 bucket.tokens -= 1;
+                if (iterations > 0) {
+                    appLogger.debug('RateLimitService', RateLimitTelemetryEvent.WAIT_COMPLETED, { provider, iterations });
+                }
                 this.checkPerformanceBudget('waitForToken', performance.now() - start, RATE_LIMIT_PERFORMANCE_BUDGETS.WAIT_FOR_TOKEN_MS);
                 return;
+            }
+
+            if (iterations === 0) {
+                appLogger.debug('RateLimitService', RateLimitTelemetryEvent.WAIT_STARTED, { provider });
             }
 
             const msPerToken = 60000 / bucket.config.requestsPerMinute;
@@ -289,10 +312,13 @@ export class RateLimitService extends BaseService {
             iterations++;
         }
 
+        appLogger.info('RateLimitService', RateLimitTelemetryEvent.WAIT_EXCEEDED, { provider });
+        const retryAfterMs = 60000 / bucket.config.requestsPerMinute;
         const error = new Error(
             `Rate limit wait exceeded maximum iterations (${MAX_WAIT_ITERATIONS}) for ${provider}`
-        ) as Error & { code?: string };
+        ) as Error & { code?: string; retryAfterMs?: number };
         error.code = RateLimitErrorCode.WAIT_EXCEEDED;
+        error.retryAfterMs = retryAfterMs;
         throw error;
     }
 
@@ -333,6 +359,7 @@ export class RateLimitService extends BaseService {
             bucket.tokens -= 1;
             result = true;
         } else {
+            appLogger.debug('RateLimitService', RateLimitTelemetryEvent.TOKEN_REJECTED, { provider });
             result = false;
         }
 
@@ -347,6 +374,29 @@ export class RateLimitService extends BaseService {
         return {
             activeBuckets: this.buckets.size,
             providers: Array.from(this.buckets.keys())
+        };
+    }
+
+    /**
+     * Returns current rate limit status for a provider, useful for UX indicators.
+     * @param provider - The provider key to query
+     * @returns Status with token availability and timing information
+     */
+    getProviderStatus(provider: string): RateLimitProviderStatus {
+        this.validateProvider(provider);
+        const bucket = this.buckets.get(provider);
+        if (!bucket) {
+            return { configured: false, tokensRemaining: 0, tokensMax: 0, msUntilNextToken: 0 };
+        }
+        const maxTokens = bucket.config.maxBurst ?? bucket.config.requestsPerMinute;
+        const msPerToken = 60000 / bucket.config.requestsPerMinute;
+        const elapsed = Date.now() - bucket.lastRefill;
+        const msUntilNext = bucket.tokens >= 1 ? 0 : Math.max(0, msPerToken - elapsed);
+        return {
+            configured: true,
+            tokensRemaining: Math.floor(bucket.tokens),
+            tokensMax: maxTokens,
+            msUntilNextToken: msUntilNext
         };
     }
 

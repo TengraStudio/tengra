@@ -20,7 +20,7 @@ const mockSettingsService = { getSettings: vi.fn(() => ({ proxy: {} })), saveSet
 const mockSecurityService = { encryptSync: vi.fn(d => d), decryptSync: vi.fn(d => d) } as any;
 const mockProcessManager = {} as any;
 const mockQuotaService = {} as any;
-const mockEventBus = { on: vi.fn(), off: vi.fn(), emit: vi.fn() } as any;
+const mockEventBus = { on: vi.fn(), off: vi.fn(), emit: vi.fn(), emitCustom: vi.fn() } as any;
 const mockAuthService = { saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn() } as any;
 
 describe('Proxy-Data Integration', () => {

@@ -69,7 +69,7 @@ describe('ProxyService performance instrumentation', () => {
             processManager: mockProcessManager,
             quotaService: {} as unknown as QuotaService,
             authService: mockAuthService,
-            eventBus: { on: vi.fn(), off: vi.fn(), emit: vi.fn() } as unknown as EventBusService,
+            eventBus: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), emitCustom: vi.fn() } as unknown as EventBusService,
         });
     });
 

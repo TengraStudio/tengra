@@ -2,7 +2,7 @@
 import { FolderInspector } from '@renderer/features/projects/components/ide/FolderInspector';
 import { FileCode, X } from 'lucide-react';
 
-import { CodeEditor } from '@/components/ui/CodeEditor';
+import { CodeMirrorEditor } from '@/components/ui/CodeMirrorEditor';
 import { cn } from '@/lib/utils';
 
 interface OpenFile {
@@ -58,8 +58,8 @@ export const ProjectFilesTab = ({
                         </div>
                         <div className="flex-1 relative">
                             {activeFileObj && (
-                                <CodeEditor
-                                    value={activeFileObj.content}
+                                <CodeMirrorEditor
+                                    content={activeFileObj.content}
                                     language={activeFileObj.name.split('.').pop() ?? 'typescript'}
                                     onChange={(newContent) => {
                                         const newFiles = openFiles.map(f => f.path === activeFileObj.path ? { ...f, content: newContent ?? '', isDirty: true } : f);

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { CodeEditor } from '@/features/projects/components/ide/CodeEditor';
+import { CodeEditor } from '@/components/ui/CodeEditor';
 
 vi.mock('@/i18n', () => ({
     useTranslation: () => ({

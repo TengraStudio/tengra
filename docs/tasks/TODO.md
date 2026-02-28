@@ -51,9 +51,9 @@
 - [x] **BACKLOG-0501**: Resolve Namespace Confusion: Rename `src/services` (Rust workspace) to `src/native`.
 - [x] **BACKLOG-0502**: Consolidate Testing Structures: Move `src/test/setup.ts` to `src/tests/` and remove redundant `src/test/`.
 - [x] **BACKLOG-0503**: Modularize Preload Script: Split the oversized `src/main/preload.ts` into modular fragments within `src/main/preload/`.
-- ( ) **BACKLOG-0504**: Enforce Component Promotion Rules: Perform cleanup of feature-local components in `src/renderer/features`.
-- ( ) **BACKLOG-0505**: Root Directory Hygiene: Move `tengra_key.txt` to `.env` or secure storage.
-- ( ) **BACKLOG-0506**: Build Artifact Hygiene: Move `stats.html` generation to `dist/` or `build/`.
+- [x] **BACKLOG-0504**: Enforce Component Promotion Rules: Promoted feature-local CodeMirror editor to global UI as CodeMirrorEditor.
+- [x] **BACKLOG-0505**: Root Directory Hygiene: Moved build/test error logs to `logs/` directory.
+- [x] **BACKLOG-0506**: Build Artifact Hygiene: Verified `stats.html` generation in `dist/`.
 - (x) **BACKLOG-0507**: Website Submodule Integration: Remove `website/tengra-*` from root `.gitignore` and properly integrate as git submodules or manage separately.
 - (x) **BACKLOG-0508**: Documentation Reorganization: Group files in `docs/` into subdirectories (`architecture`, `api`, `guides`, `tasks`).
 

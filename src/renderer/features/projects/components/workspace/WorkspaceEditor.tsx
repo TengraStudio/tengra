@@ -1,6 +1,6 @@
 ﻿import React from 'react';
 
-import { CodeEditor } from '@/components/ui/CodeEditor';
+import { CodeMirrorEditor } from '@/components/ui/CodeMirrorEditor';
 import {
     loadReviewRuleConfig,
     ReviewRuleConfig,
@@ -552,51 +552,11 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
                 </div>
             ) : (
                 <div className={cn("absolute inset-0 transition-opacity duration-300", !activeTab && "opacity-0 pointer-events-none")}>
-                    <CodeEditor
-                        value={activeTab?.content ?? ''}
+                    <CodeMirrorEditor
+                        content={activeTab?.content ?? ''}
                         language={activeTab ? getLanguageFromExtension(activeTab.name) : 'typescript'}
                         onChange={handleEditorChange}
-                        className="h-full w-full"
-                        showMinimap={true}
-                        fontSize={16}
-                        initialLine={activeTab?.initialLine}
-                        enableInlayHints={enableInlayHints}
-                        enableCodeLens={enableCodeLens}
-                        performanceMode={performanceMode}
-                        aiSafetyFilterEnabled={true}
-                        aiContextLimit={6000}
-                        initialPosition={
-                            activeViewState
-                                ? { lineNumber: activeViewState.lineNumber, column: activeViewState.column }
-                                : null
-                        }
-                        initialScrollTop={activeViewState?.scrollTop ?? null}
-                        onCursorPositionChange={position => {
-                            if (!activeTab) {
-                                return;
-                            }
-                            persistViewState({
-                                ...viewStateMap,
-                                [activeTab.path]: {
-                                    lineNumber: position.lineNumber,
-                                    column: position.column,
-                                    scrollTop: viewStateMap[activeTab.path]?.scrollTop ?? 0,
-                                },
-                            });
-                        }}
-                        onScrollPositionChange={scrollTop => {
-                            if (!activeTab) {
-                                return;
-                            }
-                            persistViewState({
-                                ...viewStateMap,
-                                [activeTab.path]: {
-                                    lineNumber: viewStateMap[activeTab.path]?.lineNumber ?? 1,
-                                    column: viewStateMap[activeTab.path]?.column ?? 1,
-                                    scrollTop,
-                                },
-                            });
-                        }}
+                        readonly={false}
                     />
                 </div>
             )}

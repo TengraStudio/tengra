@@ -1,7 +1,7 @@
 import { FileCode, X } from 'lucide-react';
 import React from 'react';
 
-import { CodeEditor } from '@/components/ui/CodeEditor';
+import { CodeMirrorEditor } from '@/components/ui/CodeMirrorEditor';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -72,8 +72,8 @@ export const FilesTab: React.FC<FilesTabProps> = ({
                 <div className="flex-1 relative">
                     {activeFileObj ? (
                         <div className="absolute inset-0">
-                            <CodeEditor
-                                value={activeFileObj.content}
+                            <CodeMirrorEditor
+                                content={activeFileObj.content}
                                 language={activeFileObj.name.split('.').pop() ?? 'typescript'}
                                 onChange={newContent => {
                                     const newFiles = openFiles.map(f =>

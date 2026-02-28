@@ -98,6 +98,14 @@ export class QuotaService {
         });
     }
 
+    /** Logs a warning if elapsed time exceeds the performance budget. */
+    private warnIfOverBudget(method: string, startMs: number, budgetMs: number): void {
+        const elapsed = performance.now() - startMs;
+        if (elapsed > budgetMs) {
+            appLogger.warn('QuotaService', `${method} exceeded budget: ${elapsed.toFixed(1)}ms > ${budgetMs}ms`);
+        }
+    }
+
     // --- Validation helpers ---
 
     /** Validates that a port number is a safe positive integer. */
@@ -134,6 +142,7 @@ export class QuotaService {
             return null;
         }
 
+        const start = performance.now();
         try {
             const allAccounts = await this.authService.getAllAccountsFull();
             const antigravityAccounts = allAccounts.filter(a => a.provider.startsWith('antigravity') || a.provider.startsWith('google'));
@@ -147,10 +156,13 @@ export class QuotaService {
                     results.push({ ...quota, accountId: account.id, email: account.email });
                 }
             }
+            appLogger.info('QuotaService', `${QuotaTelemetryEvent.QUOTA_FETCHED}: ${results.length} accounts`);
+            this.warnIfOverBudget('getQuota', start, QUOTA_PERFORMANCE_BUDGETS.FETCH_QUOTA_MS);
             return { accounts: results };
         } catch (e) {
             const msg = getErrorMessage(e);
-            appLogger.error('QuotaService', `Failed to get quota: ${msg}`);
+            appLogger.error('QuotaService', `${QuotaTelemetryEvent.QUOTA_FETCH_FAILED}: ${msg}`);
+            this.warnIfOverBudget('getQuota', start, QUOTA_PERFORMANCE_BUDGETS.FETCH_QUOTA_MS);
             throw new QuotaError(`Failed to get quota: ${msg}`, QuotaErrorCode.FETCH_FAILED, { originalError: msg });
         }
     }
@@ -184,9 +196,11 @@ export class QuotaService {
             }
         } catch (error) {
             if (error instanceof QuotaError && error.quotaCode === QuotaErrorCode.AUTH_EXPIRED) {
+                appLogger.info('QuotaService', QuotaTelemetryEvent.AUTH_EXPIRED);
                 return { success: false, authExpired: true, status: 'Expired', next_reset: '-', models: [] };
             }
             if (error instanceof Error && error.message === 'AUTH_EXPIRED') {
+                appLogger.info('QuotaService', QuotaTelemetryEvent.AUTH_EXPIRED);
                 return { success: false, authExpired: true, status: 'Expired', next_reset: '-', models: [] };
             }
             if (error instanceof QuotaError && error.quotaCode === QuotaErrorCode.QUOTA_EXCEEDED) {
@@ -218,12 +232,18 @@ export class QuotaService {
     // --- Codex ---
 
     async fetchCodexQuota(): Promise<QuotaResponse | null> {
+        const start = performance.now();
         try {
             const codexData = await this.codexHandler.fetchCodexUsage();
-            if (codexData) { return this.codexHandler.parseCodexUsageToQuota(codexData); }
+            if (codexData) {
+                appLogger.info('QuotaService', QuotaTelemetryEvent.CODEX_USAGE_FETCHED);
+                this.warnIfOverBudget('fetchCodexQuota', start, QUOTA_PERFORMANCE_BUDGETS.FETCH_CODEX_USAGE_MS);
+                return this.codexHandler.parseCodexUsageToQuota(codexData);
+            }
         } catch (err) {
             appLogger.debug('QuotaService', `Failed to fetch Codex quota: ${getErrorMessage(err)}`);
         }
+        this.warnIfOverBudget('fetchCodexQuota', start, QUOTA_PERFORMANCE_BUDGETS.FETCH_CODEX_USAGE_MS);
         return null;
     }
 
@@ -260,6 +280,7 @@ export class QuotaService {
     // --- Claude/Anthropic ---
 
     async getClaudeQuota(): Promise<{ accounts: Array<ClaudeQuota> }> {
+        const start = performance.now();
         const accounts = await this.authService.getAllAccountsFull();
         const claudeAccounts = accounts.filter(a => a.provider === 'claude' || a.provider === 'anthropic');
 
@@ -270,6 +291,8 @@ export class QuotaService {
                 results.push({ ...quota, accountId: account.id, email: account.email });
             }
         }
+        appLogger.info('QuotaService', `${QuotaTelemetryEvent.CLAUDE_QUOTA_FETCHED}: ${results.length} accounts`);
+        this.warnIfOverBudget('getClaudeQuota', start, QUOTA_PERFORMANCE_BUDGETS.FETCH_CLAUDE_QUOTA_MS);
         return { accounts: results };
     }
 
@@ -289,12 +312,16 @@ export class QuotaService {
         if (accountId !== undefined && !QuotaService.isNonEmptyString(accountId)) {
             return { success: false, error: 'accountId must be a non-empty string when provided', code: QuotaErrorCode.INVALID_INPUT };
         }
-        return this.claudeHandler.saveClaudeSession(sessionKey, accountId);
+        const start = performance.now();
+        const result = await this.claudeHandler.saveClaudeSession(sessionKey, accountId);
+        this.warnIfOverBudget('saveClaudeSession', start, QUOTA_PERFORMANCE_BUDGETS.SAVE_SESSION_MS);
+        return result;
     }
 
     // --- Copilot ---
 
     async getCopilotQuota(): Promise<{ accounts: Array<CopilotQuota & { accountId?: string; email?: string }> }> {
+        const start = performance.now();
         const allAccounts = await this.authService.getAllAccountsFull();
         const copilotAccounts = allAccounts.filter(a => a.provider === 'copilot' || a.provider === 'github');
         const uniqueAccounts = this.deduplicateCopilotAccounts(copilotAccounts);
@@ -306,6 +333,8 @@ export class QuotaService {
                 results.push({ ...quota, accountId: account.id, email: account.email });
             }
         }
+        appLogger.info('QuotaService', `${QuotaTelemetryEvent.COPILOT_QUOTA_FETCHED}: ${results.length} accounts`);
+        this.warnIfOverBudget('getCopilotQuota', start, QUOTA_PERFORMANCE_BUDGETS.FETCH_COPILOT_QUOTA_MS);
         return { accounts: results };
     }
 

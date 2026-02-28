@@ -3,7 +3,7 @@
  * Allows users to run multiple LLMs simultaneously and compare/combine results
  */
 
-import { CheckCircle2, Copy, Loader2, Sparkles, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Copy, Loader2, RefreshCw, Sparkles, XCircle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { ResponsiveContainer } from '@/components/responsive/ResponsiveContainer';
@@ -261,6 +261,22 @@ export function MultiModelCollaboration({
                     <h3 className="text-lg font-semibold">{t('chat.collaboration.title')}</h3>
                 </div>
 
+                {/* No Models Available State */}
+                {availableModels.length === 0 && (
+                    <div className="p-4 bg-muted/50 border border-muted rounded-md text-center space-y-2">
+                        <AlertTriangle className="w-6 h-6 text-warning mx-auto" />
+                        <p className="text-sm text-muted-foreground">{t('chat.collaboration.noModelsAvailable')}</p>
+                    </div>
+                )}
+
+                {/* Empty State - no models selected */}
+                {availableModels.length > 0 && selectedModels.length === 0 && !isRunning && !results && (
+                    <div className="p-4 bg-muted/50 border border-dashed border-muted-foreground/25 rounded-md text-center space-y-1">
+                        <p className="text-sm font-medium">{t('chat.collaboration.emptyStateTitle')}</p>
+                        <p className="text-xs text-muted-foreground">{t('chat.collaboration.emptyStateDescription')}</p>
+                    </div>
+                )}
+
                 {/* Model Selection */}
                 <div className="space-y-2">
                     <label className="text-sm font-medium">{t('chat.collaboration.selectedModels')}</label>
@@ -444,11 +460,31 @@ export function MultiModelCollaboration({
                     )}
                 </Button>
 
-                {/* Error Display */}
+                {/* Error Display with Retry */}
                 {error && (
-                    <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md flex items-center gap-2">
-                        <XCircle className="w-4 h-4 text-destructive" />
-                        <span className="text-sm text-destructive">{error}</span>
+                    <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md space-y-2">
+                        <div className="flex items-center gap-2">
+                            <XCircle className="w-4 h-4 text-destructive shrink-0" />
+                            <span className="text-sm text-destructive flex-1">{error}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => { void (async () => { await handleRun(); })(); }}
+                                disabled={isRunning || selectedModels.length === 0}
+                            >
+                                <RefreshCw className="w-3 h-3 mr-1" />
+                                {t('chat.collaboration.retry')}
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => { setError(null); }}
+                            >
+                                {t('chat.collaboration.dismiss')}
+                            </Button>
+                        </div>
                     </div>
                 )}
 

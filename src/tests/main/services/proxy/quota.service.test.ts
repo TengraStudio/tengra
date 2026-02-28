@@ -400,4 +400,84 @@ describe('QuotaService', () => {
             expect(result).not.toBeNull();
         });
     });
+
+    describe('deduplicateCopilotAccounts edge cases', () => {
+        it('should handle non-array input gracefully', () => {
+            const dedup = (quotaService as unknown as { deduplicateCopilotAccounts: (a: unknown) => LinkedAccount[] })
+                .deduplicateCopilotAccounts;
+            expect(dedup.call(quotaService, null)).toEqual([]);
+            expect(dedup.call(quotaService, undefined)).toEqual([]);
+            expect(dedup.call(quotaService, 'not-array')).toEqual([]);
+        });
+
+        it('should return empty for empty array', () => {
+            const dedup = (quotaService as unknown as { deduplicateCopilotAccounts: (a: LinkedAccount[]) => LinkedAccount[] })
+                .deduplicateCopilotAccounts;
+            expect(dedup.call(quotaService, [])).toEqual([]);
+        });
+
+        it('should return single account directly without dedup', () => {
+            const dedup = (quotaService as unknown as { deduplicateCopilotAccounts: (a: LinkedAccount[]) => LinkedAccount[] })
+                .deduplicateCopilotAccounts;
+            const single = [{ id: 'a1', provider: 'github', email: 'u@x.com', accessToken: 'tok' } as LinkedAccount];
+            expect(dedup.call(quotaService, single)).toHaveLength(1);
+        });
+
+        it('should skip accounts with no email and no token', () => {
+            const dedup = (quotaService as unknown as { deduplicateCopilotAccounts: (a: LinkedAccount[]) => LinkedAccount[] })
+                .deduplicateCopilotAccounts;
+            const accs = [{ id: 'a1', provider: 'github' } as LinkedAccount];
+            expect(dedup.call(quotaService, accs)).toEqual([]);
+        });
+    });
+
+    describe('getLegacyQuota', () => {
+        it('should return success false when codex handler returns null', async () => {
+            (quotaService as unknown as { codexHandler: { fetchCodexUsage: ReturnType<typeof vi.fn> } })
+                .codexHandler.fetchCodexUsage = vi.fn().mockResolvedValue(null);
+            const result = await quotaService.getLegacyQuota();
+            expect(result.success).toBe(false);
+        });
+
+        it('should return success true with quota data', async () => {
+            const mockUsage = { rate_limit: { primary_window: { used_percent: 0.25 } } };
+            (quotaService as unknown as { codexHandler: { fetchCodexUsage: ReturnType<typeof vi.fn>; parseCodexUsageToQuota: ReturnType<typeof vi.fn> } })
+                .codexHandler.fetchCodexUsage = vi.fn().mockResolvedValue(mockUsage);
+            (quotaService as unknown as { codexHandler: { parseCodexUsageToQuota: ReturnType<typeof vi.fn> } })
+                .codexHandler.parseCodexUsageToQuota = vi.fn().mockReturnValue({ status: 'ok', models: [] });
+            const result = await quotaService.getLegacyQuota();
+            expect(result.success).toBe(true);
+        });
+    });
+
+    describe('getAntigravityAvailableModels', () => {
+        it('should return empty array when no antigravity accounts', async () => {
+            vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([]);
+            const result = await quotaService.getAntigravityAvailableModels();
+            expect(result).toEqual([]);
+        });
+
+        it('should return empty array when handler returns null', async () => {
+            vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([
+                { id: 'a1', provider: 'antigravity-1', email: 'e@x.com', accessToken: 'tok' } as LinkedAccount
+            ]);
+            (quotaService as unknown as { antigravityHandler: { fetchAntigravityUpstreamForToken: ReturnType<typeof vi.fn> } })
+                .antigravityHandler.fetchAntigravityUpstreamForToken = vi.fn().mockResolvedValue(null);
+            const result = await quotaService.getAntigravityAvailableModels();
+            expect(result).toEqual([]);
+        });
+    });
+
+    describe('performance budget instrumentation', () => {
+        it('should not warn when operations complete quickly', async () => {
+            const { appLogger: mockLogger } = await import('@main/logging/logger');
+            vi.mocked(mockLogger.warn).mockClear();
+            vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([]);
+            await quotaService.getQuota(8080, 'key');
+            const budgetWarnings = vi.mocked(mockLogger.warn).mock.calls.filter(
+                (c) => typeof c[1] === 'string' && c[1].includes('exceeded budget')
+            );
+            expect(budgetWarnings).toHaveLength(0);
+        });
+    });
 });

@@ -24,7 +24,6 @@ vi.mock('@main/logging/logger', () => ({
     appLogger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() }
 }));
 
-import type { Dirent } from 'fs';
 import * as fsp from 'fs/promises';
 import * as path from 'path';
 
@@ -128,7 +127,7 @@ describe('DataService Integration', () => {
             expect(eventNames).toContain(DataServiceTelemetryEvent.INITIALIZE_START);
             expect(eventNames).toContain(DataServiceTelemetryEvent.INITIALIZE_COMPLETE);
             expect(eventNames.filter(
-                (e: string) => e === DataServiceTelemetryEvent.PATH_ACCESSED
+                (e): boolean => e === DataServiceTelemetryEvent.PATH_ACCESSED
             ).length).toBe(2);
         });
 
@@ -164,7 +163,7 @@ describe('DataService Integration', () => {
 
         it('should survive migrate when rename throws', async () => {
             vi.mocked(fsp.access).mockResolvedValue(undefined);
-            vi.mocked(fsp.readdir).mockResolvedValue(['file.txt'] as unknown as Dirent[]);
+            vi.mocked(fsp.readdir).mockResolvedValue([] as Awaited<ReturnType<typeof fsp.readdir>>);
             vi.mocked(fsp.rename).mockRejectedValue(new Error('EPERM'));
             await expect(service.migrate()).resolves.toBeUndefined();
         });
@@ -235,9 +234,11 @@ describe('DataService Integration', () => {
         });
 
         it('should validate path traversal protection', () => {
-            const base = service.getBaseDir();
-            expect(service.validatePath(base, base)).toBe(true);
-            expect(service.validatePath(path.join(base, '..', 'etc'), base)).toBe(false);
+            const root = path.resolve('/safe/root');
+            const inside = path.join(root, 'sub', 'file.txt');
+            const outside = path.resolve('/other/dir');
+            expect(service.validatePath(inside, root)).toBe(true);
+            expect(service.validatePath(outside, root)).toBe(false);
         });
     });
 

@@ -1,4 +1,4 @@
-import { sanitizeCodeEditorLanguage } from '@renderer/features/projects/components/ide/code-editor-validation';
+import { sanitizeCodeEditorLanguage } from '@/components/ui/code-editor-validation';
 import { describe, expect, it } from 'vitest';
 
 describe('code editor validation', () => {
