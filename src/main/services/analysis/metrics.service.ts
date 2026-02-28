@@ -1,11 +1,26 @@
 /**
  * Performance Metrics Service
- * Tracks API latencies, request counts, and system performance
+ * Tracks API latencies, request counts, system performance, and error rate alerting
  */
 
 import { EventEmitter } from 'events';
 
-import { JsonValue } from '@shared/types/common';
+import { appLogger } from '@main/logging/logger';
+
+/** Configuration for error rate alerting thresholds */
+export interface ErrorRateThresholdConfig {
+    /** Max errors allowed per window before warning */
+    maxErrorsPerWindow: number;
+    /** Time window in milliseconds */
+    windowMs: number;
+}
+
+const DEFAULT_ERROR_RATE_THRESHOLDS: ErrorRateThresholdConfig = {
+    maxErrorsPerWindow: 10,
+    windowMs: 60_000,
+};
+
+const MAX_ERROR_TIMESTAMPS = 500;
 
 export interface MetricData {
     name: string
@@ -30,6 +45,9 @@ export class MetricsService extends EventEmitter {
     private metrics: Map<string, MetricData[]> = new Map();
     private providerStats: Map<string, ProviderMetrics> = new Map();
     private readonly maxDataPoints = 1000; // Per metric
+    private errorTimestamps: number[] = [];
+    private errorRateConfig: ErrorRateThresholdConfig = { ...DEFAULT_ERROR_RATE_THRESHOLDS };
+    private lastAlertAt = 0;
 
     constructor() {
         super();
@@ -92,6 +110,7 @@ export class MetricsService extends EventEmitter {
             stats.successCount++;
         } else {
             stats.errorCount++;
+            this.trackError();
         }
         stats.totalLatencyMs += durationMs;
         stats.avgLatencyMs = stats.totalLatencyMs / stats.requestCount;
@@ -164,11 +183,42 @@ export class MetricsService extends EventEmitter {
     }
 
     /**
+     * Configure error rate alerting thresholds
+     */
+    setErrorRateThresholds(config: Partial<ErrorRateThresholdConfig>): void {
+        if (config.maxErrorsPerWindow !== undefined) {
+            this.errorRateConfig.maxErrorsPerWindow = config.maxErrorsPerWindow;
+        }
+        if (config.windowMs !== undefined) {
+            this.errorRateConfig.windowMs = config.windowMs;
+        }
+    }
+
+    /** Track an error and check if threshold is exceeded */
+    private trackError(): void {
+        const now = Date.now();
+        this.errorTimestamps.push(now);
+        if (this.errorTimestamps.length > MAX_ERROR_TIMESTAMPS) {
+            this.errorTimestamps = this.errorTimestamps.slice(-MAX_ERROR_TIMESTAMPS);
+        }
+        const cutoff = now - this.errorRateConfig.windowMs;
+        const recentErrors = this.errorTimestamps.filter(t => t >= cutoff).length;
+        const cooldown = this.errorRateConfig.windowMs;
+        if (recentErrors >= this.errorRateConfig.maxErrorsPerWindow && now - this.lastAlertAt > cooldown) {
+            this.lastAlertAt = now;
+            appLogger.warn('MetricsService', `Error rate threshold exceeded: ${recentErrors} errors in ${this.errorRateConfig.windowMs / 1000}s (threshold: ${this.errorRateConfig.maxErrorsPerWindow})`);
+            this.emit('error-rate-exceeded', { count: recentErrors, windowMs: this.errorRateConfig.windowMs });
+        }
+    }
+
+    /**
      * Reset all metrics
      */
     reset() {
         this.metrics.clear();
         this.providerStats.clear();
+        this.errorTimestamps = [];
+        this.lastAlertAt = 0;
     }
 
     /**
@@ -186,30 +236,4 @@ let instance: MetricsService | null = null;
 export function getMetricsService(): MetricsService {
     instance ??= new MetricsService();
     return instance;
-}
-
-/**
- * Decorator to automatically measure method duration
- */
-export function measureDuration(provider: string) {
-    return function (_target: object, _propertyKey: string, descriptor: PropertyDescriptor) {
-        const original = descriptor.value;
-
-        descriptor.value = async function (...args: Array<JsonValue | object | null | undefined>) {
-            const metrics = getMetricsService();
-            const timer = metrics.startTimer();
-            let success = true;
-
-            try {
-                return await original.apply(this, args);
-            } catch (error) {
-                success = false;
-                throw error;
-            } finally {
-                metrics.recordRequest(provider, timer(), success);
-            }
-        };
-
-        return descriptor;
-    };
 }

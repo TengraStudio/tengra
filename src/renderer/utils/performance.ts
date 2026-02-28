@@ -80,36 +80,3 @@ class PerformanceMonitor {
 
 // Singleton instance
 export const performanceMonitor = new PerformanceMonitor();
-
-// Convenience function for timing async operations
-export async function measureAsync<T>(name: string, fn: () => Promise<T>): Promise<T> {
-    const startMark = `${name}-start`;
-    const endMark = `${name}-end`;
-
-    performanceMonitor.mark(startMark);
-    try {
-        const result = await fn();
-        performanceMonitor.mark(endMark);
-        performanceMonitor.measure(name, startMark, endMark);
-        return result;
-    } catch (error) {
-        performanceMonitor.mark(endMark);
-        performanceMonitor.measure(`${name} (failed)`, startMark, endMark);
-        throw error;
-    }
-}
-
-// React hook for component render timing
-export function useRenderTiming(componentName: string): void {
-    const startTime = Date.now();
-
-    // Use useEffect to mark when component is mounted
-    if (typeof window !== 'undefined') {
-        setTimeout(() => {
-            const renderTime = Date.now() - startTime;
-            if (process.env.NODE_ENV === 'development' && renderTime > 100) {
-                appLogger.warn('Performance', `Slow render: ${componentName} took ${renderTime}ms`);
-            }
-        }, 0);
-    }
-}

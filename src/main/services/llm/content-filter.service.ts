@@ -83,8 +83,8 @@ function getApiSecretPatterns(): ContentFilterPattern[] {
         { label: 'github-pat', category: 'api-secret', regex: /\bghp_[A-Za-z0-9]{36}\b/ },
         { label: 'github-oauth', category: 'api-secret', regex: /\bgho_[A-Za-z0-9]{36}\b/ },
         { label: 'github-app-token', category: 'api-secret', regex: /\bghs_[A-Za-z0-9]{36}\b/ },
-        { label: 'gitlab-pat', category: 'api-secret', regex: /\bglpat-[A-Za-z0-9\-_]{20,}\b/ },
-        { label: 'slack-token', category: 'api-secret', regex: /\bxox[bpras]-[A-Za-z0-9\-]{10,}\b/ },
+        { label: 'gitlab-pat', category: 'api-secret', regex: /\bglpat-[A-Za-z0-9-_]{20,}\b/ },
+        { label: 'slack-token', category: 'api-secret', regex: /\bxox[bpras]-[A-Za-z0-9-]{10,}\b/ },
     ];
 }
 
@@ -111,7 +111,7 @@ function getSystemExtractionPatterns(): ContentFilterPattern[] {
 }
 
 /** Returns the full default set of content filter patterns */
-export function getDefaultFilterPatterns(): ContentFilterPattern[] {
+function getDefaultFilterPatterns(): ContentFilterPattern[] {
     return [
         ...getScriptInjectionPatterns(),
         ...getPrivateKeyPatterns(),

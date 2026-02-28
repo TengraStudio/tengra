@@ -51,7 +51,7 @@ export async function batchInvoke(requests: BatchRequest[]): Promise<BatchRespon
 /**
  * Execute multiple IPC calls sequentially as a single batch
  */
-export async function batchInvokeSequential(requests: BatchRequest[]): Promise<BatchResponse> {
+async function batchInvokeSequential(requests: BatchRequest[]): Promise<BatchResponse> {
     return window.electron.batch.invokeSequential(requests);
 }
 
@@ -59,7 +59,7 @@ export async function batchInvokeSequential(requests: BatchRequest[]): Promise<B
  * Helper to extract results from batch response
  * Returns a map of channel -> result for easy access
  */
-export function extractBatchResults(response: BatchResponse): Map<string, IpcValue> {
+function extractBatchResults(response: BatchResponse): Map<string, IpcValue> {
     const results = new Map<string, IpcValue>();
 
     response.results.forEach(result => {

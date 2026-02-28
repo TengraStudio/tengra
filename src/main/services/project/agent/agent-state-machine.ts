@@ -176,13 +176,6 @@ function isLifecycleEvent(type: AgentEvent['type']): boolean {
     return ['START_TASK', 'TASK_VALIDATED', 'TASK_COMPLETE', 'TASK_FAILED', 'PAUSE', 'RESUME', 'STOP'].includes(type);
 }
 
-/**
- * Check if task is in a "stuck" waiting state that requires recovery
- */
-export function isStuckWaitingState(state: AgentState): boolean {
-    return ['waiting_llm', 'waiting_tool', 'waiting_user'].includes(state);
-}
-
 function handleLifecycleEvents(state: AgentTaskState, event: AgentEvent): AgentTaskState {
     switch (event.type) {
         case 'START_TASK': return handleStartTask(state, event as Extract<AgentEvent, { type: 'START_TASK' }>);
