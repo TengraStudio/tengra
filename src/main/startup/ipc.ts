@@ -247,7 +247,7 @@ export async function registerIpcHandlers(
     });
 
     // Workflow Automation
-    registerWorkflowIpc(services.workflowService);
+    registerWorkflowIpc(getMainWindow, services.workflowService);
 
     // Register Batch IPC
     registerBatchIpc();

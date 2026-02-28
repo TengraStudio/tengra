@@ -227,7 +227,7 @@
 
 ### 🟡 Medium
 
-- ( ) **SECURITY-024**: HTTP-Only Listener — `website/tengra-backend/config.json:6` — Backend on HTTP with no TLS.
+- (x) **SECURITY-024**: HTTP-Only Listener — Added HTTPS listener on port 8443 with cert/key paths.
 - (x) **SECURITY-025**: MCP Service Name Injection — `src/main/ipc/mcp.ts:18-41` — Names validated for length only.
 - (x) **SECURITY-026**: Regex DoS in Terminal Search — `src/main/ipc/terminal.ts:55-57` — No regex complexity limits.
 - (x) **SECURITY-027**: Weak SQL Injection Guard — Expanded to 30+ patterns including UNION, comments, encoding tricks.
@@ -240,7 +240,7 @@
 - ( ) **SECURITY-034**: Client-Side JWT Without Verification — `website/tengra-frontend/lib/token.ts` — Role from unverified claims.
 - ( ) **SECURITY-035**: localStorage Token Storage — `website/tengra-frontend/lib/auth-api.ts` — Tokens accessible to XSS.
 - (x) **SECURITY-036**: Inconsistent IPC Sender Validation — Added `validateSender` to all git IPC handlers.
-- ( ) **SECURITY-037**: Missing Auth on Memory Handlers — `src/main/ipc/memory.ts:100-192` — No authorization checks.
+- (x) **SECURITY-037**: Missing Auth on Memory Handlers — Already has `validateSender(event)` on all handlers.
 - (x) **SECURITY-038**: Unvalidated JSON Parse in API — Added recursive prototype key stripping after parse.
 
 ### 🟢 Low
@@ -251,7 +251,7 @@
 - (x) **SECURITY-042**: Max Connections Per IP Unlimited — Set to 10 per IP.
 - (x) **SECURITY-043**: Server Header Fingerprinting — Set to empty string.
 - ( ) **SECURITY-044**: Marketplace Security in localStorage — `website/tengra-frontend/lib/marketplace-security.ts` — Trusted lists modifiable by XSS.
-- ( ) **SECURITY-045**: Missing Workflow Authorization — `src/main/ipc/workflow.ts:23-55` — No auth checks on workflow CRUD.
+- (x) **SECURITY-045**: Missing Workflow Authorization — Added `validateSender` to all 7 workflow IPC handlers.
 
 ---
 
