@@ -219,4 +219,51 @@ describe('DatabaseClientService input validation', () => {
                 .rejects.toThrow('query must be a non-empty string');
         });
     });
+
+    // B-0494: Connection pool metrics before initialization
+    describe('connection pool metrics', () => {
+        it('returns initial pool metrics', () => {
+            const metrics = svc.getConnectionPoolMetrics();
+            expect(metrics.maxSockets).toBe(10);
+            expect(metrics.maxFreeSockets).toBe(5);
+            expect(metrics.pendingRequests).toBe(0);
+            expect(metrics.totalRequests).toBe(0);
+            expect(metrics.errorRate).toBe(0);
+        });
+    });
+
+    // B-0494: setPoolLimits validation
+    describe('setPoolLimits', () => {
+        it('clamps maxPendingRequests to at least 1', () => {
+            svc.setPoolLimits({ maxPendingRequests: 0 });
+            const metrics = svc.getConnectionPoolMetrics();
+            expect(metrics.maxPendingRequests).toBeGreaterThanOrEqual(1);
+        });
+
+        it('accepts valid pool config', () => {
+            svc.setPoolLimits({ maxSockets: 20, maxFreeSockets: 8, maxPendingRequests: 50 });
+            const metrics = svc.getConnectionPoolMetrics();
+            expect(metrics.maxSockets).toBe(20);
+            expect(metrics.maxFreeSockets).toBe(8);
+            expect(metrics.maxPendingRequests).toBe(50);
+        });
+    });
+
+    // B-0494: isConnected returns false before initialization
+    describe('isConnected', () => {
+        it('returns false when not initialized', () => {
+            expect(svc.isConnected()).toBe(false);
+        });
+    });
+
+    // B-0493: Path traversal validation
+    describe('path traversal prevention', () => {
+        it('rejects backslash in chatId', async () => {
+            await expect(svc.getChat('a\\b')).rejects.toThrow('contains invalid characters');
+        });
+
+        it('rejects space in projectId', async () => {
+            await expect(svc.getProject('a b')).rejects.toThrow('contains invalid characters');
+        });
+    });
 });

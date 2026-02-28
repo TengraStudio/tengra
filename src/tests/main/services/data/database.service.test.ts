@@ -341,4 +341,124 @@ describe('DatabaseService', () => {
             expect(() => service.setConnectionPoolConfig({ maxSockets: 5 })).not.toThrow();
         });
     });
+
+    // B-0491: Edge case tests for compression
+    describe('compression roundtrip', () => {
+        it('vector embedding compresses and decompresses correctly', () => {
+            const vector = [0.1, 0.2, 0.3, -0.5, 1.0];
+            const compressed = service.compressVectorEmbedding(vector);
+            const decompressed = service.decompressVectorEmbedding(compressed);
+            expect(decompressed.length).toBe(vector.length);
+            decompressed.forEach((val, i) => {
+                expect(val).toBeCloseTo(vector[i], 4);
+            });
+        });
+
+        it('empty vector compresses to non-empty string', () => {
+            const compressed = service.compressVectorEmbedding([]);
+            expect(compressed.length).toBeGreaterThan(0);
+            const decompressed = service.decompressVectorEmbedding(compressed);
+            expect(decompressed).toEqual([]);
+        });
+
+        it('message history compresses and decompresses correctly', () => {
+            const messages = [{ role: 'user', content: 'hello' }, { role: 'assistant', content: 'hi' }];
+            const compressed = service.compressMessageHistory(messages);
+            const decompressed = service.decompressMessageHistory(compressed);
+            expect(decompressed).toEqual(messages);
+        });
+
+        it('compression metrics track operations', () => {
+            service.compressVectorEmbedding([1, 2, 3]);
+            const metrics = service.getCompressionMetrics();
+            expect(metrics.operations).toBeGreaterThanOrEqual(1);
+            expect(metrics.rawBytes).toBeGreaterThan(0);
+            expect(metrics.ratio).toBeGreaterThan(0);
+        });
+    });
+
+    // B-0491: Replication and sharding config edge cases
+    describe('replication config', () => {
+        it('returns default config', () => {
+            const config = service.getReplicationConfig();
+            expect(config.enabled).toBe(false);
+            expect(config.lagThresholdMs).toBe(5_000);
+        });
+
+        it('merges partial config', () => {
+            const updated = service.setReplicationConfig({ enabled: true });
+            expect(updated.enabled).toBe(true);
+            expect(updated.lagThresholdMs).toBe(5_000);
+        });
+    });
+
+    describe('sharding config', () => {
+        it('returns default config', () => {
+            const config = service.getShardingConfig();
+            expect(config.enabled).toBe(false);
+            expect(config.shardCount).toBe(1);
+        });
+
+        it('clamps shardCount to minimum of 1', () => {
+            const updated = service.setShardingConfig({ shardCount: 0 });
+            expect(updated.shardCount).toBe(1);
+        });
+
+        it('getShardForKey returns deterministic shard index', () => {
+            service.setShardingConfig({ shardCount: 4 });
+            const shard1 = service.getShardForKey('test-key');
+            const shard2 = service.getShardForKey('test-key');
+            expect(shard1).toBe(shard2);
+            expect(shard1).toBeGreaterThanOrEqual(0);
+            expect(shard1).toBeLessThan(4);
+        });
+    });
+
+    // B-0491: Vector cache eviction
+    describe('vector cache eviction', () => {
+        it('clearVectorSearchCache resets analytics', () => {
+            service.clearVectorSearchCache();
+            const analytics = service.getVectorSearchAnalytics();
+            expect(analytics.codeSymbols.queries).toBe(0);
+            expect(analytics.semanticFragments.queries).toBe(0);
+        });
+    });
+
+    // B-0491: Connection health proxy
+    describe('connection health', () => {
+        it('delegates to dbClient.testConnection', async () => {
+            const dbClient = (service as unknown as { dbClient: { testConnection: ReturnType<typeof vi.fn> } }).dbClient;
+            dbClient.testConnection = vi.fn().mockResolvedValue({ healthy: true, latencyMs: 5 });
+            const result = await service.getConnectionHealth(3_000);
+            expect(dbClient.testConnection).toHaveBeenCalledWith(3_000);
+            expect(result.healthy).toBe(true);
+        });
+    });
+
+    // B-0494: Performance budgets are defined
+    describe('performance budgets', () => {
+        it('DATABASE_PERFORMANCE_BUDGETS has all required keys', async () => {
+            const { DATABASE_PERFORMANCE_BUDGETS: budgets } = await import('@main/services/data/database.service');
+            expect(budgets.QUERY_MS).toBe(5000);
+            expect(budgets.BATCH_MS).toBe(10000);
+            expect(budgets.BACKUP_MS).toBe(30000);
+            expect(budgets.MIGRATION_MS).toBe(60000);
+            expect(budgets.INITIALIZE_MS).toBe(10000);
+            expect(budgets.CLEANUP_MS).toBe(5000);
+        });
+    });
+
+    // B-0495: Telemetry event enum completeness
+    describe('telemetry events', () => {
+        it('DatabaseServiceTelemetryEvent has all expected events', async () => {
+            const { DatabaseServiceTelemetryEvent: evt } = await import('@main/services/data/database.service');
+            expect(evt.QUERY_EXECUTED).toBe('db_query_executed');
+            expect(evt.QUERY_FAILED).toBe('db_query_failed');
+            expect(evt.BATCH_EXECUTED).toBe('db_batch_executed');
+            expect(evt.BACKUP_CREATED).toBe('db_backup_created');
+            expect(evt.MIGRATION_RUN).toBe('db_migration_run');
+            expect(evt.CONNECTION_OPENED).toBe('db_connection_opened');
+            expect(evt.CONNECTION_CLOSED).toBe('db_connection_closed');
+        });
+    });
 });
