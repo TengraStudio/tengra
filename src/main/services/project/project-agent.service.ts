@@ -862,14 +862,22 @@ export class ProjectAgentService extends BaseService {
             return { success: true, telemetry: [] as TaskMetrics[] };
         }
 
+        const checkpoint = await this.agentCheckpointService.getLatestCheckpoint(taskId);
+        const state = checkpoint?.state;
+
+        const providerNames = (state?.providerHistory ?? []).map(
+            (p: { provider: string }) => p.provider
+        );
+        const uniqueProviders = Array.from(new Set(providerNames));
+
         const telemetry: TaskMetrics = {
             duration: metrics.resources.totalExecutionTimeMs,
             llmCalls: metrics.resources.apiCallCount,
-            toolCalls: 0,
+            toolCalls: state?.metrics?.toolCalls ?? 0,
             tokensUsed: metrics.resources.totalTokensUsed,
-            providersUsed: [],
+            providersUsed: uniqueProviders,
             errorCount: metrics.errors.totalErrors,
-            recoveryCount: 0,
+            recoveryCount: state?.recoveryAttempts ?? 0,
             estimatedCost: metrics.resources.totalCostUsd,
         };
         return { success: true, telemetry: [telemetry] };
