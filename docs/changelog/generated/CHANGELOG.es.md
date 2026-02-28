@@ -1,5 +1,17 @@
 # Registro de cambios
 
+## [2026-02-28]
+
+### Seguridad de tipos estricta: resolución de conversiones de tipos desconocidos y de cualquier tipo
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Se resolvieron violaciones de seguridad de tipos pendientes al eliminar las conversiones de tipos inseguras `any` y `unknown` en el renderizador y los procesos principales, aplicando estrictas reglas de escritura de Tengra.
+
+- **Seguridad del tipo de renderizador**: se agregaron justificaciones `// SAFETY:` obligatorias y límites de tipo estrictos para todas las instancias de conversión `unknown` restantes en el renderizador, incluidas `useAgentHandlers`, `SessionSetup`, `useVoice`, `TerminalConnectionSelector`, `ipc-client` y `voice.store`.
+- **Seguridad del proceso principal**: Verificado que el directorio `src/main` no contiene errores de tipo ni violaciones inseguras de ESLint `any`/`unknown`.
+- **Calidad del código**: Fuerza de diez de la NASA aplicada y controles estrictos de compilación TypeScript, lo que permite que la aplicación pase con éxito `npm run type-check` y `npm run build` sin advertencias ni discrepancias de tipos.
+
 ## [2026-02-27]
 
 ### Refinamiento de la modularización de precarga y revisión de la seguridad de tipos

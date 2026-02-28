@@ -134,6 +134,7 @@ export async function registerIpcHandlers(
     registerProjectIpc(getMainWindow, {
         projectService: services.projectService,
         logoService,
+        inlineSuggestionService: services.inlineSuggestionService,
         codeIntelligenceService: services.codeIntelligenceService,
         jobSchedulerService: services.jobSchedulerService,
         databaseService: services.databaseService,

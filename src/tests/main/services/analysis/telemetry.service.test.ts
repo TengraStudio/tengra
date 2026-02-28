@@ -2,7 +2,8 @@
  * Unit tests for TelemetryService (BACKLOG-0461)
  */
 import { TelemetryErrorCode, TelemetryService } from '@main/services/analysis/telemetry.service';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SettingsService } from '@main/services/system/settings.service';
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
 // Mock the logger
 vi.mock('@main/logging/logger', () => ({
@@ -19,9 +20,13 @@ vi.mock('uuid', () => ({
     v4: vi.fn().mockReturnValue('test-uuid-1234')
 }));
 
+interface MockSettingsService {
+    getSettings: MockInstance;
+}
+
 describe('TelemetryService', () => {
     let service: TelemetryService;
-    let mockSettingsService: any;
+    let mockSettingsService: MockSettingsService;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -34,7 +39,9 @@ describe('TelemetryService', () => {
             })
         };
 
-        service = new TelemetryService(mockSettingsService);
+        service = new TelemetryService(
+            mockSettingsService as unknown as SettingsService
+        );
     });
 
     afterEach(() => {
@@ -79,17 +86,25 @@ describe('TelemetryService', () => {
         });
 
         it('should generate unique IDs for each event', () => {
-            service.track('event1');
-            service.track('event2');
-            service.track('event3');
+            const r1 = service.track('event1');
+            const r2 = service.track('event2');
+            const r3 = service.track('event3');
+            expect(r1.success).toBe(true);
+            expect(r2.success).toBe(true);
+            expect(r3.success).toBe(true);
+            expect(service.getQueueSize()).toBe(3);
         });
 
         it('should include session ID in all events', () => {
             service.track('test.event');
+            const health = service.getHealth();
+            expect(health.sessionId).toBe('test-uuid-1234');
         });
 
         it('should include timestamp in events', () => {
-            service.track('test.event');
+            const result = service.track('test.event');
+            expect(result.success).toBe(true);
+            expect(service.getTotalTrackedEvents()).toBe(1);
         });
 
         it('should handle very large properties object', () => {
@@ -139,12 +154,16 @@ describe('TelemetryService', () => {
             service.track('event1');
             service.track('event2');
             service.track('event3');
+            expect(service.getQueueSize()).toBe(3);
+            expect(service.getTotalTrackedEvents()).toBe(3);
         });
 
         it('should handle rapid successive track calls', () => {
             for (let i = 0; i < 100; i++) {
                 service.track(`event${i}`);
             }
+            expect(service.getQueueSize()).toBe(100);
+            expect(service.getTotalTrackedEvents()).toBe(100);
         });
     });
 

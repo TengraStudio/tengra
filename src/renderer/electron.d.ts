@@ -2,6 +2,7 @@ import type { IpcContractVersionInfo } from '@shared/constants/ipc-contract';
 import type {
     InlineSuggestionRequest,
     InlineSuggestionResponse,
+    InlineSuggestionTelemetry,
 } from '@shared/schemas/inline-suggestions.schema';
 import type { IpcRendererEvent } from 'electron';
 
@@ -501,6 +502,9 @@ export interface ElectronAPI {
         applyLogo: (projectPath: string, tempLogoPath: string) => Promise<string>;
         getCompletion: (text: string) => Promise<string>;
         getInlineSuggestion: (request: InlineSuggestionRequest) => Promise<InlineSuggestionResponse>;
+        trackInlineSuggestionTelemetry: (
+            event: InlineSuggestionTelemetry
+        ) => Promise<{ success: boolean }>;
         improveLogoPrompt: (prompt: string) => Promise<string>;
         uploadLogo: (projectPath: string) => Promise<string | null>;
         analyzeDirectory: (dirPath: string) => Promise<{
@@ -2542,6 +2546,10 @@ export interface ElectronAPI {
         getProfile: (extensionId: string) => Promise<{
             success: boolean;
             profile?: import('@shared/types/extension').ExtensionProfileData;
+        }>;
+        getState: (extensionId: string) => Promise<{
+            success: boolean;
+            state?: { global: Record<string, unknown>; workspace: Record<string, unknown> };
         }>;
         validate: (manifest: unknown) => Promise<{ valid: boolean; errors: string[] }>;
     };

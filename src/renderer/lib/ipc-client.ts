@@ -4,7 +4,7 @@ import {
     type IpcContractVersionInfo,
     isIpcContractCompatible,
 } from '@shared/constants/ipc-contract';
-import { IpcContractEntry,IpcContractMap, IpcValue } from '@shared/types/common';
+import { IpcContractEntry, IpcContractMap, IpcValue } from '@shared/types/common';
 import { z, ZodError, ZodType } from 'zod';
 
 const DEFAULT_MAX_ATTEMPTS = 3;
@@ -168,5 +168,6 @@ export async function invokeTypedIpc<
     args: TContract[TChannel]['args'],
     options: IpcInvokeOptions<TContract[TChannel]['response']>
 ): Promise<TContract[TChannel]['response']> {
+    // SAFETY: The args conform to the strict contract schema at design-time but need to be coerced to IpcValue[] for the underlying generic IPC transport.
     return invokeIpc<TContract[TChannel]['response']>(channel, args as unknown as IpcValue[], options);
 }

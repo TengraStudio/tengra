@@ -160,6 +160,7 @@ function handleVoiceEvent(event: VoiceEvent): void {
             break;
         case 'settings-updated':
             if (event.data && typeof event.data === 'object') {
+                // SAFETY: We expect consistent VoiceSettings payload shape from the event source at runtime, maintained by the IPC boundary.
                 store.settings = event.data as unknown as VoiceSettings;
             }
             break;

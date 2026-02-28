@@ -76,8 +76,10 @@ export const useAgentHandlers = ({
 
     useEffect(() => {
         const unsubscribe = window.electron.onAgentEvent((payload: unknown) => {
-            const typedPayload = payload as { type: string; data?: { taskId?: string; reason?: string } };
-            if (typedPayload.type === 'agent:interrupt_required' && typedPayload.data?.taskId === selectedTaskId) {
+            // SAFETY: We expect this specific shape from the agent event bus for interrupts.
+            // If the payload doesn't match, the optional chaining will safely ignore it.
+            const typedPayload = payload as { type?: string; data?: { taskId?: string; reason?: string } };
+            if (typedPayload?.type === 'agent:interrupt_required' && typedPayload?.data?.taskId === selectedTaskId) {
                 setInterruptReason(typedPayload.data.reason ?? 'Manual intervention required');
                 setIsInterruptModalOpen(true);
             }

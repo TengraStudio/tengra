@@ -163,6 +163,9 @@ node_modules/
 docs/components_checklist.md
 docs/changelog/i18n/.tr.translation.cache.json
 
+# Security-sensitive files (must be in secure storage, not repository root)
+tengra_key.txt
+
 # Binaries
 reports/**
 .claude/settings.local.json

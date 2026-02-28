@@ -1,5 +1,17 @@
 # Änderungsprotokoll
 
+## [2026-02-28]
+
+### Strenge Typsicherheit: Auflösung beliebiger und unbekannter Typumwandlungen
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Ausstehende Verstöße gegen die Typsicherheit wurden behoben, indem unsichere Typumwandlungen vom Typ `any` und `unknown` im Renderer und in den Hauptprozessen eliminiert wurden, wodurch strenge Tengra-Typisierungsregeln durchgesetzt wurden.
+
+- **Renderer-Typsicherheit**: Für alle verbleibenden `unknown`-Cast-Instanzen im Renderer wurden obligatorische `// SAFETY:`-Begründungen und strenge Typgrenzen hinzugefügt, einschließlich `useAgentHandlers`, `SessionSetup`, `useVoice`, `TerminalConnectionSelector`, `ipc-client` und `voice.store`.
+- **Hauptprozesssicherheit**: Es wurde überprüft, dass das Verzeichnis `src/main` keine Typfehler und keine unsicheren `any`/`unknown` ESLint-Verstöße enthält.
+- **Codequalität**: Erzwungene NASA-Zehnerpotenz und strenge TypeScript-Kompilierungsprüfungen, sodass die Anwendung `npm run type-check` und `npm run build` ohne Warnungen oder Typkonflikte erfolgreich bestehen kann.
+
 ## [2026-02-27]
 
 ### Preload-Modularisierung & Typsicherheit-Refinement

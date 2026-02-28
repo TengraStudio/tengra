@@ -69,8 +69,26 @@ const CHECKPOINT_TRIGGER_VALUES: AgentCheckpointTrigger[] = [
 const CHECKPOINT_SNAPSHOT_PREFIX = 'gzip:';
 const MAX_CHECKPOINTS_PER_TASK = 200;
 
+/** Health metrics for the agent checkpoint subsystem */
+export interface AgentCheckpointHealth {
+    totalSaves: number;
+    totalLoads: number;
+    totalRollbacks: number;
+    totalErrors: number;
+    avgSaveDurationMs: number;
+    avgLoadDurationMs: number;
+    budgetBreaches: number;
+}
+
 export class AgentCheckpointService extends BaseService {
     private telemetryService: TelemetryService | null = null;
+    private totalSaves = 0;
+    private totalLoads = 0;
+    private totalRollbacks = 0;
+    private totalErrors = 0;
+    private totalSaveDurationMs = 0;
+    private totalLoadDurationMs = 0;
+    private budgetBreaches = 0;
 
     constructor(private databaseService: DatabaseService) {
         super('AgentCheckpointService');
@@ -88,6 +106,40 @@ export class AgentCheckpointService extends BaseService {
         }
     }
 
+    /**
+     * Warn and track when an operation exceeds its performance budget.
+     * @param method - The method name being measured
+     * @param startTime - Start timestamp from performance.now()
+     * @param budgetMs - Budget in milliseconds
+     */
+    private warnIfOverBudget(method: string, startTime: number, budgetMs: number): void {
+        const elapsed = performance.now() - startTime;
+        if (elapsed > budgetMs) {
+            this.budgetBreaches++;
+            this.logWarn(`Performance budget exceeded for ${method}`, {
+                elapsedMs: Math.round(elapsed),
+                budgetMs,
+            });
+        }
+    }
+
+    /** Returns health dashboard metrics for this service */
+    getHealthMetrics(): AgentCheckpointHealth {
+        return {
+            totalSaves: this.totalSaves,
+            totalLoads: this.totalLoads,
+            totalRollbacks: this.totalRollbacks,
+            totalErrors: this.totalErrors,
+            avgSaveDurationMs: this.totalSaves > 0
+                ? Math.round(this.totalSaveDurationMs / this.totalSaves)
+                : 0,
+            avgLoadDurationMs: this.totalLoads > 0
+                ? Math.round(this.totalLoadDurationMs / this.totalLoads)
+                : 0,
+            budgetBreaches: this.budgetBreaches,
+        };
+    }
+
     async initialize(): Promise<void> {
         this.logInfo('AgentCheckpointService initialized');
     }
@@ -99,10 +151,10 @@ export class AgentCheckpointService extends BaseService {
         trigger: AgentCheckpointTrigger = 'manual_snapshot'
     ): Promise<string> {
         if (!taskId) {throw new AgentCheckpointError('taskId is required', 'MISSING_TASK_ID');}
+        const perfStart = performance.now();
         const startTime = Date.now();
 
         try {
-            // Validate state before saving
             AgentTaskStateSchema.parse(state);
 
             if (trigger === 'auto_state_sync') {
@@ -112,25 +164,27 @@ export class AgentCheckpointService extends BaseService {
 
             const snapshot = this.serializeSnapshot(state, trigger);
             const checkpointId = await this.databaseService.uac.createCheckpoint(
-                taskId,
-                stepIndex,
-                trigger,
-                snapshot
+                taskId, stepIndex, trigger, snapshot
             );
             await this.databaseService.uac.trimCheckpoints(taskId, MAX_CHECKPOINTS_PER_TASK);
             const durationMs = Date.now() - startTime;
+            this.totalSaves++;
+            this.totalSaveDurationMs += durationMs;
             this.logInfo(`Saved checkpoint ${checkpointId} for task ${taskId} (trigger: ${trigger})`);
             this.trackEvent(AgentCheckpointTelemetryEvent.CHECKPOINT_SAVED, {
                 taskId, checkpointId, trigger, stepIndex, durationMs
             });
             return checkpointId;
         } catch (error) {
+            this.totalErrors++;
             const durationMs = Date.now() - startTime;
             this.trackEvent(AgentCheckpointTelemetryEvent.CHECKPOINT_SAVED, {
                 taskId, trigger, stepIndex, durationMs, success: false,
                 error: (error as Error).message
             });
             throw new AgentCheckpointError('Failed to save checkpoint', 'SAVE_FAILED', { error, taskId });
+        } finally {
+            this.warnIfOverBudget('saveCheckpoint', perfStart, AGENT_CHECKPOINT_PERFORMANCE_BUDGETS.SAVE_CHECKPOINT_MS);
         }
     }
 
@@ -152,8 +206,10 @@ export class AgentCheckpointService extends BaseService {
     }
 
     async getCheckpoints(taskId: string): Promise<AgentCheckpointItem[]> {
+        const perfStart = performance.now();
         const rows = await this.databaseService.uac.getCheckpoints(taskId);
 
+        this.warnIfOverBudget('getCheckpoints', perfStart, AGENT_CHECKPOINT_PERFORMANCE_BUDGETS.LIST_CHECKPOINTS_MS);
         return rows.map(row => ({
             id: row.id,
             taskId: row.task_id,
@@ -164,25 +220,38 @@ export class AgentCheckpointService extends BaseService {
     }
 
     async loadCheckpoint(checkpointId: string): Promise<AgentCheckpointItem | null> {
+        const perfStart = performance.now();
         const startTime = Date.now();
-        const row = await this.databaseService.uac.getCheckpoint(checkpointId);
-        if (!row) {
-            return null;
-        }
+        try {
+            const row = await this.databaseService.uac.getCheckpoint(checkpointId);
+            if (!row) {
+                return null;
+            }
 
-        const parsed = this.parseSnapshot(row.snapshot, row.trigger, row.created_at);
-        const durationMs = Date.now() - startTime;
-        this.trackEvent(AgentCheckpointTelemetryEvent.CHECKPOINT_RESTORED, {
-            checkpointId, taskId: row.task_id, trigger: row.trigger, durationMs
-        });
-        return {
-            id: row.id,
-            taskId: row.task_id,
-            stepIndex: row.step_index,
-            trigger: parsed.trigger,
-            createdAt: parsed.createdAt,
-            state: parsed.state
-        };
+            const parsed = this.parseSnapshot(row.snapshot, row.trigger, row.created_at);
+            const durationMs = Date.now() - startTime;
+            this.totalLoads++;
+            this.totalLoadDurationMs += durationMs;
+            this.trackEvent(AgentCheckpointTelemetryEvent.CHECKPOINT_RESTORED, {
+                checkpointId, taskId: row.task_id, trigger: row.trigger, durationMs
+            });
+            return {
+                id: row.id,
+                taskId: row.task_id,
+                stepIndex: row.step_index,
+                trigger: parsed.trigger,
+                createdAt: parsed.createdAt,
+                state: parsed.state
+            };
+        } catch (error) {
+            this.totalErrors++;
+            throw new AgentCheckpointError(
+                'Failed to load checkpoint', 'LOAD_FAILED',
+                { error, checkpointId }
+            );
+        } finally {
+            this.warnIfOverBudget('loadCheckpoint', perfStart, AGENT_CHECKPOINT_PERFORMANCE_BUDGETS.RESTORE_CHECKPOINT_MS);
+        }
     }
 
     async getLatestCheckpoint(taskId: string): Promise<AgentCheckpointItem | null> {
@@ -203,33 +272,47 @@ export class AgentCheckpointService extends BaseService {
     }
 
     async prepareRollback(checkpointId: string, currentState: AgentTaskState): Promise<RollbackPreparation> {
+        const perfStart = performance.now();
         const startTime = Date.now();
         this.trackEvent(AgentCheckpointTelemetryEvent.ROLLBACK_STARTED, {
             checkpointId, taskId: currentState.taskId
         });
 
-        const checkpoint = await this.loadCheckpoint(checkpointId);
-        if (!checkpoint?.state) {
-            throw new Error(`Checkpoint ${checkpointId} not found`);
+        try {
+            const checkpoint = await this.loadCheckpoint(checkpointId);
+            if (!checkpoint?.state) {
+                throw new AgentCheckpointError(
+                    `Checkpoint ${checkpointId} not found`,
+                    'CHECKPOINT_NOT_FOUND',
+                    { checkpointId }
+                );
+            }
+
+            const preRollbackCheckpointId = await this.saveCheckpoint(
+                currentState.taskId,
+                currentState.currentStep,
+                currentState,
+                'pre_rollback'
+            );
+
+            const durationMs = Date.now() - startTime;
+            this.totalRollbacks++;
+            this.trackEvent(AgentCheckpointTelemetryEvent.ROLLBACK_COMPLETED, {
+                checkpointId, preRollbackCheckpointId,
+                taskId: currentState.taskId, durationMs
+            });
+
+            return { resumedCheckpoint: checkpoint, preRollbackCheckpointId };
+        } catch (error) {
+            if (error instanceof AgentCheckpointError) { throw error; }
+            this.totalErrors++;
+            throw new AgentCheckpointError(
+                'Rollback preparation failed', 'ROLLBACK_FAILED',
+                { error, checkpointId }
+            );
+        } finally {
+            this.warnIfOverBudget('prepareRollback', perfStart, AGENT_CHECKPOINT_PERFORMANCE_BUDGETS.ROLLBACK_MS);
         }
-
-        const preRollbackCheckpointId = await this.saveCheckpoint(
-            currentState.taskId,
-            currentState.currentStep,
-            currentState,
-            'pre_rollback'
-        );
-
-        const durationMs = Date.now() - startTime;
-        this.trackEvent(AgentCheckpointTelemetryEvent.ROLLBACK_COMPLETED, {
-            checkpointId, preRollbackCheckpointId,
-            taskId: currentState.taskId, durationMs
-        });
-
-        return {
-            resumedCheckpoint: checkpoint,
-            preRollbackCheckpointId
-        };
     }
 
     async createPlanVersion(

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-28T04:05:50.745Z",
+  "generatedAt": "2026-02-28T04:31:03.126Z",
   "locales": [
     "en",
     "tr",
@@ -12,6 +12,97 @@
     "ar"
   ],
   "entries": [
+    {
+      "id": "2026-02-28-type-safety-lint-resolution",
+      "date": "2026-02-28",
+      "channel": "stable",
+      "type": "fix",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Renderer TypeScript",
+        "Type Safety",
+        "Main TypeScript"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Strict Type Safety: Resolution of Any and Unknown Type Casts",
+          "summary": "Resolved outstanding type safety violations by eliminating unsafe `any` and `unknown` type casts across the renderer and main processes, enforcing strict Tengra typing rules.",
+          "items": [
+            "- **Renderer Type Safety**: Added mandatory `// SAFETY:` justifications and strict type boundaries for all remaining `unknown` cast instances in the renderer, including `useAgentHandlers`, `SessionSetup`, `useVoice`, `TerminalConnectionSelector`, `ipc-client`, and `voice.store`.",
+            "- **Main Process Safety**: Verified that the `src/main` directory contains zero type errors and zero unsafe `any`/`unknown` ESLint violations.",
+            "- **Code Quality**: Enforced NASA Power of Ten and strict TypeScript compilation checks, allowing the application to successfully pass `npm run type-check` and `npm run build` without any warnings or type mismatches."
+          ]
+        },
+        "tr": {
+          "title": "Sıkı Tip Güvenliği: Any ve Unknown Tip Dönüşümlerinin Çözümü",
+          "summary": "Tengra'nın katı tip kurallarını uygulayarak işleyici ve ana süreçler genelindeki güvensiz 'any' ve 'unknown' tip dönüşümlerini ortadan kaldırarak bekleyen tip güvenliği ihlallerini çözüme kavuşturdu.",
+          "items": [
+            "- **İşleyici Tip Güvenliği**: İşleticinde, `useAgentHandlers`, `SessionSetup`, `useVoice`, `TerminalConnectionSelector`, `ipc-client` ve `voice.store` dahil olmak üzere kalan tüm `unknown` dönüşümleri için zorunlu `// SAFETY:` gerekçeleri ve katı tip sınırları eklendi.",
+            "- **Ana Süreç Güvenliği**: `src/main` dizininin sıfır tip hatası ve sıfır güvensiz `any`/`unknown` ESLint ihlali içerdiği doğrulandı.",
+            "- **Kod Kalitesi**: NASA Power of Ten ve sıkı TypeScript derleme kontrolleri uygulanarak, uygulamanın hiçbir uyarı veya tip uyuşmazlığı olmadan `npm run type-check` ve `npm run build` süreçlerini başarıyla tamamlaması sağlandı."
+          ]
+        },
+        "de": {
+          "title": "Strenge Typsicherheit: Auflösung beliebiger und unbekannter Typumwandlungen",
+          "summary": "Ausstehende Verstöße gegen die Typsicherheit wurden behoben, indem unsichere Typumwandlungen vom Typ `any` und `unknown` im Renderer und in den Hauptprozessen eliminiert wurden, wodurch strenge Tengra-Typisierungsregeln durchgesetzt wurden.",
+          "items": [
+            "- **Renderer-Typsicherheit**: Für alle verbleibenden `unknown`-Cast-Instanzen im Renderer wurden obligatorische `// SAFETY:`-Begründungen und strenge Typgrenzen hinzugefügt, einschließlich `useAgentHandlers`, `SessionSetup`, `useVoice`, `TerminalConnectionSelector`, `ipc-client` und `voice.store`.",
+            "- **Hauptprozesssicherheit**: Es wurde überprüft, dass das Verzeichnis `src/main` keine Typfehler und keine unsicheren `any`/`unknown` ESLint-Verstöße enthält.",
+            "- **Codequalität**: Erzwungene NASA-Zehnerpotenz und strenge TypeScript-Kompilierungsprüfungen, sodass die Anwendung `npm run type-check` und `npm run build` ohne Warnungen oder Typkonflikte erfolgreich bestehen kann."
+          ]
+        },
+        "fr": {
+          "title": "Sécurité de type stricte: résolution des conversions de type quelconques et inconnues",
+          "summary": "Résolution des violations de sécurité de type exceptionnelles en éliminant les conversions de types dangereuses `any` et `unknown` dans le moteur de rendu et les processus principaux, appliquant ainsi des règles de typage Tengra strictes.",
+          "items": [
+            "- **Sécurité du type de moteur de rendu**: ajout de justifications obligatoires `// SAFETY:` et de limites de type strictes pour toutes les instances de diffusion `unknown` restantes dans le moteur de rendu, y compris `useAgentHandlers`, `SessionSetup`, `useVoice`, `TerminalConnectionSelector`, `ipc-client` et `voice.store`.",
+            "- **Sécurité du processus principal**: vérification que le répertoire `src/main` ne contient aucune erreur de type et aucune violation ESLint dangereuse `any`/`unknown`.",
+            "- **Qualité du code**: application de la puissance dix de la NASA et contrôles stricts de la compilation TypeScript, permettant à l'application de passer avec succès `npm run type-check` et `npm run build` sans aucun avertissement ni incompatibilité de type."
+          ]
+        },
+        "es": {
+          "title": "Seguridad de tipos estricta: resolución de conversiones de tipos desconocidos y de cualquier tipo",
+          "summary": "Se resolvieron violaciones de seguridad de tipos pendientes al eliminar las conversiones de tipos inseguras `any` y `unknown` en el renderizador y los procesos principales, aplicando estrictas reglas de escritura de Tengra.",
+          "items": [
+            "- **Seguridad del tipo de renderizador**: se agregaron justificaciones `// SAFETY:` obligatorias y límites de tipo estrictos para todas las instancias de conversión `unknown` restantes en el renderizador, incluidas `useAgentHandlers`, `SessionSetup`, `useVoice`, `TerminalConnectionSelector`, `ipc-client` y `voice.store`.",
+            "- **Seguridad del proceso principal**: Verificado que el directorio `src/main` no contiene errores de tipo ni violaciones inseguras de ESLint `any`/`unknown`.",
+            "- **Calidad del código**: Fuerza de diez de la NASA aplicada y controles estrictos de compilación TypeScript, lo que permite que la aplicación pase con éxito `npm run type-check` y `npm run build` sin advertencias ni discrepancias de tipos."
+          ]
+        },
+        "ja": {
+          "title": "厳密な型安全性: あらゆる未知の型キャストの解決",
+          "summary": "レンダラーとメインプロセス全体で安全でない `any` および `unknown` 型キャストを排除し、厳格な Tengra 型指定ルールを適用することにより、未解決の型安全性違反を解決しました。",
+          "items": [
+            "- **レンダラーのタイプ セーフティ**: `useAgentHandlers`、`SessionSetup`、`useVoice`、`TerminalConnectionSelector`、`ipc-client`、`voice.store` など、レンダラー内の残りのすべての `unknown` キャスト インスタンスに必須の `// SAFETY:` 位置揃えと厳密な型境界が追加されました。",
+            "- **メイン プロセスの安全性**: `src/main` ディレクトリにタイプ エラーと安全でない `any`/`unknown` ESLint 違反が含まれていないことを確認しました。",
+            "- **コード品質**: NASA の 10 乗および厳密な TypeScript コンパイル チェックを強制し、アプリケーションが警告や型の不一致なしに `npm run type-check` および `npm run build` を正常に通過できるようにします。"
+          ]
+        },
+        "zh": {
+          "title": "严格类型安全：解决任何未知类型转换",
+          "summary": "通过消除渲染器和主进程中不安全的 `any` 和 `unknown` 类型转换，强制执行严格的 Tengra 类型规则，解决了突出的类型安全违规问题。",
+          "items": [
+            "- **渲染器类型安全**：为渲染器中所有剩余的 `unknown` 强制转换实例添加了强制 `// SAFETY:` 理由和严格的类型边界，包括 `useAgentHandlers`、`SessionSetup`、`useVoice`、`TerminalConnectionSelector`、`ipc-client` 和 `voice.store`。",
+            "- **主进程安全**：已验证 `src/main` 目录包含零个类型错误和零个不安全 `any`/`unknown` ESLint 违规。",
+            "- **代码质量**：强制执行 NASA 的十次幂和严格的 TypeScript 编译检查，允许应用程序成功通过 `npm run type-check` 和 `npm run build`，而不会出现任何警告或类型不匹配。"
+          ]
+        },
+        "ar": {
+          "title": "السلامة الصارمة للنوع: حل أي قوالب من النوع غير المعروف",
+          "summary": "تم حل الانتهاكات المعلقة لسلامة النوع من خلال إزالة نماذج النوع `any` و`unknown` غير الآمنة عبر العارض والعمليات الرئيسية، وفرض قواعد كتابة Tengra الصارمة.",
+          "items": [
+            "- **أمان نوع العارض**: تمت إضافة مبررات `// SAFETY:` الإلزامية وحدود النوع الصارمة لجميع مثيلات `unknown` المتبقية في العارض، بما في ذلك `useAgentHandlers`، `SessionSetup`، `useVoice`، `TerminalConnectionSelector`، `ipc-client`، و __رمز الرمز_7__.",
+            "- **سلامة العملية الرئيسية**: تم التحقق من أن الدليل `src/main` لا يحتوي على أخطاء في النوع ولا يحتوي على أي انتهاكات غير آمنة `any`/`unknown` ESLint.",
+            "- **جودة الكود**: فحوصات تجميع TypeScript الصارمة التي فرضتها NASA Power of Ten، مما يسمح للتطبيق باجتياز `npm run type-check` و`npm run build` بنجاح دون أي تحذيرات أو عدم تطابق في الكتابة."
+          ]
+        }
+      }
+    },
     {
       "id": "2026-02-27-preload-modularization-refinement",
       "date": "2026-02-27",

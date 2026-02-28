@@ -1,5 +1,17 @@
 # Journal des modifications
 
+## [2026-02-28]
+
+### Sécurité de type stricte: résolution des conversions de type quelconques et inconnues
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Résolution des violations de sécurité de type exceptionnelles en éliminant les conversions de types dangereuses `any` et `unknown` dans le moteur de rendu et les processus principaux, appliquant ainsi des règles de typage Tengra strictes.
+
+- **Sécurité du type de moteur de rendu**: ajout de justifications obligatoires `// SAFETY:` et de limites de type strictes pour toutes les instances de diffusion `unknown` restantes dans le moteur de rendu, y compris `useAgentHandlers`, `SessionSetup`, `useVoice`, `TerminalConnectionSelector`, `ipc-client` et `voice.store`.
+- **Sécurité du processus principal**: vérification que le répertoire `src/main` ne contient aucune erreur de type et aucune violation ESLint dangereuse `any`/`unknown`.
+- **Qualité du code**: application de la puissance dix de la NASA et contrôles stricts de la compilation TypeScript, permettant à l'application de passer avec succès `npm run type-check` et `npm run build` sans aucun avertissement ni incompatibilité de type.
+
 ## [2026-02-27]
 
 ### Affinage de la modularisation du préchargement et révision de la sécurité des types

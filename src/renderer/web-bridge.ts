@@ -2,6 +2,7 @@ import type { ElectronAPI } from '@renderer/electron.d';
 import type {
     InlineSuggestionRequest,
     InlineSuggestionResponse,
+    InlineSuggestionTelemetry,
 } from '@shared/schemas/inline-suggestions.schema';
 import type { AdvancedSemanticFragment, PendingMemory } from '@shared/types/advanced-memory';
 import type { Chat, Folder, Message, ToolCall, ToolResult } from '@shared/types/chat';
@@ -245,6 +246,9 @@ export const webElectronMock: ElectronAPI = {
             suggestion: null,
             source: 'custom',
         }),
+        trackInlineSuggestionTelemetry: async (
+            _event: InlineSuggestionTelemetry
+        ) => ({ success: true }),
         improveLogoPrompt: async (_prompt: string) => '',
         uploadLogo: async (_projectPath: string) => null,
         analyzeDirectory: async (_dirPath: string) => ({
@@ -2091,6 +2095,9 @@ export const webElectronMock: ElectronAPI = {
             version: '',
         }),
         getProfile: async (_extensionId: string) => ({
+            success: false,
+        }),
+        getState: async (_extensionId: string) => ({
             success: false,
         }),
         validate: async (_manifest: unknown) => ({

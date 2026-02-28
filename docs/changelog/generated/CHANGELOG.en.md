@@ -1,5 +1,17 @@
 # Changelog
 
+## [2026-02-28]
+
+### Strict Type Safety: Resolution of Any and Unknown Type Casts
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Resolved outstanding type safety violations by eliminating unsafe `any` and `unknown` type casts across the renderer and main processes, enforcing strict Tengra typing rules.
+
+- **Renderer Type Safety**: Added mandatory `// SAFETY:` justifications and strict type boundaries for all remaining `unknown` cast instances in the renderer, including `useAgentHandlers`, `SessionSetup`, `useVoice`, `TerminalConnectionSelector`, `ipc-client`, and `voice.store`.
+- **Main Process Safety**: Verified that the `src/main` directory contains zero type errors and zero unsafe `any`/`unknown` ESLint violations.
+- **Code Quality**: Enforced NASA Power of Ten and strict TypeScript compilation checks, allowing the application to successfully pass `npm run type-check` and `npm run build` without any warnings or type mismatches.
+
 ## [2026-02-27]
 
 ### Preload Modularization Refinement & Type Safety Overhaul

@@ -53,6 +53,7 @@ vi.mock('@main/utils/ipc-wrapper.util', () => ({
 // Mock Services
 let mockProjectService: any;
 let mockLogoService: any;
+let mockInlineSuggestionService: any;
 let mockCodeIntelligenceService: any;
 let mockAuditLogService: any;
 
@@ -78,8 +79,12 @@ describe('Project IPC Integration', () => {
             generateLogo: vi.fn(),
             analyzeProjectIdentity: vi.fn(),
             applyLogo: vi.fn(),
-            getCompletion: vi.fn(),
             improveLogoPrompt: vi.fn()
+        };
+
+        mockInlineSuggestionService = {
+            getCompletion: vi.fn(),
+            getInlineSuggestion: vi.fn(),
         };
 
         mockCodeIntelligenceService = {
@@ -95,6 +100,7 @@ describe('Project IPC Integration', () => {
         registerProjectIpc(() => null, {
             projectService: mockProjectService,
             logoService: mockLogoService,
+            inlineSuggestionService: mockInlineSuggestionService,
             codeIntelligenceService: mockCodeIntelligenceService,
             jobSchedulerService: {} as any,
             databaseService: {} as any,
@@ -112,6 +118,7 @@ describe('Project IPC Integration', () => {
         registerProjectIpc(() => null, {
             projectService: mockProjectService,
             logoService: mockLogoService,
+            inlineSuggestionService: mockInlineSuggestionService,
             codeIntelligenceService: mockCodeIntelligenceService,
             jobSchedulerService: {} as any,
             databaseService: {} as any,
@@ -140,6 +147,7 @@ describe('Project IPC Integration', () => {
         registerProjectIpc(() => null, {
             projectService: mockProjectService,
             logoService: mockLogoService,
+            inlineSuggestionService: mockInlineSuggestionService,
             codeIntelligenceService: mockCodeIntelligenceService,
             jobSchedulerService: {} as any,
             databaseService: {} as any,
@@ -166,6 +174,7 @@ describe('Project IPC Integration', () => {
         registerProjectIpc(() => null, {
             projectService: mockProjectService,
             logoService: mockLogoService,
+            inlineSuggestionService: mockInlineSuggestionService,
             codeIntelligenceService: mockCodeIntelligenceService,
             jobSchedulerService: {} as any,
             databaseService: {} as any,
@@ -188,6 +197,7 @@ describe('Project IPC Integration', () => {
         registerProjectIpc(() => null, {
             projectService: mockProjectService,
             logoService: mockLogoService,
+            inlineSuggestionService: mockInlineSuggestionService,
             codeIntelligenceService: mockCodeIntelligenceService,
             jobSchedulerService: {} as any,
             databaseService: {} as any,

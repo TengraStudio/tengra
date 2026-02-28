@@ -13,8 +13,8 @@ import { PreviewMarketButton } from './PreviewMarketButton';
 import { SubmitButton } from './SubmitButton';
 
 interface SessionSetupProps {
-    onCreateSession: (config: IdeaSessionConfig) => Promise<void>
-    isLoading: boolean
+	onCreateSession: (config: IdeaSessionConfig) => Promise<void>
+	isLoading: boolean
 }
 
 export const SessionSetup: React.FC<SessionSetupProps> = ({
@@ -67,8 +67,8 @@ export const SessionSetup: React.FC<SessionSetupProps> = ({
 		}
 	};
 
-	const handleSubmit = async (e: React.FormEvent): Promise<void> => {
-		e.preventDefault();
+	const handleSubmit = async (e?: React.FormEvent): Promise<void> => {
+		e?.preventDefault();
 		if (!selectedModel || categories.length === 0) {
 			return;
 		}
@@ -127,7 +127,7 @@ export const SessionSetup: React.FC<SessionSetupProps> = ({
 			<SubmitButton
 				isValid={isValid}
 				isLoading={isLoading}
-				onSubmit={() => void handleSubmit(new Event('submit') as unknown as React.FormEvent)}
+				onSubmit={() => void handleSubmit()}
 			/>
 
 			{showPreview && (
@@ -137,7 +137,7 @@ export const SessionSetup: React.FC<SessionSetupProps> = ({
 					onContinue={() => {
 						setShowPreview(false);
 						// Submit the form to start research
-						void handleSubmit(new Event('submit') as unknown as React.FormEvent);
+						void handleSubmit();
 					}}
 					isLoading={isLoadingPreview}
 					preview={marketPreview}

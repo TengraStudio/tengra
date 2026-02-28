@@ -655,6 +655,7 @@ export class ProxyService extends BaseService {
     if (elapsed > PROXY_PERFORMANCE_BUDGETS.START_MS) {
       this.logWarn(`startEmbeddedProxy exceeded budget: ${elapsed.toFixed(1)}ms > ${PROXY_PERFORMANCE_BUDGETS.START_MS}ms`);
     }
+    this.eventBus.emitCustom(ProxyTelemetryEvent.PROXY_STARTED, { port: this.currentPort, elapsedMs: elapsed });
     return status;
   }
 

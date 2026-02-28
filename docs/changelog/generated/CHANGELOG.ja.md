@@ -1,5 +1,17 @@
 # 変更履歴
 
+## [2026-02-28]
+
+### 厳密な型安全性: あらゆる未知の型キャストの解決
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: レンダラーとメインプロセス全体で安全でない `any` および `unknown` 型キャストを排除し、厳格な Tengra 型指定ルールを適用することにより、未解決の型安全性違反を解決しました。
+
+- **レンダラーのタイプ セーフティ**: `useAgentHandlers`、`SessionSetup`、`useVoice`、`TerminalConnectionSelector`、`ipc-client`、`voice.store` など、レンダラー内の残りのすべての `unknown` キャスト インスタンスに必須の `// SAFETY:` 位置揃えと厳密な型境界が追加されました。
+- **メイン プロセスの安全性**: `src/main` ディレクトリにタイプ エラーと安全でない `any`/`unknown` ESLint 違反が含まれていないことを確認しました。
+- **コード品質**: NASA の 10 乗および厳密な TypeScript コンパイル チェックを強制し、アプリケーションが警告や型の不一致なしに `npm run type-check` および `npm run build` を正常に通過できるようにします。
+
 ## [2026-02-27]
 
 ### プリロードのモジュール化の洗練と型安全性の見直し

@@ -244,7 +244,7 @@ function useExtensionTools() {
     /** Get profile data */
     const getProfile = useCallback(async (extensionId: string): Promise<{ success: boolean; profile?: ExtensionProfileData }> => {
         try {
-            const result = await (window.electron.extension as any)?.getProfile(extensionId);
+            const result = await window.electron.extension.getProfile(extensionId);
             return result ?? { success: false };
         } catch {
             return { success: false };
@@ -254,7 +254,7 @@ function useExtensionTools() {
     /** Get state data */
     const getState = useCallback(async (extensionId: string): Promise<{ success: boolean; state?: { global: Record<string, unknown>, workspace: Record<string, unknown> } }> => {
         try {
-            const result = await (window.electron.extension as any)?.getState(extensionId);
+            const result = await window.electron.extension.getState(extensionId);
             return result ?? { success: false };
         } catch {
             return { success: false };

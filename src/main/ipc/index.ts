@@ -178,6 +178,7 @@ export async function registerAllIpc(
     registerProjectIpc(getWin, {
         projectService: services.projectService,
         logoService,
+        inlineSuggestionService: services.inlineSuggestionService,
         codeIntelligenceService: services.codeIntelligenceService,
         jobSchedulerService: services.jobSchedulerService,
         databaseService: services.databaseService,

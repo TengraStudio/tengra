@@ -2,9 +2,16 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { BaseService } from '@main/services/base.service';
+import {
+    MAX_THEME_ID_LENGTH,
+    MAX_THEME_NAME_LENGTH,
+    REQUIRED_COLOR_KEYS,
+    THEME_ID_PATTERN,
+    ThemeErrorCode,
+} from '@main/services/ui/theme-error';
 import { BUILTIN_THEMES, getThemeById } from '@main/utils/theme-constants';
 import { JsonObject } from '@shared/types/common';
-import { CustomTheme, DEFAULT_THEME_PRESETS, ThemePreset } from '@shared/types/theme';
+import { CustomTheme, DEFAULT_THEME_PRESETS, ThemeColors, ThemePreset } from '@shared/types/theme';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { app } from 'electron';
 
@@ -53,6 +60,8 @@ export class ThemeService extends BaseService {
     private initialized = false;
     private readonly telemetryLog: ThemeTelemetryEvent[] = [];
     private static readonly MAX_TELEMETRY_LOG = 200;
+    private static readonly SAVE_RETRY_LIMIT = 2;
+    private static readonly SAVE_RETRY_DELAY_MS = 50;
 
     constructor() {
         super('ThemeService');
@@ -84,6 +93,45 @@ export class ThemeService extends BaseService {
             hasActivePreset: this.store.preset !== null,
             storePath: this.storePath,
         };
+    }
+
+    /** Validates a theme ID string for format and length. */
+    validateThemeId(id: string): ThemeErrorCode | null {
+        if (typeof id !== 'string' || id.trim().length === 0) {
+            return ThemeErrorCode.INVALID_ID;
+        }
+        if (id.length > MAX_THEME_ID_LENGTH) {
+            return ThemeErrorCode.INVALID_ID;
+        }
+        if (!THEME_ID_PATTERN.test(id)) {
+            return ThemeErrorCode.INVALID_ID;
+        }
+        return null;
+    }
+
+    /** Validates a theme name string for length and content. */
+    validateThemeName(name: string): ThemeErrorCode | null {
+        if (typeof name !== 'string' || name.trim().length === 0) {
+            return ThemeErrorCode.INVALID_NAME;
+        }
+        if (name.length > MAX_THEME_NAME_LENGTH) {
+            return ThemeErrorCode.INVALID_NAME;
+        }
+        return null;
+    }
+
+    /** Validates that required color keys are present. */
+    validateColors(colors: ThemeColors): ThemeErrorCode | null {
+        if (typeof colors !== 'object' || colors === null || Array.isArray(colors)) {
+            return ThemeErrorCode.INVALID_COLORS;
+        }
+        const colorsRecord = colors as Record<string, unknown>;
+        for (const key of REQUIRED_COLOR_KEYS) {
+            if (typeof colorsRecord[key] !== 'string') {
+                return ThemeErrorCode.INVALID_COLORS;
+            }
+        }
+        return null;
     }
 
     async initialize(): Promise<void> {

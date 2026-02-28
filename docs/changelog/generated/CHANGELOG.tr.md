@@ -1,5 +1,17 @@
 # Değişiklik Günlüğü
 
+## [2026-02-28]
+
+### Sıkı Tip Güvenliği: Any ve Unknown Tip Dönüşümlerinin Çözümü
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Tengra'nın katı tip kurallarını uygulayarak işleyici ve ana süreçler genelindeki güvensiz 'any' ve 'unknown' tip dönüşümlerini ortadan kaldırarak bekleyen tip güvenliği ihlallerini çözüme kavuşturdu.
+
+- **İşleyici Tip Güvenliği**: İşleticinde, `useAgentHandlers`, `SessionSetup`, `useVoice`, `TerminalConnectionSelector`, `ipc-client` ve `voice.store` dahil olmak üzere kalan tüm `unknown` dönüşümleri için zorunlu `// SAFETY:` gerekçeleri ve katı tip sınırları eklendi.
+- **Ana Süreç Güvenliği**: `src/main` dizininin sıfır tip hatası ve sıfır güvensiz `any`/`unknown` ESLint ihlali içerdiği doğrulandı.
+- **Kod Kalitesi**: NASA Power of Ten ve sıkı TypeScript derleme kontrolleri uygulanarak, uygulamanın hiçbir uyarı veya tip uyuşmazlığı olmadan `npm run type-check` ve `npm run build` süreçlerini başarıyla tamamlaması sağlandı.
+
 ## [2026-02-27]
 
 ### Preload Modülerleştirme İyileştirmesi ve Tip Güvenliği Revizyonu

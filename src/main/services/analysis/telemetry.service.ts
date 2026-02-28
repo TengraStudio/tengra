@@ -62,6 +62,18 @@ export interface TelemetryHealth {
     totalFlushedEvents: number;
 }
 
+/**
+ * Meta-telemetry snapshot for self-monitoring
+ */
+export interface MetaTelemetrySnapshot {
+    flushAttempts: number;
+    flushFailures: number;
+    budgetExceeded: number;
+    overflowDrops: number;
+    validationRejects: number;
+    lastOperationAt: number | null;
+}
+
 export interface TelemetryEvent {
     id: string;
     name: string;
@@ -83,6 +95,14 @@ export class TelemetryService extends BaseService {
     // Retry configuration
     private readonly maxRetryAttempts = 3;
     private readonly retryDelayMs = 1000;
+
+    // Meta-telemetry counters for self-monitoring
+    private metaFlushAttempts = 0;
+    private metaFlushFailures = 0;
+    private metaBudgetExceeded = 0;
+    private metaOverflowDrops = 0;
+    private metaValidationRejects = 0;
+    private metaLastOperationAt: number | null = null;
 
     constructor(private settingsService: SettingsService) {
         super('TelemetryService');
@@ -168,6 +188,20 @@ export class TelemetryService extends BaseService {
     }
 
     /**
+     * Gets a snapshot of meta-telemetry counters for self-monitoring
+     */
+    getMetaTelemetry(): MetaTelemetrySnapshot {
+        return {
+            flushAttempts: this.metaFlushAttempts,
+            flushFailures: this.metaFlushFailures,
+            budgetExceeded: this.metaBudgetExceeded,
+            overflowDrops: this.metaOverflowDrops,
+            validationRejects: this.metaValidationRejects,
+            lastOperationAt: this.metaLastOperationAt
+        };
+    }
+
+    /**
      * Logs a warning if an operation exceeds its performance budget.
      * @param operation - Name of the operation
      * @param durationMs - Actual duration in milliseconds
@@ -175,6 +209,7 @@ export class TelemetryService extends BaseService {
      */
     private checkPerformanceBudget(operation: string, durationMs: number, budgetMs: number): void {
         if (durationMs > budgetMs) {
+            this.metaBudgetExceeded++;
             appLogger.warn('TelemetryService', `Performance budget exceeded for ${operation}: ${durationMs.toFixed(2)}ms (budget: ${budgetMs}ms)`);
         }
     }

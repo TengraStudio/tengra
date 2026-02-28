@@ -3953,5 +3953,14 @@
       "- **Pruebas de contrato de servicio de proxy**: verificación de claves de presupuesto de rendimiento de cuota actualizadas y manejo de límites `QuotaErrorCode` para admitir códigos de error recién agregados.",
       "- **Servicio de punto de control del agente**: se resolvió un error fatal de referencia TypeScript runtime causado al importar `AgentCheckpointTelemetryEvent` con un modificador `type` en lugar de como un valor, lo que rompió las aserciones de seguimiento."
     ]
+  },
+  "2026-02-28-type-safety-lint-resolution": {
+    "title": "Seguridad de tipos estricta: resolución de conversiones de tipos desconocidos y de cualquier tipo",
+    "summary": "Se resolvieron violaciones de seguridad de tipos pendientes al eliminar las conversiones de tipos inseguras `any` y `unknown` en el renderizador y los procesos principales, aplicando estrictas reglas de escritura de Tengra.",
+    "items": [
+      "- **Seguridad del tipo de renderizador**: se agregaron justificaciones `// SAFETY:` obligatorias y límites de tipo estrictos para todas las instancias de conversión `unknown` restantes en el renderizador, incluidas `useAgentHandlers`, `SessionSetup`, `useVoice`, `TerminalConnectionSelector`, `ipc-client` y `voice.store`.",
+      "- **Seguridad del proceso principal**: Verificado que el directorio `src/main` no contiene errores de tipo ni violaciones inseguras de ESLint `any`/`unknown`.",
+      "- **Calidad del código**: Fuerza de diez de la NASA aplicada y controles estrictos de compilación TypeScript, lo que permite que la aplicación pase con éxito `npm run type-check` y `npm run build` sin advertencias ni discrepancias de tipos."
+    ]
   }
 }

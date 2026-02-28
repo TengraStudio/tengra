@@ -62,6 +62,7 @@
 - [x] **SEC-STAB-02**: Harden Electron Content Security Policy (CSP) with robust sources and headers.
 - [x] **SEC-STAB-03**: Consolidate CSP management into Main process and remove redundant meta tags.
 - [x] **SEC-STAB-04**: Restrict WebContents navigation to trusted origins and local files.
+- [x] **SEC-STAB-05**: Strict Type Safety: Resolve unsafe 'any' and 'unknown' type casts across renderer components.
 
 ### v2.0.0 (Target: Q4 2026)
 - ( ) Plugin ecosystem
@@ -445,7 +446,7 @@ Selected small/contained tasks that are realistic to ship quickly:
   - ( ) Applied targeted lint override to unblock quality gate; follow-up refactor remains.
 - [x] **AUD-2026-02-20-08**: Refactor oversized legacy functions in marketplace/workspace/image settings to remove file-specific lint override and improve maintainability.
   - [x] `src/renderer/features/extensions/hooks/useExtensions.ts`
-  - ( ) `src/renderer/features/projects/hooks/useAgentHandlers.ts`
+  - [x] `src/renderer/features/projects/hooks/useAgentHandlers.ts`
   - [x] `src/renderer/features/projects/hooks/useWorkspaceManager.ts`
   - [x] `src/shared/utils/extension.util.ts`
 - (x) **AUD-2026-02-20-06**: Resolve npm audit backlog (39 vulnerabilities: 35 high / 4 moderate) via phased dependency upgrades (`electron-builder`, `eslint`, `@electron/rebuild`, `typescript-eslint`).

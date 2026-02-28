@@ -60,6 +60,7 @@ export const TerminalConnectionSelector: React.FC<TerminalConnectionSelectorProp
                 // Fetch Docker containers
                 const dockerResult = await invokeTypedIpc<TerminalIpcContract, 'terminal:getDockerContainers'>('terminal:getDockerContainers', [], { responseSchema: terminalGetDockerContainersResponseSchema });
                 if (dockerResult.success && Array.isArray(dockerResult.containers)) {
+                    // SAFETY: The docker result containers are evaluated and passed by the IPC boundary schema, but lose strict typing.
                     const mappedContainers: DockerContainerOption[] = (dockerResult.containers as unknown as RawDockerContainer[]).map(c => ({
                         id: c.Id,
                         name: Array.isArray(c.Names) ? c.Names[0].replace(/^\//, '') : c.Id.substring(0, 12),

@@ -38,6 +38,7 @@ import { CopilotService } from '@main/services/llm/copilot.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { HuggingFaceService } from '@main/services/llm/huggingface.service';
 import { IdeaGeneratorService } from '@main/services/llm/idea-generator.service';
+import { InlineSuggestionService } from '@main/services/llm/inline-suggestion.service';
 import { LlamaService } from '@main/services/llm/llama.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalAIService } from '@main/services/llm/local-ai.service';
@@ -153,6 +154,7 @@ export interface Services {
     huggingFaceService: HuggingFaceService;
     projectService: ProjectService;
     terminalService: TerminalService;
+    inlineSuggestionService: InlineSuggestionService;
     logoService: LazyServiceDependency<LogoService>;
     processService: ProcessService;
     codeIntelligenceService: CodeIntelligenceService;
@@ -679,6 +681,15 @@ function registerProjectServices() {
     container.register('gitService', () => new GitService());
     // SSH and Docker services are now lazy-loaded
     container.register(
+        'inlineSuggestionService',
+        (ls, as) =>
+            new InlineSuggestionService({
+                llmService: ls as LLMService,
+                authService: as as AuthService,
+            }),
+        ['llmService', 'authService']
+    );
+    container.register(
         'codeIntelligenceService',
         (dbs, es) => new CodeIntelligenceService(dbs as DatabaseService, es as EmbeddingService),
         ['databaseService', 'embeddingService']
@@ -991,6 +1002,9 @@ function buildServicesMap(
         huggingFaceService: container.resolve<HuggingFaceService>('huggingFaceService'),
         projectService: container.resolve<ProjectService>('projectService'),
         terminalService: container.resolve<TerminalService>('terminalService'),
+        inlineSuggestionService: container.resolve<InlineSuggestionService>(
+            'inlineSuggestionService'
+        ),
         logoService: createLazyServiceDependency<LogoService>('logoService'),
         processService: container.resolve<ProcessService>('processService'),
         processManagerService: container.resolve<ProcessManagerService>('processManagerService'),

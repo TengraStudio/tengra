@@ -69,6 +69,18 @@ export class WorkflowService extends BaseService {
         }
     }
 
+    /** Logs a warning when an operation exceeds its performance budget. */
+    private checkPerformanceBudget(operation: string, durationMs: number, budgetMs: number): void {
+        if (durationMs > budgetMs) {
+            this.logWarn(`Performance budget exceeded for ${operation}: ${durationMs.toFixed(2)}ms (budget: ${budgetMs}ms)`);
+        }
+    }
+
+    /** Emits a telemetry event for workflow monitoring dashboards. */
+    private emitTelemetry(event: WorkflowTelemetryEvent, properties?: Record<string, string | number | boolean>): void {
+        this.logDebug(`Telemetry: ${event}`, properties as unknown as Record<string, JsonValue>);
+    }
+
     constructor(dependencies?: WorkflowServiceDependencies) {
         super('WorkflowService');
         this.dependencies = dependencies;

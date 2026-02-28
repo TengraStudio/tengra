@@ -2,6 +2,7 @@ import { appLogger } from '@main/logging/logger';
 import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { LogoService } from '@main/services/external/logo.service';
+import { InlineSuggestionService } from '@main/services/llm/inline-suggestion.service';
 import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service';
 import { ProjectService } from '@main/services/project/project.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
@@ -9,6 +10,7 @@ import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import {
     inlineSuggestionRequestSchema,
     inlineSuggestionResponseSchema,
+    inlineSuggestionTelemetrySchema,
 } from '@shared/schemas/inline-suggestions.schema';
 import { dialog, ipcMain } from 'electron';
 import { z } from 'zod';
@@ -19,6 +21,8 @@ export interface ProjectIpcDeps {
     projectService: ProjectService;
     /** Service for logo generation and project identity analysis. */
     logoService: LogoService;
+    /** Service for inline code suggestions and completions. */
+    inlineSuggestionService: InlineSuggestionService;
     /** Service for code indexing and symbol search. */
     codeIntelligenceService: CodeIntelligenceService;
     /** Service for scheduling background jobs with debouncing. */
@@ -53,6 +57,7 @@ export const registerProjectIpc = (
     const {
         projectService,
         logoService,
+        inlineSuggestionService,
         codeIntelligenceService,
         jobSchedulerService,
         databaseService,
@@ -257,7 +262,7 @@ export const registerProjectIpc = (
         createValidatedIpcHandler(
             'project:getCompletion',
             async (_event, text: string) => {
-                return await logoService.getCompletion(text);
+                return await inlineSuggestionService.getCompletion(text);
             },
             {
                 argsSchema: z.tuple([z.string()]),
@@ -272,11 +277,26 @@ export const registerProjectIpc = (
         createValidatedIpcHandler(
             'project:getInlineSuggestion',
             async (_event, request: z.infer<typeof inlineSuggestionRequestSchema>) => {
-                return await logoService.getInlineSuggestion(request);
+                return await inlineSuggestionService.getInlineSuggestion(request);
             },
             {
                 argsSchema: z.tuple([inlineSuggestionRequestSchema]),
                 responseSchema: inlineSuggestionResponseSchema,
+                wrapResponse: true,
+            }
+        )
+    );
+
+    ipcMain.handle(
+        'project:trackInlineSuggestionTelemetry',
+        createValidatedIpcHandler(
+            'project:trackInlineSuggestionTelemetry',
+            async (_event, eventData: z.infer<typeof inlineSuggestionTelemetrySchema>) => {
+                return await inlineSuggestionService.trackTelemetry(eventData);
+            },
+            {
+                argsSchema: z.tuple([inlineSuggestionTelemetrySchema]),
+                responseSchema: z.object({ success: z.boolean() }),
                 wrapResponse: true,
             }
         )

@@ -1,7 +1,9 @@
 import type { Monaco, OnChange } from '@monaco-editor/react';
 import type {
     InlineSuggestionRequest,
+    InlineSuggestionResponse,
     InlineSuggestionSource,
+    InlineSuggestionTelemetry,
 } from '@shared/schemas/inline-suggestions.schema';
 import { Loader2 } from 'lucide-react';
 import type { editor } from 'monaco-editor';
@@ -46,6 +48,25 @@ export const DEFAULT_INLINE_SUGGESTION_CONFIG: InlineSuggestionConfig = {
     maxTokens: 128,
 };
 
+const INLINE_SUGGESTION_DEBOUNCE_MS = 120;
+const INLINE_SUGGESTION_CACHE_TTL_MS = 30_000;
+const INLINE_SUGGESTION_CACHE_LIMIT = 40;
+const INLINE_SUGGESTION_ACCEPT_COMMAND = 'tengra.inlineSuggestion.accept';
+
+interface InlineSuggestionCacheEntry {
+    response: InlineSuggestionResponse;
+    createdAt: number;
+}
+
+interface ActiveInlineSuggestionSession {
+    cacheKey: string;
+    source: InlineSuggestionSource;
+    provider?: string;
+    model?: string;
+    language: string;
+    accepted: boolean;
+}
+
 function resolveInlineSuggestionConfig(
     settingsConfig: Partial<InlineSuggestionConfig>,
     inlineSuggestionConfig: InlineSuggestionConfig | null
@@ -69,6 +90,36 @@ function resolveInlineSuggestionConfig(
         ...settingsConfig,
         ...(inlineSuggestionConfig ?? {}),
     };
+}
+
+function buildInlineSuggestionCacheKey(request: InlineSuggestionRequest): string {
+    const prefixTail = request.prefix.slice(-240);
+    const suffixHead = (request.suffix ?? '').slice(0, 120);
+    return [
+        request.source,
+        request.provider ?? '',
+        request.model ?? '',
+        request.language,
+        `${request.cursorLine}:${request.cursorColumn}`,
+        prefixTail,
+        suffixHead,
+    ].join('|');
+}
+
+function pruneInlineSuggestionCache(cache: Map<string, InlineSuggestionCacheEntry>, now: number): void {
+    for (const [key, entry] of cache) {
+        if (now - entry.createdAt > INLINE_SUGGESTION_CACHE_TTL_MS) {
+            cache.delete(key);
+        }
+    }
+
+    while (cache.size > INLINE_SUGGESTION_CACHE_LIMIT) {
+        const oldestKey = cache.keys().next().value;
+        if (!oldestKey) {
+            break;
+        }
+        cache.delete(oldestKey);
+    }
 }
 
 function buildInlineSuggestionConfigFromSettings(
@@ -358,16 +409,52 @@ const useInlineCompletions = (
     inlineSuggestionConfig: InlineSuggestionConfig,
     readOnly: boolean
 ) => {
+    const cacheRef = useRef<Map<string, InlineSuggestionCacheEntry>>(new Map());
+    const latestRequestIdRef = useRef(0);
+    const activeSessionRef = useRef<ActiveInlineSuggestionSession | null>(null);
+
     useEffect(() => {
         if (!monacoRef.current || !hasMonaco || !inlineSuggestionConfig.enabled || readOnly) {
             return;
         }
         const monaco = monacoRef.current;
+        const trackTelemetry = (event: InlineSuggestionTelemetry) => {
+            void window.electron.project.trackInlineSuggestionTelemetry(event).catch(() => {});
+        };
+        const commandDisposable = monaco.editor.registerCommand(
+            INLINE_SUGGESTION_ACCEPT_COMMAND,
+            (_accessor: unknown, payload: ActiveInlineSuggestionSession | undefined) => {
+                if (!payload) {
+                    return;
+                }
+                activeSessionRef.current = {
+                    ...payload,
+                    accepted: true,
+                };
+                trackTelemetry({
+                    event: 'accept',
+                    source: payload.source,
+                    provider: payload.provider,
+                    model: payload.model,
+                    language: payload.language,
+                    cacheKey: payload.cacheKey,
+                });
+            }
+        );
         const prov = monaco.languages.registerInlineCompletionsProvider(normalizedLanguage, {
             provideInlineCompletions: async (
                 model: editor.ITextModel,
                 pos: { lineNumber: number; column: number }
             ) => {
+                const requestId = latestRequestIdRef.current + 1;
+                latestRequestIdRef.current = requestId;
+                await new Promise(resolve => {
+                    setTimeout(resolve, INLINE_SUGGESTION_DEBOUNCE_MS);
+                });
+                if (requestId !== latestRequestIdRef.current) {
+                    return { items: [] };
+                }
+
                 const request = buildInlineSuggestionRequest(
                     model,
                     pos,
@@ -380,11 +467,80 @@ const useInlineCompletions = (
                     return { items: [] };
                 }
 
+                const startedAt = Date.now();
+                const cacheKey = buildInlineSuggestionCacheKey(request);
+                pruneInlineSuggestionCache(cacheRef.current, startedAt);
+                const cached = cacheRef.current.get(cacheKey);
+                if (cached && startedAt - cached.createdAt <= INLINE_SUGGESTION_CACHE_TTL_MS) {
+                    trackTelemetry({
+                        event: 'cache_hit',
+                        source: cached.response.source,
+                        provider: cached.response.provider,
+                        model: cached.response.model,
+                        language: request.language,
+                        cacheKey,
+                    });
+                    if (!cached.response.suggestion) {
+                        return { items: [] };
+                    }
+                    const session: ActiveInlineSuggestionSession = {
+                        cacheKey,
+                        source: cached.response.source,
+                        provider: cached.response.provider,
+                        model: cached.response.model,
+                        language: request.language,
+                        accepted: false,
+                    };
+                    return {
+                        items: [
+                            {
+                                insertText: cached.response.suggestion,
+                                range: {
+                                    startLineNumber: pos.lineNumber,
+                                    startColumn: pos.column,
+                                    endLineNumber: pos.lineNumber,
+                                    endColumn: pos.column,
+                                },
+                                command: {
+                                    id: INLINE_SUGGESTION_ACCEPT_COMMAND,
+                                    title: 'Track inline suggestion accept',
+                                    arguments: [session],
+                                },
+                            },
+                        ],
+                    };
+                }
+
+                trackTelemetry({
+                    event: 'request',
+                    source: request.source,
+                    provider: request.provider,
+                    model: request.model,
+                    language: request.language,
+                    cacheKey,
+                });
+
                 try {
                     const response = await window.electron.project.getInlineSuggestion(request);
+                    cacheRef.current.set(cacheKey, {
+                        response,
+                        createdAt: Date.now(),
+                    });
+                    pruneInlineSuggestionCache(cacheRef.current, Date.now());
+                    if (requestId !== latestRequestIdRef.current) {
+                        return { items: [] };
+                    }
                     if (!response.suggestion) {
                         return { items: [] };
                     }
+                    const session: ActiveInlineSuggestionSession = {
+                        cacheKey,
+                        source: response.source,
+                        provider: response.provider,
+                        model: response.model,
+                        language: request.language,
+                        accepted: false,
+                    };
                     return {
                         items: [
                             {
@@ -395,17 +551,70 @@ const useInlineCompletions = (
                                     endLineNumber: pos.lineNumber,
                                     endColumn: pos.column,
                                 },
+                                command: {
+                                    id: INLINE_SUGGESTION_ACCEPT_COMMAND,
+                                    title: 'Track inline suggestion accept',
+                                    arguments: [session],
+                                },
                             },
                         ],
                     };
                 } catch {
+                    if (requestId === latestRequestIdRef.current) {
+                        trackTelemetry({
+                            event: 'error',
+                            source: request.source,
+                            provider: request.provider,
+                            model: request.model,
+                            language: request.language,
+                            cacheKey,
+                            latencyMs: Date.now() - startedAt,
+                            reason: 'request_failed',
+                        });
+                    }
                     return { items: [] };
                 }
             },
-            freeInlineCompletions: () => { },
-            handleItemDidShow: () => { },
+            freeInlineCompletions: () => {
+                const activeSession = activeSessionRef.current;
+                if (!activeSession || activeSession.accepted) {
+                    activeSessionRef.current = null;
+                    return;
+                }
+                trackTelemetry({
+                    event: 'reject',
+                    source: activeSession.source,
+                    provider: activeSession.provider,
+                    model: activeSession.model,
+                    language: activeSession.language,
+                    cacheKey: activeSession.cacheKey,
+                });
+                activeSessionRef.current = null;
+            },
+            handleItemDidShow: (_completions: unknown, item: unknown) => {
+                const commandCandidate =
+                    item && typeof item === 'object' && 'command' in item
+                        ? (item as { command?: { arguments?: unknown[] } }).command
+                        : undefined;
+                const session = commandCandidate?.arguments?.[0] as
+                    | ActiveInlineSuggestionSession
+                    | undefined;
+                if (!session) {
+                    return;
+                }
+                activeSessionRef.current = session;
+                trackTelemetry({
+                    event: 'show',
+                    source: session.source,
+                    provider: session.provider,
+                    model: session.model,
+                    language: session.language,
+                    cacheKey: session.cacheKey,
+                });
+            },
         });
         return () => {
+            commandDisposable.dispose();
             prov.dispose();
         };
     }, [

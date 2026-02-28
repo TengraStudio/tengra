@@ -62,6 +62,7 @@ function getSpeechRecognition(): BrowserSpeechRecognitionConstructor | null {
     if (typeof window === 'undefined') {
         return null;
     }
+    // SAFETY: We are accessing standard browser speech recognition APIs that are not fully typed in standard lib.
     const voiceWindow = window as unknown as {
         SpeechRecognition: BrowserSpeechRecognitionConstructor;
         webkitSpeechRecognition: BrowserSpeechRecognitionConstructor;

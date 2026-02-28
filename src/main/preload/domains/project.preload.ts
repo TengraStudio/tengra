@@ -1,6 +1,7 @@
 import type {
     InlineSuggestionRequest,
     InlineSuggestionResponse,
+    InlineSuggestionTelemetry,
 } from '@shared/schemas/inline-suggestions.schema';
 import { IpcValue, ProjectAnalysis } from '@shared/types';
 import { IpcRenderer, IpcRendererEvent } from 'electron';
@@ -23,6 +24,9 @@ export interface ProjectBridge {
     applyLogo: (projectPath: string, tempLogoPath: string) => Promise<string>;
     getCompletion: (text: string) => Promise<string>;
     getInlineSuggestion: (request: InlineSuggestionRequest) => Promise<InlineSuggestionResponse>;
+    trackInlineSuggestionTelemetry: (
+        event: InlineSuggestionTelemetry
+    ) => Promise<{ success: boolean }>;
     improveLogoPrompt: (prompt: string) => Promise<string>;
     uploadLogo: (projectPath: string) => Promise<string | null>;
     watch: (rootPath: string) => Promise<boolean>;
@@ -77,6 +81,8 @@ export function createProjectBridge(ipc: IpcRenderer): ProjectBridge {
         getCompletion: text => ipc.invoke('project:getCompletion', text).then(unwrapProjectResponse),
         getInlineSuggestion: request =>
             ipc.invoke('project:getInlineSuggestion', request).then(unwrapProjectResponse),
+        trackInlineSuggestionTelemetry: event =>
+            ipc.invoke('project:trackInlineSuggestionTelemetry', event).then(unwrapProjectResponse),
         improveLogoPrompt: prompt =>
             ipc.invoke('project:improveLogoPrompt', prompt).then(unwrapProjectResponse),
         uploadLogo: projectPath => ipc.invoke('project:uploadLogo', projectPath).then(unwrapProjectResponse),

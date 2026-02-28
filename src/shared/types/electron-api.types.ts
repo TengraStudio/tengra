@@ -1,6 +1,7 @@
 import type {
     InlineSuggestionRequest,
     InlineSuggestionResponse,
+    InlineSuggestionTelemetry,
 } from '@shared/schemas/inline-suggestions.schema';
 import { IpcRendererEvent } from 'electron';
 
@@ -909,6 +910,9 @@ export interface ElectronAPI {
         applyLogo: (projectPath: string, tempLogoPath: string) => Promise<string>;
         getCompletion: (text: string) => Promise<string>;
         getInlineSuggestion: (request: InlineSuggestionRequest) => Promise<InlineSuggestionResponse>;
+        trackInlineSuggestionTelemetry: (
+            event: InlineSuggestionTelemetry
+        ) => Promise<{ success: boolean }>;
         improveLogoPrompt: (prompt: string) => Promise<string>;
         uploadLogo: (projectPath: string) => Promise<string | null>;
         watch: (rootPath: string) => Promise<boolean>;

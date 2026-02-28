@@ -9,10 +9,6 @@ import { ModelProviderInfo, ModelRegistryService } from '@main/services/llm/mode
 import { ProjectService } from '@main/services/project/project.service';
 import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
-import {
-    InlineSuggestionRequest,
-    InlineSuggestionResponse,
-} from '@shared/schemas/inline-suggestions.schema';
 import { JsonObject } from '@shared/types/common';
 import { ModelQuotaItem } from '@shared/types/quota';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
@@ -25,11 +21,6 @@ interface LogoAnalysisModelCandidate {
 }
 
 interface ResolvedGenerationModel {
-    model: string;
-    provider?: string;
-}
-
-interface InlineSuggestionRoute {
     model: string;
     provider?: string;
 }
@@ -981,142 +972,6 @@ ${context}`;
         }
     }
 
-    private buildInlineSuggestionPrompt(request: InlineSuggestionRequest): string {
-        const suffixSection = request.suffix?.trim()
-            ? `Code after cursor:\n${request.suffix}`
-            : 'Code after cursor:\n<empty>';
-        const tokenHint = request.maxTokens ? `Keep the completion under ${request.maxTokens} tokens.` : '';
-
-        return `You are an expert code completion engine.
-Continue the code at the cursor without explanation, markdown, or backticks.
-Return only the text that should be inserted at the cursor.
-Match the existing coding style, indentation, and language semantics.
-${tokenHint}
-
-Language: ${request.language}
-Cursor: line ${request.cursorLine}, column ${request.cursorColumn}
-
-Code before cursor:
-${request.prefix}
-
-${suffixSection}`;
-    }
-
-    private resolveInlineSuggestionRoute(request: InlineSuggestionRequest): InlineSuggestionRoute {
-        if (request.source === 'copilot') {
-            return {
-                model: request.model?.trim() || 'gpt-4o-copilot',
-                provider: 'copilot',
-            };
-        }
-
-        return {
-            model: request.model?.trim() || 'gpt-4o-mini',
-            provider: request.provider?.trim() || undefined,
-        };
-    }
-
-    private normalizeInlineSuggestionContent(content: string): string | null {
-        const withoutCodeFence = content
-            .replace(/^```[a-zA-Z0-9_-]*\s*/u, '')
-            .replace(/```$/u, '')
-            .replace(/\r\n/g, '\n')
-            .trim();
-
-        if (!withoutCodeFence) {
-            return null;
-        }
-
-        return withoutCodeFence;
-    }
-
-    private async withSelectedCopilotAccount<T>(
-        accountId: string | undefined,
-        task: () => Promise<T>
-    ): Promise<T> {
-        if (!accountId) {
-            return task();
-        }
-
-        const previousAccount = await this.authService.getActiveAccount('copilot');
-        if (previousAccount?.id === accountId) {
-            return task();
-        }
-
-        await this.authService.setActiveAccount('copilot', accountId);
-
-        try {
-            return await task();
-        } finally {
-            if (previousAccount?.id) {
-                await this.authService.setActiveAccount('copilot', previousAccount.id);
-            }
-        }
-    }
-
-    async getInlineSuggestion(request: InlineSuggestionRequest): Promise<InlineSuggestionResponse> {
-        const trimmedPrefix = request.prefix.trim();
-        if (!trimmedPrefix) {
-            return {
-                suggestion: null,
-                source: request.source,
-                model: request.model,
-                provider: request.provider,
-            };
-        }
-
-        let copilotAccountId = request.accountId;
-        if (request.source === 'copilot') {
-            const copilotAccounts = await this.authService.getAccountsByProvider('copilot');
-            if (copilotAccounts.length === 0) {
-                return {
-                    suggestion: null,
-                    source: request.source,
-                    model: request.model,
-                    provider: 'copilot',
-                };
-            }
-
-            const activeCopilotAccount = await this.authService.getActiveAccount('copilot');
-            copilotAccountId =
-                copilotAccountId
-                || activeCopilotAccount?.id
-                || copilotAccounts[0]?.id;
-        }
-
-        const prompt = this.buildInlineSuggestionPrompt(request);
-        const route = this.resolveInlineSuggestionRoute(request);
-        const response = await this.withSelectedCopilotAccount(copilotAccountId, async () =>
-            this.llmService.chat(
-                [{ role: 'user', content: prompt }],
-                route.model,
-                [],
-                route.provider,
-                { temperature: 0.15 }
-            )
-        );
-
-        return {
-            suggestion: this.normalizeInlineSuggestionContent(response.content),
-            source: request.source,
-            model: route.model,
-            provider: route.provider,
-        };
-    }
-
-    async getCompletion(text: string): Promise<string> {
-        const lines = text.split(/\r?\n/u);
-        const lastLine = lines.at(-1) ?? '';
-        const response = await this.getInlineSuggestion({
-            prefix: text,
-            language: 'plaintext',
-            cursorLine: lines.length,
-            cursorColumn: lastLine.length + 1,
-            source: 'custom',
-            model: 'gpt-4o-mini',
-        });
-        return response.suggestion ?? '';
-    }
 }
 
 

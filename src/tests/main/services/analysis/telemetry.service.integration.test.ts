@@ -2,7 +2,8 @@
  * Integration tests for TelemetryService (BACKLOG-0462)
  */
 import { TelemetryService } from '@main/services/analysis/telemetry.service';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SettingsService } from '@main/services/system/settings.service';
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
 // Mock electron and dependencies
 vi.mock('electron', () => ({
@@ -11,9 +12,13 @@ vi.mock('electron', () => ({
     }
 }));
 
+interface MockSettingsService {
+    getSettings: MockInstance;
+}
+
 describe('TelemetryService Integration Tests', () => {
     let service: TelemetryService;
-    let mockSettingsService: any;
+    let mockSettingsService: MockSettingsService;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -26,7 +31,9 @@ describe('TelemetryService Integration Tests', () => {
             })
         };
 
-        service = new TelemetryService(mockSettingsService);
+        service = new TelemetryService(
+            mockSettingsService as unknown as SettingsService
+        );
     });
 
     afterEach(async () => {
@@ -200,6 +207,86 @@ describe('TelemetryService Integration Tests', () => {
             expect(TELEMETRY_PERFORMANCE_BUDGETS.flush).toBeDefined();
             expect(TELEMETRY_PERFORMANCE_BUDGETS.initialize).toBeDefined();
             expect(TELEMETRY_PERFORMANCE_BUDGETS.cleanup).toBeDefined();
+        });
+    });
+
+    describe('Regression: batch then flush cycle', () => {
+        it('should flush all events tracked via trackBatch', async () => {
+            await service.initialize();
+
+            const batch = Array.from({ length: 10 }, (_, i) => ({ name: `batch.event${i}` }));
+            const result = service.trackBatch(batch);
+            expect(result.success).toBe(true);
+            expect(service.getQueueSize()).toBe(10);
+
+            await service.flush();
+            expect(service.getQueueSize()).toBe(0);
+            expect(service.getTotalFlushedEvents()).toBe(10);
+        });
+
+        it('should maintain correct counters across mixed track and trackBatch', async () => {
+            service.track('single.event');
+            service.trackBatch([{ name: 'batch1' }, { name: 'batch2' }]);
+            expect(service.getTotalTrackedEvents()).toBe(3);
+            expect(service.getQueueSize()).toBe(3);
+
+            await service.flush();
+            expect(service.getTotalFlushedEvents()).toBe(3);
+
+            service.track('after.flush');
+            expect(service.getTotalTrackedEvents()).toBe(4);
+            expect(service.getQueueSize()).toBe(1);
+        });
+    });
+
+    describe('Regression: multiple flush cycles', () => {
+        it('should handle repeated init-track-flush-cleanup cycles', async () => {
+            for (let cycle = 0; cycle < 3; cycle++) {
+                const svc = new TelemetryService(
+                    mockSettingsService as unknown as SettingsService
+                );
+                await svc.initialize();
+                svc.track(`cycle${cycle}.event`);
+                await svc.flush();
+                expect(svc.getQueueSize()).toBe(0);
+                await svc.cleanup();
+            }
+        });
+    });
+
+    describe('Regression: telemetry toggle mid-batch', () => {
+        it('should reject remaining events when disabled mid-batch', () => {
+            let callCount = 0;
+            mockSettingsService.getSettings.mockImplementation(() => {
+                callCount++;
+                // Disable after first call
+                return { telemetry: { enabled: callCount <= 1 } };
+            });
+
+            const result = service.trackBatch([
+                { name: 'event1' },
+                { name: 'event2' },
+                { name: 'event3' }
+            ]);
+
+            expect(result.success).toBe(false);
+            expect(result.results?.[0].success).toBe(true);
+            expect(result.results?.[1].success).toBe(false);
+            expect(result.results?.[2].success).toBe(false);
+        });
+    });
+
+    describe('Regression: health after overflow recovery', () => {
+        it('should recover health after flush clears overflow state', async () => {
+            // Fill to 91% (unhealthy threshold)
+            for (let i = 0; i < 9100; i++) {
+                service.track(`event${i}`);
+            }
+            expect(service.getHealth().isHealthy).toBe(false);
+
+            await service.flush();
+            expect(service.getHealth().isHealthy).toBe(true);
+            expect(service.getHealth().queueSize).toBe(0);
         });
     });
 });
