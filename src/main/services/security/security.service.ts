@@ -43,6 +43,15 @@ export class SecurityService extends BaseService implements ISecurityService {
         this.testEncryption();
     }
 
+    /** Securely zeros the master key buffer and releases resources. */
+    override async cleanup(): Promise<void> {
+        if (this.masterKey) {
+            this.masterKey.fill(0);
+            this.masterKey = null;
+        }
+        this.logInfo('Security service cleaned up');
+    }
+
     private loadOrCreateMasterKey() {
         try {
             if (fs.existsSync(this.keyPath)) {

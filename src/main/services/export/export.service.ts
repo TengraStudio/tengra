@@ -21,6 +21,12 @@ export class ExportService extends BaseService {
         appLogger.info('ExportService', 'Initializing Export Service...');
     }
 
+    /** Drains the PDF export queue. */
+    async cleanup(): Promise<void> {
+        await this.pdfExportQueue;
+        appLogger.info('ExportService', 'Export service cleaned up');
+    }
+
     async exportToMarkdown(content: string, filePath: string): Promise<{ success: boolean; error?: string }> {
         try {
             await fs.writeFile(filePath, content, 'utf-8');

@@ -64,6 +64,12 @@ export class BrainService {
         this.isInitialized = true;
     }
 
+    /** Resets initialization state. */
+    async cleanup(): Promise<void> {
+        this.isInitialized = false;
+        appLogger.info('BrainService', 'Brain service cleaned up');
+    }
+
     /**
      * Learn a fact about the user
      */

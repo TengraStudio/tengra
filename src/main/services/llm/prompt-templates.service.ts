@@ -29,6 +29,12 @@ export class PromptTemplatesService extends BaseService {
         await this.loadCustomTemplates();
     }
 
+    /** Clears in-memory custom templates. */
+    async cleanup(): Promise<void> {
+        this.customTemplates = [];
+        this.logInfo('Prompt templates service cleaned up');
+    }
+
     /**
      * Get all templates (builtin + custom)
      */

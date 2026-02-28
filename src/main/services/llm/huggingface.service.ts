@@ -964,6 +964,21 @@ export class HuggingFaceService extends BaseService {
         appLogger.info('HuggingFaceService', 'Initializing...');
     }
 
+    /** Clears fine-tune timers, caches, and pending download queue. */
+    override async cleanup(): Promise<void> {
+        for (const timer of this.fineTuneTimers.values()) {
+            clearInterval(timer);
+        }
+        this.fineTuneTimers.clear();
+        this.fineTuneJobs.clear();
+        this.searchCache.clear();
+        this.watchlist.clear();
+        this.downloadQueue.length = 0;
+        this.modelVersions.length = 0;
+        this.isProcessingQueue = false;
+        this.logInfo('HuggingFace service cleaned up');
+    }
+
     private async executeDownload(
         url: string,
         outputPath: string,

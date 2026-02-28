@@ -47,6 +47,12 @@ export class AuditLogService extends BaseService {
         await this.rotateLogs();
     }
 
+    /** Resets in-memory integrity hash chain. */
+    async cleanup(): Promise<void> {
+        this.lastIntegrityHash = '';
+        this.logInfo('Audit log service cleaned up');
+    }
+
     private async migrateLegacyData(): Promise<void> {
         if (!fs.existsSync(this.legacyLogPath)) {
             return;

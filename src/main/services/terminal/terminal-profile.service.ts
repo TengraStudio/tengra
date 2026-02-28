@@ -53,6 +53,12 @@ export class TerminalProfileService extends BaseService {
         await this.loadProfiles();
     }
 
+    /** Clears in-memory terminal profiles. */
+    async cleanup(): Promise<void> {
+        this.profiles.clear();
+        this.logInfo('Terminal profile service cleaned up');
+    }
+
     /**
      * Get all terminal profiles
      */

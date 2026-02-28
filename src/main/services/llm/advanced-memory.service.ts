@@ -161,6 +161,18 @@ export class AdvancedMemoryService {
         appLogger.info(SERVICE_NAME, 'Advanced memory service initialized');
     }
 
+    /** Clears staging buffers, shared namespaces, and analytics state. */
+    async cleanup(): Promise<void> {
+        this.stagingBuffer.clear();
+        this.sharedNamespaces.clear();
+        this.sharedNamespaceConflicts.clear();
+        this.searchAnalytics.queryCounts.clear();
+        this.searchAnalytics.history.length = 0;
+        this.cachedOllamaModel = null;
+        this.isInitialized = false;
+        appLogger.info(SERVICE_NAME, 'Advanced memory service cleaned up');
+    }
+
     // ========================================================================
     // FACT EXTRACTION (Entry Point)
     // ========================================================================

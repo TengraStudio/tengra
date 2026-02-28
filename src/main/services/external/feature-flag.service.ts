@@ -102,6 +102,13 @@ export class FeatureFlagService extends BaseService {
         void super.initialize();
     }
 
+    /** Clears in-memory flags and overrides. */
+    override async cleanup(): Promise<void> {
+        this.flags.clear();
+        this.overrides.clear();
+        this.logInfo('Feature flag service cleaned up');
+    }
+
     private async loadFlags() {
         try {
             // Ensure Config Dir exists

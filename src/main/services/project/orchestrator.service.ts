@@ -35,6 +35,18 @@ export class MultiAgentOrchestratorService extends BaseService {
         this.logInfo('Initializing Multi-Agent Orchestrator...');
     }
 
+    /** Resets orchestration state and clears history. */
+    async cleanup(): Promise<void> {
+        this.state = {
+            status: 'idle',
+            currentTask: '',
+            plan: [],
+            history: [],
+            assignments: {}
+        };
+        this.logInfo('Multi-Agent Orchestrator cleaned up');
+    }
+
     /**
      * Start a multi-agent orchestration workflow (Planning Phase)
      */

@@ -423,6 +423,13 @@ export class ModelRegistryService extends BaseService {
 
     // Removed fetchProxyModels and fetchLlamaModels
 
+    /** Clears the model cache and resets telemetry counters. */
+    override async cleanup(): Promise<void> {
+        this.cachedModels = [];
+        this.lastUpdate = 0;
+        this.logInfo('Model registry service cleaned up');
+    }
+
     /**
      * Get cached remote models.
      */
