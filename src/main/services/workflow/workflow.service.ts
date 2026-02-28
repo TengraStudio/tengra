@@ -124,31 +124,39 @@ export class WorkflowService extends BaseService {
     }
 
     private async loadWorkflows(): Promise<void> {
+        const start = performance.now();
         try {
             const data = await fs.readFile(this.workflowsFilePath, 'utf-8');
             const workflowsArray: Workflow[] = JSON.parse(data);
             this.workflows = new Map(workflowsArray.map(w => [w.id, w]));
             this.logInfo(`Loaded ${this.workflows.size} workflows from disk`);
+            this.emitTelemetry(WorkflowTelemetryEvent.WORKFLOWS_LOADED, { count: this.workflows.size });
         } catch (error) {
             if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
                 this.logInfo('No workflows file found, starting with empty workflows');
             } else {
                 this.logError('Failed to load workflows', error);
             }
+        } finally {
+            this.checkPerformanceBudget('load', performance.now() - start, WORKFLOW_PERFORMANCE_BUDGETS.LOAD_MS);
         }
     }
 
     private async saveWorkflows(): Promise<void> {
+        const start = performance.now();
         try {
             const workflowsArray = Array.from(this.workflows.values());
             await fs.writeFile(this.workflowsFilePath, JSON.stringify(workflowsArray, null, 2), 'utf-8');
             this.logInfo(`Saved ${workflowsArray.length} workflows to disk`);
+            this.emitTelemetry(WorkflowTelemetryEvent.WORKFLOWS_SAVED, { count: workflowsArray.length });
         } catch (error) {
             this.logError('Failed to save workflows', error);
             throw new WorkflowError(
                 WorkflowErrorCode.SAVE_FAILED,
                 `Failed to save workflows: ${error instanceof Error ? error.message : String(error)}`
             );
+        } finally {
+            this.checkPerformanceBudget('save', performance.now() - start, WORKFLOW_PERFORMANCE_BUDGETS.SAVE_MS);
         }
     }
 
@@ -170,6 +178,7 @@ export class WorkflowService extends BaseService {
     }
 
     public async createWorkflow(workflow: Omit<Workflow, 'id' | 'createdAt' | 'updatedAt'>): Promise<Workflow> {
+        const start = performance.now();
         const parsed = CreateWorkflowInputSchema.safeParse(workflow);
         if (!parsed.success) {
             const message = formatZodErrors(parsed.error);
@@ -186,6 +195,8 @@ export class WorkflowService extends BaseService {
         this.workflows.set(newWorkflow.id, newWorkflow);
         await this.saveWorkflows();
         this.logInfo(`Created workflow: ${newWorkflow.name} (${newWorkflow.id})`);
+        this.emitTelemetry(WorkflowTelemetryEvent.WORKFLOW_CREATED, { workflowId: newWorkflow.id });
+        this.checkPerformanceBudget('create', performance.now() - start, WORKFLOW_PERFORMANCE_BUDGETS.CREATE_MS);
 
         if (newWorkflow.enabled) {
             this.registerWorkflowTriggers();
@@ -195,6 +206,7 @@ export class WorkflowService extends BaseService {
     }
 
     public async updateWorkflow(id: string, updates: Partial<Workflow>): Promise<Workflow> {
+        const start = performance.now();
         this.validateId(id, 'updateWorkflow');
 
         const parsed = UpdateWorkflowInputSchema.safeParse(updates);
@@ -219,6 +231,8 @@ export class WorkflowService extends BaseService {
         this.workflows.set(id, updatedWorkflow);
         await this.saveWorkflows();
         this.logInfo(`Updated workflow: ${updatedWorkflow.name} (${id})`);
+        this.emitTelemetry(WorkflowTelemetryEvent.WORKFLOW_UPDATED, { workflowId: id });
+        this.checkPerformanceBudget('update', performance.now() - start, WORKFLOW_PERFORMANCE_BUDGETS.UPDATE_MS);
 
         // Re-register triggers if enabled status changed
         this.registerWorkflowTriggers();
@@ -227,6 +241,7 @@ export class WorkflowService extends BaseService {
     }
 
     public async deleteWorkflow(id: string): Promise<void> {
+        const start = performance.now();
         this.validateId(id, 'deleteWorkflow');
 
         const workflow = this.workflows.get(id);
@@ -237,6 +252,8 @@ export class WorkflowService extends BaseService {
         this.workflows.delete(id);
         await this.saveWorkflows();
         this.logInfo(`Deleted workflow: ${workflow.name} (${id})`);
+        this.emitTelemetry(WorkflowTelemetryEvent.WORKFLOW_DELETED, { workflowId: id });
+        this.checkPerformanceBudget('delete', performance.now() - start, WORKFLOW_PERFORMANCE_BUDGETS.DELETE_MS);
     }
 
     public getWorkflow(id: string): Workflow | undefined {
@@ -266,6 +283,7 @@ export class WorkflowService extends BaseService {
         id: string,
         context?: Partial<WorkflowContext>
     ): Promise<WorkflowExecutionResult> {
+        const start = performance.now();
         this.validateId(id, 'executeWorkflow');
 
         if (context !== undefined) {
@@ -287,6 +305,12 @@ export class WorkflowService extends BaseService {
 
         this.logInfo(`Executing workflow: ${workflow.name} (${id})`);
         const result = await this.workflowRunner.executeWorkflow(workflow, context);
+
+        const telemetryEvent = result.status === 'success'
+            ? WorkflowTelemetryEvent.WORKFLOW_EXECUTED
+            : WorkflowTelemetryEvent.WORKFLOW_EXECUTION_FAILED;
+        this.emitTelemetry(telemetryEvent, { workflowId: id, status: result.status });
+        this.checkPerformanceBudget('execute', performance.now() - start, WORKFLOW_PERFORMANCE_BUDGETS.EXECUTE_MS);
 
         // Update last run info
         await this.updateWorkflow(id, {

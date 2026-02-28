@@ -1,4 +1,4 @@
-import { Clock, Play, Power, PowerOff, Trash2, Zap } from 'lucide-react';
+import { Clock, Loader2, Play, Power, PowerOff, Trash2, Zap } from 'lucide-react';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -7,6 +7,7 @@ import { Workflow } from '@/types/workflow.types';
 interface WorkflowListProps {
     workflows: Workflow[];
     selectedWorkflow: Workflow | null;
+    executingIds: Set<string>;
     onSelectWorkflow: (workflow: Workflow) => void;
     onToggleWorkflow: (workflow: Workflow) => void;
     onRunWorkflow: (workflowId: string) => void;
@@ -19,6 +20,7 @@ interface WorkflowListProps {
 export const WorkflowList: React.FC<WorkflowListProps> = ({
     workflows,
     selectedWorkflow,
+    executingIds,
     onSelectWorkflow,
     onToggleWorkflow,
     onRunWorkflow,
@@ -45,6 +47,7 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
         <div className="space-y-3">
             {workflows.map((workflow) => {
                 const isSelected = selectedWorkflow?.id === workflow.id;
+                const isExecuting = executingIds.has(workflow.id);
                 const hasRun = workflow.lastRunAt !== undefined;
                 const isSuccess = workflow.lastRunStatus === 'success';
 
@@ -106,10 +109,15 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
                                     </button>
                                     <button
                                         onClick={() => onRunWorkflow(workflow.id)}
-                                        className="p-2 rounded-md hover:bg-blue-500/10 text-blue-500 transition-colors"
+                                        disabled={isExecuting}
+                                        className="p-2 rounded-md hover:bg-blue-500/10 text-blue-500 transition-colors disabled:opacity-50"
                                         title={t('workflows.run')}
                                     >
-                                        <Play className="w-4 h-4" />
+                                        {isExecuting ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <Play className="w-4 h-4" />
+                                        )}
                                     </button>
                                     <button
                                         onClick={() => onDeleteWorkflow(workflow.id)}
