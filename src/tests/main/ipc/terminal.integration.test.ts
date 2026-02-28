@@ -3,11 +3,11 @@ import { withRateLimit } from '@main/utils/rate-limiter.util';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 
-const ipcMainHandlers = new Map<string, (...args: any[]) => any>();
+const ipcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
 
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: any[]) => any) => {
+        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
             ipcMainHandlers.set(channel, handler);
         }),
         setMaxListeners: vi.fn()
@@ -25,8 +25,8 @@ vi.mock('@main/logging/logger', () => ({
 }));
 
 vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: (_name: string, handler: (...args: any[]) => any) => async (...args: any[]) => handler(...args),
-    createSafeIpcHandler: (_name: string, handler: (...args: any[]) => any, defaultValue: unknown) => async (...args: any[]) => {
+    createIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown) => async (...args: unknown[]) => handler(...args),
+    createSafeIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown, defaultValue: unknown) => async (...args: unknown[]) => {
         try {
             return await handler(...args);
         } catch {
@@ -35,7 +35,7 @@ vi.mock('@main/utils/ipc-wrapper.util', () => ({
     },
     createValidatedIpcHandler: (
         _name: string,
-        handler: (...args: any[]) => any,
+        handler: (...args: unknown[]) => unknown,
         options?: { argsSchema?: { parse: (args: unknown[]) => unknown[] }; defaultValue?: unknown }
     ) => async (event: unknown, ...args: unknown[]) => {
         try {
@@ -147,7 +147,7 @@ describe('Terminal IPC Integration', () => {
         }
     };
 
-    const mockEvent = { sender: { id: 1 } } as any;
+    const mockEvent = { sender: { id: 1 } } as never;
 
 
     beforeEach(() => {
@@ -155,11 +155,11 @@ describe('Terminal IPC Integration', () => {
         vi.clearAllMocks();
 
         registerTerminalIpc(
-            () => mockWindow as any,
-            mockTerminalService as any,
-            mockProfileService as any,
-            mockSmartService as any,
-            mockDockerService as any
+            () => mockWindow as never,
+            mockTerminalService as never,
+            mockProfileService as never,
+            mockSmartService as never,
+            mockDockerService as never
         );
     });
 

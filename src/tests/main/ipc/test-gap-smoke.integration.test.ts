@@ -92,18 +92,18 @@ describe('Missing IPC TODO coverage (behavior)', () => {
 
         const mockWin = {
             webContents: { id: 1 }
-        } as any;
+        } as never;
 
         const mockEvent = {
             sender: { id: 1 }
-        } as any;
+        } as never;
 
         vi.mocked(dialog.showOpenDialog).mockResolvedValue({
             canceled: false,
             filePaths: ['C:/workspace/project']
-        } as any);
+        } as never);
 
-        registerFilesIpc(() => mockWin, fileSystemService as any, roots);
+        registerFilesIpc(() => mockWin, fileSystemService as never, roots);
 
         const handler = handlers.get('files:selectDirectory');
         const result = await handler?.(mockEvent);

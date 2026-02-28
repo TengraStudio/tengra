@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock electron
-const mockIpcMainHandlers = new Map<string, (...args: any[]) => any>();
+const mockIpcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: any[]) => any) => {
+        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
             mockIpcMainHandlers.set(channel, handler);
         }),
         removeHandler: vi.fn((channel: string) => {
@@ -24,7 +24,7 @@ vi.mock('@main/logging/logger', () => ({
 
 // Mock IPC wrapper
 vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createSafeIpcHandler: (_name: string, handler: (...args: any[]) => any, fallback: any) => async (...args: any[]) => {
+    createSafeIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown, fallback: unknown) => async (...args: unknown[]) => {
         try {
             const result = await handler(...args);
             return result;
@@ -34,7 +34,7 @@ vi.mock('@main/utils/ipc-wrapper.util', () => ({
     },
     createValidatedIpcHandler: (
         _name: string,
-        handler: (...args: any[]) => any,
+        handler: (...args: unknown[]) => unknown,
         options?: { argsSchema?: { parse: (args: unknown[]) => unknown[] }; defaultValue?: unknown }
     ) => async (event: unknown, ...args: unknown[]) => {
         try {
@@ -51,7 +51,7 @@ vi.mock('@main/utils/ipc-wrapper.util', () => ({
 
 // Mock sanitize util
 vi.mock('@shared/utils/sanitize.util', () => ({
-    safeJsonParse: vi.fn((jsonString: string, fallback: any) => {
+    safeJsonParse: vi.fn((jsonString: string, fallback: unknown) => {
         try {
             return JSON.parse(jsonString);
         } catch {
@@ -69,7 +69,7 @@ vi.mock('@main/services/llm/agent.service', () => ({
 import { registerAgentIpc } from '@main/ipc/agent';
 
 describe('Agent IPC Integration', () => {
-    let mockAgentService: any;
+    let mockAgentService: Record<string, ReturnType<typeof vi.fn>>;
 
     beforeEach(() => {
         vi.clearAllMocks();

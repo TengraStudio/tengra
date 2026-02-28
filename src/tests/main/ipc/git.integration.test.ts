@@ -3,7 +3,7 @@ import { IpcMainInvokeEvent } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { ipcMainHandlers, fsPromisesMock } = vi.hoisted(() => ({
-    ipcMainHandlers: new Map<string, (...args: any[]) => Promise<any>>(),
+    ipcMainHandlers: new Map<string, (...args: unknown[]) => Promise<unknown>>(),
     fsPromisesMock: {
         readdir: vi.fn(),
         stat: vi.fn(),
@@ -16,7 +16,7 @@ const { ipcMainHandlers, fsPromisesMock } = vi.hoisted(() => ({
 
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: any[]) => Promise<any>) => {
+        handle: vi.fn((channel: string, handler: (...args: unknown[]) => Promise<unknown>) => {
             ipcMainHandlers.set(channel, handler);
         }),
         removeHandler: vi.fn(),
@@ -41,8 +41,8 @@ vi.mock('@main/utils/ipc-batch.util', () => ({
 }));
 
 vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: (_name: string, handler: (...args: any[]) => any) => async (...args: any[]) => handler(...args),
-    createSafeIpcHandler: (_name: string, handler: (...args: any[]) => any, defaultValue: unknown) => async (...args: any[]) => {
+    createIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown) => async (...args: unknown[]) => handler(...args),
+    createSafeIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown, defaultValue: unknown) => async (...args: unknown[]) => {
         try {
             return await handler(...args);
         } catch {
@@ -51,7 +51,7 @@ vi.mock('@main/utils/ipc-wrapper.util', () => ({
     },
     createValidatedIpcHandler: (
         _name: string,
-        handler: (...args: any[]) => any,
+        handler: (...args: unknown[]) => unknown,
         options?: { argsSchema?: { parse: (args: unknown[]) => unknown[] }; defaultValue?: unknown }
     ) => async (event: unknown, ...args: unknown[]) => {
         try {
@@ -68,7 +68,7 @@ vi.mock('@main/utils/ipc-wrapper.util', () => ({
 
 
 vi.mock('@main/utils/rate-limiter.util', () => ({
-    withRateLimit: vi.fn(async (_bucket: string, fn: () => Promise<any>) => await fn()),
+    withRateLimit: vi.fn(async (_bucket: string, fn: () => Promise<unknown>) => await fn()),
 }));
 
 describe('Git IPC Integration', () => {
@@ -179,7 +179,7 @@ describe('Git IPC Integration', () => {
         commit: vi.fn(async () => ({ success: true })),
         push: vi.fn(async () => ({ success: true })),
         pull: vi.fn(async () => ({ success: true })),
-    } as any;
+    } as never;
 
     beforeEach(() => {
         ipcMainHandlers.clear();
@@ -190,12 +190,12 @@ describe('Git IPC Integration', () => {
                 name: 'pre-commit',
                 isFile: () => true,
             },
-        ] as any);
+        ] as never);
         fsPromisesMock.stat.mockResolvedValue({
             mode: 0o100755,
             size: 64,
             mtime: new Date('2026-01-01T00:00:00.000Z'),
-        } as any);
+        } as never);
         fsPromisesMock.readFile.mockResolvedValue('#!/usr/bin/env sh\necho ok\n');
         fsPromisesMock.mkdir.mockResolvedValue(undefined);
         fsPromisesMock.chmod.mockResolvedValue(undefined);

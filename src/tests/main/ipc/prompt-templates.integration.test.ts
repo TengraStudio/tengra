@@ -75,7 +75,7 @@ describe('Prompt Templates IPC Handlers', () => {
                 { id: 'template1', name: 'Template 1', category: 'general', template: 'content 1', variables: [], createdAt: 1, updatedAt: 1 },
                 { id: 'template2', name: 'Template 2', category: 'code', template: 'content 2', variables: [], createdAt: 1, updatedAt: 1 }
             ];
-            vi.mocked(mockPromptTemplatesService.getAllTemplates).mockReturnValue(templates as any);
+            vi.mocked(mockPromptTemplatesService.getAllTemplates).mockReturnValue(templates as never);
 
 
             const result = await handler!(mockEvent);
@@ -100,7 +100,7 @@ describe('Prompt Templates IPC Handlers', () => {
             expect(handler).toBeDefined();
 
             const templates = [{ id: 'template1', name: 'Code Template', category: 'code', template: 'content', variables: [], createdAt: 1, updatedAt: 1 }];
-            vi.mocked(mockPromptTemplatesService.getByCategory).mockReturnValue(templates as any);
+            vi.mocked(mockPromptTemplatesService.getByCategory).mockReturnValue(templates as never);
 
 
             const result = await handler!(mockEvent, 'code');
@@ -133,7 +133,7 @@ describe('Prompt Templates IPC Handlers', () => {
             expect(handler).toBeDefined();
 
             const templates = [{ id: 'template1', name: 'Refactor Template', tags: ['refactor', 'code'], template: 'content', variables: [], createdAt: 1, updatedAt: 1 }];
-            vi.mocked(mockPromptTemplatesService.getByTag).mockReturnValue(templates as any);
+            vi.mocked(mockPromptTemplatesService.getByTag).mockReturnValue(templates as never);
 
 
             const result = await handler!(mockEvent, 'refactor');
@@ -157,7 +157,7 @@ describe('Prompt Templates IPC Handlers', () => {
             expect(handler).toBeDefined();
 
             const templates = [{ id: 'template1', name: 'React Component', template: 'content', variables: [], createdAt: 1, updatedAt: 1 }];
-            vi.mocked(mockPromptTemplatesService.search).mockReturnValue(templates as any);
+            vi.mocked(mockPromptTemplatesService.search).mockReturnValue(templates as never);
 
 
             const result = await handler!(mockEvent, 'react');
@@ -190,7 +190,7 @@ describe('Prompt Templates IPC Handlers', () => {
             expect(handler).toBeDefined();
 
             const template = { id: 'template1', name: 'My Template', template: 'content', variables: [], createdAt: 1, updatedAt: 1 };
-            vi.mocked(mockPromptTemplatesService.getTemplate).mockReturnValue(template as any);
+            vi.mocked(mockPromptTemplatesService.getTemplate).mockReturnValue(template as never);
 
 
             const result = await handler!(mockEvent, 'template1');

@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock electron
-const mockIpcMainHandlers = new Map<string, (...args: any[]) => any>();
+const mockIpcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: any[]) => any) => {
+        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
             mockIpcMainHandlers.set(channel, handler);
         }),
         removeHandler: vi.fn((channel: string) => {
@@ -24,7 +24,7 @@ vi.mock('@main/logging/logger', () => ({
 
 // Mock rate limiter
 vi.mock('@main/utils/rate-limiter.util', () => ({
-    withRateLimit: vi.fn(async (_key: string, fn: () => any) => await fn()),
+    withRateLimit: vi.fn(async (_key: string, fn: () => unknown) => await fn()),
 }));
 
 // Mock ToolExecutor
@@ -42,8 +42,8 @@ import { registerToolsIpc } from '@main/ipc/tools';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
 
 describe('Tools IPC Integration', () => {
-    let mockToolExecutor: any;
-    let mockCommandService: any;
+    let mockToolExecutor: Record<string, ReturnType<typeof vi.fn>>;
+    let mockCommandService: Record<string, ReturnType<typeof vi.fn>>;
 
     beforeEach(() => {
         vi.clearAllMocks();

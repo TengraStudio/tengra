@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 
 // Mock Electron ipcMain
-const ipcMainHandlers = new Map<string, (...args: any[]) => any>();
+const ipcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
 
 vi.mock('electron', () => ({
     app: {
@@ -22,28 +22,28 @@ vi.mock('electron', () => ({
 
 // Mock IPC Wrapper to avoid transitive dependency issues with error.util
 vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: (_name: string, handler: (...args: any[]) => any) => async (event: unknown, ...args: any[]) => {
+    createIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown) => async (event: unknown, ...args: unknown[]) => {
         try {
             const result = await handler(event, ...args);
             return { success: true, data: result };
-        } catch (error: any) {
-            return { success: false, error: error.message ?? 'Unknown Error' };
+        } catch (error: unknown) {
+            return { success: false, error: (error instanceof Error ? error.message : 'Unknown Error') };
         }
     },
     createValidatedIpcHandler: (
         _name: string,
-        handler: (...args: any[]) => any,
+        handler: (...args: unknown[]) => unknown,
         options?: { argsSchema?: { parse: (args: unknown[]) => unknown[] }; defaultValue?: unknown }
     ) => async (event: unknown, ...args: unknown[]) => {
         try {
             const parsedArgs = options?.argsSchema ? options.argsSchema.parse(args) : args;
             const result = await handler(event, ...(parsedArgs as unknown[]));
             return { success: true, data: result };
-        } catch (error: any) {
+        } catch (error: unknown) {
             if (options && Object.prototype.hasOwnProperty.call(options, 'defaultValue')) {
                 return options.defaultValue;
             }
-            return { success: false, error: error.message ?? 'Validation failed' };
+            return { success: false, error: (error instanceof Error ? error.message : 'Validation failed') };
         }
     }
 }));
@@ -79,7 +79,7 @@ describe('Chat IPC Integration', () => {
             isDestroyed: vi.fn().mockReturnValue(false),
             send: vi.fn()
         }
-    } as any;
+    } as never;
 
     beforeEach(() => {
         ipcMainHandlers.clear();
@@ -88,21 +88,21 @@ describe('Chat IPC Integration', () => {
     });
 
 
-    const initIPC = (overrides?: Record<string, any>) => {
+    const initIPC = (overrides?: Record<string, unknown>) => {
         registerChatIpc({
             getMainWindow: () => null,
-            settingsService: mockSettingsService as any,
-            copilotService: mockCopilotService as any,
-            llmService: mockLLMService as any,
-            proxyService: mockProxyService as any,
-            codeIntelligenceService: mockCodeIntelligenceService as any,
-            contextRetrievalService: mockContextRetrievalService as any,
-            databaseService: mockDatabaseService as any,
+            settingsService: mockSettingsService as never,
+            copilotService: mockCopilotService as never,
+            llmService: mockLLMService as never,
+            proxyService: mockProxyService as never,
+            codeIntelligenceService: mockCodeIntelligenceService as never,
+            contextRetrievalService: mockContextRetrievalService as never,
+            databaseService: mockDatabaseService as never,
             ...(overrides ?? {})
         });
     };
 
-    const createStreamRequest = (overrides?: Record<string, any>) => ({
+    const createStreamRequest = (overrides?: Record<string, unknown>) => ({
         messages: [{ role: 'user', content: 'test' }],
         model: 'gpt-4o',
         tools: [],

@@ -1,16 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mockIpcMainHandlers = new Map<string, (...args: any[]) => any>();
-const mockIpcMainListeners = new Map<string, (...args: any[]) => void>();
-const mockWindows: any[] = [];
+const mockIpcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
+const mockIpcMainListeners = new Map<string, (...args: unknown[]) => void>();
+const mockWindows: unknown[] = [];
 
 // Mock electron
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: any[]) => any) => {
+        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
             mockIpcMainHandlers.set(channel, handler);
         }),
-        on: vi.fn((channel: string, handler: (...args: any[]) => void) => {
+        on: vi.fn((channel: string, handler: (...args: unknown[]) => void) => {
             mockIpcMainListeners.set(channel, handler);
         }),
         removeHandler: vi.fn((channel: string) => {
@@ -22,7 +22,7 @@ vi.mock('electron', () => ({
     },
     BrowserWindow: {
         getAllWindows: vi.fn(() => mockWindows),
-        fromWebContents: vi.fn((sender: any) => {
+        fromWebContents: vi.fn((sender: unknown) => {
             return { id: sender.id };
         }),
     },
@@ -46,7 +46,7 @@ vi.mock('@main/logging/logger', () => ({
 
 // Mock IPC wrapper
 vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createSafeIpcHandler: (_name: string, handler: (...args: any[]) => any, fallback: any) => async (...args: any[]) => {
+    createSafeIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown, fallback: unknown) => async (...args: unknown[]) => {
         try {
             const result = await handler(...args);
             return result;
@@ -217,7 +217,7 @@ describe('Logging IPC Handlers', () => {
             pushLogEntry('info', 'TestSource', 'Test message');
             
             const getHandler = mockIpcMainHandlers.get('log:buffer:get');
-            const buffer = await getHandler!({}) as any[];
+            const buffer = await getHandler!({}) as unknown[];
             
             expect(buffer.length).toBe(1);
             expect(buffer[0]).toMatchObject({
@@ -239,7 +239,7 @@ describe('Logging IPC Handlers', () => {
             }
             
             const getHandler = mockIpcMainHandlers.get('log:buffer:get');
-            const buffer = await getHandler!({}) as any[];
+            const buffer = await getHandler!({}) as unknown[];
             
             expect(buffer.length).toBeLessThanOrEqual(500); // get returns last 500
         });

@@ -29,12 +29,12 @@ interface MockCodeIntelligenceService extends Partial<CodeIntelligenceService> {
 
 describe('Code Intelligence IPC Handlers', () => {
     let mockService: MockCodeIntelligenceService;
-    let registeredHandlers: Map<string, any>;
+    let registeredHandlers: Map<string, (...args: unknown[]) => Promise<unknown>>;
 
     beforeEach(() => {
         registeredHandlers = new Map();
 
-        vi.mocked(ipcMain.handle).mockImplementation((channel: string, listener: any) => {
+        vi.mocked(ipcMain.handle).mockImplementation((channel: string, listener: (...args: unknown[]) => unknown) => {
             registeredHandlers.set(channel, listener);
         });
 
@@ -121,7 +121,7 @@ describe('Code Intelligence IPC Handlers', () => {
 
     describe('code:scanTodos', () => {
         it('should scan project for TODOs', async () => {
-            const handler = async (_event: IpcMainInvokeEvent, ...args: any[]) => {
+            const handler = async (_event: IpcMainInvokeEvent, ...args: unknown[]) => {
                 const rootPath = args[0] as string;
                 return await mockService.scanProjectTodos!(rootPath);
             };
@@ -138,7 +138,7 @@ describe('Code Intelligence IPC Handlers', () => {
 
     describe('code:findSymbols', () => {
         it('should find symbols in project', async () => {
-            const handler = async (_event: IpcMainInvokeEvent, ...args: any[]) => {
+            const handler = async (_event: IpcMainInvokeEvent, ...args: unknown[]) => {
                 const rootPath = args[0] as string;
                 const query = args[1] as string;
                 return await mockService.findSymbols!(rootPath, query);
@@ -156,7 +156,7 @@ describe('Code Intelligence IPC Handlers', () => {
 
     describe('code:searchFiles', () => {
         it('should search files in project', async () => {
-            const handler = async (_event: IpcMainInvokeEvent, ...args: any[]) => {
+            const handler = async (_event: IpcMainInvokeEvent, ...args: unknown[]) => {
                 const rootPath = args[0] as string;
                 const query = args[1] as string;
                 const projectId = args[2] as string;
@@ -176,7 +176,7 @@ describe('Code Intelligence IPC Handlers', () => {
 
     describe('code:indexProject', () => {
         it('should index a project', async () => {
-            const handler = async (_event: IpcMainInvokeEvent, ...args: any[]) => {
+            const handler = async (_event: IpcMainInvokeEvent, ...args: unknown[]) => {
                 const rootPath = args[0] as string;
                 const projectId = args[1] as string;
                 const force = args[2] as boolean | undefined;
@@ -193,7 +193,7 @@ describe('Code Intelligence IPC Handlers', () => {
 
     describe('code:queryIndexedSymbols', () => {
         it('should query indexed symbols', async () => {
-            const handler = async (_event: IpcMainInvokeEvent, ...args: any[]) => {
+            const handler = async (_event: IpcMainInvokeEvent, ...args: unknown[]) => {
                 const query = args[0] as string;
                 return await mockService.queryIndexedSymbols!(query);
             };
@@ -210,7 +210,7 @@ describe('Code Intelligence IPC Handlers', () => {
 
     describe('code:findDefinition', () => {
         it('should find symbol definition', async () => {
-            const handler = async (_event: IpcMainInvokeEvent, ...args: any[]) => {
+            const handler = async (_event: IpcMainInvokeEvent, ...args: unknown[]) => {
                 const rootPath = args[0] as string;
                 const symbol = args[1] as string;
                 return await mockService.findDefinition!(rootPath, symbol);
@@ -230,7 +230,7 @@ describe('Code Intelligence IPC Handlers', () => {
 
     describe('code:findReferences', () => {
         it('should find symbol references', async () => {
-            const handler = async (_event: IpcMainInvokeEvent, ...args: any[]) => {
+            const handler = async (_event: IpcMainInvokeEvent, ...args: unknown[]) => {
                 const rootPath = args[0] as string;
                 const symbol = args[1] as string;
                 return await mockService.findReferences!(rootPath, symbol);
@@ -251,7 +251,7 @@ describe('Code Intelligence IPC Handlers', () => {
 
     describe('code:getFileOutline', () => {
         it('should return file outline symbols', async () => {
-            const handler = async (_event: IpcMainInvokeEvent, ...args: any[]) => {
+            const handler = async (_event: IpcMainInvokeEvent, ...args: unknown[]) => {
                 const filePath = args[0] as string;
                 return await mockService.getFileOutline!(filePath);
             };
@@ -269,7 +269,7 @@ describe('Code Intelligence IPC Handlers', () => {
 
     describe('code:previewRenameSymbol', () => {
         it('should return rename preview', async () => {
-            const handler = async (_event: IpcMainInvokeEvent, ...args: any[]) => {
+            const handler = async (_event: IpcMainInvokeEvent, ...args: unknown[]) => {
                 const rootPath = args[0] as string;
                 const symbol = args[1] as string;
                 const newSymbol = args[2] as string;
@@ -312,7 +312,7 @@ describe('Code Intelligence IPC Handlers', () => {
                 errors: [],
             });
 
-            const handler = async (_event: IpcMainInvokeEvent, ...args: any[]) => {
+            const handler = async (_event: IpcMainInvokeEvent, ...args: unknown[]) => {
                 const rootPath = args[0] as string;
                 const symbol = args[1] as string;
                 const newSymbol = args[2] as string;
@@ -343,7 +343,7 @@ describe('Code Intelligence IPC Handlers', () => {
 
     describe('code:getSymbolAnalytics', () => {
         it('should return symbol analytics for project', async () => {
-            const handler = async (_event: IpcMainInvokeEvent, ...args: any[]) => {
+            const handler = async (_event: IpcMainInvokeEvent, ...args: unknown[]) => {
                 const rootPath = args[0] as string;
                 return await mockService.getSymbolAnalytics!(rootPath);
             };
@@ -363,7 +363,7 @@ describe('Code Intelligence IPC Handlers', () => {
 
     describe('code:generateFileDocumentation', () => {
         it('should generate file documentation preview', async () => {
-            const handler = async (_event: IpcMainInvokeEvent, ...args: any[]) => {
+            const handler = async (_event: IpcMainInvokeEvent, ...args: unknown[]) => {
                 const filePath = args[0] as string;
                 const format = args[1] as 'markdown' | 'jsdoc-comments' | undefined;
                 return await mockService.generateFileDocumentation!(filePath, format ?? 'markdown');
@@ -384,7 +384,7 @@ describe('Code Intelligence IPC Handlers', () => {
 
     describe('code:analyzeQuality', () => {
         it('should analyze code quality', async () => {
-            const handler = async (_event: IpcMainInvokeEvent, ...args: any[]) => {
+            const handler = async (_event: IpcMainInvokeEvent, ...args: unknown[]) => {
                 const rootPath = args[0] as string;
                 const maxFiles = args[1] as number | undefined;
                 return await mockService.analyzeCodeQuality!(rootPath, maxFiles ?? 300);

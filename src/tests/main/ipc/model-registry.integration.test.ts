@@ -2,11 +2,11 @@ import { registerModelRegistryIpc } from '@main/ipc/model-registry';
 import { IpcMainInvokeEvent } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const ipcMainHandlers = new Map<string, (...args: any[]) => any>();
+const ipcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
 
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: any[]) => any) => {
+        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
             ipcMainHandlers.set(channel, handler);
         }),
         setMaxListeners: vi.fn()
@@ -23,8 +23,8 @@ vi.mock('@main/logging/logger', () => ({
 }));
 
 vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: (_name: string, handler: (...args: any[]) => any) => async (...args: any[]) => handler(...args),
-    createSafeIpcHandler: (_name: string, handler: (...args: any[]) => any, defaultValue: unknown) => async (...args: any[]) => {
+    createIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown) => async (...args: unknown[]) => handler(...args),
+    createSafeIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown, defaultValue: unknown) => async (...args: unknown[]) => {
         try {
             return await handler(...args);
         } catch {
@@ -65,7 +65,7 @@ describe('Model Registry IPC Integration', () => {
 
     describe('without rate limiting', () => {
         beforeEach(() => {
-            registerModelRegistryIpc(mockModelRegistryService as any);
+            registerModelRegistryIpc(mockModelRegistryService as never);
         });
 
         it('registers all model registry IPC handlers', () => {
@@ -136,7 +136,7 @@ describe('Model Registry IPC Integration', () => {
 
     describe('with rate limiting', () => {
         beforeEach(() => {
-            registerModelRegistryIpc(mockModelRegistryService as any, mockRateLimitService as any);
+            registerModelRegistryIpc(mockModelRegistryService as never, mockRateLimitService as never);
         });
 
         it('applies rate limit to getAllModels', async () => {

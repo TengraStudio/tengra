@@ -107,7 +107,7 @@ describe('Migration IPC Handlers', () => {
                 lastMigration: 0,
                 appliedMigrations: [],
                 pendingMigrations: ['001_init']
-            } as any);
+            } as never);
 
             const result = await handler!(mockEvent);
 

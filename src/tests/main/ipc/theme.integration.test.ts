@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock electron
-const mockIpcMainHandlers = new Map<string, (...args: any[]) => any>();
+const mockIpcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: any[]) => any) => {
+        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
             mockIpcMainHandlers.set(channel, handler);
         }),
         removeHandler: vi.fn((channel: string) => {
@@ -27,8 +27,8 @@ vi.mock('@main/logging/logger', () => ({
 
 // Mock IPC wrapper
 vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: (_name: string, handler: (...args: any[]) => any) => handler,
-    createSafeIpcHandler: (_name: string, handler: (...args: any[]) => any, fallback: any) => async (...args: any[]) => {
+    createIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown) => handler,
+    createSafeIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown, fallback: unknown) => async (...args: unknown[]) => {
         try {
             const result = await handler(...args);
             return result;
@@ -88,7 +88,7 @@ describe('Theme IPC Handlers', () => {
             uninstallTheme: vi.fn().mockResolvedValue(undefined),
             getThemesDirectory: vi.fn().mockReturnValue('C:\\themes'),
         };
-        registerThemeIpc(mockService as any);
+        registerThemeIpc(mockService as never);
     });
 
     describe('theme:getCurrent', () => {
@@ -152,7 +152,7 @@ describe('Theme IPC Handlers', () => {
                 { id: 'dark', name: 'Dark Theme', type: 'dark' },
                 { id: 'light', name: 'Light Theme', type: 'light' },
             ];
-            vi.mocked(themeStore.getAllThemes).mockReturnValue(mockThemes as any);
+            vi.mocked(themeStore.getAllThemes).mockReturnValue(mockThemes as never);
 
             const handler = mockIpcMainHandlers.get('theme:getAll');
             expect(handler).toBeDefined();
@@ -185,7 +185,7 @@ describe('Theme IPC Handlers', () => {
 
             // Re-register with new mock
             mockIpcMainHandlers.clear();
-            registerThemeIpc(mockService as any);
+            registerThemeIpc(mockService as never);
 
             const handler = mockIpcMainHandlers.get('theme:runtime:install');
             expect(handler).toBeDefined();
@@ -217,7 +217,7 @@ describe('Theme IPC Handlers', () => {
 
             // Re-register with new mock
             mockIpcMainHandlers.clear();
-            registerThemeIpc(mockService as any);
+            registerThemeIpc(mockService as never);
 
             const handler = mockIpcMainHandlers.get('theme:runtime:uninstall');
             expect(handler).toBeDefined();
@@ -293,7 +293,7 @@ describe('Theme IPC Handlers', () => {
 
         it('should return custom themes', async () => {
             const mockCustomThemes = [{ id: 'custom-1', name: 'Custom Theme' }];
-            vi.mocked(themeStore.getCustomThemes).mockReturnValue(mockCustomThemes as any);
+            vi.mocked(themeStore.getCustomThemes).mockReturnValue(mockCustomThemes as never);
 
             const handler = mockIpcMainHandlers.get('theme:getCustom');
             const result = await handler!({});
@@ -304,7 +304,7 @@ describe('Theme IPC Handlers', () => {
 
     describe('theme:addCustom', () => {
         it('should add custom theme', async () => {
-            vi.mocked(themeStore.addCustomTheme).mockResolvedValue({ id: 'test', name: 'Test', isDark: true, colors: {}, createdAt: Date.now(), modifiedAt: Date.now() } as any);
+            vi.mocked(themeStore.addCustomTheme).mockResolvedValue({ id: 'test', name: 'Test', isDark: true, colors: {}, createdAt: Date.now(), modifiedAt: Date.now() } as never);
 
             const handler = mockIpcMainHandlers.get('theme:addCustom');
             expect(handler).toBeDefined();
@@ -360,7 +360,7 @@ describe('Theme IPC Handlers', () => {
     describe('theme:getDetails', () => {
         it('should return theme details', async () => {
             const mockDetails = { id: 'dark', name: 'Dark Theme', version: '1.0.0' };
-            vi.mocked(themeStore.getThemeDetails).mockReturnValue(mockDetails as any);
+            vi.mocked(themeStore.getThemeDetails).mockReturnValue(mockDetails as never);
 
             const handler = mockIpcMainHandlers.get('theme:getDetails');
             expect(handler).toBeDefined();

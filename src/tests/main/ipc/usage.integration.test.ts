@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock electron
-const mockIpcMainHandlers = new Map<string, (...args: any[]) => any>();
+const mockIpcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: any[]) => any) => {
+        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
             mockIpcMainHandlers.set(channel, handler);
         }),
         removeHandler: vi.fn((channel: string) => {
@@ -24,12 +24,12 @@ vi.mock('@main/logging/logger', () => ({
 
 // Mock rate limiter
 vi.mock('@main/utils/rate-limiter.util', () => ({
-    withRateLimit: vi.fn(async (_key: string, fn: () => any) => await fn()),
+    withRateLimit: vi.fn(async (_key: string, fn: () => unknown) => await fn()),
 }));
 
 // Mock error util
 vi.mock('@shared/utils/error.util', () => ({
-    getErrorMessage: vi.fn((error: any) => error?.message || String(error)),
+    getErrorMessage: vi.fn((error: unknown) => error?.message || String(error)),
 }));
 
 // Mock services
@@ -51,9 +51,9 @@ import { appLogger } from '@main/logging/logger';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
 
 describe('Usage IPC Integration', () => {
-    let mockUsageTrackingService: any;
-    let mockSettingsService: any;
-    let mockProxyService: any;
+    let mockUsageTrackingService: Record<string, ReturnType<typeof vi.fn>>;
+    let mockSettingsService: Record<string, ReturnType<typeof vi.fn>>;
+    let mockProxyService: Record<string, ReturnType<typeof vi.fn>>;
 
     beforeEach(() => {
         vi.clearAllMocks();

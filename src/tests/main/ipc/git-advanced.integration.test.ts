@@ -16,7 +16,7 @@ vi.mock('electron', () => ({
 vi.mock('@main/utils/ipc-wrapper.util', () => ({
     createValidatedIpcHandler: (
         _name: string,
-        handler: (...args: any[]) => any,
+        handler: (...args: unknown[]) => unknown,
         options?: { argsSchema?: { parse: (args: unknown[]) => unknown[] }; defaultValue?: unknown }
     ) => async (event: unknown, ...args: unknown[]) => {
         try {
@@ -36,7 +36,7 @@ vi.mock('@main/utils/rate-limiter.util', () => ({
 }));
 
 describe('Git Advanced IPC Handlers', () => {
-    let gitService: any;
+    let gitService: Record<string, ReturnType<typeof vi.fn>>;
 
     beforeEach(() => {
         ipcHandlers.clear();
@@ -81,9 +81,9 @@ describe('Git Advanced IPC Handlers', () => {
     it('returns repository stats and clamps invalid days', async () => {
         const handler = ipcHandlers.get('git:getRepositoryStats');
         const result = await handler?.({}, 'C:/repo', -1);
-        expect((result as any).success).toBe(true);
-        expect((result as any).stats.totalCommits).toBe(42);
-        expect((result as any).stats.days).toBe(365);
+        expect((result as never).success).toBe(true);
+        expect((result as never).stats.totalCommits).toBe(42);
+        expect((result as never).stats.days).toBe(365);
     });
 });
 

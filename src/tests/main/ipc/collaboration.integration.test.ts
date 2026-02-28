@@ -3,7 +3,7 @@ import { IpcMainInvokeEvent } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock Electron ipcMain
-const ipcMainHandlers = new Map<string, (...args: any[]) => any>();
+const ipcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
 
 vi.mock('electron', () => ({
     ipcMain: {
@@ -16,15 +16,15 @@ vi.mock('electron', () => ({
 
 // Mock IPC Wrapper
 vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: (_name: string, handler: (...args: any[]) => any) => async (...args: any[]) => {
+    createIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown) => async (...args: unknown[]) => {
         try {
             const result = await handler(...args);
             return { success: true, data: result };
-        } catch (error: any) {
-            return { success: false, error: error.message ?? 'Unknown Error' };
+        } catch (error: unknown) {
+            return { success: false, error: (error instanceof Error ? error.message : 'Unknown Error') };
         }
     },
-    createSafeIpcHandler: (_name: string, handler: (...args: any[]) => any, fallback: any) => async (...args: any[]) => {
+    createSafeIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown, fallback: unknown) => async (...args: unknown[]) => {
         try {
             const result = await handler(...args);
             return { success: true, data: result };
@@ -60,7 +60,7 @@ describe('Collaboration IPC Integration', () => {
     });
 
     const initIPC = () => {
-        registerCollaborationIpc(() => null, mockCollaborationService as any);
+        registerCollaborationIpc(() => null, mockCollaborationService as never);
     };
 
     it('should register expected handlers', () => {
@@ -167,7 +167,7 @@ describe('Collaboration IPC Integration', () => {
             const request = {
                 messages: [{ role: 'user', content: 'Test' }],
                 models: [{ provider: 'openai', model: 'gpt-4' }],
-                strategy: 'invalid-strategy' as any
+                strategy: 'invalid-strategy' as never
             };
 
             const result = await handler?.({} as IpcMainInvokeEvent, request);
@@ -215,7 +215,7 @@ describe('Collaboration IPC Integration', () => {
                 averageLatency: 250
             };
 
-            (multiLLMOrchestrator.getProviderStats as any).mockReturnValue(stats);
+            (multiLLMOrchestrator.getProviderStats as never).mockReturnValue(stats);
 
             const result = await handler?.({} as IpcMainInvokeEvent, 'openai');
 
@@ -230,7 +230,7 @@ describe('Collaboration IPC Integration', () => {
             initIPC();
             const handler = ipcMainHandlers.get('collaboration:getProviderStats');
 
-            (multiLLMOrchestrator.getProviderStats as any).mockReturnValue(undefined);
+            (multiLLMOrchestrator.getProviderStats as never).mockReturnValue(undefined);
 
             const result = await handler?.({} as IpcMainInvokeEvent, 'non-existent');
 
@@ -250,7 +250,7 @@ describe('Collaboration IPC Integration', () => {
                 ['anthropic', { totalRequests: 50 }]
             ]);
 
-            (multiLLMOrchestrator.getAllStats as any).mockReturnValue(allStats);
+            (multiLLMOrchestrator.getAllStats as never).mockReturnValue(allStats);
 
             const result = await handler?.({} as IpcMainInvokeEvent);
 
@@ -268,7 +268,7 @@ describe('Collaboration IPC Integration', () => {
             initIPC();
             const handler = ipcMainHandlers.get('collaboration:getProviderStats');
 
-            (multiLLMOrchestrator.getProviderStats as any).mockImplementation(() => {
+            (multiLLMOrchestrator.getProviderStats as never).mockImplementation(() => {
                 throw new Error('Stats error');
             });
 
@@ -286,7 +286,7 @@ describe('Collaboration IPC Integration', () => {
             initIPC();
             const handler = ipcMainHandlers.get('collaboration:getActiveTaskCount');
 
-            (multiLLMOrchestrator.getActiveTaskCount as any).mockReturnValue(5);
+            (multiLLMOrchestrator.getActiveTaskCount as never).mockReturnValue(5);
 
             const result = await handler?.({} as IpcMainInvokeEvent, 'openai');
 
@@ -314,7 +314,7 @@ describe('Collaboration IPC Integration', () => {
             initIPC();
             const handler = ipcMainHandlers.get('collaboration:getActiveTaskCount');
 
-            (multiLLMOrchestrator.getActiveTaskCount as any).mockImplementation(() => {
+            (multiLLMOrchestrator.getActiveTaskCount as never).mockImplementation(() => {
                 throw new Error('Count error');
             });
 
@@ -332,7 +332,7 @@ describe('Collaboration IPC Integration', () => {
             initIPC();
             const handler = ipcMainHandlers.get('collaboration:setProviderConfig');
 
-            (multiLLMOrchestrator.setProviderConfig as any).mockReturnValue(undefined);
+            (multiLLMOrchestrator.setProviderConfig as never).mockReturnValue(undefined);
 
             const config = {
                 maxConcurrent: 5,
@@ -392,7 +392,7 @@ describe('Collaboration IPC Integration', () => {
             const handler = ipcMainHandlers.get('collaboration:setProviderConfig');
 
             const config = {
-                maxConcurrent: 'invalid' as any,
+                maxConcurrent: 'invalid' as never,
                 priority: 10,
                 rateLimitPerMinute: 100
             };
@@ -412,7 +412,7 @@ describe('Collaboration IPC Integration', () => {
 
             const config = {
                 maxConcurrent: 5,
-                priority: 'high' as any,
+                priority: 'high' as never,
                 rateLimitPerMinute: 100
             };
 
@@ -451,7 +451,7 @@ describe('Collaboration IPC Integration', () => {
             const config = {
                 maxConcurrent: 5,
                 priority: 10,
-                rateLimitPerMinute: 'unlimited' as any
+                rateLimitPerMinute: 'unlimited' as never
             };
 
             const result = await handler?.({} as IpcMainInvokeEvent, 'openai', config);

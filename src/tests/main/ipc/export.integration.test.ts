@@ -3,7 +3,7 @@ import { IpcMainInvokeEvent } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock Electron ipcMain
-const ipcMainHandlers = new Map<string, (...args: any[]) => any>();
+const ipcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
 
 vi.mock('electron', () => ({
     ipcMain: {
@@ -16,12 +16,12 @@ vi.mock('electron', () => ({
 
 // Mock IPC Wrapper
 vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: (_name: string, handler: (...args: any[]) => any) => async (...args: any[]) => {
+    createIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown) => async (...args: unknown[]) => {
         try {
             const result = await handler(...args);
             return { success: true, data: result };
-        } catch (error: any) {
-            return { success: false, error: error.message ?? 'Unknown Error' };
+        } catch (error: unknown) {
+            return { success: false, error: (error instanceof Error ? error.message : 'Unknown Error') };
         }
     }
 }));
@@ -47,7 +47,7 @@ describe('Export IPC Integration', () => {
     });
 
     const initIPC = () => {
-        registerExportIpc(() => null, mockExportService as any);
+        registerExportIpc(() => null, mockExportService as never);
     };
 
     it('should register expected handlers', () => {

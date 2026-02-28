@@ -4,7 +4,7 @@ import { registerMetricsIpc } from '@main/ipc/metrics';
 import { appLogger } from '@main/logging/logger';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mockIpcMainHandlers = new Map<string, (...args: any[]) => any>();
+const mockIpcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
 
 // Mock metrics service
 const mockMetricsService = {
@@ -17,7 +17,7 @@ const mockMetricsService = {
 // Mock electron
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: any[]) => any) => {
+        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
             mockIpcMainHandlers.set(channel, handler);
         }),
         removeHandler: vi.fn((channel: string) => {
@@ -42,7 +42,7 @@ vi.mock('@main/services/analysis/metrics.service', () => ({
 
 // Mock IPC wrapper
 vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createSafeIpcHandler: (_name: string, handler: (...args: any[]) => any, fallback: any) => async (...args: any[]) => {
+    createSafeIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown, fallback: unknown) => async (...args: unknown[]) => {
         try {
             const result = await handler(...args);
             return result;

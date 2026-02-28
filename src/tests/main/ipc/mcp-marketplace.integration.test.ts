@@ -89,7 +89,7 @@ describe('MCP-Marketplace IPC Handlers', () => {
             listPlugins: vi.fn(async () => [])
         };
 
-        registerMcpMarketplaceHandlers(marketplaceService as any, settingsService as any, mcpPluginService as any);
+        registerMcpMarketplaceHandlers(marketplaceService as never, settingsService as never, mcpPluginService as never);
     });
 
     const getRequiredHandler = (channel: string): IpcHandler => {

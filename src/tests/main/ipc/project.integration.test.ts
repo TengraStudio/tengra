@@ -2,7 +2,7 @@ import { registerProjectIpc } from '@main/ipc/project';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock Electron ipcMain
-const ipcMainHandlers = new Map<string, (...args: any[]) => any>();
+const ipcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
 
 vi.mock('electron', () => ({
     ipcMain: {
@@ -15,31 +15,31 @@ vi.mock('electron', () => ({
 
 // Mock IPC Wrapper
 vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: (_name: string, handler: (...args: any[]) => any) => async (event: unknown, ...args: any[]) => {
+    createIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown) => async (event: unknown, ...args: unknown[]) => {
         try {
             const result = await handler(event, ...args);
             return { success: true, data: result };
-        } catch (error: any) {
-            return { success: false, error: error.message ?? 'Unknown Error' };
+        } catch (error: unknown) {
+            return { success: false, error: (error instanceof Error ? error.message : 'Unknown Error') };
         }
     },
     createValidatedIpcHandler: (
         _name: string,
-        handler: (...args: any[]) => any,
+        handler: (...args: unknown[]) => unknown,
         options?: { argsSchema?: { parse: (args: unknown[]) => unknown[] }; defaultValue?: unknown }
     ) => async (event: unknown, ...args: unknown[]) => {
         try {
             const parsedArgs = options?.argsSchema ? options.argsSchema.parse(args) : args;
             const result = await handler(event, ...(parsedArgs as unknown[]));
             return { success: true, data: result };
-        } catch (error: any) {
+        } catch (error: unknown) {
             if (options && Object.prototype.hasOwnProperty.call(options, 'defaultValue')) {
                 return options.defaultValue;
             }
-            return { success: false, error: error.message ?? 'Validation failed' };
+            return { success: false, error: (error instanceof Error ? error.message : 'Validation failed') };
         }
     },
-    createSafeIpcHandler: (_name: string, handler: (...args: any[]) => any, defaultValue: unknown) => async (...args: any[]) => {
+    createSafeIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown, defaultValue: unknown) => async (...args: unknown[]) => {
         try {
             return await handler(...args);
         } catch {
@@ -51,14 +51,14 @@ vi.mock('@main/utils/ipc-wrapper.util', () => ({
 
 // Mock Services
 // Mock Services
-let mockProjectService: any;
-let mockLogoService: any;
-let mockInlineSuggestionService: any;
-let mockCodeIntelligenceService: any;
-let mockAuditLogService: any;
+let mockProjectService: Record<string, ReturnType<typeof vi.fn>>;
+let mockLogoService: Record<string, ReturnType<typeof vi.fn>>;
+let mockInlineSuggestionService: Record<string, ReturnType<typeof vi.fn>>;
+let mockCodeIntelligenceService: Record<string, ReturnType<typeof vi.fn>>;
+let mockAuditLogService: Record<string, ReturnType<typeof vi.fn>>;
 
 describe('Project IPC Integration', () => {
-    const mockEvent = { sender: { id: 1 } } as any;
+    const mockEvent = { sender: { id: 1 } } as never;
 
     beforeEach(() => {
 
@@ -102,8 +102,8 @@ describe('Project IPC Integration', () => {
             logoService: mockLogoService,
             inlineSuggestionService: mockInlineSuggestionService,
             codeIntelligenceService: mockCodeIntelligenceService,
-            jobSchedulerService: {} as any,
-            databaseService: {} as any,
+            jobSchedulerService: {} as never,
+            databaseService: {} as never,
             auditLogService: mockAuditLogService
         });
         expect(ipcMainHandlers.has('project:analyze')).toBe(true);
@@ -120,8 +120,8 @@ describe('Project IPC Integration', () => {
             logoService: mockLogoService,
             inlineSuggestionService: mockInlineSuggestionService,
             codeIntelligenceService: mockCodeIntelligenceService,
-            jobSchedulerService: {} as any,
-            databaseService: {} as any,
+            jobSchedulerService: {} as never,
+            databaseService: {} as never,
             auditLogService: mockAuditLogService
         });
         const handler = ipcMainHandlers.get('project:analyze');
@@ -149,8 +149,8 @@ describe('Project IPC Integration', () => {
             logoService: mockLogoService,
             inlineSuggestionService: mockInlineSuggestionService,
             codeIntelligenceService: mockCodeIntelligenceService,
-            jobSchedulerService: {} as any,
-            databaseService: {} as any,
+            jobSchedulerService: {} as never,
+            databaseService: {} as never,
             auditLogService: mockAuditLogService
         });
         const handler = ipcMainHandlers.get('project:generateLogo');
@@ -176,8 +176,8 @@ describe('Project IPC Integration', () => {
             logoService: mockLogoService,
             inlineSuggestionService: mockInlineSuggestionService,
             codeIntelligenceService: mockCodeIntelligenceService,
-            jobSchedulerService: {} as any,
-            databaseService: {} as any,
+            jobSchedulerService: {} as never,
+            databaseService: {} as never,
             auditLogService: mockAuditLogService
         });
         const handler = ipcMainHandlers.get('project:analyze');
@@ -199,8 +199,8 @@ describe('Project IPC Integration', () => {
             logoService: mockLogoService,
             inlineSuggestionService: mockInlineSuggestionService,
             codeIntelligenceService: mockCodeIntelligenceService,
-            jobSchedulerService: {} as any,
-            databaseService: {} as any,
+            jobSchedulerService: {} as never,
+            databaseService: {} as never,
             auditLogService: mockAuditLogService
         });
         const handler = ipcMainHandlers.get('project:saveEnv');

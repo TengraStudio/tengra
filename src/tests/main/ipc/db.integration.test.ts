@@ -16,8 +16,8 @@ vi.mock('electron', () => ({
 }));
 
 vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: (_name: string, handler: (...args: any[]) => any) => async (...args: any[]) => handler(...args),
-    createSafeIpcHandler: (_name: string, handler: (...args: any[]) => any, defaultValue: unknown) => async (...args: any[]) => {
+    createIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown) => async (...args: unknown[]) => handler(...args),
+    createSafeIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown, defaultValue: unknown) => async (...args: unknown[]) => {
         try {
             return await handler(...args);
         } catch {
@@ -26,7 +26,7 @@ vi.mock('@main/utils/ipc-wrapper.util', () => ({
     },
     createValidatedIpcHandler: (
         _name: string,
-        handler: (...args: any[]) => any,
+        handler: (...args: unknown[]) => unknown,
         options?: { argsSchema?: { parse: (args: unknown[]) => unknown[] }; defaultValue?: unknown }
     ) => async (event: unknown, ...args: unknown[]) => {
         try {
@@ -42,7 +42,7 @@ vi.mock('@main/utils/ipc-wrapper.util', () => ({
 }));
 
 vi.mock('@main/utils/rate-limiter.util', () => ({
-    withRateLimit: vi.fn(async (_bucket: string, fn: () => Promise<any>) => await fn()),
+    withRateLimit: vi.fn(async (_bucket: string, fn: () => Promise<unknown>) => await fn()),
 }));
 
 
@@ -67,18 +67,18 @@ interface MockAuditLogService extends Partial<AuditLogService> {
 }
 
 describe('Database IPC Handlers', () => {
-    let mockDatabaseService: any;
+    let mockDatabaseService: Record<string, ReturnType<typeof vi.fn>>;
 
     let mockEmbeddingService: MockEmbeddingService;
     let mockAuditLogService: MockAuditLogService;
-    let registeredHandlers: Map<string, any>;
-    const mockEvent = { sender: { id: 1, send: vi.fn() } } as any;
+    let registeredHandlers: Map<string, (...args: unknown[]) => Promise<unknown>>;
+    const mockEvent = { sender: { id: 1, send: vi.fn() } } as never;
 
 
     beforeEach(() => {
         registeredHandlers = new Map();
 
-        vi.mocked(ipcMain.handle).mockImplementation((channel: string, listener: any) => {
+        vi.mocked(ipcMain.handle).mockImplementation((channel: string, listener: (...args: unknown[]) => unknown) => {
             if (!registeredHandlers.has(channel)) {
                 registeredHandlers.set(channel, listener);
             }
@@ -119,7 +119,7 @@ describe('Database IPC Handlers', () => {
                 getPrompts: vi.fn().mockResolvedValue([]),
                 getDetailedStats: vi.fn().mockResolvedValue({}),
             }
-        } as any;
+        } as never;
 
 
         mockEmbeddingService = {

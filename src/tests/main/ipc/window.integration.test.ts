@@ -20,16 +20,16 @@ const mockMainWindow = {
     loadURL: vi.fn(),
 };
 
-const mockIpcMainHandlers = new Map<string, (...args: any[]) => any>();
-const mockIpcMainListeners = new Map<string, (...args: any[]) => void>();
+const mockIpcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
+const mockIpcMainListeners = new Map<string, (...args: unknown[]) => void>();
 
 // Mock electron
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: any[]) => any) => {
+        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
             mockIpcMainHandlers.set(channel, handler);
         }),
-        on: vi.fn((channel: string, handler: (...args: any[]) => void) => {
+        on: vi.fn((channel: string, handler: (...args: unknown[]) => void) => {
             mockIpcMainListeners.set(channel, handler);
         }),
         removeHandler: vi.fn((channel: string) => {
@@ -40,7 +40,7 @@ vi.mock('electron', () => ({
         }),
     },
     BrowserWindow: {
-        fromWebContents: vi.fn((sender: any) => {
+        fromWebContents: vi.fn((sender: unknown) => {
             return sender.id === 1 ? mockMainWindow : null;
         }),
     },
@@ -85,7 +85,7 @@ vi.mock('child_process', () => ({
         stderr: {
             on: vi.fn(),
         },
-        on: vi.fn((event: string, cb: (...args: any[]) => void) => {
+        on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
             if (event === 'close') {
                 setTimeout(() => cb(0), 0);
             }
@@ -109,10 +109,10 @@ describe('Window IPC Handlers', () => {
         mockMainWindow.isDestroyed.mockReturnValue(false);
 
         // Trigger registration
-        registerWindowIpc(() => mockMainWindow as any, new Set<string>(['/app']));
+        registerWindowIpc(() => mockMainWindow as never, new Set<string>(['/app']));
     });
 
-    const mockEvent = { sender: { id: 1 } } as any;
+    const mockEvent = { sender: { id: 1 } } as never;
 
 
     afterEach(() => {
