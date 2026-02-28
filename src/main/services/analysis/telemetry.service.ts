@@ -251,6 +251,7 @@ export class TelemetryService extends BaseService {
         // Validate event name
         const nameValidation = this.validateEventName(name);
         if (!nameValidation.valid) {
+            this.metaValidationRejects++;
             appLogger.warn('Telemetry', 'Invalid event name rejected', { name, error: nameValidation.error });
             return { success: false, error: nameValidation.error };
         }
@@ -258,12 +259,14 @@ export class TelemetryService extends BaseService {
         // Validate properties
         const propsValidation = this.validateProperties(properties);
         if (!propsValidation.valid) {
+            this.metaValidationRejects++;
             appLogger.warn('Telemetry', 'Invalid properties rejected', { name, error: propsValidation.error });
             return { success: false, error: propsValidation.error };
         }
 
         // Check queue overflow
         if (this.queue.length >= this.maxQueueSize) {
+            this.metaOverflowDrops++;
             appLogger.warn('Telemetry', 'Queue overflow, dropping event', { queueSize: this.queue.length });
             return { success: false, error: TelemetryErrorCode.QUEUE_OVERFLOW };
         }
@@ -278,6 +281,7 @@ export class TelemetryService extends BaseService {
 
         this.queue.push(event);
         this.totalTrackedEvents++;
+        this.metaLastOperationAt = Date.now();
 
         // Use logger for debug visibility
         appLogger.debug('Telemetry', `Tracked event: ${name}`, properties as JsonObject);
@@ -341,6 +345,7 @@ export class TelemetryService extends BaseService {
     private async flushWithRetry(): Promise<boolean> {
         if (this.queue.length === 0) { return true; }
 
+        this.metaFlushAttempts++;
         const batch = [...this.queue];
         this.queue = [];
         let lastError: Error | undefined;
@@ -348,23 +353,23 @@ export class TelemetryService extends BaseService {
         for (let attempt = 1; attempt <= this.maxRetryAttempts; attempt++) {
             try {
                 // In a real app, this would send to an endpoint (PostHog, Mixpanel, etc.)
-                // For now, we simulate processing or logging to a separate file
-                // this.logInfo(`Flushed ${batch.length} telemetry events.`);
 
                 this.totalFlushedEvents += batch.length;
                 this.lastFlushTime = Date.now();
+                this.metaLastOperationAt = Date.now();
                 return true;
             } catch (error) {
                 lastError = error instanceof Error ? error : new Error(String(error));
                 this.logWarn(`Flush attempt ${attempt}/${this.maxRetryAttempts} failed`, lastError);
 
                 if (attempt < this.maxRetryAttempts) {
-                    await this.sleep(this.retryDelayMs * attempt); // Exponential backoff
+                    await this.sleep(this.retryDelayMs * attempt);
                 }
             }
         }
 
-        // All retries failed, re-queue with limit to avoid memory leak
+        // All retries failed
+        this.metaFlushFailures++;
         if (lastError) {
             if (this.queue.length + batch.length <= this.maxQueueSize) {
                 this.queue = [...batch, ...this.queue];

@@ -133,6 +133,7 @@ export class MonitoringService extends BaseService {
             const memUsage = totalMem > 0 ? ((totalMem - freeMem) / totalMem) * 100 : 0;
 
             this.logDebug('getUsage completed', { cpu: cpuUsage, memory: memUsage });
+            this.emitTelemetry(MonitoringTelemetryEvent.USAGE_CHECKED, { cpu: cpuUsage, memory: memUsage });
 
             return {
                 success: true,
@@ -190,11 +191,13 @@ export class MonitoringService extends BaseService {
             }
 
             this.logDebug('getSystemMonitor completed', { platform: os.platform() });
+            this.emitTelemetry(MonitoringTelemetryEvent.SYSTEM_MONITOR_CHECKED, { platform: os.platform() });
 
             return { success: true, result: { output } };
         } catch (error) {
             const errorMessage = getErrorMessage(error);
             this.logError('getSystemMonitor failed', error);
+            this.emitTelemetry(MonitoringTelemetryEvent.COMMAND_FAILED, { method: 'getSystemMonitor', error: errorMessage });
             return { success: false, error: errorMessage };
         } finally {
             this.warnIfOverBudget('getSystemMonitor', start, MONITORING_PERFORMANCE_BUDGETS.GET_SYSTEM_MONITOR_MS);
@@ -243,11 +246,13 @@ export class MonitoringService extends BaseService {
             }
 
             this.logDebug('getBatteryStatus completed', { platform: os.platform() });
+            this.emitTelemetry(MonitoringTelemetryEvent.BATTERY_CHECKED, { platform: os.platform() });
 
             return { success: true, result: { output } };
         } catch (error) {
             const errorMessage = getErrorMessage(error);
             this.logError('getBatteryStatus failed', error);
+            this.emitTelemetry(MonitoringTelemetryEvent.COMMAND_FAILED, { method: 'getBatteryStatus', error: errorMessage });
             return { success: false, error: errorMessage };
         } finally {
             this.warnIfOverBudget('getBatteryStatus', start, MONITORING_PERFORMANCE_BUDGETS.GET_BATTERY_STATUS_MS);
@@ -520,6 +525,10 @@ export class MonitoringService extends BaseService {
                 maxRetries: DEFAULT_RETRY_COUNT,
                 baseDelayMs: DEFAULT_RETRY_BASE_DELAY_MS,
                 onRetry: (_err, attempt, delay) => {
+                    this.emitTelemetry(MonitoringTelemetryEvent.COMMAND_TIMEOUT, {
+                        command: command.substring(0, 50),
+                        attempt,
+                    });
                     this.logWarn('executeWithTimeout retrying', {
                         command: command.substring(0, 50),
                         attempt,
@@ -562,5 +571,17 @@ export class MonitoringService extends BaseService {
             initialized: true,
             telemetryEnabled: this.telemetryEnabled,
         };
+    }
+
+    /**
+     * Emit a telemetry event when telemetry is enabled.
+     * @param event - The telemetry event name
+     * @param metadata - Optional metadata for the event
+     */
+    private emitTelemetry(event: MonitoringTelemetryEvent, metadata?: Record<string, unknown>): void {
+        if (!this.telemetryEnabled) {
+            return;
+        }
+        appLogger.info(this.name, `Telemetry: ${event}`, metadata);
     }
 }
