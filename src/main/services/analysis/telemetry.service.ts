@@ -1,6 +1,8 @@
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { withRetry } from '@main/utils/retry.util';
+import { RETRY_DEFAULTS } from '@shared/constants/defaults';
 import { JsonObject } from '@shared/types/common';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -93,8 +95,8 @@ export class TelemetryService extends BaseService {
     private readonly maxQueueSize = MAX_QUEUE_SIZE;
 
     // Retry configuration
-    private readonly maxRetryAttempts = 3;
-    private readonly retryDelayMs = 1000;
+    private readonly maxRetryAttempts = RETRY_DEFAULTS.MAX_ATTEMPTS;
+    private readonly retryDelayMs = RETRY_DEFAULTS.BASE_DELAY_MS;
 
     // Meta-telemetry counters for self-monitoring
     private metaFlushAttempts = 0;
@@ -338,48 +340,43 @@ export class TelemetryService extends BaseService {
         this.flushInterval = setInterval(() => { void this.flush(); }, 60000); // Flush every minute
     }
 
-    private async sleep(ms: number): Promise<void> {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
     private async flushWithRetry(): Promise<boolean> {
         if (this.queue.length === 0) { return true; }
 
         this.metaFlushAttempts++;
         const batch = [...this.queue];
         this.queue = [];
-        let lastError: Error | undefined;
 
-        for (let attempt = 1; attempt <= this.maxRetryAttempts; attempt++) {
-            try {
-                // In a real app, this would send to an endpoint (PostHog, Mixpanel, etc.)
-
-                this.totalFlushedEvents += batch.length;
-                this.lastFlushTime = Date.now();
-                this.metaLastOperationAt = Date.now();
-                return true;
-            } catch (error) {
-                lastError = error instanceof Error ? error : new Error(String(error));
-                this.logWarn(`Flush attempt ${attempt}/${this.maxRetryAttempts} failed`, lastError);
-
-                if (attempt < this.maxRetryAttempts) {
-                    await this.sleep(this.retryDelayMs * attempt);
+        try {
+            await withRetry(
+                async () => {
+                    // In a real app, this would send to an endpoint (PostHog, Mixpanel, etc.)
+                    this.totalFlushedEvents += batch.length;
+                    this.lastFlushTime = Date.now();
+                    this.metaLastOperationAt = Date.now();
+                },
+                {
+                    maxRetries: this.maxRetryAttempts - 1,
+                    baseDelayMs: this.retryDelayMs,
+                    shouldRetry: () => true,
+                    onRetry: (_err, attempt) => {
+                        this.logWarn(`Flush attempt ${attempt + 1}/${this.maxRetryAttempts} failed`);
+                    }
                 }
-            }
-        }
-
-        // All retries failed
-        this.metaFlushFailures++;
-        if (lastError) {
+            );
+            return true;
+        } catch (error) {
+            // All retries failed
+            this.metaFlushFailures++;
+            const lastError = error instanceof Error ? error : new Error(String(error));
             if (this.queue.length + batch.length <= this.maxQueueSize) {
                 this.queue = [...batch, ...this.queue];
                 this.logError('All flush attempts failed, re-queued events', lastError);
             } else {
                 this.logError('Queue full after flush failure, dropping events', lastError);
             }
+            return false;
         }
-
-        return false;
     }
 
     /**

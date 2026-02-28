@@ -7,6 +7,7 @@ import * as path from 'path';
 import { appLogger } from '@main/logging/logger';
 import { SecurityService } from '@main/services/security/security.service';
 import { validateCommand } from '@main/utils/command-validator.util';
+import { withRetry } from '@main/utils/retry.util';
 import {
     SSHDevContainer,
     SSHExecOptions,
@@ -1907,13 +1908,20 @@ export class SSHService extends EventEmitter {
         if (!config) {
             return { success: false, error: 'Connection profile not found' };
         }
-        for (let attempt = 0; attempt < maxRetries; attempt++) {
-            const result = await this.connect({ ...config, id: connectionId });
-            if (result.success) {
-                return result;
-            }
+        try {
+            return await withRetry(
+                async () => {
+                    const result = await this.connect({ ...config, id: connectionId });
+                    if (!result.success) {
+                        throw new Error(result.error ?? 'Connection failed');
+                    }
+                    return result;
+                },
+                { maxRetries: maxRetries - 1, baseDelayMs: 1000 }
+            );
+        } catch {
+            return { success: false, error: 'Reconnect attempts exhausted' };
         }
-        return { success: false, error: 'Reconnect attempts exhausted' };
     }
 
     async acquireConnection(connectionId: string): Promise<{ success: boolean; error?: string }> {

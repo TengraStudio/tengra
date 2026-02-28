@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { EventEmitter } from 'events';
 
 import { BaseService } from '@main/services/base.service';
+import { SERVICE_DEFAULTS } from '@shared/constants/defaults';
 import { SystemEventKey, SystemEvents } from '@shared/types/events';
 
 /**
@@ -20,12 +21,12 @@ export class EventBusService extends BaseService {
     private bus: EventEmitter;
     private eventHistory: { event: string; payload: unknown; timestamp: number; id: string }[] = [];
     private subscriptions = new Map<string, { event: string; listener: EventBusListener }>();
-    private readonly MAX_HISTORY = 100;
+    private readonly MAX_HISTORY = SERVICE_DEFAULTS.EVENT_HISTORY_SIZE;
 
     constructor() {
         super('EventBusService');
         this.bus = new EventEmitter();
-        this.bus.setMaxListeners(60); // Increased for more complex app
+        this.bus.setMaxListeners(SERVICE_DEFAULTS.EVENT_BUS_MAX_LISTENERS);
     }
 
     async initialize(): Promise<void> {

@@ -4,8 +4,10 @@ import * as http from 'http';
 
 import { appLogger } from '@main/logging/logger';
 import { SettingsService } from '@main/services/system/settings.service';
+import { withRetry } from '@main/utils/retry.util';
 import { ToolCall } from '@shared/types/chat';
 import { JsonObject, JsonValue } from '@shared/types/common';
+import { SERVICE_DEFAULTS } from '@shared/constants/defaults';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import axios from 'axios';
@@ -139,8 +141,8 @@ export class OllamaService {
     private connectionPool: ConnectionPoolEntry[] = [];
     private maxPoolSize: number = 5;
     private reconnectAttempts: number = 0;
-    private maxReconnectAttempts: number = 3;
-    private reconnectDelayMs: number = 1000;
+    private maxReconnectAttempts: number = SERVICE_DEFAULTS.MAX_RECONNECT_ATTEMPTS;
+    private reconnectDelayMs: number = SERVICE_DEFAULTS.RECONNECT_DELAY_MS;
     private lastConnectionCheck: Date = new Date();
 
     // OLLAMA-03: GPU monitoring
@@ -848,26 +850,34 @@ export class OllamaService {
      * Attempt to reconnect with exponential backoff
      */
     async reconnect(): Promise<boolean> {
-        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-            appLogger.warn('OllamaService', `Max reconnect attempts (${this.maxReconnectAttempts}) reached`);
-            return false;
-        }
-
-        this.reconnectAttempts++;
-        const delay = this.reconnectDelayMs * Math.pow(2, this.reconnectAttempts - 1);
-
-        appLogger.info('OllamaService', `Reconnect attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} after ${delay}ms`);
-
-        await new Promise(resolve => setTimeout(resolve, delay));
-
-        const connected = await this.isAvailable();
-        if (connected) {
+        this.reconnectAttempts = 0;
+        try {
+            await withRetry(
+                async () => {
+                    const connected = await this.isAvailable();
+                    if (!connected) {
+                        throw new Error('Ollama not available');
+                    }
+                },
+                {
+                    maxRetries: this.maxReconnectAttempts - 1,
+                    baseDelayMs: this.reconnectDelayMs,
+                    maxDelayMs: this.reconnectDelayMs * 4,
+                    shouldRetry: () => true,
+                    onRetry: (_err, attempt) => {
+                        this.reconnectAttempts = attempt + 1;
+                        const delay = this.reconnectDelayMs * Math.pow(2, attempt);
+                        appLogger.info('OllamaService', `Reconnect attempt ${attempt + 1}/${this.maxReconnectAttempts} after ${delay}ms`);
+                    }
+                }
+            );
             this.reconnectAttempts = 0;
             appLogger.info('OllamaService', 'Reconnection successful');
             return true;
+        } catch {
+            appLogger.warn('OllamaService', `Max reconnect attempts (${this.maxReconnectAttempts}) reached`);
+            return false;
         }
-
-        return this.reconnect();
     }
 
     // ========================================

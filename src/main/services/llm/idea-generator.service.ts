@@ -8,6 +8,7 @@ import { LocalImageService } from '@main/services/llm/local-image.service';
 import { ProjectScaffoldService } from '@main/services/project/project-scaffold.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
+import { withRetry } from '@main/utils/retry.util';
 import { Message } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
 import { DatabaseAdapter } from '@shared/types/database';
@@ -541,29 +542,18 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
         operation: string,
         maxRetries = 3
     ): Promise<T> {
-        let lastError: Error | undefined;
-
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-                return await fn();
-            } catch (error) {
-                lastError = error instanceof Error ? error : new Error(String(error));
-
-                if (attempt === maxRetries || !this.isRetryableError(error)) {
-                    throw lastError;
-                }
-
-                const backoffMs = Math.min(1000 * Math.pow(2, attempt - 1), 30000);
+        return withRetry(fn, {
+            maxRetries: maxRetries - 1,
+            baseDelayMs: 1000,
+            maxDelayMs: 30000,
+            shouldRetry: (error) => this.isRetryableError(error),
+            onRetry: (error, attempt, delayMs) => {
                 appLogger.warn(
                     this.name,
-                    `${operation} failed (attempt ${attempt}/${maxRetries}), retrying in ${backoffMs}ms: ${getErrorMessage(error)}`
+                    `${operation} failed (attempt ${attempt + 1}/${maxRetries}), retrying in ${delayMs}ms: ${getErrorMessage(error)}`
                 );
-
-                await new Promise(resolve => setTimeout(resolve, backoffMs));
             }
-        }
-
-        throw lastError ?? new Error(`${operation} failed after ${maxRetries} attempts`);
+        });
     }
 
     /**

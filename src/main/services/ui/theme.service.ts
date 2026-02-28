@@ -10,6 +10,8 @@ import {
     ThemeErrorCode,
 } from '@main/services/ui/theme-error';
 import { BUILTIN_THEMES, getThemeById } from '@main/utils/theme-constants';
+import { withRetry } from '@main/utils/retry.util';
+import { RETRY_DEFAULTS } from '@shared/constants/defaults';
 import { JsonObject } from '@shared/types/common';
 import { CustomTheme, DEFAULT_THEME_PRESETS, ThemeColors, ThemePreset } from '@shared/types/theme';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
@@ -60,8 +62,6 @@ export class ThemeService extends BaseService {
     private initialized = false;
     private readonly telemetryLog: ThemeTelemetryEvent[] = [];
     private static readonly MAX_TELEMETRY_LOG = 200;
-    private static readonly SAVE_RETRY_LIMIT = 2;
-    private static readonly SAVE_RETRY_DELAY_MS = 50;
 
     constructor() {
         super('ThemeService');
@@ -168,32 +168,32 @@ export class ThemeService extends BaseService {
     }
 
     private async saveStore(): Promise<boolean> {
-        for (let attempt = 0; attempt <= ThemeService.SAVE_RETRY_LIMIT; attempt++) {
-            try {
-                const tempPath = this.storePath + '.tmp';
-                await fs.promises.writeFile(tempPath, JSON.stringify(this.store, null, 2), 'utf8');
-                await fs.promises.rename(tempPath, this.storePath);
-                return true;
-            } catch (error) {
-                if (attempt < ThemeService.SAVE_RETRY_LIMIT) {
-                    this.logWarn(`Save attempt ${attempt + 1} failed, retrying...`);
-                    await this.delay(ThemeService.SAVE_RETRY_DELAY_MS);
-                } else {
-                    this.logError('Failed to save theme store after retries', error as Error);
-                    this.emitTelemetry({
-                        action: 'theme.save.failed',
-                        success: false,
-                        timestamp: Date.now(),
-                    });
+        try {
+            await withRetry(
+                async () => {
+                    const tempPath = this.storePath + '.tmp';
+                    await fs.promises.writeFile(tempPath, JSON.stringify(this.store, null, 2), 'utf8');
+                    await fs.promises.rename(tempPath, this.storePath);
+                },
+                {
+                    maxRetries: RETRY_DEFAULTS.FILE_SAVE_RETRIES,
+                    baseDelayMs: RETRY_DEFAULTS.FILE_SAVE_DELAY_MS,
+                    shouldRetry: () => true,
+                    onRetry: (_err, attempt) => {
+                        this.logWarn(`Save attempt ${attempt + 1} failed, retrying...`);
+                    }
                 }
-            }
+            );
+            return true;
+        } catch (error) {
+            this.logError('Failed to save theme store after retries', error as Error);
+            this.emitTelemetry({
+                action: 'theme.save.failed',
+                success: false,
+                timestamp: Date.now(),
+            });
+            return false;
         }
-        return false;
-    }
-
-    /** Returns a promise that resolves after the given milliseconds. */
-    private delay(ms: number): Promise<void> {
-        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
 
