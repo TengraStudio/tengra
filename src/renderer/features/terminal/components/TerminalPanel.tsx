@@ -1,4 +1,3 @@
-/* eslint-disable max-lines-per-function */
 import { useTranslation } from '@renderer/i18n';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { type ITheme, Terminal as XTerm } from 'xterm';
@@ -298,6 +297,7 @@ function resolveTerminalAppearance(
     };
 }
 
+// eslint-disable-next-line max-lines-per-function
 function TerminalPanelContentImpl({
     isOpen,
     onToggle,

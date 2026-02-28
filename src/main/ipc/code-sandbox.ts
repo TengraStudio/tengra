@@ -1,11 +1,12 @@
 import { spawn } from 'child_process';
 import vm from 'vm';
 
+import { createMainWindowSenderValidator, SenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { withRetry } from '@main/utils/ipc-retry.util';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { ipcMain } from 'electron';
+import { BrowserWindow, ipcMain } from 'electron';
 import { z } from 'zod';
 
 const SupportedLanguageSchema = z.enum(['javascript', 'typescript', 'python', 'shell']);
@@ -297,7 +298,12 @@ const JS_BLOCKED_PATTERNS = [
     /\bfs\b/i,
     /\bnet\b/i,
     /\bhttp\b/i,
-    /\bhttps\b/i
+    /\bhttps\b/i,
+    /\.constructor\b/i,
+    /\b__proto__\b/i,
+    /\bprototype\b/i,
+    /\bProxy\b/,
+    /\bReflect\b/
 ];
 
 const PYTHON_BLOCKED_PATTERNS = [
@@ -342,7 +348,7 @@ const executeJavascriptSandbox = async (
 
     const stdoutParts: string[] = [];
     const stderrParts: string[] = [];
-    const context = vm.createContext({
+    const sandbox = {
         console: {
             log: (...args: unknown[]) => stdoutParts.push(args.map(value => String(value)).join(' ')),
             error: (...args: unknown[]) => stderrParts.push(args.map(value => String(value)).join(' '))
@@ -352,11 +358,13 @@ const executeJavascriptSandbox = async (
         JSON,
         setTimeout: undefined,
         setInterval: undefined
-    });
+    };
+    Object.freeze(sandbox);
+    const context = vm.createContext(sandbox);
 
     try {
         const script = new vm.Script(code, { filename: `sandbox.${language === 'typescript' ? 'ts' : 'js'}` });
-        const executionResult = script.runInContext(context, { timeout: timeoutMs });
+        const executionResult = script.runInContext(context, { timeout: timeoutMs, microtaskMode: 'afterEvaluate' });
         const resultText = executionResult === undefined ? undefined : String(executionResult);
         return {
             success: true,
@@ -386,12 +394,12 @@ const executeJavascriptSandbox = async (
 
 const resolveShellProgram = (language: 'python' | 'shell'): { command: string; args: string[] } => {
     if (language === 'python') {
-        return { command: process.platform === 'win32' ? 'python' : 'python3', args: ['-I', '-c'] };
+        return { command: process.platform === 'win32' ? 'python' : 'python3', args: ['-I', '-'] };
     }
     if (process.platform === 'win32') {
-        return { command: 'powershell.exe', args: ['-NoProfile', '-Command'] };
+        return { command: 'powershell.exe', args: ['-NoProfile', '-Command', '-'] };
     }
-    return { command: 'bash', args: ['-lc'] };
+    return { command: 'bash', args: ['--restricted', '-s'] };
 };
 
 const executeSubprocessSandbox = async (
@@ -418,10 +426,13 @@ const executeSubprocessSandbox = async (
 
     const { command, args } = resolveShellProgram(language);
     return await new Promise<z.infer<typeof ExecuteResponseSchema>>(resolve => {
-        const child = spawn(command, [...args, code], {
+        const child = spawn(command, args, {
             stdio: ['pipe', 'pipe', 'pipe'],
             windowsHide: true
         });
+
+        child.stdin.write(code);
+        child.stdin.end();
 
         let stdout = '';
         let stderr = '';
@@ -544,7 +555,9 @@ const executeWithRetryPolicy = async (
     };
 };
 
-export function registerCodeSandboxIpc(): void {
+export function registerCodeSandboxIpc(getMainWindow: () => BrowserWindow | null): void {
+    const validateSender = createMainWindowSenderValidator(getMainWindow, 'code-sandbox operation');
+
     ipcMain.handle(
         'code-sandbox:languages',
         createValidatedIpcHandler(
@@ -579,7 +592,8 @@ export function registerCodeSandboxIpc(): void {
         'code-sandbox:execute',
         createValidatedIpcHandler(
             'code-sandbox:execute',
-            async (_event, payload: z.infer<typeof ExecuteRequestSchema>) => {
+            async (event, payload: z.infer<typeof ExecuteRequestSchema>) => {
+                validateSender(event);
                 const startedAt = Date.now();
                 const result = await executeWithRetryPolicy(payload);
                 const durationMs = Date.now() - startedAt;

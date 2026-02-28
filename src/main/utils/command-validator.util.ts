@@ -24,7 +24,7 @@ const BLOCKED_TOKENS = [
     'chmod 777'
 ];
 
-const DANGEROUS_OPERATORS = [';', '&&', '||'];
+const DANGEROUS_OPERATORS = [';', '&&', '||', '>', '>>', '<', '|', '`', '$(' ];
 
 /**
  * Validates a shell command string for safety.

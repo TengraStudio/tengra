@@ -198,9 +198,9 @@
 
 ### 🔴 Critical
 
-- ( ) **SECURITY-001**: Hardcoded JWT Secret — `website/tengra-backend/controllers/AuthTokenUtil.h:28` — JWT secret hardcoded in source code, allows token forgery.
-- ( ) **SECURITY-002**: Hardcoded Database Password — `website/tengra-backend/config.json:17` — Plaintext DB password in committed config file.
-- ( ) **SECURITY-003**: Hardcoded Legacy Salt — `website/tengra-backend/controllers/AuthController.cpp:463` — Password salt hardcoded, enables offline brute-force.
+- (x) **SECURITY-001**: Hardcoded JWT Secret — Reads from `TENGRA_JWT_SECRET` env var with fatal abort if unset.
+- (x) **SECURITY-002**: Hardcoded Database Password — Removed from config.json, reads from `TENGRA_DB_PASSWORD` env var.
+- (x) **SECURITY-003**: Hardcoded Legacy Salt — Reads from `TENGRA_PASSWORD_SALT` env var, denies login if unset.
 - ( ) **SECURITY-004**: CORS Wildcard Origin — `website/tengra-backend/main.cpp:57` — `Access-Control-Allow-Origin: *` allows CSRF-style attacks.
 - (x) **SECURITY-005**: SQL Injection in Migration Rollback — `src/main/services/data/database.service.ts:731` — String interpolation instead of parameterized queries.
 - (x) **SECURITY-006**: JWT Decoded Without Signature Verification — `src/main/utils/local-auth-server.util.ts:441-452` — Now uses JWKS verification via jose library with userinfo fallback.
