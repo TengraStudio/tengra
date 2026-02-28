@@ -14,6 +14,7 @@ import { SettingsService } from '@main/services/system/settings.service';
 import { ChatMessage, ContentPart, OpenAIResponse, ToolCall } from '@main/types/llm.types';
 import { MessageNormalizer } from '@main/utils/message-normalizer.util';
 import { sanitizePrompt, validatePromptSafety } from '@main/utils/prompt-sanitizer.util';
+import { filterContent } from '@main/services/llm/content-filter.service';
 import { StreamChunk, StreamParser } from '@main/utils/stream-parser.util';
 import { Message, MessageContentPart, SystemMode, ToolDefinition } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
@@ -159,25 +160,11 @@ export class LLMService {
      * Validate LLM output against safety policies
      */
     private validateContent(content: string): string {
-        // Basic filtering for sensitive patterns (placeholder)
-        // In fully implemented version, this would check for:
-        // - PII leaks
-        // - Malicious code injection patterns
-        // - System prompt leaks
-
-        const FORBIDDEN_PATTERNS = [
-            '<script>alert(',
-            'javascript:alert(',
-            '-----BEGIN RSA PRIVATE KEY-----'
-        ];
-
-        for (const pattern of FORBIDDEN_PATTERNS) {
-            if (content.includes(pattern)) {
-                appLogger.warn('LLMService', 'Content filtering blocked unsafe pattern');
-                return '[CONTENT BLOCKED BY SECURITY POLICY]';
-            }
+        const result = filterContent(content);
+        if (result.blocked) {
+            appLogger.warn('LLMService', `Content filtering blocked unsafe pattern(s): ${result.matchedPatterns.join(', ')}`);
         }
-        return content;
+        return result.content;
     }
 
     /**

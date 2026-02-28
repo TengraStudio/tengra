@@ -16,7 +16,7 @@ import { z } from 'zod';
 // AUD-SEC-031: Schema validation for API payloads
 const ToolExecuteSchema = z.object({
     toolName: z.string().min(1).max(256).regex(/^[a-zA-Z0-9._-]+$/, 'Invalid toolName format'),
-    args: z.record(z.string(), z.unknown()).optional()
+    args: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null(), z.array(z.union([z.string(), z.number(), z.boolean(), z.null()])), z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]))])).optional()
 });
 
 const ChatMessageSchema = z.object({
@@ -39,6 +39,13 @@ const VisionAnalyzeSchema = z.object({
     model: z.string().max(128).optional(),
     provider: z.string().max(64).optional()
 });
+
+// SECURITY-018: WebSocket message schema validation
+const WebSocketMessageSchema = z.object({
+    type: z.string().min(1).max(64).regex(/^[a-zA-Z0-9:_-]+$/, 'Invalid message type'),
+    payload: z.record(z.string(), z.unknown()).optional(),
+    id: z.string().max(128).optional()
+}).strict();
 
 // AUD-SEC-033: Explicit CORS allowlist
 const CORS_ALLOWED_ORIGINS = new Set([
@@ -823,7 +830,25 @@ export class ApiServerService extends BaseService {
 
             ws.on('message', (data) => {
                 try {
-                    const message = JSON.parse(data.toString());
+                    const raw = JSON.parse(data.toString());
+
+                    // SECURITY-018: Validate incoming WebSocket messages with Zod
+                    const parsed = WebSocketMessageSchema.safeParse(raw);
+                    if (!parsed.success) {
+                        appLogger.warn(
+                            this.name,
+                            `WebSocket invalid message from ${clientId}: ${parsed.error.message}`
+                        );
+                        ws.send(
+                            JSON.stringify({
+                                type: 'error',
+                                error: 'Message validation failed'
+                            })
+                        );
+                        return;
+                    }
+
+                    const message = parsed.data;
                     appLogger.info(
                         this.name,
                         `WebSocket message from ${clientId}: ${message.type}`

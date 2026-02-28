@@ -66,7 +66,7 @@
 ## 🛡️ Core Infrastructure & Security
 
 ### Security Hardening
-- ( ) **SEC-H-001**: Verify WebContents navigation restriction to trusted origins.
+- (x) **SEC-H-001**: Verify WebContents navigation restriction to trusted origins. — Already implemented via `navigation-security.util.ts`.
 - ( ) **SEC-H-002**: Audit all IPC handlers for `responseSchema` validation (Zod).
 - ( ) **SEC-H-003**: Implement periodic security scan for `node_modules` vulnerabilities.
 
@@ -201,24 +201,24 @@
 - (x) **SECURITY-001**: Hardcoded JWT Secret — Reads from `TENGRA_JWT_SECRET` env var with fatal abort if unset.
 - (x) **SECURITY-002**: Hardcoded Database Password — Removed from config.json, reads from `TENGRA_DB_PASSWORD` env var.
 - (x) **SECURITY-003**: Hardcoded Legacy Salt — Reads from `TENGRA_PASSWORD_SALT` env var, denies login if unset.
-- ( ) **SECURITY-004**: CORS Wildcard Origin — `website/tengra-backend/main.cpp:57` — `Access-Control-Allow-Origin: *` allows CSRF-style attacks.
+- (x) **SECURITY-004**: CORS Wildcard Origin — Replaced with origin whitelist from `TENGRA_CORS_ORIGINS` env var.
 - (x) **SECURITY-005**: SQL Injection in Migration Rollback — `src/main/services/data/database.service.ts:731` — String interpolation instead of parameterized queries.
 - (x) **SECURITY-006**: JWT Decoded Without Signature Verification — `src/main/utils/local-auth-server.util.ts:441-452` — Now uses JWKS verification via jose library with userinfo fallback.
 - (x) **SECURITY-007**: Path Traversal in Export Handler — `src/main/ipc/export.ts:9-23` — No path traversal check on filePath parameter.
 - (x) **SECURITY-008**: Path Traversal in Backup/Restore — `src/main/ipc/backup.ts:50-68` — No traversal prevention on backup paths.
-- ( ) **SECURITY-009**: Code Sandbox Escape via vm.Script — `src/main/ipc/code-sandbox.ts:323-359` — Node.js `vm` module doesn't provide true isolation.
-- ( ) **SECURITY-010**: Shell Code Injection via Spawn — `src/main/ipc/code-sandbox.ts:421` — User code passed as CLI argument to shell interpreters.
+- (x) **SECURITY-009**: Code Sandbox Escape via vm.Script — Hardened with frozen context, extended blocklist, microtaskMode.
+- (x) **SECURITY-010**: Shell Code Injection via Spawn — Code now piped via stdin instead of CLI args.
 
 ### 🟠 High
 
-- ( ) **SECURITY-011**: Command Injection in CommandService — `src/main/services/system/command.service.ts:98-101` — Raw command strings through PowerShell shell.
-- ( ) **SECURITY-012**: Command Injection in Spawn-with-Shell — `src/main/services/system/command.service.ts:186-188` — Empty args array passes command to shell.
-- ( ) **SECURITY-013**: Unvalidated stdout in Command Chain — `src/main/services/analysis/monitoring.service.ts:227-229` — Command injection via crafted battery device names.
+- (x) **SECURITY-011**: Command Injection in CommandService — Added injection patterns for redirection, newlines, null bytes, pipes.
+- (x) **SECURITY-012**: Command Injection in Spawn-with-Shell — Already uses `shell: false` in all `spawn` calls.
+- (x) **SECURITY-013**: Unvalidated stdout in Command Chain — Added battery path regex allowlist and first-line extraction.
 - (x) **SECURITY-014**: Gallery Path Traversal — `src/main/ipc/gallery.ts:225-249` — targetDirectory not validated against safe root.
 - (x) **SECURITY-015**: HuggingFace URL Hostname Bypass — `src/main/ipc/huggingface.ts:62-68` — `.includes('huggingface.co')` bypassed by subdomains.
 - (x) **SECURITY-016**: HuggingFace Path Traversal — `src/main/ipc/huggingface.ts:210-220` — No traversal check on path parameter.
 - (x) **SECURITY-017**: Prototype Pollution in sanitizeObject — `src/shared/utils/sanitize.util.ts:189-222` — No `__proto__`/`constructor` key filtering.
-- ( ) **SECURITY-018**: Unvalidated WebSocket Messages — `src/main/api/api-server.service.ts:824-845` — No schema validation on WS messages.
+- (x) **SECURITY-018**: Unvalidated WebSocket Messages — Added Zod schema validation with strict mode.
 - (x) **SECURITY-019**: z.any() Validation Bypass — `src/shared/schemas/agent-checkpoint.schema.ts:65-70` — 6 fields using z.any().
 - ( ) **SECURITY-020**: Empty Redis Password — `website/tengra-backend/config.json:28` — Unauthenticated Redis access.
 - ( ) **SECURITY-021**: Prompt Injection via RAG Context — `src/main/ipc/chat.ts:158` — RAG context injected without escaping.
@@ -230,11 +230,11 @@
 - ( ) **SECURITY-024**: HTTP-Only Listener — `website/tengra-backend/config.json:6` — Backend on HTTP with no TLS.
 - (x) **SECURITY-025**: MCP Service Name Injection — `src/main/ipc/mcp.ts:18-41` — Names validated for length only.
 - (x) **SECURITY-026**: Regex DoS in Terminal Search — `src/main/ipc/terminal.ts:55-57` — No regex complexity limits.
-- ( ) **SECURITY-027**: Weak SQL Injection Guard — `website/tengra-backend/controllers/SqliGuardUtil.h:16-31` — Trivially bypassed string matching.
+- (x) **SECURITY-027**: Weak SQL Injection Guard — Expanded to 30+ patterns including UNION, comments, encoding tricks.
 - (x) **SECURITY-028**: Missing Recursion Depth Limit — `src/shared/utils/sanitize.util.ts:189-222` — `sanitizeObject()` recurses without depth tracking.
 - (x) **SECURITY-029**: Model Name Not Sanitized — `src/main/ipc/ollama.ts:41-50` — Model names may contain shell metacharacters.
-- ( ) **SECURITY-030**: Unvalidated Tool Arguments — `src/main/api/api-server.service.ts:18` — z.unknown() in tool args.
-- ( ) **SECURITY-031**: Insufficient Content Filtering — `src/main/services/llm/llm.service.ts:161-181` — Only 3 hardcoded patterns.
+- (x) **SECURITY-030**: Unvalidated Tool Arguments — Replaced `z.unknown()` with typed union schema.
+- (x) **SECURITY-031**: Insufficient Content Filtering — Integrated `content-filter.service.ts` with 35+ patterns across 6 categories.
 - ( ) **SECURITY-032**: No CSRF Tokens on State-Changing Endpoints — `src/main/api/api-server.service.ts` — POST endpoints lack CSRF tokens.
 - ( ) **SECURITY-033**: Session Disabled in Backend — `website/tengra-backend/config.json:36` — No session revocation capability.
 - ( ) **SECURITY-034**: Client-Side JWT Without Verification — `website/tengra-frontend/lib/token.ts` — Role from unverified claims.
@@ -261,11 +261,11 @@
 
 ### Renderer (27 issues)
 
-- ( ) **PERF-001**: MessageBubble mega-component 2136 lines — `src/renderer/features/chat/components/MessageBubble.tsx` — 14x limit, inline DOMPurify, must split into 10+ components.
-- ( ) **PERF-002**: ChatInput oversized 472 lines — `src/renderer/features/chat/components/ChatInput.tsx` — `.split(' ').pop()` every keystroke, ResizeObserver churn.
+- [x] **PERF-001**: MessageBubble mega-component 2136 lines — `src/renderer/features/chat/components/MessageBubble.tsx` — 14x limit, inline DOMPurify, split into 10+ components.
+- [x] **PERF-002**: ChatInput oversized 472 lines — `src/renderer/features/chat/components/ChatInput.tsx` — Extracted sub-components and optimized keystroke performance.
 - ( ) **PERF-003**: MultiModelCollaboration oversized 470 lines — `src/renderer/features/chat/components/MultiModelCollaboration.tsx` — 13 useState, no useMemo.
 - ( ) **PERF-004**: TitleBar oversized 572 lines — `src/renderer/components/layout/TitleBar.tsx` — Inline changelog modal, object creation per render.
-- ( ) **PERF-005**: PanelLayout oversized 494 lines — `src/renderer/components/layout/PanelLayout.tsx` — Sub-components not wrapped in React.memo.
+- [x] **PERF-005**: PanelLayout optimized 494 lines — `src/renderer/components/layout/PanelLayout.tsx` — Sub-components wrapped in React.memo and restored functionality.
 - (x) **PERF-006**: SlashMenu missing React.memo + useMemo — `src/renderer/features/chat/components/SlashMenu.tsx` — .filter() runs every render.
 - (x) **PERF-007**: MessageActions missing React.memo — `src/renderer/features/chat/components/MessageActions.tsx` — Re-renders on every parent render.
 - (x) **PERF-008**: ToolDisplay missing React.memo — `src/renderer/features/chat/components/ToolDisplay.tsx` — Inline sub-component definitions.

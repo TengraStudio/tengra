@@ -222,13 +222,17 @@ export class MonitoringService extends BaseService {
                 output = stdout;
             } else if (platform === 'linux') {
                 const batteries = await this.executeWithTimeout('upower -e | grep battery', this.commandTimeout);
-                if (batteries.stdout.trim()) {
+                const batteryPath = batteries.stdout.trim().split('\n')[0].trim();
+                // SECURITY-013: Sanitize stdout to prevent command injection via crafted device names
+                const VALID_BATTERY_PATH = /^[a-zA-Z0-9/_\-.:]+$/;
+                if (batteryPath && VALID_BATTERY_PATH.test(batteryPath)) {
                     const { stdout } = await this.executeWithTimeout(
-                        `upower -i ${batteries.stdout.trim()}`,
+                        `upower -i ${batteryPath}`,
                         this.commandTimeout
                     );
                     output = stdout;
                 } else {
+                    this.logWarn('getBatteryStatus: invalid or empty battery device path rejected');
                     return { success: false, error: MonitoringErrorCode.NO_BATTERY };
                 }
             } else if (platform === 'darwin') {
