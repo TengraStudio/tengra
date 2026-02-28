@@ -276,43 +276,43 @@
 - (x) **PERF-013**: useAppInitialization missing cleanup — `src/renderer/hooks/useAppInitialization.ts` — window.TengraSpeak never removed.
 - (x) **PERF-014**: notification-center.store dismissTimers leak — `src/renderer/store/notification-center.store.ts` — Maps persist without cleanup. *(Verified: timers already cleaned up properly.)*
 - (x) **PERF-015**: VoiceOverlay eagerly imported — `src/renderer/App.tsx` — Should use React.lazy().
-- ( ) **PERF-016**: Settings tabs not lazy-loaded — `src/renderer/features/settings/SettingsPage.tsx` — All panels loaded upfront.
+- (x) **PERF-016**: Settings tabs not lazy-loaded — `src/renderer/features/settings/SettingsPage.tsx` — All panels loaded upfront.
 - ( ) **PERF-017**: LoggingDashboard missing virtualization — `src/renderer/components/ui/LoggingDashboard.tsx` — 500+ entries rendered.
 - ( ) **PERF-018**: GalleryView missing virtualization — `src/renderer/components/shared/GalleryView.tsx` — 100+ images in DOM.
 - ( ) **PERF-019**: MarkdownRenderer DOMPurify in render path — `src/renderer/features/chat/components/MarkdownRenderer.tsx` — No memoization.
-- ( ) **PERF-020**: MCPStore ToolCard not memoized — `src/renderer/features/mcp/MCPStore.tsx` — 24+ cards re-render.
+- (x) **PERF-020**: MCPStore ToolCard not memoized — `src/renderer/features/mcp/MCPStore.tsx` — 24+ cards re-render.
 - (x) **PERF-021**: PanelLayout inline style objects — `src/renderer/components/layout/PanelLayout.tsx` — New object refs per render.
 - (x) **PERF-022**: QuickActionBar inline position styles — `src/renderer/components/layout/QuickActionBar.tsx` — 5-property object every render.
 - ( ) **PERF-023**: Health stores nested spread anti-pattern — `src/renderer/store/*-health.store.ts` — 4+ levels of spread per event.
-- ( ) **PERF-024**: loading-analytics.store full array scan — `src/renderer/store/loading-analytics.store.ts` — Filters 300 items on every completion.
-- ( ) **PERF-025**: voice.store direct array mutation — `src/renderer/store/voice.store.ts` — .push()/.splice() breaks change detection.
+- (x) **PERF-024**: loading-analytics.store full array scan — `src/renderer/store/loading-analytics.store.ts` — Filters 300 items on every completion.
+- (x) **PERF-025**: voice.store direct array mutation — `src/renderer/store/voice.store.ts` — .push()/.splice() breaks change detection.
 - ( ) **PERF-026**: ChatInput slash detection every keystroke — `src/renderer/features/chat/components/ChatInput.tsx` — No debounce.
 - ( ) **PERF-027**: ProjectsPage grid view not virtualized — `src/renderer/features/projects/ProjectsPage.tsx` — Only list view virtualized.
 
 ### Main Process (25 issues)
 
 - (x) **PERF-101**: Unbounded queryCounts Map — `src/main/services/llm/advanced-memory.service.ts:1684` — No eviction policy.
-- ( ) **PERF-102**: Incomplete SSH disconnect() cleanup — `src/main/services/project/ssh.service.ts:857` — 6+ Maps not cleaned.
-- ( ) **PERF-103**: No cleanup in MultiLLMOrchestratorService — `src/main/services/llm/multi-llm-orchestrator.service.ts` — 5 Maps grow indefinitely.
+- (x) **PERF-102**: Incomplete SSH disconnect() cleanup — `src/main/services/project/ssh.service.ts:857` — 6+ Maps not cleaned.
+- (x) **PERF-103**: No cleanup in MultiLLMOrchestratorService — `src/main/services/llm/multi-llm-orchestrator.service.ts` — 5 Maps grow indefinitely.
 - (x) **PERF-104**: Unbounded Maps in monitoring — `src/main/services/analysis/monitoring.service.ts:91-93` — No size limit or TTL.
-- ( ) **PERF-105**: Unbounded Maps in agent collaboration — `src/main/services/project/agent/agent-collaboration.service.ts:232` — No auto-pruning.
+- (x) **PERF-105**: Unbounded Maps in agent collaboration — `src/main/services/project/agent/agent-collaboration.service.ts:232` — No auto-pruning.
 - (x) **PERF-106**: Recursive sync directory traversal — `src/main/services/mcp/mcp-plugin.service.ts:171-186` — readdirSync+statSync blocking.
 - (x) **PERF-107**: Sync mkdirSync on every plugin action — `src/main/services/mcp/mcp-plugin.service.ts:44` — Redundant sync I/O.
-- ( ) **PERF-108**: execSync in terminal backend discovery — `kitty.backend.ts`, `warp.backend.ts`, `alacritty.backend.ts`, `ghostty.backend.ts` — Blocking main thread.
+- (x) **PERF-108**: execSync in terminal backend discovery — `kitty.backend.ts`, `warp.backend.ts`, `alacritty.backend.ts`, `ghostty.backend.ts` — Blocking main thread.
 - (x) **PERF-109**: writeFileSync in image generation — `src/main/services/llm/local-image.service.ts:2398` — Blocks main thread. *(Verified: already uses async fs.promises.writeFile.)*
 - (x) **PERF-110**: Sync file reads in security service — `src/main/services/security/security.service.ts:49,96` — Blocks event loop. *(Verified: already uses async fs.promises.)*
-- ( ) **PERF-111**: Recursive sync dir scan in proxy rebuild — `src/main/services/proxy/proxy-process.service.ts:384-421` — All synchronous.
+- (x) **PERF-111**: Recursive sync dir scan in proxy rebuild — `src/main/services/proxy/proxy-process.service.ts:384-421` — All synchronous.
 - (x) **PERF-112**: O(n²) model selection loop — `src/main/services/llm/huggingface.service.ts:411-420` — .find() inside loop.
 - (x) **PERF-113**: O(n×m) history lookup — `src/main/services/llm/local-image.service.ts:1809` — .map+.find instead of Map lookup.
-- ( ) **PERF-114**: Array.from().filter() in hot scheduling path — `src/main/services/llm/multi-llm-orchestrator.service.ts:193` — Full array scan per cycle.
+- (x) **PERF-114**: Array.from().filter() in hot scheduling path — `src/main/services/llm/multi-llm-orchestrator.service.ts:193` — Full array scan per cycle.
 - (x) **PERF-115**: JSON.parse(JSON.stringify()) for deep clone — Multiple files — Use structuredClone() instead.
 - ( ) **PERF-116**: readFileSync on every extension manifest — `src/main/services/extension/extension.service.ts:558` — No caching.
-- ( ) **PERF-117**: readFileSync for port file discovery — `src/main/services/data/database-client.service.ts:206` — Repeated blocking I/O.
+- (x) **PERF-117**: readFileSync for port file discovery — `src/main/services/data/database-client.service.ts:206` — Repeated blocking I/O.
 - ( ) **PERF-118**: N+1 query on file change — `src/main/ipc/project.ts:136-140` — Fetches ALL projects then linear scan.
 - (x) **PERF-119**: Sequential git subprocess calls — `src/main/ipc/git.ts:196-218` — 3 git processes that could be parallelized. *(Skipped: calls are sequential dependencies; marked done.)*
 - ( ) **PERF-120**: No pagination on code intelligence results — `src/main/ipc/code-intelligence.ts` — Unbounded result arrays.
 - (x) **PERF-121**: Duplicate parseStatus closure per call — `src/main/ipc/git.ts:421-443` — Should be module-level.
-- ( ) **PERF-122**: Model registry no caching — `src/main/ipc/model-registry.ts:16-35` — Recomputes on every call.
+- (x) **PERF-122**: Model registry no caching — `src/main/ipc/model-registry.ts:16-35` — Recomputes on every call.
 - ( ) **PERF-123**: Code intelligence search not debounced — `src/main/ipc/code-intelligence.ts:27-38` — Fires every keystroke.
 - (x) **PERF-124**: Sequential awaits for independent git calls — `src/main/ipc/git.ts:463-465` — Should use Promise.all.
 - (x) **PERF-125**: Sequential awaits in getDetailedStatus — `src/main/ipc/git.ts:417-419` — Should use Promise.all.
@@ -398,7 +398,7 @@
 
 - (x) **QUALITY-036**: Missing timer cleanup — `src/renderer/features/chat/components/MonacoBlock.tsx` — Memory leak on unmount.
 - ( ) **QUALITY-037**: Large component state — `src/renderer/features/projects/components/workspace/WorkspaceEditor.tsx` — 18+ useState.
-- ( ) **QUALITY-038**: Tooltip event listener churn — `src/renderer/components/ui/tooltip.tsx:100-113` — addEventListener/removeEventListener cycle.
+- (x) **QUALITY-038**: Tooltip event listener churn — `src/renderer/components/ui/tooltip.tsx:100-113` — addEventListener/removeEventListener cycle.
 - (x) **QUALITY-039**: Missing AbortController — `src/renderer/components/ui/CodeEditor.tsx:110-140` — Stale requests on unmount.
 - (x) **QUALITY-040**: useMemo with Date.now() — `src/renderer/features/chat/components/MultiModelCollaboration.tsx:159` — Empty deps with time value. *(Verified: already uses useRef, not useMemo.)*
 

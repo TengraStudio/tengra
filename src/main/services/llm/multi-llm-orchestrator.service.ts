@@ -31,6 +31,9 @@ export interface ProviderStats {
     averageLatency: number
 }
 
+/** Maximum entries allowed in task-tracking Maps before pruning oldest */
+const MAX_MAP_SIZE = 10_000;
+
 /**
  * Advanced orchestrator for managing multiple LLM providers simultaneously
  */
@@ -44,6 +47,17 @@ export class MultiLLMOrchestrator extends EventEmitter {
     constructor() {
         super();
         this.initializeDefaultConfigs();
+    }
+
+    /** Count active tasks matching a predicate without intermediate arrays */
+    private countActiveTasks(predicate: (task: LLMTask) => boolean): number {
+        let count = 0;
+        for (const task of this.activeTasks.values()) {
+            if (predicate(task)) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private initializeDefaultConfigs() {
@@ -190,8 +204,9 @@ export class MultiLLMOrchestrator extends EventEmitter {
             return;
         }
 
-        const activeForProvider = Array.from(this.activeTasks.values())
-            .filter(t => this.normalizeProvider(t.provider) === provider).length;
+        const activeForProvider = this.countActiveTasks(
+            t => this.normalizeProvider(t.provider) === provider
+        );
 
         const maxConcurrent = config.maxConcurrent;
         const availableSlots = maxConcurrent - activeForProvider;
@@ -208,9 +223,25 @@ export class MultiLLMOrchestrator extends EventEmitter {
     }
 
     /**
+     * Prune oldest entries from a Map when it exceeds MAX_MAP_SIZE
+     */
+    private pruneMap<V>(map: Map<string, V>): void {
+        if (map.size <= MAX_MAP_SIZE) {return;}
+        const excess = map.size - MAX_MAP_SIZE;
+        const iter = map.keys();
+        for (let i = 0; i < excess; i++) {
+            const key = iter.next().value;
+            if (key !== undefined) {map.delete(key);}
+        }
+        appLogger.warn('MultiLLMOrchestrator', `Pruned ${excess} oldest entries from Map (limit: ${MAX_MAP_SIZE})`);
+    }
+
+    /**
      * Start executing a task
      */
     private async startTask(task: LLMTask) {
+        this.pruneMap(this.activeTasks);
+        this.pruneMap(this.taskStartTimes);
         this.activeTasks.set(task.taskId, task);
         this.taskStartTimes.set(task.taskId, Date.now());
 
@@ -299,8 +330,12 @@ export class MultiLLMOrchestrator extends EventEmitter {
      * Check if a chat is currently generating
      */
     isGenerating(chatId: string): boolean {
-        return Array.from(this.activeTasks.values())
-            .some(task => task.chatId === chatId);
+        for (const task of this.activeTasks.values()) {
+            if (task.chatId === chatId) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -308,8 +343,7 @@ export class MultiLLMOrchestrator extends EventEmitter {
      */
     getActiveTaskCount(provider: string): number {
         const normalized = this.normalizeProvider(provider);
-        return Array.from(this.activeTasks.values())
-            .filter(t => this.normalizeProvider(t.provider) === normalized).length;
+        return this.countActiveTasks(t => this.normalizeProvider(t.provider) === normalized);
     }
 
     /**
@@ -325,6 +359,19 @@ export class MultiLLMOrchestrator extends EventEmitter {
             }
         }
         return false;
+    }
+
+    /**
+     * Dispose of all resources and clear Maps
+     */
+    dispose(): void {
+        this.providerQueues.clear();
+        this.activeTasks.clear();
+        this.providerConfigs.clear();
+        this.providerStats.clear();
+        this.taskStartTimes.clear();
+        this.removeAllListeners();
+        appLogger.info('MultiLLMOrchestrator', 'Disposed all resources');
     }
 
     /**

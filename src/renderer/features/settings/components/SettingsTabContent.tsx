@@ -1,25 +1,24 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 
 import { GalleryView } from '@/components/shared/GalleryView';
-import {
-    AboutTab,
-    AccountsTab,
-    AdvancedTab,
-    AppearanceTab,
-    DeveloperTab,
-    GeneralTab,
-    ImageSettingsTab,
-    MCPSettingsTab,
-    ModelsTab,
-    ModelUsageLimitsTab,
-    PersonasTab,
-    SpeechTab,
-    StatisticsTab,
-    VoiceSettingsTab
-} from '@/features/settings/components';
 import type { GroupedModels, ModelInfo } from '@/types';
 
 import { SettingsSharedProps } from '../types';
+
+const AboutTab = React.lazy(() => import('@/features/settings/components/AboutTab').then(m => ({ default: m.AboutTab })));
+const AccountsTab = React.lazy(() => import('@/features/settings/components/AccountsTab').then(m => ({ default: m.AccountsTab })));
+const AdvancedTab = React.lazy(() => import('@/features/settings/components/AdvancedTab').then(m => ({ default: m.AdvancedTab })));
+const AppearanceTab = React.lazy(() => import('@/features/settings/components/AppearanceTab').then(m => ({ default: m.AppearanceTab })));
+const DeveloperTab = React.lazy(() => import('@/features/settings/components/DeveloperTab').then(m => ({ default: m.DeveloperTab })));
+const GeneralTab = React.lazy(() => import('@/features/settings/components/GeneralTab').then(m => ({ default: m.GeneralTab })));
+const ImageSettingsTab = React.lazy(() => import('@/features/settings/components/ImageSettingsTab').then(m => ({ default: m.ImageSettingsTab })));
+const MCPSettingsTab = React.lazy(() => import('@/features/settings/components/MCPSettingsTab').then(m => ({ default: m.MCPSettingsTab })));
+const ModelsTab = React.lazy(() => import('@/features/settings/components/ModelsTab').then(m => ({ default: m.ModelsTab })));
+const ModelUsageLimitsTab = React.lazy(() => import('@/features/settings/components/ModelUsageLimitsTab').then(m => ({ default: m.ModelUsageLimitsTab })));
+const PersonasTab = React.lazy(() => import('@/features/settings/components/PersonasTab').then(m => ({ default: m.PersonasTab })));
+const SpeechTab = React.lazy(() => import('@/features/settings/components/SpeechTab').then(m => ({ default: m.SpeechTab })));
+const StatisticsTab = React.lazy(() => import('@/features/settings/components/StatisticsTab').then(m => ({ default: m.StatisticsTab })));
+const VoiceSettingsTab = React.lazy(() => import('@/features/settings/components/VoiceSettingsTab').then(m => ({ default: m.VoiceSettingsTab })));
 
 interface SettingsTabContentProps {
     activeTab: string
@@ -81,5 +80,5 @@ export const SettingsTabContent: React.FC<SettingsTabContentProps> = ({
         voice: <VoiceSettingsTab {...sharedProps} />
     };
 
-    return <>{tabMap[activeTab] ?? null}</>;
+    return <Suspense fallback={<div className="animate-pulse p-6 text-muted-foreground">Loading...</div>}>{tabMap[activeTab] ?? null}</Suspense>;
 };

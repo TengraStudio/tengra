@@ -13,6 +13,19 @@
 - **Component Clean-up**: Eliminated unused local variables and imports.
 - **Build Integrity**: Verified zero lingering type mismatches.
 
+### 性能优化第二批（PERF-016/020/024/025/114/117）
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: 设置选项卡懒加载、MCP ToolCard 记忆化、修复 store 变更模式、同步 I/O 转为异步，以及优化编排器热路径迭代。
+
+- **MCPStore ToolCard**: 使用 React.memo 包裹，防止 24+ 张卡片的不必要重新渲染。
+- **voice.store**: 将 .push()/.splice() 变更替换为不可变数组操作，以实现正确的变更检测。
+- **loading-analytics.store**: 在 recalculateAverageDuration 中将 filter+reduce 替换为单次遍历循环。
+- **SettingsTabContent**: 全部 14 个选项卡组件通过 React.lazy() 和 Suspense 实现懒加载。
+- **database-client.service**: 将 existsSync/unlinkSync 转换为异步 fs/promises，实现非阻塞端口发现。
+- **MultiLLMOrchestrator**: 在热调度路径中将 Array.from().filter() 替换为基于迭代器的 countActiveTasks 辅助函数。
+
 ### Project Hygiene: Root Cleanup and Component Promotion
 
 - **Type**: refactor

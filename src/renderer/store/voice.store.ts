@@ -106,7 +106,7 @@ function updateCommands(commands: VoiceCommand[]): void {
 
 /** Add a command */
 function addCommand(command: VoiceCommand): void {
-    store.commands.push(command);
+    store.commands = [...store.commands, command];
     notifyListeners();
 }
 
@@ -114,7 +114,7 @@ function addCommand(command: VoiceCommand): void {
 function removeCommand(commandId: string): void {
     const index = store.commands.findIndex((c) => c.id === commandId);
     if (index !== -1) {
-        store.commands.splice(index, 1);
+        store.commands = store.commands.filter((c) => c.id !== commandId);
         notifyListeners();
     }
 }

@@ -7,6 +7,7 @@
  */
 
 import * as fs from 'fs';
+import * as fsPromises from 'fs/promises';
 import * as http from 'http';
 import * as net from 'net';
 import * as path from 'path';
@@ -45,9 +46,19 @@ import {
     DbUpsertMarketplaceModelsRequest,
     DbVectorSearchRequest,
 } from '@shared/types/db-api';
+import { delay } from '@shared/utils/delay.util';
 import { getErrorMessage } from '@shared/utils/error.util';
 import axios, { AxiosError, AxiosInstance } from 'axios';
 import { app } from 'electron';
+
+/** PERF-117: Cached port file entry with TTL */
+interface PortFileCacheEntry {
+    content: string;
+    timestamp: number;
+}
+
+/** PERF-117: TTL for port file cache in milliseconds */
+const PORT_FILE_CACHE_TTL_MS = 5_000;
 
 const SERVICE_NAME = 'db-service';
 const MAX_HEALTH_RETRIES = 30;
@@ -76,6 +87,9 @@ export class DatabaseClientService extends BaseService {
     private totalRequests = 0;
     private failedRequests = 0;
     private lastRequestAt?: number;
+
+    /** PERF-117: Cache for port file reads to avoid repeated synchronous I/O */
+    private portFileCache = new Map<string, PortFileCacheEntry>();
 
     constructor(
         private eventBus: EventBusService,
@@ -186,7 +200,7 @@ export class DatabaseClientService extends BaseService {
                 this.logInfo(`Using managed db-service port from process manager: ${managedPort}`);
                 return managedPort;
             }
-            await this.sleep(100);
+            await delay(100);
         }
 
         return null;
@@ -198,12 +212,14 @@ export class DatabaseClientService extends BaseService {
     private async discoverService(): Promise<number | null> {
         const portFiles = this.getPortFileCandidates();
         for (const portFile of portFiles) {
-            if (!fs.existsSync(portFile)) {
+            try {
+                await fsPromises.access(portFile, fs.constants.F_OK);
+            } catch {
                 continue;
             }
 
             try {
-                const content = fs.readFileSync(portFile, 'utf8').trim();
+                const content = this.readPortFileCached(portFile);
                 const port = parseInt(content, 10);
                 if (isNaN(port)) {
                     continue;
@@ -214,7 +230,8 @@ export class DatabaseClientService extends BaseService {
                 if (!isOpen) {
                     // Clean up stale port file
                     try {
-                        fs.unlinkSync(portFile);
+                        await fsPromises.unlink(portFile);
+                        this.portFileCache.delete(portFile);
                     } catch {
                         /* ignore */
                     }
@@ -228,6 +245,19 @@ export class DatabaseClientService extends BaseService {
         }
 
         return null;
+    }
+
+    /** PERF-117: Read port file with caching to avoid repeated synchronous I/O */
+    private readPortFileCached(filePath: string): string {
+        const now = Date.now();
+        const cached = this.portFileCache.get(filePath);
+        if (cached && (now - cached.timestamp) < PORT_FILE_CACHE_TTL_MS) {
+            return cached.content;
+        }
+
+        const content = fs.readFileSync(filePath, 'utf8').trim();
+        this.portFileCache.set(filePath, { content, timestamp: now });
+        return content;
     }
 
     /**
@@ -276,16 +306,9 @@ export class DatabaseClientService extends BaseService {
             } catch {
                 // Continue retrying
             }
-            await this.sleep(HEALTH_RETRY_DELAY_MS);
+            await delay(HEALTH_RETRY_DELAY_MS);
         }
         throw new Error('db-service health check timed out');
-    }
-
-    /**
-     * Sleep utility
-     */
-    private sleep(ms: number): Promise<void> {
-        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     /**
@@ -737,6 +760,9 @@ export class DatabaseClientService extends BaseService {
 
         // PERF-003-4: Destroy HTTP agent and close all pooled connections
         this.httpAgent.destroy();
+
+        // PERF-117: Clear port file cache
+        this.portFileCache.clear();
 
         // Note: We don't stop the service as it's persistent
     }

@@ -171,15 +171,18 @@ function hydrate(): void {
 hydrate();
 
 function recalculateAverageDuration(history: LoadingOperationRecord[]): number {
-    const completed = history.filter(entry => entry.endedAt && entry.status !== 'running');
-    if (completed.length === 0) {
+    if (history.length === 0) {
         return 0;
     }
-    const total = completed.reduce((sum, entry) => {
-        const endedAt = entry.endedAt ?? entry.startedAt;
-        return sum + Math.max(0, endedAt - entry.startedAt);
-    }, 0);
-    return Math.round(total / completed.length);
+    let count = 0;
+    let total = 0;
+    for (const entry of history) {
+        if (entry.endedAt && entry.status !== 'running') {
+            total += Math.max(0, entry.endedAt - entry.startedAt);
+            count++;
+        }
+    }
+    return count === 0 ? 0 : Math.round(total / count);
 }
 
 export function createLoadingOperationId(prefix: string): string {

@@ -13,6 +13,19 @@
 - **Component Clean-up**: Eliminated unused local variables and imports.
 - **Build Integrity**: Verified zero lingering type mismatches.
 
+### パフォーマンス最適化バッチ2（PERF-016/020/024/025/114/117）
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: 設定タブの遅延ロード、MCP ToolCardのメモ化、ストアのミューテーションパターン修正、同期I/Oの非同期変換、オーケストレーターのホットパス反復処理の最適化を実施しました。
+
+- **MCPStore ToolCard**: 24枚以上のカードの不要な再レンダリングを防ぐためReact.memoでラップしました。
+- **voice.store**: 適切な変更検出のため、.push()/.splice()ミューテーションをイミュータブルな配列操作に置き換えました。
+- **loading-analytics.store**: recalculateAverageDurationでfilter+reduceをシングルパスループに置き換えました。
+- **SettingsTabContent**: 14個のタブコンポーネントすべてをReact.lazy()とSuspenseで遅延ロードしました。
+- **database-client.service**: ノンブロッキングのポート検出のためexistsSync/unlinkSyncを非同期fs/promisesに変換しました。
+- **MultiLLMOrchestrator**: ホットスケジューリングパスでArray.from().filter()をイテレーターベースのcountActiveTasksヘルパーに置き換えました。
+
 ### Project Hygiene: Root Cleanup and Component Promotion
 
 - **Type**: refactor

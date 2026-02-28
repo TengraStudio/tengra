@@ -13,6 +13,19 @@
 - **Component Clean-up**: Eliminated unused local variables and imports.
 - **Build Integrity**: Verified zero lingering type mismatches.
 
+### Optimisations de performance lot 2 (PERF-016/020/024/025/114/117)
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: Chargement différé des onglets de paramètres, mémoïsation de MCP ToolCard, correction des motifs de mutation des stores, conversion des E/S synchrones en asynchrones et optimisation de l'itération du chemin critique dans l'orchestrateur.
+
+- **MCPStore ToolCard**: Enveloppé dans React.memo pour éviter les re-rendus de 24+ cartes.
+- **voice.store**: Mutations .push()/.splice() remplacées par des opérations de tableau immuables pour une détection correcte des changements.
+- **loading-analytics.store**: filter+reduce remplacé par une boucle en un seul passage dans recalculateAverageDuration.
+- **SettingsTabContent**: Les 14 composants d'onglets chargés en différé avec React.lazy() et Suspense.
+- **database-client.service**: existsSync/unlinkSync convertis en fs/promises asynchrones pour une découverte de port non bloquante.
+- **MultiLLMOrchestrator**: Array.from().filter() remplacé par un assistant countActiveTasks basé sur un itérateur dans le chemin de planification critique.
+
 ### Project Hygiene: Root Cleanup and Component Promotion
 
 - **Type**: refactor

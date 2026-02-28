@@ -21,7 +21,7 @@ const CATEGORIES = [
     { id: 'Utility', labelKey: 'mcp.categories.utility', icon: Plug },
 ];
 
-const ToolCard = ({
+const ToolCard = React.memo(({
     tool,
     isInstalled,
     onSelect,
@@ -117,7 +117,7 @@ const ToolCard = ({
             )}
         </div>
     </div>
-);
+));
 
 const ToolDetailModal = ({
     tool,

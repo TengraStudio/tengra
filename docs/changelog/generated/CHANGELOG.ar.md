@@ -13,6 +13,19 @@
 - **Component Clean-up**: Eliminated unused local variables and imports.
 - **Build Integrity**: Verified zero lingering type mismatches.
 
+### تحسينات الأداء الدفعة 2 (PERF-016/020/024/025/114/117)
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: تحميل كسول لعلامات تبويب الإعدادات، حفظ MCP ToolCard في الذاكرة، إصلاح أنماط تغيير المخازن، تحويل عمليات الإدخال/الإخراج المتزامنة إلى غير متزامنة، وتحسين التكرار في المسار الحرج للمنسق.
+
+- **MCPStore ToolCard**: تم تغليفه بـ React.memo لمنع إعادة عرض أكثر من 24 بطاقة.
+- **voice.store**: تم استبدال تغييرات .push()/.splice() بعمليات مصفوفة غير قابلة للتغيير لاكتشاف التغييرات بشكل صحيح.
+- **loading-analytics.store**: تم استبدال filter+reduce بحلقة تمرير واحدة في recalculateAverageDuration.
+- **SettingsTabContent**: تم تحميل جميع مكونات علامات التبويب الـ 14 بشكل كسول باستخدام React.lazy() وSuspense.
+- **database-client.service**: تم تحويل existsSync/unlinkSync إلى fs/promises غير متزامنة لاكتشاف المنافذ بدون حظر.
+- **MultiLLMOrchestrator**: تم استبدال Array.from().filter() بمساعد countActiveTasks القائم على المكرر في مسار الجدولة الحرج.
+
 ### Project Hygiene: Root Cleanup and Component Promotion
 
 - **Type**: refactor

@@ -13,6 +13,19 @@
 - **Component Clean-up**: Eliminated unused local variables and imports.
 - **Build Integrity**: Verified zero lingering type mismatches.
 
+### Performanz-Optimierungen Batch 2 (PERF-016/020/024/025/114/117)
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: Einstellungs-Tabs lazy-geladen, MCP ToolCard memoisiert, Store-Mutationsmuster korrigiert, synchrones I/O auf async umgestellt und Hot-Path-Iteration im Orchestrator optimiert.
+
+- **MCPStore ToolCard**: Mit React.memo umschlossen, um unnötige Re-Renders von 24+ Karten zu verhindern.
+- **voice.store**: .push()/.splice()-Mutationen durch unveränderliche Array-Operationen für korrekte Änderungserkennung ersetzt.
+- **loading-analytics.store**: filter+reduce durch Single-Pass-Schleife in recalculateAverageDuration ersetzt.
+- **SettingsTabContent**: Alle 14 Tab-Komponenten mit React.lazy() und Suspense lazy-geladen.
+- **database-client.service**: existsSync/unlinkSync auf async fs/promises für nicht-blockierende Port-Erkennung umgestellt.
+- **MultiLLMOrchestrator**: Array.from().filter() durch iterator-basierten countActiveTasks-Helfer im Hot-Scheduling-Pfad ersetzt.
+
 ### Project Hygiene: Root Cleanup and Component Promotion
 
 - **Type**: refactor

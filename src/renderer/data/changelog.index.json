@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-28T15:09:04.722Z",
+  "generatedAt": "2026-02-28T18:21:30.693Z",
   "locales": [
     "en",
     "tr",
@@ -107,6 +107,123 @@
             "- **Build System**: Removed obsolete default URLs causing strict TypeScript ESLint rule failures.",
             "- **Component Clean-up**: Eliminated unused local variables and imports.",
             "- **Build Integrity**: Verified zero lingering type mismatches."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-28-perf-batch2-stores-lazy-async",
+      "date": "2026-02-28",
+      "channel": "stable",
+      "type": "perf",
+      "status": "completed",
+      "audience": [
+        "end-user"
+      ],
+      "components": [
+        "Renderer",
+        "MCP",
+        "Settings",
+        "LLM",
+        "Database"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Performance Optimizations Batch 2 (PERF-016/020/024/025/114/117)",
+          "summary": "Lazy-loaded settings tabs, memoized MCP ToolCard, fixed store mutation patterns, converted sync I/O to async, and optimized hot-path iteration in orchestrator.",
+          "items": [
+            "- **MCPStore ToolCard**: Wrapped in React.memo to prevent re-renders of 24+ cards.",
+            "- **voice.store**: Replaced .push()/.splice() mutations with immutable array operations for proper change detection.",
+            "- **loading-analytics.store**: Replaced filter+reduce with single-pass loop in recalculateAverageDuration.",
+            "- **SettingsTabContent**: All 14 tab components lazy-loaded with React.lazy() and Suspense.",
+            "- **database-client.service**: Converted existsSync/unlinkSync to async fs/promises for non-blocking port discovery.",
+            "- **MultiLLMOrchestrator**: Replaced Array.from().filter() with iterator-based countActiveTasks helper in hot scheduling path."
+          ]
+        },
+        "tr": {
+          "title": "Performans İyileştirmeleri Grup 2 (PERF-016/020/024/025/114/117)",
+          "summary": "Ayarlar sekmeleri lazy-load edildi, MCP ToolCard memo'landı, store mutasyon kalıpları düzeltildi, senkron I/O async'e dönüştürüldü ve orchestrator hot-path iterasyonu optimize edildi.",
+          "items": [
+            "- **MCPStore ToolCard**: 24+ kartın gereksiz yeniden render edilmesini önlemek için React.memo ile sarmalandı.",
+            "- **voice.store**: Doğru değişiklik algılama için .push()/.splice() mutasyonları değişmez dizi işlemleriyle değiştirildi.",
+            "- **loading-analytics.store**: recalculateAverageDuration'da filter+reduce yerine tek geçişli döngü kullanıldı.",
+            "- **SettingsTabContent**: 14 sekme bileşeni React.lazy() ve Suspense ile lazy-load edildi.",
+            "- **database-client.service**: Engellenmeyen port keşfi için existsSync/unlinkSync, async fs/promises'e dönüştürüldü.",
+            "- **MultiLLMOrchestrator**: Hot zamanlama yolunda Array.from().filter() yerine iterator tabanlı countActiveTasks yardımcısı kullanıldı."
+          ]
+        },
+        "de": {
+          "title": "Performanz-Optimierungen Batch 2 (PERF-016/020/024/025/114/117)",
+          "summary": "Einstellungs-Tabs lazy-geladen, MCP ToolCard memoisiert, Store-Mutationsmuster korrigiert, synchrones I/O auf async umgestellt und Hot-Path-Iteration im Orchestrator optimiert.",
+          "items": [
+            "- **MCPStore ToolCard**: Mit React.memo umschlossen, um unnötige Re-Renders von 24+ Karten zu verhindern.",
+            "- **voice.store**: .push()/.splice()-Mutationen durch unveränderliche Array-Operationen für korrekte Änderungserkennung ersetzt.",
+            "- **loading-analytics.store**: filter+reduce durch Single-Pass-Schleife in recalculateAverageDuration ersetzt.",
+            "- **SettingsTabContent**: Alle 14 Tab-Komponenten mit React.lazy() und Suspense lazy-geladen.",
+            "- **database-client.service**: existsSync/unlinkSync auf async fs/promises für nicht-blockierende Port-Erkennung umgestellt.",
+            "- **MultiLLMOrchestrator**: Array.from().filter() durch iterator-basierten countActiveTasks-Helfer im Hot-Scheduling-Pfad ersetzt."
+          ]
+        },
+        "fr": {
+          "title": "Optimisations de performance lot 2 (PERF-016/020/024/025/114/117)",
+          "summary": "Chargement différé des onglets de paramètres, mémoïsation de MCP ToolCard, correction des motifs de mutation des stores, conversion des E/S synchrones en asynchrones et optimisation de l'itération du chemin critique dans l'orchestrateur.",
+          "items": [
+            "- **MCPStore ToolCard**: Enveloppé dans React.memo pour éviter les re-rendus de 24+ cartes.",
+            "- **voice.store**: Mutations .push()/.splice() remplacées par des opérations de tableau immuables pour une détection correcte des changements.",
+            "- **loading-analytics.store**: filter+reduce remplacé par une boucle en un seul passage dans recalculateAverageDuration.",
+            "- **SettingsTabContent**: Les 14 composants d'onglets chargés en différé avec React.lazy() et Suspense.",
+            "- **database-client.service**: existsSync/unlinkSync convertis en fs/promises asynchrones pour une découverte de port non bloquante.",
+            "- **MultiLLMOrchestrator**: Array.from().filter() remplacé par un assistant countActiveTasks basé sur un itérateur dans le chemin de planification critique."
+          ]
+        },
+        "es": {
+          "title": "Optimizaciones de rendimiento lote 2 (PERF-016/020/024/025/114/117)",
+          "summary": "Pestañas de configuración con carga diferida, MCP ToolCard memorizado, patrones de mutación de stores corregidos, E/S síncronas convertidas a asíncronas e iteración de ruta crítica optimizada en el orquestador.",
+          "items": [
+            "- **MCPStore ToolCard**: Envuelto en React.memo para evitar re-renderizados de 24+ tarjetas.",
+            "- **voice.store**: Mutaciones .push()/.splice() reemplazadas por operaciones de array inmutables para una detección correcta de cambios.",
+            "- **loading-analytics.store**: filter+reduce reemplazado por un bucle de un solo paso en recalculateAverageDuration.",
+            "- **SettingsTabContent**: Los 14 componentes de pestañas cargados de forma diferida con React.lazy() y Suspense.",
+            "- **database-client.service**: existsSync/unlinkSync convertidos a fs/promises asíncronos para descubrimiento de puertos no bloqueante.",
+            "- **MultiLLMOrchestrator**: Array.from().filter() reemplazado por un asistente countActiveTasks basado en iterador en la ruta de planificación crítica."
+          ]
+        },
+        "ja": {
+          "title": "パフォーマンス最適化バッチ2（PERF-016/020/024/025/114/117）",
+          "summary": "設定タブの遅延ロード、MCP ToolCardのメモ化、ストアのミューテーションパターン修正、同期I/Oの非同期変換、オーケストレーターのホットパス反復処理の最適化を実施しました。",
+          "items": [
+            "- **MCPStore ToolCard**: 24枚以上のカードの不要な再レンダリングを防ぐためReact.memoでラップしました。",
+            "- **voice.store**: 適切な変更検出のため、.push()/.splice()ミューテーションをイミュータブルな配列操作に置き換えました。",
+            "- **loading-analytics.store**: recalculateAverageDurationでfilter+reduceをシングルパスループに置き換えました。",
+            "- **SettingsTabContent**: 14個のタブコンポーネントすべてをReact.lazy()とSuspenseで遅延ロードしました。",
+            "- **database-client.service**: ノンブロッキングのポート検出のためexistsSync/unlinkSyncを非同期fs/promisesに変換しました。",
+            "- **MultiLLMOrchestrator**: ホットスケジューリングパスでArray.from().filter()をイテレーターベースのcountActiveTasksヘルパーに置き換えました。"
+          ]
+        },
+        "zh": {
+          "title": "性能优化第二批（PERF-016/020/024/025/114/117）",
+          "summary": "设置选项卡懒加载、MCP ToolCard 记忆化、修复 store 变更模式、同步 I/O 转为异步，以及优化编排器热路径迭代。",
+          "items": [
+            "- **MCPStore ToolCard**: 使用 React.memo 包裹，防止 24+ 张卡片的不必要重新渲染。",
+            "- **voice.store**: 将 .push()/.splice() 变更替换为不可变数组操作，以实现正确的变更检测。",
+            "- **loading-analytics.store**: 在 recalculateAverageDuration 中将 filter+reduce 替换为单次遍历循环。",
+            "- **SettingsTabContent**: 全部 14 个选项卡组件通过 React.lazy() 和 Suspense 实现懒加载。",
+            "- **database-client.service**: 将 existsSync/unlinkSync 转换为异步 fs/promises，实现非阻塞端口发现。",
+            "- **MultiLLMOrchestrator**: 在热调度路径中将 Array.from().filter() 替换为基于迭代器的 countActiveTasks 辅助函数。"
+          ]
+        },
+        "ar": {
+          "title": "تحسينات الأداء الدفعة 2 (PERF-016/020/024/025/114/117)",
+          "summary": "تحميل كسول لعلامات تبويب الإعدادات، حفظ MCP ToolCard في الذاكرة، إصلاح أنماط تغيير المخازن، تحويل عمليات الإدخال/الإخراج المتزامنة إلى غير متزامنة، وتحسين التكرار في المسار الحرج للمنسق.",
+          "items": [
+            "- **MCPStore ToolCard**: تم تغليفه بـ React.memo لمنع إعادة عرض أكثر من 24 بطاقة.",
+            "- **voice.store**: تم استبدال تغييرات .push()/.splice() بعمليات مصفوفة غير قابلة للتغيير لاكتشاف التغييرات بشكل صحيح.",
+            "- **loading-analytics.store**: تم استبدال filter+reduce بحلقة تمرير واحدة في recalculateAverageDuration.",
+            "- **SettingsTabContent**: تم تحميل جميع مكونات علامات التبويب الـ 14 بشكل كسول باستخدام React.lazy() وSuspense.",
+            "- **database-client.service**: تم تحويل existsSync/unlinkSync إلى fs/promises غير متزامنة لاكتشاف المنافذ بدون حظر.",
+            "- **MultiLLMOrchestrator**: تم استبدال Array.from().filter() بمساعد countActiveTasks القائم على المكرر في مسار الجدولة الحرج."
           ]
         }
       }

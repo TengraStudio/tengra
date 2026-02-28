@@ -4,6 +4,44 @@
   "generatedAt": "2026-02-20T09:15:00Z",
   "entries": [
     {
+      "id": "2026-02-28-perf-batch2-stores-lazy-async",
+      "date": "2026-02-28",
+      "channel": "stable",
+      "type": "perf",
+      "category": "performance",
+      "status": "completed",
+      "audience": ["end-user"],
+      "components": ["Renderer", "MCP", "Settings", "LLM", "Database"],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Performance Optimizations Batch 2 (PERF-016/020/024/025/114/117)",
+          "summary": "Lazy-loaded settings tabs, memoized MCP ToolCard, fixed store mutation patterns, converted sync I/O to async, and optimized hot-path iteration in orchestrator.",
+          "items": [
+            "- **MCPStore ToolCard**: Wrapped in React.memo to prevent re-renders of 24+ cards.",
+            "- **voice.store**: Replaced .push()/.splice() mutations with immutable array operations for proper change detection.",
+            "- **loading-analytics.store**: Replaced filter+reduce with single-pass loop in recalculateAverageDuration.",
+            "- **SettingsTabContent**: All 14 tab components lazy-loaded with React.lazy() and Suspense.",
+            "- **database-client.service**: Converted existsSync/unlinkSync to async fs/promises for non-blocking port discovery.",
+            "- **MultiLLMOrchestrator**: Replaced Array.from().filter() with iterator-based countActiveTasks helper in hot scheduling path."
+          ]
+        },
+        "tr": {
+          "title": "Performans İyileştirmeleri Grup 2 (PERF-016/020/024/025/114/117)",
+          "summary": "Ayarlar sekmeleri lazy-load edildi, MCP ToolCard memo'landı, store mutasyon kalıpları düzeltildi, senkron I/O async'e dönüştürüldü ve orchestrator hot-path iterasyonu optimize edildi.",
+          "items": [
+            "- **MCPStore ToolCard**: 24+ kartın gereksiz yeniden render edilmesini önlemek için React.memo ile sarmalandı.",
+            "- **voice.store**: Doğru değişiklik algılama için .push()/.splice() mutasyonları değişmez dizi işlemleriyle değiştirildi.",
+            "- **loading-analytics.store**: recalculateAverageDuration'da filter+reduce yerine tek geçişli döngü kullanıldı.",
+            "- **SettingsTabContent**: 14 sekme bileşeni React.lazy() ve Suspense ile lazy-load edildi.",
+            "- **database-client.service**: Engellenmeyen port keşfi için existsSync/unlinkSync, async fs/promises'e dönüştürüldü.",
+            "- **MultiLLMOrchestrator**: Hot zamanlama yolunda Array.from().filter() yerine iterator tabanlı countActiveTasks yardımcısı kullanıldı."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-28-renderer-performance-batch",
       "date": "2026-02-28",
       "channel": "stable",
