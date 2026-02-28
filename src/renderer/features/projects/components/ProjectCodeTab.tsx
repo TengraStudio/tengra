@@ -1,4 +1,4 @@
-import type { FileSearchResult } from '@shared/types/common';
+﻿import type { FileSearchResult } from '@shared/types/common';
 import { Check, FileCode2, Search } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 
@@ -106,13 +106,13 @@ export const ProjectCodeTab: React.FC<ProjectCodeTabProps> = ({ projectRoot, onO
                 <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_auto_auto] gap-2">
                     <input
                         className="px-3 py-2 rounded-md bg-muted/20 border border-border/50 text-sm"
-                        placeholder="Symbol (e.g. functionName)"
+                        placeholder={t('placeholder.symbolName')}
                         value={symbol}
                         onChange={e => setSymbol(e.target.value)}
                     />
                     <input
                         className="px-3 py-2 rounded-md bg-muted/20 border border-border/50 text-sm"
-                        placeholder="File path for outline (e.g. src/main.ts)"
+                        placeholder={t('placeholder.filePathOutline')}
                         value={filePath}
                         onChange={e => setFilePath(e.target.value)}
                     />
@@ -269,9 +269,9 @@ export const ProjectCodeTab: React.FC<ProjectCodeTabProps> = ({ projectRoot, onO
                     <FileCode2 className="w-4 h-4" /> Refactor Rename
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_100px_auto_auto] gap-2">
-                    <input className="px-3 py-2 rounded-md bg-muted/20 border border-border/50 text-sm" placeholder="Old symbol" value={symbol} onChange={e => setSymbol(e.target.value)} />
-                    <input className="px-3 py-2 rounded-md bg-muted/20 border border-border/50 text-sm" placeholder="New symbol" value={newSymbol} onChange={e => setNewSymbol(e.target.value)} />
-                    <input className="px-3 py-2 rounded-md bg-muted/20 border border-border/50 text-sm" placeholder="Max files" value={maxFiles} onChange={e => setMaxFiles(e.target.value)} />
+                    <input className="px-3 py-2 rounded-md bg-muted/20 border border-border/50 text-sm" placeholder={t('placeholder.oldSymbol')} value={symbol} onChange={e => setSymbol(e.target.value)} />
+                    <input className="px-3 py-2 rounded-md bg-muted/20 border border-border/50 text-sm" placeholder={t('placeholder.newSymbol')} value={newSymbol} onChange={e => setNewSymbol(e.target.value)} />
+                    <input className="px-3 py-2 rounded-md bg-muted/20 border border-border/50 text-sm" placeholder={t('placeholder.maxFiles')} value={maxFiles} onChange={e => setMaxFiles(e.target.value)} />
                     <button
                         className="px-3 py-2 rounded-md bg-primary text-primary-foreground text-xs disabled:opacity-60"
                         disabled={busyKey !== '' || symbol.trim() === '' || newSymbol.trim() === ''}
@@ -312,7 +312,7 @@ export const ProjectCodeTab: React.FC<ProjectCodeTabProps> = ({ projectRoot, onO
             <div className="rounded-xl border border-border bg-card p-4 space-y-3">
                 <div className="text-sm font-semibold">Documentation + Quality</div>
                 <div className="grid grid-cols-1 md:grid-cols-[2fr_160px_auto_auto] gap-2">
-                    <input className="px-3 py-2 rounded-md bg-muted/20 border border-border/50 text-sm" placeholder="File path for docs" value={filePath} onChange={e => setFilePath(e.target.value)} />
+                    <input className="px-3 py-2 rounded-md bg-muted/20 border border-border/50 text-sm" placeholder={t('placeholder.filePathDocs')} value={filePath} onChange={e => setFilePath(e.target.value)} />
                     <select className="px-3 py-2 rounded-md bg-muted/20 border border-border/50 text-sm" value={docFormat} onChange={e => setDocFormat(e.target.value as 'markdown' | 'jsdoc-comments')}>
                         <option value="markdown">markdown</option>
                         <option value="jsdoc-comments">jsdoc-comments</option>

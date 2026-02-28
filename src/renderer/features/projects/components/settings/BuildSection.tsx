@@ -1,4 +1,4 @@
-import { Code, Search,Shield } from 'lucide-react';
+﻿import { Code, Search,Shield } from 'lucide-react';
 import React from 'react';
 
 import { SettingsSectionProps } from './types';
@@ -20,7 +20,7 @@ export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setForm
                         value={formData.buildCommand}
                         onChange={e => setFormData(prev => ({ ...prev, buildCommand: e.target.value }))}
                         className="w-full bg-muted/30 border border-border/50 rounded-lg py-2 pl-9 pr-4 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
-                        placeholder="npm run build"
+                        placeholder={t('placeholder.buildCommand')}
                     />
                 </div>
             </div>
@@ -34,7 +34,7 @@ export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setForm
                         value={formData.testCommand}
                         onChange={e => setFormData(prev => ({ ...prev, testCommand: e.target.value }))}
                         className="w-full bg-muted/30 border border-border/50 rounded-lg py-2 pl-9 pr-4 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
-                        placeholder="npm run test"
+                        placeholder={t('placeholder.testCommand')}
                     />
                 </div>
             </div>
@@ -48,7 +48,7 @@ export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setForm
                         value={formData.lintCommand}
                         onChange={e => setFormData(prev => ({ ...prev, lintCommand: e.target.value }))}
                         className="w-full bg-muted/30 border border-border/50 rounded-lg py-2 pl-9 pr-4 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
-                        placeholder="npm run lint"
+                        placeholder={t('placeholder.lintCommand')}
                     />
                 </div>
             </div>
@@ -61,7 +61,7 @@ export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setForm
                         value={formData.outputDir}
                         onChange={e => setFormData(prev => ({ ...prev, outputDir: e.target.value }))}
                         className="w-full bg-muted/30 border border-border/50 rounded-lg py-2 px-4 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
-                        placeholder="dist"
+                        placeholder={t('placeholder.outputDir')}
                     />
                 </div>
                 <div className="space-y-2">
@@ -71,7 +71,7 @@ export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setForm
                         value={formData.envFile}
                         onChange={e => setFormData(prev => ({ ...prev, envFile: e.target.value }))}
                         className="w-full bg-muted/30 border border-border/50 rounded-lg py-2 px-4 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
-                        placeholder=".env.local"
+                        placeholder={t('placeholder.envFile')}
                     />
                 </div>
             </div>

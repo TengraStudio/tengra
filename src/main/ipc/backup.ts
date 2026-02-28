@@ -3,9 +3,10 @@
  * Exposes backup and restore functionality to the renderer process
  */
 
+import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { BackupMetadata, BackupResult, BackupService, RestoreResult } from '@main/services/data/backup.service';
 import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { ipcMain, IpcMainInvokeEvent } from 'electron';
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 
 export interface BackupListItem {
     name: string
@@ -17,10 +18,12 @@ export interface BackupListItem {
  * Registers IPC handlers for backup functionality
  * @param backupService Service for managing backups
  */
-export function registerBackupIpc(backupService: BackupService) {
+export function registerBackupIpc(getMainWindow: () => BrowserWindow | null, backupService: BackupService) {
+    const validateSender = createMainWindowSenderValidator(getMainWindow, 'backup operation');
+
     // Create a backup
     ipcMain.handle('backup:create', createIpcHandler('backup:create', async (
-        _event: IpcMainInvokeEvent,
+        event: IpcMainInvokeEvent,
         options?: {
             includeChats?: boolean
             includeAuth?: boolean
@@ -33,12 +36,13 @@ export function registerBackupIpc(backupService: BackupService) {
             cloudSyncDir?: string
         }
     ): Promise<BackupResult> => {
+        validateSender(event);
         return backupService.createBackup(options);
     }));
 
     // Restore from a backup
     ipcMain.handle('backup:restore', createIpcHandler('backup:restore', async (
-        _event: IpcMainInvokeEvent,
+        event: IpcMainInvokeEvent,
         backupPath: string,
         options?: {
             restoreChats?: boolean
@@ -47,6 +51,7 @@ export function registerBackupIpc(backupService: BackupService) {
             mergeChats?: boolean
         }
     ): Promise<RestoreResult> => {
+        validateSender(event);
         if (!backupPath || typeof backupPath !== 'string' || backupPath.trim().length === 0) {
             throw new Error('backupPath must be a non-empty string');
         }
@@ -60,9 +65,10 @@ export function registerBackupIpc(backupService: BackupService) {
 
     // Delete a backup
     ipcMain.handle('backup:delete', createIpcHandler('backup:delete', async (
-        _event: IpcMainInvokeEvent,
+        event: IpcMainInvokeEvent,
         backupPath: string
     ): Promise<boolean> => {
+        validateSender(event);
         if (!backupPath || typeof backupPath !== 'string' || backupPath.trim().length === 0) {
             throw new Error('backupPath must be a non-empty string');
         }
@@ -90,7 +96,7 @@ export function registerBackupIpc(backupService: BackupService) {
 
     // Configure auto-backup
     ipcMain.handle('backup:configureAutoBackup', createIpcHandler('backup:configureAutoBackup', async (
-        _event: IpcMainInvokeEvent,
+        event: IpcMainInvokeEvent,
         config: {
             enabled: boolean
             intervalHours?: number
@@ -101,6 +107,7 @@ export function registerBackupIpc(backupService: BackupService) {
             cloudSyncDir?: string
         }
     ): Promise<void> => {
+        validateSender(event);
         return backupService.configureAutoBackup(config);
     }));
 
@@ -117,24 +124,27 @@ export function registerBackupIpc(backupService: BackupService) {
     }));
 
     ipcMain.handle('backup:syncToCloudDir', createIpcHandler('backup:syncToCloudDir', async (
-        _event: IpcMainInvokeEvent,
+        event: IpcMainInvokeEvent,
         backupPath: string,
         targetDir: string
     ): Promise<{ success: boolean; targetPath?: string; error?: string }> => {
+        validateSender(event);
         return backupService.syncBackupToDirectory(backupPath, targetDir);
     }));
 
     ipcMain.handle('backup:createDisasterRecoveryBundle', createIpcHandler('backup:createDisasterRecoveryBundle', async (
-        _event: IpcMainInvokeEvent,
+        event: IpcMainInvokeEvent,
         targetDir?: string
     ) => {
+        validateSender(event);
         return backupService.createDisasterRecoveryBundle(targetDir);
     }));
 
     ipcMain.handle('backup:restoreDisasterRecoveryBundle', createIpcHandler('backup:restoreDisasterRecoveryBundle', async (
-        _event: IpcMainInvokeEvent,
+        event: IpcMainInvokeEvent,
         bundlePath: string
     ): Promise<RestoreResult> => {
+        validateSender(event);
         if (!bundlePath || typeof bundlePath !== 'string' || bundlePath.trim().length === 0) {
             throw new Error('bundlePath must be a non-empty string');
         }

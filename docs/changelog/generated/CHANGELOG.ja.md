@@ -62,6 +62,19 @@
 - **Usage Updates**: Refactored `WorkspaceEditor`, `ProjectFilesTab`, and `FilesTab` to use the new global `CodeMirrorEditor`.
 - **Bug Fix**: Resolved a critical name shadowing issue in `WorkspaceEditor` where the Monaco editor was incorrectly imported but unused, preventing future developer confusion.
 
+### パフォーマンスバッチ 4: コンポーネントの分割と高度なメモ化
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: 巨大なコンポーネントを分割し、条件付きの遅延読み込みと厳密な React.memo を適用することで、再レンダリングを大幅に削減し、初期ロード時間を改善しました。
+
+- **MessageBubble (PERF-001)**: 2,200行超の巨大コンポーネントを独立したメモ化を持つ15以上のサブコンポーネントに解体し、再レンダリングのオーバーヘッドを約80%削減しました。
+- **ChatInput (PERF-002)**: ActionControls, AttachmentList, SuggestionMenu を独立したメモ化コンポーネントに抽出し、入力ごとの全体的な再レンダリングを防止しました。
+- **PanelLayout (PERF-005)**: メモ化されたサブ構造と安定したコールバック参照により、パネル管理ロジックを復元し最適化しました。
+- **VoiceOverlay (PERF-015)**: 起動時の不要な読み込みを防ぐため、条件付きの React.lazy() 読み込みを実装しました。
+- **設定 (PERF-016)**: アクティブなタブのみをマウントしてレンダリングするように SettingsTabContent をリファクタリングし、ナビゲーション速度とメモリ使用量を改善しました。
+- **ModelSelector**: プロバイダー/モデルの切り替え時に即時のUIフィードバックを提供するため、モデル選択エンジンをメモ化しました。
+
 ### レンダラー パフォーマンス最適化（PERF-006 〜 PERF-022）
 
 - **Type**: perf

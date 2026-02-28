@@ -23,12 +23,18 @@ export function installRendererLogger() {
         error: console.error.bind(console)
     };
 
+    const isProd = typeof import.meta !== 'undefined'
+        && import.meta.env != null
+        && import.meta.env.PROD === true;
+
     const send = (level: LogLevel, args: LogValue[]) => {
-        // Temporarily sending all logs to main for debugging
-        // if (level === 'error' || level === 'warn') {
+        // In production, only forward errors and warnings to main via IPC
+        // to avoid excessive IPC round-trips for verbose log levels.
+        if (isProd && level !== 'error' && level !== 'warn') {
+            return;
+        }
         const message = formatArgs(args);
         logger.write(level, message);
-        // }
     };
 
     // eslint-disable-next-line no-console

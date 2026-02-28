@@ -4,6 +4,7 @@
  */
 
 import { BaseService } from '@main/services/base.service';
+import { withRetry } from '@main/utils/retry.util';
 import { JsonValue } from '@shared/types/common';
 import {
     DEFAULT_VOICE_COMMANDS,
@@ -392,30 +393,24 @@ export class VoiceService extends BaseService {
         return 'ready';
     }
 
-    private async waitFor(delayMs: number): Promise<void> {
-        await new Promise<void>(resolve => setTimeout(resolve, delayMs));
-    }
-
     private async executeWithRetry<T>(
         channel: string,
         operation: () => Promise<T>,
         maxAttempts: number
     ): Promise<T> {
-        let lastError: Error | null = null;
-        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-            try {
-                return await operation();
-            } catch (caughtError) {
-                const error = caughtError instanceof Error ? caughtError : new Error(String(caughtError));
-                lastError = error;
-                if (!this.isRetryableError(error) || attempt >= maxAttempts) {
-                    break;
-                }
+        return withRetry(operation, {
+            maxRetries: maxAttempts - 1,
+            baseDelayMs: this.retryDelayMs,
+            maxDelayMs: this.retryDelayMs,
+            jitterFactor: 0,
+            shouldRetry: (error) => {
+                const err = error instanceof Error ? error : new Error(String(error));
+                return this.isRetryableError(err);
+            },
+            onRetry: () => {
                 this.trackRetry(channel);
-                await this.waitFor(this.retryDelayMs);
-            }
-        }
-        throw (lastError ?? new Error('Unknown voice IPC error'));
+            },
+        });
     }
 
     private getHealthSummary(): {

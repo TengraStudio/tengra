@@ -1,13 +1,14 @@
 import path from 'path';
 
 import { registerGitAdvancedIpc } from '@main/ipc/git-advanced';
+import { createMainWindowSenderValidator, SenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { GitService } from '@main/services/project/git.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { ipcMain } from 'electron';
+import { BrowserWindow, ipcMain } from 'electron';
 import { z } from 'zod';
 
 /** Maximum path length */
@@ -35,23 +36,25 @@ const PathSchema = z.string().min(1).max(MAX_PATH_LENGTH).trim();
 /**
  * Registers IPC handlers for Git operations
  */
-export function registerGitIpc(gitService: GitService) {
+export function registerGitIpc(getMainWindow: () => BrowserWindow | null, gitService: GitService) {
+    const validateSender = createMainWindowSenderValidator(getMainWindow, 'git operation');
     appLogger.info('GitIPC', 'Registering Git IPC handlers');
-    registerStatusHandlers(gitService);
-    registerHistoryHandlers(gitService);
-    registerDiffHandlers(gitService);
-    registerActionHandlers(gitService);
-    registerGitBatchHandlers(gitService);
-    registerGitAdvancedIpc(gitService);
+    registerStatusHandlers(gitService, validateSender);
+    registerHistoryHandlers(gitService, validateSender);
+    registerDiffHandlers(gitService, validateSender);
+    registerActionHandlers(gitService, validateSender);
+    registerGitBatchHandlers(gitService, validateSender);
+    registerGitAdvancedIpc(gitService, validateSender);
 }
 
 /**
  * Registers batchable Git IPC handlers for commonly grouped operations
  * @param gitService - Git service instance for executing git commands
  */
-function registerGitBatchHandlers(gitService: GitService) {
+function registerGitBatchHandlers(gitService: GitService, validateSender: SenderValidator) {
     // Register commonly batched git operations
-    registerBatchableHandler('git:getBranch', createValidatedIpcHandler('git:getBranch', async (_event, cwd: string) => {
+    registerBatchableHandler('git:getBranch', createValidatedIpcHandler('git:getBranch', async (event, cwd: string) => {
+        validateSender(event);
         try {
             const result = await gitService.executeRaw(cwd, 'rev-parse --abbrev-ref HEAD');
             if (result.success && result.stdout) {
@@ -66,7 +69,8 @@ function registerGitBatchHandlers(gitService: GitService) {
         argsSchema: z.tuple([CwdSchema])
     }) as never);
 
-    registerBatchableHandler('git:getStatus', createValidatedIpcHandler('git:getStatus', async (_event, cwd: string) => {
+    registerBatchableHandler('git:getStatus', createValidatedIpcHandler('git:getStatus', async (event, cwd: string) => {
+        validateSender(event);
         try {
             const result = await gitService.getStatus(cwd);
             const isClean = result.length === 0;
@@ -84,7 +88,8 @@ function registerGitBatchHandlers(gitService: GitService) {
         argsSchema: z.tuple([CwdSchema])
     }) as never);
 
-    registerBatchableHandler('git:getLastCommit', createValidatedIpcHandler('git:getLastCommit', async (_event, cwd: string) => {
+    registerBatchableHandler('git:getLastCommit', createValidatedIpcHandler('git:getLastCommit', async (event, cwd: string) => {
+        validateSender(event);
         try {
             const result = await gitService.executeRaw(
                 cwd,
@@ -103,7 +108,8 @@ function registerGitBatchHandlers(gitService: GitService) {
         argsSchema: z.tuple([CwdSchema])
     }) as never);
 
-    registerBatchableHandler('git:getBranches', createValidatedIpcHandler('git:getBranches', async (_event, cwd: string) => {
+    registerBatchableHandler('git:getBranches', createValidatedIpcHandler('git:getBranches', async (event, cwd: string) => {
+        validateSender(event);
         try {
             const result = await gitService.executeRaw(
                 cwd,
@@ -130,8 +136,9 @@ function registerGitBatchHandlers(gitService: GitService) {
  * Registers IPC handlers for repository status queries
  * @param gitService - Git service instance for executing git commands
  */
-function registerStatusHandlers(gitService: GitService) {
-    ipcMain.handle('git:isRepository', createValidatedIpcHandler('git:isRepository', async (_event, cwd: string) => {
+function registerStatusHandlers(gitService: GitService, validateSender: SenderValidator) {
+    ipcMain.handle('git:isRepository', createValidatedIpcHandler('git:isRepository', async (event, cwd: string) => {
+        validateSender(event);
         const result = await gitService.executeRaw(cwd, 'rev-parse --git-dir');
         return { success: true, isRepository: result.success };
     }, {
@@ -139,7 +146,8 @@ function registerStatusHandlers(gitService: GitService) {
         argsSchema: z.tuple([CwdSchema])
     }));
 
-    ipcMain.handle('git:getTreeStatus', createValidatedIpcHandler('git:getTreeStatus', async (_event, cwd: string, targetPath?: string) => {
+    ipcMain.handle('git:getTreeStatus', createValidatedIpcHandler('git:getTreeStatus', async (event, cwd: string, targetPath?: string) => {
+        validateSender(event);
         try {
             const rootResult = await gitService.executeRaw(cwd, 'rev-parse --show-toplevel');
             if (!rootResult.success || !rootResult.stdout) {
@@ -178,7 +186,8 @@ function registerStatusHandlers(gitService: GitService) {
         argsSchema: z.tuple([CwdSchema, z.string().optional()])
     }));
 
-    ipcMain.handle('git:getRemotes', createValidatedIpcHandler('git:getRemotes', async (_event, cwd: string) => {
+    ipcMain.handle('git:getRemotes', createValidatedIpcHandler('git:getRemotes', async (event, cwd: string) => {
+        validateSender(event);
         try {
             const result = await gitService.executeRaw(cwd, 'remote -v');
             if (result.success && result.stdout) {
@@ -193,7 +202,8 @@ function registerStatusHandlers(gitService: GitService) {
         argsSchema: z.tuple([CwdSchema])
     }));
 
-    ipcMain.handle('git:getTrackingInfo', createValidatedIpcHandler('git:getTrackingInfo', async (_event, cwd: string) => {
+    ipcMain.handle('git:getTrackingInfo', createValidatedIpcHandler('git:getTrackingInfo', async (event, cwd: string) => {
+        validateSender(event);
         const branchResult = await gitService.executeRaw(cwd, 'rev-parse --abbrev-ref HEAD');
         if (!branchResult.success || !branchResult.stdout) {
             return { success: true, tracking: null, ahead: 0, behind: 0 };
@@ -313,8 +323,9 @@ function parseTrackingCounts(result: { success: boolean; stdout?: string }, trac
  * Registers IPC handlers for commit history and statistics
  * @param gitService - Git service instance for executing git commands
  */
-function registerHistoryHandlers(gitService: GitService) {
-    ipcMain.handle('git:getLastCommit', createValidatedIpcHandler('git:getLastCommit', async (_event, cwd: string) => {
+function registerHistoryHandlers(gitService: GitService, validateSender: SenderValidator) {
+    ipcMain.handle('git:getLastCommit', createValidatedIpcHandler('git:getLastCommit', async (event, cwd: string) => {
+        validateSender(event);
         const result = await gitService.executeRaw(
             cwd,
             'log -1 --pretty=format:"%h|%s|%an|%ar|%cI"'
@@ -337,7 +348,8 @@ function registerHistoryHandlers(gitService: GitService) {
         argsSchema: z.tuple([CwdSchema])
     }));
 
-    ipcMain.handle('git:getRecentCommits', createValidatedIpcHandler('git:getRecentCommits', async (_event, cwd: string, count?: number) => {
+    ipcMain.handle('git:getRecentCommits', createValidatedIpcHandler('git:getRecentCommits', async (event, cwd: string, count?: number) => {
+        validateSender(event);
         const result = await gitService.getLog(cwd, count || 10);
         return { success: true, commits: result };
     }, {
@@ -345,7 +357,8 @@ function registerHistoryHandlers(gitService: GitService) {
         argsSchema: z.tuple([CwdSchema, CountSchema(MAX_COMMIT_COUNT)])
     }));
 
-    ipcMain.handle('git:getCommitStats', createValidatedIpcHandler('git:getCommitStats', async (_event, cwd: string, days?: number) => {
+    ipcMain.handle('git:getCommitStats', createValidatedIpcHandler('git:getCommitStats', async (event, cwd: string, days?: number) => {
+        validateSender(event);
         const result = await gitService.executeRaw(
             cwd,
             `log --since="${days || 30} days ago" --pretty=format:"%ad" --date=short`
@@ -371,8 +384,9 @@ function registerHistoryHandlers(gitService: GitService) {
  * Registers IPC handlers for diff viewing, staging, and unstaging
  * @param gitService - Git service instance for executing git commands
  */
-function registerDiffHandlers(gitService: GitService) {
-    ipcMain.handle('git:getFileDiff', createValidatedIpcHandler('git:getFileDiff', async (_event, cwd: string, filePath: string, staged?: boolean) => {
+function registerDiffHandlers(gitService: GitService, validateSender: SenderValidator) {
+    ipcMain.handle('git:getFileDiff', createValidatedIpcHandler('git:getFileDiff', async (event, cwd: string, filePath: string, staged?: boolean) => {
+        validateSender(event);
         const result = await gitService.getFileDiff(cwd, filePath, staged === true);
         return result;
     }, {
@@ -380,7 +394,8 @@ function registerDiffHandlers(gitService: GitService) {
         argsSchema: z.tuple([CwdSchema, PathSchema, z.boolean().optional()])
     }));
 
-    ipcMain.handle('git:getUnifiedDiff', createValidatedIpcHandler('git:getUnifiedDiff', async (_event, cwd: string, filePath: string, staged?: boolean) => {
+    ipcMain.handle('git:getUnifiedDiff', createValidatedIpcHandler('git:getUnifiedDiff', async (event, cwd: string, filePath: string, staged?: boolean) => {
+        validateSender(event);
         const result = await gitService.getUnifiedDiff(cwd, filePath, staged === true);
         return result;
     }, {
@@ -388,7 +403,8 @@ function registerDiffHandlers(gitService: GitService) {
         argsSchema: z.tuple([CwdSchema, PathSchema, z.boolean().optional()])
     }));
 
-    ipcMain.handle('git:getCommitDiff', createValidatedIpcHandler('git:getCommitDiff', async (_event, cwd: string, hash: string) => {
+    ipcMain.handle('git:getCommitDiff', createValidatedIpcHandler('git:getCommitDiff', async (event, cwd: string, hash: string) => {
+        validateSender(event);
         const result = await gitService.getCommitDiff(cwd, hash);
         return result;
     }, {
@@ -396,7 +412,8 @@ function registerDiffHandlers(gitService: GitService) {
         argsSchema: z.tuple([CwdSchema, HashSchema])
     }));
 
-    ipcMain.handle('git:stageFile', createValidatedIpcHandler('git:stageFile', async (_event, cwd: string, filePath: string) => {
+    ipcMain.handle('git:stageFile', createValidatedIpcHandler('git:stageFile', async (event, cwd: string, filePath: string) => {
+        validateSender(event);
         const result = await withRateLimit('git', () => gitService.stageFile(cwd, filePath));
         return { success: result.success, error: result.error };
     }, {
@@ -404,7 +421,8 @@ function registerDiffHandlers(gitService: GitService) {
         argsSchema: z.tuple([CwdSchema, PathSchema])
     }));
 
-    ipcMain.handle('git:unstageFile', createValidatedIpcHandler('git:unstageFile', async (_event, cwd: string, filePath: string) => {
+    ipcMain.handle('git:unstageFile', createValidatedIpcHandler('git:unstageFile', async (event, cwd: string, filePath: string) => {
+        validateSender(event);
         const result = await withRateLimit('git', () => gitService.unstageFile(cwd, filePath));
         return { success: result.success, error: result.error };
     }, {
@@ -412,7 +430,8 @@ function registerDiffHandlers(gitService: GitService) {
         argsSchema: z.tuple([CwdSchema, PathSchema])
     }));
 
-    ipcMain.handle('git:getDetailedStatus', createValidatedIpcHandler('git:getDetailedStatus', async (_event, cwd: string) => {
+    ipcMain.handle('git:getDetailedStatus', createValidatedIpcHandler('git:getDetailedStatus', async (event, cwd: string) => {
+        validateSender(event);
         // Get staged files
         const stagedResult = await gitService.executeRaw(cwd, 'diff --cached --name-status');
         // Get unstaged files
@@ -460,7 +479,8 @@ function registerDiffHandlers(gitService: GitService) {
         argsSchema: z.tuple([CwdSchema])
     }));
 
-    ipcMain.handle('git:getDiffStats', createValidatedIpcHandler('git:getDiffStats', async (_event, cwd: string) => {
+    ipcMain.handle('git:getDiffStats', createValidatedIpcHandler('git:getDiffStats', async (event, cwd: string) => {
+        validateSender(event);
         const stagedResult = await gitService.executeRaw(cwd, 'diff --cached --numstat');
         const unstagedResult = await gitService.executeRaw(cwd, 'diff --numstat');
 
@@ -517,8 +537,9 @@ function registerDiffHandlers(gitService: GitService) {
  * Registers IPC handlers for git actions (checkout, commit, push, pull)
  * @param gitService - Git service instance for executing git commands
  */
-function registerActionHandlers(gitService: GitService) {
-    ipcMain.handle('git:checkout', createValidatedIpcHandler('git:checkout', async (_event, cwd: string, branch: string) => {
+function registerActionHandlers(gitService: GitService, validateSender: SenderValidator) {
+    ipcMain.handle('git:checkout', createValidatedIpcHandler('git:checkout', async (event, cwd: string, branch: string) => {
+        validateSender(event);
         const result = await withRateLimit('git', () => gitService.checkout(cwd, branch));
         return { success: result.success, error: result.error };
     }, {
@@ -526,7 +547,8 @@ function registerActionHandlers(gitService: GitService) {
         argsSchema: z.tuple([CwdSchema, BranchSchema])
     }));
 
-    ipcMain.handle('git:commit', createValidatedIpcHandler('git:commit', async (_event, cwd: string, message: string) => {
+    ipcMain.handle('git:commit', createValidatedIpcHandler('git:commit', async (event, cwd: string, message: string) => {
+        validateSender(event);
         const result = await withRateLimit('git', () => gitService.commit(cwd, message));
         return { success: result.success, error: result.error };
     }, {
@@ -534,7 +556,8 @@ function registerActionHandlers(gitService: GitService) {
         argsSchema: z.tuple([CwdSchema, CommitMessageSchema])
     }));
 
-    ipcMain.handle('git:push', createValidatedIpcHandler('git:push', async (_event, cwd: string, remoteRaw?: string, branchRaw?: string) => {
+    ipcMain.handle('git:push', createValidatedIpcHandler('git:push', async (event, cwd: string, remoteRaw?: string, branchRaw?: string) => {
+        validateSender(event);
         const remote = remoteRaw ?? 'origin';
         let branch = branchRaw;
         if (!branch) {
@@ -561,7 +584,8 @@ function registerActionHandlers(gitService: GitService) {
         argsSchema: z.tuple([CwdSchema, BranchSchema.optional(), BranchSchema.optional()])
     }));
 
-    ipcMain.handle('git:pull', createValidatedIpcHandler('git:pull', async (_event, cwd: string) => {
+    ipcMain.handle('git:pull', createValidatedIpcHandler('git:pull', async (event, cwd: string) => {
+        validateSender(event);
         const result = await withRateLimit('git', () => gitService.pull(cwd));
         return {
             success: result.success,

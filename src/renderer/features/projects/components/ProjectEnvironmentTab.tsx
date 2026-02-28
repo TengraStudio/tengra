@@ -1,4 +1,4 @@
-import { Eye, EyeOff, Plus, Save, Settings, Trash2 } from 'lucide-react';
+﻿import { Eye, EyeOff, Plus, Save, Settings, Trash2 } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 import { z } from 'zod';
 
@@ -222,7 +222,7 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
                                         value={envVar.value}
                                         onChange={(e) => updateVar(idx, 'value', e.target.value)}
                                         className="flex-1 bg-transparent border-b border-white/10 focus:border-primary/50 outline-none text-sm font-mono text-foreground py-1"
-                                        placeholder="value"
+                                        placeholder={t('placeholder.envValue')}
                                     />
                                     <button
                                         onClick={() => toggleVisibility(idx)}

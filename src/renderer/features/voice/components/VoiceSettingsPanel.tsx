@@ -1,4 +1,4 @@
-/**
+﻿/**
  * VoiceSettingsPanel Component - Settings for voice control
  * UI-11: Voice-first interface option
  */
@@ -130,7 +130,7 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
                         <Input
                             value={localSettings.wakeWord}
                             onChange={(e) => handleSettingChangeSafe('wakeWord', e.target.value)}
-                            placeholder="tengra"
+                            placeholder={t('placeholder.wakeWord')}
                         />
                     </div>
                     <div className="flex items-center justify-between">

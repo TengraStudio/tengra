@@ -46,7 +46,7 @@ const DEFAULT_CONFIG: LoggerConfig = {
     maxBytes: 10 * 1024 * 1024, // 10 MB
     maxFiles: 5,
     compressRotated: true,
-    jsonFormat: false,
+    jsonFormat: true,
     retentionDays: 30,
 };
 
@@ -112,6 +112,7 @@ class AppLogger {
         const timeStr = now.toLocaleTimeString('en-GB', { hour12: false }).replace(/:/g, '-'); // HH-mm-ss
 
         const dayDir = path.join(this.logDir, dateStr);
+        // Sync I/O required: logger bootstrap must complete before any log calls
         if (!fs.existsSync(dayDir)) {
             fs.mkdirSync(dayDir, { recursive: true, mode: 0o700 });
         }
@@ -375,29 +376,33 @@ class AppLogger {
             for (let i = maxFiles - 1; i >= 1; i--) {
                 const src = `${this.logPath}.${i}.gz`;
                 const dest = `${this.logPath}.${i + 1}.gz`;
-                if (fs.existsSync(src)) {
-                    fs.renameSync(src, dest);
-                }
+                try {
+                    await fs.promises.access(src, fs.constants.F_OK);
+                    await fs.promises.rename(src, dest);
+                } catch { /* file doesn't exist, skip */ }
             }
             // Compress the current .1 file if it exists
             const firstRotated = `${this.logPath}.1`;
-            if (fs.existsSync(firstRotated)) {
+            try {
+                await fs.promises.access(firstRotated, fs.constants.F_OK);
                 await this.compressFile(firstRotated, `${firstRotated}.gz`);
-                fs.unlinkSync(firstRotated);
-            }
+                await fs.promises.unlink(firstRotated);
+            } catch { /* file doesn't exist, skip */ }
         } else {
             for (let i = maxFiles - 1; i >= 1; i--) {
                 const src = `${this.logPath}.${i}`;
                 const dest = `${this.logPath}.${i + 1}`;
-                if (fs.existsSync(src)) {
-                    fs.renameSync(src, dest);
-                }
+                try {
+                    await fs.promises.access(src, fs.constants.F_OK);
+                    await fs.promises.rename(src, dest);
+                } catch { /* file doesn't exist, skip */ }
             }
         }
 
-        if (fs.existsSync(this.logPath)) {
-            fs.renameSync(this.logPath, `${this.logPath}.1`);
-        }
+        try {
+            await fs.promises.access(this.logPath, fs.constants.F_OK);
+            await fs.promises.rename(this.logPath, `${this.logPath}.1`);
+        } catch { /* file doesn't exist, skip */ }
         this.size = 0;
     }
 
@@ -484,7 +489,9 @@ class AppLogger {
     /**
      * Clean up log files older than retentionDays
      */
+    /** @deprecated Sync fallback kept for backward compatibility; prefer cleanupOldLogsAsync */
     cleanupOldLogs(): number {
+        // Sync I/O acceptable: legacy public API, called rarely (manual invocation only)
         if (!this.logDir || !fs.existsSync(this.logDir)) {
             return 0;
         }
@@ -529,6 +536,7 @@ class AppLogger {
         oldestLog: Date | null;
         newestLog: Date | null;
     } {
+        // Sync I/O acceptable: on-demand diagnostics method, not called in hot paths
         if (!this.logDir || !fs.existsSync(this.logDir)) {
             return { totalFiles: 0, totalSize: 0, oldestLog: null, newestLog: null };
         }

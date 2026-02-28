@@ -1,4 +1,5 @@
 import { appLogger } from '@main/logging/logger';
+import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import { CopilotService } from '@main/services/llm/copilot.service';
 import { LLMService } from '@main/services/llm/llm.service';
@@ -8,7 +9,7 @@ import { createIpcHandler, createValidatedIpcHandler } from '@main/utils/ipc-wra
 import { IpcValue } from '@shared/types/common';
 import { AppSettings } from '@shared/types/settings';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { app, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import { z } from 'zod';
 
 const MAX_SECRET_LENGTH = 4096;
@@ -94,6 +95,7 @@ function syncStartupBehavior(settings: AppSettings): void {
  * @param options - Configuration object containing service dependencies and connection update callbacks
  */
 export function registerSettingsIpc(options: {
+    getMainWindow: () => BrowserWindow | null
     settingsService: SettingsService
     llmService: LLMService
     copilotService: CopilotService
@@ -101,7 +103,8 @@ export function registerSettingsIpc(options: {
     updateOpenAIConnection: () => void
     updateOllamaConnection: () => void | Promise<void>
 }) {
-    const { settingsService, llmService, copilotService, auditLogService, updateOpenAIConnection, updateOllamaConnection } = options;
+    const { getMainWindow, settingsService, llmService, copilotService, auditLogService, updateOpenAIConnection, updateOllamaConnection } = options;
+    const validateSender = createMainWindowSenderValidator(getMainWindow, 'settings operation');
     const settingsTelemetry = {
         getCount: 0,
         saveCount: 0,
@@ -329,7 +332,8 @@ export function registerSettingsIpc(options: {
 
     registerBatchableHandler('saveSettings', validatedSaveHandler);
 
-    ipcMain.handle('settings:get', createIpcHandler('settings:get', async () => {
+    ipcMain.handle('settings:get', createIpcHandler('settings:get', async (event) => {
+        validateSender(event);
         const startedAt = Date.now();
         const settings = settingsService.getSettings();
         await logApiKeyReadAccess(settings, 'invoke');
@@ -343,13 +347,14 @@ export function registerSettingsIpc(options: {
 
     ipcMain.handle('settings:health', createIpcHandler(
         'settings:health',
-        async () => getSettingsHealthSummary(),
+        async (event) => { validateSender(event); return getSettingsHealthSummary(); },
         { wrapResponse: true }
     ));
 
     ipcMain.handle('settings:save', createValidatedIpcHandler<AppSettings, [AppSettings]>(
         'settings:save',
-        async (_event, settings) => {
+        async (event, settings) => {
+            validateSender(event);
             return await handleSaveSettingsImplementation(settings);
         },
         {

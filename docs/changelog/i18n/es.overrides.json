@@ -1,4 +1,16 @@
 {
+  "2026-02-28-renderer-perf-batch4-memo-lazy-split": {
+    "title": "Batch de rendimiento 4: División de componentes y memoización avanzada",
+    "summary": "Reducción significativa de los ciclos de renderizado y mejora del tiempo de carga inicial mediante el fraccionamiento de mega-componentes y el uso de React.memo.",
+    "items": [
+      "- **MessageBubble (PERF-001)**: Deconstrucción del componente de 2,2k líneas en más de 15 sub-componentes con memoización independiente, reduciendo el coste de renderizado en un ~80%.",
+      "- **ChatInput (PERF-002)**: Extracción de ActionControls, AttachmentList y SuggestionMenu a componentes aislados y memoizados, evitando el renderizado completo al escribir.",
+      "- **PanelLayout (PERF-005)**: Lógica de gestión de paneles restaurada y optimizada con estructuras memoizadas y referencias de callback estables.",
+      "- **VoiceOverlay (PERF-015)**: Implementación de carga diferida (lazy loading) condicional para evitar la descarga preventiva de archivos al inicio.",
+      "- **Ajustes (PERF-016)**: Refactorización de SettingsTabContent para montar y renderizar solo la pestaña activa, mejorando la velocidad de navegación.",
+      "- **ModelSelector**: Memoización del motor de selección de modelos para ofrecer una respuesta inmediata al cambiar de proveedor o modelo."
+    ]
+  },
   "2026-02-28-renderer-performance-batch": {
     "title": "Optimizaciones de rendimiento del renderer (PERF-006 a PERF-022)",
     "summary": "Aplicación de React.memo, useMemo y carga diferida en múltiples componentes del renderer para reducir re-renderizados innecesarios y mejorar la capacidad de respuesta de la interfaz.",

@@ -1,4 +1,5 @@
 import { appLogger } from '@main/logging/logger';
+import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalAIService } from '@main/services/llm/local-ai.service';
 import { OllamaService } from '@main/services/llm/ollama.service';
@@ -71,6 +72,7 @@ function validateMessages(value: unknown): Array<{ role: MessageRole; content: s
  * Registers IPC handlers for Ollama operations
  */
 export function registerOllamaIpc(options: {
+    getMainWindow: () => BrowserWindow | null
     localAIService: LocalAIService
     settingsService: SettingsService
     llmService: LLMService
@@ -81,21 +83,24 @@ export function registerOllamaIpc(options: {
 }) {
     appLogger.info('OllamaIPC', 'Registering Ollama IPC handlers');
     const { localAIService, ollamaService, ollamaHealthService, rateLimitService } = options;
+    const validateSender = createMainWindowSenderValidator(options.getMainWindow, 'ollama operation');
 
     ipcMain.handle('ollama:tags', createSafeIpcHandler('ollama:tags',
-        async () => [], []
+        async (event) => { validateSender(event); return []; }, []
     )); // Moved to ModelRegistryService via Rust
 
     // deleted unused functions
     ipcMain.handle('ollama:getModels', createSafeIpcHandler('ollama:getModels',
-        async (): Promise<ModelDefinition[]> => {
+        async (event): Promise<ModelDefinition[]> => {
+            validateSender(event);
             return []; // Moved to ModelRegistryService via Rust
         }, []
     ));
 
     // Use health service for isRunning check
     ipcMain.handle('ollama:isRunning', createSafeIpcHandler('ollama:isRunning',
-        async () => {
+        async (event) => {
+            validateSender(event);
             if (ollamaHealthService) {
                 const status = ollamaHealthService.getStatus();
                 return status.online;
@@ -106,7 +111,8 @@ export function registerOllamaIpc(options: {
 
     // Get detailed health status
     ipcMain.handle('ollama:healthStatus', createSafeIpcHandler('ollama:healthStatus',
-        async () => {
+        async (event) => {
+            validateSender(event);
             if (ollamaHealthService) {
                 return ollamaHealthService.getStatus();
             }
@@ -116,7 +122,8 @@ export function registerOllamaIpc(options: {
 
     // Force health check
     ipcMain.handle('ollama:forceHealthCheck', createSafeIpcHandler('ollama:forceHealthCheck',
-        async () => {
+        async (event) => {
+            validateSender(event);
             if (ollamaHealthService) {
                 return await ollamaHealthService.forceCheck();
             }
@@ -126,7 +133,7 @@ export function registerOllamaIpc(options: {
 
     // GPU Check
     ipcMain.handle('ollama:checkCuda', createSafeIpcHandler('ollama:checkCuda',
-        async () => localAIService.checkCudaSupport(),
+        async (event) => { validateSender(event); return localAIService.checkCudaSupport(); },
         { hasCuda: false }
     ));
 
@@ -143,7 +150,8 @@ export function registerOllamaIpc(options: {
     }
 
     ipcMain.handle('ollama:chat', createSafeIpcHandler('ollama:chat',
-        async (_event: IpcMainInvokeEvent, messagesRaw: unknown, modelRaw: unknown) => {
+        async (event: IpcMainInvokeEvent, messagesRaw: unknown, modelRaw: unknown) => {
+            validateSender(event);
             const messages = validateMessages(messagesRaw);
             const model = validateModel(modelRaw);
             if (!model || messages.length === 0) {
@@ -166,6 +174,7 @@ export function registerOllamaIpc(options: {
 
     ipcMain.handle('ollama:chatStream', createSafeIpcHandler('ollama:chatStream',
         async (event: IpcMainInvokeEvent, messagesRaw: unknown, modelRaw: unknown) => {
+            validateSender(event);
             const messages = validateMessages(messagesRaw);
             const model = validateModel(modelRaw);
             if (!model || messages.length === 0) {
@@ -204,7 +213,8 @@ export function registerOllamaIpc(options: {
     ));
 
     ipcMain.handle('ollama:abort', createSafeIpcHandler('ollama:abort',
-        async () => {
+        async (event) => {
+            validateSender(event);
             if (ollamaService) {
                 ollamaService.abort();
                 return { success: true };
@@ -214,7 +224,8 @@ export function registerOllamaIpc(options: {
     ));
 
     ipcMain.handle('ollama:pull', createSafeIpcHandler('ollama:pull',
-        async (_event: IpcMainInvokeEvent, modelNameRaw: unknown) => {
+        async (event: IpcMainInvokeEvent, modelNameRaw: unknown) => {
+            validateSender(event);
             const modelName = validateModel(modelNameRaw);
             if (!modelName) {
                 throw new Error('Invalid model name');
@@ -243,7 +254,8 @@ export function registerOllamaIpc(options: {
     ));
 
     ipcMain.handle('ollama:abortPull', createSafeIpcHandler('ollama:abortPull',
-        async () => {
+        async (event) => {
+            validateSender(event);
             if (ollamaService) {
                 ollamaService.abort();
                 return { success: true };
@@ -253,7 +265,8 @@ export function registerOllamaIpc(options: {
     ));
 
     ipcMain.handle('ollama:getLibraryModels', createSafeIpcHandler('ollama:getLibraryModels',
-        async () => {
+        async (event) => {
+            validateSender(event);
             // SEC-011: Rate limit model listing operations
             if (rateLimitService) {
                 await rateLimitService.waitForToken('ollama:operation');
@@ -266,7 +279,8 @@ export function registerOllamaIpc(options: {
     ));
 
     ipcMain.handle('ollama:start', createSafeIpcHandler('ollama:start',
-        async () => {
+        async (event) => {
+            validateSender(event);
             const { startOllama } = await import('@main/startup/ollama');
             // Get primary window
             const win = BrowserWindow.getAllWindows()[0];
@@ -280,7 +294,8 @@ export function registerOllamaIpc(options: {
     // ========================================
 
     ipcMain.handle('ollama:checkModelHealth', createValidatedIpcHandler('ollama:checkModelHealth',
-        async (_event: IpcMainInvokeEvent, modelName: string) => {
+        async (event: IpcMainInvokeEvent, modelName: string) => {
+            validateSender(event);
             if (!ollamaService) {
                 throw new Error('Ollama service unavailable');
             }
@@ -300,7 +315,8 @@ export function registerOllamaIpc(options: {
     ));
 
     ipcMain.handle('ollama:checkAllModelsHealth', createSafeIpcHandler('ollama:checkAllModelsHealth',
-        async () => {
+        async (event) => {
+            validateSender(event);
             if (!ollamaService) {
                 throw new Error('Ollama service unavailable');
             }
@@ -309,7 +325,8 @@ export function registerOllamaIpc(options: {
     ));
 
     ipcMain.handle('ollama:getModelRecommendations', createSafeIpcHandler('ollama:getModelRecommendations',
-        async (_event: IpcMainInvokeEvent, categoryRaw: unknown) => {
+        async (event: IpcMainInvokeEvent, categoryRaw: unknown) => {
+            validateSender(event);
             if (!ollamaService) {
                 throw new Error('Ollama service unavailable');
             }
@@ -321,7 +338,8 @@ export function registerOllamaIpc(options: {
     ));
 
     ipcMain.handle('ollama:getRecommendedModelForTask', createSafeIpcHandler('ollama:getRecommendedModelForTask',
-        async (_event: IpcMainInvokeEvent, taskRaw: unknown) => {
+        async (event: IpcMainInvokeEvent, taskRaw: unknown) => {
+            validateSender(event);
             if (!ollamaService) {
                 throw new Error('Ollama service unavailable');
             }
@@ -335,7 +353,8 @@ export function registerOllamaIpc(options: {
     // ========================================
 
     ipcMain.handle('ollama:getConnectionStatus', createSafeIpcHandler('ollama:getConnectionStatus',
-        async () => {
+        async (event) => {
+            validateSender(event);
             if (!ollamaService) {
                 throw new Error('Ollama service unavailable');
             }
@@ -353,7 +372,8 @@ export function registerOllamaIpc(options: {
     ));
 
     ipcMain.handle('ollama:testConnection', createSafeIpcHandler('ollama:testConnection',
-        async () => {
+        async (event) => {
+            validateSender(event);
             if (!ollamaService) {
                 throw new Error('Ollama service unavailable');
             }
@@ -362,7 +382,8 @@ export function registerOllamaIpc(options: {
     ));
 
     ipcMain.handle('ollama:reconnect', createSafeIpcHandler('ollama:reconnect',
-        async () => {
+        async (event) => {
+            validateSender(event);
             if (!ollamaService) {
                 throw new Error('Ollama service unavailable');
             }
@@ -375,7 +396,8 @@ export function registerOllamaIpc(options: {
     // ========================================
 
     ipcMain.handle('ollama:getGPUInfo', createSafeIpcHandler('ollama:getGPUInfo',
-        async () => {
+        async (event) => {
+            validateSender(event);
             if (!ollamaService) {
                 throw new Error('Ollama service unavailable');
             }
@@ -389,7 +411,8 @@ export function registerOllamaIpc(options: {
     ));
 
     ipcMain.handle('ollama:startGPUMonitoring', createValidatedIpcHandler('ollama:startGPUMonitoring',
-        async (_event: IpcMainInvokeEvent, intervalMs: number = 10000) => {
+        async (event: IpcMainInvokeEvent, intervalMs: number = 10000) => {
+            validateSender(event);
             if (!ollamaService) {
                 throw new Error('Ollama service unavailable');
             }
@@ -402,7 +425,8 @@ export function registerOllamaIpc(options: {
     ));
 
     ipcMain.handle('ollama:stopGPUMonitoring', createSafeIpcHandler('ollama:stopGPUMonitoring',
-        async () => {
+        async (event) => {
+            validateSender(event);
             if (!ollamaService) {
                 throw new Error('Ollama service unavailable');
             }
@@ -412,11 +436,12 @@ export function registerOllamaIpc(options: {
     ));
 
     ipcMain.handle('ollama:setGPUAlertThresholds', createValidatedIpcHandler('ollama:setGPUAlertThresholds',
-        async (_event: IpcMainInvokeEvent, thresholds: {
+        async (event: IpcMainInvokeEvent, thresholds: {
             highMemoryPercent?: number;
             highTemperatureC?: number;
             lowMemoryMB?: number;
         }) => {
+            validateSender(event);
             if (!ollamaService) {
                 throw new Error('Ollama service unavailable');
             }
@@ -433,7 +458,8 @@ export function registerOllamaIpc(options: {
     ));
 
     ipcMain.handle('ollama:getGPUAlertThresholds', createSafeIpcHandler('ollama:getGPUAlertThresholds',
-        async () => {
+        async (event) => {
+            validateSender(event);
             if (!ollamaService) {
                 throw new Error('Ollama service unavailable');
             }

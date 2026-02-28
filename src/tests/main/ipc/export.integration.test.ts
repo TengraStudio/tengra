@@ -47,7 +47,7 @@ describe('Export IPC Integration', () => {
     });
 
     const initIPC = () => {
-        registerExportIpc(mockExportService as any);
+        registerExportIpc(() => null, mockExportService as any);
     };
 
     it('should register expected handlers', () => {

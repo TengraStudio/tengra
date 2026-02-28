@@ -59,7 +59,7 @@ describe('Git Advanced IPC Handlers', () => {
             }),
             cancelOperation: vi.fn((id: string) => id === 'op-1')
         };
-        registerGitAdvancedIpc(gitService);
+        registerGitAdvancedIpc(gitService, (_e) => {});
     });
 
     it('registers advanced git handlers', () => {

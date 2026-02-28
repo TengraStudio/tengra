@@ -86,6 +86,7 @@ export interface Message {
     reactions?: string[] | undefined
     sources?: string[] | undefined
     variants?: MessageVariant[] | undefined // Alternative responses
+    attachments?: Attachment[] | undefined
 }
 
 export interface Chat {

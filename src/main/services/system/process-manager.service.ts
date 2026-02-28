@@ -7,6 +7,7 @@ import { promisify } from 'util';
 
 import { LifecycleAware } from '@main/core/container';
 import { appLogger } from '@main/logging/logger';
+import { OPERATION_TIMEOUTS } from '@shared/constants/timeouts';
 import { getErrorMessage } from '@shared/utils/error.util';
 import axios from 'axios';
 import { app } from 'electron';
@@ -85,7 +86,7 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
     private async isPortOpen(port: number): Promise<boolean> {
         return new Promise(resolve => {
             const socket = new net.Socket();
-            socket.setTimeout(200); // Fast check
+            socket.setTimeout(OPERATION_TIMEOUTS.PORT_CHECK_FAST); // Fast check
             socket.on('connect', () => {
                 socket.destroy();
                 resolve(true);

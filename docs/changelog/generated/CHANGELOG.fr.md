@@ -62,6 +62,19 @@
 - **Usage Updates**: Refactored `WorkspaceEditor`, `ProjectFilesTab`, and `FilesTab` to use the new global `CodeMirrorEditor`.
 - **Bug Fix**: Resolved a critical name shadowing issue in `WorkspaceEditor` where the Monaco editor was incorrectly imported but unused, preventing future developer confusion.
 
+### Batch de Performance 4 : Découpage de composants & mémoisation avancée
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: Réduction significative des cycles de rendu et amélioration du temps de chargement initial en découpant les méga-composants et en appliquant React.memo.
+
+- **MessageBubble (PERF-001)** : Décomposition du méga-composant de 2,2k lignes en plus de 15 sous-composants, réduisant le coût de rendu de ~80%.
+- **ChatInput (PERF-002)** : Extraction de ActionControls, AttachmentList et SuggestionMenu en composants isolés et mémoïsés pour éviter le rendu complet lors de la saisie.
+- **PanelLayout (PERF-005)** : Logique de gestion de panneaux restaurée et optimisée avec des structures mémoïsées et des références de callback stables.
+- **VoiceOverlay (PERF-015)** : Mise en œuvre du chargement différé conditionnel pour éviter la récupération préventive de fichiers au démarrage.
+- **Settings (PERF-016)** : Refactorisation de SettingsTabContent pour ne monter et rendre que l'onglet actif, améliorant la vitesse de navigation.
+- **ModelSelector** : Mémoïsation du moteur de sélection de modèles pour fournir un retour immédiat lors du changement de fournisseur/modèle.
+
 ### Optimisations de performance du renderer (PERF-006 à PERF-022)
 
 - **Type**: perf

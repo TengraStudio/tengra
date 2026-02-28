@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useDebounce } from '@/hooks/useDebounce';
 import { Language, useTranslation } from '@/i18n';
@@ -34,7 +34,7 @@ interface ModelSelectorProps {
     onChatModeChange?: (mode: 'instant' | 'thinking' | 'agent') => void;
 }
 
-export function ModelSelector({
+export const ModelSelector = memo(({
     selectedProvider,
     selectedModel,
     selectedModels = [],
@@ -55,7 +55,7 @@ export function ModelSelector({
     onThinkingLevelChange,
     chatMode = 'instant',
     onChatModeChange
-}: ModelSelectorProps) {
+}: ModelSelectorProps) => {
     const { t } = useTranslation(language);
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery] = useState('');
@@ -120,6 +120,7 @@ export function ModelSelector({
         if (!m && !keepOpen) { setIsOpen(false); }
     }, [onSelect]);
 
+
     const handleClose = useCallback(() => {
         setIsOpen(false);
     }, []);
@@ -167,4 +168,5 @@ export function ModelSelector({
             />
         </div>
     );
-}
+});
+ModelSelector.displayName = 'ModelSelector';

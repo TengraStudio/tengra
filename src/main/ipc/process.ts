@@ -2,6 +2,7 @@ import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { ProcessService } from '@main/services/system/process.service';
 import { createSafeIpcHandler as baseCreateSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { IPC_TIMEOUTS } from '@shared/constants/timeouts';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 
 const MAX_COMMAND_LENGTH = 1024;
@@ -210,7 +211,7 @@ export const setupProcessEvents = (processService: ProcessService) => {
         const current = buffers.get(id) ?? '';
         buffers.set(id, current + data);
 
-        timer ??= setTimeout(flush, 100);
+        timer ??= setTimeout(flush, IPC_TIMEOUTS.BUFFER_FLUSH);
     });
 
     processService.on('exit', ({ id, code }) => {

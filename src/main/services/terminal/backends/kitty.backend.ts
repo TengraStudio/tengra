@@ -117,9 +117,9 @@ export class KittyBackend implements ITerminalBackend {
 
         for (const candidate of commonPaths) {
             try {
+                // Sync I/O acceptable: one-time shell detection at backend init
                 if (fs.existsSync(candidate)) {
                     appLogger.info('KittyBackend', `Found Kitty at common location: ${candidate}`);
-                    return candidate;
                 }
             } catch {
                 // Ignore failed path checks.

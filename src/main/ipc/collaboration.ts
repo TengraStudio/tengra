@@ -2,23 +2,25 @@
  * IPC Handlers for Model Collaboration
  */
 
+import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { ModelCollaborationService } from '@main/services/llm/model-collaboration.service';
 import { multiLLMOrchestrator } from '@main/services/llm/multi-llm-orchestrator.service';
 import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { Message } from '@shared/types/chat';
-import { ipcMain, IpcMainInvokeEvent } from 'electron';
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 
 /**
  * Registers IPC handlers for model collaboration
  * @param collaborationService Service for model collaboration
  */
-export function registerCollaborationIpc(collaborationService: ModelCollaborationService) {
+export function registerCollaborationIpc(getMainWindow: () => BrowserWindow | null, collaborationService: ModelCollaborationService) {
+    const validateSender = createMainWindowSenderValidator(getMainWindow, 'collaboration operation');
 
     /**
      * Run multiple models in collaboration
      */
     ipcMain.handle('collaboration:run', createIpcHandler('collaboration:run', async (
-        _event: IpcMainInvokeEvent,
+        event: IpcMainInvokeEvent,
         request: {
             messages: Message[]
             models: Array<{ provider: string; model: string }>
@@ -29,6 +31,7 @@ export function registerCollaborationIpc(collaborationService: ModelCollaboratio
             }
         }
     ) => {
+        validateSender(event);
         if (!Array.isArray(request.messages)) {
             throw new Error('Messages must be an array');
         }
@@ -47,9 +50,10 @@ export function registerCollaborationIpc(collaborationService: ModelCollaboratio
      * Get provider statistics
      */
     ipcMain.handle('collaboration:getProviderStats', createSafeIpcHandler('collaboration:getProviderStats', async (
-        _event: IpcMainInvokeEvent,
+        event: IpcMainInvokeEvent,
         provider?: string
     ) => {
+        validateSender(event);
         if (provider) {
             return multiLLMOrchestrator.getProviderStats(provider) ?? null;
         }
@@ -60,9 +64,10 @@ export function registerCollaborationIpc(collaborationService: ModelCollaboratio
      * Get active task count for a provider
      */
     ipcMain.handle('collaboration:getActiveTaskCount', createSafeIpcHandler('collaboration:getActiveTaskCount', async (
-        _event: IpcMainInvokeEvent,
+        event: IpcMainInvokeEvent,
         provider: string
     ) => {
+        validateSender(event);
         if (typeof provider !== 'string') {
             throw new Error('Provider must be a string');
         }
@@ -73,7 +78,7 @@ export function registerCollaborationIpc(collaborationService: ModelCollaboratio
      * Configure provider settings
      */
     ipcMain.handle('collaboration:setProviderConfig', createIpcHandler('collaboration:setProviderConfig', async (
-        _event: IpcMainInvokeEvent,
+        event: IpcMainInvokeEvent,
         provider: string,
         config: {
             maxConcurrent: number
@@ -81,6 +86,7 @@ export function registerCollaborationIpc(collaborationService: ModelCollaboratio
             rateLimitPerMinute: number
         }
     ) => {
+        validateSender(event);
         if (typeof provider !== 'string') {
             throw new Error('Provider must be a string');
         }

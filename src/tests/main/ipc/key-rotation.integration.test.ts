@@ -57,7 +57,7 @@ describe('Key Rotation IPC Handlers', () => {
 
         mockEvent = {} as IpcMainInvokeEvent;
 
-        registerKeyRotationIpc(mockKeyRotationService);
+        registerKeyRotationIpc(() => null, mockKeyRotationService);
     });
 
     describe('key-rotation:getCurrentKey', () => {

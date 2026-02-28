@@ -61,8 +61,10 @@ export class ExtensionService extends BaseService {
         const userDataPath = process.env.USERDATA || '';
         this.state.extensionsPath = path.join(userDataPath, 'extensions');
 
-        if (!fs.existsSync(this.state.extensionsPath)) {
-            fs.mkdirSync(this.state.extensionsPath, { recursive: true });
+        try {
+            await fs.promises.access(this.state.extensionsPath, fs.constants.F_OK);
+        } catch {
+            await fs.promises.mkdir(this.state.extensionsPath, { recursive: true });
         }
 
         this.setupIpcHandlers();
@@ -286,11 +288,13 @@ export class ExtensionService extends BaseService {
     async installExtension(extensionPath: string): Promise<{ success: boolean; extensionId?: string; error?: string }> {
         const manifestPath = path.join(extensionPath, 'package.json');
 
-        if (!fs.existsSync(manifestPath)) {
+        try {
+            await fs.promises.access(manifestPath, fs.constants.F_OK);
+        } catch {
             return { success: false, error: 'package.json not found' };
         }
 
-        const manifestContent = fs.readFileSync(manifestPath, 'utf-8');
+        const manifestContent = await fs.promises.readFile(manifestPath, 'utf-8');
         const packageJson = JSON.parse(manifestContent);
         const manifest = packageJson.tengra as ExtensionManifest;
 
@@ -416,7 +420,7 @@ export class ExtensionService extends BaseService {
         try {
             // Load extension module
             const modulePath = path.join(instance.context.extensionPath, instance.manifest.main);
-            if (fs.existsSync(modulePath)) {
+            if (await fs.promises.access(modulePath, fs.constants.F_OK).then(() => true).catch(() => false)) {
                 // In a real implementation, this would load the module in a sandboxed context
                 // For now, we just mock activity
                 instance.module = {};

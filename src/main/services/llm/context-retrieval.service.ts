@@ -1,6 +1,7 @@
 import { appLogger } from '@main/logging/logger';
 import { DatabaseService, SemanticFragment } from '@main/services/data/database.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
+import { withRetry } from '@main/utils/retry.util';
 import { ContextRetrievalInputSchema } from '@shared/schemas/service-hardening.schema';
 
 export interface RetrievalResult {
@@ -338,22 +339,21 @@ export class ContextRetrievalService {
     }
 
     private async generateEmbeddingWithRetry(query: string): Promise<number[]> {
-        let lastError: Error | null = null;
-        for (let attempt = 1; attempt <= CONTEXT_RETRIEVAL_RETRY_ATTEMPTS; attempt += 1) {
-            try {
-                return await this.embedding.generateEmbedding(query);
-            } catch (caughtError) {
-                const error = caughtError instanceof Error ? caughtError : new Error(String(caughtError));
-                lastError = error;
-                if (attempt >= CONTEXT_RETRIEVAL_RETRY_ATTEMPTS) {
-                    break;
-                }
-                this.analytics.retries++;
-                this.analytics.lastErrorCode = CONTEXT_RETRIEVAL_ERROR_CODE.transient;
-                appLogger.warn(CONTEXT_RETRIEVAL_SERVICE_NAME, `Embedding retry ${attempt}/${CONTEXT_RETRIEVAL_RETRY_ATTEMPTS - 1}: ${error.message}`);
-                await new Promise(resolve => setTimeout(resolve, CONTEXT_RETRIEVAL_RETRY_DELAY_MS));
+        return withRetry(
+            () => this.embedding.generateEmbedding(query),
+            {
+                maxRetries: CONTEXT_RETRIEVAL_RETRY_ATTEMPTS - 1,
+                baseDelayMs: CONTEXT_RETRIEVAL_RETRY_DELAY_MS,
+                maxDelayMs: CONTEXT_RETRIEVAL_RETRY_DELAY_MS,
+                jitterFactor: 0,
+                shouldRetry: () => true,
+                onRetry: (error, attempt) => {
+                    this.analytics.retries++;
+                    this.analytics.lastErrorCode = CONTEXT_RETRIEVAL_ERROR_CODE.transient;
+                    const message = error instanceof Error ? error.message : String(error);
+                    appLogger.warn(CONTEXT_RETRIEVAL_SERVICE_NAME, `Embedding retry ${attempt + 1}/${CONTEXT_RETRIEVAL_RETRY_ATTEMPTS - 1}: ${message}`);
+                },
             }
-        }
-        throw (lastError ?? new Error('Unknown context retrieval embedding failure'));
+        );
     }
 }

@@ -37,7 +37,7 @@ describe('Code Sandbox IPC Handlers', () => {
     beforeEach(() => {
         ipcMainHandlers.clear();
         vi.clearAllMocks();
-        registerCodeSandboxIpc();
+        registerCodeSandboxIpc(() => null);
     });
 
     const getRequiredHandler = (channel: string): IpcHandler => {

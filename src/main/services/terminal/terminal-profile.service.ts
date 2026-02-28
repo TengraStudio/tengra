@@ -296,7 +296,9 @@ export class TerminalProfileService extends BaseService {
         }
 
         try {
-            if (!fs.existsSync(this.persistencePath)) {
+            try {
+                await fs.promises.access(this.persistencePath, fs.constants.F_OK);
+            } catch {
                 await this.createDefaultProfiles();
                 return;
             }

@@ -1,4 +1,4 @@
-
+﻿
 import {
     addEdge,
     Background,
@@ -616,7 +616,7 @@ const ProjectTodoTabCanvas: React.FC<ProjectTodoTabProps> = ({ project, onUpdate
                     <span>{t('projectDashboard.todoList')}:</span><span>{stats.total}</span><span className="text-success">{stats.completed}</span><span className="text-warning">{stats.inProgress}</span><span>{stats.pending}</span><span className="text-destructive">blocked:{stats.blocked}</span>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                    <div className="relative"><Filter className="w-3.5 h-3.5 absolute left-2 top-2.5 text-muted-foreground" /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search" className="h-8 w-32 rounded-md border border-border bg-background pl-7 pr-2 text-xs" /></div>
+                    <div className="relative"><Filter className="w-3.5 h-3.5 absolute left-2 top-2.5 text-muted-foreground" /><input value={query} onChange={event => setQuery(event.target.value)} placeholder={t('placeholder.search')} className="h-8 w-32 rounded-md border border-border bg-background pl-7 pr-2 text-xs" /></div>
                     <select value={statusFilter} onChange={event => setStatusFilter(event.target.value as 'all' | TodoStatus)} className="h-8 rounded-md border border-border bg-background px-2 text-xs"><option value="all">all</option><option value="pending">pending</option><option value="in_progress">in progress</option><option value="completed">completed</option></select>
                     <select value={categoryFilter} onChange={event => setCategoryFilter(event.target.value)} className="h-8 rounded-md border border-border bg-background px-2 text-xs"><option value="all">all categories</option>{categories.map(category => <option key={category} value={category}>{category}</option>)}</select>
                     <button onClick={addTodoNode} className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs inline-flex items-center gap-1"><Plus className="w-3.5 h-3.5" />{t('projectDashboard.createTodo')}</button>

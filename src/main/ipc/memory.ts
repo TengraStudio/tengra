@@ -1,7 +1,8 @@
 import { appLogger } from '@main/logging/logger';
+import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { MemoryService } from '@main/services/llm/memory.service';
 import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { ipcMain, IpcMainInvokeEvent } from 'electron';
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 
 /** Maximum ID length */
 const MAX_ID_LENGTH = 128;
@@ -89,14 +90,16 @@ function validateTags(value: unknown): string[] {
 /**
  * Registers IPC handlers for memory operations
  */
-export function registerMemoryIpc(memoryService: MemoryService): void {
+export function registerMemoryIpc(getMainWindow: () => BrowserWindow | null, memoryService: MemoryService): void {
     appLogger.info('MemoryIPC', 'Registering memory IPC handlers');
+    const validateSender = createMainWindowSenderValidator(getMainWindow, 'memory operation');
 
     ipcMain.handle(
         'memory:getAll',
         createSafeIpcHandler(
             'memory:getAll',
-            async () => {
+            async (event) => {
+                validateSender(event);
                 return await memoryService.getAllMemories();
             },
             { facts: [], episodes: [], entities: [] }
@@ -107,7 +110,8 @@ export function registerMemoryIpc(memoryService: MemoryService): void {
         'memory:deleteFact',
         createSafeIpcHandler(
             'memory:deleteFact',
-            async (_event: IpcMainInvokeEvent, factIdRaw: unknown) => {
+            async (event: IpcMainInvokeEvent, factIdRaw: unknown) => {
+                validateSender(event);
                 const factId = validateId(factIdRaw);
                 if (!factId) {
                     throw new Error('Invalid fact ID');
@@ -123,7 +127,8 @@ export function registerMemoryIpc(memoryService: MemoryService): void {
         'memory:deleteEntity',
         createSafeIpcHandler(
             'memory:deleteEntity',
-            async (_event: IpcMainInvokeEvent, entityIdRaw: unknown) => {
+            async (event: IpcMainInvokeEvent, entityIdRaw: unknown) => {
+                validateSender(event);
                 const entityId = validateId(entityIdRaw);
                 if (!entityId) {
                     throw new Error('Invalid entity ID');
@@ -139,7 +144,8 @@ export function registerMemoryIpc(memoryService: MemoryService): void {
         'memory:addFact',
         createSafeIpcHandler(
             'memory:addFact',
-            async (_event: IpcMainInvokeEvent, contentRaw: unknown, tagsRaw: unknown) => {
+            async (event: IpcMainInvokeEvent, contentRaw: unknown, tagsRaw: unknown) => {
+                validateSender(event);
                 const content = validateContent(contentRaw);
                 if (!content) {
                     throw new Error('Invalid content');
@@ -157,12 +163,13 @@ export function registerMemoryIpc(memoryService: MemoryService): void {
         createSafeIpcHandler(
             'memory:setEntityFact',
             async (
-                _event: IpcMainInvokeEvent,
+                event: IpcMainInvokeEvent,
                 entityTypeRaw: unknown,
                 entityNameRaw: unknown,
                 keyRaw: unknown,
                 valueRaw: unknown
             ) => {
+                validateSender(event);
                 const entityType = validateField(entityTypeRaw);
                 const entityName = validateField(entityNameRaw);
                 const key = validateField(keyRaw);
@@ -183,7 +190,8 @@ export function registerMemoryIpc(memoryService: MemoryService): void {
         'memory:search',
         createSafeIpcHandler(
             'memory:search',
-            async (_event: IpcMainInvokeEvent, queryRaw: unknown) => {
+            async (event: IpcMainInvokeEvent, queryRaw: unknown) => {
+                validateSender(event);
                 const query = validateQuery(queryRaw);
                 if (!query) {
                     throw new Error('Invalid query');

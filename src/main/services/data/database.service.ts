@@ -17,6 +17,7 @@ import { DbDetailedStats, DbStats, DbTokenStats } from '@shared/types/db-api';
 import { FileDiff } from '@shared/types/file-diff';
 import { Project } from '@shared/types/project';
 import { AgentProfile } from '@shared/types/project-agent';
+import { AppErrorCode, TengraError, ValidationError } from '@shared/utils/error.util';
 import { v4 as uuidv4 } from 'uuid';
 
 import { ChatRepository } from './repositories/chat.repository';
@@ -256,21 +257,21 @@ export class DatabaseService extends BaseService {
     /** Validates that a value is a non-empty string, throwing with the given label if not. */
     private validateId(value: unknown, label: string): asserts value is string {
         if (typeof value !== 'string' || value.trim().length === 0) {
-            throw new Error(`[${DatabaseServiceErrorCode.INVALID_ID}] ${label} must be a non-empty string`);
+            throw new ValidationError(`[${DatabaseServiceErrorCode.INVALID_ID}] ${label} must be a non-empty string`);
         }
     }
 
     /** Validates that a value is a string (used for SQL statements). */
     private validateSql(value: unknown): asserts value is string {
         if (typeof value !== 'string' || value.trim().length === 0) {
-            throw new Error(`[${DatabaseServiceErrorCode.INVALID_QUERY}] SQL statement must be a non-empty string`);
+            throw new ValidationError(`[${DatabaseServiceErrorCode.INVALID_QUERY}] SQL statement must be a non-empty string`);
         }
     }
 
     /** Validates that a value is an array. */
     private validateArray(value: unknown, label: string): asserts value is unknown[] {
         if (!Array.isArray(value)) {
-            throw new Error(`[${DatabaseServiceErrorCode.OPERATION_FAILED}] ${label} must be an array`);
+            throw new ValidationError(`[${DatabaseServiceErrorCode.OPERATION_FAILED}] ${label} must be an array`);
         }
     }
 
@@ -320,7 +321,7 @@ export class DatabaseService extends BaseService {
             await this.initPromise;
         }
         if (!this.dbClient.isConnected()) {
-            throw new Error(`Database client not connected. Reason: ${this.initError?.message ?? 'unknown'}`);
+            throw new TengraError(`Database client not connected. Reason: ${this.initError?.message ?? 'unknown'}`, AppErrorCode.DB_NOT_INITIALIZED);
         }
         return this.createAdapter();
     }
@@ -504,25 +505,43 @@ export class DatabaseService extends BaseService {
         this.slowQueryLogs = [];
     }
 
+    /**
+     * Configures connection pool limits for the database client.
+     * @param config - Pool configuration with optional socket and request limits
+     * @throws {ValidationError} If config is null or not an object
+     */
     setConnectionPoolConfig(config: { maxSockets?: number; maxFreeSockets?: number; maxPendingRequests?: number }): void {
         if (config === null || typeof config !== 'object') {
-            throw new Error(`[${DatabaseServiceErrorCode.OPERATION_FAILED}] config must be a non-null object`);
+            throw new ValidationError(`[${DatabaseServiceErrorCode.OPERATION_FAILED}] config must be a non-null object`);
         }
         this.dbClient.setPoolLimits(config);
     }
 
+    /** Returns current connection pool metrics (active sockets, free sockets, pending requests). */
     getConnectionPoolMetrics() {
         return this.dbClient.getConnectionPoolMetrics();
     }
 
+    /** Recycles the connection pool, closing idle connections and resetting state. */
     async recycleConnectionPool(): Promise<void> {
         await this.dbClient.recycleConnectionPool();
     }
 
+    /**
+     * Checks database connection health by running a test query.
+     * @param timeoutMs - Optional timeout in milliseconds for the health check
+     * @returns Health status and measured latency
+     */
     async getConnectionHealth(timeoutMs?: number): Promise<{ healthy: boolean; latencyMs: number }> {
         return this.dbClient.testConnection(timeoutMs);
     }
 
+    /**
+     * Returns the EXPLAIN query plan for the given SQL statement.
+     * @param sql - SQL query to analyze
+     * @param params - Optional query parameters
+     * @returns Array of query plan rows
+     */
     async analyzeQueryPlan(sql: string, params?: SqlParams): Promise<unknown[]> {
         this.validateSql(sql);
         const explainSql = `EXPLAIN ${sql}`;
@@ -530,6 +549,11 @@ export class DatabaseService extends BaseService {
         return res.rows as unknown[];
     }
 
+    /**
+     * Executes multiple SQL statements sequentially, collecting results for each.
+     * @param statements - Array of SQL statements with optional parameters
+     * @returns Array of results indicating success or failure with error message
+     */
     async executeBatch(
         statements: Array<{ sql: string; params?: SqlParams }>
     ): Promise<Array<{ success: boolean; error?: string }>> {
@@ -633,6 +657,7 @@ export class DatabaseService extends BaseService {
         }
     }
 
+    /** Returns the full migration history with version, name, checksum, and timestamps. */
     async getMigrationHistory(): Promise<MigrationHistoryEntry[]> {
         const rows = await this.getMigrationHistoryRows();
         return rows.map(row => ({
@@ -644,6 +669,12 @@ export class DatabaseService extends BaseService {
         }));
     }
 
+    /**
+     * Runs pending database migrations up to the specified target version.
+     * @param options - Optional settings: dryRun to preview without applying, targetVersion to stop at
+     * @returns Array of execution results for each migration attempted
+     * @throws {TengraError} If a migration checksum conflict is detected
+     */
     async runMigrations(options: { dryRun?: boolean; targetVersion?: number } = {}): Promise<MigrationExecutionResult[]> {
         const dryRun = options.dryRun === true;
         const known = this.getKnownMigrations().sort((a, b) => a.version - b.version);
@@ -652,7 +683,7 @@ export class DatabaseService extends BaseService {
         const appliedVersions = new Set(history.filter(h => !h.rolled_back_at).map(h => h.version));
         const conflicts = this.detectMigrationConflicts(history.map(h => ({ version: h.version, checksum: h.checksum })));
         if (conflicts.length > 0) {
-            throw new Error(`Migration conflict detected for versions: ${conflicts.map(c => c.version).join(', ')}`);
+            throw new TengraError(`Migration conflict detected for versions: ${conflicts.map(c => c.version).join(', ')}`, AppErrorCode.DB_MIGRATION_FAILED);
         }
 
         const toRun = known.filter(m => m.version <= targetVersion && !appliedVersions.has(m.version));
@@ -701,6 +732,12 @@ export class DatabaseService extends BaseService {
         return results;
     }
 
+    /**
+     * Rolls back the most recently applied migration.
+     * @param options - Optional settings: dryRun to preview without applying
+     * @returns Execution result of the rollback, or null if no migration to roll back
+     * @throws {TengraError} If no down migration is found for the version
+     */
     async rollbackLastMigration(options: { dryRun?: boolean } = {}): Promise<MigrationExecutionResult | null> {
         const dryRun = options.dryRun === true;
         const history = await this.getMigrationHistoryRows();
@@ -710,7 +747,7 @@ export class DatabaseService extends BaseService {
         }
         const migration = this.getKnownMigrations().find(m => m.version === lastApplied.version);
         if (!migration) {
-            throw new Error(`No down migration found for version ${lastApplied.version}`);
+            throw new TengraError(`No down migration found for version ${lastApplied.version}`, AppErrorCode.DB_MIGRATION_FAILED);
         }
 
         const startedAt = Date.now();
@@ -738,6 +775,11 @@ export class DatabaseService extends BaseService {
         };
     }
 
+    /**
+     * Validates that expected database tables exist in the current schema.
+     * @param expectedTables - List of table names to check (defaults to core tables)
+     * @returns Validation result with present/missing tables and warnings
+     */
     async validateSchema(expectedTables: string[] = ['chats', 'messages', 'projects', 'folders', 'prompts', 'linked_accounts']): Promise<SchemaValidationResult> {
         const present: string[] = [];
         const missing: string[] = [];
@@ -765,11 +807,19 @@ export class DatabaseService extends BaseService {
         };
     }
 
+    /**
+     * Returns a sorted list of tables that are present in the current schema.
+     * @param expectedTables - List of table names to check (defaults to core tables)
+     */
     async getSchemaSnapshot(expectedTables: string[] = ['chats', 'messages', 'projects', 'folders', 'prompts', 'linked_accounts']): Promise<string[]> {
         const result = await this.validateSchema(expectedTables);
         return result.tablesPresent.sort();
     }
 
+    /**
+     * Compares current schema against an expected snapshot, returning added and removed tables.
+     * @param expectedSnapshot - List of table names representing the expected schema
+     */
     async diffSchema(expectedSnapshot: string[]): Promise<SchemaDiffResult> {
         const current = await this.getSchemaSnapshot(expectedSnapshot);
         const expectedSet = new Set(expectedSnapshot);
@@ -779,6 +829,11 @@ export class DatabaseService extends BaseService {
         return { addedTables, removedTables };
     }
 
+    /**
+     * Updates the replication configuration with the provided partial config.
+     * @param config - Partial replication settings to merge
+     * @returns The updated replication configuration
+     */
     setReplicationConfig(config: Partial<ReplicationConfig>): ReplicationConfig {
         this.replicationConfig = {
             ...this.replicationConfig,
@@ -787,10 +842,15 @@ export class DatabaseService extends BaseService {
         return { ...this.replicationConfig };
     }
 
+    /** Returns a copy of the current replication configuration. */
     getReplicationConfig(): ReplicationConfig {
         return { ...this.replicationConfig };
     }
 
+    /**
+     * Returns replication lag metrics including lag duration and health status.
+     * @returns Lag in milliseconds and whether it is within the configured threshold
+     */
     async getReplicationLagMetrics(): Promise<{ lagMs: number; healthy: boolean }> {
         const health = await this.dbClient.getHealth();
         const now = Date.now();
@@ -801,11 +861,17 @@ export class DatabaseService extends BaseService {
         };
     }
 
+    /** Triggers failover to primary by disabling replication. */
     async failoverToPrimary(): Promise<{ success: boolean }> {
         this.replicationConfig.enabled = false;
         return { success: true };
     }
 
+    /**
+     * Updates the sharding configuration, ensuring at least 1 shard.
+     * @param config - Partial sharding settings to merge
+     * @returns The updated sharding configuration
+     */
     setShardingConfig(config: Partial<ShardingConfig>): ShardingConfig {
         const shardCount = Math.max(1, config.shardCount ?? this.shardingConfig.shardCount);
         this.shardingConfig = {
@@ -816,10 +882,16 @@ export class DatabaseService extends BaseService {
         return { ...this.shardingConfig };
     }
 
+    /** Returns a copy of the current sharding configuration. */
     getShardingConfig(): ShardingConfig {
         return { ...this.shardingConfig };
     }
 
+    /**
+     * Computes the shard index for a given key using a hash function.
+     * @param key - The key to determine shard placement for
+     * @returns Zero-based shard index
+     */
     getShardForKey(key: string): number {
         const shardCount = Math.max(1, this.shardingConfig.shardCount);
         let hash = 0;
@@ -830,6 +902,12 @@ export class DatabaseService extends BaseService {
         return Math.abs(hash) % shardCount;
     }
 
+    /**
+     * Executes a SQL query across all active shards and returns results per shard.
+     * @param sql - SQL query to execute
+     * @param params - Optional query parameters
+     * @returns Array of results grouped by shard index
+     */
     async queryAcrossShards(sql: string, params?: SqlParams): Promise<Array<{ shard: number; rows: unknown[] }>> {
         this.validateSql(sql);
         const shards = Math.max(1, this.shardingConfig.shardCount);
@@ -841,6 +919,11 @@ export class DatabaseService extends BaseService {
         return rows;
     }
 
+    /**
+     * Gzip-compresses a float32 vector embedding and returns it as a base64 string.
+     * @param vector - Array of numbers representing the vector embedding
+     * @returns Base64-encoded compressed payload
+     */
     compressVectorEmbedding(vector: number[]): string {
         const raw = Buffer.from(Float32Array.from(vector).buffer);
         const compressed = zlib.gzipSync(raw);
@@ -850,6 +933,11 @@ export class DatabaseService extends BaseService {
         return compressed.toString('base64');
     }
 
+    /**
+     * Decompresses a base64-encoded gzip payload back into a number array.
+     * @param payload - Base64-encoded compressed vector
+     * @returns Array of numbers representing the original vector embedding
+     */
     decompressVectorEmbedding(payload: string): number[] {
         const compressed = Buffer.from(payload, 'base64');
         const raw = zlib.gunzipSync(compressed);
@@ -857,6 +945,11 @@ export class DatabaseService extends BaseService {
         return Array.from(view);
     }
 
+    /**
+     * Gzip-compresses a JSON message history array and returns it as a base64 string.
+     * @param messages - Array of message objects to compress
+     * @returns Base64-encoded compressed payload
+     */
     compressMessageHistory(messages: JsonObject[]): string {
         const raw = Buffer.from(JSON.stringify(messages), 'utf8');
         const compressed = zlib.gzipSync(raw);
@@ -866,12 +959,18 @@ export class DatabaseService extends BaseService {
         return compressed.toString('base64');
     }
 
+    /**
+     * Decompresses a base64-encoded gzip payload back into a JSON object array.
+     * @param payload - Base64-encoded compressed message history
+     * @returns Array of message objects
+     */
     decompressMessageHistory(payload: string): JsonObject[] {
         const compressed = Buffer.from(payload, 'base64');
         const raw = zlib.gunzipSync(compressed);
         return JSON.parse(raw.toString('utf8')) as JsonObject[];
     }
 
+    /** Returns compression statistics including operation count, byte sizes, and compression ratio. */
     getCompressionMetrics(): {
         operations: number;
         rawBytes: number;
@@ -889,31 +988,50 @@ export class DatabaseService extends BaseService {
         };
     }
 
+    /** Checks whether the database contains any data. */
     async hasData(): Promise<boolean> { return true; }
 
     // Folders
+    /** Retrieves all folders. */
     async getFolders() { return this._system.getFolders(); }
+    /** Retrieves a folder by ID. */
     async getFolder(id: string) { return this._system.getFolder(id); }
+    /** Creates a new folder with the given name and optional color. */
     async createFolder(name: string, color?: string) { return this._system.createFolder(name, color); }
+    /** Updates a folder by ID with the provided partial updates. */
     async updateFolder(id: string, updates: Partial<Folder>) { return this._system.updateFolder(id, updates); }
+    /** Deletes a folder by ID. */
     async deleteFolder(id: string) { return this._system.deleteFolder(id); }
 
     // Prompts
+    /** Retrieves all prompts. */
     async getPrompts() { return this._system.getPrompts(); }
+    /** Retrieves a prompt by ID. */
     async getPrompt(id: string) { return this._system.getPrompt(id); }
+    /** Creates a new prompt with the given title, content, and optional tags. */
     async createPrompt(title: string, content: string, tags: string[] = []) { return this._system.createPrompt(title, content, tags); }
+    /** Updates a prompt by ID with the provided partial updates. */
     async updatePrompt(id: string, updates: Partial<Prompt>) { return this._system.updatePrompt(id, updates); }
+    /** Deletes a prompt by ID. */
     async deletePrompt(id: string): Promise<void> { return this._system.deletePrompt(id); }
 
     // Projects
+    /** Retrieves all projects. */
     async getProjects(): Promise<Project[]> { return this._projects.getProjects(); }
+    /** Retrieves a project by ID. */
     async getProject(id: string): Promise<Project | null | undefined> { return this._projects.getProject(id); }
+    /** Checks whether a project path has indexed symbols. */
     async hasIndexedSymbols(projectPath: string): Promise<boolean> { return this._projects.hasIndexedSymbols(projectPath); }
+    /** Creates a new project with the given title, path, description, and optional metadata. */
     async createProject(title: string, path: string, desc: string = '', m?: string, c?: string): Promise<Project> { return this._projects.createProject(title, path, desc, m, c); }
+    /** Updates a project by ID with the provided partial updates. */
     async updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined> { return this._projects.updateProject(id, updates); }
+    /** Deletes a project by ID, optionally removing associated files. */
     async deleteProject(id: string, deleteFiles: boolean = false): Promise<void> { return this._projects.deleteProject(id, deleteFiles); }
+    /** Archives or unarchives a project by ID. */
     async archiveProject(id: string, isArchived: boolean): Promise<Project | undefined> { return this._projects.updateProject(id, { status: isArchived ? 'archived' : 'active' }); }
 
+    /** Deletes multiple projects by ID, optionally removing associated files. */
     async bulkDeleteProjects(ids: string[], deleteFiles: boolean = false) {
         this.validateArray(ids, 'ids');
         for (const id of ids) {
@@ -922,6 +1040,7 @@ export class DatabaseService extends BaseService {
         }
     }
 
+    /** Archives or unarchives multiple projects by ID. */
     async bulkArchiveProjects(ids: string[], isArchived: boolean) {
         this.validateArray(ids, 'ids');
         for (const id of ids) {
@@ -931,17 +1050,29 @@ export class DatabaseService extends BaseService {
     }
 
     // Chats & Messages
+    /** Creates a new chat. */
     async createChat(chat: Chat) { return this._chats.createChat(chat); }
+    /** Retrieves all chats. */
     async getAllChats() { return this._chats.getAllChats(); }
+    /** Retrieves a chat by ID. */
     async getChat(id: string) { return this._chats.getChat(id); }
+    /** Retrieves chats, optionally filtered by project ID. */
     async getChats(projectId?: string) { return this._chats.getChats(projectId); }
+    /** Updates a chat by ID with the provided partial updates. */
     async updateChat(id: string, updates: Partial<Chat>) { return this._chats.updateChat(id, updates); }
+    /** Deletes a chat by ID. */
     async deleteChat(id: string) { return this._chats.deleteChat(id); }
+    /** Archives or unarchives a chat by ID. */
     async archiveChat(id: string, isArchived: boolean) { return this._chats.updateChat(id, { metadata: { isArchived } }); }
+    /** Retrieves all bookmarked messages. */
     async getBookmarkedMessages() { return this._chats.getBookmarkedMessages(); }
+    /** Searches chats based on the provided search options. */
     async searchChats(options: SearchChatsOptions) { return this._chats.searchChats(options); }
+    /** Deletes all chats. */
     async deleteAllChats() { return this._chats.deleteAllChats(); }
+    /** Deletes all chats matching the given title. */
     async deleteChatsByTitle(title: string) { return this._chats.deleteChatsByTitle(title); }
+    /** Deletes multiple chats by ID. */
     async bulkDeleteChats(ids: string[]) {
         this.validateArray(ids, 'ids');
         for (const id of ids) {
@@ -950,6 +1081,7 @@ export class DatabaseService extends BaseService {
         }
     }
 
+    /** Archives or unarchives multiple chats by ID. */
     async bulkArchiveChats(ids: string[], isArchived: boolean) {
         this.validateArray(ids, 'ids');
         for (const id of ids) {
@@ -1160,10 +1292,15 @@ export class DatabaseService extends BaseService {
 
 
     // Stats & Tracking
+    /** Returns aggregate database statistics. */
     async getStats(): Promise<DbStats> { return this._system.getStats(); }
+    /** Returns detailed database statistics for the given period. */
     async getDetailedStats(period: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily'): Promise<DbDetailedStats> { return this._system.getDetailedStats(period); }
+    /** Returns time tracking statistics. */
     async getTimeStats(): Promise<TimeTrackingStats> { return this.timeTracking.getTimeStats(); }
+    /** Returns current migration version and last migration timestamp. */
     async getMigrationStatus(): Promise<{ version: number; lastMigration: number }> { return this._system.getMigrationStatus(); }
+    /** Records token usage, resolving project UUID to path if needed. */
     async addTokenUsage(record: TokenUsageRecord) {
         let projectPath = record.projectId;
         if (projectPath && !projectPath.includes('/') && !projectPath.includes('\\')) {
@@ -1174,7 +1311,14 @@ export class DatabaseService extends BaseService {
         }
         return this._system.addTokenUsage({ ...record, projectId: projectPath });
     }
+    /** Returns token usage statistics for the given period. */
     async getTokenUsageStats(period: 'daily' | 'weekly' | 'monthly'): Promise<DbTokenStats> { return this._system.getTokenUsageStats(period); }
+    /**
+     * Archives chats that have not been updated since the given timestamp.
+     * @param olderThanMs - Cutoff timestamp in milliseconds; chats older than this are archived
+     * @param limit - Maximum number of chats to archive (default 200)
+     * @returns Count of archived chats, inspected candidates, and the cutoff used
+     */
     async archiveOldChats(olderThanMs: number, limit: number = 200): Promise<{ archived: number; inspected: number; cutoff: number }> {
         const chats = await this.getAllChats();
         const candidates = chats
@@ -1193,10 +1337,16 @@ export class DatabaseService extends BaseService {
         return { archived, inspected: candidates.length, cutoff: olderThanMs };
     }
 
+    /** Searches only archived chats using the provided search options. */
     async searchArchivedChats(options: Omit<SearchChatsOptions, 'isArchived'> = {}): Promise<Chat[]> {
         return this.searchChats({ ...options, isArchived: true });
     }
 
+    /**
+     * Unarchives multiple chats by ID.
+     * @param ids - Array of chat IDs to unarchive
+     * @returns Count of successfully updated chats
+     */
     async unarchiveChats(ids: string[]): Promise<{ updated: number }> {
         this.validateArray(ids, 'ids');
         let updated = 0;
@@ -1210,6 +1360,7 @@ export class DatabaseService extends BaseService {
         return { updated };
     }
 
+    /** Returns counts of archived vs active chats and projects. */
     async getArchiveStats(): Promise<{ archivedChats: number; activeChats: number; archivedProjects: number; activeProjects: number }> {
         const [chats, projects] = await Promise.all([this.getAllChats(), this.getProjects()]);
         const archivedChats = chats.filter(chat => Boolean(chat.metadata?.isArchived)).length;
@@ -1219,6 +1370,11 @@ export class DatabaseService extends BaseService {
         return { archivedChats, activeChats, archivedProjects, activeProjects };
     }
 
+    /**
+     * Duplicates a chat and all its messages, returning the new chat ID.
+     * @param id - ID of the chat to duplicate
+     * @returns The new chat's ID, or null if the original chat was not found
+     */
     async duplicateChat(id: string): Promise<string | null> {
         const chat = await this.getChat(id);
         if (!chat) { return null; }
@@ -1231,10 +1387,15 @@ export class DatabaseService extends BaseService {
         }
         return null;
     }
+    /** Adds a message to a chat. */
     async addMessage(msg: JsonObject) { return this._chats.addMessage(msg); }
+    /** Retrieves all messages for a given chat ID. */
     async getMessages(chatId: string) { return this._chats.getMessages(chatId); }
+    /** Retrieves all messages across all chats. */
     async getAllMessages() { return this._chats.getAllMessages(); }
+    /** Updates a message by ID with the provided partial updates. */
     async updateMessage(id: string, updates: JsonObject) { return this._chats.updateMessage(id, updates); }
+    /** Deletes a message by ID. */
     async deleteMessage(id: string) { return this._chats.deleteMessage(id); }
     async deleteMessages(ids: string[]) {
         this.validateArray(ids, 'ids');
@@ -1249,14 +1410,17 @@ export class DatabaseService extends BaseService {
 
     // --- Usage Tracking Methods ---
 
+    /** Records an API usage event with provider, model, and timestamp. */
     async addUsageRecord(record: { provider: string; model: string; timestamp: number }) {
         await this.ensureInitialized();
         return this._system.addUsageRecord(record);
     }
+    /** Returns the count of usage records since the given timestamp, optionally filtered by provider and model. */
     async getUsageCount(since: number, provider?: string, model?: string) {
         await this.ensureInitialized();
         return this._system.getUsageCount(since, provider, model);
     }
+    /** Deletes usage records older than the given timestamp. */
     async cleanupUsageRecords(before: number) {
         await this.ensureInitialized();
         return this._system.cleanupUsageRecords(before);
@@ -1338,6 +1502,7 @@ export class DatabaseService extends BaseService {
     async ensureFileDiffTable() { return this._knowledge.ensureFileDiffTable(); }
 
     // Memory
+    /** Stores a key-value pair as an episodic memory entry. */
     async storeMemory(key: string, value: JsonValue) {
         return this.storeEpisodicMemory({
             id: uuidv4(),
@@ -1353,6 +1518,7 @@ export class DatabaseService extends BaseService {
             metadata: { key }
         });
     }
+    /** Recalls a stored memory by key, searching episodic memories. */
     async recallMemory(key: string) {
         const memories = await this.searchEpisodicMemories([], 100);
         return memories.find(m => m.metadata?.key === key);

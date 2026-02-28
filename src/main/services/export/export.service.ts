@@ -51,8 +51,9 @@ export class ExportService extends BaseService {
             printWindow = new BrowserWindow({
                 show: false,
                 webPreferences: {
-                    nodeIntegration: false,
-                    contextIsolation: true
+                    sandbox: true,
+                    contextIsolation: true,
+                    nodeIntegration: false
                 }
             });
 

@@ -569,8 +569,9 @@ function registerCookieHandlers(getMainWindow: () => BrowserWindow | null) {
                     show: false,
                     webPreferences: {
                         partition: 'default', // Use default session for cookie sharing
-                        nodeIntegration: false,
+                        sandbox: true,
                         contextIsolation: true,
+                        nodeIntegration: false,
                     },
                 });
 

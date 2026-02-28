@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 
 import { appLogger } from '@main/logging/logger';
+import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { BrowserWindow, dialog, ipcMain } from 'electron';
 
@@ -51,12 +52,14 @@ function parseSaveFileOptions(value: unknown): SaveFileOptions | null {
  */
 export function registerDialogIpc(getMainWindow: () => BrowserWindow | null): void {
     appLogger.info('DialogIPC', 'Registering dialog IPC handlers');
+    const validateSender = createMainWindowSenderValidator(getMainWindow, 'dialog operation');
 
     ipcMain.handle(
         'dialog:selectDirectory',
         createSafeIpcHandler(
             'dialog:selectDirectory',
-            async () => {
+            async (event) => {
+                validateSender(event);
                 const win = getMainWindow();
                 if (!win) {
                     return { success: false, error: 'Window not found' };
@@ -80,7 +83,8 @@ export function registerDialogIpc(getMainWindow: () => BrowserWindow | null): vo
         'dialog:saveFile',
         createSafeIpcHandler(
             'dialog:saveFile',
-            async (_event, optionsRaw: unknown) => {
+            async (event, optionsRaw: unknown) => {
+                validateSender(event);
                 const win = getMainWindow();
                 if (!win) {
                     return { success: false, error: 'Window not found' };

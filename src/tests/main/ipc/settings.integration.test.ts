@@ -102,6 +102,7 @@ describe('Settings IPC Handlers', () => {
         };
 
         registerSettingsIpc({
+            getMainWindow: () => null,
             settingsService: settingsService as never,
             llmService: llmService as never,
             copilotService: copilotService as never,

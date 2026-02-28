@@ -1,4 +1,5 @@
 import { appLogger } from '@main/logging/logger';
+import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { LogoService } from '@main/services/external/logo.service';
@@ -82,11 +83,14 @@ export const registerProjectIpc = (
         });
     };
 
+    const validateSender = createMainWindowSenderValidator(getWindow, 'project operation');
+
     ipcMain.handle(
         'project:analyze',
         createValidatedIpcHandler(
             'project:analyze',
-            async (_event, rootPath: string, projectId: string | undefined) => {
+            async (event, rootPath: string, projectId: string | undefined) => {
+                validateSender(event);
                 appLogger.info(
                     'ProjectIPC',
                     `[ProjectIPC] Analyze requested for ${rootPath} (ID: ${projectId})`
@@ -115,7 +119,8 @@ export const registerProjectIpc = (
         'project:watch',
         createValidatedIpcHandler(
             'project:watch',
-            async (_event, rootPath: string) => {
+            async (event, rootPath: string) => {
+                validateSender(event);
                 const win = getWindow();
                 await projectService.watchProject(rootPath, (event, filePath) => {
                     void (async () => {
@@ -170,7 +175,8 @@ export const registerProjectIpc = (
         'project:unwatch',
         createValidatedIpcHandler(
             'project:unwatch',
-            async (_event, rootPath: string) => {
+            async (event, rootPath: string) => {
+                validateSender(event);
                 await projectService.stopWatch(rootPath);
                 return { success: true };
             },
@@ -186,10 +192,11 @@ export const registerProjectIpc = (
         createValidatedIpcHandler(
             'project:generateLogo',
             async (
-                _event,
+                event,
                 projectPath: string,
                 options: { prompt: string; style: string; model: string; count: number }
             ) => {
+                validateSender(event);
                 return await logoService.generateLogo(
                     projectPath,
                     options.prompt,
@@ -209,7 +216,8 @@ export const registerProjectIpc = (
         'project:analyzeIdentity',
         createValidatedIpcHandler(
             'project:analyzeIdentity',
-            async (_event, projectPath: string) => {
+            async (event, projectPath: string) => {
+                validateSender(event);
                 return await logoService.analyzeProjectIdentity(projectPath);
             },
             {
@@ -223,7 +231,8 @@ export const registerProjectIpc = (
         'project:analyzeDirectory',
         createValidatedIpcHandler(
             'project:analyzeDirectory',
-            async (_event, dirPath: string) => {
+            async (event, dirPath: string) => {
+                validateSender(event);
                 return await projectService.analyzeDirectory(dirPath);
             },
             {
@@ -237,7 +246,8 @@ export const registerProjectIpc = (
         'project:applyLogo',
         createValidatedIpcHandler(
             'project:applyLogo',
-            async (_event, projectPath: string, tempLogoPath: string) => {
+            async (event, projectPath: string, tempLogoPath: string) => {
+                validateSender(event);
                 try {
                     const result = await logoService.applyLogo(projectPath, tempLogoPath);
                     await logDestructiveAction('project.apply-logo', projectPath, true, {
@@ -261,7 +271,8 @@ export const registerProjectIpc = (
         'project:getCompletion',
         createValidatedIpcHandler(
             'project:getCompletion',
-            async (_event, text: string) => {
+            async (event, text: string) => {
+                validateSender(event);
                 return await inlineSuggestionService.getCompletion(text);
             },
             {
@@ -276,7 +287,8 @@ export const registerProjectIpc = (
         'project:getInlineSuggestion',
         createValidatedIpcHandler(
             'project:getInlineSuggestion',
-            async (_event, request: z.infer<typeof inlineSuggestionRequestSchema>) => {
+            async (event, request: z.infer<typeof inlineSuggestionRequestSchema>) => {
+                validateSender(event);
                 return await inlineSuggestionService.getInlineSuggestion(request);
             },
             {
@@ -291,7 +303,8 @@ export const registerProjectIpc = (
         'project:trackInlineSuggestionTelemetry',
         createValidatedIpcHandler(
             'project:trackInlineSuggestionTelemetry',
-            async (_event, eventData: z.infer<typeof inlineSuggestionTelemetrySchema>) => {
+            async (event, eventData: z.infer<typeof inlineSuggestionTelemetrySchema>) => {
+                validateSender(event);
                 return await inlineSuggestionService.trackTelemetry(eventData);
             },
             {
@@ -306,7 +319,8 @@ export const registerProjectIpc = (
         'project:improveLogoPrompt',
         createValidatedIpcHandler(
             'project:improveLogoPrompt',
-            async (_event, prompt: string) => {
+            async (event, prompt: string) => {
+                validateSender(event);
                 return await logoService.improveLogoPrompt(prompt);
             },
             {
@@ -320,7 +334,8 @@ export const registerProjectIpc = (
         'project:uploadLogo',
         createValidatedIpcHandler(
             'project:uploadLogo',
-            async (_event, projectPath: string) => {
+            async (event, projectPath: string) => {
+                validateSender(event);
                 const result = await dialog.showOpenDialog({
                     properties: ['openFile'],
                     filters: [{ name: 'Images', extensions: ['jpg', 'png', 'gif', 'webp', 'svg'] }],
@@ -344,7 +359,8 @@ export const registerProjectIpc = (
         'project:getEnv',
         createValidatedIpcHandler(
             'project:getEnv',
-            async (_event, rootPath: string) => {
+            async (event, rootPath: string) => {
+                validateSender(event);
                 return await projectService.getEnvVars(rootPath);
             },
             {
@@ -358,7 +374,8 @@ export const registerProjectIpc = (
         'project:saveEnv',
         createValidatedIpcHandler(
             'project:saveEnv',
-            async (_event, rootPath: string, vars: Record<string, string>) => {
+            async (event, rootPath: string, vars: Record<string, string>) => {
+                validateSender(event);
                 try {
                     await projectService.saveEnvVars(rootPath, vars);
                     await logDestructiveAction('project.save-env', rootPath, true, {

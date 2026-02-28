@@ -14,7 +14,7 @@ import { LocalAuthServer } from '@main/utils/local-auth-server.util';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { ClaudeQuota, CodexUsage, CopilotQuota, ModelQuotaItem, QuotaInfo, QuotaResponse } from '@shared/types/quota';
 import { AuthenticationError } from '@shared/utils/error.util';
-import { AppErrorCode, getErrorMessage, ProxyServiceError } from '@shared/utils/error.util';
+import { AppErrorCode, getErrorMessage, ProxyServiceError, ValidationError } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { net } from 'electron';
 
@@ -249,7 +249,7 @@ export class ProxyService extends BaseService {
     }
     const config = this.providerRateConfigs.get(provider) ?? this.providerRateConfigs.get('default');
     if (!config) {
-      throw new Error('Default provider rate limit config not found');
+      throw new ProxyServiceError('Default provider rate limit config not found', AppErrorCode.PROXY_INVALID_CONFIG, false);
     }
     return config;
   }
@@ -260,7 +260,7 @@ export class ProxyService extends BaseService {
     }
     const window = this.providerWindows.get(provider);
     if (!window) {
-      throw new Error(`Provider window not found for ${provider}`);
+      throw new ProxyServiceError(`Provider window not found for ${provider}`, AppErrorCode.PROXY_NOT_INITIALIZED, false);
     }
     return window;
   }
@@ -271,7 +271,7 @@ export class ProxyService extends BaseService {
     }
     const queue = this.providerQueues.get(provider);
     if (!queue) {
-      throw new Error(`Provider queue not found for ${provider}`);
+      throw new ProxyServiceError(`Provider queue not found for ${provider}`, AppErrorCode.PROXY_NOT_INITIALIZED, false);
     }
     return queue;
   }
@@ -415,7 +415,7 @@ export class ProxyService extends BaseService {
     this.getProviderStats(provider).blocked += 1;
     const queue = this.getProviderQueue(provider);
     if (queue.length >= cfg.maxQueueSize) {
-      throw new Error(`Rate limit queue full for provider ${provider}`);
+      throw new ProxyServiceError(`Rate limit queue full for provider ${provider}`, AppErrorCode.RATE_LIMIT, false);
     }
 
     await new Promise<void>((resolve, reject) => {
@@ -433,6 +433,7 @@ export class ProxyService extends BaseService {
     return this.buildSnapshot(provider);
   }
 
+  /** Returns rate limit snapshots for all configured providers. @returns Object with generatedAt timestamp and provider snapshots */
   getProviderRateLimitMetrics(): {
     generatedAt: number;
     providers: ProviderRateLimitSnapshot[];
@@ -447,6 +448,7 @@ export class ProxyService extends BaseService {
     };
   }
 
+  /** Returns rate limit configuration for all providers. @returns Map of provider name to config */
   getProviderRateLimitConfig(): Record<string, ProviderRateLimitConfig> {
     const output: Record<string, ProviderRateLimitConfig> = {};
     for (const [provider, config] of this.providerRateConfigs.entries()) {
@@ -455,10 +457,17 @@ export class ProxyService extends BaseService {
     return output;
   }
 
+  /**
+   * Updates rate limit config for a provider.
+   * @param providerRaw - Provider identifier
+   * @param config - Partial config to merge
+   * @returns Merged config
+   * @throws ValidationError if provider is invalid
+   */
   setProviderRateLimitConfig(providerRaw: string, config: Partial<ProviderRateLimitConfig>): ProviderRateLimitConfig {
     const providerError = validateProvider(providerRaw);
     if (providerError) {
-      throw new Error(`setProviderRateLimitConfig: ${providerError}`);
+      throw new ValidationError(`setProviderRateLimitConfig: ${providerError}`);
     }
 
     const provider = this.normalizeProviderForRateLimit(providerRaw);
@@ -477,6 +486,11 @@ export class ProxyService extends BaseService {
 
 
 
+  /**
+   * Initiates GitHub device code OAuth flow.
+   * @param appId - OAuth app to use
+   * @returns Device code response for user authorization
+   */
   async initiateGitHubAuth(appId: 'profile' | 'copilot' = 'profile'): Promise<DeviceCodeResponse> {
     this.eventBus.emitCustom(ProxyTelemetryEvent.AUTH_INITIATED, { provider: 'github', appId });
     await this.waitForRateLimit('github', { priority: 2 });
@@ -510,14 +524,22 @@ export class ProxyService extends BaseService {
     });
   }
 
+  /**
+   * Polls for GitHub OAuth token after device code authorization.
+   * @param deviceCode - Device code from initiateGitHubAuth
+   * @param interval - Poll interval in seconds
+   * @param appId - OAuth app identifier
+   * @returns Token response
+   * @throws ValidationError if inputs invalid
+   */
   async waitForGitHubToken(deviceCode: string, interval: number, appId: 'profile' | 'copilot' = 'profile'): Promise<TokenResponse> {
     const codeError = validateToken(deviceCode, 'Device code');
     if (codeError) {
-      throw new Error(`waitForGitHubToken: ${codeError}`);
+      throw new ValidationError(`waitForGitHubToken: ${codeError}`);
     }
     const intervalError = validateInterval(interval);
     if (intervalError) {
-      throw new Error(`waitForGitHubToken: ${intervalError}`);
+      throw new ValidationError(`waitForGitHubToken: ${intervalError}`);
     }
 
     await this.waitForRateLimit('github', { priority: 3 });
@@ -549,6 +571,7 @@ export class ProxyService extends BaseService {
     });
   }
 
+  /** Starts Antigravity Google OAuth flow. @returns Auth URL and state parameter */
   async getAntigravityAuthUrl(): Promise<{ url: string, state: string }> {
     return this.startGoogleAuth('antigravity');
   }
@@ -596,6 +619,7 @@ export class ProxyService extends BaseService {
     );
   }
 
+  /** Starts Claude/Anthropic OAuth flow. @returns Auth URL and state parameter */
   async getAnthropicAuthUrl(): Promise<{ url: string; state: string }> {
     // Use TypeScript LocalAuthServer to avoid terminal spam from Go proxy's browser automation
     return this.startClaudeAuth();
@@ -627,6 +651,7 @@ export class ProxyService extends BaseService {
     );
   }
 
+  /** Gets Codex authentication URL from proxy. @returns Proxy request response with auth URL */
   async getCodexAuthUrl(): Promise<ProxyRequestResponse> {
     const response = await this.makeRequest(
       '/v0/management/codex-auth-url?is_webui=true',
@@ -641,6 +666,12 @@ export class ProxyService extends BaseService {
 
 
 
+  /**
+   * Starts the embedded proxy process.
+   * @param options - Optional port configuration
+   * @returns Proxy status
+   * @throws on invalid port
+   */
   async startEmbeddedProxy(options?: { port?: number }): Promise<ProxyEmbedStatus> {
     const start = performance.now();
     if (options?.port !== undefined) {
@@ -664,6 +695,7 @@ export class ProxyService extends BaseService {
     return status;
   }
 
+  /** Stops the embedded proxy process. @throws ProxyServiceError on failure */
   async stopEmbeddedProxy(): Promise<void> {
     const start = performance.now();
     try {
@@ -682,6 +714,7 @@ export class ProxyService extends BaseService {
     this.eventBus.emitCustom(ProxyTelemetryEvent.PROXY_STOPPED, { elapsedMs: elapsed });
   }
 
+  /** Returns current embedded proxy running status. @returns Proxy embed status */
   getEmbeddedProxyStatus(): ProxyEmbedStatus {
     const status = this.processManager.getStatus();
     if (status.running && status.port) { this.currentPort = status.port; }
@@ -689,6 +722,11 @@ export class ProxyService extends BaseService {
     return status;
   }
 
+  /**
+   * Generates proxy configuration file.
+   * @param port - Port number
+   * @throws ProxyServiceError on invalid port
+   */
   async generateConfig(port?: number): Promise<void> {
     const start = performance.now();
     const effectivePort = port ?? this.currentPort;
@@ -708,32 +746,39 @@ export class ProxyService extends BaseService {
     }
   }
 
+  /** Fetches quota information for all linked accounts. @returns Quota data or null */
   async getQuota(): Promise<{ accounts: Array<QuotaResponse & { accountId?: string; email?: string }> } | null> {
     const quota = await this.quotaService.getQuota(this.currentPort, await this.getProxyKey());
     if (!quota) { return null; }
     return quota;
   }
 
+  /** Fetches Codex usage data for linked accounts. */
   async getCodexUsage(): Promise<{ accounts: Array<{ usage: CodexUsage | { error: string }; accountId?: string; email?: string }> }> {
     return this.quotaService.getCodexUsage();
   }
 
+  /** Fetches available Antigravity models. */
   async getAntigravityAvailableModels(): Promise<ModelQuotaItem[]> {
     return this.quotaService.getAntigravityAvailableModels();
   }
 
+  /** Fetches legacy quota information. */
   async getLegacyQuota(): Promise<{ success: boolean; authExpired?: boolean; data?: JsonObject } & Partial<QuotaResponse>> {
     return this.quotaService.getLegacyQuota();
   }
 
+  /** Fetches Copilot quota for linked accounts. */
   async getCopilotQuota(): Promise<{ accounts: Array<CopilotQuota & { accountId?: string; email?: string }> }> {
     return this.quotaService.getCopilotQuota();
   }
 
+  /** Fetches Claude quota for linked accounts. */
   async getClaudeQuota(): Promise<{ accounts: Array<ClaudeQuota> }> {
     return this.quotaService.getClaudeQuota();
   }
 
+  /** Fetches and merges model data from all providers. @returns Aggregated model response */
   async getModels(): Promise<ProxyModelResponse> {
     const start = performance.now();
     const apiKey = await this.getProxyKey();
@@ -1049,6 +1094,7 @@ export class ProxyService extends BaseService {
     return key;
   }
 
+  /** Returns the proxy API key, generating one if needed. @returns Proxy API key string */
   async getProxyKey(): Promise<string> { return await this.ensureProxyKey(); }
 
   private async ensureAuthStoreKey(): Promise<string> {
@@ -1107,6 +1153,11 @@ export class ProxyService extends BaseService {
     });
   }
 
+  /**
+   * Fetches GitHub user profile using access token.
+   * @param accessToken - GitHub OAuth token
+   * @returns Profile with email, name, avatar, login
+   */
   async fetchGitHubProfile(accessToken: string): Promise<{ email?: string; displayName?: string; avatarUrl?: string; login?: string }> {
     const tokenError = validateToken(accessToken, 'Access token');
     if (tokenError) {
@@ -1156,6 +1207,11 @@ export class ProxyService extends BaseService {
     });
   }
 
+  /**
+   * Fetches primary verified email from GitHub.
+   * @param accessToken - GitHub OAuth token
+   * @returns Primary email or undefined
+   */
   async fetchGitHubEmails(accessToken: string): Promise<string | undefined> {
     const tokenError = validateToken(accessToken, 'Access token');
     if (tokenError) {

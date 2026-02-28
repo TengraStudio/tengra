@@ -1979,8 +1979,49 @@
 
 /* --- RTL (Right-to-Left) UTILITIES --- */
 [dir='rtl'] {
+    direction: rtl;
     text-align: right;
 }
+
+/* Convert physical margin/padding to logical properties for key layout areas */
+[dir='rtl'] .ml-auto { margin-left: unset; margin-right: auto; }
+[dir='rtl'] .mr-auto { margin-right: unset; margin-left: auto; }
+
+/* Sidebar, header, main content logical property overrides */
+[dir='rtl'] .pl-sidebar, [dir='rtl'] .sidebar-offset { padding-left: unset; padding-inline-start: var(--sidebar-width, 260px); }
+[dir='rtl'] .border-l { border-left: unset; border-inline-start: 1px solid hsl(var(--border)); }
+[dir='rtl'] .border-r { border-right: unset; border-inline-end: 1px solid hsl(var(--border)); }
+
+/* Flip common directional spacing utilities under RTL */
+[dir='rtl'] .space-x-1 > :not([hidden]) ~ :not([hidden]) { --tw-space-x-reverse: 1; }
+[dir='rtl'] .space-x-2 > :not([hidden]) ~ :not([hidden]) { --tw-space-x-reverse: 1; }
+[dir='rtl'] .space-x-3 > :not([hidden]) ~ :not([hidden]) { --tw-space-x-reverse: 1; }
+[dir='rtl'] .space-x-4 > :not([hidden]) ~ :not([hidden]) { --tw-space-x-reverse: 1; }
+
+/* Flip flexbox row direction for RTL */
+[dir='rtl'] .flex-row { flex-direction: row-reverse; }
+[dir='rtl'] .flex-row-reverse { flex-direction: row; }
+
+/* Flip text alignment */
+[dir='rtl'] .text-left { text-align: right; }
+[dir='rtl'] .text-right { text-align: left; }
+
+/* Flip absolute/fixed positioned elements */
+[dir='rtl'] .left-0 { left: unset; right: 0; }
+[dir='rtl'] .right-0 { right: unset; left: 0; }
+[dir='rtl'] .right-2 { right: unset; left: 0.5rem; }
+[dir='rtl'] .left-2 { left: unset; right: 0.5rem; }
+
+/* Flip directional margin utilities used in sidebar indentation */
+[dir='rtl'] .ml-2 { margin-left: unset; margin-right: 0.5rem; }
+[dir='rtl'] .ml-3 { margin-left: unset; margin-right: 0.75rem; }
+[dir='rtl'] .mr-2 { margin-right: unset; margin-left: 0.5rem; }
+
+/* Flip directional padding utilities used in sidebar/search inputs */
+[dir='rtl'] .pl-2 { padding-left: unset; padding-right: 0.5rem; }
+[dir='rtl'] .pl-7 { padding-left: unset; padding-right: 1.75rem; }
+[dir='rtl'] .pl-8 { padding-left: unset; padding-right: 2rem; }
+[dir='rtl'] .pr-3 { padding-right: unset; padding-left: 0.75rem; }
 
 /* Flip animations for RTL */
 [dir='rtl'] .animate-slide-in {

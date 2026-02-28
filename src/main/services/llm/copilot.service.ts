@@ -1,7 +1,9 @@
 import { randomUUID } from 'crypto';
 
+import { CircuitBreaker } from '@main/core/circuit-breaker';
 import { BaseService } from '@main/services/base.service';
 import { AuthService } from '@main/services/security/auth.service';
+import { CACHE_TTL, OPERATION_TIMEOUTS, RETRY_TIMEOUTS } from '@shared/constants/timeouts';
 import { Message, ToolCall, ToolDefinition } from '@shared/types/chat';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -111,6 +113,13 @@ export class CopilotService extends BaseService {
     private static readonly MAX_QUEUED_REQUESTS = 30;
     private static readonly LOW_REMAINING_WARNING_THRESHOLD = 25;
 
+    /** Circuit breaker for Copilot API calls */
+    private circuitBreaker = new CircuitBreaker({
+        failureThreshold: 5,
+        resetTimeoutMs: 60000,
+        serviceName: 'CopilotAPI'
+    });
+
     constructor(
         private authService?: AuthService,
         private notificationService?: { showNotification: (t: string, b: string, silent?: boolean) => void }
@@ -122,10 +131,10 @@ export class CopilotService extends BaseService {
         this.logInfo('Initializing Copilot service...');
 
         // Delay VSCode version fetch to avoid startup rate limiting
-        setTimeout(() => { void this.fetchVsCodeVersion(); }, 5000);
+        setTimeout(() => { void this.fetchVsCodeVersion(); }, RETRY_TIMEOUTS.VSCODE_FETCH_DELAY);
 
         // Start monitoring after initial delay
-        setTimeout(() => { void this.startRateLimitMonitoring(); }, 10000);
+        setTimeout(() => { void this.startRateLimitMonitoring(); }, CACHE_TTL.RATE_LIMIT_MONITOR);
 
         this.logInfo('Copilot service initialized successfully');
     }
@@ -312,7 +321,7 @@ export class CopilotService extends BaseService {
     private async fetchVsCodeVersion() {
         try {
             const controller = new AbortController();
-            const timeout = setTimeout(() => { controller.abort(); }, 2000);
+            const timeout = setTimeout(() => { controller.abort(); }, OPERATION_TIMEOUTS.CONNECTIVITY_CHECK);
             const response = await fetch('https://raw.githubusercontent.com/microsoft/vscode/main/package.json', { signal: controller.signal });
             const packageJson = safeJsonParse<{ version: string }>(await response.text(), { version: FALLBACK_VSCODE_VERSION });
             if (packageJson.version) {
@@ -951,11 +960,13 @@ export class CopilotService extends BaseService {
 
             const { headers, payload, finalModel } = await this.prepareChatRequest(messages, model, stream, tools);
 
-            const response = await fetch(`${this.getBaseUrl()}/chat/completions`, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify(payload)
-            });
+            const response = await this.circuitBreaker.execute(() =>
+                fetch(`${this.getBaseUrl()}/chat/completions`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(payload)
+                })
+            );
 
             if (!response.ok) {
                 return this.handleCopilotError({ response, finalModel, messages, headers, payload, stream, tools });

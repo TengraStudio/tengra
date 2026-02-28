@@ -275,8 +275,8 @@
 - (x) **PERF-012**: ThemeContext incomplete useCallback deps — `src/renderer/context/ThemeContext.tsx` — Missing `theme` dependency. *(Verified: deps already correct.)*
 - (x) **PERF-013**: useAppInitialization missing cleanup — `src/renderer/hooks/useAppInitialization.ts` — window.TengraSpeak never removed.
 - (x) **PERF-014**: notification-center.store dismissTimers leak — `src/renderer/store/notification-center.store.ts` — Maps persist without cleanup. *(Verified: timers already cleaned up properly.)*
-- (x) **PERF-015**: VoiceOverlay eagerly imported — `src/renderer/App.tsx` — Should use React.lazy().
-- (x) **PERF-016**: Settings tabs not lazy-loaded — `src/renderer/features/settings/SettingsPage.tsx` — All panels loaded upfront.
+- [x] **PERF-015**: VoiceOverlay optimized — `src/renderer/App.tsx` — Now uses React.lazy() to defer component loading.
+- [x] **PERF-016**: Settings tabs lazy-loaded — `src/renderer/features/settings/SettingsPage.tsx` — Improved navigation speed and memory usage by only rendering the active tab.
 - ( ) **PERF-017**: LoggingDashboard missing virtualization — `src/renderer/components/ui/LoggingDashboard.tsx` — 500+ entries rendered.
 - ( ) **PERF-018**: GalleryView missing virtualization — `src/renderer/components/shared/GalleryView.tsx` — 100+ images in DOM.
 - (x) **PERF-019**: MarkdownRenderer DOMPurify in render path — `src/renderer/features/chat/components/MarkdownRenderer.tsx` — Already memoized via useEffect.

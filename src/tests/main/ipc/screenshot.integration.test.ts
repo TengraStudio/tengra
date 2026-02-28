@@ -73,7 +73,7 @@ describe('Screenshot IPC Handlers', () => {
         ]);
         
         // Register handlers
-        registerScreenshotIpc();
+        registerScreenshotIpc(() => null);
     });
 
     describe('screenshot:capture', () => {

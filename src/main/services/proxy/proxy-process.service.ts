@@ -12,6 +12,7 @@ import { validatePort } from '@main/services/proxy/proxy-validation.util';
 import { AuthService } from '@main/services/security/auth.service';
 import { AuthAPIService } from '@main/services/security/auth-api.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { OPERATION_TIMEOUTS } from '@shared/constants/timeouts';
 import { JsonObject } from '@shared/types/common';
 import { AppErrorCode, getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
@@ -87,7 +88,7 @@ export class ProxyProcessManager {
                 'Proxy',
                 `Port ${this.currentPort} is still busy after kill. Retrying in 1s...`
             );
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, OPERATION_TIMEOUTS.RETRY_DELAY));
             const stillTaken = await this.isPortBusy(this.currentPort);
             if (stillTaken) {
                 appLogger.error(
@@ -281,14 +282,16 @@ export class ProxyProcessManager {
 
     private async ensureBinary(): Promise<string> {
         const binaryPath = this.getBinaryPath();
-        if (fs.existsSync(binaryPath) && !this.shouldRebuild(binaryPath)) {
+        const binaryExists = await fs.promises.access(binaryPath, fs.constants.F_OK).then(() => true).catch(() => false);
+        if (binaryExists && !await this.shouldRebuild(binaryPath)) {
             return binaryPath;
         }
 
         const sourceDir = this.getSourceDir();
-        if (!fs.existsSync(sourceDir)) {
+        const sourceDirExists = await fs.promises.access(sourceDir, fs.constants.F_OK).then(() => true).catch(() => false);
+        if (!sourceDirExists) {
             appLogger.error('Proxy', `Source directory not found: ${sourceDir}`);
-            if (fs.existsSync(binaryPath)) {
+            if (binaryExists) {
                 return binaryPath;
             }
             throw new Error(`Proxy source not found and binary missing: ${sourceDir}`);
@@ -315,42 +318,48 @@ export class ProxyProcessManager {
 
         // Ensure resources/bin exists
         const binDir = path.dirname(binaryPath);
-        if (!fs.existsSync(binDir)) {
-            fs.mkdirSync(binDir, { recursive: true });
+        const binDirExists = await fs.promises.access(binDir, fs.constants.F_OK).then(() => true).catch(() => false);
+        if (!binDirExists) {
+            await fs.promises.mkdir(binDir, { recursive: true });
         }
 
         // Move/Copy binary from source dir to resources/bin
         const builtBinary = path.join(sourceDir, path.basename(binaryPath));
-        if (fs.existsSync(builtBinary)) {
-            fs.copyFileSync(builtBinary, binaryPath);
+        const builtExists = await fs.promises.access(builtBinary, fs.constants.F_OK).then(() => true).catch(() => false);
+        if (builtExists) {
+            await fs.promises.copyFile(builtBinary, binaryPath);
             appLogger.info('Proxy', `Binary built and copied to: ${binaryPath}`);
         }
 
-        if (!fs.existsSync(binaryPath)) {
+        const finalExists = await fs.promises.access(binaryPath, fs.constants.F_OK).then(() => true).catch(() => false);
+        if (!finalExists) {
             throw new Error('Failed to build embed binary');
         }
         return binaryPath;
     }
 
-    private shouldRebuild(binaryPath: string): boolean {
-        if (!fs.existsSync(binaryPath)) {
-            return true;
-        }
+    private async shouldRebuild(binaryPath: string): Promise<boolean> {
         try {
-            const binaryMtime = fs.statSync(binaryPath).mtimeMs;
+            const binaryStat = await fs.promises.stat(binaryPath);
+            const binaryMtime = binaryStat.mtimeMs;
             const sourceDir = this.getSourceDir();
-            if (!fs.existsSync(sourceDir)) {
+            const sourceDirExists = await fs.promises.access(sourceDir, fs.constants.F_OK).then(() => true).catch(() => false);
+            if (!sourceDirExists) {
                 return false;
             }
 
             const inputs = this.collectBuildInputs(sourceDir);
-            return inputs.some((file) => {
+            for (const file of inputs) {
                 try {
-                    return fs.statSync(file).mtimeMs > binaryMtime;
+                    const stat = await fs.promises.stat(file);
+                    if (stat.mtimeMs > binaryMtime) {
+                        return true;
+                    }
                 } catch {
-                    return false;
+                    // skip inaccessible files
                 }
-            });
+            }
+            return false;
         } catch (e) {
             appLogger.debug('Proxy', `shouldRebuild check failed: ${getErrorMessage(e)}`);
             return false;

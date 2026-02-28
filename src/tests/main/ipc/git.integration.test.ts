@@ -201,7 +201,7 @@ describe('Git IPC Integration', () => {
         fsPromisesMock.chmod.mockResolvedValue(undefined);
         fsPromisesMock.writeFile.mockResolvedValue(undefined);
 
-        registerGitIpc(mockGitService);
+        registerGitIpc(() => null, mockGitService);
     });
 
     it('registers advanced Git handlers', () => {

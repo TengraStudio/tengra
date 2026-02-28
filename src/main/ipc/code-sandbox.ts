@@ -1,7 +1,7 @@
 import { spawn } from 'child_process';
 import vm from 'vm';
 
-import { createMainWindowSenderValidator, SenderValidator } from '@main/ipc/sender-validator';
+import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { withRetry } from '@main/utils/ipc-retry.util';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
@@ -364,7 +364,7 @@ const executeJavascriptSandbox = async (
 
     try {
         const script = new vm.Script(code, { filename: `sandbox.${language === 'typescript' ? 'ts' : 'js'}` });
-        const executionResult = script.runInContext(context, { timeout: timeoutMs, microtaskMode: 'afterEvaluate' });
+        const executionResult = script.runInContext(context, { timeout: timeoutMs });
         const resultText = executionResult === undefined ? undefined : String(executionResult);
         return {
             success: true,

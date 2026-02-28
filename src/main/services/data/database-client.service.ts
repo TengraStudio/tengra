@@ -15,6 +15,7 @@ import * as path from 'path';
 import { BaseService } from '@main/services/base.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
+import { OPERATION_TIMEOUTS } from '@shared/constants/timeouts';
 import {
     DbApiResponse,
     DbChat,
@@ -275,7 +276,7 @@ export class DatabaseClientService extends BaseService {
     private isPortOpen(port: number): Promise<boolean> {
         return new Promise(resolve => {
             const socket = new net.Socket();
-            socket.setTimeout(200);
+            socket.setTimeout(OPERATION_TIMEOUTS.PORT_CHECK_FAST);
             socket.on('connect', () => {
                 socket.destroy();
                 resolve(true);

@@ -125,6 +125,22 @@ export const commandSchema = z.string().min(1).max(1024);
 export const commandArgsSchema = z.array(z.string()).optional();
 export const cwdSchema = z.string().optional();
 
+// --- Auth Extended Schemas ---
+
+export const appIdSchema = z.enum(['profile', 'copilot']).optional().default('copilot');
+export const deviceCodeSchema = z.string().min(1).max(512);
+export const pollIntervalSchema = z.number().int().min(1).max(60);
+export const revokeAccountOptionsSchema = z.object({
+    revokeAccess: z.boolean().optional(),
+    revokeRefresh: z.boolean().optional(),
+    revokeSession: z.boolean().optional()
+}).optional();
+
+// --- Key Rotation Schemas ---
+
+export const keyRotationProviderSchema = z.string().trim().min(1).max(64).regex(/^[a-zA-Z0-9_-]+$/, 'Provider must be alphanumeric with hyphens/underscores');
+export const keyRotationKeysSchema = z.string().trim().min(1).max(4096);
+
 // --- Proxy Schemas ---
 
 export const sessionKeySchema = z.string().min(1).max(512);

@@ -74,19 +74,20 @@ export async function registerAllIpc(
     registerWindowIpc(getWin, allowedFileRoots);
     registerLazyServicesIpc();
     registerContractIpc();
-    registerCodeSandboxIpc();
+    registerCodeSandboxIpc(getWin);
     registerProcessIpc(getWin, services.processService);
     setupProcessEvents(services.processService);
     registerLoggingIpc();
     registerDialogIpc(getWin);
     registerHealthIpc(services.healthCheckService);
     registerMigrationIpc(services.databaseService);
-    registerScreenshotIpc();
+    registerScreenshotIpc(getWin);
 
     // UI & Navigation
     registerGalleryIpc(services.dataService.getPath('gallery'));
-    registerExportIpc(services.exportService);
+    registerExportIpc(getWin, services.exportService);
     registerSettingsIpc({
+        getMainWindow: getWin,
         settingsService: services.settingsService,
         llmService: services.llmService,
         copilotService: services.copilotService,
@@ -143,6 +144,7 @@ export async function registerAllIpc(
         services.proxyService
     );
     registerChatIpc({
+        getMainWindow: getWin,
         settingsService: services.settingsService,
         copilotService: services.copilotService,
         llmService: services.llmService,
@@ -152,6 +154,7 @@ export async function registerAllIpc(
         databaseService: services.databaseService,
     });
     registerOllamaIpc({
+        getMainWindow: getWin,
         localAIService: services.localAIService,
         settingsService: services.settingsService,
         llmService: services.llmService,
@@ -160,12 +163,12 @@ export async function registerAllIpc(
         proxyService: services.proxyService,
         rateLimitService: services.rateLimitService,
     });
-    registerLlamaIpc(services.llamaService);
+    registerLlamaIpc(getWin, services.llamaService);
     registerHFModelIpc(services.llmService, services.huggingFaceService);
     registerTokenEstimationIpc();
     registerVoiceIpc();
-    registerKeyRotationIpc(services.keyRotationService);
-    registerCollaborationIpc(services.modelCollaborationService);
+    registerKeyRotationIpc(getWin, services.keyRotationService);
+    registerCollaborationIpc(getWin, services.modelCollaborationService);
     registerMultiModelIpc(services.multiModelComparisonService);
     registerSdCppIpc(services.localImageService);
     registerMarketplaceIpc({
@@ -184,12 +187,12 @@ export async function registerAllIpc(
         databaseService: services.databaseService,
         auditLogService: services.auditLogService,
     });
-    registerAgentIpc(services.agentService);
+    registerAgentIpc(getWin, services.agentService);
     registerCodeIntelligenceIpc(services.codeIntelligenceService);
-    registerMemoryIpc(services.memoryService);
-    registerBrainIpcHandlers(services.brainService);
-    registerGitIpc(services.gitService);
-    registerPromptTemplatesIpc(services.promptTemplatesService);
+    registerMemoryIpc(getWin, services.memoryService);
+    registerBrainIpcHandlers(getWin, services.brainService);
+    registerGitIpc(getWin, services.gitService);
+    registerPromptTemplatesIpc(getWin, services.promptTemplatesService);
 
     registerTerminalIpc(
         getWin,
@@ -200,12 +203,12 @@ export async function registerAllIpc(
     );
 
     // External Integrations
-    registerToolsIpc(toolExecutor, services.commandService);
+    registerToolsIpc(getWin, toolExecutor, services.commandService);
     registerMcpIpc(mcpDispatcher, getWin);
 
 
     // Backup & Restore
-    registerBackupIpc(services.backupService);
+    registerBackupIpc(getWin, services.backupService);
 
     // IPC Batching
     registerBatchIpc();

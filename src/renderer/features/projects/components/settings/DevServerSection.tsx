@@ -1,4 +1,4 @@
-import { Play } from 'lucide-react';
+﻿import { Play } from 'lucide-react';
 import React from 'react';
 
 import { SettingsSectionProps } from './types';
@@ -20,7 +20,7 @@ export const DevServerSection: React.FC<SettingsSectionProps> = ({ formData, set
                         value={formData.devCommand}
                         onChange={e => setFormData(prev => ({ ...prev, devCommand: e.target.value }))}
                         className="w-full bg-muted/30 border border-border/50 rounded-lg py-2 pl-9 pr-4 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
-                        placeholder="npm run dev"
+                        placeholder={t('placeholder.devCommand')}
                     />
                 </div>
             </div>
@@ -33,7 +33,7 @@ export const DevServerSection: React.FC<SettingsSectionProps> = ({ formData, set
                         value={formData.devPort}
                         onChange={e => setFormData(prev => ({ ...prev, devPort: parseInt(e.target.value) || 3000 }))}
                         className="w-full bg-muted/30 border border-border/50 rounded-lg py-2 px-4 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
-                        placeholder="3000"
+                        placeholder={t('placeholder.portNumber')}
                     />
                 </div>
                 <div className="space-y-2 flex items-center pt-8">

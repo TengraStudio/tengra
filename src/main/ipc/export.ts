@@ -1,7 +1,8 @@
 import { appLogger } from '@main/logging/logger';
+import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { ExportService } from '@main/services/export/export.service';
 import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { ipcMain, IpcMainInvokeEvent } from 'electron';
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 
 /** Maximum content size for export (50MB) */
 const MAX_CONTENT_SIZE = 50 * 1024 * 1024;
@@ -30,14 +31,16 @@ function validateExportInput(content: unknown, filePath: unknown): { content: st
 /**
  * Registers IPC handlers for file export operations
  */
-export function registerExportIpc(exportService: ExportService): void {
+export function registerExportIpc(getMainWindow: () => BrowserWindow | null, exportService: ExportService): void {
     appLogger.info('ExportIPC', 'Registering export IPC handlers');
+    const validateSender = createMainWindowSenderValidator(getMainWindow, 'export operation');
 
     ipcMain.handle(
         'export:markdown',
         createIpcHandler(
             'export:markdown',
-            async (_event: IpcMainInvokeEvent, contentRaw: unknown, filePathRaw: unknown) => {
+            async (event: IpcMainInvokeEvent, contentRaw: unknown, filePathRaw: unknown) => {
+                validateSender(event);
                 const validated = validateExportInput(contentRaw, filePathRaw);
                 if (!validated) {
                     throw new Error('Invalid export parameters');
@@ -51,7 +54,8 @@ export function registerExportIpc(exportService: ExportService): void {
         'export:pdf',
         createIpcHandler(
             'export:pdf',
-            async (_event: IpcMainInvokeEvent, htmlContentRaw: unknown, filePathRaw: unknown) => {
+            async (event: IpcMainInvokeEvent, htmlContentRaw: unknown, filePathRaw: unknown) => {
+                validateSender(event);
                 const validated = validateExportInput(htmlContentRaw, filePathRaw);
                 if (!validated) {
                     throw new Error('Invalid export parameters');

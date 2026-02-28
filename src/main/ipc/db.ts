@@ -1,12 +1,13 @@
 import { appLogger } from '@main/logging/logger';
 import { AuditLogService } from '@main/services/analysis/audit-log.service';
-import { Chat as DbChat, DatabaseService, SearchChatsOptions as DbSearchOptions } from '@main/services/data/database.service';
+import { Chat as DbChat, DatabaseService, Folder as DbFolder, Prompt as DbPrompt, SearchChatsOptions as DbSearchOptions } from '@main/services/data/database.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { serializeToIpc, validatedAs, validatedToJsonObject } from '@main/utils/ipc-serializer.util';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
 import { Chat, Folder, Message, Prompt } from '@shared/types/chat';
-import { IpcValue, JsonObject } from '@shared/types/common';
+import { JsonObject } from '@shared/types/common';
 import { DbTokenStats } from '@shared/types/db-api';
 import { Project } from '@shared/types/project';
 import { BrowserWindow, ipcMain, IpcMainEvent, IpcMainInvokeEvent } from 'electron';
@@ -133,12 +134,12 @@ export function registerDbIpc(
 function registerBatchHandlers(databaseService: DatabaseService, validateSender: SenderValidator) {
     registerBatchableHandler('db:getAllChats', createValidatedIpcHandler('db:getAllChats', async (event) => {
         validateSender(event);
-        return (await databaseService.chats.getAllChats()) as unknown as IpcValue;
+        return serializeToIpc(await databaseService.chats.getAllChats());
     }, { defaultValue: [] }));
 
     registerBatchableHandler('db:getChatById', createValidatedIpcHandler('db:getChatById', async (event, id: string) => {
         validateSender(event);
-        return (await databaseService.chats.getChat(id)) as unknown as IpcValue;
+        return serializeToIpc(await databaseService.chats.getChat(id));
     }, {
         defaultValue: null,
         argsSchema: z.tuple([IdSchema])
@@ -146,7 +147,7 @@ function registerBatchHandlers(databaseService: DatabaseService, validateSender:
 
     registerBatchableHandler('db:getMessages', createValidatedIpcHandler('db:getMessages', async (event, chatId: string) => {
         validateSender(event);
-        return (await databaseService.chats.getMessages(chatId)) as unknown as IpcValue;
+        return serializeToIpc(await databaseService.chats.getMessages(chatId));
     }, {
         defaultValue: [],
         argsSchema: z.tuple([IdSchema])
@@ -154,7 +155,7 @@ function registerBatchHandlers(databaseService: DatabaseService, validateSender:
 
     registerBatchableHandler('db:updateChat', createValidatedIpcHandler('db:updateChat', async (event, chatId: string, updates: Partial<Chat>) => {
         validateSender(event);
-        return await withRateLimit('db', () => databaseService.chats.updateChat(chatId, updates as unknown as JsonObject));
+        return await withRateLimit('db', () => databaseService.chats.updateChat(chatId, validatedAs<Partial<DbChat>>({ ...updates })));
     }, {
         defaultValue: { success: false },
         argsSchema: z.tuple([IdSchema, z.record(z.string(), z.unknown())])
@@ -171,7 +172,7 @@ function registerBatchHandlers(databaseService: DatabaseService, validateSender:
 
     registerBatchableHandler('db:addMessage', createValidatedIpcHandler('db:addMessage', async (event, message: Message) => {
         validateSender(event);
-        const result = await withRateLimit('db', () => databaseService.chats.addMessage(message as unknown as JsonObject));
+        const result = await withRateLimit('db', () => databaseService.chats.addMessage(validatedToJsonObject({ ...message })));
         return result;
     }, {
         defaultValue: { success: false, id: '' },
@@ -185,7 +186,7 @@ function registerBatchHandlers(databaseService: DatabaseService, validateSender:
 function registerChatHandlers(databaseService: DatabaseService, validateSender: SenderValidator, _auditLogService?: AuditLogService) {
     ipcMain.handle('db:createChat', createValidatedIpcHandler('db:createChat', async (event, chat: Chat) => {
         validateSender(event);
-        return await withRateLimit('db', () => databaseService.chats.createChat(chat as unknown as DbChat));
+        return await withRateLimit('db', () => databaseService.chats.createChat(validatedAs<DbChat>({ ...chat })));
     }, {
         defaultValue: null,
         argsSchema: z.tuple([ChatSchema])
@@ -211,7 +212,7 @@ function registerChatHandlers(databaseService: DatabaseService, validateSender: 
 
     ipcMain.handle('db:archiveChat', createValidatedIpcHandler('db:archiveChat', async (event, id: string, isArchived: boolean) => {
         validateSender(event);
-        await databaseService.chats.updateChat(id, { metadata: { isArchived } } as unknown as JsonObject);
+        await databaseService.chats.updateChat(id, validatedAs<Partial<DbChat>>({ metadata: { isArchived } }));
         return { success: true };
     }, {
         defaultValue: { success: false },
@@ -356,7 +357,7 @@ function registerFolderHandlers(databaseService: DatabaseService, validateSender
 
     ipcMain.handle('db:updateFolder', createValidatedIpcHandler('db:updateFolder', async (event, id: string, updates: Partial<Folder>) => {
         validateSender(event);
-        return await withRateLimit('db', () => databaseService.system.updateFolder(id, updates as unknown as JsonObject));
+        return await withRateLimit('db', () => databaseService.system.updateFolder(id, validatedAs<Partial<DbFolder>>({ ...updates })));
     }, {
         defaultValue: null,
         argsSchema: z.tuple([IdSchema, z.record(z.string(), z.unknown())])
@@ -373,7 +374,7 @@ function registerFolderHandlers(databaseService: DatabaseService, validateSender
 
     ipcMain.handle('db:moveChatToFolder', createValidatedIpcHandler('db:moveChatToFolder', async (event, chatId: string, folderId: string | null) => {
         validateSender(event);
-        await databaseService.chats.updateChat(chatId, { folderId: folderId ?? undefined } as unknown as JsonObject);
+        await databaseService.chats.updateChat(chatId, validatedAs<Partial<DbChat>>({ folderId: folderId ?? undefined }));
         return { success: true };
     }, {
         defaultValue: { success: false },
@@ -450,7 +451,7 @@ function registerPromptHandlers(databaseService: DatabaseService, validateSender
 
     ipcMain.handle('db:updatePrompt', createValidatedIpcHandler('db:updatePrompt', async (event, id: string, updates: Partial<Prompt>) => {
         validateSender(event);
-        return await withRateLimit('db', () => databaseService.system.updatePrompt(id, updates as unknown as JsonObject));
+        return await withRateLimit('db', () => databaseService.system.updatePrompt(id, validatedAs<Partial<DbPrompt>>({ ...updates })));
     }, {
         defaultValue: null,
         argsSchema: z.tuple([IdSchema, z.record(z.string(), z.unknown())])

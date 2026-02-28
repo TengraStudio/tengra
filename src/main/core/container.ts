@@ -1,4 +1,5 @@
 import { appLogger } from '@main/logging/logger';
+import { OPERATION_TIMEOUTS } from '@shared/constants/timeouts';
 import { getErrorMessage, ValidationError } from '@shared/utils/error.util';
 
 
@@ -39,6 +40,8 @@ interface ServiceDefinition<T extends ServiceValue> {
 export class Container {
     private services: Map<string, ServiceDefinition<ServiceValue>> = new Map();
     private initialized = false;
+    private deferredServices: Set<string> = new Set();
+    private deferredInitialized = false;
 
     /**
      * Register a service factory.
@@ -122,8 +125,12 @@ export class Container {
             }
         }
 
-        // Run initialize() on them
+        // Run initialize() on them (skip deferred services)
         for (const def of singletons) {
+            if (this.deferredServices.has(def.name)) {
+                appLogger.info('Container', `Deferring initialization of ${def.name}`);
+                continue;
+            }
             // Cast to LifecycleAware to check for optional initialize() method
             const instance = def.instance as LifecycleAware;
             if (typeof instance.initialize === 'function') {
@@ -157,10 +164,9 @@ export class Container {
                     appLogger.info('Container', `Cleaning up ${def.name}...`);
                     const start = Date.now();
 
-                    // 2s timeout per service cleanup
                     await Promise.race([
                         instance.cleanup(),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('Cleanup timed out')), 2000))
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('Cleanup timed out')), OPERATION_TIMEOUTS.SERVICE_CLEANUP))
                     ]);
 
                     appLogger.info('Container', `Cleaned up ${def.name} in ${Date.now() - start}ms`);
@@ -184,6 +190,42 @@ export class Container {
                 { originalError: error instanceof Error ? error : String(error) }
             );
         }
+    }
+
+    /**
+     * Mark service names as deferred so their initialize() runs in initDeferred() instead of init().
+     * @param names - Service names to defer initialization for
+     */
+    markDeferred(names: string[]): void {
+        for (const name of names) {
+            this.deferredServices.add(name);
+        }
+    }
+
+    /**
+     * Initialize deferred services that were skipped during init().
+     * Should be called after the main window is shown to optimize startup time.
+     */
+    async initDeferred(): Promise<void> {
+        if (this.deferredInitialized) { return; }
+
+        const deferred = Array.from(this.services.values())
+            .filter(def => def.scope === Scope.SINGLETON && this.deferredServices.has(def.name));
+
+        for (const def of deferred) {
+            const instance = def.instance as LifecycleAware;
+            if (typeof instance?.initialize === 'function') {
+                try {
+                    const start = Date.now();
+                    await instance.initialize();
+                    appLogger.info('Container', `Deferred init ${def.name} in ${Date.now() - start}ms`);
+                } catch (error) {
+                    appLogger.error('Container', `Failed deferred init ${def.name}`, error as Error);
+                }
+            }
+        }
+
+        this.deferredInitialized = true;
     }
 
     /**

@@ -44,6 +44,7 @@ import {
     SharedMemorySyncResult,
     SimilarMemoryCandidate
 } from '@shared/types/advanced-memory';
+import { withRetry } from '@main/utils/retry.util';
 import { JsonObject } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
@@ -1868,23 +1869,22 @@ If no facts worth remembering, return [].`;
     }
 
     private async generateEmbeddingWithRetry(content: string): Promise<number[]> {
-        let lastError: Error | null = null;
-        for (let attempt = 1; attempt <= ADVANCED_MEMORY_RETRY_ATTEMPTS; attempt += 1) {
-            try {
-                return await this.embedding.generateEmbedding(content);
-            } catch (caughtError) {
-                const error = caughtError instanceof Error ? caughtError : new Error(String(caughtError));
-                lastError = error;
-                if (attempt >= ADVANCED_MEMORY_RETRY_ATTEMPTS) {
-                    break;
-                }
-                this.operationalAnalytics.retries++;
-                this.operationalAnalytics.lastErrorCode = ADVANCED_MEMORY_ERROR_CODE.transient;
-                appLogger.warn(SERVICE_NAME, `Embedding retry ${attempt}/${ADVANCED_MEMORY_RETRY_ATTEMPTS - 1}: ${error.message}`);
-                await new Promise(resolve => setTimeout(resolve, ADVANCED_MEMORY_RETRY_DELAY_MS));
+        return withRetry(
+            () => this.embedding.generateEmbedding(content),
+            {
+                maxRetries: ADVANCED_MEMORY_RETRY_ATTEMPTS - 1,
+                baseDelayMs: ADVANCED_MEMORY_RETRY_DELAY_MS,
+                maxDelayMs: ADVANCED_MEMORY_RETRY_DELAY_MS,
+                jitterFactor: 0,
+                shouldRetry: () => true,
+                onRetry: (error, attempt) => {
+                    this.operationalAnalytics.retries++;
+                    this.operationalAnalytics.lastErrorCode = ADVANCED_MEMORY_ERROR_CODE.transient;
+                    const message = error instanceof Error ? error.message : String(error);
+                    appLogger.warn(SERVICE_NAME, `Embedding retry ${attempt + 1}/${ADVANCED_MEMORY_RETRY_ATTEMPTS - 1}: ${message}`);
+                },
             }
-        }
-        throw (lastError ?? new Error('Unknown advanced memory embedding failure'));
+        );
     }
 
     private isProjectAllowed(

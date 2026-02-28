@@ -565,7 +565,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
                         <input
                             value={uploadLocalPath}
                             onChange={event => setUploadLocalPath(event.target.value)}
-                            placeholder="C:\\path\\file.txt"
+                            placeholder={t('placeholder.sftpLocalPath')}
                             className="w-full px-1 py-1 border border-border/40 rounded bg-background text-xs"
                         />
                         <button className="secondary-btn text-xs" onClick={() => { void handleUpload(); }}>

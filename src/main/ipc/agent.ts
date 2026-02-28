@@ -2,8 +2,9 @@
  * IPC handlers for Agent Service
  */
 import { AgentService } from '@main/services/llm/agent.service';
+import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { ipcMain } from 'electron';
+import { BrowserWindow, ipcMain } from 'electron';
 import { z } from 'zod';
 
 const agentSchema = z.object({
@@ -43,12 +44,15 @@ type CreateAgentPayload = z.infer<typeof createAgentPayloadSchema>;
 type DeleteAgentOptions = z.infer<typeof deleteAgentOptionsSchema>;
 type Template = z.infer<typeof templateSchema>;
 
-export function registerAgentIpc(agentService: AgentService) {
+export function registerAgentIpc(getMainWindow: () => BrowserWindow | null, agentService: AgentService) {
+    const validateSender = createMainWindowSenderValidator(getMainWindow, 'agent operation');
+
     /**
      * Get all agents
      * Returns an empty array on failure
      */
-    ipcMain.handle('agent:get-all', createValidatedIpcHandler('agent:get-all', async () => {
+    ipcMain.handle('agent:get-all', createValidatedIpcHandler('agent:get-all', async (event) => {
+        validateSender(event);
         return await agentService.getAllAgents();
     }, { defaultValue: [] }));
 
@@ -56,14 +60,16 @@ export function registerAgentIpc(agentService: AgentService) {
      * Get a specific agent by ID
      * Returns null on failure
      */
-    ipcMain.handle('agent:get', createValidatedIpcHandler('agent:get', async (_event, id: string) => {
+    ipcMain.handle('agent:get', createValidatedIpcHandler('agent:get', async (event, id: string) => {
+        validateSender(event);
         return await agentService.getAgent(id);
     }, {
         defaultValue: null,
         argsSchema: z.tuple([z.string()])
     }));
 
-    ipcMain.handle('agent:create', createValidatedIpcHandler('agent:create', async (_event, payload: CreateAgentPayload) => {
+    ipcMain.handle('agent:create', createValidatedIpcHandler('agent:create', async (event, payload: CreateAgentPayload) => {
+        validateSender(event);
         const { agent, options } = payload;
         if (!agent) {
             return { success: false, error: 'Invalid agent payload' };
@@ -82,21 +88,24 @@ export function registerAgentIpc(agentService: AgentService) {
         argsSchema: z.tuple([createAgentPayloadSchema])
     }));
 
-    ipcMain.handle('agent:delete', createValidatedIpcHandler('agent:delete', async (_event, id: string, options?: DeleteAgentOptions) => {
+    ipcMain.handle('agent:delete', createValidatedIpcHandler('agent:delete', async (event, id: string, options?: DeleteAgentOptions) => {
+        validateSender(event);
         return await agentService.deleteAgent(id, options ?? { confirm: false });
     }, {
         defaultValue: { success: false, error: 'delete failed' },
         argsSchema: z.tuple([z.string(), deleteAgentOptionsSchema])
     }));
 
-    ipcMain.handle('agent:clone', createValidatedIpcHandler('agent:clone', async (_event, id: string, newName?: string) => {
+    ipcMain.handle('agent:clone', createValidatedIpcHandler('agent:clone', async (event, id: string, newName?: string) => {
+        validateSender(event);
         return await agentService.cloneAgent(id, newName);
     }, {
         defaultValue: { success: false, error: 'clone failed' },
         argsSchema: z.tuple([z.string(), z.string().optional()])
     }));
 
-    ipcMain.handle('agent:export', createValidatedIpcHandler('agent:export', async (_event, id: string) => {
+    ipcMain.handle('agent:export', createValidatedIpcHandler('agent:export', async (event, id: string) => {
+        validateSender(event);
         const agent = await agentService.getAgent(id);
         if (!agent) {
             return null;
@@ -107,18 +116,21 @@ export function registerAgentIpc(agentService: AgentService) {
         argsSchema: z.tuple([z.string()])
     }));
 
-    ipcMain.handle('agent:import', createValidatedIpcHandler('agent:import', async (_event, payload: string) => {
+    ipcMain.handle('agent:import', createValidatedIpcHandler('agent:import', async (event, payload: string) => {
+        validateSender(event);
         return await agentService.importAgent(payload);
     }, {
         defaultValue: { success: false, error: 'import failed' },
         argsSchema: z.tuple([z.string()])
     }));
 
-    ipcMain.handle('agent:get-templates-library', createValidatedIpcHandler('agent:get-templates-library', async () => {
+    ipcMain.handle('agent:get-templates-library', createValidatedIpcHandler('agent:get-templates-library', async (event) => {
+        validateSender(event);
         return await agentService.getAgentTemplatesLibrary();
     }, { defaultValue: [] }));
 
-    ipcMain.handle('agent:validate-template', createValidatedIpcHandler('agent:validate-template', async (_event, template: Template) => {
+    ipcMain.handle('agent:validate-template', createValidatedIpcHandler('agent:validate-template', async (event, template: Template) => {
+        validateSender(event);
         return agentService.validateAgentTemplate({
             name: template.name,
             description: template.description,
@@ -132,7 +144,8 @@ export function registerAgentIpc(agentService: AgentService) {
         argsSchema: z.tuple([templateSchema])
     }));
 
-    ipcMain.handle('agent:recover', createValidatedIpcHandler('agent:recover', async (_event, archiveId: string) => {
+    ipcMain.handle('agent:recover', createValidatedIpcHandler('agent:recover', async (event, archiveId: string) => {
+        validateSender(event);
         return await agentService.recoverAgentFromArchive(archiveId);
     }, {
         defaultValue: { success: false, error: 'recovery failed' },

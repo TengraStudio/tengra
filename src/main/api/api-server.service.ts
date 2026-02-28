@@ -573,13 +573,32 @@ export class ApiServerService extends BaseService {
             });
             req.on('end', () => {
                 try {
-                    resolve(body ? JSON.parse(body) : {});
+                    const parsed = body ? JSON.parse(body) : {};
+                    resolve(this.stripPrototypeKeys(parsed) as JsonObject);
                 } catch {
                     reject(new Error('Invalid JSON body'));
                 }
             });
             req.on('error', reject);
         });
+    }
+
+    /** Recursively strip prototype pollution keys from parsed JSON */
+    private stripPrototypeKeys(obj: unknown): unknown {
+        if (obj === null || typeof obj !== 'object') {
+            return obj;
+        }
+        if (Array.isArray(obj)) {
+            return obj.map(item => this.stripPrototypeKeys(item));
+        }
+        const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+        const cleaned: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(obj)) {
+            if (!DANGEROUS_KEYS.has(key)) {
+                cleaned[key] = this.stripPrototypeKeys(value);
+            }
+        }
+        return cleaned;
     }
 
     /**

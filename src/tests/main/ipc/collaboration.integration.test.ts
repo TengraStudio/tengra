@@ -60,7 +60,7 @@ describe('Collaboration IPC Integration', () => {
     });
 
     const initIPC = () => {
-        registerCollaborationIpc(mockCollaborationService as any);
+        registerCollaborationIpc(() => null, mockCollaborationService as any);
     };
 
     it('should register expected handlers', () => {

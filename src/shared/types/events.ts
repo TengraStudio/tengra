@@ -56,6 +56,7 @@ export interface SystemEvents {
     'model-registry.cache.update.completed': { provider?: string; count: number }
     'model-registry.provider.fetch.failed': { provider: string; error: string }
     'telemetry:model-registry': { name: SystemEventKey;[key: string]: unknown; timestamp: number }
+    'security:vulnerabilities-found': { critical: number; high: number; timestamp: number }
 }
 
 export type SystemEventKey = keyof SystemEvents

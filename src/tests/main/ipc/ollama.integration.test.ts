@@ -136,6 +136,7 @@ describe('Ollama IPC Handlers', () => {
         } as unknown as IpcMainInvokeEvent;
 
         registerOllamaIpc({
+            getMainWindow: () => null,
             localAIService: mockLocalAIService,
             settingsService: mockSettingsService,
             llmService: mockLLMService,
@@ -192,6 +193,7 @@ describe('Ollama IPC Handlers', () => {
             // Re-register without health service
             ipcMainHandlers.clear();
             registerOllamaIpc({
+                getMainWindow: () => null,
                 localAIService: mockLocalAIService,
                 settingsService: mockSettingsService,
                 llmService: mockLLMService,
@@ -222,6 +224,7 @@ describe('Ollama IPC Handlers', () => {
             // Re-register without health service
             ipcMainHandlers.clear();
             registerOllamaIpc({
+                getMainWindow: () => null,
                 localAIService: mockLocalAIService,
                 settingsService: mockSettingsService,
                 llmService: mockLLMService
@@ -401,6 +404,7 @@ describe('Ollama IPC Handlers', () => {
             // Re-register without ollama service
             ipcMainHandlers.clear();
             registerOllamaIpc({
+                getMainWindow: () => null,
                 localAIService: mockLocalAIService,
                 settingsService: mockSettingsService,
                 llmService: mockLLMService,
@@ -429,6 +433,7 @@ describe('Ollama IPC Handlers', () => {
             // Re-register without ollama service
             ipcMainHandlers.clear();
             registerOllamaIpc({
+                getMainWindow: () => null,
                 localAIService: mockLocalAIService,
                 settingsService: mockSettingsService,
                 llmService: mockLLMService
@@ -456,6 +461,7 @@ describe('Ollama IPC Handlers', () => {
             // Re-register without ollama service
             ipcMainHandlers.clear();
             registerOllamaIpc({
+                getMainWindow: () => null,
                 localAIService: mockLocalAIService,
                 settingsService: mockSettingsService,
                 llmService: mockLLMService

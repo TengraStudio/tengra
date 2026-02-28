@@ -1,0 +1,182 @@
+import { useCallback, type MutableRefObject } from 'react';
+import { Terminal as XTerm } from 'xterm';
+
+import { appLogger } from '@/utils/renderer-logger';
+
+import {
+    ANSI_ESCAPE_SEQUENCE_REGEX,
+    TERMINAL_PASTE_HISTORY_LIMIT,
+    stripAnsiControlSequences,
+} from '../constants/terminal-panel-constants';
+import { buildFormattedClipboardHtml, summarizePasteText } from '../utils/terminal-panel-helpers';
+import { alertDialog, confirmDialog } from '../utils/dialog';
+
+interface UseTerminalClipboardActionsParams {
+    activeTabIdRef: MutableRefObject<string | null>;
+    terminalInstancesRef: MutableRefObject<Record<string, XTerm | null>>;
+    writeInputToTargetSessions: (value: string) => Promise<void>;
+    setTerminalContextMenu: (menu: { x: number; y: number } | null) => void;
+    setPasteHistory: (fn: (prev: string[]) => string[]) => void;
+}
+
+export function useTerminalClipboardActions({
+    activeTabIdRef,
+    terminalInstancesRef,
+    writeInputToTargetSessions,
+    setTerminalContextMenu,
+    setPasteHistory,
+}: UseTerminalClipboardActionsParams) {
+    const getActiveTerminalInstance = useCallback(() => {
+        if (!activeTabIdRef.current) {
+            return null;
+        }
+        return terminalInstancesRef.current[activeTabIdRef.current] ?? null;
+    }, [activeTabIdRef, terminalInstancesRef]);
+
+    const handleCopySelection = useCallback(async (options?: { stripAnsi?: boolean; trimWhitespace?: boolean }) => {
+        try {
+            const terminal = getActiveTerminalInstance();
+            let selectedText = terminal?.hasSelection()
+                ? terminal.getSelection()
+                : (window.getSelection()?.toString() ?? '');
+
+            if (!selectedText) {
+                return;
+            }
+
+            if (options?.stripAnsi) {
+                selectedText = stripAnsiControlSequences(selectedText);
+            }
+            if (options?.trimWhitespace) {
+                selectedText = selectedText.trim();
+            }
+
+            if (selectedText) {
+                await navigator.clipboard.writeText(selectedText);
+            }
+        } catch (error) {
+            appLogger.error('TerminalPanel', 'Failed to copy terminal selection', error as Error);
+        } finally {
+            setTerminalContextMenu(null);
+        }
+    }, [getActiveTerminalInstance, setTerminalContextMenu]);
+
+    const handleCopyWithFormatting = useCallback(async () => {
+        try {
+            const terminal = getActiveTerminalInstance();
+            const selectedText = terminal?.hasSelection()
+                ? terminal.getSelection()
+                : (window.getSelection()?.toString() ?? '');
+
+            if (!selectedText) {
+                return;
+            }
+
+            const htmlContent = buildFormattedClipboardHtml(selectedText);
+            const clipboardItem = new ClipboardItem({
+                'text/plain': new Blob([selectedText], { type: 'text/plain' }),
+                'text/html': new Blob([htmlContent], { type: 'text/html' }),
+            });
+            await navigator.clipboard.write([clipboardItem]);
+        } catch (error) {
+            appLogger.error('TerminalPanel', 'Failed to copy with formatting', error as Error);
+            await handleCopySelection();
+        } finally {
+            setTerminalContextMenu(null);
+        }
+    }, [getActiveTerminalInstance, handleCopySelection, setTerminalContextMenu]);
+
+    const handleCopyStripAnsi = useCallback(async () => {
+        await handleCopySelection({ stripAnsi: true });
+    }, [handleCopySelection]);
+
+    const handlePasteClipboard = useCallback(async () => {
+        try {
+            if (!activeTabIdRef.current) {
+                return;
+            }
+            const text = await navigator.clipboard.readText();
+            if (text) {
+                const hasMultipleLines = /\r?\n/.test(text);
+                if (hasMultipleLines) {
+                    const preview = text
+                        .split(/\r?\n/)
+                        .slice(0, 3)
+                        .join('\n')
+                        .slice(0, 240);
+                    const confirmed = confirmDialog(
+                        `Paste ${text.split(/\r?\n/).length} lines?\n\n${preview}`
+                    );
+                    if (!confirmed) {
+                        return;
+                    }
+                }
+                await writeInputToTargetSessions(text);
+                setPasteHistory(prev => {
+                    const normalized = text.trim();
+                    if (!normalized) {
+                        return prev;
+                    }
+                    const next = [normalized, ...prev.filter(item => item !== normalized)];
+                    return next.slice(0, TERMINAL_PASTE_HISTORY_LIMIT);
+                });
+            }
+        } catch (error) {
+            appLogger.error('TerminalPanel', 'Failed to paste into terminal', error as Error);
+        } finally {
+            setTerminalContextMenu(null);
+        }
+    }, [activeTabIdRef, writeInputToTargetSessions, setTerminalContextMenu, setPasteHistory]);
+
+    const handlePasteFromHistory = useCallback(async (entry: string) => {
+        try {
+            if (!activeTabIdRef.current) {
+                return;
+            }
+            await writeInputToTargetSessions(entry);
+        } catch (error) {
+            appLogger.error('TerminalPanel', 'Failed to paste from history', error as Error);
+        } finally {
+            setTerminalContextMenu(null);
+        }
+    }, [activeTabIdRef, writeInputToTargetSessions, setTerminalContextMenu]);
+
+    const handleTestPaste = useCallback(async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            if (!text) {
+                return;
+            }
+            const hasAnsi = ANSI_ESCAPE_SEQUENCE_REGEX.test(text);
+            alertDialog(summarizePasteText(text, hasAnsi));
+        } catch (error) {
+            appLogger.error('TerminalPanel', 'Failed to test paste', error as Error);
+        } finally {
+            setTerminalContextMenu(null);
+        }
+    }, [setTerminalContextMenu]);
+
+    const handleSelectAll = useCallback(() => {
+        getActiveTerminalInstance()?.selectAll();
+        setTerminalContextMenu(null);
+    }, [getActiveTerminalInstance, setTerminalContextMenu]);
+
+    const handleClearOutput = useCallback(() => {
+        const terminal = getActiveTerminalInstance();
+        terminal?.clearSelection();
+        terminal?.clear();
+        setTerminalContextMenu(null);
+    }, [getActiveTerminalInstance, setTerminalContextMenu]);
+
+    return {
+        getActiveTerminalInstance,
+        handleCopySelection,
+        handleCopyWithFormatting,
+        handleCopyStripAnsi,
+        handlePasteClipboard,
+        handlePasteFromHistory,
+        handleTestPaste,
+        handleSelectAll,
+        handleClearOutput,
+    };
+}

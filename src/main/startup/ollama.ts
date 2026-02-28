@@ -2,6 +2,7 @@ import { exec } from 'child_process';
 import * as http from 'http';
 import { promisify } from 'util';
 
+import { OPERATION_TIMEOUTS, REQUEST_TIMEOUTS } from '@shared/constants/timeouts';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { BrowserWindow, dialog } from 'electron';
@@ -42,7 +43,7 @@ function fetchIPv4(url: string, options?: RequestInit): Promise<Response> {
         });
 
         req.on('error', reject);
-        req.setTimeout(5000, () => {
+        req.setTimeout(REQUEST_TIMEOUTS.HEALTH_CHECK, () => {
             req.destroy();
             reject(new Error('Request timeout'));
         });
@@ -161,7 +162,7 @@ async function executeStartCommand(): Promise<boolean> {
 
 async function waitForReady(): Promise<boolean> {
     for (let i = 0; i < 30; i++) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, OPERATION_TIMEOUTS.POLL_INTERVAL));
         if (await isOllamaRunning()) {
             return true;
         }

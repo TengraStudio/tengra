@@ -1,7 +1,8 @@
-import { auditGetLogsOptionsSchema, validateIpc } from '@main/ipc/validation';
+import { auditGetLogsOptionsSchema } from '@main/ipc/validation';
 import { AuditLogService } from '@main/services/analysis/audit-log.service';
-import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { ipcMain } from 'electron';
+import { z } from 'zod';
 
 /**
  * Registers IPC handlers for audit log operations.
@@ -17,14 +18,16 @@ export function registerAuditIpc(auditLogService: AuditLogService) {
      * @param options.endDate - Filter logs before this timestamp (ms)
      * @param options.limit - Maximum number of logs to return
      */
-    ipcMain.handle('audit:getLogs', createIpcHandler('audit:getLogs', async (_event, options?: unknown) => {
-        const validated = validateIpc(auditGetLogsOptionsSchema, options, 'audit:getLogs');
-        return await auditLogService.getLogs(validated);
+    ipcMain.handle('audit:getLogs', createValidatedIpcHandler('audit:getLogs', async (_event, options?: z.infer<typeof auditGetLogsOptionsSchema>) => {
+        return await auditLogService.getLogs(options);
+    }, {
+        argsSchema: z.tuple([auditGetLogsOptionsSchema]),
+        schemaVersion: 1
     }));
 
     /** Clears all audit logs. */
-    ipcMain.handle('audit:clearLogs', createIpcHandler('audit:clearLogs', async () => {
+    ipcMain.handle('audit:clearLogs', createValidatedIpcHandler('audit:clearLogs', async () => {
         await auditLogService.clearLogs();
         return { success: true };
-    }));
+    }, { schemaVersion: 1 }));
 }

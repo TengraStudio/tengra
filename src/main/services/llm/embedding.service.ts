@@ -4,6 +4,7 @@ import { LLMService } from '@main/services/llm/llm.service';
 import { OllamaService } from '@main/services/llm/ollama.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { EmbeddingTextInputSchema } from '@shared/schemas/service-hardening.schema';
+import { withRetry } from '@main/utils/retry.util';
 import { createHash } from 'node:crypto';
 
 export type EmbeddingProvider = 'ollama' | 'openai' | 'llama' | 'none';
@@ -299,9 +300,8 @@ export class EmbeddingService {
     }
 
     private async generateWithRetry(text: string): Promise<number[] | undefined> {
-        let lastError: Error | null = null;
-        for (let attempt = 1; attempt <= EMBEDDING_RETRY_ATTEMPTS; attempt += 1) {
-            try {
+        return withRetry(
+            async () => {
                 switch (this.currentProvider) {
                     case 'ollama':
                         return await this.ollama.getEmbeddings(this.model, text);
@@ -313,22 +313,24 @@ export class EmbeddingService {
                     default:
                         return undefined;
                 }
-            } catch (caughtError) {
-                const error = caughtError instanceof Error ? caughtError : new Error(String(caughtError));
-                lastError = error;
-                if (attempt >= EMBEDDING_RETRY_ATTEMPTS) {
-                    break;
-                }
-                this.analytics.retries++;
-                this.analytics.lastErrorCode = EMBEDDING_ERROR_CODE.transient;
-                appLogger.warn(
-                    EMBEDDING_SERVICE_NAME,
-                    `Provider retry ${attempt}/${EMBEDDING_RETRY_ATTEMPTS - 1}: ${error.message}`
-                );
-                await new Promise(resolve => setTimeout(resolve, EMBEDDING_RETRY_DELAY_MS));
+            },
+            {
+                maxRetries: EMBEDDING_RETRY_ATTEMPTS - 1,
+                baseDelayMs: EMBEDDING_RETRY_DELAY_MS,
+                maxDelayMs: EMBEDDING_RETRY_DELAY_MS,
+                jitterFactor: 0,
+                shouldRetry: () => true,
+                onRetry: (error, attempt) => {
+                    this.analytics.retries++;
+                    this.analytics.lastErrorCode = EMBEDDING_ERROR_CODE.transient;
+                    const message = error instanceof Error ? error.message : String(error);
+                    appLogger.warn(
+                        EMBEDDING_SERVICE_NAME,
+                        `Provider retry ${attempt + 1}/${EMBEDDING_RETRY_ATTEMPTS - 1}: ${message}`
+                    );
+                },
             }
-        }
-        throw (lastError ?? new Error('Unknown embedding provider failure'));
+        );
     }
 
     private finalizeDurationMetric(startedAt: number): void {

@@ -8,7 +8,7 @@ import {
     ProjectRootPathSchema
 } from '@shared/schemas/service-hardening.schema';
 import { JsonObject } from '@shared/types/common';
-import { getErrorMessage } from '@shared/utils/error.util';
+import { getErrorMessage, ValidationError } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 export interface ProjectStats {
@@ -115,6 +115,7 @@ export class ProjectService extends BaseService {
         }
     }
 
+    /** Closes all file watchers and clears caches. */
     async cleanup(): Promise<void> {
         this.logInfo('Cleaning up ProjectService watchers...');
         for (const [path, watcher] of this.watchers) {
@@ -130,6 +131,10 @@ export class ProjectService extends BaseService {
         this.changedPathSets.clear();
     }
 
+    /**
+     * Stops watching a specific project directory.
+     * @param rootPath - Absolute path to the project root
+     */
     async stopWatch(rootPath: string) {
         rootPath = this.resolveAndValidateRootPath(rootPath);
         if (this.watchers.has(rootPath)) {
@@ -140,6 +145,11 @@ export class ProjectService extends BaseService {
         }
     }
 
+    /**
+     * Returns audit metadata for a project path.
+     * @param rootPath - Project root path
+     * @returns Object with rootPath and projectName
+     */
     getAuditContext(rootPath: string): { rootPath: string; projectName: string } {
         const normalizedRootPath = this.resolveAndValidateRootPath(rootPath);
         return {
@@ -957,6 +967,11 @@ export class ProjectService extends BaseService {
         };
     }
 
+    /**
+     * Reads and parses .env file from project root.
+     * @param rootPath - Project root path
+     * @returns Key-value map of environment variables
+     */
     async getEnvVars(rootPath: string): Promise<Record<string, string>> {
         rootPath = this.resolveAndValidateRootPath(rootPath);
         const envPath = path.join(rootPath, '.env');
@@ -989,11 +1004,17 @@ export class ProjectService extends BaseService {
         }
     }
 
+    /**
+     * Writes environment variables to .env file.
+     * @param rootPath - Project root path
+     * @param vars - Key-value map to write
+     * @throws ValidationError if vars are invalid
+     */
     async saveEnvVars(rootPath: string, vars: Record<string, string>): Promise<void> {
         rootPath = this.resolveAndValidateRootPath(rootPath);
         const parsedVars = ProjectEnvVarsSchema.safeParse(vars);
         if (!parsedVars.success) {
-            throw new Error(`Invalid environment variable payload: ${parsedVars.error.issues[0]?.message ?? 'unknown validation issue'}`);
+            throw new ValidationError(`Invalid environment variable payload: ${parsedVars.error.issues[0]?.message ?? 'unknown validation issue'}`);
         }
         const envPath = path.join(rootPath, '.env');
         try {
@@ -1014,7 +1035,7 @@ export class ProjectService extends BaseService {
             : inputPath;
         const parsedPath = ProjectRootPathSchema.safeParse(sanitizedInput);
         if (!parsedPath.success) {
-            throw new Error(`Invalid project root path: ${parsedPath.error.issues[0]?.message ?? 'unknown validation issue'}`);
+            throw new ValidationError(`Invalid project root path: ${parsedPath.error.issues[0]?.message ?? 'unknown validation issue'}`);
         }
         return path.resolve(parsedPath.data);
     }

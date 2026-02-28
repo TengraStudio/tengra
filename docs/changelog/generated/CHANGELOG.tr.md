@@ -58,6 +58,19 @@
 
 - Pending
 
+### Performans Grup 4: Bileşen Ayrıştırma ve Gelişmiş Memoization
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: Mega bileşenleri ayrıştırarak, koşullu lazy loading uygulayarak ve kritik UI yollarında sıkı React.memo kullanarak yeniden render döngüleri önemli ölçüde azaltıldı.
+
+- **MessageBubble (PERF-001)**: 2.2k satırlık mega bileşen, bağımsız memoization içeren 15'ten fazla alt bileşene ayrıldı; yeniden render yükü ~%80 azaltıldı.
+- **ChatInput (PERF-002)**: ActionControls, AttachmentList ve SuggestionMenu izole memo bileşenlerine aktarıldı, tuş vuruşlarında tam girdi yeniden renderı önlendi.
+- **PanelLayout (PERF-005)**: Panel yönetim mantığı, memo'lanmış alt yapılar ve kararlı callback referanslarıyla geri yüklendi ve optimize edildi.
+- **VoiceOverlay (PERF-015)**: Başlangıçta hevesli chunk getirmeyi önlemek için koşullu React.lazy() yüklemesi uygulandı.
+- **Ayarlar (PERF-016)**: SettingsTabContent, yalnızca aktif sekmeyi bağlayacak ve render edecek şekilde yeniden yapılandırıldı; gezinme hızı ve bellek kullanımı iyileştirildi.
+- **ModelSelector**: Sağlayıcı/model değiştirme sırasında anında arayüz geri bildirimi sağlamak için model seçim motoru memo'landı.
+
 ### Renderer Performans İyileştirmeleri (PERF-006 - PERF-022)
 
 - **Type**: perf

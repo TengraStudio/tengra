@@ -1,4 +1,4 @@
-import { X } from 'lucide-react';
+﻿import { X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
@@ -97,7 +97,7 @@ export function TerminalMultiplexerPanel({
                     onChange={event => {
                         setMultiplexerSessionName(event.target.value);
                     }}
-                    placeholder="session name"
+                    placeholder={t('placeholder.sessionName')}
                     className="h-7 flex-1 px-2 rounded border border-border bg-background/60 text-xs outline-none"
                 />
                 <button

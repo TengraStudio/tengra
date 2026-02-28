@@ -79,7 +79,7 @@ export async function registerIpcHandlers(
     registerWindowIpc(getMainWindow, allowedFileRoots);
     registerLazyServicesIpc();
     registerContractIpc();
-    registerCodeSandboxIpc();
+    registerCodeSandboxIpc(getMainWindow);
     registerModelRegistryIpc(services.modelRegistryService, services.rateLimitService);
     registerModelDownloaderIpc(services.modelDownloaderService);
     registerAuditIpc(services.auditLogService);
@@ -108,9 +108,10 @@ export async function registerIpcHandlers(
         services.settingsService,
         services.proxyService
     );
-    registerKeyRotationIpc(services.keyRotationService);
+    registerKeyRotationIpc(getMainWindow, services.keyRotationService);
 
     registerChatIpc({
+        getMainWindow,
         settingsService: services.settingsService,
         copilotService: services.copilotService,
         llmService: services.llmService,
@@ -122,6 +123,7 @@ export async function registerIpcHandlers(
     });
 
     registerOllamaIpc({
+        getMainWindow,
         localAIService: services.localAIService,
         settingsService: services.settingsService,
         llmService: services.llmService,
@@ -140,19 +142,20 @@ export async function registerIpcHandlers(
         databaseService: services.databaseService,
         auditLogService: services.auditLogService,
     });
-    registerAgentIpc(services.agentService);
+    registerAgentIpc(getMainWindow, services.agentService);
     registerProcessIpc(getMainWindow, services.processService);
     setupProcessEvents(services.processService);
     registerCodeIntelligenceIpc(services.codeIntelligenceService);
 
     registerDbIpc(getMainWindow, services.databaseService, services.embeddingService);
-    registerLlamaIpc(services.llamaService);
-    registerMemoryIpc(services.memoryService);
+    registerLlamaIpc(getMainWindow, services.llamaService);
+    registerMemoryIpc(getMainWindow, services.memoryService);
     registerAdvancedMemoryIpc(services.advancedMemoryService);
-    registerBrainIpcHandlers(services.brainService);
-    registerGitIpc(services.gitService);
+    registerBrainIpcHandlers(getMainWindow, services.brainService);
+    registerGitIpc(getMainWindow, services.gitService);
 
     registerSettingsIpc({
+        getMainWindow,
         settingsService: services.settingsService,
         llmService: services.llmService,
         copilotService: services.copilotService,
@@ -184,9 +187,9 @@ export async function registerIpcHandlers(
     registerFilesIpc(getMainWindow, services.fileSystemService, allowedFileRoots, services.auditLogService);
     registerHFModelIpc(services.llmService, services.huggingFaceService);
     registerMultiModelIpc(services.multiModelComparisonService);
-    registerCollaborationIpc(services.modelCollaborationService);
+    registerCollaborationIpc(getMainWindow, services.modelCollaborationService);
 
-    registerToolsIpc(toolExecutor, services.commandService);
+    registerToolsIpc(getMainWindow, toolExecutor, services.commandService);
     registerMcpIpc(mcpDispatcher, getMainWindow);
     registerMcpMarketplaceHandlers(
         services.mcpMarketplaceService,
@@ -194,7 +197,7 @@ export async function registerIpcHandlers(
         services.mcpPluginService
     );
 
-    registerScreenshotIpc();
+    registerScreenshotIpc(getMainWindow);
     registerLoggingIpc();
     registerClipboardIpc(services.clipboardService);
 
@@ -210,10 +213,10 @@ export async function registerIpcHandlers(
     registerDialogIpc(getMainWindow);
 
     registerProxyEmbedIpc(services.proxyService);
-    registerExportIpc(services.exportService);
+    registerExportIpc(getMainWindow, services.exportService);
 
     // Prompt Templates
-    registerPromptTemplatesIpc(services.promptTemplatesService);
+    registerPromptTemplatesIpc(getMainWindow, services.promptTemplatesService);
 
     // Register Gallery IPC
     registerGalleryIpc(services.dataService.getPath('gallery'), services.databaseService);
@@ -232,7 +235,7 @@ export async function registerIpcHandlers(
     registerVoiceIpc();
 
     // Backup & Restore
-    registerBackupIpc(services.backupService);
+    registerBackupIpc(getMainWindow, services.backupService);
 
     // Theme Management
     registerThemeIpc(services.themeService);

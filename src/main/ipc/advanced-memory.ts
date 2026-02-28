@@ -349,7 +349,7 @@ const createTelemetryAwareHandler = <T extends AdvancedMemoryResponseEnvelope = 
                 options.retries ?? 1,
                 options.retryDelayMs ?? 35
             );
-            const resultRecord = result as unknown as Record<string, unknown>;
+            const resultRecord = result as Record<string, unknown>;
             const uiState = inferUiStateFromResult(resultRecord);
             const durationMs = Date.now() - startedAt;
             if (uiState === 'failure') {

@@ -195,13 +195,14 @@ export function sanitizeObject<T extends Record<string, unknown>>(
     }
 
     if (Array.isArray(obj)) {
-        return obj.map(item => {
+        const sanitizedArray: unknown = obj.map(item => {
             if (typeof item === 'object' && item !== null) {
                 return sanitizeObject(item as Record<string, unknown>, options);
             }
 
             return item;
-        }) as unknown as T;
+        });
+        return sanitizedArray as T;
     }
 
     const sanitized = {} as T;

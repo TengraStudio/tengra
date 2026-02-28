@@ -45,7 +45,7 @@ describe('Backup IPC Integration', () => {
     });
 
     const initIPC = () => {
-        registerBackupIpc(mockBackupService as any);
+        registerBackupIpc(() => null, mockBackupService as any);
     };
 
     it('should register expected handlers', () => {

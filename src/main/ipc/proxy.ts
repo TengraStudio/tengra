@@ -6,6 +6,7 @@ import { AuthService } from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
 import { createSafeIpcHandler as baseCreateSafeIpcHandler,createValidatedIpcHandler as baseCreateValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { IpcValue } from '@shared/types/common';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
@@ -54,19 +55,19 @@ export function registerProxyIpc(
 
     // Register batchable quota handlers for efficient batch loading
     registerSecureBatchableHandler('getQuota', async (): Promise<IpcValue> => {
-        return (await proxyService.getQuota()) as unknown as IpcValue;
+        return serializeToIpc(await proxyService.getQuota());
     });
 
     registerSecureBatchableHandler('getCopilotQuota', async (): Promise<IpcValue> => {
-        return (await proxyService.getCopilotQuota()) as unknown as IpcValue;
+        return serializeToIpc(await proxyService.getCopilotQuota());
     });
 
     registerSecureBatchableHandler('getCodexUsage', async (): Promise<IpcValue> => {
-        return (await proxyService.getCodexUsage()) as unknown as IpcValue;
+        return serializeToIpc(await proxyService.getCodexUsage());
     });
 
     registerSecureBatchableHandler('getClaudeQuota', async (): Promise<IpcValue> => {
-        return (await proxyService.getClaudeQuota()) as unknown as IpcValue;
+        return serializeToIpc(await proxyService.getClaudeQuota());
     });
 
     ipcMain.handle('proxy:antigravityLogin', createSafeIpcHandler('proxy:antigravityLogin', async () => {

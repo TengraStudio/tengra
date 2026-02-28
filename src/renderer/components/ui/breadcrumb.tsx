@@ -20,7 +20,7 @@ export function Breadcrumb({
     items, 
     className,
     showHome = false,
-    separator = <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50" />
+    separator = <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 rtl-flip" />
 }: BreadcrumbProps) {
     if (items.length === 0) {return null;}
 

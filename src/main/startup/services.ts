@@ -86,6 +86,7 @@ import { AuthService } from '@main/services/security/auth.service';
 import { AuthAPIService } from '@main/services/security/auth-api.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
 import { RateLimitService } from '@main/services/security/rate-limit.service';
+import { SecurityScanService } from '@main/services/security/security-scan.service';
 import { SecurityService } from '@main/services/security/security.service';
 import { TokenService } from '@main/services/security/token.service';
 import { CommandService } from '@main/services/system/command.service';
@@ -112,6 +113,7 @@ import { ScreenshotService } from '@main/services/ui/screenshot.service';
 import { WorkflowService } from '@main/services/workflow/workflow.service';
 import {
     bootstrapCoreData,
+    initDeferredServices,
     initializeContainerSafely,
     registerServiceGroups,
     startCriticalHealthChecks,
@@ -184,6 +186,7 @@ export interface Services {
     rateLimitService: RateLimitService;
     utilityService: UtilityService;
     tokenService: TokenService;
+    securityScanService: SecurityScanService;
     usageTrackingService: UsageTrackingService;
     auditLogService: AuditLogService;
     promptTemplatesService: PromptTemplatesService;
@@ -213,6 +216,13 @@ export interface Services {
     marketplaceService: LazyServiceDependency<MarketplaceService>;
     modelDownloaderService: ModelDownloaderService;
     workflowService: WorkflowService;
+}
+
+/**
+ * Initialize deferred (non-critical) services. Call after main window is shown.
+ */
+export async function startDeferredServices(): Promise<void> {
+    await initDeferredServices(container);
 }
 
 export async function createServices(allowedFileRoots: Set<string>): Promise<Services> {
@@ -415,6 +425,11 @@ function registerSecurityServices() {
             });
         },
         ['tokenDepsBase', 'processManagerService', 'jobSchedulerService']
+    );
+    container.register(
+        'securityScanService',
+        (ebs, js) => new SecurityScanService(ebs as EventBusService, js as JobSchedulerService),
+        ['eventBusService', 'jobSchedulerService']
     );
 }
 
@@ -1033,6 +1048,7 @@ function buildServicesMap(
         keyRotationService: container.resolve<KeyRotationService>('keyRotationService'),
         rateLimitService: container.resolve<RateLimitService>('rateLimitService'),
         tokenService: container.resolve<TokenService>('tokenService'),
+        securityScanService: container.resolve<SecurityScanService>('securityScanService'),
         usageTrackingService: container.resolve<UsageTrackingService>('usageTrackingService'),
         auditLogService: container.resolve<AuditLogService>('auditLogService'),
         promptTemplatesService: container.resolve<PromptTemplatesService>('promptTemplatesService'),

@@ -189,6 +189,7 @@ export class SettingsService extends BaseService {
         this.settings = { ...DEFAULT_SETTINGS };
     }
 
+    /** Loads settings from disk and synchronizes tokens to the auth service. */
     async initialize(): Promise<void> {
         if (this.initialized) {
             return;
@@ -205,6 +206,7 @@ export class SettingsService extends BaseService {
         this.recordTelemetryEvent('settings.initialize.success');
     }
 
+    /** Persists any pending settings to disk and cleans up resources. */
     async cleanup(): Promise<void> {
         while (this.saveInProgress) {
             await new Promise(resolve => setTimeout(resolve, 50));
@@ -496,14 +498,22 @@ export class SettingsService extends BaseService {
         return -1;
     }
 
+    /** Returns the current in-memory application settings. */
     getSettings(): AppSettings {
         return this.settings;
     }
 
+    /** Returns the filesystem path to the settings.json file. */
     getSettingsPath(): string {
         return this.settingsPath;
     }
 
+    /**
+     * Merges and persists partial settings updates.
+     * @param newSettings - Partial settings to merge into the current configuration.
+     * @returns The updated {@link AppSettings} after the merge.
+     * @throws {Error} If the payload is not a valid non-array object.
+     */
     async saveSettings(newSettings: Partial<AppSettings>): Promise<AppSettings> {
         if (!newSettings || typeof newSettings !== 'object' || Array.isArray(newSettings)) {
             throw new Error('Settings payload must be a non-array object');
@@ -761,12 +771,17 @@ export class SettingsService extends BaseService {
         }
     }
 
+    /**
+     * Reloads settings from disk, discarding any in-memory changes.
+     * @returns The freshly loaded {@link AppSettings}.
+     */
     async reloadSettings(): Promise<AppSettings> {
         this.settings = await this.loadSettings();
         this.recordTelemetryEvent('settings.reload.success');
         return this.settings;
     }
 
+    /** Returns service health metrics including load/save stats and recent telemetry events. */
     getHealthMetrics(): {
         status: 'healthy' | 'degraded';
         uiState: 'ready' | 'empty' | 'failure';

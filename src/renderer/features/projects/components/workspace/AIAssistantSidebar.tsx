@@ -1,4 +1,4 @@
-import { MessageBubble } from '@renderer/features/chat/components/MessageBubble';
+﻿import { MessageBubble } from '@renderer/features/chat/components/MessageBubble';
 import { AgentTaskHistoryItem } from '@shared/types/project-agent';
 import { ArrowLeft, Check, ClipboardList, Play, Users } from 'lucide-react';
 import React from 'react';
@@ -304,7 +304,7 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                         className="w-full bg-muted/20 border border-white/10 rounded-lg px-3 py-2 text-xs"
                         value={rejectReason}
                         onChange={event => setRejectReason(event.target.value)}
-                        placeholder="Reject reason"
+                        placeholder={t('placeholder.rejectReason')}
                     />
                     {rejectionHistory.length > 0 && (
                         <div className="rounded-lg border border-white/10 p-2 space-y-1 max-h-24 overflow-y-auto">
@@ -324,25 +324,25 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                         className="bg-muted/20 border border-white/10 rounded-lg px-2 py-1.5 text-xs"
                         value={timelineFilter.stage}
                         onChange={event => setTimelineFilter(prev => ({ ...prev, stage: event.target.value }))}
-                        placeholder="stage"
+                        placeholder={t('placeholder.stage')}
                     />
                     <input
                         className="bg-muted/20 border border-white/10 rounded-lg px-2 py-1.5 text-xs"
                         value={timelineFilter.agent}
                         onChange={event => setTimelineFilter(prev => ({ ...prev, agent: event.target.value }))}
-                        placeholder="agent"
+                        placeholder={t('placeholder.agent')}
                     />
                     <input
                         className="bg-muted/20 border border-white/10 rounded-lg px-2 py-1.5 text-xs"
                         value={timelineFilter.model}
                         onChange={event => setTimelineFilter(prev => ({ ...prev, model: event.target.value }))}
-                        placeholder="model"
+                        placeholder={t('placeholder.model')}
                     />
                     <input
                         className="bg-muted/20 border border-white/10 rounded-lg px-2 py-1.5 text-xs"
                         value={timelineFilter.interrupt}
                         onChange={event => setTimelineFilter(prev => ({ ...prev, interrupt: event.target.value }))}
-                        placeholder="interrupt"
+                        placeholder={t('placeholder.interrupt')}
                     />
                 </div>
 

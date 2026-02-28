@@ -2,6 +2,7 @@ import { AppHeader } from '@renderer/components/layout/AppHeader';
 import { AppModals } from '@renderer/components/layout/AppModals';
 import { DragDropWrapper } from '@renderer/components/layout/DragDropWrapper';
 import { LayoutManager } from '@renderer/components/layout/LayoutManager';
+import { OfflineBanner } from '@renderer/components/layout/OfflineBanner';
 import { SessionLockOverlay } from '@renderer/components/layout/SessionLockOverlay';
 import { Sidebar } from '@renderer/components/layout/Sidebar';
 import { ToastsContainer } from '@renderer/components/layout/ToastsContainer';
@@ -319,6 +320,7 @@ function MainApp() {
             )}
         >
             <div className="app-container h-screen w-full overflow-hidden">
+                <OfflineBanner />
                 {showLanguagePrompt && (
                     <LanguageSelectionPrompt
                         onClose={() => {

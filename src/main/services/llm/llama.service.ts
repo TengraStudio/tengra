@@ -9,6 +9,7 @@ import * as path from 'path';
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
+import { OPERATION_TIMEOUTS } from '@shared/constants/timeouts';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { app } from 'electron';
@@ -274,7 +275,7 @@ export class LlamaService extends BaseService {
 
     private async waitForServerStart(modelPath: string): Promise<{ success: boolean; error?: string }> {
         for (let i = 0; i < 60; i++) {
-            await new Promise(r => setTimeout(r, 1000));
+            await new Promise(r => setTimeout(r, OPERATION_TIMEOUTS.RETRY_DELAY));
             if (await this.isServerRunning()) {
                 this.currentModelPath = modelPath;
                 this.logInfo('llama-server started successfully');
@@ -292,7 +293,7 @@ export class LlamaService extends BaseService {
         if (!proc) { return; }
 
         proc.kill('SIGTERM');
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, OPERATION_TIMEOUTS.PROCESS_KILL_GRACE));
 
         if (!proc.killed) {
             proc.kill('SIGKILL');

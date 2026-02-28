@@ -13,9 +13,10 @@ import { appLogger, LogLevel } from '@main/logging/logger';
 import { McpDispatcher } from '@main/mcp/dispatcher';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { registerIpcHandlers } from '@main/startup/ipc';
-import { container, createServices } from '@main/startup/services';
+import { container, createServices, startDeferredServices } from '@main/startup/services';
 import { ToolExecutor } from '@main/tools/tool-executor';
 import { validateEnvironmentVariables } from '@main/utils/env-validator.util';
+import { OPERATION_TIMEOUTS } from '@shared/constants/timeouts';
 import { getErrorMessage } from '@shared/utils/error.util';
 
 import { registerLifecycleHandlers } from './startup/lifecycle';
@@ -166,6 +167,9 @@ app.whenReady().then(async () => {
         }
         deferredTasksStarted = true;
         void Promise.resolve().then(async () => {
+            // Initialize deferred (non-critical) services first
+            await startDeferredServices();
+
             const { startOllama } = await import('@main/startup/ollama');
             void startOllama(getMainWindow, false).catch(err => appLogger.error('Main', `Ollama Fail: ${err}`));
             const openedMainWindow = getMainWindow();
@@ -181,7 +185,7 @@ app.whenReady().then(async () => {
         setTimeout(runDeferredStartupTasks, 0);
     });
     mainWindow.webContents.once('did-finish-load', runDeferredStartupTasks);
-    setTimeout(runDeferredStartupTasks, 5000);
+    setTimeout(runDeferredStartupTasks, OPERATION_TIMEOUTS.DEFERRED_STARTUP);
 
 }).catch(e => {
     closeSplashWindow();

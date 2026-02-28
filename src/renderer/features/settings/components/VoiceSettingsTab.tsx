@@ -1,4 +1,4 @@
-import { VoiceCommand } from '@shared/types/voice';
+﻿import { VoiceCommand } from '@shared/types/voice';
 import {
     Command,
     Eye,
@@ -216,7 +216,7 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
                                             value={settings.wakeWord}
                                             onChange={(e) => { void updateSettings({ wakeWord: e.target.value }); }}
                                             className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-2 text-xs focus:border-primary/50 outline-none transition-all"
-                                            placeholder="e.g. Hey Tengra"
+                                            placeholder={t('placeholder.wakeWordExample')}
                                         />
                                     </div>
                                 </div>

@@ -1,8 +1,42 @@
 {
   "version": 1,
   "generatedFrom": "docs/changelog/data/changelog.entries.json",
-  "generatedAt": "2026-02-20T09:15:00Z",
+  "generatedAt": "2026-02-28T21:00:00Z",
   "entries": [
+    {
+      "id": "2026-02-28-renderer-perf-batch4-memo-lazy-split",
+      "date": "2026-02-28",
+      "channel": "stable",
+      "type": "perf",
+      "category": "performance",
+      "status": "completed",
+      "audience": [
+        "end-user"
+      ],
+      "components": [
+        "Renderer",
+        "Layout",
+        "Chat",
+        "Settings",
+        "Models"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Performance Batch 4: Component Splitting & Advanced Memoization",
+          "summary": "Significantly reduced re-render cycles and improved initial load time by splitting mega-components, implementing conditional lazy loading, and applying strict React.memo across critical UI paths.",
+          "items": [
+            "- **MessageBubble (PERF-001)**: Deconstructed the 2.2k line mega-component into 15+ sub-components with independent memoization, reducing re-render overhead by ~80%.",
+            "- **ChatInput (PERF-002)**: Extracted ActionControls, AttachmentList, and SuggestionMenu into isolated memoized components, preventing full input re-renders on keystrokes.",
+            "- **PanelLayout (PERF-005)**: Restored and optimized panel management logic with memoized sub-structures and stable callback references.",
+            "- **VoiceOverlay (PERF-015)**: Implemented conditional React.lazy() loading to prevent eager chunk fetching on startup.",
+            "- **Settings (PERF-016)**: Refactored SettingsTabContent to only mount and render the active tab, improving navigation speed and memory usage.",
+            "- **ModelSelector**: Memoized the model selection engine to provide instant UI feedback during provider/model switching."
+          ]
+        }
+      }
+    },
     {
       "id": "2026-02-28-perf-batch3-lazy-changelog-website",
       "date": "2026-02-28",

@@ -1,6 +1,7 @@
 import { spawn } from 'child_process';
 import * as path from 'path';
 
+import { CircuitBreaker } from '@main/core/circuit-breaker';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { HttpService } from '@main/services/external/http.service';
@@ -192,6 +193,12 @@ export class HuggingFaceService extends BaseService {
     private modelVersions: HFModelVersionRecord[] = [];
     private fineTuneJobs = new Map<string, HFFineTuneJob>();
     private fineTuneTimers = new Map<string, NodeJS.Timeout>();
+    /** Circuit breaker for HuggingFace API calls */
+    private circuitBreaker = new CircuitBreaker({
+        failureThreshold: 3,
+        resetTimeoutMs: 30000,
+        serviceName: 'HuggingFaceAPI'
+    });
 
     constructor(private httpService: HttpService) {
         super('HuggingFaceService');
@@ -233,10 +240,12 @@ export class HuggingFaceService extends BaseService {
             });
 
             const url = `https://huggingface.co/api/models?${params.toString()}`;
-            const apiResponse = await this.httpService.fetch(url, {
-                retryCount: 2,
-                timeoutMs: 15000
-            });
+            const apiResponse = await this.circuitBreaker.execute(() =>
+                this.httpService.fetch(url, {
+                    retryCount: 2,
+                    timeoutMs: 15000
+                })
+            );
 
             if (!apiResponse.ok) {
                 appLogger.error('HuggingFaceService', `API request failed: ${apiResponse.statusText}`);

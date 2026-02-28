@@ -1,4 +1,4 @@
-import { LinkedAccountInfo } from '@renderer/electron.d';
+﻿import { LinkedAccountInfo } from '@renderer/electron.d';
 import { DeviceCodeModal, DeviceCodeModalState } from '@renderer/features/settings/components/DeviceCodeModal';
 import { UseLinkedAccountsResult } from '@renderer/features/settings/hooks/useLinkedAccounts';
 import { ChevronDown, Cpu, ExternalLink, Plus, RefreshCw } from 'lucide-react';
@@ -363,7 +363,7 @@ const NvidiaSection = React.memo(({
                         <label className="text-xs font-bold uppercase text-muted-foreground">{t('accounts.enterApiKey')}</label>
                         <input
                             type="password"
-                            placeholder="nvapi-..."
+                            placeholder={t('placeholder.apiKeyPrefix')}
                             value={settings.nvidia?.apiKey ?? ''}
                             onChange={e => setSettings({ ...settings, nvidia: { ...settings.nvidia, apiKey: e.target.value, model: settings.nvidia?.model ?? 'nvidia/llama3-chatqa-1.5-70b' } })}
                             onBlur={() => handleSave()}

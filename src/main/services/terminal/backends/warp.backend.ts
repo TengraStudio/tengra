@@ -120,9 +120,9 @@ export class WarpBackend implements ITerminalBackend {
 
         for (const p of commonPaths) {
             try {
+                // Sync I/O acceptable: one-time shell detection at backend init
                 if (fs.existsSync(p)) {
                     appLogger.info('WarpBackend', `Found Warp at common location: ${p}`);
-                    return p;
                 }
             } catch {
                 // Ignore

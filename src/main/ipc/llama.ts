@@ -1,9 +1,10 @@
 import { appLogger } from '@main/logging/logger';
+import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { LlamaService } from '@main/services/llm/llama.service';
 import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
 import { IpcValue } from '@shared/types/common';
-import { ipcMain, IpcMainInvokeEvent } from 'electron';
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 
 /** Maximum model path length */
 const MAX_PATH_LENGTH = 4096;
@@ -92,14 +93,16 @@ function validateConfig(value: unknown): Record<string, IpcValue> {
 /**
  * Registers IPC handlers for Llama model operations
  */
-export function registerLlamaIpc(llamaService: LlamaService): void {
+export function registerLlamaIpc(getMainWindow: () => BrowserWindow | null, llamaService: LlamaService): void {
     appLogger.info('LlamaIPC', 'Registering Llama IPC handlers');
+    const validateSender = createMainWindowSenderValidator(getMainWindow, 'llama operation');
 
     ipcMain.handle(
         'llama:loadModel',
         createIpcHandler(
             'llama:loadModel',
-            async (_event: IpcMainInvokeEvent, modelPathRaw: unknown, configRaw: unknown) => {
+            async (event: IpcMainInvokeEvent, modelPathRaw: unknown, configRaw: unknown) => {
+                validateSender(event);
                 const modelPath = validatePath(modelPathRaw);
                 if (!modelPath) {
                     throw new Error('Invalid model path');
@@ -115,7 +118,8 @@ export function registerLlamaIpc(llamaService: LlamaService): void {
         'llama:unloadModel',
         createSafeIpcHandler(
             'llama:unloadModel',
-            async () => {
+            async (event) => {
+                validateSender(event);
                 appLogger.info('LlamaIPC', 'Unloading model');
                 await llamaService.stopServer();
                 return { success: true };
@@ -128,7 +132,8 @@ export function registerLlamaIpc(llamaService: LlamaService): void {
         'llama:chat',
         createSafeIpcHandler(
             'llama:chat',
-            async (_event: IpcMainInvokeEvent, messageRaw: unknown, systemPromptRaw?: unknown) => {
+            async (event: IpcMainInvokeEvent, messageRaw: unknown, systemPromptRaw?: unknown) => {
+                validateSender(event);
                 const message = validateMessage(messageRaw);
                 if (!message) {
                     throw new Error('Invalid or empty message');
@@ -148,7 +153,8 @@ export function registerLlamaIpc(llamaService: LlamaService): void {
         'llama:resetSession',
         createSafeIpcHandler(
             'llama:resetSession',
-            async () => {
+            async (event) => {
+                validateSender(event);
                 await llamaService.resetSession();
                 return { success: true };
             },
@@ -160,7 +166,8 @@ export function registerLlamaIpc(llamaService: LlamaService): void {
         'llama:getModels',
         createSafeIpcHandler(
             'llama:getModels',
-            async () => {
+            async (event) => {
+                validateSender(event);
                 return await llamaService.getModels();
             },
             []
@@ -171,7 +178,8 @@ export function registerLlamaIpc(llamaService: LlamaService): void {
         'llama:downloadModel',
         createIpcHandler(
             'llama:downloadModel',
-            async (_event: IpcMainInvokeEvent, urlRaw: unknown, filenameRaw: unknown) => {
+            async (event: IpcMainInvokeEvent, urlRaw: unknown, filenameRaw: unknown) => {
+                validateSender(event);
                 const url = validateUrl(urlRaw);
                 const filename = validatePath(filenameRaw, MAX_FILENAME_LENGTH);
                 if (!url || !filename) {
@@ -187,7 +195,8 @@ export function registerLlamaIpc(llamaService: LlamaService): void {
         'llama:deleteModel',
         createIpcHandler(
             'llama:deleteModel',
-            async (_event: IpcMainInvokeEvent, modelPathRaw: unknown) => {
+            async (event: IpcMainInvokeEvent, modelPathRaw: unknown) => {
+                validateSender(event);
                 const modelPath = validatePath(modelPathRaw);
                 if (!modelPath) {
                     throw new Error('Invalid model path');
@@ -201,7 +210,8 @@ export function registerLlamaIpc(llamaService: LlamaService): void {
         'llama:getConfig',
         createSafeIpcHandler(
             'llama:getConfig',
-            async () => {
+            async (event) => {
+                validateSender(event);
                 return llamaService.getConfig();
             },
             {}
@@ -212,7 +222,8 @@ export function registerLlamaIpc(llamaService: LlamaService): void {
         'llama:setConfig',
         createSafeIpcHandler(
             'llama:setConfig',
-            async (_event: IpcMainInvokeEvent, configRaw: unknown) => {
+            async (event: IpcMainInvokeEvent, configRaw: unknown) => {
+                validateSender(event);
                 const config = validateConfig(configRaw);
                 llamaService.setConfig(config);
                 return { success: true };
@@ -225,7 +236,8 @@ export function registerLlamaIpc(llamaService: LlamaService): void {
         'llama:getGpuInfo',
         createSafeIpcHandler(
             'llama:getGpuInfo',
-            async () => {
+            async (event) => {
+                validateSender(event);
                 return await llamaService.getGpuInfo();
             },
             null
@@ -236,7 +248,8 @@ export function registerLlamaIpc(llamaService: LlamaService): void {
         'llama:getModelsDir',
         createSafeIpcHandler(
             'llama:getModelsDir',
-            async () => {
+            async (event) => {
+                validateSender(event);
                 return llamaService.getModelsDir();
             },
             ''

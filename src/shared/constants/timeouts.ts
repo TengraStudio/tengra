@@ -128,3 +128,29 @@ export const AGENT_TIMEOUTS = {
     /** Session reload interval */
     SESSION_RELOAD: 1000,
 } as const;
+
+/** Operation timeouts for service lifecycle and process management */
+export const OPERATION_TIMEOUTS = {
+    /** Per-service cleanup timeout during container shutdown */
+    SERVICE_CLEANUP: 2000,
+    /** Deferred startup task delay after window ready */
+    DEFERRED_STARTUP: 5000,
+    /** Generic polling interval for status/readiness checks */
+    POLL_INTERVAL: 500,
+    /** Grace period after SIGTERM before escalating to SIGKILL */
+    PROCESS_KILL_GRACE: 1000,
+    /** Delay between retry attempts for recoverable operations */
+    RETRY_DELAY: 1000,
+    /** Fast port availability check timeout */
+    PORT_CHECK_FAST: 200,
+    /** Timeout for connectivity / reachability checks */
+    CONNECTIVITY_CHECK: 2000,
+} as const;
+
+/** IPC communication timeouts */
+export const IPC_TIMEOUTS = {
+    /** Data buffer flush interval for batched IPC events */
+    BUFFER_FLUSH: 100,
+    /** Delay between batch processing items */
+    BATCH_DELAY: 100,
+} as const;

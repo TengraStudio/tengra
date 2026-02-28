@@ -90,6 +90,7 @@ describe('Chat IPC Integration', () => {
 
     const initIPC = (overrides?: Record<string, any>) => {
         registerChatIpc({
+            getMainWindow: () => null,
             settingsService: mockSettingsService as any,
             copilotService: mockCopilotService as any,
             llmService: mockLLMService as any,

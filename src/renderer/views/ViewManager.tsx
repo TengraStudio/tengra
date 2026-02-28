@@ -5,6 +5,7 @@ import { useProject } from '@renderer/context/ProjectContext';
 import { ChatTemplate } from '@renderer/features/chat/types';
 import React, { lazy, Suspense, useEffect, useMemo } from 'react';
 
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { renderViewSkeleton } from '@/components/ui/view-skeletons';
 import { Language, useTranslation } from '@/i18n';
@@ -201,9 +202,11 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
                 exit={{ opacity: 0, scale: 0.98 }}
                 transition={{ duration: pagePreset.duration, ease: pagePreset.ease }}
             >
-                <Suspense fallback={renderViewSkeleton(currentView)}>
-                    {renderView()}
-                </Suspense>
+                <ErrorBoundary resetKeys={[currentView]}>
+                    <Suspense fallback={renderViewSkeleton(currentView)}>
+                        {renderView()}
+                    </Suspense>
+                </ErrorBoundary>
             </motion.div>
             {isListening && (
                 <div onClick={() => stopListening()} className="absolute top-4 right-4 z-[9999] cursor-pointer bg-destructive/70 text-destructive-foreground px-3 py-1.5 rounded-full backdrop-blur-md animate-pulse flex items-center gap-2">

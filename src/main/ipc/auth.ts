@@ -1,12 +1,16 @@
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import {
     accountIdSchema,
+    appIdSchema,
     authTokenDataSchema,
     backupPassphraseSchema,
     backupPayloadSchema,
     credentialExportOptionsSchema,
     credentialImportSchema,
+    deviceCodeSchema,
+    pollIntervalSchema,
     providerSchema,
+    revokeAccountOptionsSchema,
     sessionIdSchema,
     sessionLimitSchema
 } from '@main/ipc/validation';
@@ -21,7 +25,8 @@ import {
 } from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
-import { createIpcHandler as baseCreateIpcHandler, createValidatedIpcHandler as baseCreateValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { createValidatedIpcHandler as baseCreateValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { IpcValue, JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
@@ -48,16 +53,6 @@ export interface AuthIpcDependencies {
 export function registerAuthIpc(deps: AuthIpcDependencies) {
     const { proxyService, copilotService, authService, auditLogService, getMainWindow, eventBus } = deps;
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'auth operation');
-    const createIpcHandler = <T = JsonValue, Args extends unknown[] = unknown[]>(
-        handlerName: string,
-        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>
-    ) => baseCreateIpcHandler<T, Args>(
-        handlerName,
-        async (event, ...args) => {
-            validateSender(event);
-            return handler(event, ...args);
-        }
-    );
     const createValidatedIpcHandler = <T = JsonValue, Args extends unknown[] = unknown[]>(
         handlerName: string,
         handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>,
@@ -81,11 +76,14 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
     };
     // --- GitHub/Copilot Device Code Flow ---
 
-    ipcMain.handle('auth:github-login', createIpcHandler('auth:github-login', async (_event, appId: 'profile' | 'copilot' = 'copilot') => {
+    ipcMain.handle('auth:github-login', createValidatedIpcHandler('auth:github-login', async (_event, appId: 'profile' | 'copilot' = 'copilot') => {
         return await proxyService.initiateGitHubAuth(appId);
+    }, {
+        argsSchema: z.tuple([appIdSchema]),
+        schemaVersion: 1
     }));
 
-    ipcMain.handle('auth:poll-token', createIpcHandler('auth:poll-token', async (_event, deviceCode: string, interval: number, appId: 'profile' | 'copilot' = 'copilot') => {
+    ipcMain.handle('auth:poll-token', createValidatedIpcHandler('auth:poll-token', async (_event, deviceCode: string, interval: number, appId: 'profile' | 'copilot' = 'copilot') => {
         try {
             const response = await proxyService.waitForGitHubToken(deviceCode, interval, appId);
             const token = response.access_token;
@@ -125,6 +123,9 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
             });
             return { success: false, error: getErrorMessage(error as Error) };
         }
+    }, {
+        argsSchema: z.tuple([deviceCodeSchema, pollIntervalSchema, appIdSchema]),
+        schemaVersion: 1
     }));
 
     // Note: The following handlers are registered in batch handlers below for optimization
@@ -208,34 +209,49 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
         schemaVersion: 1
     }));
 
-    ipcMain.handle('auth:detect-provider', createIpcHandler('auth:detect-provider', async (_event, providerHint?: string, tokenData?: TokenData) => {
+    ipcMain.handle('auth:detect-provider', createValidatedIpcHandler('auth:detect-provider', async (_event, providerHint?: string, tokenData?: TokenData) => {
         const provider = authService.detectProvider(providerHint, tokenData);
         return { provider };
+    }, {
+        argsSchema: z.tuple([providerSchema.optional(), authTokenDataSchema.optional()]),
+        schemaVersion: 1
     }));
 
-    ipcMain.handle('auth:get-provider-health', createIpcHandler('auth:get-provider-health', async (_event, provider?: string) => {
+    ipcMain.handle('auth:get-provider-health', createValidatedIpcHandler('auth:get-provider-health', async (_event, provider?: string) => {
         return await authService.getProviderHealth(provider);
+    }, {
+        argsSchema: z.tuple([providerSchema.optional()]),
+        schemaVersion: 1
     }));
 
-    ipcMain.handle('auth:get-provider-analytics', createIpcHandler('auth:get-provider-analytics', async () => {
+    ipcMain.handle('auth:get-provider-analytics', createValidatedIpcHandler('auth:get-provider-analytics', async () => {
         return await authService.getProviderAnalytics();
-    }));
+    }, { schemaVersion: 1 }));
 
-    ipcMain.handle('auth:rotate-token-encryption', createIpcHandler('auth:rotate-token-encryption', async (_event, provider?: string) => {
+    ipcMain.handle('auth:rotate-token-encryption', createValidatedIpcHandler('auth:rotate-token-encryption', async (_event, provider?: string) => {
         return await authService.rotateTokenEncryption(provider);
+    }, {
+        argsSchema: z.tuple([providerSchema.optional()]),
+        schemaVersion: 1
     }));
 
-    ipcMain.handle('auth:revoke-account-token', createIpcHandler('auth:revoke-account-token', async (
+    ipcMain.handle('auth:revoke-account-token', createValidatedIpcHandler('auth:revoke-account-token', async (
         _event,
         accountId: string,
         options?: { revokeAccess?: boolean; revokeRefresh?: boolean; revokeSession?: boolean }
     ) => {
         await authService.revokeAccountTokens(accountId, options);
         return { success: true };
+    }, {
+        argsSchema: z.tuple([accountIdSchema, revokeAccountOptionsSchema]),
+        schemaVersion: 1
     }));
 
-    ipcMain.handle('auth:get-token-analytics', createIpcHandler('auth:get-token-analytics', async (_event, provider?: string) => {
+    ipcMain.handle('auth:get-token-analytics', createValidatedIpcHandler('auth:get-token-analytics', async (_event, provider?: string) => {
         return await authService.getTokenAnalytics(provider);
+    }, {
+        argsSchema: z.tuple([providerSchema.optional()]),
+        schemaVersion: 1
     }));
 
     ipcMain.handle('auth:export-credentials', createValidatedIpcHandler('auth:export-credentials', async (
@@ -355,8 +371,11 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
         schemaVersion: 1
     }));
 
-    ipcMain.handle('auth:get-session-analytics', createIpcHandler('auth:get-session-analytics', async (_event, provider?: string) => {
+    ipcMain.handle('auth:get-session-analytics', createValidatedIpcHandler('auth:get-session-analytics', async (_event, provider?: string) => {
         return authService.getSessionAnalytics(provider);
+    }, {
+        argsSchema: z.tuple([providerSchema.optional()]),
+        schemaVersion: 1
     }));
 
     ipcMain.handle('auth:set-session-timeout', createValidatedIpcHandler('auth:set-session-timeout', async (_event, timeoutMs: number) => {
@@ -366,9 +385,9 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
         schemaVersion: 1
     }));
 
-    ipcMain.handle('auth:get-session-timeout', createIpcHandler('auth:get-session-timeout', async () => {
+    ipcMain.handle('auth:get-session-timeout', createValidatedIpcHandler('auth:get-session-timeout', async () => {
         return { timeoutMs: authService.getSessionIdleTimeout() };
-    }));
+    }, { schemaVersion: 1 }));
 
     // Note: auth:has-linked-account is registered in batch handlers below
 
@@ -377,9 +396,9 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
         const provider = args[0] as string | undefined;
         try {
             if (provider) {
-                return (await authService.getAccountsByProvider(provider)) as unknown as JsonValue;
+                return serializeToIpc(await authService.getAccountsByProvider(provider));
             }
-            return (await authService.getAllAccounts()) as unknown as JsonValue;
+            return serializeToIpc(await authService.getAllAccounts());
         } catch (error) {
             appLogger.error('AuthIPC', 'Failed to get linked accounts (batched)', error as Error);
             return [];
@@ -389,7 +408,7 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
     registerSecureBatchableHandler('auth:get-active-linked-account', async (_event, ...args): Promise<import('@shared/types/common').JsonValue> => {
         const provider = args[0] as string;
         try {
-            return (await authService.getActiveAccount(provider)) as unknown as JsonValue;
+            return serializeToIpc(await authService.getActiveAccount(provider));
         } catch (error) {
             appLogger.error('AuthIPC', 'Failed to get active linked account (batched)', error as Error);
             return null;

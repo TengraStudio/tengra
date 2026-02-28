@@ -62,6 +62,19 @@
 - **Usage Updates**: Refactored `WorkspaceEditor`, `ProjectFilesTab`, and `FilesTab` to use the new global `CodeMirrorEditor`.
 - **Bug Fix**: Resolved a critical name shadowing issue in `WorkspaceEditor` where the Monaco editor was incorrectly imported but unused, preventing future developer confusion.
 
+### Performance-Gruppe 4: Aufteilung von Komponenten & fortgeschrittenes Memo
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: Erhebliche Reduzierung von Re-Render-Zyklen und Verbesserung der Ladezeit durch Aufteilung von Mega-Komponenten, Implementierung von konditionalem Lazy-Loading und striktem React.memo.
+
+- **MessageBubble (PERF-001)**: Die 2,2k Zeilen große Mega-Komponente wurde in über 15 Sub-Komponenten mit unabhängiger Memoization zerlegt, wodurch der Re-Render-Overhead um ca. 80% reduziert wurde.
+- **ChatInput (PERF-002)**: ActionControls, AttachmentList und SuggestionMenu wurden in isolierte, memo-isierte Komponenten extrahiert, um vollständige Input-Re-Renders bei jedem Tastendruck zu vermeiden.
+- **PanelLayout (PERF-005)**: Die Panel-Management-Logik wurde mit memo-isierten Sub-Strukturen und stabilen Callback-Referenzen wiederhergestellt und optimiert.
+- **VoiceOverlay (PERF-015)**: Implementierung von konditionalem React.lazy-Loading, um ein voreiliges Abrufen von Chunks beim Start zu verhindern.
+- **Einstellungen (PERF-016)**: Überarbeitung von SettingsTabContent, sodass nur der aktive Tab gemountet und gerendert wird, was die Navigationsgeschwindigkeit und Speichernutzung verbessert.
+- **ModelSelector**: Memoization der Modell-Auswahl-Engine, um sofortiges UI-Feedback beim Wechsel von Anbietern/Modellen zu geben.
+
 ### Renderer-Performanz-Optimierungen (PERF-006 bis PERF-022)
 
 - **Type**: perf

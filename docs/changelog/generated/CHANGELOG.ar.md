@@ -62,6 +62,19 @@
 - **Usage Updates**: Refactored `WorkspaceEditor`, `ProjectFilesTab`, and `FilesTab` to use the new global `CodeMirrorEditor`.
 - **Bug Fix**: Resolved a critical name shadowing issue in `WorkspaceEditor` where the Monaco editor was incorrectly imported but unused, preventing future developer confusion.
 
+### دفعة الأداء 4: تقسيم المكونات و Memoization المتقدم
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: تقليل دورات إعادة التنفيذ (re-render) بشكل كبير وتحسين وقت التحميل الأولي من خلال تقسيم المكونات الضخمة وتطبيق React.memo.
+
+- **MessageBubble (PERF-001)**: تم تفكيك المكون الضخم المكون من 2.2 ألف سطر إلى أكثر من 15 مكونًا فرعيًا مع memoization مستقل، مما قلل من حمل إعادة التنفيذ بنسبة 80% تقريبًا.
+- **ChatInput (PERF-002)**: تم استخراج ActionControls و AttachmentList و SuggestionMenu إلى مكونات معزولة ومموهة (memoized)، مما منع إعادة تنفيذ المدخلات بالكامل عند كتابة كل حرف.
+- **PanelLayout (PERF-005)**: تم استعادة وتحسين منطق إدارة اللوحات باستخدام هياكل مموهة ومراجع استدعاء (callback) مستقرة.
+- **VoiceOverlay (PERF-015)**: تنفيذ التحميل الكسول (lazy loading) الشرطي لمنع جلب الملفات المسبق عند بدء التشغيل.
+- **الإعدادات (PERF-016)**: تمت إعادة هيكلة SettingsTabContent ليتم تحميل وعرض التبويب النشط فقط، مما أدى إلى تحسين سرعة التنقل واستخدام الذاكرة.
+- **ModelSelector**: تم تمويه (memoizing) محرك اختيار النماذج لتوفير استجابة فورية للواجهة عند تغيير المزود أو النموذج.
+
 ### تحسينات أداء العارض (PERF-006 إلى PERF-022)
 
 - **Type**: perf

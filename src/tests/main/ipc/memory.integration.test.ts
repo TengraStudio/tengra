@@ -54,7 +54,7 @@ describe('Memory IPC Handlers', () => {
         mockIpcMainHandlers.clear();
         
         // Register handlers
-        registerMemoryIpc(mockMemoryService as any);
+        registerMemoryIpc(() => null, mockMemoryService as any);
     });
 
     describe('memory:getAll', () => {

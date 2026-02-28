@@ -6,6 +6,7 @@ import { EventEmitter } from 'events';
 
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
+import { OPERATION_TIMEOUTS } from '@shared/constants/timeouts';
 import { getErrorMessage } from '@shared/utils/error.util';
 
 export interface HealthStatus {
@@ -239,7 +240,7 @@ export class HealthCheckService extends BaseService {
                 // Simple ping-like check using fetch to a reliable CDN/DNS
                 // Using 1.1.1.1 (Cloudflare) or generic connectivity check
                 const controller = new AbortController();
-                const id = setTimeout(() => controller.abort(), 2000);
+                const id = setTimeout(() => controller.abort(), OPERATION_TIMEOUTS.CONNECTIVITY_CHECK);
                 const res = await fetch('https://1.1.1.1', { method: 'HEAD', signal: controller.signal });
                 clearTimeout(id);
                 return res.ok || res.status === 405; // 405 is fine for HEAD, means we reached it

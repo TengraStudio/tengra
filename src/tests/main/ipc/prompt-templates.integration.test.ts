@@ -63,7 +63,7 @@ describe('Prompt Templates IPC Handlers', () => {
 
         mockEvent = {} as IpcMainInvokeEvent;
 
-        registerPromptTemplatesIpc(mockPromptTemplatesService);
+        registerPromptTemplatesIpc(() => null, mockPromptTemplatesService);
     });
 
     describe('prompt-templates:getAll', () => {

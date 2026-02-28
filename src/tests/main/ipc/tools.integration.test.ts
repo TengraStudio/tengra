@@ -58,7 +58,7 @@ describe('Tools IPC Integration', () => {
             killCommand: vi.fn(),
         };
 
-        registerToolsIpc(mockToolExecutor, mockCommandService);
+        registerToolsIpc(() => null, mockToolExecutor, mockCommandService);
     });
 
     it('should register expected handlers', () => {

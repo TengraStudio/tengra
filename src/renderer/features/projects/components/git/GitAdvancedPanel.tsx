@@ -1,4 +1,4 @@
-import {
+﻿import {
     Check,
     GitBranch,
     GitCompareArrows,
@@ -15,6 +15,7 @@ import {
     Wrench,
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from '@renderer/i18n';
 
 import { cn } from '@/lib/utils';
 
@@ -54,6 +55,7 @@ const Field: React.FC<{
 );
 
 export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ projectPath }) => {
+    const { t } = useTranslation();
     const git = useGitAdvanced(projectPath);
 
     const [stashMessage, setStashMessage] = useState('WIP snapshot');
@@ -94,7 +96,7 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ projectPath 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
             <Card title="GIT-00 Operation Controls" icon={<RefreshCw className="w-4 h-4 text-primary" />} className="xl:col-span-2">
                 <div className="flex flex-wrap items-center gap-2 text-xs">
-                    <Field value={operationTimeoutMs} onChange={setOperationTimeoutMs} placeholder="Timeout (ms)" className="w-36" />
+                    <Field value={operationTimeoutMs} onChange={setOperationTimeoutMs} placeholder={t('placeholder.timeoutMs')} className="w-36" />
                     <button
                         onClick={() => git.setOperationTimeoutMs(Math.max(1000, Number.parseInt(operationTimeoutMs, 10) || 60000))}
                         className="px-3 h-9 rounded-lg border border-border/40 hover:bg-muted/40"
@@ -169,7 +171,7 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ projectPath 
 
             <Card title="GIT-02 Stash Management" icon={<GitCompareArrows className="w-4 h-4 text-primary" />}>
                 <div className="flex gap-2">
-                    <Field value={stashMessage} onChange={setStashMessage} placeholder="Stash message" className="flex-1" />
+                    <Field value={stashMessage} onChange={setStashMessage} placeholder={t('placeholder.stashMessage')} className="flex-1" />
                     <button
                         onClick={() => void git.createStash(stashMessage, true)}
                         className="px-3 h-9 rounded-lg border border-border/40 hover:bg-muted/40 text-xs"
@@ -179,7 +181,7 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ projectPath 
                 </div>
                 <div className="relative">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                    <Field value={stashQuery} onChange={setStashQuery} placeholder="Search stashes" className="pl-8 w-full" />
+                    <Field value={stashQuery} onChange={setStashQuery} placeholder={t('placeholder.searchStashes')} className="pl-8 w-full" />
                 </div>
                 <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                     {filteredStashes.map(stash => (
@@ -203,7 +205,7 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ projectPath 
 
             <Card title="GIT-03 Blame Integration" icon={<GitPullRequest className="w-4 h-4 text-info" />}>
                 <div className="flex gap-2">
-                    <Field value={blameFilePath} onChange={setBlameFilePath} placeholder="Relative file path (e.g. src/App.tsx)" className="flex-1" />
+                    <Field value={blameFilePath} onChange={setBlameFilePath} placeholder={t('placeholder.relativeFilePath')} className="flex-1" />
                     <button onClick={() => void git.loadBlame(blameFilePath)} className="px-3 h-9 rounded-lg border border-border/40 hover:bg-muted/40 text-xs">Load</button>
                 </div>
                 <div className="max-h-64 overflow-y-auto border border-border/40 rounded-lg">
@@ -248,7 +250,7 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ projectPath 
 
             <Card title="GIT-04 Rebase Support" icon={<Workflow className="w-4 h-4 text-warning" />}>
                 <div className="flex gap-2 flex-wrap">
-                    <Field value={rebaseBaseBranch} onChange={setRebaseBaseBranch} placeholder="Base branch" className="w-40" />
+                    <Field value={rebaseBaseBranch} onChange={setRebaseBaseBranch} placeholder={t('placeholder.baseBranch')} className="w-40" />
                     <button onClick={() => void git.fetchRebasePlan(rebaseBaseBranch)} className="px-3 h-9 rounded-lg border border-border/40 hover:bg-muted/40 text-xs">Preview Plan</button>
                     <button onClick={() => void git.runRebaseAction('start', rebaseBaseBranch)} className="px-3 h-9 rounded-lg border border-border/40 hover:bg-muted/40 text-xs">Start Rebase</button>
                     <button onClick={() => void git.runRebaseAction('continue')} className="px-3 h-9 rounded-lg border border-border/40 hover:bg-muted/40 text-xs">Continue</button>
@@ -279,9 +281,9 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ projectPath 
                     <button onClick={() => void git.runSubmoduleAction('sync')} className="px-3 h-9 rounded-lg border border-border/40 hover:bg-muted/40 text-xs">Sync</button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_1fr_auto] gap-2">
-                    <Field value={submoduleUrl} onChange={setSubmoduleUrl} placeholder="Submodule URL" />
-                    <Field value={submodulePath} onChange={setSubmodulePath} placeholder="Submodule path" />
-                    <Field value={submoduleBranch} onChange={setSubmoduleBranch} placeholder="Branch (optional)" />
+                    <Field value={submoduleUrl} onChange={setSubmoduleUrl} placeholder={t('placeholder.submoduleUrl')} />
+                    <Field value={submodulePath} onChange={setSubmodulePath} placeholder={t('placeholder.submodulePath')} />
+                    <Field value={submoduleBranch} onChange={setSubmoduleBranch} placeholder={t('placeholder.branchOptional')} />
                     <button
                         onClick={() => void git.runSubmoduleAction('add', { url: submoduleUrl, path: submodulePath, branch: submoduleBranch })}
                         className="px-3 h-9 rounded-lg border border-border/40 hover:bg-muted/40 text-xs"
@@ -322,13 +324,13 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ projectPath 
                         <option value="hotfix">hotfix</option>
                         <option value="support">support</option>
                     </select>
-                    <Field value={flowName} onChange={setFlowName} placeholder="Branch name" />
-                    <Field value={flowBase} onChange={setFlowBase} placeholder="Base" />
+                    <Field value={flowName} onChange={setFlowName} placeholder={t('placeholder.branchName')} />
+                    <Field value={flowBase} onChange={setFlowBase} placeholder={t('placeholder.base')} />
                     <button onClick={() => void git.startFlowBranch(flowType, flowName, flowBase)} className="px-3 h-9 rounded-lg border border-border/40 hover:bg-muted/40 text-xs">Start</button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_auto] gap-2">
-                    <Field value={finishBranch} onChange={setFinishBranch} placeholder="Branch to finish" />
-                    <Field value={finishTarget} onChange={setFinishTarget} placeholder="Target branch" />
+                    <Field value={finishBranch} onChange={setFinishBranch} placeholder={t('placeholder.branchToFinish')} />
+                    <Field value={finishTarget} onChange={setFinishTarget} placeholder={t('placeholder.targetBranch')} />
                     <button onClick={() => void git.finishFlowBranch(finishBranch, finishTarget, true)} className="px-3 h-9 rounded-lg border border-border/40 hover:bg-muted/40 text-xs">Finish</button>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
@@ -355,7 +357,7 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ projectPath 
                         ))}
                         {git.hookTemplates.length === 0 && <option value="pre-commit">pre-commit</option>}
                     </select>
-                    <Field value={hookTemplate} onChange={setHookTemplate} placeholder="Optional custom hook script" />
+                    <Field value={hookTemplate} onChange={setHookTemplate} placeholder={t('placeholder.customHookScript')} />
                     <button onClick={() => void git.installHook(hookName, hookTemplate)} className="px-3 h-9 rounded-lg border border-border/40 hover:bg-muted/40 text-xs">Install</button>
                 </div>
                 <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
@@ -398,7 +400,7 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ projectPath 
 
             <Card title="GIT-08 Repository Statistics" icon={<GitCompareArrows className="w-4 h-4 text-primary" />} className="xl:col-span-2">
                 <div className="flex flex-wrap items-center gap-2">
-                    <Field value={statsDays} onChange={setStatsDays} placeholder="Days" className="w-28" />
+                    <Field value={statsDays} onChange={setStatsDays} placeholder={t('placeholder.days')} className="w-28" />
                     <button onClick={() => void git.fetchStats(Number(statsDays) || 365)} className="px-3 h-9 rounded-lg border border-border/40 hover:bg-muted/40 text-xs">Refresh Stats</button>
                     <button onClick={() => void git.exportStats(Number(statsDays) || 365)} className="px-3 h-9 rounded-lg border border-border/40 hover:bg-muted/40 text-xs">Export CSV</button>
                 </div>

@@ -34,9 +34,10 @@ import LogoCopilot from '@/assets/copilot.png';
 import LogoOllama from '@/assets/ollama.svg';
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { Message, MessageVariant } from '@/types';
+import { Attachment, Message, MessageVariant } from '@/types';
 
 import { TypingIndicator } from './TypingIndicator';
+import { AttachmentList } from './input/AttachmentList';
 
 import 'katex/dist/katex.min.css';
 import '@renderer/features/chat/components/MessageBubble.css';
@@ -633,7 +634,7 @@ const MarkdownContent = memo(
                                     c =>
                                         isValidElement(c) &&
                                         (c as React.ReactElement<{ type?: string }>).props.type ===
-                                            'checkbox'
+                                        'checkbox'
                                 );
                             return (
                                 <li
@@ -873,6 +874,7 @@ const MessageBubbleContent = memo(
         onStop,
         isSpeaking,
         onCodeConvert,
+        attachments,
         t,
         isUser,
     }: MessageBubbleContentProps) => {
@@ -904,12 +906,20 @@ const MessageBubbleContent = memo(
         }
         if (showRawMarkdown || isUser) {
             return (
-                <div className="whitespace-pre-wrap font-mono text-sm bg-accent/20 rounded-lg p-3 border border-border/30 overflow-x-auto text-foreground/90 leading-relaxed">
-                    {displayContent}
+                <div className="flex flex-col gap-2">
+                    <AttachmentList attachments={attachments} onRemove={() => { }} t={t} />
+                    <div className="whitespace-pre-wrap font-mono text-sm bg-accent/20 rounded-lg p-3 border border-border/30 overflow-x-auto text-foreground/90 leading-relaxed">
+                        {displayContent}
+                    </div>
                 </div>
             );
         }
-        return markdownNode;
+        return (
+            <div className="flex flex-col gap-2">
+                <AttachmentList attachments={attachments} onRemove={() => { }} t={t} />
+                {markdownNode}
+            </div>
+        );
     }
 );
 MessageBubbleContent.displayName = 'MessageBubbleContent';
@@ -1181,6 +1191,7 @@ interface MessageBubbleContentProps {
     isSpeaking?: boolean;
     onCodeConvert?: (imageUrl: string) => void;
     onSourceClick?: (source: string) => void;
+    attachments: Attachment[];
     t: TranslationFn;
 }
 
@@ -1366,7 +1377,7 @@ const useMessageContent = (
             typeof raw === 'string'
                 ? raw
                 : Array.isArray(raw)
-                  ? raw
+                    ? raw
                         .map(c => {
                             if (typeof c === 'string') {
                                 return c;
@@ -1377,7 +1388,7 @@ const useMessageContent = (
                             return '';
                         })
                         .join('')
-                  : '';
+                    : '';
         const cacheKey = `${content}::${reasoning ?? ''}`;
         if (!streaming) {
             const cached = messageContentParseCache.get(cacheKey);
@@ -1721,6 +1732,7 @@ interface ContentRenderContext {
     displayContent: string;
     quotaDetails: QuotaDetails | null;
     images: string[];
+    attachments: Attachment[];
     showRawMarkdown: boolean;
     callbacks: {
         onSpeak?: (text: string) => void;
@@ -1757,6 +1769,7 @@ const buildMessageContentProps = (ctx: ContentRenderContext): MessageBubbleConte
     displayContent: ctx.displayContent,
     quotaDetails: ctx.quotaDetails,
     images: ctx.images,
+    attachments: ctx.attachments,
     showRawMarkdown: ctx.showRawMarkdown,
     onSpeak: ctx.callbacks.onSpeak,
     onStop: ctx.callbacks.onStop,
@@ -1989,6 +2002,7 @@ const SingleMessageView = memo(
             displayContent,
             quotaDetails: quota,
             images,
+            attachments: message.attachments || [],
             showRawMarkdown,
             callbacks: { onSpeak, onStop, onCodeConvert },
             t,

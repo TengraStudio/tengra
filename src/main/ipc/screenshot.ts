@@ -1,19 +1,22 @@
 import { appLogger } from '@main/logging/logger';
+import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
-import { desktopCapturer, ipcMain } from 'electron';
+import { BrowserWindow, desktopCapturer, ipcMain } from 'electron';
 
 /**
  * Registers IPC handlers for screenshot capture operations
  */
-export function registerScreenshotIpc(): void {
+export function registerScreenshotIpc(getMainWindow: () => BrowserWindow | null): void {
     appLogger.info('ScreenshotIPC', 'Registering screenshot IPC handlers');
+    const validateSender = createMainWindowSenderValidator(getMainWindow, 'screenshot operation');
 
     ipcMain.handle(
         'screenshot:capture',
         createSafeIpcHandler(
             'screenshot:capture',
-            async () => {
+            async (event) => {
+                validateSender(event);
                 return await withRateLimit('screenshot', async () => {
                     const sources = await desktopCapturer.getSources({
                         types: ['screen'],

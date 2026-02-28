@@ -12,6 +12,7 @@ import { QuotaModel, QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { withRetry } from '@main/utils/retry.util';
 import { getErrorMessage } from '@shared/utils/error.util';
 import axios from 'axios';
 import { app } from 'electron';
@@ -661,18 +662,13 @@ export class LocalImageService extends BaseService {
     }
 
     private async executeWithRetry<T>(operation: () => Promise<T>, maxAttempts: number): Promise<T> {
-        let lastError: Error | null = null;
-        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-            try {
-                return await operation();
-            } catch (error) {
-                lastError = error instanceof Error ? error : new Error(String(error));
-                if (attempt < maxAttempts) {
-                    await this.delay(this.RETRY_POLICY.networkDelayMs);
-                }
-            }
-        }
-        throw (lastError ?? new Error('Unknown retry failure'));
+        return withRetry(operation, {
+            maxRetries: maxAttempts - 1,
+            baseDelayMs: this.RETRY_POLICY.networkDelayMs,
+            maxDelayMs: this.RETRY_POLICY.networkDelayMs,
+            jitterFactor: 0,
+            shouldRetry: () => true,
+        });
     }
 
     private async generateWithOllama(options: ImageGenerationOptions): Promise<string> {

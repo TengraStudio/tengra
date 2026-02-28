@@ -15,7 +15,7 @@ import { DatabaseService, LinkedAccount } from '@main/services/data/database.ser
 import { SecurityService } from '@main/services/security/security.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { JsonObject } from '@shared/types/common';
-import { getErrorMessage } from '@shared/utils/error.util';
+import { AppErrorCode, getErrorMessage, TengraError, ValidationError } from '@shared/utils/error.util';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -604,7 +604,7 @@ export class AuthService extends BaseService {
     createMasterKeyBackup(passphrase: string): string {
         const result = this.securityService.createEncryptedMasterKeyBackup(passphrase);
         if (!result.success || !result.result?.backup) {
-            throw new Error(result.error ?? 'Failed to create master key backup');
+            throw new TengraError(result.error ?? 'Failed to create master key backup', AppErrorCode.AUTH_ERROR);
         }
         return result.result.backup;
     }
@@ -615,7 +615,7 @@ export class AuthService extends BaseService {
     restoreMasterKeyBackup(backupPayload: string, passphrase: string): void {
         const result = this.securityService.restoreMasterKeyBackup(backupPayload, passphrase);
         if (!result.success) {
-            throw new Error(result.error ?? 'Failed to restore master key backup');
+            throw new TengraError(result.error ?? 'Failed to restore master key backup', AppErrorCode.AUTH_ERROR);
         }
     }
 
@@ -849,7 +849,7 @@ export class AuthService extends BaseService {
             .filter(account => account.accessToken || account.refreshToken || account.sessionToken);
 
         if (exportableAccounts.length === 0) {
-            throw new Error('No linked credentials available for export');
+            throw new ValidationError('No linked credentials available for export');
         }
 
         const payload: CredentialExportPayload = {
@@ -883,18 +883,18 @@ export class AuthService extends BaseService {
         this.validateExportPassword(password);
         const bundle = this.parseCredentialExportPackage(payloadText);
         if (Date.now() > bundle.expiresAt) {
-            throw new Error('Credential export package has expired');
+            throw new ValidationError('Credential export package has expired');
         }
 
         const serializedPayload = this.decryptCredentialPayload(bundle, password);
         const checksum = this.computeChecksum(serializedPayload);
         if (checksum !== bundle.checksum) {
-            throw new Error('Credential export checksum verification failed');
+            throw new ValidationError('Credential export checksum verification failed');
         }
 
         const payload = this.parseCredentialExportPayload(serializedPayload);
         if (Date.now() > payload.expiresAt) {
-            throw new Error('Credential export payload has expired');
+            throw new ValidationError('Credential export payload has expired');
         }
 
         let imported = 0;
@@ -942,7 +942,7 @@ export class AuthService extends BaseService {
         }
 
         if (imported === 0 && skipped > 0) {
-            throw new Error('Credential import failed for all accounts');
+            throw new TengraError('Credential import failed for all accounts', AppErrorCode.AUTH_ERROR);
         }
 
         return { imported, skipped, expiresAt: payload.expiresAt };
@@ -1062,11 +1062,11 @@ export class AuthService extends BaseService {
         try {
             parsed = JSON.parse(payloadText);
         } catch (error) {
-            throw new Error(`Invalid credential export package JSON: ${getErrorMessage(error as Error)}`);
+            throw new ValidationError(`Invalid credential export package JSON: ${getErrorMessage(error as Error)}`);
         }
 
         if (!parsed || typeof parsed !== 'object') {
-            throw new Error('Invalid credential export package');
+            throw new ValidationError('Invalid credential export package');
         }
 
         const pkg = parsed as Partial<CredentialExportPackage>;
@@ -1079,7 +1079,7 @@ export class AuthService extends BaseService {
             !pkg.checksum ||
             typeof pkg.expiresAt !== 'number'
         ) {
-            throw new Error('Credential export package schema mismatch');
+            throw new ValidationError('Credential export package schema mismatch');
         }
 
         return pkg as CredentialExportPackage;
@@ -1090,11 +1090,11 @@ export class AuthService extends BaseService {
         try {
             parsed = JSON.parse(serializedPayload);
         } catch (error) {
-            throw new Error(`Invalid credential export payload JSON: ${getErrorMessage(error as Error)}`);
+            throw new ValidationError(`Invalid credential export payload JSON: ${getErrorMessage(error as Error)}`);
         }
 
         if (!parsed || typeof parsed !== 'object') {
-            throw new Error('Invalid credential export payload');
+            throw new ValidationError('Invalid credential export payload');
         }
 
         const payload = parsed as Partial<CredentialExportPayload>;
@@ -1103,7 +1103,7 @@ export class AuthService extends BaseService {
             typeof payload.expiresAt !== 'number' ||
             !Array.isArray(payload.accounts)
         ) {
-            throw new Error('Credential export payload schema mismatch');
+            throw new ValidationError('Credential export payload schema mismatch');
         }
         return payload as CredentialExportPayload;
     }
@@ -1143,8 +1143,9 @@ export class AuthService extends BaseService {
             ]);
             return decrypted.toString('utf8');
         } catch (error) {
-            throw new Error(
-                `Failed to decrypt credential export package: ${getErrorMessage(error as Error)}`
+            throw new TengraError(
+                `Failed to decrypt credential export package: ${getErrorMessage(error as Error)}`,
+                AppErrorCode.AUTH_ERROR
             );
         }
     }
@@ -1159,7 +1160,7 @@ export class AuthService extends BaseService {
 
     private validateExportPassword(password: string): void {
         if (password.length < EXPORT_PASSWORD_MIN_LENGTH) {
-            throw new Error(`Export password must be at least ${EXPORT_PASSWORD_MIN_LENGTH} characters`);
+            throw new ValidationError(`Export password must be at least ${EXPORT_PASSWORD_MIN_LENGTH} characters`);
         }
     }
 
@@ -1168,11 +1169,11 @@ export class AuthService extends BaseService {
             return DEFAULT_EXPORT_EXPIRY_HOURS;
         }
         if (!Number.isFinite(expiresInHours)) {
-            throw new Error('Export expiration must be a finite number');
+            throw new ValidationError('Export expiration must be a finite number');
         }
         const normalized = Math.floor(expiresInHours);
         if (normalized < 1 || normalized > MAX_EXPORT_EXPIRY_HOURS) {
-            throw new Error(`Export expiration must be between 1 and ${MAX_EXPORT_EXPIRY_HOURS} hours`);
+            throw new ValidationError(`Export expiration must be between 1 and ${MAX_EXPORT_EXPIRY_HOURS} hours`);
         }
         return normalized;
     }

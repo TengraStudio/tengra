@@ -69,7 +69,7 @@ describe('Llama IPC Handlers', () => {
 
         mockEvent = {} as IpcMainInvokeEvent;
 
-        registerLlamaIpc(mockLlamaService);
+        registerLlamaIpc(() => null, mockLlamaService);
     });
 
     describe('llama:loadModel', () => {

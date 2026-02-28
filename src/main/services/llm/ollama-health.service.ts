@@ -1,6 +1,8 @@
 import { EventEmitter } from 'events';
 
+import { CircuitBreaker } from '@main/core/circuit-breaker';
 import { BaseService } from '@main/services/base.service';
+import { REQUEST_TIMEOUTS } from '@shared/constants/timeouts';
 import { getErrorMessage } from '@shared/utils/error.util';
 
 export interface OllamaStatus {
@@ -22,6 +24,12 @@ export class OllamaHealthService extends BaseService {
     /** Debounce timer for rapid check requests */
     private lastCheckTime: number = 0;
     private readonly minCheckIntervalMs: number = 2000; // Minimum 2s between checks
+    /** Circuit breaker for Ollama health check requests */
+    private circuitBreaker = new CircuitBreaker({
+        failureThreshold: 3,
+        resetTimeoutMs: 30000,
+        serviceName: 'OllamaHealth'
+    });
 
     constructor(baseUrl?: string) {
         super('OllamaHealthService');
@@ -101,13 +109,20 @@ export class OllamaHealthService extends BaseService {
 
         try {
             // Try to get Ollama version/tags
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-            const response = await fetch(`${this.baseUrl}/api/tags`, {
-                signal: controller.signal
+            const response = await this.circuitBreaker.execute(async () => {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUTS.HEALTH_CHECK);
+                try {
+                    const res = await fetch(`${this.baseUrl}/api/tags`, {
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+                    return res;
+                } catch (err) {
+                    clearTimeout(timeoutId);
+                    throw err;
+                }
             });
-            clearTimeout(timeoutId);
 
             if (response.ok) {
                 const data = await response.json() as { models?: unknown[] };

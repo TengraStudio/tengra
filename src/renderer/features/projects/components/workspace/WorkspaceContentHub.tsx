@@ -1,4 +1,5 @@
-import React from 'react';
+﻿import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
     autocompleteMasteryGuide,
@@ -23,6 +24,7 @@ const MEMORY_SYNC_STORAGE_KEY_PREFIX = 'workspace.memory.sync:v1:';
 const AGENT_METRICS_STORAGE_KEY_PREFIX = 'workspace.agent.metrics:v1:';
 
 export const WorkspaceContentHub: React.FC<WorkspaceContentHubProps> = ({ project, onApplyTemplate }) => {
+    const { t } = useTranslation();
     const storageKey = `${CHECKLIST_STORAGE_KEY_PREFIX}${project.id}`;
     const debateStorageKey = `${DEBATE_HISTORY_STORAGE_KEY_PREFIX}${project.id}`;
     const memoryStorageKey = `${MEMORY_SYNC_STORAGE_KEY_PREFIX}${project.id}`;
@@ -148,7 +150,7 @@ export const WorkspaceContentHub: React.FC<WorkspaceContentHubProps> = ({ projec
                     <input
                         value={query}
                         onChange={event => setQuery(event.target.value)}
-                        placeholder="Search failure signatures..."
+                        placeholder={t('placeholder.searchFailureSignatures')}
                         className="w-full rounded border border-border/40 bg-background px-2 py-1"
                     />
                     <div className="space-y-1 max-h-28 overflow-auto">
@@ -210,7 +212,7 @@ export const WorkspaceContentHub: React.FC<WorkspaceContentHubProps> = ({ projec
                     <input
                         value={debateTopic}
                         onChange={event => setDebateTopic(event.target.value)}
-                        placeholder="Enter a topic..."
+                        placeholder={t('placeholder.enterTopic')}
                         className="w-full rounded border border-border/40 bg-background px-2 py-1"
                     />
                     <button className="secondary-btn text-xs px-2 py-1" onClick={runDebate}>

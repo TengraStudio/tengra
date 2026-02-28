@@ -19,7 +19,7 @@ import {
     VotingConfiguration,
     VotingSession,
 } from '@shared/types/project-agent';
-import { BrowserWindow, ipcMain } from 'electron';
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 
 interface CanvasNode {
     id: string;
@@ -485,10 +485,11 @@ export function registerProjectAgentIpc(
 
     ipcMain.handle(
         'project:create-voting-session',
-        createSafeIpcHandler('project:create-voting-session', async (
-            _,
-            payload: { taskId: string; stepIndex: number; question: string; options: string[] }
-        ): Promise<VotingSession> => {
+        createSafeIpcHandler<VotingSession | null>('project:create-voting-session', async (
+            _: IpcMainInvokeEvent,
+            ...args: unknown[]
+        ): Promise<VotingSession | null> => {
+            const payload = args[0] as { taskId: string; stepIndex: number; question: string; options: string[] };
             validateString(payload.taskId, 'taskId');
             validateNumber(payload.stepIndex, 'stepIndex');
             validateString(payload.question, 'question');
@@ -498,7 +499,7 @@ export function registerProjectAgentIpc(
                 payload.question,
                 payload.options
             );
-        }, null as unknown as VotingSession)
+        }, null)
     );
 
     ipcMain.handle(
