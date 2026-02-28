@@ -1,7 +1,7 @@
 import * as path from 'path';
 
-import { appLogger } from '@main/logging/logger';
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
+import { appLogger } from '@main/logging/logger';
 import { chatQueueManager, OrchestrationPolicy } from '@main/services/chat-queue.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { ContextRetrievalService } from '@main/services/llm/context-retrieval.service';
