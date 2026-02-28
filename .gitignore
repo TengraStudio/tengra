@@ -33,6 +33,12 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 *.tmp.js
 *.tmp.ts
 
+# Temporary analysis/diagnostic scripts and output at project root
+find_cross_imports.js
+find_cross_imports.py
+parse_lint.js
+lint_results.json
+
 .vscode
 
 # Runtime data
