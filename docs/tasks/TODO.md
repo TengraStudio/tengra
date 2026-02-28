@@ -220,8 +220,8 @@
 - (x) **SECURITY-017**: Prototype Pollution in sanitizeObject — `src/shared/utils/sanitize.util.ts:189-222` — No `__proto__`/`constructor` key filtering.
 - (x) **SECURITY-018**: Unvalidated WebSocket Messages — Added Zod schema validation with strict mode.
 - (x) **SECURITY-019**: z.any() Validation Bypass — `src/shared/schemas/agent-checkpoint.schema.ts:65-70` — 6 fields using z.any().
-- ( ) **SECURITY-020**: Empty Redis Password — `website/tengra-backend/config.json:28` — Unauthenticated Redis access.
-- ( ) **SECURITY-021**: Prompt Injection via RAG Context — `src/main/ipc/chat.ts:158` — RAG context injected without escaping.
+- (x) **SECURITY-020**: Empty Redis Password — Already handled by `TENGRA_REDIS_PASSWORD` env var override in `main.cpp`.
+- (x) **SECURITY-021**: Prompt Injection via RAG Context — Added `sanitizeRAGContext()` and XML delimiters.
 - (x) **SECURITY-022**: Terminal Export Path Traversal — `src/main/ipc/terminal.ts:564-572` — exportPath has no path sanitization.
 - (x) **SECURITY-023**: Insufficient Key Masking — `src/main/ipc/key-rotation.ts:105` — Short keys mostly exposed in logs.
 
@@ -246,10 +246,10 @@
 ### 🟢 Low
 
 - ( ) **SECURITY-039**: Weak sanitizeSqlInput Function — `src/shared/utils/sanitize.util.ts:231-261` — Creates false sense of security.
-- ( ) **SECURITY-040**: Max Body Size 100MB — `website/tengra-backend/config.json:42` — Memory exhaustion DoS vector.
+- (x) **SECURITY-040**: Max Body Size 100MB — Reduced to 10MB.
 - (x) **SECURITY-041**: Process Env Leaked to PTY — `src/main/services/system/process.service.ts:66` — Full env passed to spawned processes.
-- ( ) **SECURITY-042**: Max Connections Per IP Unlimited — `website/tengra-backend/config.json:41` — No per-IP connection limit.
-- ( ) **SECURITY-043**: Server Header Fingerprinting — `website/tengra-backend/config.json:38` — Reveals server technology.
+- (x) **SECURITY-042**: Max Connections Per IP Unlimited — Set to 10 per IP.
+- (x) **SECURITY-043**: Server Header Fingerprinting — Set to empty string.
 - ( ) **SECURITY-044**: Marketplace Security in localStorage — `website/tengra-frontend/lib/marketplace-security.ts` — Trusted lists modifiable by XSS.
 - ( ) **SECURITY-045**: Missing Workflow Authorization — `src/main/ipc/workflow.ts:23-55` — No auth checks on workflow CRUD.
 
