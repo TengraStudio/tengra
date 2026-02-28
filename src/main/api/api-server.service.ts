@@ -1,4 +1,4 @@
-import { randomBytes } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 import { createServer, IncomingMessage, Server as HttpServer, ServerResponse } from 'http';
 
 import { appLogger } from '@main/logging/logger';
@@ -94,6 +94,8 @@ export class ApiServerService extends BaseService {
     private wsServer: WebSocketServer | null = null;
     private port: number;
     private apiToken: string = '';
+    /** SECURITY-032: CSRF token for state-changing requests */
+    private csrfToken: string = '';
 
     constructor(private options: ApiServerOptions) {
         super('ApiServerService');
@@ -119,6 +121,9 @@ export class ApiServerService extends BaseService {
 
         // Generate API token for this session
         this.apiToken = this.generateApiToken();
+
+        // SECURITY-032: Generate CSRF token for state-changing endpoint protection
+        this.csrfToken = randomUUID();
 
         await this.startServer();
     }
@@ -261,6 +266,19 @@ export class ApiServerService extends BaseService {
                 message: 'Rate limit exceeded'
             });
             return;
+        }
+
+        // SECURITY-032: Validate CSRF token on state-changing requests
+        if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
+            const csrfHeader = req.headers['x-csrf-token'];
+            if (typeof csrfHeader !== 'string' || csrfHeader !== this.csrfToken) {
+                this.sendJson(res, 403, {
+                    success: false,
+                    error: 'Forbidden',
+                    message: 'Invalid or missing CSRF token'
+                });
+                return;
+            }
         }
 
         // Handle authenticated routes
@@ -462,6 +480,10 @@ export class ApiServerService extends BaseService {
         // Route mapping for authenticated endpoints
         if (method === 'GET') {
             switch (pathname) {
+                case '/api/csrf-token':
+                    // SECURITY-032: Expose CSRF token to authenticated clients
+                    this.sendJson(res, 200, { csrfToken: this.csrfToken });
+                    return;
                 case '/api/tools/list':
                     await this.handleToolsList(res);
                     return;
@@ -514,7 +536,7 @@ export class ApiServerService extends BaseService {
         }
 
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-CSRF-Token');
         res.setHeader('Access-Control-Allow-Credentials', 'true');
     }
 

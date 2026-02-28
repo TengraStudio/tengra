@@ -235,7 +235,7 @@
 - (x) **SECURITY-029**: Model Name Not Sanitized — `src/main/ipc/ollama.ts:41-50` — Model names may contain shell metacharacters.
 - (x) **SECURITY-030**: Unvalidated Tool Arguments — Replaced `z.unknown()` with typed union schema.
 - (x) **SECURITY-031**: Insufficient Content Filtering — Integrated `content-filter.service.ts` with 35+ patterns across 6 categories.
-- ( ) **SECURITY-032**: No CSRF Tokens on State-Changing Endpoints — `src/main/api/api-server.service.ts` — POST endpoints lack CSRF tokens.
+- (x) **SECURITY-032**: No CSRF Tokens on State-Changing Endpoints — Added CSRF token generation, validation middleware, and token endpoint.
 - ( ) **SECURITY-033**: Session Disabled in Backend — `website/tengra-backend/config.json:36` — No session revocation capability.
 - ( ) **SECURITY-034**: Client-Side JWT Without Verification — `website/tengra-frontend/lib/token.ts` — Role from unverified claims.
 - ( ) **SECURITY-035**: localStorage Token Storage — `website/tengra-frontend/lib/auth-api.ts` — Tokens accessible to XSS.
@@ -245,7 +245,7 @@
 
 ### 🟢 Low
 
-- ( ) **SECURITY-039**: Weak sanitizeSqlInput Function — `src/shared/utils/sanitize.util.ts:231-261` — Creates false sense of security.
+- (x) **SECURITY-039**: Weak sanitizeSqlInput Function — Added deprecation warning, proper escaping, expanded blocklist.
 - (x) **SECURITY-040**: Max Body Size 100MB — Reduced to 10MB.
 - (x) **SECURITY-041**: Process Env Leaked to PTY — `src/main/services/system/process.service.ts:66` — Full env passed to spawned processes.
 - (x) **SECURITY-042**: Max Connections Per IP Unlimited — Set to 10 per IP.

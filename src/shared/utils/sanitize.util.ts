@@ -223,23 +223,38 @@ export function sanitizeObject<T extends Record<string, unknown>>(
 }
 
 /**
- * Sanitizes SQL-like input to prevent injection
- * Note: This is a basic sanitization. Always use parameterized queries in production.
- * 
+ * @deprecated **SECURITY WARNING — Do NOT rely on this function for SQL injection prevention.**
+ * Blocklist-based sanitization is fundamentally flawed: it cannot anticipate all attack
+ * vectors (encoding tricks, keyword variations, database-specific syntax) and creates a
+ * false sense of security. **Always use parameterized queries / prepared statements instead.**
+ *
+ * This function is retained only for defense-in-depth on display/logging strings where
+ * the value will never be interpolated into a SQL statement. If you find yourself calling
+ * this before a query, refactor to use parameterized queries immediately.
+ *
  * @param input - The input string to sanitize
- * @returns Sanitized string
+ * @returns Sanitized string with common SQL meta-characters escaped or removed
  */
 export function sanitizeSqlInput(input: string): string {
     if (typeof input !== 'string') {
         return '';
     }
 
+    // Escape single quotes by doubling them (standard SQL escaping)
+    let sanitized = input.replace(/'/g, "''");
+
+    // Escape backslashes (used in some DB engines for escape sequences)
+    sanitized = sanitized.replace(/\\/g, '\\\\');
+
     // Remove SQL comment syntax
-    let sanitized = input.replace(/--/g, '');
+    sanitized = sanitized.replace(/--/g, '');
     sanitized = sanitized.replace(/\/\*[\s\S]*?\*\//g, '');
 
     // Remove semicolons (statement terminators)
     sanitized = sanitized.replace(/;/g, '');
+
+    // Remove null bytes which can bypass filters
+    sanitized = sanitized.replace(/\0/g, '');
 
     // Remove common SQL keywords that could be used for injection
     const dangerousKeywords = [
@@ -251,7 +266,12 @@ export function sanitizeSqlInput(input: string): string {
         /\bCREATE\s+TABLE\b/gi,
         /\bEXEC\b/gi,
         /\bEXECUTE\b/gi,
-        /\bUNION\s+SELECT\b/gi
+        /\bUNION\s+SELECT\b/gi,
+        /\bUNION\s+ALL\s+SELECT\b/gi,
+        /\bINTO\s+OUTFILE\b/gi,
+        /\bLOAD_FILE\b/gi,
+        /\bBENCHMARK\b/gi,
+        /\bSLEEP\b/gi
     ];
 
     for (const keyword of dangerousKeywords) {
