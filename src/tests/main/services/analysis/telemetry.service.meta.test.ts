@@ -3,7 +3,6 @@
  */
 import {
     type MetaTelemetrySnapshot,
-    TelemetryErrorCode,
     TelemetryService
 } from '@main/services/analysis/telemetry.service';
 import { SettingsService } from '@main/services/system/settings.service';
