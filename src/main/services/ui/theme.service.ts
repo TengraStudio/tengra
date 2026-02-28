@@ -125,9 +125,9 @@ export class ThemeService extends BaseService {
         if (typeof colors !== 'object' || colors === null || Array.isArray(colors)) {
             return ThemeErrorCode.INVALID_COLORS;
         }
-        const colorsRecord = colors as Record<string, unknown>;
-        for (const key of REQUIRED_COLOR_KEYS) {
-            if (typeof colorsRecord[key] !== 'string') {
+        const requiredKeys = REQUIRED_COLOR_KEYS as ReadonlyArray<keyof ThemeColors>;
+        for (const key of requiredKeys) {
+            if (typeof colors[key] !== 'string') {
                 return ThemeErrorCode.INVALID_COLORS;
             }
         }
@@ -167,14 +167,33 @@ export class ThemeService extends BaseService {
         return { ...DEFAULT_THEME_STORE };
     }
 
-    private async saveStore(): Promise<void> {
-        try {
-            const tempPath = this.storePath + '.tmp';
-            await fs.promises.writeFile(tempPath, JSON.stringify(this.store, null, 2), 'utf8');
-            await fs.promises.rename(tempPath, this.storePath);
-        } catch (error) {
-            this.logError('Failed to save theme store', error as Error);
+    private async saveStore(): Promise<boolean> {
+        for (let attempt = 0; attempt <= ThemeService.SAVE_RETRY_LIMIT; attempt++) {
+            try {
+                const tempPath = this.storePath + '.tmp';
+                await fs.promises.writeFile(tempPath, JSON.stringify(this.store, null, 2), 'utf8');
+                await fs.promises.rename(tempPath, this.storePath);
+                return true;
+            } catch (error) {
+                if (attempt < ThemeService.SAVE_RETRY_LIMIT) {
+                    this.logWarn(`Save attempt ${attempt + 1} failed, retrying...`);
+                    await this.delay(ThemeService.SAVE_RETRY_DELAY_MS);
+                } else {
+                    this.logError('Failed to save theme store after retries', error as Error);
+                    this.emitTelemetry({
+                        action: 'theme.save.failed',
+                        success: false,
+                        timestamp: Date.now(),
+                    });
+                }
+            }
         }
+        return false;
+    }
+
+    /** Returns a promise that resolves after the given milliseconds. */
+    private delay(ms: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
 
@@ -185,6 +204,13 @@ export class ThemeService extends BaseService {
 
     async setTheme(themeId: string): Promise<boolean> {
         const start = Date.now();
+        const idError = this.validateThemeId(themeId);
+        if (idError) {
+            this.logWarn(`Invalid theme ID: ${themeId}`);
+            this.emitTelemetry({ action: 'theme.switch', themeId, success: false, timestamp: Date.now() });
+            return false;
+        }
+
         const theme = getThemeById(themeId) ?? this.store.customThemes.find(t => t.id === themeId);
         if (!theme) {
             this.logWarn(`Theme not found: ${themeId}`);
@@ -250,8 +276,21 @@ export class ThemeService extends BaseService {
         return [...this.store.customThemes];
     }
 
-    async addCustomTheme(theme: Omit<CustomTheme, 'id' | 'createdAt' | 'modifiedAt'>): Promise<CustomTheme> {
+    async addCustomTheme(theme: Omit<CustomTheme, 'id' | 'createdAt' | 'modifiedAt'>): Promise<CustomTheme | null> {
         const start = Date.now();
+        const nameError = this.validateThemeName(theme.name);
+        if (nameError) {
+            this.logWarn(`Invalid theme name: ${theme.name}`);
+            this.emitTelemetry({ action: 'theme.custom.create', success: false, timestamp: Date.now() });
+            return null;
+        }
+        const colorsError = this.validateColors(theme.colors);
+        if (colorsError) {
+            this.logWarn('Invalid theme colors');
+            this.emitTelemetry({ action: 'theme.custom.create', success: false, timestamp: Date.now() });
+            return null;
+        }
+
         const customTheme: CustomTheme = {
             ...theme,
             id: `custom-${Date.now()}`,
@@ -311,6 +350,12 @@ export class ThemeService extends BaseService {
     }
 
     async toggleFavorite(themeId: string): Promise<boolean> {
+        const idError = this.validateThemeId(themeId);
+        if (idError) {
+            this.logWarn(`Invalid theme ID for favorite toggle: ${themeId}`);
+            return false;
+        }
+
         const index = this.store.favorites.indexOf(themeId);
         if (index === -1) {
             this.store.favorites.push(themeId);
@@ -410,6 +455,9 @@ export class ThemeService extends BaseService {
                 isCustom: true,
                 source: 'imported'
             });
+            if (!imported) {
+                throw new Error(ThemeErrorCode.IMPORT_FAILED);
+            }
             this.emitTelemetry({
                 action: 'theme.import',
                 themeId: imported.id,
@@ -428,16 +476,21 @@ export class ThemeService extends BaseService {
 
     private validateImportedTheme(themeObject: JsonObject): void {
         if (typeof themeObject !== 'object' || Array.isArray(themeObject)) {
-            throw new Error('Invalid theme format');
+            throw new Error(ThemeErrorCode.INVALID_FORMAT);
         }
 
         if (!themeObject.id || !themeObject.name || !themeObject.colors) {
-            throw new Error('Missing required theme properties');
+            throw new Error(ThemeErrorCode.INVALID_FORMAT);
         }
 
         const themeId = themeObject.id as string;
+        const idError = this.validateThemeId(themeId);
+        if (idError) {
+            throw new Error(ThemeErrorCode.INVALID_ID);
+        }
+
         if (getThemeById(themeId) || this.store.customThemes.some(t => t.id === themeId)) {
-            throw new Error('Theme ID already exists');
+            throw new Error(ThemeErrorCode.DUPLICATE_ID);
         }
     }
 

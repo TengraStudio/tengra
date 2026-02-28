@@ -43,8 +43,10 @@ export {
     toggleSidebarCollapsed,
     useSidebarStore
 } from './sidebar.store';
+export type { ThemeLoadStatus } from './theme.store';
 export {
     getThemeSnapshot,
+    resetTheme,
     setTheme,
     subscribeTheme,
     toggleTheme,

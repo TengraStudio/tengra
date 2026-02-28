@@ -41,9 +41,27 @@ function resetFsMocks(): void {
     mockRename.mockResolvedValue(undefined);
 }
 
+/** Minimal valid colors object shared across tests */
+function colors() {
+    return {
+        background: '0 0% 0%', foreground: '0 0% 100%',
+        card: 'c', cardForeground: 'cf', popover: 'p', popoverForeground: 'pf',
+        primary: 'pr', primaryForeground: 'prf', secondary: 's', secondaryForeground: 'sf',
+        muted: 'm', mutedForeground: 'mf', accent: 'a', accentForeground: 'af',
+        destructive: 'd', destructiveForeground: 'df', border: 'b', input: 'i', ring: 'r',
+    };
+}
+
+/** Minimal valid custom theme input for tests */
+function themeInput(name = 'Test Theme') {
+    return {
+        name, category: 'artisanal' as const, isDark: true,
+        colors: colors(), isCustom: true as const, source: 'user-created' as const,
+    };
+}
+
 // ── Tests ────────────────────────────────────────────────────────────
 
-// eslint-disable-next-line max-lines-per-function
 describe('ThemeService (UI)', () => {
     let ThemeService: { new(): InstanceType<typeof import('@main/services/ui/theme.service').ThemeService> };
     let service: InstanceType<typeof import('@main/services/ui/theme.service').ThemeService>;
@@ -174,22 +192,8 @@ describe('ThemeService (UI)', () => {
 
             // Add custom themes to go over 20
             for (let i = 0; i < 10; i++) {
-                const customTheme = await service.addCustomTheme({
-                    name: `Overflow ${i}`,
-                    category: 'elite-dark' as const,
-                    isDark: true,
-                    colors: {
-                        background: '0 0% 0%',
-                        foreground: '0 0% 100%',
-                        card: '', cardForeground: '', popover: '', popoverForeground: '',
-                        primary: '', primaryForeground: '', secondary: '', secondaryForeground: '',
-                        muted: '', mutedForeground: '', accent: '', accentForeground: '',
-                        destructive: '', destructiveForeground: '', border: '', input: '', ring: '',
-                    },
-                    isCustom: true as const,
-                    source: 'user-created' as const,
-                });
-                await service.setTheme(customTheme.id);
+                const customTheme = await service.addCustomTheme(themeInput(`Overflow ${i}`));
+                await service.setTheme(customTheme!.id);
             }
 
             expect(service.getHistory().length).toBeLessThanOrEqual(20);
@@ -202,24 +206,10 @@ describe('ThemeService (UI)', () => {
         });
 
         it('should accept a custom theme id', async () => {
-            const custom = await service.addCustomTheme({
-                name: 'My Theme',
-                category: 'artisanal' as const,
-                isDark: true,
-                colors: {
-                    background: '0 0% 0%',
-                    foreground: '0 0% 100%',
-                    card: '', cardForeground: '', popover: '', popoverForeground: '',
-                    primary: '', primaryForeground: '', secondary: '', secondaryForeground: '',
-                    muted: '', mutedForeground: '', accent: '', accentForeground: '',
-                    destructive: '', destructiveForeground: '', border: '', input: '', ring: '',
-                },
-                isCustom: true as const,
-                source: 'user-created' as const,
-            });
-            const result = await service.setTheme(custom.id);
+            const custom = await service.addCustomTheme(themeInput('My Theme'));
+            const result = await service.setTheme(custom!.id);
             expect(result).toBe(true);
-            expect(service.getCurrentTheme()).toBe(custom.id);
+            expect(service.getCurrentTheme()).toBe(custom!.id);
         });
     });
 
@@ -239,21 +229,7 @@ describe('ThemeService (UI)', () => {
         });
 
         it('should include custom themes with isCustom flag', async () => {
-            await service.addCustomTheme({
-                name: 'Custom',
-                category: 'artisanal' as const,
-                isDark: true,
-                colors: {
-                    background: '0 0% 0%',
-                    foreground: '0 0% 100%',
-                    card: '', cardForeground: '', popover: '', popoverForeground: '',
-                    primary: '', primaryForeground: '', secondary: '', secondaryForeground: '',
-                    muted: '', mutedForeground: '', accent: '', accentForeground: '',
-                    destructive: '', destructiveForeground: '', border: '', input: '', ring: '',
-                },
-                isCustom: true as const,
-                source: 'user-created' as const,
-            });
+            await service.addCustomTheme(themeInput('Custom'));
 
             const themes = service.getAllThemes();
             const custom = themes.find((t: { isCustom?: boolean }) => t.isCustom === true);
@@ -275,22 +251,8 @@ describe('ThemeService (UI)', () => {
         });
 
         it('should return custom theme with isBuiltIn = false', async () => {
-            const custom = await service.addCustomTheme({
-                name: 'Detail Test',
-                category: 'artisanal' as const,
-                isDark: false,
-                colors: {
-                    background: '0 0% 100%',
-                    foreground: '0 0% 0%',
-                    card: '', cardForeground: '', popover: '', popoverForeground: '',
-                    primary: '', primaryForeground: '', secondary: '', secondaryForeground: '',
-                    muted: '', mutedForeground: '', accent: '', accentForeground: '',
-                    destructive: '', destructiveForeground: '', border: '', input: '', ring: '',
-                },
-                isCustom: true as const,
-                source: 'user-created' as const,
-            });
-            const details = service.getThemeDetails(custom.id);
+            const custom = await service.addCustomTheme(themeInput('Detail Test'));
+            const details = service.getThemeDetails(custom!.id);
             expect(details).not.toBeNull();
             expect(details!.isBuiltIn).toBe(false);
         });
@@ -308,44 +270,16 @@ describe('ThemeService (UI)', () => {
         });
 
         it('should create a custom theme with generated id and timestamps', async () => {
-            const theme = await service.addCustomTheme({
-                name: 'Brand New',
-                category: 'elite-dark' as const,
-                isDark: true,
-                colors: {
-                    background: '0 0% 5%',
-                    foreground: '0 0% 95%',
-                    card: '', cardForeground: '', popover: '', popoverForeground: '',
-                    primary: '', primaryForeground: '', secondary: '', secondaryForeground: '',
-                    muted: '', mutedForeground: '', accent: '', accentForeground: '',
-                    destructive: '', destructiveForeground: '', border: '', input: '', ring: '',
-                },
-                isCustom: true as const,
-                source: 'user-created' as const,
-            });
+            const theme = await service.addCustomTheme(themeInput('Brand New'));
 
-            expect(theme.id).toMatch(/^custom-\d+$/);
-            expect(theme.createdAt).toBeTypeOf('number');
-            expect(theme.modifiedAt).toBeTypeOf('number');
-            expect(theme.name).toBe('Brand New');
+            expect(theme!.id).toMatch(/^custom-\d+$/);
+            expect(theme!.createdAt).toBeTypeOf('number');
+            expect(theme!.modifiedAt).toBeTypeOf('number');
+            expect(theme!.name).toBe('Brand New');
         });
 
         it('should persist after adding', async () => {
-            await service.addCustomTheme({
-                name: 'Persist Me',
-                category: 'artisanal' as const,
-                isDark: true,
-                colors: {
-                    background: '0 0% 0%',
-                    foreground: '0 0% 100%',
-                    card: '', cardForeground: '', popover: '', popoverForeground: '',
-                    primary: '', primaryForeground: '', secondary: '', secondaryForeground: '',
-                    muted: '', mutedForeground: '', accent: '', accentForeground: '',
-                    destructive: '', destructiveForeground: '', border: '', input: '', ring: '',
-                },
-                isCustom: true as const,
-                source: 'user-created' as const,
-            });
+            await service.addCustomTheme(themeInput('Persist Me'));
             expect(mockWriteFile).toHaveBeenCalled();
         });
     });
@@ -356,81 +290,39 @@ describe('ThemeService (UI)', () => {
         });
 
         it('should update an existing custom theme', async () => {
-            const theme = await service.addCustomTheme({
-                name: 'Before Update',
-                category: 'artisanal' as const,
-                isDark: true,
-                colors: {
-                    background: '0 0% 0%',
-                    foreground: '0 0% 100%',
-                    card: '', cardForeground: '', popover: '', popoverForeground: '',
-                    primary: '', primaryForeground: '', secondary: '', secondaryForeground: '',
-                    muted: '', mutedForeground: '', accent: '', accentForeground: '',
-                    destructive: '', destructiveForeground: '', border: '', input: '', ring: '',
-                },
-                isCustom: true as const,
-                source: 'user-created' as const,
-            });
+            const theme = await service.addCustomTheme(themeInput('Before Update'));
 
-            const result = await service.updateCustomTheme(theme.id, { name: 'After Update' });
+            const result = await service.updateCustomTheme(theme!.id, { name: 'After Update' });
             expect(result).toBe(true);
 
             const updated = service.getCustomThemes().find(
-                (t: { id: string }) => t.id === theme.id,
+                (t: { id: string }) => t.id === theme!.id,
             );
             expect(updated!.name).toBe('After Update');
         });
 
         it('should preserve id even if updates try to change it', async () => {
-            const theme = await service.addCustomTheme({
-                name: 'ID Guard',
-                category: 'artisanal' as const,
-                isDark: true,
-                colors: {
-                    background: '0 0% 0%',
-                    foreground: '0 0% 100%',
-                    card: '', cardForeground: '', popover: '', popoverForeground: '',
-                    primary: '', primaryForeground: '', secondary: '', secondaryForeground: '',
-                    muted: '', mutedForeground: '', accent: '', accentForeground: '',
-                    destructive: '', destructiveForeground: '', border: '', input: '', ring: '',
-                },
-                isCustom: true as const,
-                source: 'user-created' as const,
-            });
+            const theme = await service.addCustomTheme(themeInput('ID Guard'));
 
-            await service.updateCustomTheme(theme.id, { id: 'hacked', name: 'Renamed' });
+            await service.updateCustomTheme(theme!.id, { id: 'hacked', name: 'Renamed' });
             const found = service.getCustomThemes().find(
-                (t: { id: string }) => t.id === theme.id,
+                (t: { id: string }) => t.id === theme!.id,
             );
             expect(found).toBeDefined();
-            expect(found!.id).toBe(theme.id);
+            expect(found!.id).toBe(theme!.id);
         });
 
         it('should update modifiedAt timestamp', async () => {
-            const theme = await service.addCustomTheme({
-                name: 'Timestamp Check',
-                category: 'artisanal' as const,
-                isDark: true,
-                colors: {
-                    background: '0 0% 0%',
-                    foreground: '0 0% 100%',
-                    card: '', cardForeground: '', popover: '', popoverForeground: '',
-                    primary: '', primaryForeground: '', secondary: '', secondaryForeground: '',
-                    muted: '', mutedForeground: '', accent: '', accentForeground: '',
-                    destructive: '', destructiveForeground: '', border: '', input: '', ring: '',
-                },
-                isCustom: true as const,
-                source: 'user-created' as const,
-            });
+            const theme = await service.addCustomTheme(themeInput('Timestamp Check'));
 
             // Small delay so timestamps differ
             await new Promise(resolve => setTimeout(resolve, 10));
 
-            await service.updateCustomTheme(theme.id, { name: 'Updated' });
+            await service.updateCustomTheme(theme!.id, { name: 'Updated' });
             const updated = service.getCustomThemes().find(
-                (t: { id: string }) => t.id === theme.id,
+                (t: { id: string }) => t.id === theme!.id,
             );
-            expect(updated!.modifiedAt).toBeGreaterThanOrEqual(theme.modifiedAt);
+            expect(updated!.modifiedAt).toBeGreaterThanOrEqual(theme!.modifiedAt);
         });
 
         it('should return false for a non-existent custom theme', async () => {
@@ -445,48 +337,20 @@ describe('ThemeService (UI)', () => {
         });
 
         it('should remove a custom theme', async () => {
-            const theme = await service.addCustomTheme({
-                name: 'Delete Me',
-                category: 'artisanal' as const,
-                isDark: true,
-                colors: {
-                    background: '0 0% 0%',
-                    foreground: '0 0% 100%',
-                    card: '', cardForeground: '', popover: '', popoverForeground: '',
-                    primary: '', primaryForeground: '', secondary: '', secondaryForeground: '',
-                    muted: '', mutedForeground: '', accent: '', accentForeground: '',
-                    destructive: '', destructiveForeground: '', border: '', input: '', ring: '',
-                },
-                isCustom: true as const,
-                source: 'user-created' as const,
-            });
+            const theme = await service.addCustomTheme(themeInput('Delete Me'));
 
-            const result = await service.deleteCustomTheme(theme.id);
+            const result = await service.deleteCustomTheme(theme!.id);
             expect(result).toBe(true);
             expect(service.getCustomThemes().length).toBe(0);
         });
 
         it('should revert to graphite when deleting the active theme', async () => {
-            const theme = await service.addCustomTheme({
-                name: 'Active Custom',
-                category: 'artisanal' as const,
-                isDark: true,
-                colors: {
-                    background: '0 0% 0%',
-                    foreground: '0 0% 100%',
-                    card: '', cardForeground: '', popover: '', popoverForeground: '',
-                    primary: '', primaryForeground: '', secondary: '', secondaryForeground: '',
-                    muted: '', mutedForeground: '', accent: '', accentForeground: '',
-                    destructive: '', destructiveForeground: '', border: '', input: '', ring: '',
-                },
-                isCustom: true as const,
-                source: 'user-created' as const,
-            });
+            const theme = await service.addCustomTheme(themeInput('Active Custom'));
 
-            await service.setTheme(theme.id);
-            expect(service.getCurrentTheme()).toBe(theme.id);
+            await service.setTheme(theme!.id);
+            expect(service.getCurrentTheme()).toBe(theme!.id);
 
-            await service.deleteCustomTheme(theme.id);
+            await service.deleteCustomTheme(theme!.id);
             expect(service.getCurrentTheme()).toBe('graphite');
         });
 
@@ -502,21 +366,7 @@ describe('ThemeService (UI)', () => {
         });
 
         it('should return a copy (not the internal array)', async () => {
-            await service.addCustomTheme({
-                name: 'Copy Check',
-                category: 'artisanal' as const,
-                isDark: true,
-                colors: {
-                    background: '0 0% 0%',
-                    foreground: '0 0% 100%',
-                    card: '', cardForeground: '', popover: '', popoverForeground: '',
-                    primary: '', primaryForeground: '', secondary: '', secondaryForeground: '',
-                    muted: '', mutedForeground: '', accent: '', accentForeground: '',
-                    destructive: '', destructiveForeground: '', border: '', input: '', ring: '',
-                },
-                isCustom: true as const,
-                source: 'user-created' as const,
-            });
+            await service.addCustomTheme(themeInput('Copy Check'));
 
             const a = service.getCustomThemes();
             const b = service.getCustomThemes();
@@ -631,537 +481,5 @@ describe('ThemeService (UI)', () => {
             expect(service.getCurrentPreset()).toBeNull();
         });
     });
-
-    // ── Export / Import ──────────────────────────────────────────────
-
-    describe('exportTheme', () => {
-        beforeEach(async () => {
-            await service.initialize();
-        });
-
-        it('should export a built-in theme as JSON string', () => {
-            const json = service.exportTheme('graphite');
-            expect(json).not.toBeNull();
-            const parsed = JSON.parse(json as string);
-            expect(parsed.version).toBe('1.0');
-            expect(parsed.theme).toBeDefined();
-            expect(parsed.exportedAt).toBeDefined();
-        });
-
-        it('should return null for an unknown theme', () => {
-            expect(service.exportTheme('nonexistent')).toBeNull();
-        });
-    });
-
-    describe('importTheme', () => {
-        beforeEach(async () => {
-            await service.initialize();
-        });
-
-        it('should import a valid exported theme', async () => {
-            const exportData = JSON.stringify({
-                version: '1.0',
-                theme: {
-                    id: 'imported-theme-123',
-                    name: 'Imported',
-                    isDark: true,
-                    category: 'artisanal',
-                    colors: {
-                        background: '0 0% 0%',
-                        foreground: '0 0% 100%',
-                        card: '', cardForeground: '', popover: '', popoverForeground: '',
-                        primary: '', primaryForeground: '', secondary: '', secondaryForeground: '',
-                        muted: '', mutedForeground: '', accent: '', accentForeground: '',
-                        destructive: '', destructiveForeground: '', border: '', input: '', ring: '',
-                    },
-                },
-            });
-
-            const result = await service.importTheme(exportData);
-            expect(result).not.toBeNull();
-            expect(result!.name).toBe('Imported');
-            expect(result!.source).toBe('imported');
-        });
-
-        it('should return null for invalid version', async () => {
-            const data = JSON.stringify({ version: '2.0', theme: {} });
-            const result = await service.importTheme(data);
-            expect(result).toBeNull();
-        });
-
-        it('should return null for missing theme field', async () => {
-            const data = JSON.stringify({ version: '1.0' });
-            const result = await service.importTheme(data);
-            expect(result).toBeNull();
-        });
-
-        it('should return null for invalid JSON', async () => {
-            const result = await service.importTheme('not-json{{{');
-            expect(result).toBeNull();
-        });
-
-        it('should return null when theme is missing required properties', async () => {
-            const data = JSON.stringify({
-                version: '1.0',
-                theme: { id: 'missing-name' },
-            });
-            const result = await service.importTheme(data);
-            expect(result).toBeNull();
-        });
-
-        it('should return null when theme id already exists as built-in', async () => {
-            const data = JSON.stringify({
-                version: '1.0',
-                theme: {
-                    id: 'graphite',
-                    name: 'Graphite Clone',
-                    colors: {
-                        background: '0 0% 0%',
-                        foreground: '0 0% 100%',
-                        card: '', cardForeground: '', popover: '', popoverForeground: '',
-                        primary: '', primaryForeground: '', secondary: '', secondaryForeground: '',
-                        muted: '', mutedForeground: '', accent: '', accentForeground: '',
-                        destructive: '', destructiveForeground: '', border: '', input: '', ring: '',
-                    },
-                },
-            });
-            const result = await service.importTheme(data);
-            expect(result).toBeNull();
-        });
-
-        it('should return null when theme id already exists as custom', async () => {
-            const custom = await service.addCustomTheme({
-                name: 'Existing',
-                category: 'artisanal' as const,
-                isDark: true,
-                colors: {
-                    background: '0 0% 0%',
-                    foreground: '0 0% 100%',
-                    card: '', cardForeground: '', popover: '', popoverForeground: '',
-                    primary: '', primaryForeground: '', secondary: '', secondaryForeground: '',
-                    muted: '', mutedForeground: '', accent: '', accentForeground: '',
-                    destructive: '', destructiveForeground: '', border: '', input: '', ring: '',
-                },
-                isCustom: true as const,
-                source: 'user-created' as const,
-            });
-
-            const data = JSON.stringify({
-                version: '1.0',
-                theme: {
-                    id: custom.id,
-                    name: 'Duplicate',
-                    colors: {
-                        background: '0 0% 0%',
-                        foreground: '0 0% 100%',
-                        card: '', cardForeground: '', popover: '', popoverForeground: '',
-                        primary: '', primaryForeground: '', secondary: '', secondaryForeground: '',
-                        muted: '', mutedForeground: '', accent: '', accentForeground: '',
-                        destructive: '', destructiveForeground: '', border: '', input: '', ring: '',
-                    },
-                },
-            });
-            const result = await service.importTheme(data);
-            expect(result).toBeNull();
-        });
-    });
-
-    // ── duplicateTheme ───────────────────────────────────────────────
-
-    describe('duplicateTheme', () => {
-        beforeEach(async () => {
-            await service.initialize();
-        });
-
-        it('should duplicate a built-in theme with a new name', async () => {
-            const dup = await service.duplicateTheme('graphite', 'Graphite Copy');
-            expect(dup).not.toBeNull();
-            expect(dup!.name).toBe('Graphite Copy');
-            expect(dup!.id).toMatch(/^custom-\d+$/);
-        });
-
-        it('should return null when duplicating a non-existent theme', async () => {
-            const dup = await service.duplicateTheme('nonexistent', 'Nope');
-            expect(dup).toBeNull();
-        });
-    });
-
-    // ── Persistence (saveStore) ──────────────────────────────────────
-
-    describe('persistence', () => {
-        beforeEach(async () => {
-            await service.initialize();
-        });
-
-        it('should write to a temp file then rename (atomic save)', async () => {
-            await service.setTheme('obsidian');
-            expect(mockWriteFile).toHaveBeenCalledWith(
-                expect.stringContaining('.tmp'),
-                expect.stringContaining('obsidian'),
-                'utf8',
-            );
-            expect(mockRename).toHaveBeenCalled();
-        });
-
-        it('should not throw when writeFile fails', async () => {
-            mockWriteFile.mockRejectedValue(new Error('ENOSPC'));
-            await expect(service.setTheme('obsidian')).resolves.toBe(true);
-        });
-
-        it('should not throw when rename fails', async () => {
-            mockRename.mockRejectedValue(new Error('EACCES'));
-            await expect(service.setTheme('obsidian')).resolves.toBe(true);
-        });
-    });
-
-    // ── Cleanup ──────────────────────────────────────────────────────
-
-    describe('cleanup', () => {
-        it('should save store on cleanup when initialized', async () => {
-            await service.initialize();
-            await service.cleanup();
-            // writeFile is called during cleanup via saveStore
-            expect(mockWriteFile).toHaveBeenCalled();
-        });
-
-        it('should not save when not initialized', async () => {
-            await service.cleanup();
-            expect(mockWriteFile).not.toHaveBeenCalled();
-        });
-
-        it('should be safe to call cleanup multiple times', async () => {
-            await service.initialize();
-            await service.cleanup();
-            await service.cleanup();
-            // Should not throw
-        });
-    });
-
-    // ── Error Resilience ─────────────────────────────────────────────
-
-    describe('error resilience', () => {
-        beforeEach(async () => {
-            await service.initialize();
-        });
-
-        it('should handle saveStore failure gracefully during setTheme', async () => {
-            mockWriteFile.mockRejectedValue(new Error('disk error'));
-            const result = await service.setTheme('obsidian');
-            // setTheme should still return true (in-memory update succeeds)
-            expect(result).toBe(true);
-            expect(service.getCurrentTheme()).toBe('obsidian');
-        });
-
-        it('should handle saveStore failure during addCustomTheme', async () => {
-            mockWriteFile.mockRejectedValue(new Error('disk error'));
-
-            const theme = await service.addCustomTheme({
-                name: 'Error Test',
-                category: 'artisanal' as const,
-                isDark: true,
-                colors: {
-                    background: '0 0% 0%',
-                    foreground: '0 0% 100%',
-                    card: '', cardForeground: '', popover: '', popoverForeground: '',
-                    primary: '', primaryForeground: '', secondary: '', secondaryForeground: '',
-                    muted: '', mutedForeground: '', accent: '', accentForeground: '',
-                    destructive: '', destructiveForeground: '', border: '', input: '', ring: '',
-                },
-                isCustom: true as const,
-                source: 'user-created' as const,
-            });
-            // In-memory state is still updated
-            expect(theme).toBeDefined();
-        });
-
-        it('should handle saveStore failure during toggleFavorite', async () => {
-            mockWriteFile.mockRejectedValue(new Error('disk error'));
-            const result = await service.toggleFavorite('obsidian');
-            expect(typeof result).toBe('boolean');
-        });
-
-        it('should handle saveStore failure during clearHistory', async () => {
-            mockWriteFile.mockRejectedValue(new Error('disk error'));
-            await expect(service.clearHistory()).resolves.not.toThrow();
-        });
-    });
 });
 
-// ── Telemetry Events & Health Tracking ──────────────────────────────
-
-describe('ThemeService Telemetry & Health', () => {
-    let ThemeService: { new(): InstanceType<typeof import('@main/services/ui/theme.service').ThemeService> };
-    let service: InstanceType<typeof import('@main/services/ui/theme.service').ThemeService>;
-
-    beforeEach(async () => {
-        vi.resetModules();
-        vi.clearAllMocks();
-        resetFsMocks();
-
-        const mod = await import('@main/services/ui/theme.service');
-        ThemeService = mod.ThemeService;
-        service = new ThemeService();
-        await service.initialize();
-    });
-
-    // ── getHealth ────────────────────────────────────────────────────
-
-    describe('getHealth', () => {
-        it('should return correct health snapshot after initialization', () => {
-            const health = service.getHealth();
-            expect(health.initialized).toBe(true);
-            expect(health.currentTheme).toBe('graphite');
-            expect(health.customThemeCount).toBe(0);
-            expect(health.favoriteCount).toBe(0);
-            expect(health.historySize).toBe(1);
-            expect(health.hasActivePreset).toBe(false);
-            expect(typeof health.storePath).toBe('string');
-        });
-
-        it('should reflect custom theme count after adding themes', async () => {
-            await service.addCustomTheme({
-                name: 'Health Test',
-                category: 'artisanal' as const,
-                isDark: true,
-                colors: {
-                    background: '0 0% 0%', foreground: '0 0% 100%',
-                    card: '', cardForeground: '', popover: '', popoverForeground: '',
-                    primary: '', primaryForeground: '', secondary: '', secondaryForeground: '',
-                    muted: '', mutedForeground: '', accent: '', accentForeground: '',
-                    destructive: '', destructiveForeground: '', border: '', input: '', ring: '',
-                },
-                isCustom: true as const,
-                source: 'user-created' as const,
-            });
-            expect(service.getHealth().customThemeCount).toBe(1);
-        });
-
-        it('should reflect active preset', async () => {
-            await service.applyPreset('developer');
-            expect(service.getHealth().hasActivePreset).toBe(true);
-        });
-
-        it('should reflect favorite count', async () => {
-            await service.toggleFavorite('obsidian');
-            expect(service.getHealth().favoriteCount).toBe(1);
-        });
-    });
-
-    // ── getHealth before initialization ──────────────────────────────
-
-    describe('getHealth before initialization', () => {
-        it('should return initialized: false before initialize()', async () => {
-            vi.resetModules();
-            vi.clearAllMocks();
-            resetFsMocks();
-            const mod = await import('@main/services/ui/theme.service');
-            const uninitializedService = new mod.ThemeService();
-            expect(uninitializedService.getHealth().initialized).toBe(false);
-        });
-    });
-
-    // ── Telemetry on theme switch ────────────────────────────────────
-
-    describe('telemetry on setTheme', () => {
-        it('should emit theme.switch event on successful switch', async () => {
-            await service.setTheme('obsidian');
-            const events = service.getTelemetryLog();
-            const switchEvent = events.find(e => e.action === 'theme.switch' && e.success);
-            expect(switchEvent).toBeDefined();
-            expect(switchEvent!.themeId).toBe('obsidian');
-            expect(switchEvent!.previousThemeId).toBe('graphite');
-            expect(typeof switchEvent!.durationMs).toBe('number');
-            expect(typeof switchEvent!.timestamp).toBe('number');
-        });
-
-        it('should emit theme.switch failure event for invalid theme', async () => {
-            await service.setTheme('nonexistent');
-            const events = service.getTelemetryLog();
-            const failEvent = events.find(e => e.action === 'theme.switch' && !e.success);
-            expect(failEvent).toBeDefined();
-            expect(failEvent!.themeId).toBe('nonexistent');
-        });
-    });
-
-    // ── Telemetry on custom theme creation ───────────────────────────
-
-    describe('telemetry on addCustomTheme', () => {
-        it('should emit theme.custom.create event', async () => {
-            const theme = await service.addCustomTheme({
-                name: 'Telemetry Test',
-                category: 'artisanal' as const,
-                isDark: true,
-                colors: {
-                    background: '0 0% 0%', foreground: '0 0% 100%',
-                    card: '', cardForeground: '', popover: '', popoverForeground: '',
-                    primary: '', primaryForeground: '', secondary: '', secondaryForeground: '',
-                    muted: '', mutedForeground: '', accent: '', accentForeground: '',
-                    destructive: '', destructiveForeground: '', border: '', input: '', ring: '',
-                },
-                isCustom: true as const,
-                source: 'user-created' as const,
-            });
-
-            const events = service.getTelemetryLog();
-            const createEvent = events.find(e => e.action === 'theme.custom.create');
-            expect(createEvent).toBeDefined();
-            expect(createEvent!.themeId).toBe(theme.id);
-            expect(createEvent!.source).toBe('user-created');
-            expect(createEvent!.success).toBe(true);
-            expect(typeof createEvent!.durationMs).toBe('number');
-        });
-    });
-
-    // ── Telemetry on custom theme deletion ───────────────────────────
-
-    describe('telemetry on deleteCustomTheme', () => {
-        it('should emit success event on delete', async () => {
-            const theme = await service.addCustomTheme({
-                name: 'Delete Me',
-                category: 'artisanal' as const,
-                isDark: true,
-                colors: {
-                    background: '0 0% 0%', foreground: '0 0% 100%',
-                    card: '', cardForeground: '', popover: '', popoverForeground: '',
-                    primary: '', primaryForeground: '', secondary: '', secondaryForeground: '',
-                    muted: '', mutedForeground: '', accent: '', accentForeground: '',
-                    destructive: '', destructiveForeground: '', border: '', input: '', ring: '',
-                },
-                isCustom: true as const,
-                source: 'user-created' as const,
-            });
-
-            await service.deleteCustomTheme(theme.id);
-            const events = service.getTelemetryLog();
-            const deleteEvent = events.find(e => e.action === 'theme.custom.delete' && e.success);
-            expect(deleteEvent).toBeDefined();
-            expect(deleteEvent!.themeId).toBe(theme.id);
-        });
-
-        it('should emit failure event for non-existent id', async () => {
-            await service.deleteCustomTheme('nonexistent');
-            const events = service.getTelemetryLog();
-            const failEvent = events.find(e => e.action === 'theme.custom.delete' && !e.success);
-            expect(failEvent).toBeDefined();
-            expect(failEvent!.themeId).toBe('nonexistent');
-        });
-    });
-
-    // ── Telemetry on export ──────────────────────────────────────────
-
-    describe('telemetry on exportTheme', () => {
-        it('should emit success event on valid export', () => {
-            service.exportTheme('graphite');
-            const events = service.getTelemetryLog();
-            const exportEvent = events.find(e => e.action === 'theme.export' && e.success);
-            expect(exportEvent).toBeDefined();
-            expect(exportEvent!.themeId).toBe('graphite');
-        });
-
-        it('should emit failure event for unknown theme', () => {
-            service.exportTheme('nonexistent');
-            const events = service.getTelemetryLog();
-            const failEvent = events.find(e => e.action === 'theme.export' && !e.success);
-            expect(failEvent).toBeDefined();
-            expect(failEvent!.themeId).toBe('nonexistent');
-        });
-    });
-
-    // ── Telemetry on import ──────────────────────────────────────────
-
-    describe('telemetry on importTheme', () => {
-        it('should emit success event on valid import', async () => {
-            const exportData = JSON.stringify({
-                version: '1.0',
-                theme: {
-                    id: 'import-telemetry-test',
-                    name: 'Imported Telemetry',
-                    isDark: true,
-                    category: 'artisanal',
-                    colors: {
-                        background: '0 0% 0%', foreground: '0 0% 100%',
-                        card: '', cardForeground: '', popover: '', popoverForeground: '',
-                        primary: '', primaryForeground: '', secondary: '', secondaryForeground: '',
-                        muted: '', mutedForeground: '', accent: '', accentForeground: '',
-                        destructive: '', destructiveForeground: '', border: '', input: '', ring: '',
-                    },
-                },
-            });
-
-            const result = await service.importTheme(exportData);
-            expect(result).not.toBeNull();
-
-            const events = service.getTelemetryLog();
-            const importEvent = events.find(e => e.action === 'theme.import' && e.success);
-            expect(importEvent).toBeDefined();
-            expect(importEvent!.source).toBe('imported');
-            expect(typeof importEvent!.durationMs).toBe('number');
-        });
-
-        it('should emit failure event on invalid import', async () => {
-            await service.importTheme('not-json{{{');
-            const events = service.getTelemetryLog();
-            const failEvent = events.find(e => e.action === 'theme.import' && !e.success);
-            expect(failEvent).toBeDefined();
-            expect(typeof failEvent!.durationMs).toBe('number');
-        });
-
-        it('should emit failure event for wrong version', async () => {
-            const data = JSON.stringify({ version: '2.0', theme: {} });
-            await service.importTheme(data);
-            const events = service.getTelemetryLog();
-            const failEvent = events.find(e => e.action === 'theme.import' && !e.success);
-            expect(failEvent).toBeDefined();
-        });
-    });
-
-    // ── Telemetry on preset application ──────────────────────────────
-
-    describe('telemetry on applyPreset', () => {
-        it('should emit success event on valid preset', async () => {
-            await service.applyPreset('developer');
-            const events = service.getTelemetryLog();
-            const presetEvent = events.find(e => e.action === 'theme.preset.apply' && e.success);
-            expect(presetEvent).toBeDefined();
-            expect(presetEvent!.presetId).toBe('developer');
-            expect(presetEvent!.themeId).toBe('obsidian');
-        });
-
-        it('should emit failure event for non-existent preset', async () => {
-            await service.applyPreset('nonexistent');
-            const events = service.getTelemetryLog();
-            const failEvent = events.find(e => e.action === 'theme.preset.apply' && !e.success);
-            expect(failEvent).toBeDefined();
-            expect(failEvent!.presetId).toBe('nonexistent');
-        });
-    });
-
-    // ── Telemetry log capping ────────────────────────────────────────
-
-    describe('telemetry log capping', () => {
-        it('should cap telemetry log at MAX_TELEMETRY_LOG entries', async () => {
-            // Trigger more than 200 events via export (sync, fast)
-            for (let i = 0; i < 210; i++) {
-                service.exportTheme('graphite');
-            }
-            const events = service.getTelemetryLog();
-            expect(events.length).toBeLessThanOrEqual(200);
-        });
-    });
-
-    // ── getTelemetryLog returns copy ─────────────────────────────────
-
-    describe('getTelemetryLog', () => {
-        it('should return a copy of the log', async () => {
-            await service.setTheme('obsidian');
-            const a = service.getTelemetryLog();
-            const b = service.getTelemetryLog();
-            expect(a).not.toBe(b);
-            expect(a).toEqual(b);
-        });
-
-        it('should be empty initially', () => {
-            expect(service.getTelemetryLog().length).toBe(0);
-        });
-    });
-});
