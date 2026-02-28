@@ -13,6 +13,18 @@
 - **Component Clean-up**: Eliminated unused local variables and imports.
 - **Build Integrity**: Verified zero lingering type mismatches.
 
+### Base del backend de sincronización colaborativa (FEAT-02)
+
+- **Type**: feature
+- **Status**: in_progress
+- **Summary**: Se inicializó la infraestructura de colaboración en tiempo real, incluyendo sincronización basada en WebSocket, soporte de ámbitos OAuth y controladores IPC de Electron validados.
+
+- **Seguridad del backend**: Se migró el secreto JWT codificado a gestión de configuración segura.
+- **Ámbitos OAuth**: Se añadió soporte para ámbitos JWT detallados en el sistema de autenticación C++.
+- **CollaborationController (C++)**: Se creó un controlador WebSocket en tiempo real para sincronización basada en salas.
+- **UserCollaborationService (Electron)**: Se implementó un servicio cliente WebSocket gestionado para el backend de colaboración.
+- **Refuerzo IPC**: Se definieron contratos estrictos validados con Zod para todos los canales IPC de sincronización colaborativa.
+
 ### Optimizaciones de rendimiento lote 2 (PERF-016/020/024/025/114/117)
 
 - **Type**: perf
@@ -25,6 +37,18 @@
 - **SettingsTabContent**: Los 14 componentes de pestañas cargados de forma diferida con React.lazy() y Suspense.
 - **database-client.service**: existsSync/unlinkSync convertidos a fs/promises asíncronos para descubrimiento de puertos no bloqueante.
 - **MultiLLMOrchestrator**: Array.from().filter() reemplazado por un asistente countActiveTasks basado en iterador en la ruta de planificación crítica.
+
+### Rendimiento lote 3: Changelog diferido, optimizaciones del sitio web
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: Carga diferida de datos del changelog en componentes de diseño, traslado de Google Fonts del CSS @import bloqueante a enlace HTML con preconnect, y eliminación de código muerto del sitio web.
+
+- **AUDIT-PERF-001**: TitleBar y AppHeader ahora cargan changelog.index.json al abrir el modal en lugar de a nivel de módulo.
+- **PERF-203**: Google Fonts trasladado del CSS @import bloqueante a una etiqueta de enlace HTML.
+- **PERF-204**: Añadidos indicios de preconnect para Google Fonts en index.html.
+- **PERF-207**: Añadidos loading="lazy" y decoding="async" al logo de la barra de navegación.
+- **PERF-208**: Eliminado App.css no utilizado (código muerto de plantilla Vite).
 
 ### Project Hygiene: Root Cleanup and Component Promotion
 

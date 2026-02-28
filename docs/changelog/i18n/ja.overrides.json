@@ -4022,5 +4022,27 @@
       "- **database-client.service**: ノンブロッキングのポート検出のためexistsSync/unlinkSyncを非同期fs/promisesに変換しました。",
       "- **MultiLLMOrchestrator**: ホットスケジューリングパスでArray.from().filter()をイテレーターベースのcountActiveTasksヘルパーに置き換えました。"
     ]
+  },
+  "2026-02-28-perf-batch3-lazy-changelog-website": {
+    "title": "パフォーマンスバッチ3：遅延Changelog、Webサイト最適化",
+    "summary": "レイアウトコンポーネントでのchangelogデータ読み込みを遅延化、Google FontsをレンダリングブロッキングCSS @importからpreconnect付きHTMLリンクに移動、Webサイトからデッドコードを削除しました。",
+    "items": [
+      "- **AUDIT-PERF-001**: TitleBarとAppHeaderがモジュールレベルではなくモーダル表示時にchangelog.index.jsonを遅延ロードするようになりました。",
+      "- **PERF-203**: Google Fontsをレンダリングブロッキングの CSS @import から HTML リンクタグに移動しました。",
+      "- **PERF-204**: index.htmlにGoogle Fontsのpreconnectヒントを追加しました。",
+      "- **PERF-207**: ナビバーのロゴにloading=\"lazy\"とdecoding=\"async\"を追加しました。",
+      "- **PERF-208**: 未使用のApp.css（Viteボイラープレートのデッドコード）を削除しました。"
+    ]
+  },
+  "2026-02-28-collab-sync-backend-foundation": {
+    "title": "コラボレーティブ同期バックエンド基盤 (FEAT-02)",
+    "summary": "WebSocketベースの同期、OAuthスコープサポート、および検証済みElectron IPCハンドラーを含むリアルタイムコラボレーションインフラストラクチャが初期化されました。",
+    "items": [
+      "- **バックエンドセキュリティ**: ハードコードされたJWTシークレットを安全な構成管理に移行しました。",
+      "- **OAuthスコープ**: C++認証システムにきめ細かなJWTスコープのサポートを追加しました。",
+      "- **CollaborationController (C++)**: ルームベースの同期用リアルタイムWebSocketコントローラーを作成しました。",
+      "- **UserCollaborationService (Electron)**: コラボレーションバックエンド用の管理型WebSocketクライアントサービスを実装しました。",
+      "- **IPC強化**: すべてのコラボレーション同期IPCチャネルに対して厳密なZod検証済みコントラクトを定義しました。"
+    ]
   }
 }

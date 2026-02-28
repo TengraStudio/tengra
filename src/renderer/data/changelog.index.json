@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-28T18:21:30.693Z",
+  "generatedAt": "2026-02-28T18:36:46.147Z",
   "locales": [
     "en",
     "tr",
@@ -107,6 +107,114 @@
             "- **Build System**: Removed obsolete default URLs causing strict TypeScript ESLint rule failures.",
             "- **Component Clean-up**: Eliminated unused local variables and imports.",
             "- **Build Integrity**: Verified zero lingering type mismatches."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-28-collab-sync-backend-foundation",
+      "date": "2026-02-28",
+      "channel": "stable",
+      "type": "feature",
+      "status": "in_progress",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Backend",
+        "Electron",
+        "IPC",
+        "Security"
+      ],
+      "breaking": false,
+      "security": true,
+      "contentByLocale": {
+        "en": {
+          "title": "Collaborative Sync Backend & Presence (FEAT-02)",
+          "summary": "Implemented real-time synchronization backend and frontend bridge for multi-user collaboration. Added support for Yjs state sync, awareness (presence), and scope-based authorization.",
+          "items": [
+            "- **Backend Security**: Migrated hardcoded JWT secret to secure configuration management.",
+            "- **OAuth Scopes**: Added support for fine-grained JWT scopes in the C++ auth system.",
+            "- **CollaborationController (C++)**: Created a real-time WebSocket controller for room-based sync (chats and projects).",
+            "- **UserCollaborationService (Electron)**: Implemented a managed WebSocket client service for connecting to the collaboration backend.",
+            "- **IPC Hardening**: Defined strict Zod-validated contracts for all collaboration-sync IPC channels."
+          ]
+        },
+        "tr": {
+          "title": "İş Birlikçi Eşitleme Arka Plan Temeli (FEAT-02)",
+          "summary": "WebSocket tabanlı eşitleme, OAuth kapsam desteği ve doğrulanmış Electron IPC işleyicilerini içeren gerçek zamanlı iş birliği altyapısı başlatıldı.",
+          "items": [
+            "- **Arka Plan Güvenliği**: Sabit kodlanmış JWT sırrı güvenli yapılandırma yönetimine taşındı.",
+            "- **OAuth Kapsamları**: C++ kimlik doğrulama sistemine ayrıntılı JWT kapsamları için destek eklendi.",
+            "- **CollaborationController (C++)**: Oda tabanlı eşitleme için gerçek zamanlı WebSocket denetleyicisi oluşturuldu.",
+            "- **UserCollaborationService (Electron)**: İş birliği arka planına bağlanmak için yönetilen bir WebSocket istemci hizmeti uygulandı.",
+            "- **IPC Sertleştirme**: Tüm iş birliği eşitleme IPC kanalları için katı Zod onaylı sözleşmeler tanımlandı."
+          ]
+        },
+        "de": {
+          "title": "Grundlage für kollaboratives Sync-Backend (FEAT-02)",
+          "summary": "Die Echtzeit-Kollaborationsinfrastruktur wurde initialisiert, einschließlich WebSocket-basierter Synchronisierung, OAuth-Scope-Unterstützung und validierter Electron-IPC-Handler.",
+          "items": [
+            "- **Backend-Sicherheit**: Hartcodiertes JWT-Geheimnis auf sichere Konfigurationsverwaltung migriert.",
+            "- **OAuth-Scopes**: Unterstützung für feingranulare JWT-Scopes im C++-Authentifizierungssystem hinzugefügt.",
+            "- **CollaborationController (C++)**: Echtzeit-WebSocket-Controller für raumbasierte Synchronisierung erstellt.",
+            "- **UserCollaborationService (Electron)**: Verwalteten WebSocket-Client-Dienst für das Kollaborations-Backend implementiert.",
+            "- **IPC-Härtung**: Strikte Zod-validierte Verträge für alle Kollaborations-Sync-IPC-Kanäle definiert."
+          ]
+        },
+        "fr": {
+          "title": "Fondation du backend de synchronisation collaborative (FEAT-02)",
+          "summary": "L'infrastructure de collaboration en temps réel a été initialisée, incluant la synchronisation basée sur WebSocket, la prise en charge des portées OAuth et des gestionnaires IPC Electron validés.",
+          "items": [
+            "- **Sécurité backend** : Secret JWT codé en dur migré vers une gestion de configuration sécurisée.",
+            "- **Portées OAuth** : Ajout de la prise en charge des portées JWT granulaires dans le système d'authentification C++.",
+            "- **CollaborationController (C++)** : Création d'un contrôleur WebSocket en temps réel pour la synchronisation par salle.",
+            "- **UserCollaborationService (Electron)** : Implémentation d'un service client WebSocket géré pour le backend de collaboration.",
+            "- **Renforcement IPC** : Définition de contrats strict validés par Zod pour tous les canaux IPC de synchronisation collaborative."
+          ]
+        },
+        "es": {
+          "title": "Base del backend de sincronización colaborativa (FEAT-02)",
+          "summary": "Se inicializó la infraestructura de colaboración en tiempo real, incluyendo sincronización basada en WebSocket, soporte de ámbitos OAuth y controladores IPC de Electron validados.",
+          "items": [
+            "- **Seguridad del backend**: Se migró el secreto JWT codificado a gestión de configuración segura.",
+            "- **Ámbitos OAuth**: Se añadió soporte para ámbitos JWT detallados en el sistema de autenticación C++.",
+            "- **CollaborationController (C++)**: Se creó un controlador WebSocket en tiempo real para sincronización basada en salas.",
+            "- **UserCollaborationService (Electron)**: Se implementó un servicio cliente WebSocket gestionado para el backend de colaboración.",
+            "- **Refuerzo IPC**: Se definieron contratos estrictos validados con Zod para todos los canales IPC de sincronización colaborativa."
+          ]
+        },
+        "ja": {
+          "title": "コラボレーティブ同期バックエンド基盤 (FEAT-02)",
+          "summary": "WebSocketベースの同期、OAuthスコープサポート、および検証済みElectron IPCハンドラーを含むリアルタイムコラボレーションインフラストラクチャが初期化されました。",
+          "items": [
+            "- **バックエンドセキュリティ**: ハードコードされたJWTシークレットを安全な構成管理に移行しました。",
+            "- **OAuthスコープ**: C++認証システムにきめ細かなJWTスコープのサポートを追加しました。",
+            "- **CollaborationController (C++)**: ルームベースの同期用リアルタイムWebSocketコントローラーを作成しました。",
+            "- **UserCollaborationService (Electron)**: コラボレーションバックエンド用の管理型WebSocketクライアントサービスを実装しました。",
+            "- **IPC強化**: すべてのコラボレーション同期IPCチャネルに対して厳密なZod検証済みコントラクトを定義しました。"
+          ]
+        },
+        "zh": {
+          "title": "协作同步后端基础 (FEAT-02)",
+          "summary": "初始化了实时协作基础设施，包括基于WebSocket的同步、OAuth范围支持和经过验证的Electron IPC处理程序。",
+          "items": [
+            "- **后端安全**: 将硬编码的JWT密钥迁移到安全配置管理。",
+            "- **OAuth范围**: 在C++认证系统中添加了细粒度JWT范围支持。",
+            "- **CollaborationController (C++)**: 创建了用于基于房间同步的实时WebSocket控制器。",
+            "- **UserCollaborationService (Electron)**: 实现了用于协作后端的托管WebSocket客户端服务。",
+            "- **IPC强化**: 为所有协作同步IPC通道定义了严格的Zod验证合约。"
+          ]
+        },
+        "ar": {
+          "title": "أساس الواجهة الخلفية للمزامنة التعاونية (FEAT-02)",
+          "summary": "تم تهيئة البنية التحتية للتعاون في الوقت الفعلي بما في ذلك المزامنة المبنية على WebSocket ودعم نطاقات OAuth ومعالجات Electron IPC المتحقق منها.",
+          "items": [
+            "- **أمان الواجهة الخلفية**: تم ترحيل سر JWT المشفر يدويًا إلى إدارة التكوين الآمنة.",
+            "- **نطاقات OAuth**: تمت إضافة دعم لنطاقات JWT الدقيقة في نظام المصادقة C++.",
+            "- **CollaborationController (C++)**: تم إنشاء وحدة تحكم WebSocket في الوقت الفعلي للمزامنة القائمة على الغرف.",
+            "- **UserCollaborationService (Electron)**: تم تنفيذ خدمة عميل WebSocket مُدارة للواجهة الخلفية للتعاون.",
+            "- **تقوية IPC**: تم تحديد عقود صارمة موثقة بـ Zod لجميع قنوات IPC للمزامنة التعاونية."
           ]
         }
       }
@@ -224,6 +332,113 @@
             "- **SettingsTabContent**: تم تحميل جميع مكونات علامات التبويب الـ 14 بشكل كسول باستخدام React.lazy() وSuspense.",
             "- **database-client.service**: تم تحويل existsSync/unlinkSync إلى fs/promises غير متزامنة لاكتشاف المنافذ بدون حظر.",
             "- **MultiLLMOrchestrator**: تم استبدال Array.from().filter() بمساعد countActiveTasks القائم على المكرر في مسار الجدولة الحرج."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-28-perf-batch3-lazy-changelog-website",
+      "date": "2026-02-28",
+      "channel": "stable",
+      "type": "perf",
+      "status": "completed",
+      "audience": [
+        "end-user"
+      ],
+      "components": [
+        "Renderer",
+        "Layout",
+        "Website"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Performance Batch 3: Lazy Changelog, Website Optimizations",
+          "summary": "Deferred changelog data loading in layout components, moved Google Fonts from render-blocking CSS @import to HTML link with preconnect, and removed dead code from website.",
+          "items": [
+            "- **AUDIT-PERF-001**: TitleBar and AppHeader now lazy-load changelog.index.json on modal open instead of at module level.",
+            "- **PERF-203**: Moved Google Fonts from render-blocking CSS @import to HTML link tag.",
+            "- **PERF-204**: Added preconnect hints for Google Fonts in index.html.",
+            "- **PERF-207**: Added loading=\"lazy\" and decoding=\"async\" to Navbar logo.",
+            "- **PERF-208**: Removed unused App.css (Vite boilerplate dead code)."
+          ]
+        },
+        "tr": {
+          "title": "Performans Grup 3: Tembel Changelog, Website Optimizasyonları",
+          "summary": "Layout bileşenlerinde changelog verisi yükleme ertelendi, Google Fonts render-engelleyici CSS @import'tan HTML link'e taşındı ve web sitesinden ölü kod temizlendi.",
+          "items": [
+            "- **AUDIT-PERF-001**: TitleBar ve AppHeader artık modül yüklenirken değil, modal açıldığında changelog.index.json'ı yüklüyor.",
+            "- **PERF-203**: Google Fonts render-engelleyici CSS @import'tan HTML link etiketine taşındı.",
+            "- **PERF-204**: index.html'e Google Fonts için preconnect ipuçları eklendi.",
+            "- **PERF-207**: Navbar logosuna loading=\"lazy\" ve decoding=\"async\" eklendi.",
+            "- **PERF-208**: Kullanılmayan App.css (Vite şablon ölü kodu) silindi."
+          ]
+        },
+        "de": {
+          "title": "Performanz Batch 3: Lazy Changelog, Website-Optimierungen",
+          "summary": "Changelog-Datenladung in Layout-Komponenten verzögert, Google Fonts von render-blockierendem CSS @import auf HTML-Link mit Preconnect verschoben und toten Code von der Website entfernt.",
+          "items": [
+            "- **AUDIT-PERF-001**: TitleBar und AppHeader laden changelog.index.json jetzt beim Öffnen des Modals statt auf Modulebene.",
+            "- **PERF-203**: Google Fonts von render-blockierendem CSS @import auf HTML-Link-Tag verschoben.",
+            "- **PERF-204**: Preconnect-Hinweise für Google Fonts in index.html hinzugefügt.",
+            "- **PERF-207**: loading=\"lazy\" und decoding=\"async\" zum Navbar-Logo hinzugefügt.",
+            "- **PERF-208**: Unbenutzte App.css (Vite-Boilerplate toter Code) entfernt."
+          ]
+        },
+        "fr": {
+          "title": "Performance lot 3 : Changelog différé, optimisations du site web",
+          "summary": "Chargement différé des données du changelog dans les composants de mise en page, déplacement de Google Fonts du CSS @import bloquant le rendu vers un lien HTML avec preconnect, et suppression du code mort du site web.",
+          "items": [
+            "- **AUDIT-PERF-001**: TitleBar et AppHeader chargent désormais changelog.index.json à l'ouverture du modal au lieu du niveau module.",
+            "- **PERF-203**: Google Fonts déplacé du CSS @import bloquant le rendu vers une balise lien HTML.",
+            "- **PERF-204**: Ajout d'indices preconnect pour Google Fonts dans index.html.",
+            "- **PERF-207**: Ajout de loading=\"lazy\" et decoding=\"async\" au logo de la barre de navigation.",
+            "- **PERF-208**: Suppression du fichier App.css inutilisé (code mort du modèle Vite)."
+          ]
+        },
+        "es": {
+          "title": "Rendimiento lote 3: Changelog diferido, optimizaciones del sitio web",
+          "summary": "Carga diferida de datos del changelog en componentes de diseño, traslado de Google Fonts del CSS @import bloqueante a enlace HTML con preconnect, y eliminación de código muerto del sitio web.",
+          "items": [
+            "- **AUDIT-PERF-001**: TitleBar y AppHeader ahora cargan changelog.index.json al abrir el modal en lugar de a nivel de módulo.",
+            "- **PERF-203**: Google Fonts trasladado del CSS @import bloqueante a una etiqueta de enlace HTML.",
+            "- **PERF-204**: Añadidos indicios de preconnect para Google Fonts en index.html.",
+            "- **PERF-207**: Añadidos loading=\"lazy\" y decoding=\"async\" al logo de la barra de navegación.",
+            "- **PERF-208**: Eliminado App.css no utilizado (código muerto de plantilla Vite)."
+          ]
+        },
+        "ja": {
+          "title": "パフォーマンスバッチ3：遅延Changelog、Webサイト最適化",
+          "summary": "レイアウトコンポーネントでのchangelogデータ読み込みを遅延化、Google FontsをレンダリングブロッキングCSS @importからpreconnect付きHTMLリンクに移動、Webサイトからデッドコードを削除しました。",
+          "items": [
+            "- **AUDIT-PERF-001**: TitleBarとAppHeaderがモジュールレベルではなくモーダル表示時にchangelog.index.jsonを遅延ロードするようになりました。",
+            "- **PERF-203**: Google Fontsをレンダリングブロッキングの CSS @import から HTML リンクタグに移動しました。",
+            "- **PERF-204**: index.htmlにGoogle Fontsのpreconnectヒントを追加しました。",
+            "- **PERF-207**: ナビバーのロゴにloading=\"lazy\"とdecoding=\"async\"を追加しました。",
+            "- **PERF-208**: 未使用のApp.css（Viteボイラープレートのデッドコード）を削除しました。"
+          ]
+        },
+        "zh": {
+          "title": "性能优化第三批：延迟 Changelog、网站优化",
+          "summary": "在布局组件中延迟加载 changelog 数据，将 Google Fonts 从阻塞渲染的 CSS @import 移至带有 preconnect 的 HTML 链接，并从网站中移除了死代码。",
+          "items": [
+            "- **AUDIT-PERF-001**: TitleBar 和 AppHeader 现在在模态框打开时才懒加载 changelog.index.json，而非在模块级别加载。",
+            "- **PERF-203**: 将 Google Fonts 从阻塞渲染的 CSS @import 移至 HTML link 标签。",
+            "- **PERF-204**: 在 index.html 中为 Google Fonts 添加了 preconnect 提示。",
+            "- **PERF-207**: 为导航栏 Logo 添加了 loading=\"lazy\" 和 decoding=\"async\"。",
+            "- **PERF-208**: 移除了未使用的 App.css（Vite 模板死代码）。"
+          ]
+        },
+        "ar": {
+          "title": "الأداء الدفعة 3: تحميل كسول لسجل التغييرات، تحسينات الموقع",
+          "summary": "تم تأجيل تحميل بيانات سجل التغييرات في مكونات التخطيط، ونقل Google Fonts من CSS @import المعيق للعرض إلى رابط HTML مع preconnect، وإزالة الكود الميت من الموقع.",
+          "items": [
+            "- **AUDIT-PERF-001**: يقوم TitleBar وAppHeader الآن بتحميل changelog.index.json بشكل كسول عند فتح النافذة المنبثقة بدلاً من مستوى الوحدة.",
+            "- **PERF-203**: تم نقل Google Fonts من CSS @import المعيق للعرض إلى وسم رابط HTML.",
+            "- **PERF-204**: تمت إضافة تلميحات preconnect لـ Google Fonts في index.html.",
+            "- **PERF-207**: تمت إضافة loading=\"lazy\" وdecoding=\"async\" إلى شعار شريط التنقل.",
+            "- **PERF-208**: تمت إزالة App.css غير المستخدم (كود ميت من قالب Vite)."
           ]
         }
       }

@@ -13,12 +13,11 @@ import {
     X as ClearIcon,
     X,
 } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { Modal } from '@/components/ui/modal';
 import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/context/ChatContext';
-import changelogIndex from '@/data/changelog.index.json';
 import { useTranslation } from '@/i18n';
 
 interface AppHeaderProps {
@@ -52,10 +51,24 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
     const Icon = viewIcons[currentView] ?? MessageSquare;
     const [isChangelogOpen, setIsChangelogOpen] = useState(false);
+    const [changelogEntries, setChangelogEntries] = useState<ChangelogIndexEntry[]>([]);
+
+    useEffect(() => {
+        if (!isChangelogOpen || changelogEntries.length > 0) {
+            return;
+        }
+        let mounted = true;
+        void import('@/data/changelog.index.json').then((mod) => {
+            if (mounted) {
+                setChangelogEntries(mod.default.entries as ChangelogIndexEntry[]);
+            }
+        });
+        return () => { mounted = false; };
+    }, [isChangelogOpen, changelogEntries.length]);
 
     const changelogGroups = useMemo(() => {
         const grouped = new Map<string, ChangelogIndexEntry[]>();
-        for (const entry of changelogIndex.entries as ChangelogIndexEntry[]) {
+        for (const entry of changelogEntries) {
             const bucket = grouped.get(entry.date) ?? [];
             bucket.push(entry);
             grouped.set(entry.date, bucket);
@@ -65,7 +78,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             .sort(([a], [b]) => b.localeCompare(a))
             .slice(0, 20)
             .map(([date, items]) => ({ date, items }));
-    }, []);
+    }, [changelogEntries]);
 
     const handleMinimize = () => {
         void window.electron.minimize();

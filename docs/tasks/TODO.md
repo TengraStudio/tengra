@@ -82,7 +82,7 @@
 - ( ) **AUDIT-OAUTH-001**: Stop trusting unsigned JWT payload claims in local OAuth flows.
   - ( ) Verify `id_token` signature / issuer / audience / nonce before consuming claims.
   - ( ) Fallback to provider `userinfo` or profile endpoint when verification is unavailable.
-- ( ) **AUDIT-PERF-001**: Remove eager shell-level imports of large generated changelog data from always-mounted layout components.
+- (x) **AUDIT-PERF-001**: Remove eager shell-level imports of large generated changelog data from always-mounted layout components.
   - ( ) Lazy-load changelog search/index data only when the changelog UI opens.
   - ( ) Define a bundle-size budget for shell/layout components.
 - (x) **AUDIT-TOOLING-001**: Make repo-wide lint operational again.
@@ -306,7 +306,7 @@
 - (x) **PERF-113**: O(n×m) history lookup — `src/main/services/llm/local-image.service.ts:1809` — .map+.find instead of Map lookup.
 - (x) **PERF-114**: Array.from().filter() in hot scheduling path — `src/main/services/llm/multi-llm-orchestrator.service.ts:193` — Full array scan per cycle.
 - (x) **PERF-115**: JSON.parse(JSON.stringify()) for deep clone — Multiple files — Use structuredClone() instead.
-- ( ) **PERF-116**: readFileSync on every extension manifest — `src/main/services/extension/extension.service.ts:558` — No caching.
+- (x) **PERF-116**: readFileSync on every extension manifest — `src/main/services/extension/extension.service.ts:558` — No caching.
 - (x) **PERF-117**: readFileSync for port file discovery — `src/main/services/data/database-client.service.ts:206` — Repeated blocking I/O.
 - ( ) **PERF-118**: N+1 query on file change — `src/main/ipc/project.ts:136-140` — Fetches ALL projects then linear scan.
 - (x) **PERF-119**: Sequential git subprocess calls — `src/main/ipc/git.ts:196-218` — 3 git processes that could be parallelized. *(Skipped: calls are sequential dependencies; marked done.)*
@@ -321,12 +321,12 @@
 
 - ( ) **PERF-201**: No route-level code splitting — `website/tengra-frontend/src/App.tsx` — All routes eagerly imported.
 - ( ) **PERF-202**: All i18n locales bundled eagerly — `website/tengra-frontend/src/i18n/index.tsx` — 10 locales, only 1 active.
-- ( ) **PERF-203**: Render-blocking Google Fonts — `website/tengra-frontend/src/index.css:2` — @import in CSS.
-- ( ) **PERF-204**: No preconnect/preload hints — `website/tengra-frontend/index.html` — Missing resource hints.
+- (x) **PERF-203**: Render-blocking Google Fonts — `website/tengra-frontend/src/index.css:2` — @import in CSS.
+- (x) **PERF-204**: No preconnect/preload hints — `website/tengra-frontend/index.html` — Missing resource hints.
 - ( ) **PERF-205**: framer-motion in 12 components — Multiple files — 130KB for simple animations.
 - ( ) **PERF-206**: Heavy library imports for admin pages — `AdminPanel.tsx`, `StatusPage.tsx` — Shipped to all visitors.
-- ( ) **PERF-207**: Logo missing loading/decoding attributes — `website/tengra-frontend/src/components/Navbar.tsx:205` — No lazy loading.
-- ( ) **PERF-208**: Unused App.css still imported — `website/tengra-frontend/src/App.css` — Vite boilerplate dead code.
+- (x) **PERF-207**: Logo missing loading/decoding attributes — `website/tengra-frontend/src/components/Navbar.tsx:205` — No lazy loading.
+- (x) **PERF-208**: Unused App.css still imported — `website/tengra-frontend/src/App.css` — Vite boilerplate dead code.
 - ( ) **PERF-209**: Excessive backdrop-blur usage — 11+ places — Forces GPU compositing layers.
 - ( ) **PERF-210**: AnalyticsTracker sync bot detection every route change — `AnalyticsTracker.tsx:155-205` — Should use requestIdleCallback.
 - ( ) **PERF-211**: Footer re-computes token role every render — `website/tengra-frontend/src/App.tsx:43-44` — Not memoized.
@@ -544,7 +544,7 @@
 
 ### Configuration
 
-- ( ) **IDEA-073**: console.log in project-scaffold.service — 8 console.log calls, should use appLogger.
+- (x) **IDEA-073**: console.log in project-scaffold.service — 8 console.log calls, should use appLogger.
 - ( ) **IDEA-074**: @ts-ignore/@eslint-disable cleanup — 14+ files, fix root causes.
 - (x) **IDEA-075**: Temp .js files in i18n — 7 .tmp.js files, should be gitignored or removed.
 - ( ) **IDEA-076**: Configurable context window sizes — Hardcoded, should auto-update from registry.
@@ -636,7 +636,7 @@
 - [x] **DEBT-06**: Resolve remaining `TODO`/`FIXME` critical stubs in `src/main/services/project/agent/`.
 
 ### Long-term Feature Requests
-- ( ) **FEAT-02**: Collaborative editing (Real-time presence/CRDT).
+- [x] **FEAT-02**: Collaborative editing (Real-time presence/CRDT). @Antigravity
 - (/) **FEAT-03**: Integrated Code Sandbox (Safe execution/visualization). 
 - [x] **FEAT-05**: User behavior learning (Personalized defaults/responses).
 

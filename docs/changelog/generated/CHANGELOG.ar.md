@@ -13,6 +13,18 @@
 - **Component Clean-up**: Eliminated unused local variables and imports.
 - **Build Integrity**: Verified zero lingering type mismatches.
 
+### أساس الواجهة الخلفية للمزامنة التعاونية (FEAT-02)
+
+- **Type**: feature
+- **Status**: in_progress
+- **Summary**: تم تهيئة البنية التحتية للتعاون في الوقت الفعلي بما في ذلك المزامنة المبنية على WebSocket ودعم نطاقات OAuth ومعالجات Electron IPC المتحقق منها.
+
+- **أمان الواجهة الخلفية**: تم ترحيل سر JWT المشفر يدويًا إلى إدارة التكوين الآمنة.
+- **نطاقات OAuth**: تمت إضافة دعم لنطاقات JWT الدقيقة في نظام المصادقة C++.
+- **CollaborationController (C++)**: تم إنشاء وحدة تحكم WebSocket في الوقت الفعلي للمزامنة القائمة على الغرف.
+- **UserCollaborationService (Electron)**: تم تنفيذ خدمة عميل WebSocket مُدارة للواجهة الخلفية للتعاون.
+- **تقوية IPC**: تم تحديد عقود صارمة موثقة بـ Zod لجميع قنوات IPC للمزامنة التعاونية.
+
 ### تحسينات الأداء الدفعة 2 (PERF-016/020/024/025/114/117)
 
 - **Type**: perf
@@ -25,6 +37,18 @@
 - **SettingsTabContent**: تم تحميل جميع مكونات علامات التبويب الـ 14 بشكل كسول باستخدام React.lazy() وSuspense.
 - **database-client.service**: تم تحويل existsSync/unlinkSync إلى fs/promises غير متزامنة لاكتشاف المنافذ بدون حظر.
 - **MultiLLMOrchestrator**: تم استبدال Array.from().filter() بمساعد countActiveTasks القائم على المكرر في مسار الجدولة الحرج.
+
+### الأداء الدفعة 3: تحميل كسول لسجل التغييرات، تحسينات الموقع
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: تم تأجيل تحميل بيانات سجل التغييرات في مكونات التخطيط، ونقل Google Fonts من CSS @import المعيق للعرض إلى رابط HTML مع preconnect، وإزالة الكود الميت من الموقع.
+
+- **AUDIT-PERF-001**: يقوم TitleBar وAppHeader الآن بتحميل changelog.index.json بشكل كسول عند فتح النافذة المنبثقة بدلاً من مستوى الوحدة.
+- **PERF-203**: تم نقل Google Fonts من CSS @import المعيق للعرض إلى وسم رابط HTML.
+- **PERF-204**: تمت إضافة تلميحات preconnect لـ Google Fonts في index.html.
+- **PERF-207**: تمت إضافة loading="lazy" وdecoding="async" إلى شعار شريط التنقل.
+- **PERF-208**: تمت إزالة App.css غير المستخدم (كود ميت من قالب Vite).
 
 ### Project Hygiene: Root Cleanup and Component Promotion
 

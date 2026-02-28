@@ -4022,5 +4022,27 @@
       "- **database-client.service**: existsSync/unlinkSync auf async fs/promises für nicht-blockierende Port-Erkennung umgestellt.",
       "- **MultiLLMOrchestrator**: Array.from().filter() durch iterator-basierten countActiveTasks-Helfer im Hot-Scheduling-Pfad ersetzt."
     ]
+  },
+  "2026-02-28-perf-batch3-lazy-changelog-website": {
+    "title": "Performanz Batch 3: Lazy Changelog, Website-Optimierungen",
+    "summary": "Changelog-Datenladung in Layout-Komponenten verzögert, Google Fonts von render-blockierendem CSS @import auf HTML-Link mit Preconnect verschoben und toten Code von der Website entfernt.",
+    "items": [
+      "- **AUDIT-PERF-001**: TitleBar und AppHeader laden changelog.index.json jetzt beim Öffnen des Modals statt auf Modulebene.",
+      "- **PERF-203**: Google Fonts von render-blockierendem CSS @import auf HTML-Link-Tag verschoben.",
+      "- **PERF-204**: Preconnect-Hinweise für Google Fonts in index.html hinzugefügt.",
+      "- **PERF-207**: loading=\"lazy\" und decoding=\"async\" zum Navbar-Logo hinzugefügt.",
+      "- **PERF-208**: Unbenutzte App.css (Vite-Boilerplate toter Code) entfernt."
+    ]
+  },
+  "2026-02-28-collab-sync-backend-foundation": {
+    "title": "Grundlage für kollaboratives Sync-Backend (FEAT-02)",
+    "summary": "Die Echtzeit-Kollaborationsinfrastruktur wurde initialisiert, einschließlich WebSocket-basierter Synchronisierung, OAuth-Scope-Unterstützung und validierter Electron-IPC-Handler.",
+    "items": [
+      "- **Backend-Sicherheit**: Hartcodiertes JWT-Geheimnis auf sichere Konfigurationsverwaltung migriert.",
+      "- **OAuth-Scopes**: Unterstützung für feingranulare JWT-Scopes im C++-Authentifizierungssystem hinzugefügt.",
+      "- **CollaborationController (C++)**: Echtzeit-WebSocket-Controller für raumbasierte Synchronisierung erstellt.",
+      "- **UserCollaborationService (Electron)**: Verwalteten WebSocket-Client-Dienst für das Kollaborations-Backend implementiert.",
+      "- **IPC-Härtung**: Strikte Zod-validierte Verträge für alle Kollaborations-Sync-IPC-Kanäle definiert."
+    ]
   }
 }

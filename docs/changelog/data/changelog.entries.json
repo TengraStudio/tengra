@@ -4,14 +4,107 @@
   "generatedAt": "2026-02-20T09:15:00Z",
   "entries": [
     {
+      "id": "2026-02-28-perf-batch3-lazy-changelog-website",
+      "date": "2026-02-28",
+      "channel": "stable",
+      "type": "perf",
+      "category": "performance",
+      "status": "completed",
+      "audience": [
+        "end-user"
+      ],
+      "components": [
+        "Renderer",
+        "Layout",
+        "Website"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Performance Batch 3: Lazy Changelog, Website Optimizations",
+          "summary": "Deferred changelog data loading in layout components, moved Google Fonts from render-blocking CSS @import to HTML link with preconnect, and removed dead code from website.",
+          "items": [
+            "- **AUDIT-PERF-001**: TitleBar and AppHeader now lazy-load changelog.index.json on modal open instead of at module level.",
+            "- **PERF-203**: Moved Google Fonts from render-blocking CSS @import to HTML link tag.",
+            "- **PERF-204**: Added preconnect hints for Google Fonts in index.html.",
+            "- **PERF-207**: Added loading=\"lazy\" and decoding=\"async\" to Navbar logo.",
+            "- **PERF-208**: Removed unused App.css (Vite boilerplate dead code)."
+          ]
+        },
+        "tr": {
+          "title": "Performans Grup 3: Tembel Changelog, Website Optimizasyonları",
+          "summary": "Layout bileşenlerinde changelog verisi yükleme ertelendi, Google Fonts render-engelleyici CSS @import'tan HTML link'e taşındı ve web sitesinden ölü kod temizlendi.",
+          "items": [
+            "- **AUDIT-PERF-001**: TitleBar ve AppHeader artık modül yüklenirken değil, modal açıldığında changelog.index.json'ı yüklüyor.",
+            "- **PERF-203**: Google Fonts render-engelleyici CSS @import'tan HTML link etiketine taşındı.",
+            "- **PERF-204**: index.html'e Google Fonts için preconnect ipuçları eklendi.",
+            "- **PERF-207**: Navbar logosuna loading=\"lazy\" ve decoding=\"async\" eklendi.",
+            "- **PERF-208**: Kullanılmayan App.css (Vite şablon ölü kodu) silindi."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-28-collab-sync-backend-foundation",
+      "date": "2026-02-28",
+      "channel": "stable",
+      "type": "feature",
+      "category": "collaboration",
+      "status": "in_progress",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Backend",
+        "Electron",
+        "IPC",
+        "Security"
+      ],
+      "breaking": false,
+      "security": true,
+      "translations": {
+        "en": {
+          "title": "Collaborative Sync Backend & Presence (FEAT-02)",
+          "summary": "Implemented real-time synchronization backend and frontend bridge for multi-user collaboration. Added support for Yjs state sync, awareness (presence), and scope-based authorization.",
+          "items": [
+            "- **Backend Security**: Migrated hardcoded JWT secret to secure configuration management.",
+            "- **OAuth Scopes**: Added support for fine-grained JWT scopes in the C++ auth system.",
+            "- **CollaborationController (C++)**: Created a real-time WebSocket controller for room-based sync (chats and projects).",
+            "- **UserCollaborationService (Electron)**: Implemented a managed WebSocket client service for connecting to the collaboration backend.",
+            "- **IPC Hardening**: Defined strict Zod-validated contracts for all collaboration-sync IPC channels."
+          ]
+        },
+        "tr": {
+          "title": "İş Birlikçi Eşitleme Arka Plan Temeli (FEAT-02)",
+          "summary": "WebSocket tabanlı eşitleme, OAuth kapsam desteği ve doğrulanmış Electron IPC işleyicilerini içeren gerçek zamanlı iş birliği altyapısı başlatıldı.",
+          "items": [
+            "- **Arka Plan Güvenliği**: Sabit kodlanmış JWT sırrı güvenli yapılandırma yönetimine taşındı.",
+            "- **OAuth Kapsamları**: C++ kimlik doğrulama sistemine ayrıntılı JWT kapsamları için destek eklendi.",
+            "- **CollaborationController (C++)**: Oda tabanlı eşitleme (sohbetler ve projeler) için gerçek zamanlı WebSocket denetleyicisi oluşturuldu.",
+            "- **UserCollaborationService (Electron)**: İş birliği arka planına bağlanmak için yönetilen bir WebSocket istemci hizmeti uygulandı.",
+            "- **IPC Sertleştirme**: Tüm iş birliği eşitleme IPC kanalları için katı Zod onaylı sözleşmeler tanımlandı."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-28-perf-batch2-stores-lazy-async",
       "date": "2026-02-28",
       "channel": "stable",
       "type": "perf",
       "category": "performance",
       "status": "completed",
-      "audience": ["end-user"],
-      "components": ["Renderer", "MCP", "Settings", "LLM", "Database"],
+      "audience": [
+        "end-user"
+      ],
+      "components": [
+        "Renderer",
+        "MCP",
+        "Settings",
+        "LLM",
+        "Database"
+      ],
       "breaking": false,
       "security": false,
       "translations": {
@@ -48,8 +141,15 @@
       "type": "perf",
       "category": "performance",
       "status": "completed",
-      "audience": ["end-user"],
-      "components": ["Renderer", "Chat", "Layout", "MCP"],
+      "audience": [
+        "end-user"
+      ],
+      "components": [
+        "Renderer",
+        "Chat",
+        "Layout",
+        "MCP"
+      ],
       "breaking": false,
       "security": false,
       "translations": {

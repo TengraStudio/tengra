@@ -13,6 +13,18 @@
 - **Component Clean-up**: Eliminated unused local variables and imports.
 - **Build Integrity**: Verified zero lingering type mismatches.
 
+### コラボレーティブ同期バックエンド基盤 (FEAT-02)
+
+- **Type**: feature
+- **Status**: in_progress
+- **Summary**: WebSocketベースの同期、OAuthスコープサポート、および検証済みElectron IPCハンドラーを含むリアルタイムコラボレーションインフラストラクチャが初期化されました。
+
+- **バックエンドセキュリティ**: ハードコードされたJWTシークレットを安全な構成管理に移行しました。
+- **OAuthスコープ**: C++認証システムにきめ細かなJWTスコープのサポートを追加しました。
+- **CollaborationController (C++)**: ルームベースの同期用リアルタイムWebSocketコントローラーを作成しました。
+- **UserCollaborationService (Electron)**: コラボレーションバックエンド用の管理型WebSocketクライアントサービスを実装しました。
+- **IPC強化**: すべてのコラボレーション同期IPCチャネルに対して厳密なZod検証済みコントラクトを定義しました。
+
 ### パフォーマンス最適化バッチ2（PERF-016/020/024/025/114/117）
 
 - **Type**: perf
@@ -25,6 +37,18 @@
 - **SettingsTabContent**: 14個のタブコンポーネントすべてをReact.lazy()とSuspenseで遅延ロードしました。
 - **database-client.service**: ノンブロッキングのポート検出のためexistsSync/unlinkSyncを非同期fs/promisesに変換しました。
 - **MultiLLMOrchestrator**: ホットスケジューリングパスでArray.from().filter()をイテレーターベースのcountActiveTasksヘルパーに置き換えました。
+
+### パフォーマンスバッチ3：遅延Changelog、Webサイト最適化
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: レイアウトコンポーネントでのchangelogデータ読み込みを遅延化、Google FontsをレンダリングブロッキングCSS @importからpreconnect付きHTMLリンクに移動、Webサイトからデッドコードを削除しました。
+
+- **AUDIT-PERF-001**: TitleBarとAppHeaderがモジュールレベルではなくモーダル表示時にchangelog.index.jsonを遅延ロードするようになりました。
+- **PERF-203**: Google Fontsをレンダリングブロッキングの CSS @import から HTML リンクタグに移動しました。
+- **PERF-204**: index.htmlにGoogle Fontsのpreconnectヒントを追加しました。
+- **PERF-207**: ナビバーのロゴにloading="lazy"とdecoding="async"を追加しました。
+- **PERF-208**: 未使用のApp.css（Viteボイラープレートのデッドコード）を削除しました。
 
 ### Project Hygiene: Root Cleanup and Component Promotion
 

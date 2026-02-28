@@ -13,6 +13,18 @@
 - **Component Clean-up**: Eliminated unused local variables and imports.
 - **Build Integrity**: Verified zero lingering type mismatches.
 
+### Collaborative Sync Backend & Presence (FEAT-02)
+
+- **Type**: feature
+- **Status**: in_progress
+- **Summary**: Implemented real-time synchronization backend and frontend bridge for multi-user collaboration. Added support for Yjs state sync, awareness (presence), and scope-based authorization.
+
+- **Backend Security**: Migrated hardcoded JWT secret to secure configuration management.
+- **OAuth Scopes**: Added support for fine-grained JWT scopes in the C++ auth system.
+- **CollaborationController (C++)**: Created a real-time WebSocket controller for room-based sync (chats and projects).
+- **UserCollaborationService (Electron)**: Implemented a managed WebSocket client service for connecting to the collaboration backend.
+- **IPC Hardening**: Defined strict Zod-validated contracts for all collaboration-sync IPC channels.
+
 ### Performance Optimizations Batch 2 (PERF-016/020/024/025/114/117)
 
 - **Type**: perf
@@ -25,6 +37,18 @@
 - **SettingsTabContent**: All 14 tab components lazy-loaded with React.lazy() and Suspense.
 - **database-client.service**: Converted existsSync/unlinkSync to async fs/promises for non-blocking port discovery.
 - **MultiLLMOrchestrator**: Replaced Array.from().filter() with iterator-based countActiveTasks helper in hot scheduling path.
+
+### Performance Batch 3: Lazy Changelog, Website Optimizations
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: Deferred changelog data loading in layout components, moved Google Fonts from render-blocking CSS @import to HTML link with preconnect, and removed dead code from website.
+
+- **AUDIT-PERF-001**: TitleBar and AppHeader now lazy-load changelog.index.json on modal open instead of at module level.
+- **PERF-203**: Moved Google Fonts from render-blocking CSS @import to HTML link tag.
+- **PERF-204**: Added preconnect hints for Google Fonts in index.html.
+- **PERF-207**: Added loading="lazy" and decoding="async" to Navbar logo.
+- **PERF-208**: Removed unused App.css (Vite boilerplate dead code).
 
 ### Project Hygiene: Root Cleanup and Component Promotion
 

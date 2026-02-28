@@ -13,6 +13,18 @@
 - **Component Clean-up**: Eliminated unused local variables and imports.
 - **Build Integrity**: Verified zero lingering type mismatches.
 
+### Grundlage für kollaboratives Sync-Backend (FEAT-02)
+
+- **Type**: feature
+- **Status**: in_progress
+- **Summary**: Die Echtzeit-Kollaborationsinfrastruktur wurde initialisiert, einschließlich WebSocket-basierter Synchronisierung, OAuth-Scope-Unterstützung und validierter Electron-IPC-Handler.
+
+- **Backend-Sicherheit**: Hartcodiertes JWT-Geheimnis auf sichere Konfigurationsverwaltung migriert.
+- **OAuth-Scopes**: Unterstützung für feingranulare JWT-Scopes im C++-Authentifizierungssystem hinzugefügt.
+- **CollaborationController (C++)**: Echtzeit-WebSocket-Controller für raumbasierte Synchronisierung erstellt.
+- **UserCollaborationService (Electron)**: Verwalteten WebSocket-Client-Dienst für das Kollaborations-Backend implementiert.
+- **IPC-Härtung**: Strikte Zod-validierte Verträge für alle Kollaborations-Sync-IPC-Kanäle definiert.
+
 ### Performanz-Optimierungen Batch 2 (PERF-016/020/024/025/114/117)
 
 - **Type**: perf
@@ -25,6 +37,18 @@
 - **SettingsTabContent**: Alle 14 Tab-Komponenten mit React.lazy() und Suspense lazy-geladen.
 - **database-client.service**: existsSync/unlinkSync auf async fs/promises für nicht-blockierende Port-Erkennung umgestellt.
 - **MultiLLMOrchestrator**: Array.from().filter() durch iterator-basierten countActiveTasks-Helfer im Hot-Scheduling-Pfad ersetzt.
+
+### Performanz Batch 3: Lazy Changelog, Website-Optimierungen
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: Changelog-Datenladung in Layout-Komponenten verzögert, Google Fonts von render-blockierendem CSS @import auf HTML-Link mit Preconnect verschoben und toten Code von der Website entfernt.
+
+- **AUDIT-PERF-001**: TitleBar und AppHeader laden changelog.index.json jetzt beim Öffnen des Modals statt auf Modulebene.
+- **PERF-203**: Google Fonts von render-blockierendem CSS @import auf HTML-Link-Tag verschoben.
+- **PERF-204**: Preconnect-Hinweise für Google Fonts in index.html hinzugefügt.
+- **PERF-207**: loading="lazy" und decoding="async" zum Navbar-Logo hinzugefügt.
+- **PERF-208**: Unbenutzte App.css (Vite-Boilerplate toter Code) entfernt.
 
 ### Project Hygiene: Root Cleanup and Component Promotion
 

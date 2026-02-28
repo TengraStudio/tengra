@@ -13,6 +13,18 @@
 - **Component Clean-up**: Eliminated unused local variables and imports.
 - **Build Integrity**: Verified zero lingering type mismatches.
 
+### 协作同步后端基础 (FEAT-02)
+
+- **Type**: feature
+- **Status**: in_progress
+- **Summary**: 初始化了实时协作基础设施，包括基于WebSocket的同步、OAuth范围支持和经过验证的Electron IPC处理程序。
+
+- **后端安全**: 将硬编码的JWT密钥迁移到安全配置管理。
+- **OAuth范围**: 在C++认证系统中添加了细粒度JWT范围支持。
+- **CollaborationController (C++)**: 创建了用于基于房间同步的实时WebSocket控制器。
+- **UserCollaborationService (Electron)**: 实现了用于协作后端的托管WebSocket客户端服务。
+- **IPC强化**: 为所有协作同步IPC通道定义了严格的Zod验证合约。
+
 ### 性能优化第二批（PERF-016/020/024/025/114/117）
 
 - **Type**: perf
@@ -25,6 +37,18 @@
 - **SettingsTabContent**: 全部 14 个选项卡组件通过 React.lazy() 和 Suspense 实现懒加载。
 - **database-client.service**: 将 existsSync/unlinkSync 转换为异步 fs/promises，实现非阻塞端口发现。
 - **MultiLLMOrchestrator**: 在热调度路径中将 Array.from().filter() 替换为基于迭代器的 countActiveTasks 辅助函数。
+
+### 性能优化第三批：延迟 Changelog、网站优化
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: 在布局组件中延迟加载 changelog 数据，将 Google Fonts 从阻塞渲染的 CSS @import 移至带有 preconnect 的 HTML 链接，并从网站中移除了死代码。
+
+- **AUDIT-PERF-001**: TitleBar 和 AppHeader 现在在模态框打开时才懒加载 changelog.index.json，而非在模块级别加载。
+- **PERF-203**: 将 Google Fonts 从阻塞渲染的 CSS @import 移至 HTML link 标签。
+- **PERF-204**: 在 index.html 中为 Google Fonts 添加了 preconnect 提示。
+- **PERF-207**: 为导航栏 Logo 添加了 loading="lazy" 和 decoding="async"。
+- **PERF-208**: 移除了未使用的 App.css（Vite 模板死代码）。
 
 ### Project Hygiene: Root Cleanup and Component Promotion
 

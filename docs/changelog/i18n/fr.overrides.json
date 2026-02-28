@@ -4022,5 +4022,27 @@
       "- **database-client.service**: existsSync/unlinkSync convertis en fs/promises asynchrones pour une découverte de port non bloquante.",
       "- **MultiLLMOrchestrator**: Array.from().filter() remplacé par un assistant countActiveTasks basé sur un itérateur dans le chemin de planification critique."
     ]
+  },
+  "2026-02-28-perf-batch3-lazy-changelog-website": {
+    "title": "Performance lot 3 : Changelog différé, optimisations du site web",
+    "summary": "Chargement différé des données du changelog dans les composants de mise en page, déplacement de Google Fonts du CSS @import bloquant le rendu vers un lien HTML avec preconnect, et suppression du code mort du site web.",
+    "items": [
+      "- **AUDIT-PERF-001**: TitleBar et AppHeader chargent désormais changelog.index.json à l'ouverture du modal au lieu du niveau module.",
+      "- **PERF-203**: Google Fonts déplacé du CSS @import bloquant le rendu vers une balise lien HTML.",
+      "- **PERF-204**: Ajout d'indices preconnect pour Google Fonts dans index.html.",
+      "- **PERF-207**: Ajout de loading=\"lazy\" et decoding=\"async\" au logo de la barre de navigation.",
+      "- **PERF-208**: Suppression du fichier App.css inutilisé (code mort du modèle Vite)."
+    ]
+  },
+  "2026-02-28-collab-sync-backend-foundation": {
+    "title": "Fondation du backend de synchronisation collaborative (FEAT-02)",
+    "summary": "L'infrastructure de collaboration en temps réel a été initialisée, incluant la synchronisation basée sur WebSocket, la prise en charge des portées OAuth et des gestionnaires IPC Electron validés.",
+    "items": [
+      "- **Sécurité backend** : Secret JWT codé en dur migré vers une gestion de configuration sécurisée.",
+      "- **Portées OAuth** : Ajout de la prise en charge des portées JWT granulaires dans le système d'authentification C++.",
+      "- **CollaborationController (C++)** : Création d'un contrôleur WebSocket en temps réel pour la synchronisation par salle.",
+      "- **UserCollaborationService (Electron)** : Implémentation d'un service client WebSocket géré pour le backend de collaboration.",
+      "- **Renforcement IPC** : Définition de contrats strict validés par Zod pour tous les canaux IPC de synchronisation collaborative."
+    ]
   }
 }

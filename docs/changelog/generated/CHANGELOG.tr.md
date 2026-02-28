@@ -13,6 +13,18 @@
 - **Bileşen Temizliği**: Kullanılmayan yerel değişkenler ve içe aktarmalar temizlendi.
 - **Derleme Bütünlüğü**: Sıfır kalan tip uyuşmazlığı doğrulandı.
 
+### İş Birlikçi Eşitleme Arka Plan Temeli (FEAT-02)
+
+- **Type**: feature
+- **Status**: in_progress
+- **Summary**: WebSocket tabanlı eşitleme, OAuth kapsam desteği ve doğrulanmış Electron IPC işleyicilerini içeren gerçek zamanlı iş birliği altyapısı başlatıldı.
+
+- **Arka Plan Güvenliği**: Sabit kodlanmış JWT sırrı güvenli yapılandırma yönetimine taşındı.
+- **OAuth Kapsamları**: C++ kimlik doğrulama sistemine ayrıntılı JWT kapsamları için destek eklendi.
+- **CollaborationController (C++)**: Oda tabanlı eşitleme için gerçek zamanlı WebSocket denetleyicisi oluşturuldu.
+- **UserCollaborationService (Electron)**: İş birliği arka planına bağlanmak için yönetilen bir WebSocket istemci hizmeti uygulandı.
+- **IPC Sertleştirme**: Tüm iş birliği eşitleme IPC kanalları için katı Zod onaylı sözleşmeler tanımlandı.
+
 ### Performans İyileştirmeleri Grup 2 (PERF-016/020/024/025/114/117)
 
 - **Type**: perf
@@ -25,6 +37,18 @@
 - **SettingsTabContent**: 14 sekme bileşeni React.lazy() ve Suspense ile lazy-load edildi.
 - **database-client.service**: Engellenmeyen port keşfi için existsSync/unlinkSync, async fs/promises'e dönüştürüldü.
 - **MultiLLMOrchestrator**: Hot zamanlama yolunda Array.from().filter() yerine iterator tabanlı countActiveTasks yardımcısı kullanıldı.
+
+### Performans Grup 3: Tembel Changelog, Website Optimizasyonları
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: Layout bileşenlerinde changelog verisi yükleme ertelendi, Google Fonts render-engelleyici CSS @import'tan HTML link'e taşındı ve web sitesinden ölü kod temizlendi.
+
+- **AUDIT-PERF-001**: TitleBar ve AppHeader artık modül yüklenirken değil, modal açıldığında changelog.index.json'ı yüklüyor.
+- **PERF-203**: Google Fonts render-engelleyici CSS @import'tan HTML link etiketine taşındı.
+- **PERF-204**: index.html'e Google Fonts için preconnect ipuçları eklendi.
+- **PERF-207**: Navbar logosuna loading="lazy" ve decoding="async" eklendi.
+- **PERF-208**: Kullanılmayan App.css (Vite şablon ölü kodu) silindi.
 
 ### Project Hygiene: Root Cleanup and Component Promotion
 

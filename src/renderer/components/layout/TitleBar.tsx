@@ -2,7 +2,6 @@ import { Download, FileText, Loader2, Minus, Puzzle, Search, Square, X } from 'l
 import { type CSSProperties, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Modal } from '@/components/ui/modal';
-import changelogIndex from '@/data/changelog.index.json';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +30,7 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
             ? translation.language
             : 'en';
     const [isChangelogOpen, setIsChangelogOpen] = useState(false);
+    const [changelogEntries, setChangelogEntries] = useState<ChangelogIndexEntry[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
@@ -109,7 +109,7 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
     const changelogGroups = useMemo(() => {
         const grouped = new Map<string, ChangelogIndexEntry[]>();
 
-        for (const entry of changelogIndex.entries as ChangelogIndexEntry[]) {
+        for (const entry of changelogEntries) {
             const bucket = grouped.get(entry.date) ?? [];
             bucket.push(entry);
             grouped.set(entry.date, bucket);
@@ -118,7 +118,20 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
         return Array.from(grouped.entries())
             .sort(([a], [b]) => b.localeCompare(a))
             .map(([date, items]) => ({ date, items }));
-    }, []);
+    }, [changelogEntries]);
+
+    useEffect(() => {
+        if (!isChangelogOpen || changelogEntries.length > 0) {
+            return;
+        }
+        let mounted = true;
+        void import('@/data/changelog.index.json').then((mod) => {
+            if (mounted) {
+                setChangelogEntries(mod.default.entries as ChangelogIndexEntry[]);
+            }
+        });
+        return () => { mounted = false; };
+    }, [isChangelogOpen, changelogEntries.length]);
 
     useEffect(() => {
         let mounted = true;
