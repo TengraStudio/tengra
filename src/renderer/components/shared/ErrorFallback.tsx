@@ -36,7 +36,7 @@ export const ErrorFallback = ({
                             {t('errors.somethingWentWrong')}
                         </h2>
                         <p className="text-sm text-muted-foreground">
-                            The application encountered an unexpected error.
+                            {t('errors.unexpectedDescription')}
                         </p>
                     </div>
                 </div>
@@ -44,10 +44,10 @@ export const ErrorFallback = ({
                 <div className="space-y-4">
                     <div className="relative group/code">
                         <div className="absolute -top-3 left-3 px-2 py-0.5 bg-card text-[10px] font-bold uppercase tracking-wider text-destructive/70 border border-border rounded">
-                            Error Message
+                            {t('errors.errorMessageLabel')}
                         </div>
                         <pre className="text-sm bg-muted/30 p-5 rounded-xl overflow-auto whitespace-pre-wrap font-mono border border-border/50 text-foreground">
-                            {error.message || 'Unknown error occurred'}
+                            {error.message || t('common.unknownError')}
                         </pre>
                     </div>
 
@@ -59,7 +59,7 @@ export const ErrorFallback = ({
                             >
                                 <span className="flex items-center gap-2">
                                     {showStack ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                                    TECHNICAL DETAILS (STACK TRACE)
+                                    {t('errors.technicalDetails')}
                                 </span>
                             </button>
                             {showStack && (
@@ -83,10 +83,10 @@ export const ErrorFallback = ({
                                 : "hover:bg-muted text-muted-foreground hover:text-foreground"
                         )}
                     >
-                        {copied ? <span className="animate-in zoom-in-50 duration-200">Copied!</span> : (
+                        {copied ? <span className="animate-in zoom-in-50 duration-200">{t('common.copied')}</span> : (
                             <>
                                 <Copy className="w-4 h-4 opacity-70 group-hover:opacity-100 transition-opacity" />
-                                <span>Copy Details</span>
+                                <span>{t('errors.copyDetails')}</span>
                             </>
                         )}
                     </button>

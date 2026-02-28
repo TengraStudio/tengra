@@ -86,6 +86,11 @@ export const en = {
         continue: 'Continue',
         healthy: 'Healthy',
         degraded: 'Degraded',
+        copied: 'Copied!',
+        finalizing: 'Finalizing...',
+        timeRemaining: '~{{seconds}}s remaining',
+        loadingContext: 'Loading {{context}}',
+        selectEllipsis: 'Select...',
     },
     /** @context Loading state indicators shown while content is being fetched */
     loading: {
@@ -102,6 +107,10 @@ export const en = {
     errors: {
         unexpected: 'Sorry, there was an error.',
         somethingWentWrong: 'Something went wrong:',
+        unexpectedDescription: 'The application encountered an unexpected error.',
+        errorMessageLabel: 'Error Message',
+        technicalDetails: 'TECHNICAL DETAILS (STACK TRACE)',
+        copyDetails: 'Copy Details',
         rootNotFound: 'Root element not found',
         rateLimitWarning: 'Rate limit warning ({{provider}}): {{remaining}}/{{limit}} remaining',
         rateLimit: {
@@ -425,6 +434,7 @@ export const en = {
             activate: 'Activate focused element',
             escape: 'Close modal or cancel',
             arrowNav: 'Navigate within lists',
+            skipToMainContent: 'Skip to main content',
         },
         factoryResetConfirm: 'Are you sure you want to delete all data?',
         language: 'Language',
@@ -2283,6 +2293,13 @@ export const en = {
         showShortcuts: 'Show Shortcuts',
         close: 'Close',
         footer: 'Press Esc to close',
+        pressKeys: 'Press keys...',
+        resetToDefault: 'Reset to default',
+        searchPlaceholder: 'Search shortcuts',
+        export: 'Export',
+        import: 'Import',
+        resetAll: 'Reset all',
+        closeModal: 'Close modal',
     },
     semanticSearch: {
         title: 'Semantic Search',
@@ -3178,6 +3195,7 @@ export const en = {
     },
     extensionDev: {
         devtools: 'Extension DevTools',
+        devToolsTitle: 'Extension Developer Tools',
         extensions: 'Extensions',
         activate: 'Activate',
         deactivate: 'Deactivate',
@@ -3605,6 +3623,26 @@ export const en = {
             resetMessage: 'Are you sure you want to reset the database? This action cannot be undone.',
             backupBeforeReset: 'Create backup before reset',
         },
+    },
+    /** @context Accessible labels for icon-only buttons */
+    aria: {
+        closeModal: 'Close modal',
+        closeTab: 'Close tab',
+        previousPage: 'Previous page',
+        nextPage: 'Next page',
+        exportChat: 'Export chat',
+        moveToFolder: 'Move to folder',
+        togglePin: 'Toggle pin',
+        deleteChat: 'Delete chat',
+        closeFile: 'Close file',
+        closeTerminalTab: 'Close terminal tab',
+        stopSpeaking: 'Stop speaking',
+        speakCode: 'Speak code',
+        copyCode: 'Copy code',
+        closeOutput: 'Close output',
+        newChat: 'New chat',
+        clearSearch: 'Clear search',
+        removeFromComparison: 'Remove from comparison',
     },
 };
 

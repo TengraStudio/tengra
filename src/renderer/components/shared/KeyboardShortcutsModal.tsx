@@ -43,35 +43,38 @@ const ShortcutItem: React.FC<ShortcutItemProps> = ({
     onCapture,
     onReset,
     isRecording,
-}) => (
-    <div className="flex items-center justify-between py-2 border-b border-border/50 last:border-0 gap-3">
-        <span className="text-sm text-muted-foreground/70">{label}</span>
-        <div className="flex items-center gap-1.5">
-            {keys.map((key, i) => (
-                <kbd key={`${key}-${i}`} className="px-2 py-1 bg-muted/50 border border-border/50 rounded text-xxs font-mono text-muted-foreground/80 min-w-[24px] text-center shadow-sm">
-                    {key}
-                </kbd>
-            ))}
-            {onCapture && (
-                <button
-                    onClick={onCapture}
-                    className={`ml-1 px-2 py-1 text-xxs rounded border transition-colors ${isRecording ? 'bg-primary/15 border-primary/40 text-primary' : 'bg-muted/30 border-border/50 text-muted-foreground hover:text-foreground'}`}
-                >
-                    {isRecording ? 'Press keys...' : 'Edit'}
-                </button>
-            )}
-            {onReset && (
-                <button
-                    onClick={onReset}
-                    className="px-2 py-1 text-xxs rounded border bg-muted/20 border-border/50 text-muted-foreground hover:text-foreground transition-colors"
-                    title="Reset to default"
-                >
-                    Reset
-                </button>
-            )}
+}) => {
+    const { t } = useTranslation();
+    return (
+        <div className="flex items-center justify-between py-2 border-b border-border/50 last:border-0 gap-3">
+            <span className="text-sm text-muted-foreground/70">{label}</span>
+            <div className="flex items-center gap-1.5">
+                {keys.map((key, i) => (
+                    <kbd key={`${key}-${i}`} className="px-2 py-1 bg-muted/50 border border-border/50 rounded text-xxs font-mono text-muted-foreground/80 min-w-[24px] text-center shadow-sm">
+                        {key}
+                    </kbd>
+                ))}
+                {onCapture && (
+                    <button
+                        onClick={onCapture}
+                        className={`ml-1 px-2 py-1 text-xxs rounded border transition-colors ${isRecording ? 'bg-primary/15 border-primary/40 text-primary' : 'bg-muted/30 border-border/50 text-muted-foreground hover:text-foreground'}`}
+                    >
+                        {isRecording ? t('shortcuts.pressKeys') : t('common.edit')}
+                    </button>
+                )}
+                {onReset && (
+                    <button
+                        onClick={onReset}
+                        className="px-2 py-1 text-xxs rounded border bg-muted/20 border-border/50 text-muted-foreground hover:text-foreground transition-colors"
+                        title={t('shortcuts.resetToDefault')}
+                    >
+                        {t('common.reset')}
+                    </button>
+                )}
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 interface KeyboardShortcutsModalProps {
     isOpen: boolean
@@ -82,19 +85,19 @@ interface KeyboardShortcutsModalProps {
 interface ShortcutDefinition {
     id: ShortcutActionId;
     category: 'general' | 'navigation' | 'chat';
-    label: string;
+    labelKey: string;
 }
 
 const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
-    { id: 'commandPalette', category: 'general', label: 'Command Palette' },
-    { id: 'newChat', category: 'general', label: 'New Chat' },
-    { id: 'openSettings', category: 'general', label: 'Open Settings' },
-    { id: 'toggleSidebar', category: 'general', label: 'Toggle Sidebar' },
-    { id: 'showShortcuts', category: 'general', label: 'Show Shortcuts' },
-    { id: 'goToChat', category: 'navigation', label: 'Go To Chat' },
-    { id: 'goToProjects', category: 'navigation', label: 'Go To Projects' },
-    { id: 'goToSettings', category: 'navigation', label: 'Go To Settings' },
-    { id: 'clearChat', category: 'chat', label: 'Clear Chat' },
+    { id: 'commandPalette', category: 'general', labelKey: 'shortcuts.commandPalette' },
+    { id: 'newChat', category: 'general', labelKey: 'shortcuts.newChat' },
+    { id: 'openSettings', category: 'general', labelKey: 'shortcuts.openSettings' },
+    { id: 'toggleSidebar', category: 'general', labelKey: 'shortcuts.toggleSidebar' },
+    { id: 'showShortcuts', category: 'general', labelKey: 'shortcuts.showShortcuts' },
+    { id: 'goToChat', category: 'navigation', labelKey: 'shortcuts.goToChat' },
+    { id: 'goToProjects', category: 'navigation', labelKey: 'shortcuts.goToProjects' },
+    { id: 'goToSettings', category: 'navigation', labelKey: 'shortcuts.goToSettings' },
+    { id: 'clearChat', category: 'chat', labelKey: 'shortcuts.clearChat' },
 ];
 
 export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = React.memo(({ isOpen, onClose, language = 'tr' }) => {
@@ -213,10 +216,10 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
             return SHORTCUT_DEFINITIONS;
         }
         return SHORTCUT_DEFINITIONS.filter(def =>
-            def.label.toLowerCase().includes(query) ||
+            t(def.labelKey).toLowerCase().includes(query) ||
             shortcutBindingLabel(bindings[def.id], isMac).toLowerCase().includes(query)
         );
-    }, [searchTerm, bindings, isMac]);
+    }, [searchTerm, bindings, isMac, t]);
 
     const grouped = useMemo(() => {
         return {
@@ -317,7 +320,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
                         <input
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
-                            placeholder="Search shortcuts"
+                            placeholder={t('shortcuts.searchPlaceholder')}
                             className="w-full pl-9 pr-3 py-2 rounded-lg bg-muted/30 border border-border/50 text-sm outline-none focus:border-primary/50"
                         />
                     </div>
@@ -325,19 +328,19 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
                         onClick={handleExport}
                         className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/40 text-xs"
                     >
-                        <Download className="w-3.5 h-3.5" /> Export
+                        <Download className="w-3.5 h-3.5" /> {t('shortcuts.export')}
                     </button>
                     <button
                         onClick={() => importInputRef.current?.click()}
                         className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/40 text-xs"
                     >
-                        <Upload className="w-3.5 h-3.5" /> Import
+                        <Upload className="w-3.5 h-3.5" /> {t('shortcuts.import')}
                     </button>
                     <button
                         onClick={handleResetAll}
                         className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/40 text-xs"
                     >
-                        <RotateCcw className="w-3.5 h-3.5" /> Reset all
+                        <RotateCcw className="w-3.5 h-3.5" /> {t('shortcuts.resetAll')}
                     </button>
                 </div>
 
@@ -349,14 +352,14 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
                             {grouped.general.map(def => (
                                 <ShortcutItem
                                     key={def.id}
-                                    label={def.label}
+                                    label={t(def.labelKey)}
                                     keys={shortcutBindingLabel(bindings[def.id], isMac).split(' + ')}
                                     onCapture={() => setRecordingAction(def.id)}
                                     onReset={() => handleResetOne(def.id)}
                                     isRecording={recordingAction === def.id}
                                 />
                             ))}
-                            <ShortcutItem label="Close modal" keys={['Esc']} />
+                            <ShortcutItem label={t('shortcuts.closeModal')} keys={['Esc']} />
                         </div>
                     </div>
 
@@ -366,7 +369,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
                             {grouped.navigation.map(def => (
                                 <ShortcutItem
                                     key={def.id}
-                                    label={def.label}
+                                    label={t(def.labelKey)}
                                     keys={shortcutBindingLabel(bindings[def.id], isMac).split(' + ')}
                                     onCapture={() => setRecordingAction(def.id)}
                                     onReset={() => handleResetOne(def.id)}
@@ -382,7 +385,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
                             {grouped.chat.map(def => (
                                 <ShortcutItem
                                     key={def.id}
-                                    label={def.label}
+                                    label={t(def.labelKey)}
                                     keys={shortcutBindingLabel(bindings[def.id], isMac).split(' + ')}
                                     onCapture={() => setRecordingAction(def.id)}
                                     onReset={() => handleResetOne(def.id)}

@@ -80,7 +80,12 @@ export const tr = {
         "kb_one": "bilgi bankası",
         "continue": "Devam etmek",
         "healthy": "Sağlıklı",
-        "degraded": "Düşük Performans"
+        "degraded": "Düşük Performans",
+        "copied": "Kopyalandı!",
+        "finalizing": "Tamamlanıyor...",
+        "timeRemaining": "~{{seconds}}sn kaldı",
+        "loadingContext": "{{context}} yükleniyor",
+        "selectEllipsis": "Seçiniz..."
     },
     "serviceHealth": {
         "settings": {
@@ -120,6 +125,10 @@ export const tr = {
     "errors": {
         "unexpected": "Üzgünüz, bir hata oluştu.",
         "somethingWentWrong": "Bir şeyler yanlış gitti:",
+        "unexpectedDescription": "Uygulama beklenmeyen bir hatayla karşılaştı.",
+        "errorMessageLabel": "Hata Mesajı",
+        "technicalDetails": "TEKNİK DETAYLAR (YIĞIN İZİ)",
+        "copyDetails": "Detayları Kopyala",
         "rootNotFound": "Kök öğe bulunamadı",
         "rateLimitWarning": "Hız sınırı uyarısı ({{provider}}): {{remaining}}/{{limit}} kalan",
         "rateLimit": {
@@ -398,7 +407,8 @@ export const tr = {
             "tabNavBack": "Geriye doğru gezinin",
             "activate": "Odaklanmış öğeyi etkinleştirin",
             "escape": "Modalı kapatın veya iptal edin",
-            "arrowNav": "Listeler içinde gezinin"
+            "arrowNav": "Listeler içinde gezinin",
+            "skipToMainContent": "Ana içeriğe geç"
         },
         "factoryResetConfirm": "Tüm verileri silmek istediğinize emin misiniz?",
         "language": "Dil",
@@ -1956,7 +1966,14 @@ export const tr = {
         "showShortcuts": "Kısayolları Göster",
         "ctrl": "Ctrl",
         "close": "Kapat",
-        "footer": "Kapatmak için Esc tuşuna basın"
+        "footer": "Kapatmak için Esc tuşuna basın",
+        "pressKeys": "Tuşlara basın...",
+        "resetToDefault": "Varsayılana sıfırla",
+        "searchPlaceholder": "Kısayolları ara",
+        "export": "Dışa Aktar",
+        "import": "İçe Aktar",
+        "resetAll": "Tümünü sıfırla",
+        "closeModal": "Modalı kapat"
     },
     "semanticSearch": {
         "title": "Anlamsal Arama",
@@ -3213,6 +3230,7 @@ export const tr = {
     },
     "extensionDev": {
         "devtools": "Eklenti Geliştirici Araçları",
+        "devToolsTitle": "Eklenti Geliştirici Araçları",
         "extensions": "Eklentiler",
         "activate": "Etkinleştir",
         "deactivate": "Devre Dışı Bırak",

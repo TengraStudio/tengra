@@ -9,6 +9,7 @@ import {
 import { Check,ChevronDown } from 'lucide-react';
 import React, { useState } from 'react';
 
+import { useTranslation } from '@/i18n';
 import { AnimatePresence,motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 
@@ -106,9 +107,11 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
     value,
     options,
     onChange,
-    placeholder = 'Select...',
+    placeholder,
     className
 }) => {
+    const { t } = useTranslation();
+    const resolvedPlaceholder = placeholder ?? t('common.selectEllipsis');
     const [isOpen, setIsOpen] = useState(false);
     const [width, setWidth] = useState<number>(0);
 
@@ -122,7 +125,7 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
     const setReferenceNode = React.useCallback((node: HTMLElement | null) => { refs.setReference(node); }, [refs]);
     const setFloatingNode = React.useCallback((node: HTMLElement | null) => { refs.setFloating(node); }, [refs]);
 
-    const selectedLabel = options.find(opt => opt.value === value)?.label ?? placeholder;
+    const selectedLabel = options.find(opt => opt.value === value)?.label ?? resolvedPlaceholder;
     const isUp = placement.startsWith('top');
 
     const handleSelect = (optValue: string) => {

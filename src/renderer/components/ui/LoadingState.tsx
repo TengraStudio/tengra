@@ -1,6 +1,7 @@
 import { Loader2, X } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import {
     beginLoadingOperation,
@@ -96,9 +97,11 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
     progress,
     stage,
     onCancel,
-    cancelLabel = 'Cancel',
+    cancelLabel,
     compact = false
 }) => {
+    const { t } = useTranslation();
+    const resolvedCancelLabel = cancelLabel ?? t('common.cancel');
     const hasRegisteredRef = useRef(false);
     const [currentTime, setCurrentTime] = useState(() => Date.now());
 
@@ -154,17 +157,17 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
         }
         const remaining = Math.max(0, estimatedMs - (currentTime - startedAt));
         const seconds = Math.ceil(remaining / 1000);
-        return seconds > 0 ? `~${seconds}s remaining` : 'Finalizing...';
-    }, [currentTime, estimatedMs, startedAt]);
+        return seconds > 0 ? t('common.timeRemaining', { seconds }) : t('common.finalizing');
+    }, [currentTime, estimatedMs, startedAt, t]);
     const statusLabel = useMemo(() => {
         if (message) {
             return message;
         }
         if (analyticsContext) {
-            return `Loading ${analyticsContext}`;
+            return t('common.loadingContext', { context: analyticsContext });
         }
-        return 'Loading';
-    }, [analyticsContext, message]);
+        return t('common.loading');
+    }, [analyticsContext, message, t]);
 
     useEffect(() => {
         if (!operationId || hasRegisteredRef.current) {
@@ -227,7 +230,7 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
                             }}
                             className="mt-1 px-2.5 py-1 rounded border border-border/60 text-xs text-foreground hover:bg-accent/40"
                         >
-                            {cancelLabel}
+                            {resolvedCancelLabel}
                         </button>
                     )}
                 </div>
@@ -269,7 +272,7 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-border/60 text-xs text-foreground hover:bg-accent/40"
                 >
                     <X className="w-3 h-3" />
-                    {cancelLabel}
+                    {resolvedCancelLabel}
                 </button>
             )}
         </div>
