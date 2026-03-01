@@ -1,4 +1,15 @@
 {
+  "2026-03-01-agent-service-refactor-council-orchestration": {
+    "title": "Agenten-Architektur-Härtung: Monolithisches Service-Refactoring & Council-Orchestrierung",
+    "summary": "Dekomposition des monolithischen AgentCollaborationService in sechs domänenspezifische Services und Implementierung des CouncilService für verbesserte Planvorbereitung und kontingentbewusstes Routing.",
+    "items": [
+      "- **Dekomposition (AI-SYS-14)**: Extraktion von Voting, Debate, Messaging, Teamwork, Consensus und Routing in eigenständige Single-Responsibility-Services.",
+      "- **CouncilService (MARCH1-COUNCIL-001)**: Implementierung einer fortschrittlichen Plan-Orchestrierung mit kontingentbewusster Modellzuweisung und expliziter Genehmigung hochprioritärer Schritte.",
+      "- **AgentTaskExecutor (AI-SYS-13)**: Integration des CouncilService zur Plan-Anreicherung und Adressierung horizontaler Skalierungslücken.",
+      "- **Typsicherheit**: Lösung von über 40 strukturellen Typfehlern und Eliminierung von über 100 unsicheren Casts im Agenten-Bereich.",
+      "- **Zuverlässigkeit**: Implementierung einer heuristischen Merge-Gate-Evaluierung für Helper-Agent-Handoffs und schiedsgerichtbasierte Konsensbildung."
+    ]
+  },
   "2026-02-28-renderer-perf-batch4-memo-lazy-split": {
     "title": "Performance-Gruppe 4: Aufteilung von Komponenten & fortgeschrittenes Memo",
     "summary": "Erhebliche Reduzierung von Re-Render-Zyklen und Verbesserung der Ladezeit durch Aufteilung von Mega-Komponenten, Implementierung von konditionalem Lazy-Loading und striktem React.memo.",

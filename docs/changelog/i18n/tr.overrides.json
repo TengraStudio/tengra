@@ -1,4 +1,15 @@
 {
+  "2026-03-01-agent-service-refactor-council-orchestration": {
+    "title": "Ajan Mimarisi Sertleştirme: Monolitik Servis Refaktörü ve Konsey Orkestrasyonu",
+    "summary": "Monolitik AgentCollaborationService altı alana özgü servise ayrıştırıldı ve geliştirilmiş plan hazırlama ile kota duyarlı yönlendirme için CouncilService uygulandı.",
+    "items": [
+      "- **Ayrıştırma (AI-SYS-14)**: Oylama, Tartışma, Mesajlaşma, Takım Çalışması, Konsensüs ve Yönlendirme bağımsız, tek sorumluluklu servislere çıkarıldı.",
+      "- **CouncilService (MARCH1-COUNCIL-001)**: Kota duyarlı model ataması ve açık yüksek öncelikli adım onayı ile gelişmiş plan orkestrasyonu uygulandı.",
+      "- **AgentTaskExecutor (AI-SYS-13)**: Plan zenginleştirme için CouncilService entegre edildi ve yatay ölçeklenebilirlik boşlukları giderildi.",
+      "- **Tip Güvenliği**: Ajan alanında 40'tan fazla yapısal tip hatası çözüldü ve 100'den fazla güvensiz dönüşüm temizlendi.",
+      "- **Güvenilirlik**: Yardımcı ajan devirleri için buluşsal birleştirme kapısı değerlendirmesi ve tahkim tabanlı konsensüs oluşturma uygulandı."
+    ]
+  },
   "2026-02-28-renderer-perf-batch4-memo-lazy-split": {
     "title": "Performans Grup 4: Bileşen Ayrıştırma ve Gelişmiş Memoization",
     "summary": "Mega bileşenleri ayrıştırarak, koşullu lazy loading uygulayarak ve kritik UI yollarında sıkı React.memo kullanarak yeniden render döngüleri önemli ölçüde azaltıldı.",

@@ -65,6 +65,7 @@ import { McpMarketplaceService } from '@main/services/mcp/mcp-marketplace.servic
 import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
 import { AgentCheckpointService } from '@main/services/project/agent/agent-checkpoint.service';
 import { AgentCollaborationService } from '@main/services/project/agent/agent-collaboration.service';
+import { CouncilService } from '@main/services/project/agent/council.service';
 import { AgentPerformanceService } from '@main/services/project/agent/agent-performance.service';
 import { AgentPersistenceService } from '@main/services/project/agent/agent-persistence.service';
 import { AgentRegistryService } from '@main/services/project/agent/agent-registry.service';
@@ -215,6 +216,7 @@ export interface Services {
     terminalSmartService: TerminalSmartService;
     marketplaceService: LazyServiceDependency<MarketplaceService>;
     modelDownloaderService: ModelDownloaderService;
+    councilService: CouncilService;
     workflowService: WorkflowService;
 }
 
@@ -763,6 +765,17 @@ function registerProjectServices() {
         ['llmService']
     );
     container.register(
+        'councilService',
+        (dbs, ls, qs, col) =>
+            new CouncilService({
+                database: dbs as DatabaseService,
+                llm: ls as LLMService,
+                quota: qs as QuotaService,
+                collaboration: col as AgentCollaborationService
+            }),
+        ['databaseService', 'llmService', 'quotaService', 'agentCollaborationService']
+    );
+    container.register(
         'agentTemplateService',
         dbs => new AgentTemplateService({ database: dbs as DatabaseService }),
         ['databaseService']
@@ -775,7 +788,7 @@ function registerProjectServices() {
     container.register(
         'projectAgentService',
         (...deps) => {
-            const [dbs, ls, ebs, ars, acs, gs, col, tpl, perf] = deps;
+            const [dbs, ls, ebs, ars, acs, gs, col, tpl, perf, council] = deps;
             return new ProjectAgentService({
                 databaseService: dbs as DatabaseService,
                 llmService: ls as LLMService,
@@ -786,6 +799,7 @@ function registerProjectServices() {
                 agentCollaborationService: col as AgentCollaborationService,
                 agentTemplateService: tpl as AgentTemplateService,
                 agentPerformanceService: perf as AgentPerformanceService,
+                councilService: council as CouncilService,
             });
         },
         [
@@ -798,6 +812,7 @@ function registerProjectServices() {
             'agentCollaborationService',
             'agentTemplateService',
             'agentPerformanceService',
+            'councilService',
         ]
     );
     container.register(
@@ -1085,6 +1100,7 @@ function buildServicesMap(
         terminalSmartService: container.resolve<TerminalSmartService>('terminalSmartService'),
         marketplaceService: createLazyServiceDependency<MarketplaceService>('marketplaceService'),
         modelDownloaderService: container.resolve<ModelDownloaderService>('modelDownloaderService'),
+        councilService: container.resolve<CouncilService>('councilService'),
         workflowService: container.resolve<WorkflowService>('workflowService'),
         apiServerService: null as unknown as ApiServerService, // Will be created in main.ts after ToolExecutor
     };

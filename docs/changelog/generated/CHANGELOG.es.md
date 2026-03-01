@@ -1,5 +1,19 @@
 # Registro de cambios
 
+## [2026-03-01]
+
+### Refuerzo de la arquitectura de agentes: refactorización del servicio monolítico y orquestación del consejo
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Deconstrucción del AgentCollaborationService monolítico en seis servicios específicos de dominio e implementación de CouncilService para una preparación de planes mejorada y enrutamiento consciente de cuotas.
+
+- **Deconstrucción (AI-SYS-14)**: Extracción de votación, debate, mensajería, trabajo en equipo, consenso y enrutamiento en servicios independientes de responsabilidad única.
+- **CouncilService (MARCH1-COUNCIL-001)**: Implementación de orquestación de planes avanzada con asignación de modelos consciente de cuotas y aprobación explícita de pasos prioritarios.
+- **AgentTaskExecutor (AI-SYS-13)**: Integración de CouncilService para el enriquecimiento de planes y resolución de brechas de escalabilidad horizontal.
+- **Seguridad de tipos**: Resolución de más de 40 errores de tipo estructural y eliminación de más de 100 conversiones inseguras en el dominio de agentes.
+- **Fiabilidad**: Implementación de evaluación heurística de compuerta de fusión para traspasos de agentes ayudantes y construcción de consenso basada en arbitraje.
+
 ## [2026-02-28]
 
 ### AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-28T21:51:16.701Z",
+  "generatedAt": "2026-03-01T06:20:16.946Z",
   "locales": [
     "en",
     "tr",
@@ -12,6 +12,116 @@
     "ar"
   ],
   "entries": [
+    {
+      "id": "2026-03-01-agent-service-refactor-council-orchestration",
+      "date": "2026-03-01",
+      "channel": "stable",
+      "type": "refactor",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "AgentCollaborationService",
+        "AgentTaskExecutor",
+        "CouncilService",
+        "AgentMessagingService",
+        "AgentTeamworkService",
+        "AgentRoutingService"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Agent Arch Hardening: Monolithic Service Refactoring & Council Orchestration",
+          "summary": "Deconstructed the monolithic AgentCollaborationService into six domain-specific services and implemented the CouncilService for enhanced plan preparation and quota-aware routing.",
+          "items": [
+            "- **Deconstruction (AI-SYS-14)**: Extracted Voting, Debate, Messaging, Teamwork, Consensus, and Routing into standalone, single-responsibility services.",
+            "- **CouncilService (MARCH1-COUNCIL-001)**: Implemented advanced plan orchestration with quota-aware model assignment and explicit high-priority step approval.",
+            "- **AgentTaskExecutor (AI-SYS-13)**: Integrated CouncilService for plan enrichment and addressed horizontal scalability gaps.",
+            "- **Type Safety**: Resolved 40+ structural type errors and eliminated 100+ unsafe casts across the agent domain.",
+            "- **Reliability**: Implemented heuristic merge gate evaluation for helper agent handoffs and arbitration-based consensus building."
+          ]
+        },
+        "tr": {
+          "title": "Ajan Mimarisi Sertleştirme: Monolitik Servis Refaktörü ve Konsey Orkestrasyonu",
+          "summary": "Monolitik AgentCollaborationService altı alana özgü servise ayrıştırıldı ve geliştirilmiş plan hazırlama ile kota duyarlı yönlendirme için CouncilService uygulandı.",
+          "items": [
+            "- **Ayrıştırma (AI-SYS-14)**: Oylama, Tartışma, Mesajlaşma, Takım Çalışması, Konsensüs ve Yönlendirme bağımsız, tek sorumluluklu servislere çıkarıldı.",
+            "- **CouncilService (MARCH1-COUNCIL-001)**: Kota duyarlı model ataması ve açık yüksek öncelikli adım onayı ile gelişmiş plan orkestrasyonu uygulandı.",
+            "- **AgentTaskExecutor (AI-SYS-13)**: Plan zenginleştirme için CouncilService entegre edildi ve yatay ölçeklenebilirlik boşlukları giderildi.",
+            "- **Tip Güvenliği**: Ajan alanında 40'tan fazla yapısal tip hatası çözüldü ve 100'den fazla güvensiz dönüşüm temizlendi.",
+            "- **Güvenilirlik**: Yardımcı ajan devirleri için buluşsal birleştirme kapısı değerlendirmesi ve tahkim tabanlı konsensüs oluşturma uygulandı."
+          ]
+        },
+        "de": {
+          "title": "Agenten-Architektur-Härtung: Monolithisches Service-Refactoring & Council-Orchestrierung",
+          "summary": "Dekomposition des monolithischen AgentCollaborationService in sechs domänenspezifische Services und Implementierung des CouncilService für verbesserte Planvorbereitung und kontingentbewusstes Routing.",
+          "items": [
+            "- **Dekomposition (AI-SYS-14)**: Extraktion von Voting, Debate, Messaging, Teamwork, Consensus und Routing in eigenständige Single-Responsibility-Services.",
+            "- **CouncilService (MARCH1-COUNCIL-001)**: Implementierung einer fortschrittlichen Plan-Orchestrierung mit kontingentbewusster Modellzuweisung und expliziter Genehmigung hochprioritärer Schritte.",
+            "- **AgentTaskExecutor (AI-SYS-13)**: Integration des CouncilService zur Plan-Anreicherung und Adressierung horizontaler Skalierungslücken.",
+            "- **Typsicherheit**: Lösung von über 40 strukturellen Typfehlern und Eliminierung von über 100 unsicheren Casts im Agenten-Bereich.",
+            "- **Zuverlässigkeit**: Implementierung einer heuristischen Merge-Gate-Evaluierung für Helper-Agent-Handoffs und schiedsgerichtbasierte Konsensbildung."
+          ]
+        },
+        "fr": {
+          "title": "Durcissement de l'architecture des agents : refactorisation du service monolithique et orchestration du conseil",
+          "summary": "Déconstruction de l'AgentCollaborationService monolithique en six services spécifiques au domaine et mise en œuvre du CouncilService pour une préparation de plan améliorée et un routage sensible aux quotas.",
+          "items": [
+            "- **Déconstruction (AI-SYS-14)** : Extraction du vote, du débat, de la messagerie, du travail d'équipe, du consensus et du routage dans des services autonomes à responsabilité unique.",
+            "- **CouncilService (MARCH1-COUNCIL-001)** : Mise en œuvre d'une orchestration de plan avancée avec attribution de modèle sensible aux quotas et approbation explicite des étapes prioritaires.",
+            "- **AgentTaskExecutor (AI-SYS-13)** : Intégration du CouncilService pour l'enrichissement du plan et comblement des lacunes d'évolutivité horizontale.",
+            "- **Sécurité des types** : Résolution de plus de 40 erreurs de type structurel et élimination de plus de 100 casts dangereux dans le domaine des agents.",
+            "- **Fiabilité** : Mise en œuvre de l'évaluation heuristique de la porte de fusion pour les transferts d'agents assistants et construction de consensus basée sur l'arbitrage."
+          ]
+        },
+        "es": {
+          "title": "Refuerzo de la arquitectura de agentes: refactorización del servicio monolítico y orquestación del consejo",
+          "summary": "Deconstrucción del AgentCollaborationService monolítico en seis servicios específicos de dominio e implementación de CouncilService para una preparación de planes mejorada y enrutamiento consciente de cuotas.",
+          "items": [
+            "- **Deconstrucción (AI-SYS-14)**: Extracción de votación, debate, mensajería, trabajo en equipo, consenso y enrutamiento en servicios independientes de responsabilidad única.",
+            "- **CouncilService (MARCH1-COUNCIL-001)**: Implementación de orquestación de planes avanzada con asignación de modelos consciente de cuotas y aprobación explícita de pasos prioritarios.",
+            "- **AgentTaskExecutor (AI-SYS-13)**: Integración de CouncilService para el enriquecimiento de planes y resolución de brechas de escalabilidad horizontal.",
+            "- **Seguridad de tipos**: Resolución de más de 40 errores de tipo estructural y eliminación de más de 100 conversiones inseguras en el dominio de agentes.",
+            "- **Fiabilidad**: Implementación de evaluación heurística de compuerta de fusión para traspasos de agentes ayudantes y construcción de consenso basada en arbitraje."
+          ]
+        },
+        "ja": {
+          "title": "エージェント・アーキテクチャの強化：モノリシック・サービスのリファクタリングとカウンシル・オーケストレーション",
+          "summary": "モノリシックな AgentCollaborationService を 6 つのドメイン固有サービスに分解し、プランの準備とクォータ対応のルーティングを強化するために CouncilService を実装しました。",
+          "items": [
+            "- **分解 (AI-SYS-14)**: 投票、討論、メッセージング、チームワーク、コンセンサス、ルーティングを、単一責任のスタンドアロン・サービスに抽出しました。",
+            "- **CouncilService (MARCH1-COUNCIL-001)**: クォータ対応のモデル割り当てと、優先度の高いステップの明示的な承認を備えた高度なプラン・オーケストレーションを実装しました。",
+            "- **AgentTaskExecutor (AI-SYS-13)**: プラン拡充のために CouncilService を統合し、水平スケーラビリティのギャップに対応しました。",
+            "- **型安全性**: エージェント・ドメイン全体で 40 以上の構造的な型エラーを解決し、100 以上の安全でないキャストを排除しました。",
+            "- **信頼性**: ヘルパー・エージェントのハンドオフのためのヒューリスティックなマージ・ゲート評価と、仲裁ベースのコンセンサス構築を実装しました。"
+          ]
+        },
+        "zh": {
+          "title": "智能体架构加固：单体服务重构与委员会编排",
+          "summary": "将单体式 AgentCollaborationService 拆解为六个特定领域的服务，并实现了 CouncilService 以增强计划准备和配额感知路由。",
+          "items": [
+            "- **解构 (AI-SYS-14)**：将投票、辩论、消息传递、团队协作、共识和路由提取为独立的单一职责服务。",
+            "- **CouncilService (MARCH1-COUNCIL-001)**：实现了先进的计划编排，包含配额感知模型分配和显式高优先级步骤审批。",
+            "- **AgentTaskExecutor (AI-SYS-13)**：集成了 CouncilService 用于计划增强，并解决了水平可扩展性差距。",
+            "- **类型安全**：在智能体领域解决了 40 多个结构化类型错误，并消除了 100 多个不安全转型。",
+            "- **可靠性**：实现了用于助手智能体交接的启发式合并门控评估，以及基于仲裁的共识构建。"
+          ]
+        },
+        "ar": {
+          "title": "تقوية بنية الوكيل: إعادة هيكلة الخدمة المتجانسة وتدبير المجلس",
+          "summary": "تفكيك خدمة AgentCollaborationService المتجانسة إلى ست خدمات متخصصة وتنفيذ خدمة CouncilService لتحسين إعداد الخطط والتوجيه المدرك للحصص.",
+          "items": [
+            "- **التفكيك (AI-SYS-14)**: استخراج التصويت، والمناظرة، والمراسلة، والعمل الجماعي، والإجماع، والتوجيه إلى خدمات مستقلة ذات مسؤولية واحدة.",
+            "- **CouncilService (MARCH1-COUNCIL-001)**: تنفيذ تدبير متقدم للخطط مع تعيين نماذج مدرك للحصص وموافقة صريحة على الخطوات ذات الأولوية العالية.",
+            "- **AgentTaskExecutor (AI-SYS-13)**: دمج CouncilService لإثراء الخطط ومعالجة فجوات القابلية للتوسع الأفقي.",
+            "- **سلامة النوع**: حل أكثر من 40 خطأ في النوع الهيكلي وإزالة أكثر من 100 تحويل غير آمن عبر نطاق الوكيل.",
+            "- **الموثوقية**: تنفيذ تقييم بوابة الدمج الاستدلالي لتسليم الوكلاء المساعدين وبناء الإجماع القائم على التحكيم."
+          ]
+        }
+      }
+    },
     {
       "id": "2026-02-28-audit-tooling-repo-wide-lint-operational",
       "date": "2026-02-28",

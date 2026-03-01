@@ -676,3 +676,28 @@ export interface StepTestConfig {
     command?: string;
     filter?: string;
 }
+
+/** Telemetry events for agent collaboration monitoring (BACKLOG-0335) */
+export enum AgentCollaborationTelemetryEvent {
+    AGENT_JOINED = 'agent_collab_agent_joined',
+    TASK_ASSIGNED = 'agent_collab_task_assigned',
+    RESULT_MERGED = 'agent_collab_result_merged',
+    CONFLICT_DETECTED = 'agent_collab_conflict_detected',
+    VOTING_SESSION_CREATED = 'agent_collab_voting_session_created',
+    VOTING_COMPLETED = 'agent_collab_voting_completed',
+    CONSENSUS_REACHED = 'agent_collab_consensus_reached',
+    CONSENSUS_FAILED = 'agent_collab_consensus_failed',
+    MODEL_ROUTED = 'agent_collab_model_routed',
+    DEBATE_STARTED = 'agent_collab_debate_started',
+    DEBATE_COMPLETED = 'agent_collab_debate_completed'
+}
+
+/** Performance regression budgets in milliseconds (BACKLOG-0336) */
+export const AGENT_COLLABORATION_PERFORMANCE_BUDGETS = {
+    CREATE_VOTING_SESSION_MS: 500,
+    EXECUTE_VOTING_MS: 30000,
+    BUILD_CONSENSUS_MS: 30000,
+    ROUTE_MODEL_MS: 100,
+    DEBATE_SESSION_MS: 60000,
+    INITIALIZE_MS: 1000
+} as const;

@@ -1,6 +1,6 @@
 # Tengra Project - Comprehensive TODO List
 
-> Last updated: 2026-02-28
+> Last updated: 2026-03-01
 > **Status: In Development (Consolidated)**
 
 ## 🚀 Release Milestones
@@ -36,17 +36,17 @@
   - ( ) Add failure-state UX for provider unavailable / quota exhausted / timeout.
 
 ### Council Orchestration (President Flow)
-- ( ) **MARCH1-COUNCIL-001**: Implement "Council President" flow with explicit pre-execution approval.
-  - ( ) Generate plan + stages before execution.
-  - ( ) Present selected models/accounts/routing to user for approve/reject.
-  - ( ) Persist approved plan version and execution config for resume/audit.
-- ( ) **MARCH1-COUNCIL-002**: Implement quota-aware account/model selection strategy.
-  - ( ) Query linked account quotas before assignment.
-  - ( ) Prefer highest-available quota account(s) with capability match.
-  - ( ) Add deterministic fallback policy for multiple eligible candidates.
-- ( ) **MARCH1-COUNCIL-003**: Enable dynamic reassignment and teamwork.
-  - ( ) If an agent finishes early, allow reassignment to pending/blocked steps.
-  - ( ) Enable inter-agent discussion channel for coordination and conflict resolution.
+- [x] **MARCH1-COUNCIL-001**: Implement "Council President" flow with explicit pre-execution approval.
+  - [x] Generate plan + stages before execution.
+  - [x] Present selected models/accounts/routing to user for approve/reject.
+  - [x] Persist approved plan version and execution config for resume/audit.
+- [x] **MARCH1-COUNCIL-002**: Implement quota-aware account/model selection strategy.
+  - [x] Query linked account quotas before assignment.
+  - [x] Prefer highest-available quota account(s) with capability match.
+  - [x] Add deterministic fallback policy for multiple eligible candidates.
+- [x] **MARCH1-COUNCIL-003**: Enable dynamic reassignment and teamwork.
+  - [x] If an agent finishes early, allow reassignment to pending/blocked steps.
+  - [x] Enable inter-agent discussion channel for coordination and conflict resolution.
 - ( ) **MARCH1-COUNCIL-004**: Add user-controlled model governance.
   - ( ) Let user force allowed/blocked model list per task.
 - ( ) **MARCH1-RESUME-001**: Guarantee crash-safe continuation.
@@ -166,9 +166,9 @@
 - ( ) **AI-SYS-07**: Add conversational AI builder assistant.
 - ( ) **AI-SYS-11**: Add autonomous "AI Architect" mode for project scaffolding.
 - ( ) **AI-SYS-12**: Build local "AI Red Team" simulator for jailbreak testing.
-- ( ) **AI-SYS-13**: Refactor `AgentTaskExecutor.ts` (2410 lines) into domain services (Git, HIL, Planning).
-- ( ) **AI-SYS-14**: Refactor `AgentCollaborationService.ts` (1774 lines) to extract Debate and Voting.
-- ( ) **AI-SYS-15**: Implement semantic/robust consensus logic in `AgentCollaborationService` (replace Jaccard).
+- [x] **AI-SYS-13**: Refactor `AgentTaskExecutor.ts` (2410 lines) into domain services (Git, HIL, Planning).
+- [x] **AI-SYS-14**: Refactor `AgentCollaborationService.ts` (1774 lines) to extract Debate and Voting.
+- [x] **AI-SYS-15**: Implement semantic/robust consensus logic in `AgentCollaborationService` (with arbitration).
 
 ### Voice & Speech AI
 - ( ) **VOICE-01**: Implement local wake-word model (Porcupine/precise).

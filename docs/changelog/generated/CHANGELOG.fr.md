@@ -1,5 +1,19 @@
 # Journal des modifications
 
+## [2026-03-01]
+
+### Durcissement de l'architecture des agents : refactorisation du service monolithique et orchestration du conseil
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Déconstruction de l'AgentCollaborationService monolithique en six services spécifiques au domaine et mise en œuvre du CouncilService pour une préparation de plan améliorée et un routage sensible aux quotas.
+
+- **Déconstruction (AI-SYS-14)** : Extraction du vote, du débat, de la messagerie, du travail d'équipe, du consensus et du routage dans des services autonomes à responsabilité unique.
+- **CouncilService (MARCH1-COUNCIL-001)** : Mise en œuvre d'une orchestration de plan avancée avec attribution de modèle sensible aux quotas et approbation explicite des étapes prioritaires.
+- **AgentTaskExecutor (AI-SYS-13)** : Intégration du CouncilService pour l'enrichissement du plan et comblement des lacunes d'évolutivité horizontale.
+- **Sécurité des types** : Résolution de plus de 40 erreurs de type structurel et élimination de plus de 100 casts dangereux dans le domaine des agents.
+- **Fiabilité** : Mise en œuvre de l'évaluation heuristique de la porte de fusion pour les transferts d'agents assistants et construction de consensus basée sur l'arbitrage.
+
 ## [2026-02-28]
 
 ### AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking

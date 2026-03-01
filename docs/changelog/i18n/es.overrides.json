@@ -1,4 +1,15 @@
 {
+  "2026-03-01-agent-service-refactor-council-orchestration": {
+    "title": "Refuerzo de la arquitectura de agentes: refactorización del servicio monolítico y orquestación del consejo",
+    "summary": "Deconstrucción del AgentCollaborationService monolítico en seis servicios específicos de dominio e implementación de CouncilService para una preparación de planes mejorada y enrutamiento consciente de cuotas.",
+    "items": [
+      "- **Deconstrucción (AI-SYS-14)**: Extracción de votación, debate, mensajería, trabajo en equipo, consenso y enrutamiento en servicios independientes de responsabilidad única.",
+      "- **CouncilService (MARCH1-COUNCIL-001)**: Implementación de orquestación de planes avanzada con asignación de modelos consciente de cuotas y aprobación explícita de pasos prioritarios.",
+      "- **AgentTaskExecutor (AI-SYS-13)**: Integración de CouncilService para el enriquecimiento de planes y resolución de brechas de escalabilidad horizontal.",
+      "- **Seguridad de tipos**: Resolución de más de 40 errores de tipo estructural y eliminación de más de 100 conversiones inseguras en el dominio de agentes.",
+      "- **Fiabilidad**: Implementación de evaluación heurística de compuerta de fusión para traspasos de agentes ayudantes y construcción de consenso basada en arbitraje."
+    ]
+  },
   "2026-02-28-renderer-perf-batch4-memo-lazy-split": {
     "title": "Batch de rendimiento 4: División de componentes y memoización avanzada",
     "summary": "Reducción significativa de los ciclos de renderizado y mejora del tiempo de carga inicial mediante el fraccionamiento de mega-componentes y el uso de React.memo.",

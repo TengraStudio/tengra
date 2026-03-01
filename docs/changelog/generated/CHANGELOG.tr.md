@@ -1,5 +1,19 @@
 # Değişiklik Günlüğü
 
+## [2026-03-01]
+
+### Ajan Mimarisi Sertleştirme: Monolitik Servis Refaktörü ve Konsey Orkestrasyonu
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Monolitik AgentCollaborationService altı alana özgü servise ayrıştırıldı ve geliştirilmiş plan hazırlama ile kota duyarlı yönlendirme için CouncilService uygulandı.
+
+- **Ayrıştırma (AI-SYS-14)**: Oylama, Tartışma, Mesajlaşma, Takım Çalışması, Konsensüs ve Yönlendirme bağımsız, tek sorumluluklu servislere çıkarıldı.
+- **CouncilService (MARCH1-COUNCIL-001)**: Kota duyarlı model ataması ve açık yüksek öncelikli adım onayı ile gelişmiş plan orkestrasyonu uygulandı.
+- **AgentTaskExecutor (AI-SYS-13)**: Plan zenginleştirme için CouncilService entegre edildi ve yatay ölçeklenebilirlik boşlukları giderildi.
+- **Tip Güvenliği**: Ajan alanında 40'tan fazla yapısal tip hatası çözüldü ve 100'den fazla güvensiz dönüşüm temizlendi.
+- **Güvenilirlik**: Yardımcı ajan devirleri için buluşsal birleştirme kapısı değerlendirmesi ve tahkim tabanlı konsensüs oluşturma uygulandı.
+
 ## [2026-02-28]
 
 ### AUDIT-TOOLING-001: Operasyonel Depo Çapında Lint ve Tip Kontrolü

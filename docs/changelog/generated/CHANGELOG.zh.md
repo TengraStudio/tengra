@@ -1,5 +1,19 @@
 # 更新日志
 
+## [2026-03-01]
+
+### 智能体架构加固：单体服务重构与委员会编排
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: 将单体式 AgentCollaborationService 拆解为六个特定领域的服务，并实现了 CouncilService 以增强计划准备和配额感知路由。
+
+- **解构 (AI-SYS-14)**：将投票、辩论、消息传递、团队协作、共识和路由提取为独立的单一职责服务。
+- **CouncilService (MARCH1-COUNCIL-001)**：实现了先进的计划编排，包含配额感知模型分配和显式高优先级步骤审批。
+- **AgentTaskExecutor (AI-SYS-13)**：集成了 CouncilService 用于计划增强，并解决了水平可扩展性差距。
+- **类型安全**：在智能体领域解决了 40 多个结构化类型错误，并消除了 100 多个不安全转型。
+- **可靠性**：实现了用于助手智能体交接的启发式合并门控评估，以及基于仲裁的共识构建。
+
 ## [2026-02-28]
 
 ### AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking

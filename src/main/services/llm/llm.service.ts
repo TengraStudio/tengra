@@ -1431,4 +1431,24 @@ export class LLMService {
         if (error instanceof ApiError || error instanceof AuthenticationError) { return error; }
         return new NetworkError(error instanceof Error ? error.message : String(error), { provider: 'anthropic' });
     }
+
+    /**
+     * MARCH1-COL-04: Get list of currently connected/available providers
+     */
+    async getAvailableProviders(): Promise<string[]> {
+        const providers: string[] = [];
+        if (this.isOpenAIConnected()) { providers.push('openai'); }
+        if (this.anthropicApiKey || this.deps.keyRotationService.getCurrentKey('anthropic')) { providers.push('anthropic'); }
+        if (this.groqApiKey || this.deps.keyRotationService.getCurrentKey('groq')) { providers.push('groq'); }
+        if (this.nvidiaApiKey || this.deps.keyRotationService.getCurrentKey('nvidia')) { providers.push('nvidia'); }
+
+        // Check for proxy-based providers if available
+        const proxyKey = await this.deps.proxyService.getProxyKey().catch(() => null);
+        if (proxyKey) {
+            providers.push('antigravity');
+            providers.push('codex');
+        }
+
+        return providers;
+    }
 }

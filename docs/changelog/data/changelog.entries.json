@@ -4,6 +4,40 @@
   "generatedAt": "2026-02-28T21:00:00Z",
   "entries": [
     {
+      "id": "2026-03-01-agent-service-refactor-council-orchestration",
+      "date": "2026-03-01",
+      "channel": "stable",
+      "type": "refactor",
+      "category": "ai",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "AgentCollaborationService",
+        "AgentTaskExecutor",
+        "CouncilService",
+        "AgentMessagingService",
+        "AgentTeamworkService",
+        "AgentRoutingService"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Agent Arch Hardening: Monolithic Service Refactoring & Council Orchestration",
+          "summary": "Deconstructed the monolithic AgentCollaborationService into six domain-specific services and implemented the CouncilService for enhanced plan preparation and quota-aware routing.",
+          "items": [
+            "- **Deconstruction (AI-SYS-14)**: Extracted Voting, Debate, Messaging, Teamwork, Consensus, and Routing into standalone, single-responsibility services.",
+            "- **CouncilService (MARCH1-COUNCIL-001)**: Implemented advanced plan orchestration with quota-aware model assignment and explicit high-priority step approval.",
+            "- **AgentTaskExecutor (AI-SYS-13)**: Integrated CouncilService for plan enrichment and addressed horizontal scalability gaps.",
+            "- **Type Safety**: Resolved 40+ structural type errors and eliminated 100+ unsafe casts across the agent domain.",
+            "- **Reliability**: Implemented heuristic merge gate evaluation for helper agent handoffs and arbitration-based consensus building."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-28-renderer-perf-batch4-memo-lazy-split",
       "date": "2026-02-28",
       "channel": "stable",

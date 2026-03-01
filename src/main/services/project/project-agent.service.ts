@@ -61,6 +61,7 @@ interface ProjectAgentServiceDependencies {
     agentCollaborationService: AgentCollaborationService;
     agentTemplateService: AgentTemplateService;
     agentPerformanceService: AgentPerformanceService;
+    councilService: import('./agent/council.service').CouncilService;
 }
 
 const TASK_PRIORITY_SCORE: Record<TaskPriority, number> = {
@@ -83,6 +84,7 @@ export class ProjectAgentService extends BaseService {
     private readonly agentCollaborationService: AgentCollaborationService;
     private readonly agentTemplateService: AgentTemplateService;
     private readonly agentPerformanceService: AgentPerformanceService;
+    private readonly councilService: import('./agent/council.service').CouncilService;
     private readonly activeExecutionTaskIds = new Set<string>();
     private readonly queuedExecutionTasks: QueuedExecutionTask[] = [];
     private readonly taskAgentAssignments = new Map<string, string>();
@@ -100,6 +102,7 @@ export class ProjectAgentService extends BaseService {
         this.agentCollaborationService = deps.agentCollaborationService;
         this.agentTemplateService = deps.agentTemplateService;
         this.agentPerformanceService = deps.agentPerformanceService;
+        this.councilService = deps.councilService;
     }
 
     setToolExecutor(toolExecutor: ToolExecutor) {
@@ -200,6 +203,7 @@ export class ProjectAgentService extends BaseService {
                     checkpoint: this.agentCheckpointService,
                     git: this.gitService,
                     collaboration: this.agentCollaborationService,
+                    council: this.councilService,
                 }
             );
             if (this.toolExecutor) {
@@ -972,7 +976,9 @@ export class ProjectAgentService extends BaseService {
     async buildConsensus(
         outputs: Array<{ modelId: string; provider: string; output: string }>
     ): Promise<ConsensusResult> {
-        return await this.agentCollaborationService.buildConsensus(outputs);
+        return await this.agentCollaborationService.buildConsensus(
+            outputs.map(o => ({ model: o.modelId, output: o.output }))
+        );
     }
 
     createDebateSession(taskId: string, stepIndex: number, topic: string): DebateSession {

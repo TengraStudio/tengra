@@ -1,5 +1,19 @@
 # Änderungsprotokoll
 
+## [2026-03-01]
+
+### Agenten-Architektur-Härtung: Monolithisches Service-Refactoring & Council-Orchestrierung
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Dekomposition des monolithischen AgentCollaborationService in sechs domänenspezifische Services und Implementierung des CouncilService für verbesserte Planvorbereitung und kontingentbewusstes Routing.
+
+- **Dekomposition (AI-SYS-14)**: Extraktion von Voting, Debate, Messaging, Teamwork, Consensus und Routing in eigenständige Single-Responsibility-Services.
+- **CouncilService (MARCH1-COUNCIL-001)**: Implementierung einer fortschrittlichen Plan-Orchestrierung mit kontingentbewusster Modellzuweisung und expliziter Genehmigung hochprioritärer Schritte.
+- **AgentTaskExecutor (AI-SYS-13)**: Integration des CouncilService zur Plan-Anreicherung und Adressierung horizontaler Skalierungslücken.
+- **Typsicherheit**: Lösung von über 40 strukturellen Typfehlern und Eliminierung von über 100 unsicheren Casts im Agenten-Bereich.
+- **Zuverlässigkeit**: Implementierung einer heuristischen Merge-Gate-Evaluierung für Helper-Agent-Handoffs und schiedsgerichtbasierte Konsensbildung.
+
 ## [2026-02-28]
 
 ### AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking

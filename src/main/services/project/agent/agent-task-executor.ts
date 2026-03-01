@@ -42,6 +42,7 @@ export interface AgentServices {
     checkpoint: AgentCheckpointService;
     git: GitService;
     collaboration: AgentCollaborationService;
+    council: import('./council.service').CouncilService;
     testRunner?: AgentTestRunnerService;
 }
 
@@ -1063,6 +1064,15 @@ export class AgentTaskExecutor {
         }
 
         try {
+            // MARCH1-COUNCIL-001: Use CouncilService to prepare the plan with quota-aware routing
+            this.state.plan = await this.services.council.prepareCouncilPlan(this.taskId, this.state.plan);
+
+            // Record that this plan was prepared via Council flow
+            this.logInfo(`Council plan prepared with ${this.state.plan.length} steps`);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.logWarn(`Failed to apply collaborative routing via CouncilService: ${message}`);
+            // Fallback to basic collaboration analysis if council service fails
             const analyzed = this.services.collaboration.analyzeSteps(this.state.plan);
             const providers = await this.getAvailableModelProviders();
             this.state.plan = analyzed.map(step => {
@@ -1075,9 +1085,6 @@ export class AgentTaskExecutor {
                     modelConfig,
                 };
             });
-        } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            this.logWarn(`Failed to apply collaborative routing: ${message}`);
         }
     }
 

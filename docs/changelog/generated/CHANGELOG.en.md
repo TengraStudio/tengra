@@ -1,5 +1,19 @@
 # Changelog
 
+## [2026-03-01]
+
+### Agent Arch Hardening: Monolithic Service Refactoring & Council Orchestration
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Deconstructed the monolithic AgentCollaborationService into six domain-specific services and implemented the CouncilService for enhanced plan preparation and quota-aware routing.
+
+- **Deconstruction (AI-SYS-14)**: Extracted Voting, Debate, Messaging, Teamwork, Consensus, and Routing into standalone, single-responsibility services.
+- **CouncilService (MARCH1-COUNCIL-001)**: Implemented advanced plan orchestration with quota-aware model assignment and explicit high-priority step approval.
+- **AgentTaskExecutor (AI-SYS-13)**: Integrated CouncilService for plan enrichment and addressed horizontal scalability gaps.
+- **Type Safety**: Resolved 40+ structural type errors and eliminated 100+ unsafe casts across the agent domain.
+- **Reliability**: Implemented heuristic merge gate evaluation for helper agent handoffs and arbitration-based consensus building.
+
 ## [2026-02-28]
 
 ### AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking
