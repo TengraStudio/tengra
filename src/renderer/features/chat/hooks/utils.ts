@@ -1,4 +1,4 @@
-import { AppSettings, Message, ToolCall } from '@/types';
+import { AppSettings, ChatError, Message, ToolCall } from '@/types';
 
 export interface StreamChunk {
     index?: number
@@ -106,3 +106,23 @@ export const processStreamChunk = (
 
     return { updated: false };
 };
+
+/** Categorize an error message into a known error kind */
+export function categorizeError(message: string, model: string | null): ChatError {
+    const lower = message.toLowerCase();
+
+    if (lower.includes('quota') || lower.includes('rate limit') || lower.includes('429') || lower.includes('exceeded')) {
+        return { kind: 'quota_exhausted', message, model };
+    }
+    if (lower.includes('timeout') || lower.includes('timed out') || lower.includes('econnaborted')) {
+        return { kind: 'timeout', message, model };
+    }
+    if (
+        lower.includes('econnrefused') || lower.includes('enotfound')
+        || lower.includes('unavailable') || lower.includes('503')
+        || lower.includes('network') || lower.includes('connect')
+    ) {
+        return { kind: 'provider_unavailable', message, model };
+    }
+    return { kind: 'generic', message, model };
+}

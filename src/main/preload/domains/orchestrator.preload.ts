@@ -2,7 +2,7 @@ import { IpcValue, Message, OrchestratorState, ProjectStep } from '@shared/types
 import { IpcRenderer, IpcRendererEvent } from 'electron';
 
 export interface OrchestratorBridge {
-    start: (task: string, projectId?: string) => Promise<string>;
+    start: (task: string, projectId?: string) => Promise<void>;
     approve: (plan: ProjectStep[]) => Promise<void>;
     getState: () => Promise<OrchestratorState>;
     stop: () => Promise<void>;

@@ -143,3 +143,12 @@ export interface ChatRequest {
 export interface ChatStreamRequest extends ChatRequest {
     chatId?: string
 }
+
+export type ChatErrorKind = 'provider_unavailable' | 'quota_exhausted' | 'timeout' | 'generic';
+
+export interface ChatError {
+    kind: ChatErrorKind;
+    message: string;
+    resetsAt?: number | null;
+    model?: string | null;
+}

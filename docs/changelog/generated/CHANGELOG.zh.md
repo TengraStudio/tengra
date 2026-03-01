@@ -14,6 +14,18 @@
 - **类型安全**：在智能体领域解决了 40 多个结构化类型错误，并消除了 100 多个不安全转型。
 - **可靠性**：实现了用于助手智能体交接的启发式合并门控评估，以及基于仲裁的共识构建。
 
+### 全局聊天错误处理及失败状态 UX
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: 统一了整个应用程序的操作聊天错误类型，并在 AI 助手侧边栏中实现了一致的失败状态 UX，包括分类和重试功能。
+
+- **共享错误类型**：定义了 `ChatError` 和 `ChatErrorKind` 作为全局共享类型，确保主进程和渲染进程之间的一致性。
+- **错误分类**：更新了 `categorizeError` 工具，将流错误分类为 `quota_exhausted`（配额用尽）、`provider_unavailable`（提供商不可用）、`timeout`（超时）或 `generic`（通用）类型。
+- **失败状态 UX (MARCH1-CORE-001)**：将 `ChatErrorBanner` 集成到工作区 AI 助手侧边栏中，具有条件渲染和上下文重试操作。
+- **流集成**：更新了 `process-stream` 和 `useChatManager`，使分类后的错误状态在组件层次结构中传播。
+- **型安全加固**：解决了 10 多个与聊天钩子和 UI 组件中缺失错误属性定义相关的严格 TypeScript 错误。
+
 ## [2026-02-28]
 
 ### AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking

@@ -54,13 +54,45 @@ export class CouncilService extends BaseService {
      */
     private async routeWithQuotaAwareness(step: ProjectStep): Promise<StepModelConfig> {
         const availableProviders = await this.deps.llm.getAvailableProviders();
-        // Since QuotaService.getQuota returns an account list, let's just use it or a simpler lookup
-        // For now, let's keep it simple as the previous structure was just a placeholder
 
-        const config = this.deps.collaboration.getModelForStep(step, availableProviders);
+        // 1. Get default routing config from collaboration service
+        const defaultConfig = this.deps.collaboration.getModelForStep(step, availableProviders);
+
+        try {
+            // 2. Fetch relevant quotas for the target provider
+            const provider = defaultConfig.provider.toLowerCase();
+
+            if (provider.includes('antigravity') || provider.includes('google')) {
+                const quotas = await this.deps.quota.getAntigravityAvailableModels();
+                const modelQuota = quotas.find(q => q.id === defaultConfig.model || q.name === defaultConfig.model);
+
+                if (modelQuota?.quotaInfo) {
+                    const { remainingFraction } = modelQuota.quotaInfo;
+                    if (remainingFraction < 0.1) {
+                        this.logWarn(`Quota low for ${defaultConfig.model} (${(remainingFraction * 100).toFixed(1)}%). Attempting fallback.`);
+                        // Here we could trigger a fallback, but for now we just log it
+                    }
+                }
+            } else if (provider.includes('claude')) {
+                const claudeQuotas = await this.deps.quota.getClaudeQuota();
+                const bestAccount = claudeQuotas.accounts.sort((a, b) =>
+                    (b.fiveHour?.utilization ?? 0) - (a.fiveHour?.utilization ?? 0)
+                )[0]; // Sort by utilization (lowest first, assuming smaller utilization is better)
+
+                if (bestAccount?.fiveHour && bestAccount.fiveHour.utilization > 0.9) {
+                    this.logWarn(`Claude utilization high: ${bestAccount.fiveHour.utilization}`);
+                }
+            }
+
+            // For now, we contribute more logic here as we stabilize. 
+            // The goal is to eventually return an accountId as part of StepModelConfig.
+        } catch (e) {
+            this.logError('Failed to fetch quota for routing:', e as Error);
+        }
+
         return {
-            ...config,
-            reason: config.reason ?? 'Quota-aware selection'
+            ...defaultConfig,
+            reason: defaultConfig.reason ?? 'Quota-aware selection'
         };
     }
 

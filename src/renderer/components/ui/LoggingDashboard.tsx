@@ -1,5 +1,6 @@
 import type { IpcRendererEvent } from 'electron';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/i18n';
@@ -29,46 +30,41 @@ const levelBadgeColors = {
     error: 'bg-destructive/20 text-destructive',
 };
 
-const LogTable: React.FC<{ logs: LogEntry[]; t: (key: string) => string }> = ({ logs, t }) => (
-    <table className="w-full">
-        <thead className="sticky top-0 bg-muted text-muted-foreground">
-            <tr>
-                <th className="text-left px-3 py-2 w-32">{t('logging.time')}</th>
-                <th className="text-left px-3 py-2 w-20">{t('logging.level')}</th>
-                <th className="text-left px-3 py-2 w-32">{t('logging.source')}</th>
-                <th className="text-left px-3 py-2">{t('logging.message')}</th>
-            </tr>
-        </thead>
-        <tbody>
-            {logs.map(log => (
-                <tr
-                    key={log.id}
-                    className={`border-b border-muted hover:bg-muted/50 ${log.level === 'error' ? 'bg-destructive/10' : ''}`}
-                >
-                    <td className="px-3 py-1.5 text-muted-foreground whitespace-nowrap">
-                        {new Date(log.timestamp).toLocaleTimeString()}
-                    </td>
-                    <td className="px-3 py-1.5">
-                        <span
-                            className={`px-2 py-0.5 rounded text-xs font-medium ${levelBadgeColors[log.level]}`}
-                        >
-                            {log.level.toUpperCase()}
-                        </span>
-                    </td>
-                    <td
-                        className="px-3 py-1.5 text-muted-foreground truncate max-w-[120px]"
-                        title={log.source}
-                    >
-                        {log.source}
-                    </td>
-                    <td className={`px-3 py-1.5 ${levelColors[log.level]} break-all`}>
-                        {log.message}
-                    </td>
-                </tr>
-            ))}
-        </tbody>
-    </table>
+const LogTableHeader: React.FC<{ t: (key: string) => string }> = ({ t }) => (
+    <div className="sticky top-0 z-10 bg-muted text-muted-foreground flex font-semibold text-xs">
+        <div className="px-3 py-2 w-32 shrink-0">{t('logging.time')}</div>
+        <div className="px-3 py-2 w-20 shrink-0">{t('logging.level')}</div>
+        <div className="px-3 py-2 w-32 shrink-0">{t('logging.source')}</div>
+        <div className="px-3 py-2 flex-1">{t('logging.message')}</div>
+    </div>
 );
+
+const LogRow: React.FC<{ log: LogEntry }> = React.memo(({ log }) => (
+    <div
+        className={`flex border-b border-muted hover:bg-muted/50 ${log.level === 'error' ? 'bg-destructive/10' : ''}`}
+    >
+        <div className="px-3 py-1.5 text-muted-foreground whitespace-nowrap w-32 shrink-0">
+            {new Date(log.timestamp).toLocaleTimeString()}
+        </div>
+        <div className="px-3 py-1.5 w-20 shrink-0">
+            <span
+                className={`px-2 py-0.5 rounded text-xs font-medium ${levelBadgeColors[log.level]}`}
+            >
+                {log.level.toUpperCase()}
+            </span>
+        </div>
+        <div
+            className="px-3 py-1.5 text-muted-foreground truncate w-32 shrink-0"
+            title={log.source}
+        >
+            {log.source}
+        </div>
+        <div className={`px-3 py-1.5 ${levelColors[log.level]} break-all flex-1`}>
+            {log.message}
+        </div>
+    </div>
+));
+LogRow.displayName = 'LogRow';
 
 export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(
     ({ isOpen, onClose }) => {
@@ -79,7 +75,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(
         const [levelFilter, setLevelFilter] = useState('all');
         const [autoScroll, setAutoScroll] = useState(true);
         const [isPaused, setIsPaused] = useState(false);
-        const logsEndRef = useRef<HTMLDivElement>(null);
+        const virtuosoRef = React.useRef<VirtuosoHandle>(null);
 
         useEffect(() => {
             if (!isOpen) {
@@ -96,12 +92,6 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(
             window.electron.ipcRenderer.on('log:entry', handler);
             return () => window.electron.ipcRenderer.off('log:entry', handler);
         }, [isOpen, isPaused]);
-
-        useEffect(() => {
-            if (autoScroll && logsEndRef.current) {
-                logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
-            }
-        }, [logs, autoScroll]);
 
         const filteredLogs = useMemo(
             () =>
@@ -237,7 +227,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(
                             </button>
                         </div>
                     </div>
-                    <div className="flex-1 overflow-y-auto font-mono text-xs">
+                    <div className="flex-1 overflow-hidden font-mono text-xs flex flex-col">
                         {filteredLogs.length === 0 ? (
                             <div className="flex items-center justify-center h-full text-muted-foreground">
                                 <div className="text-center">
@@ -259,9 +249,24 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(
                                 </div>
                             </div>
                         ) : (
-                            <LogTable logs={filteredLogs} t={t} />
+                            <>
+                                <LogTableHeader t={t} />
+                                <div className="flex-1">
+                                    <Virtuoso
+                                        ref={virtuosoRef}
+                                        data={filteredLogs}
+                                        totalCount={filteredLogs.length}
+                                        followOutput={autoScroll ? 'smooth' : false}
+                                        defaultItemHeight={28}
+                                        itemContent={(_index, log) => (
+                                            <LogRow log={log} />
+                                        )}
+                                        className="custom-scrollbar"
+                                        style={{ height: '100%' }}
+                                    />
+                                </div>
+                            </>
                         )}
-                        <div ref={logsEndRef} />
                     </div>
                     <div className="px-4 py-2 border-t border-neutral-dark bg-muted/30 text-xs text-muted-foreground flex justify-between">
                         <span>

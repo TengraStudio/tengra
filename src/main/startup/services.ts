@@ -65,11 +65,11 @@ import { McpMarketplaceService } from '@main/services/mcp/mcp-marketplace.servic
 import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
 import { AgentCheckpointService } from '@main/services/project/agent/agent-checkpoint.service';
 import { AgentCollaborationService } from '@main/services/project/agent/agent-collaboration.service';
-import { CouncilService } from '@main/services/project/agent/council.service';
 import { AgentPerformanceService } from '@main/services/project/agent/agent-performance.service';
 import { AgentPersistenceService } from '@main/services/project/agent/agent-persistence.service';
 import { AgentRegistryService } from '@main/services/project/agent/agent-registry.service';
 import { AgentTemplateService } from '@main/services/project/agent/agent-template.service';
+import { CouncilService } from '@main/services/project/agent/council.service';
 import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service';
 import { DockerService } from '@main/services/project/docker.service';
 import { GitService } from '@main/services/project/git.service';

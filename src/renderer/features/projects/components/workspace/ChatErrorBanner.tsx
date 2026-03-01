@@ -1,19 +1,18 @@
-import { AlertTriangle, ArrowRightLeft,RefreshCw } from 'lucide-react';
+import { AlertTriangle, ArrowRightLeft, RefreshCw } from 'lucide-react';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
-
-import type { WorkspaceChatErrorKind } from '../../hooks/useWorkspaceChatStream';
+import { ChatErrorKind } from '@/types';
 
 interface ChatErrorBannerProps {
-    errorKind: WorkspaceChatErrorKind;
+    errorKind: ChatErrorKind;
     onRetry: () => void;
     onSwitchModel?: () => void;
     onDismiss?: () => void;
 }
 
 /** Maps error kinds to their corresponding i18n keys */
-const ERROR_MESSAGE_KEYS: Record<WorkspaceChatErrorKind, string> = {
+const ERROR_MESSAGE_KEYS: Record<ChatErrorKind, string> = {
     provider_unavailable: 'chat.errorProviderUnavailable',
     quota_exhausted: 'chat.errorQuotaExhausted',
     timeout: 'chat.errorTimeout',
@@ -21,7 +20,7 @@ const ERROR_MESSAGE_KEYS: Record<WorkspaceChatErrorKind, string> = {
 };
 
 /** Accent color per error kind */
-const ERROR_COLORS: Record<WorkspaceChatErrorKind, string> = {
+const ERROR_COLORS: Record<ChatErrorKind, string> = {
     provider_unavailable: 'border-orange-500/50 bg-orange-500/10',
     quota_exhausted: 'border-red-500/50 bg-red-500/10',
     timeout: 'border-yellow-500/50 bg-yellow-500/10',

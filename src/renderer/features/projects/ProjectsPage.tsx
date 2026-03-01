@@ -1,6 +1,6 @@
 import { ProjectWizardModal } from '@renderer/features/projects/components/ProjectWizardModal';
 import { ProjectWorkspace } from '@renderer/features/projects/components/ProjectWorkspace';
-import { AppSettings } from '@shared/types';
+import { AppSettings, ChatError } from '@shared/types';
 import { CodexUsage, QuotaResponse } from '@shared/types/quota';
 import { Archive, ArrowDownUp, Edit, FolderOpen, Monitor, Trash2 } from 'lucide-react';
 import React, { memo, useState } from 'react';
@@ -11,9 +11,9 @@ import type { GroupedModels } from '@/types';
 import { Message, Project, TerminalTab } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
-import { ProjectCard, ProjectCardSurfaceProvider } from './components/ProjectCard';
 import { ProjectModals } from './components/ProjectModals';
 import { ProjectsHeader } from './components/ProjectsHeader';
+import { VirtualizedProjectGrid } from './components/VirtualizedProjectGrid';
 import {
     loadProjectListPreferences,
     saveProjectListPreferences,
@@ -45,12 +45,13 @@ interface ProjectsPageProps {
     sendMessage?: (content?: string) => void
     messages?: Message[]
     isLoading?: boolean
+    chatError?: ChatError | null
 }
 
 export const ProjectsPage: React.FC<ProjectsPageProps> = ({
     projects, selectedProject, onSelectProject, language, tabs, activeTabId, setTabs, setActiveTabId,
     selectedProvider, selectedModel, onSelectModel, groupedModels, quotas, codexUsage, settings,
-    sendMessage, messages, isLoading
+    sendMessage, messages, isLoading, chatError
 }) => {
     const { t } = useTranslation(language);
     const LIST_SETTINGS_STORAGE_KEY = 'projects.listView.settings.v1';
@@ -266,6 +267,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                     sendMessage={sendMessage}
                     messages={messages}
                     isLoading={isLoading}
+                    chatError={chatError}
                 />
                 <ProjectModals
                     editingProject={null}
@@ -324,30 +326,19 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                 />
 
                 {viewMode === 'grid' ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <ProjectCardSurfaceProvider
-                            onSelect={(p) => {
+                    <div>
+                        <VirtualizedProjectGrid
+                            projects={sortedProjects}
+                            onSelectProject={(p) => {
                                 void handleSelectProject(p);
                             }}
-                            activeMenuId={showProjectMenu}
-                            setActiveMenuId={setShowProjectMenu}
-                            onEdit={(p, e) => { setShowProjectMenu(null); sm.startEdit(p, e); }}
-                            onDelete={(p, e) => { setShowProjectMenu(null); sm.startDelete(p, e); }}
-                            onArchive={(p) => sm.startArchive(p)}
+                            showProjectMenu={showProjectMenu}
+                            setShowProjectMenu={setShowProjectMenu}
+                            projectStateMachine={sm}
                             t={t}
-                        >
-                            {sortedProjects.map((project, i) => (
-                                <ProjectCard
-                                    key={project.id}
-                                    project={project}
-                                    index={i}
-                                    isSelected={sm.state.selectedProjectIds.has(project.id)}
-                                    onToggleSelection={() => sm.toggleSelection(project.id)}
-                                />
-                            ))}
-                        </ProjectCardSurfaceProvider>
+                        />
                         {sortedProjects.length === 0 && (
-                            <div className="col-span-full py-12 text-center border-2 border-dashed border-border/30 rounded-xl">
+                            <div className="py-12 text-center border-2 border-dashed border-border/30 rounded-xl">
                                 <Monitor className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
                                 <p className="text-muted-foreground font-medium">{t('projects.noProjects')}</p>
                                 <p className="text-xs text-muted-foreground/50 mt-1">{t('projects.startNewProject')}</p>

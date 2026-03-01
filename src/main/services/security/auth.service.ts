@@ -190,7 +190,8 @@ export class AuthService extends BaseService {
     private async migrateLegacyFiles(): Promise<void> {
         try {
             const authDir = this.dataService.getPath('auth');
-            if (!fs.existsSync(authDir)) { return; }
+            const authDirExists = await fs.promises.access(authDir).then(() => true).catch(() => false);
+            if (!authDirExists) { return; }
 
             const files = await fs.promises.readdir(authDir);
             let migrateCount = 0;

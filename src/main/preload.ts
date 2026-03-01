@@ -30,6 +30,7 @@ import { createMarketplaceBridge } from './preload/domains/marketplace.preload';
 import { createMcpBridge } from './preload/domains/mcp.preload';
 import { createMcpMarketplaceBridge } from './preload/domains/mcp-marketplace.preload';
 import { createMemoryBridge } from './preload/domains/memory.preload';
+import { createMetricsBridge } from './preload/domains/metrics.preload';
 import { createModelDownloaderBridge } from './preload/domains/model-downloader.preload';
 import { createModelRegistryBridge } from './preload/domains/model-registry.preload';
 import { createOllamaBridge } from './preload/domains/ollama.preload';
@@ -47,6 +48,7 @@ import { createSSHBridge } from './preload/domains/ssh.preload';
 import { createTerminalBridge } from './preload/domains/terminal.preload';
 import { createToolsBridge } from './preload/domains/tools.preload';
 import { createUpdateBridge } from './preload/domains/update.preload';
+import { createUsageBridge } from './preload/domains/usage.preload';
 import { createVoiceBridge } from './preload/domains/voice.preload';
 import { createWindowControlsBridge } from './preload/domains/window-controls.preload';
 import { createWorkflowBridge } from './preload/domains/workflow.preload';
@@ -86,6 +88,8 @@ const api = {
     proxyEmbed: createProxyEmbedBridge(ipcRenderer),
     extension: createExtensionBridge(ipcRenderer),
     orchestrator: createOrchestratorBridge(ipcRenderer),
+    metrics: createMetricsBridge(ipcRenderer),
+    usage: createUsageBridge(ipcRenderer),
     gallery: createGalleryBridge(ipcRenderer),
     update: createUpdateBridge(ipcRenderer),
     ideas: createIdeasBridge(ipcRenderer),

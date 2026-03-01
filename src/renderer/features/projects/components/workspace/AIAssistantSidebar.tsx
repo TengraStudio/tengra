@@ -1,4 +1,5 @@
 ﻿import { MessageBubble } from '@renderer/features/chat/components/MessageBubble';
+import { ChatErrorBanner } from '@renderer/features/projects/components/workspace/ChatErrorBanner';
 import { AgentTaskHistoryItem } from '@shared/types/project-agent';
 import { ArrowLeft, Check, ClipboardList, Play, Users } from 'lucide-react';
 import React from 'react';
@@ -7,7 +8,7 @@ import { ModelSelector } from '@/components/shared/ModelSelector';
 import { Language } from '@/i18n';
 import { motion } from '@/lib/framer-motion-compat';
 import type { GroupedModels } from '@/types';
-import { AppSettings, CodexUsage, Message, QuotaResponse } from '@/types';
+import { AppSettings, ChatError, CodexUsage, Message, QuotaResponse } from '@/types';
 
 interface AIAssistantSidebarProps {
     projectId: string;
@@ -24,6 +25,7 @@ interface AIAssistantSidebarProps {
     t: (key: string) => string;
     messages?: Message[] | undefined;
     isLoading?: boolean | undefined;
+    chatError?: ChatError | null;
     language: string;
     onSourceClick?: ((path: string) => void) | undefined;
 }
@@ -59,6 +61,7 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
     t,
     messages = [],
     isLoading,
+    chatError,
     language,
     onSourceClick,
 }) => {
@@ -174,6 +177,17 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
             return (
                 <div className="flex-1 flex flex-col min-h-0">
                     <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                        {chatError && (
+                            <ChatErrorBanner
+                                errorKind={chatError.kind}
+                                onRetry={() => {
+                                    const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
+                                    if (lastUserMsg) {
+                                        onSendMessage?.(typeof lastUserMsg.content === 'string' ? lastUserMsg.content : '');
+                                    }
+                                }}
+                            />
+                        )}
                         {messages.length === 0 ? (
                             <div className="flex gap-3">
                                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
@@ -427,8 +441,8 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                     <button
                         key={mode}
                         className={`rounded-md text-xs font-medium capitalize transition-colors ${assistantMode === mode
-                                ? 'bg-primary/20 text-primary'
-                                : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+                            ? 'bg-primary/20 text-primary'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
                             }`}
                         onClick={() => setAssistantMode(mode)}
                     >
@@ -464,8 +478,8 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                                     setApprovalChecked(false);
                                 }}
                                 className={`w-full text-left rounded-md px-2 py-1.5 border text-xs transition-colors ${session.id === selectedSessionId
-                                        ? 'bg-primary/10 border-primary/30 text-foreground'
-                                        : 'bg-background/20 border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/5'
+                                    ? 'bg-primary/10 border-primary/30 text-foreground'
+                                    : 'bg-background/20 border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/5'
                                     }`}
                             >
                                 <div className="truncate font-medium">{session.title}</div>

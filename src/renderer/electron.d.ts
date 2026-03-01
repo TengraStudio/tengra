@@ -2480,6 +2480,28 @@ export interface ElectronAPI {
         onUpdate: (callback: (state: OrchestratorStateView) => void) => () => void;
     };
 
+    metrics: {
+        getProviderStats: (provider?: string) => Promise<Record<string, {
+            totalRequests: number;
+            successCount: number;
+            errorCount: number;
+            avgLatencyMs: number;
+        }>>;
+        getSummary: () => Promise<{
+            totalRequests: number;
+            successRate: number;
+            avgLatencyMs: number;
+            providers: string[];
+        }>;
+        reset: () => Promise<boolean>;
+    };
+
+    usage: {
+        checkLimit: (provider: string, model: string) => Promise<{ allowed: boolean; reason?: string }>;
+        getUsageCount: (period: 'hourly' | 'daily' | 'weekly', provider?: string, model?: string) => Promise<number>;
+        recordUsage: (provider: string, model: string) => Promise<{ success: boolean }>;
+    };
+
     workflow: {
         getAll: () => Promise<import('@shared/types/workflow.types').Workflow[]>;
         get: (id: string) => Promise<import('@shared/types/workflow.types').Workflow | null>;

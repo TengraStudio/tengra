@@ -1,4 +1,15 @@
 {
+  "2026-03-01-chat-error-handling-refactor": {
+    "title": "Global Sohbet Hata Yönetimi ve Başarısızlık Durumu Deneyimi",
+    "summary": "Uygulama genelinde sohbet hata türleri birleştirildi ve sınıflandırma ile yeniden deneme özelliklerini içeren tutarlı bir başarısızlık durumu kullanıcı deneyimi yapay zeka asistanı kenar çubuğuna uygulandı.",
+    "items": [
+      "- **Paylaşılan Hata Türleri**: `ChatError` ve `ChatErrorKind` global paylaşılan türler olarak tanımlandı, ana ve renderer süreçleri arasında tutarlılık sağlandı.",
+      "- **Hata Sınıflandırma**: Akış hatalarını `quota_exhausted`, `provider_unavailable`, `timeout` veya `generic` türlerine ayıran `categorizeError` yardımcısı uygulandı.",
+      "- **Başarısızlık Durumu Deneyimi (MARCH1-CORE-001)**: Yapay zeka asistanı kenar çubuğuna, koşullu oluşturma ve bağlamsal yeniden deneme eylemleriyle birlikte `ChatErrorBanner` entegre edildi.",
+      "- **Akış Entegrasyonu**: `process-stream` ve `useChatManager`, sınıflandırılmış hata durumlarını bileşen hiyerarşisi boyunca yayacak şekilde güncellendi.",
+      "- **Tip Güvenliği**: Sohbet hook'ları ve UI bileşenleri genelinde eksik hata özelliği tanımlarıyla ilgili 10'dan fazla katı TypeScript hatası çözüldü."
+    ]
+  },
   "2026-03-01-agent-service-refactor-council-orchestration": {
     "title": "Ajan Mimarisi Sertleştirme: Monolitik Servis Refaktörü ve Konsey Orkestrasyonu",
     "summary": "Monolitik AgentCollaborationService altı alana özgü servise ayrıştırıldı ve geliştirilmiş plan hazırlama ile kota duyarlı yönlendirme için CouncilService uygulandı.",

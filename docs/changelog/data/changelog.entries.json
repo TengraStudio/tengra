@@ -4,6 +4,50 @@
   "generatedAt": "2026-02-28T21:00:00Z",
   "entries": [
     {
+      "id": "2026-03-01-chat-error-handling-refactor",
+      "date": "2026-03-01",
+      "channel": "stable",
+      "type": "refactor",
+      "category": "ai",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "Chat",
+        "Renderer",
+        "Shared Types",
+        "AIAssistantSidebar"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Global Chat Error Handling & Failure-State UX",
+          "summary": "Unified chat error types across the application and implemented a consistent failure-state UX in the AI Assistant sidebar with categorization and retry capabilities.",
+          "items": [
+            "- **Shared Error Types**: Defined `ChatError` and `ChatErrorKind` as global shared types, ensuring consistency between main and renderer processes.",
+            "- **Error Categorization**: Implemented a `categorizeError` utility to classify stream errors into `quota_exhausted`, `provider_unavailable`, `timeout`, or `generic` kinds.",
+            "- **Failure-State UX (MARCH1-CORE-001)**: Integrated `ChatErrorBanner` into the workspace AI Assistant sidebar with conditional rendering and contextual retry actions.",
+            "- **Stream Integration**: Updated `process-stream` and `useChatManager` to propagate categorized error states through the component hierarchy.",
+            "- **Type Safety Hardening**: Resolved 10+ strict TypeScript errors related to missing error property definitions across chat hooks and UI components."
+          ]
+        },
+        "tr": {
+          "title": "Global Sohbet Hata Yönetimi ve Başarısızlık Durumu Deneyimi",
+          "summary": "Uygulama genelinde sohbet hata türleri birleştirildi ve sınıflandırma ile yeniden deneme özelliklerini içeren tutarlı bir başarısızlık durumu kullanıcı deneyimi yapay zeka asistanı kenar çubuğuna uygulandı.",
+          "items": [
+            "- **Paylaşılan Hata Türleri**: `ChatError` ve `ChatErrorKind` global paylaşılan türler olarak tanımlandı, ana ve renderer süreçleri arasında tutarlılık sağlandı.",
+            "- **Hata Sınıflandırma**: Akış hatalarını `quota_exhausted`, `provider_unavailable`, `timeout` veya `generic` türlerine ayıran `categorizeError` yardımcısı uygulandı.",
+            "- **Başarısızlık Durumu Deneyimi (MARCH1-CORE-001)**: Yapay zeka asistanı kenar çubuğuna, koşullu oluşturma ve bağlamsal yeniden deneme eylemleriyle birlikte `ChatErrorBanner` entegre edildi.",
+            "- **Akış Entegrasyonu**: `process-stream` ve `useChatManager`, sınıflandırılmış hata durumlarını bileşen hiyerarşisi boyunca yayacak şekilde güncellendi.",
+            "- **Tip Güvenliği**: Sohbet hook'ları ve UI bileşenleri genelinde eksik hata özelliği tanımlarıyla ilgili 10'dan fazla katı TypeScript hatası çözüldü."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-03-01-agent-service-refactor-council-orchestration",
       "date": "2026-03-01",
       "channel": "stable",

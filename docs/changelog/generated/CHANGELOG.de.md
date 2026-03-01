@@ -14,6 +14,18 @@
 - **Typsicherheit**: Lösung von über 40 strukturellen Typfehlern und Eliminierung von über 100 unsicheren Casts im Agenten-Bereich.
 - **Zuverlässigkeit**: Implementierung einer heuristischen Merge-Gate-Evaluierung für Helper-Agent-Handoffs und schiedsgerichtbasierte Konsensbildung.
 
+### Globales Chat-Fehlermanagement & UX im Fehlerfall
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Vereinheitlichte Chat-Fehlertypen in der gesamten Anwendung und Implementierung einer konsistenten UX im Fehlerfall in der KI-Assistenten-Sidebar mit Kategorisierung und Wiederholungsfunktionen.
+
+- **Gemeinsame Fehlertypen**: Festlegung von `ChatError` und `ChatErrorKind` als globale gemeinsame Typen zur Sicherstellung der Konsistenz zwischen Haupt- und Renderer-Prozessen.
+- **Fehlerkategorisierung**: Implementierung eines `categorizeError`-Utilities zur Klassifizierung von Stream-Fehlern in die Kategorien `quota_exhausted`, `provider_unavailable`, `timeout` oder `generic`.
+- **UX im Fehlerfall (MARCH1-CORE-001)**: Integration des `ChatErrorBanner` in die Workspace KI-Assistenten-Sidebar mit bedingtem Rendering und kontextbezogenen Wiederholungsaktionen.
+- **Stream-Integration**: Aktualisierung von `process-stream` und `useChatManager` zur Weitergabe kategorisierter Fehlerzustände durch die Komponentenhierarchie.
+- **Härtung der Typsicherheit**: Behebung von über 10 strikten TypeScript-Fehlern im Zusammenhang mit fehlenden Fehler-Eigenschaftsdefinitionen in Chat-Hooks und UI-Komponenten.
+
 ## [2026-02-28]
 
 ### AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking

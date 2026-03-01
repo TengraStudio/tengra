@@ -19,7 +19,7 @@ import { useRenderTracker } from '@/hooks/useRenderTracker';
 import { useWorkspaceProfiler } from '@/hooks/useWorkspaceProfiler';
 import { Language } from '@/i18n';
 import type { GroupedModels } from '@/types';
-import { AppSettings, CodexUsage, Message, Project, QuotaResponse, TerminalTab } from '@/types';
+import { AppSettings, ChatError, CodexUsage, Message, Project, QuotaResponse, TerminalTab } from '@/types';
 
 interface ProjectWorkspaceProps {
     project: Project;
@@ -40,6 +40,7 @@ interface ProjectWorkspaceProps {
     sendMessage?: (content?: string) => void | Promise<void>;
     messages?: Message[];
     isLoading?: boolean;
+    chatError?: ChatError | null;
 }
 
 export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
@@ -61,6 +62,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     sendMessage,
     messages,
     isLoading,
+    chatError,
 }) => {
     useRenderTracker('ProjectWorkspace');
     const { onRender } = useWorkspaceProfiler();
@@ -129,136 +131,138 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     return (
         <div className="h-full flex flex-col bg-background relative overflow-hidden">
             <React.Profiler id="WorkspaceToolbar" onRender={onRender}>
-            <WorkspaceToolbar
-                project={project}
-                projectName={project.title}
-                onNameChange={title => {
-                    void handleUpdateProject({ title });
-                }}
-                handleRunProject={() => {
-                    tl.setIsFloatingTerminal(false);
-                    ps.setShowTerminal(true);
-                }}
-                onBack={onBack}
-                language={language}
-                dashboardTab={wm.dashboardTab}
-                onDashboardTabChange={wm.setDashboardTab}
-                sidebarCollapsed={ps.sidebarCollapsed}
-                toggleSidebar={() => ps.setSidebarCollapsed(!ps.sidebarCollapsed)}
-                showAgentPanel={ps.showAgentPanel}
-                toggleAgentPanel={() => ps.setShowAgentPanel(!ps.showAgentPanel)}
-                mountStatus={wm.mountStatus}
-            />
+                <WorkspaceToolbar
+                    project={project}
+                    projectName={project.title}
+                    onNameChange={title => {
+                        void handleUpdateProject({ title });
+                    }}
+                    handleRunProject={() => {
+                        tl.setIsFloatingTerminal(false);
+                        ps.setShowTerminal(true);
+                    }}
+                    onBack={onBack}
+                    language={language}
+                    dashboardTab={wm.dashboardTab}
+                    onDashboardTabChange={wm.setDashboardTab}
+                    sidebarCollapsed={ps.sidebarCollapsed}
+                    toggleSidebar={() => ps.setSidebarCollapsed(!ps.sidebarCollapsed)}
+                    showAgentPanel={ps.showAgentPanel}
+                    toggleAgentPanel={() => ps.setShowAgentPanel(!ps.showAgentPanel)}
+                    mountStatus={wm.mountStatus}
+                />
             </React.Profiler>
 
             <div className="flex-1 flex overflow-hidden relative">
                 <React.Profiler id="ProjectExplorerPanel" onRender={onRender}>
-                <ProjectExplorerPanel
-                    projectId={project.id}
-                    ps={ps}
-                    wm={wm}
-                    language={language}
-                    onMove={(entry, targetDirPath) => {
-                        void wm.moveEntry(entry, targetDirPath);
-                    }}
-                />
+                    <ProjectExplorerPanel
+                        projectId={project.id}
+                        ps={ps}
+                        wm={wm}
+                        language={language}
+                        onMove={(entry, targetDirPath) => {
+                            void wm.moveEntry(entry, targetDirPath);
+                        }}
+                    />
                 </React.Profiler>
 
                 <React.Profiler id="WorkspaceMain" onRender={onRender}>
-                <WorkspaceMain
-                    dashboardTab={wm.dashboardTab}
-                    openTabs={wm.openTabs}
-                    activeTabId={wm.activeTabId}
-                    setActiveEditorTabId={wm.setActiveEditorTabId}
-                    closeTab={wm.closeTab}
-                    togglePinTab={wm.togglePinTab}
-                    closeAllTabs={wm.closeAllTabs}
-                    closeTabsToRight={wm.closeTabsToRight}
-                    closeOtherTabs={wm.closeOtherTabs}
-                    copyTabAbsolutePath={wm.copyTabAbsolutePath}
-                    copyTabRelativePath={wm.copyTabRelativePath}
-                    revealTabInExplorer={async (tabId: string) => {
-                        wm.revealTabInExplorer(tabId);
-                    }}
-                    activeTab={wm.activeTab}
-                    updateTabContent={wm.updateTabContent}
-                    project={project}
-                    handleUpdateProject={handleUpdateProject}
-                    onAddMount={() => ps.setShowMountModal(true)}
-                    setShowLogoModal={ps.setShowLogoModal}
-                    t={t}
-                    language={language}
-                    setDashboardTab={wm.setDashboardTab}
-                    onDeleteProject={onDeleteProject}
-                    selectedEntry={ps.selectedEntries[0]}
-                    onOpenFile={openWorkspaceFile}
-                />
+                    <WorkspaceMain
+                        dashboardTab={wm.dashboardTab}
+                        openTabs={wm.openTabs}
+                        activeTabId={wm.activeTabId}
+                        setActiveEditorTabId={wm.setActiveEditorTabId}
+                        closeTab={wm.closeTab}
+                        togglePinTab={wm.togglePinTab}
+                        closeAllTabs={wm.closeAllTabs}
+                        closeTabsToRight={wm.closeTabsToRight}
+                        closeOtherTabs={wm.closeOtherTabs}
+                        copyTabAbsolutePath={wm.copyTabAbsolutePath}
+                        copyTabRelativePath={wm.copyTabRelativePath}
+                        revealTabInExplorer={async (tabId: string) => {
+                            wm.revealTabInExplorer(tabId);
+                        }}
+                        activeTab={wm.activeTab}
+                        updateTabContent={wm.updateTabContent}
+                        project={project}
+                        handleUpdateProject={handleUpdateProject}
+                        onAddMount={() => ps.setShowMountModal(true)}
+                        setShowLogoModal={ps.setShowLogoModal}
+                        t={t}
+                        language={language}
+                        setDashboardTab={wm.setDashboardTab}
+                        onDeleteProject={onDeleteProject}
+                        selectedEntry={ps.selectedEntries[0]}
+                        onOpenFile={openWorkspaceFile}
+                    />
                 </React.Profiler>
 
                 <React.Profiler id="WorkspaceSidebar" onRender={onRender}>
-                <WorkspaceSidebar
-                    projectId={project.id}
-                    showAgentPanel={ps.showAgentPanel}
-                    agentPanelWidth={ps.agentPanelWidth}
-                    setAgentPanelWidth={ps.setAgentPanelWidth}
-                    selectedProvider={selectedProvider}
-                    selectedModel={selectedModel}
-                    onSelectModel={onSelectModel}
-                    settings={settings ?? null}
-                    groupedModels={groupedModels as GroupedModels}
-                    quotas={quotas ?? null}
-                    codexUsage={codexUsage ?? null}
-                    agentChatMessage={ps.agentChatMessage}
-                    setAgentChatMessage={ps.setAgentChatMessage}
-                    onSendMessage={
-                        sendMessage
-                            ? (content?: string) => {
-                                void sendMessage(content);
-                            }
-                            : undefined
-                    }
-                    t={t}
-                    messages={messages}
-                    isLoading={isLoading}
-                    language={language}
-                    onSourceClick={(path: string) => {
-                        void wm.openFile({
-                            mountId: wm.mounts[0]?.id,
-                            path,
-                            name: path.split(/[\\/]/).pop() ?? '',
-                            isDirectory: false,
-                        });
-                    }}
-                />
+                    <WorkspaceSidebar
+                        projectId={project.id}
+                        showAgentPanel={ps.showAgentPanel}
+                        agentPanelWidth={ps.agentPanelWidth}
+                        setAgentPanelWidth={ps.setAgentPanelWidth}
+                        selectedProvider={selectedProvider}
+                        selectedModel={selectedModel}
+                        onSelectModel={onSelectModel}
+                        settings={settings ?? null}
+                        groupedModels={groupedModels as GroupedModels}
+                        quotas={quotas ?? null}
+                        codexUsage={codexUsage ?? null}
+                        agentChatMessage={ps.agentChatMessage}
+                        setAgentChatMessage={ps.setAgentChatMessage}
+                        onSendMessage={
+                            sendMessage
+                                ? (content?: string) => {
+                                    void sendMessage(content);
+                                }
+                                : undefined
+                        }
+                        t={t}
+                        messages={messages}
+                        isLoading={isLoading}
+                        chatError={chatError}
+                        language={language}
+                        onSourceClick={(path: string) => {
+                            void wm.openFile({
+                                mountId: wm.mounts[0]?.id,
+                                path,
+                                name: path.split(/[\\/]/).pop() ?? '',
+                                isDirectory: false,
+                            });
+                        }}
+                    />
                 </React.Profiler>
             </div>
 
             <React.Profiler id="WorkspaceTerminalLayer" onRender={onRender}>
-            <WorkspaceTerminalLayer
-                showTerminal={ps.showTerminal}
-                isFloatingTerminal={tl.isFloatingTerminal}
-                isMaximizedTerminal={tl.isMaximizedTerminal}
-                isResizingTerminal={tl.isResizingTerminal}
-                sidebarCollapsed={ps.sidebarCollapsed}
-                terminalHeight={ps.terminalHeight}
-                floatingTerminalLayout={tl.floatingTerminalLayout}
-                dockedTerminalRightInsetPx={tl.dockedTerminalRightInsetPx}
-                lastExpandedTerminalHeightRef={tl.lastExpandedTerminalHeightRef}
-                setShowTerminal={ps.setShowTerminal}
-                setIsMaximizedTerminal={tl.setIsMaximizedTerminal}
-                setIsResizingTerminal={tl.setIsResizingTerminal}
-                setIsFloatingTerminal={tl.setIsFloatingTerminal}
-                setTerminalHeight={ps.setTerminalHeight}
-                projectId={project.id}
-                projectPath={project.path}
-                tabs={tabs}
-                activeTabId={activeTabId}
-                setTabs={setTabs}
-                setActiveTabId={setActiveTabId}
-                onOpenFile={openWorkspaceFile}
-            />
+                <WorkspaceTerminalLayer
+                    showTerminal={ps.showTerminal}
+                    isFloatingTerminal={tl.isFloatingTerminal}
+                    isMaximizedTerminal={tl.isMaximizedTerminal}
+                    isResizingTerminal={tl.isResizingTerminal}
+                    sidebarCollapsed={ps.sidebarCollapsed}
+                    terminalHeight={ps.terminalHeight}
+                    floatingTerminalLayout={tl.floatingTerminalLayout}
+                    dockedTerminalRightInsetPx={tl.dockedTerminalRightInsetPx}
+                    lastExpandedTerminalHeightRef={tl.lastExpandedTerminalHeightRef}
+                    setShowTerminal={ps.setShowTerminal}
+                    setIsMaximizedTerminal={tl.setIsMaximizedTerminal}
+                    setIsResizingTerminal={tl.setIsResizingTerminal}
+                    setIsFloatingTerminal={tl.setIsFloatingTerminal}
+                    setTerminalHeight={ps.setTerminalHeight}
+                    projectId={project.id}
+                    projectPath={project.path}
+                    tabs={tabs}
+                    activeTabId={activeTabId}
+                    setTabs={setTabs}
+                    setActiveTabId={setActiveTabId}
+                    onOpenFile={openWorkspaceFile}
+                />
             </React.Profiler>
-            <WorkspaceDialogs
+
+            <WorkspaceDialogs
                 ps={ps}
                 wm={wm}
                 project={project}

@@ -2,6 +2,13 @@ import { InlineSuggestionSource } from '@shared/schemas/inline-suggestions.schem
 
 import { JsonValue } from '@/types/common';
 
+export type ModelGovernanceSettings = {
+    mode: 'allowlist' | 'blocklist';
+    allowedModels: string[];
+    blockedModels: string[];
+    [key: string]: JsonValue | undefined;
+};
+
 export type AppSettings = {
     ollama: {
         url: string;
@@ -70,6 +77,7 @@ export type AppSettings = {
         recentModels?: string[];
         hiddenModels?: string[];
     };
+    modelGovernance?: ModelGovernanceSettings;
     github?: {
         username?: string;
         token?: string;

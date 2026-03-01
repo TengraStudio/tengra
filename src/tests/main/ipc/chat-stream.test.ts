@@ -476,4 +476,407 @@ describe('Chat Stream Lifecycle (Regression)', () => {
             expect(result).toMatchObject({ success: false });
         });
     });
+
+    // ─── Database persistence ────────────────────────────────────────
+
+    describe('database persistence after stream', () => {
+        it('should save assistant message to DB after proxy stream completes', async () => {
+            initIPC();
+            const handler = ipcMainHandlers.get('chat:stream');
+            mockLLMService.chatStream.mockReturnValue((async function* () {
+                yield { content: 'Hello ' };
+                yield { content: 'World' };
+            })());
+
+            await handler?.(mockEvent, createStreamRequest());
+
+            expect(mockDatabaseService.chats.addMessage).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    chatId: 'stream-test-1',
+                    role: 'assistant',
+                    content: 'Hello World',
+                    provider: 'openai',
+                    model: 'gpt-4o'
+                })
+            );
+        });
+
+        it('should record token usage when chunks include usage data', async () => {
+            initIPC();
+            const handler = ipcMainHandlers.get('chat:stream');
+            mockLLMService.chatStream.mockReturnValue((async function* () {
+                yield { content: 'data', usage: { prompt_tokens: 100, completion_tokens: 50 } };
+            })());
+
+            await handler?.(mockEvent, createStreamRequest());
+
+            expect(mockDatabaseService.system.addTokenUsage).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    chatId: 'stream-test-1',
+                    provider: 'openai',
+                    model: 'gpt-4o',
+                    tokensSent: 100,
+                    tokensReceived: 50
+                })
+            );
+        });
+
+        it('should not save message when stream yields no content', async () => {
+            initIPC();
+            const handler = ipcMainHandlers.get('chat:stream');
+            mockLLMService.chatStream.mockReturnValue((async function* () {
+                yield { usage: { prompt_tokens: 0, completion_tokens: 0 } };
+            })());
+
+            await handler?.(mockEvent, createStreamRequest());
+
+            expect(mockDatabaseService.chats.addMessage).not.toHaveBeenCalled();
+        });
+
+        it('should accumulate reasoning content and save to DB', async () => {
+            initIPC();
+            const handler = ipcMainHandlers.get('chat:stream');
+            mockLLMService.chatStream.mockReturnValue((async function* () {
+                yield { content: 'answer', reasoning: 'step-1 ' };
+                yield { content: ' part2', reasoning: 'step-2' };
+            })());
+
+            await handler?.(mockEvent, createStreamRequest());
+
+            expect(mockDatabaseService.chats.addMessage).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    chatId: 'stream-test-1',
+                    content: 'answer part2',
+                    reasoning: 'step-1 step-2'
+                })
+            );
+        });
+
+        it('should skip token recording when both prompt and completion are zero', async () => {
+            initIPC();
+            const handler = ipcMainHandlers.get('chat:stream');
+            mockLLMService.chatStream.mockReturnValue((async function* () {
+                yield { content: 'reply' };
+            })());
+
+            await handler?.(mockEvent, createStreamRequest());
+
+            expect(mockDatabaseService.system.addTokenUsage).not.toHaveBeenCalled();
+        });
+
+        it('should save partial content when stream errors mid-generation', async () => {
+            initIPC();
+            const handler = ipcMainHandlers.get('chat:stream');
+            mockLLMService.chatStream.mockReturnValue((async function* () {
+                yield { content: 'partial' };
+                throw new Error('Connection reset');
+            })());
+
+            await handler?.(mockEvent, createStreamRequest());
+
+            expect(mockDatabaseService.chats.addMessage).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    chatId: 'stream-test-1',
+                    content: 'partial'
+                })
+            );
+        });
+    });
+
+    // ─── RAG context injection ───────────────────────────────────────
+
+    describe('RAG context injection', () => {
+        it('should emit metadata chunk with sources when project has RAG context', async () => {
+            mockContextRetrievalService.retrieveContext.mockResolvedValue({
+                contextString: 'function foo() { return 42; }',
+                sources: ['src/foo.ts:10']
+            });
+            initIPC();
+            const handler = ipcMainHandlers.get('chat:stream');
+            mockLLMService.chatStream.mockReturnValue((async function* () {
+                yield { content: 'response' };
+            })());
+
+            await handler?.(mockEvent, createStreamRequest({ projectId: 'proj-rag' }));
+
+            const chunks = getStreamChunkCalls();
+            const metadataChunks = chunks.filter(c => c.type === 'metadata');
+            expect(metadataChunks).toHaveLength(1);
+            expect(metadataChunks[0]).toMatchObject({
+                chatId: 'stream-test-1',
+                type: 'metadata',
+                sources: expect.arrayContaining(['src/foo.ts:10'])
+            });
+        });
+
+        it('should skip RAG injection when no projectId', async () => {
+            initIPC();
+            const handler = ipcMainHandlers.get('chat:stream');
+            mockLLMService.chatStream.mockReturnValue((async function* () {
+                yield { content: 'no-rag' };
+            })());
+
+            await handler?.(mockEvent, createStreamRequest({ projectId: undefined }));
+
+            expect(mockContextRetrievalService.retrieveContext).not.toHaveBeenCalled();
+        });
+
+        it('should continue streaming even when RAG retrieval fails', async () => {
+            mockContextRetrievalService.retrieveContext.mockRejectedValue(
+                new Error('Vector DB unavailable')
+            );
+            initIPC();
+            const handler = ipcMainHandlers.get('chat:stream');
+            mockLLMService.chatStream.mockReturnValue((async function* () {
+                yield { content: 'still-works' };
+            })());
+
+            await handler?.(mockEvent, createStreamRequest({ projectId: 'proj-broken-rag' }));
+
+            const chunks = getStreamChunkCalls();
+            expect(chunks.some(c => c.content === 'still-works')).toBe(true);
+            expect(chunks.some(c => c.done === true)).toBe(true);
+        });
+    });
+
+    // ─── Mid-stream sender destruction ───────────────────────────────
+
+    describe('mid-stream sender destruction', () => {
+        it('should stop sending when sender becomes destroyed mid-stream', async () => {
+            initIPC();
+            const handler = ipcMainHandlers.get('chat:stream');
+            let chunkIndex = 0;
+            typedEvent.sender.isDestroyed.mockImplementation(() => {
+                return chunkIndex > 0;
+            });
+            typedEvent.sender.send.mockImplementation(() => {
+                chunkIndex++;
+            });
+            mockLLMService.chatStream.mockReturnValue((async function* () {
+                yield { content: 'chunk-1' };
+                yield { content: 'chunk-2-should-be-skipped' };
+                yield { content: 'chunk-3-should-be-skipped' };
+            })());
+
+            await handler?.(mockEvent, createStreamRequest());
+
+            const sendCalls = typedEvent.sender.send.mock.calls;
+            const contentCalls = sendCalls.filter(
+                (call: unknown[]) => call[0] === 'ollama:streamChunk' &&
+                    (call[1] as Record<string, unknown>).content === 'chunk-2-should-be-skipped'
+            );
+            expect(contentCalls).toHaveLength(0);
+        });
+    });
+
+    // ─── Opencode provider specifics ─────────────────────────────────
+
+    describe('opencode provider stream', () => {
+        it('should save message with reasoning to DB via addMessage', async () => {
+            initIPC();
+            const handler = ipcMainHandlers.get('chat:stream');
+            mockLLMService.chatOpenCodeStream.mockReturnValue((async function* () {
+                yield { content: 'oc-answer', reasoning: 'oc-think' };
+            })());
+
+            await handler?.(mockEvent, createStreamRequest({ provider: 'opencode' }));
+
+            expect(mockDatabaseService.addMessage).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    chatId: 'stream-test-1',
+                    role: 'assistant',
+                    content: 'oc-answer',
+                    reasoning: 'oc-think',
+                    provider: 'opencode',
+                    model: 'gpt-4o'
+                })
+            );
+        });
+
+        it('should record token usage for opencode provider', async () => {
+            initIPC();
+            const handler = ipcMainHandlers.get('chat:stream');
+            mockLLMService.chatOpenCodeStream.mockReturnValue((async function* () {
+                yield { content: 'reply', usage: { prompt_tokens: 200, completion_tokens: 80 } };
+            })());
+
+            await handler?.(mockEvent, createStreamRequest({ provider: 'opencode' }));
+
+            expect(mockDatabaseService.addTokenUsage).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    chatId: 'stream-test-1',
+                    provider: 'opencode',
+                    model: 'gpt-4o',
+                    tokensSent: 200,
+                    tokensReceived: 80
+                })
+            );
+        });
+
+        it('should emit chunks with opencode provider and model tags', async () => {
+            initIPC();
+            const handler = ipcMainHandlers.get('chat:stream');
+            mockLLMService.chatOpenCodeStream.mockReturnValue((async function* () {
+                yield { content: 'tagged' };
+            })());
+
+            await handler?.(mockEvent, createStreamRequest({ provider: 'opencode' }));
+
+            const chunks = getStreamChunkCalls();
+            expect(chunks).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({ content: 'tagged', provider: 'opencode', model: 'gpt-4o' })
+                ])
+            );
+        });
+    });
+
+    // ─── Copilot provider specifics ──────────────────────────────────
+
+    describe('copilot provider stream', () => {
+        it('should save copilot assistant message to DB after stream', async () => {
+            initIPC();
+            const handler = ipcMainHandlers.get('chat:stream');
+            const encoder = new TextEncoder();
+            const mockStream = (async function* () {
+                yield encoder.encode('data: {"choices":[{"delta":{"content":"hello"}}]}\n\n');
+                yield encoder.encode('data: {"choices":[{"delta":{"content":" world"}}]}\n\n');
+                yield encoder.encode('data: [DONE]\n\n');
+            })();
+            mockCopilotService.streamChat.mockResolvedValue(mockStream);
+
+            await handler?.(mockEvent, createStreamRequest({ provider: 'copilot' }));
+
+            expect(mockDatabaseService.addMessage).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    chatId: 'stream-test-1',
+                    role: 'assistant',
+                    provider: 'copilot'
+                })
+            );
+        });
+
+        it('should emit content chunks for copilot SSE stream', async () => {
+            initIPC();
+            const handler = ipcMainHandlers.get('chat:stream');
+            const encoder = new TextEncoder();
+            const mockStream = (async function* () {
+                yield encoder.encode('data: {"choices":[{"delta":{"content":"cp-data"}}]}\n\n');
+                yield encoder.encode('data: [DONE]\n\n');
+            })();
+            mockCopilotService.streamChat.mockResolvedValue(mockStream);
+
+            await handler?.(mockEvent, createStreamRequest({ provider: 'copilot' }));
+
+            const chunks = getStreamChunkCalls();
+            expect(chunks.some(c => c.content === 'cp-data')).toBe(true);
+            expect(chunks.some(c => c.done === true)).toBe(true);
+        });
+    });
+
+    // ─── Concurrent stream isolation ─────────────────────────────────
+
+    describe('concurrent stream isolation', () => {
+        it('should maintain separate chatId contexts for parallel streams', async () => {
+            initIPC();
+            const handler = ipcMainHandlers.get('chat:stream');
+
+            mockLLMService.chatStream.mockReturnValueOnce((async function* () {
+                yield { content: 'stream-A' };
+            })());
+            mockLLMService.chatStream.mockReturnValueOnce((async function* () {
+                yield { content: 'stream-B' };
+            })());
+
+            await Promise.all([
+                handler?.(mockEvent, createStreamRequest({ chatId: 'chat-A' })),
+                handler?.(mockEvent, createStreamRequest({ chatId: 'chat-B' }))
+            ]);
+
+            const chunks = getStreamChunkCalls();
+            const chatAChunks = chunks.filter(c => c.chatId === 'chat-A' && c.content);
+            const chatBChunks = chunks.filter(c => c.chatId === 'chat-B' && c.content);
+            expect(chatAChunks.some(c => c.content === 'stream-A')).toBe(true);
+            expect(chatBChunks.some(c => c.content === 'stream-B')).toBe(true);
+        });
+
+        it('should emit separate done events for each concurrent stream', async () => {
+            initIPC();
+            const handler = ipcMainHandlers.get('chat:stream');
+
+            mockLLMService.chatStream.mockReturnValueOnce((async function* () {
+                yield { content: 'x' };
+            })());
+            mockLLMService.chatStream.mockReturnValueOnce((async function* () {
+                yield { content: 'y' };
+            })());
+
+            await Promise.all([
+                handler?.(mockEvent, createStreamRequest({ chatId: 'done-A' })),
+                handler?.(mockEvent, createStreamRequest({ chatId: 'done-B' }))
+            ]);
+
+            const chunks = getStreamChunkCalls();
+            const doneA = chunks.filter(c => c.chatId === 'done-A' && c.done === true);
+            const doneB = chunks.filter(c => c.chatId === 'done-B' && c.done === true);
+            expect(doneA).toHaveLength(1);
+            expect(doneB).toHaveLength(1);
+        });
+    });
+
+    // ─── Edge cases ──────────────────────────────────────────────────
+
+    describe('edge cases', () => {
+        it('should handle stream that yields only usage data without content', async () => {
+            initIPC();
+            const handler = ipcMainHandlers.get('chat:stream');
+            mockLLMService.chatStream.mockReturnValue((async function* () {
+                yield { usage: { prompt_tokens: 50, completion_tokens: 0 } };
+            })());
+
+            await handler?.(mockEvent, createStreamRequest());
+
+            const chunks = getStreamChunkCalls();
+            expect(chunks.some(c => c.done === true)).toBe(true);
+            expect(chunks.filter(c => c.type === 'error')).toHaveLength(0);
+        });
+
+        it('should pass reasoningEffort from optionsJson to proxy stream', async () => {
+            initIPC();
+            const handler = ipcMainHandlers.get('chat:stream');
+            mockLLMService.chatStream.mockReturnValue((async function* () {
+                yield { content: 'deep-thought' };
+            })());
+
+            await handler?.(mockEvent, createStreamRequest({
+                optionsJson: { reasoningEffort: 'high' }
+            }));
+
+            expect(mockLLMService.chatStream).toHaveBeenCalledWith(
+                expect.anything(),
+                expect.any(String),
+                expect.anything(),
+                expect.any(String),
+                expect.objectContaining({ reasoningEffort: 'high' })
+            );
+        });
+
+        it('should reject payload with empty messages array', async () => {
+            initIPC();
+            const handler = ipcMainHandlers.get('chat:stream');
+
+            const result = await handler?.(mockEvent, createStreamRequest({ messages: [] }));
+
+            expect(result).toMatchObject({ success: false });
+        });
+
+        it('should reject payload with missing model', async () => {
+            initIPC();
+            const handler = ipcMainHandlers.get('chat:stream');
+
+            const result = await handler?.(mockEvent, createStreamRequest({ model: '' }));
+
+            expect(result).toMatchObject({ success: false });
+        });
+    });
 });

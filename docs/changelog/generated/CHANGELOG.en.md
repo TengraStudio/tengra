@@ -14,6 +14,18 @@
 - **Type Safety**: Resolved 40+ structural type errors and eliminated 100+ unsafe casts across the agent domain.
 - **Reliability**: Implemented heuristic merge gate evaluation for helper agent handoffs and arbitration-based consensus building.
 
+### Global Chat Error Handling & Failure-State UX
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Unified chat error types across the application and implemented a consistent failure-state UX in the AI Assistant sidebar with categorization and retry capabilities.
+
+- **Shared Error Types**: Defined `ChatError` and `ChatErrorKind` as global shared types, ensuring consistency between main and renderer processes.
+- **Error Categorization**: Implemented a `categorizeError` utility to classify stream errors into `quota_exhausted`, `provider_unavailable`, `timeout`, or `generic` kinds.
+- **Failure-State UX (MARCH1-CORE-001)**: Integrated `ChatErrorBanner` into the workspace AI Assistant sidebar with conditional rendering and contextual retry actions.
+- **Stream Integration**: Updated `process-stream` and `useChatManager` to propagate categorized error states through the component hierarchy.
+- **Type Safety Hardening**: Resolved 10+ strict TypeScript errors related to missing error property definitions across chat hooks and UI components.
+
 ## [2026-02-28]
 
 ### AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking

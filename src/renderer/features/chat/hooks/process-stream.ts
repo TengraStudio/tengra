@@ -1,8 +1,8 @@
 import { Dispatch, SetStateAction } from 'react';
 
-import { Chat, Message, ToolCall } from '@/types';
+import { Chat, ChatError, Message, ToolCall } from '@/types';
 
-import { processStreamChunk, StreamChunk, StreamChunkResult } from './utils';
+import { categorizeError, processStreamChunk, StreamChunk, StreamChunkResult } from './utils';
 
 export interface StreamStreamingState {
     content?: string
@@ -11,6 +11,7 @@ export interface StreamStreamingState {
     sources?: string[]
     variants?: Record<number, { content: string; reasoning: string }>
     toolCalls?: ToolCall[]
+    error?: ChatError | null
 }
 
 export interface StreamResult {
@@ -21,21 +22,10 @@ export interface StreamResult {
     finalToolCalls: ToolCall[];
 }
 
-interface StreamingStateUpdate {
-    index: number
-    chatId: string
-    result: { newSources?: string[]; newReasoning?: string; newContent?: string; speed?: number | null; newToolCalls?: ToolCall[]; streamError?: string; updated: boolean }
-    finalSources: string[]
-    finalReasoning: string
-    finalContent: string
-    finalToolCalls: ToolCall[]
-    finalVariants: Record<number, { content: string; reasoning: string }>
-}
-
 interface StateUpdateContext {
     index: number;
     chatId: string;
-    result: { newSources?: string[]; newReasoning?: string; newContent?: string; speed?: number | null; newToolCalls?: ToolCall[]; streamError?: string; updated: boolean };
+    result: StreamChunkResult;
     finalSources: string[];
     finalReasoning: string;
     finalContent: string;
@@ -44,12 +34,17 @@ interface StateUpdateContext {
     finalImages: string[];
 }
 
+interface StreamingStateUpdate extends Omit<StateUpdateContext, 'result'> {
+    result: StreamChunkResult;
+    activeModel?: string;
+}
+
 // Update handlers for variant data
 interface UpdateHandlers {
-    sources: (result: StreamingStateUpdate['result'], state: StreamStreamingState, finalSources: string[]) => StreamStreamingState;
-    reasoning: (result: StreamingStateUpdate['result'], state: StreamStreamingState, finalReasoning: string) => StreamStreamingState;
-    content: (result: StreamingStateUpdate['result'], state: StreamStreamingState, finalContent: string, speed: number | null) => StreamStreamingState;
-    toolCalls: (result: StreamingStateUpdate['result'], state: StreamStreamingState, finalToolCalls: ToolCall[]) => StreamStreamingState;
+    sources: (result: StreamChunkResult, state: StreamStreamingState, finalSources: string[]) => StreamStreamingState;
+    reasoning: (result: StreamChunkResult, state: StreamStreamingState, finalReasoning: string) => StreamStreamingState;
+    content: (result: StreamChunkResult, state: StreamStreamingState, finalContent: string, speed: number | null) => StreamStreamingState;
+    toolCalls: (result: StreamChunkResult, state: StreamStreamingState, finalToolCalls: ToolCall[]) => StreamStreamingState;
 }
 
 const updateHandlers: UpdateHandlers = {
@@ -79,12 +74,19 @@ const updateHandlers: UpdateHandlers = {
     }
 };
 
-const applyUpdateHandlers = (update: StreamingStateUpdate, state: StreamStreamingState): StreamStreamingState => {
+const applyUpdateHandlers = (update: StreamingStateUpdate, state: StreamStreamingState, activeModel: string): StreamStreamingState => {
     const { result, finalSources, finalReasoning, finalContent, finalToolCalls } = update;
     let newState = updateHandlers.sources(result, state, finalSources);
     newState = updateHandlers.reasoning(result, newState, finalReasoning);
     newState = updateHandlers.content(result, newState, finalContent, result.speed ?? null);
     newState = updateHandlers.toolCalls(result, newState, finalToolCalls);
+
+    if (result.streamError) {
+        newState.error = categorizeError(result.streamError, activeModel);
+    } else {
+        newState.error = null;
+    }
+
     return newState;
 };
 
@@ -181,7 +183,7 @@ const buildNewStreamingState = (update: StreamingStateUpdate, state: StreamStrea
     const existingVariants = state.variants ?? {};
 
     // Apply update handlers only for index 0 (primary variant)
-    const updatedState = index === 0 ? applyUpdateHandlers(update, state) : { ...state };
+    const updatedState = index === 0 ? applyUpdateHandlers(update, state, update.activeModel ?? '') : { ...state };
 
     // Update variants for this specific index
     updatedState.variants = {
@@ -238,16 +240,17 @@ const handleChunkUpdate = (params: {
     finalToolCalls: ToolCall[];
     finalVariants: Record<number, { content: string; reasoning: string }>;
     finalImages: string[];
+    activeModel: string;
     setStreamingStates: Dispatch<SetStateAction<Record<string, StreamStreamingState>>>;
 }): void => {
-    const { index, result, chatId, finalSources, finalReasoning, finalContent, finalToolCalls, finalVariants, finalImages, setStreamingStates } = params;
+    const { index, result, chatId, finalSources, finalReasoning, finalContent, finalToolCalls, finalVariants, finalImages, activeModel, setStreamingStates } = params;
 
     updateVariantsMap(
         { index, chatId, result, finalSources, finalReasoning, finalContent, finalToolCalls, finalVariants, finalImages },
         finalVariants
     );
 
-    const updateData: StreamingStateUpdate = { index, chatId, result, finalSources, finalReasoning, finalContent, finalToolCalls, finalVariants };
+    const updateData: StreamingStateUpdate = { index, chatId, result, finalSources, finalReasoning, finalContent, finalToolCalls, finalVariants, finalImages, activeModel };
     setStreamingStates((prev) => {
         const state = prev[chatId] ?? {};
         return { ...prev, [chatId]: buildNewStreamingState(updateData, state) };
@@ -280,7 +283,7 @@ const handleThrottledUpdates = (params: {
         setChats,
         queueDbSave,
     } = params;
-    
+
     let updatedLastSaveTime = lastSaveTime;
     let updatedLastDbSaveTime = lastDbSaveTime;
 
@@ -356,6 +359,10 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
                 }
             }
             if (result.streamError) {
+                // Also update one last time to capture the error in streaming state
+                handleChunkUpdate({
+                    index, result, chatId, finalSources, finalReasoning, finalContent, finalToolCalls, finalVariants, finalImages, activeModel, setStreamingStates
+                });
                 break;
             }
 
@@ -377,7 +384,7 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
             }
 
             handleChunkUpdate({
-                index, result, chatId, finalSources, finalReasoning, finalContent, finalToolCalls, finalVariants, finalImages, setStreamingStates
+                index, result, chatId, finalSources, finalReasoning, finalContent, finalToolCalls, finalVariants, finalImages, activeModel, setStreamingStates
             });
         }
 

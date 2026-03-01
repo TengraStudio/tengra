@@ -3,16 +3,16 @@ import { useCallback, useRef, useState } from 'react';
 import { chatStream } from '@/lib/chat-stream';
 import { getSystemPrompt } from '@/lib/identity';
 import { generateId } from '@/lib/utils';
-import { Message } from '@/types';
+import { ChatError, Message } from '@/types';
 
-/** Categorized error types for workspace chat */
-export type WorkspaceChatErrorKind = 'provider_unavailable' | 'quota_exhausted' | 'timeout' | 'generic';
-
-export interface WorkspaceChatError {
-    kind: WorkspaceChatErrorKind;
-    message: string;
-    resetsAt?: number | null;
-    model?: string | null;
+export interface WorkspaceChatStreamResult {
+    messages: Message[];
+    isStreaming: boolean;
+    error: ChatError | null;
+    sendMessage: (content: string) => void;
+    stopStreaming: () => void;
+    clearError: () => void;
+    retry: () => void;
 }
 
 interface UseWorkspaceChatStreamOptions {
@@ -22,10 +22,10 @@ interface UseWorkspaceChatStreamOptions {
     projectId: string;
 }
 
-interface UseWorkspaceChatStreamResult {
+export interface UseWorkspaceChatStreamResult {
     messages: Message[];
     isStreaming: boolean;
-    error: WorkspaceChatError | null;
+    error: ChatError | null;
     sendMessage: (content: string) => void;
     stopStreaming: () => void;
     clearError: () => void;
@@ -43,7 +43,7 @@ export function useWorkspaceChatStream(
 
     const [messages, setMessages] = useState<Message[]>([]);
     const [isStreaming, setIsStreaming] = useState(false);
-    const [error, setError] = useState<WorkspaceChatError | null>(null);
+    const [error, setError] = useState<ChatError | null>(null);
     const abortedRef = useRef(false);
     const lastContentRef = useRef('');
 
@@ -185,7 +185,7 @@ export function useWorkspaceChatStream(
 }
 
 /** Categorize an error message into a known error kind */
-function categorizeError(message: string, model: string | null): WorkspaceChatError {
+function categorizeError(message: string, model: string | null): ChatError {
     const lower = message.toLowerCase();
 
     if (lower.includes('quota') || lower.includes('rate limit') || lower.includes('429') || lower.includes('exceeded')) {

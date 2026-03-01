@@ -30,10 +30,10 @@
 > **Deadline Notice**: Must-ship scope for March 1 launch.
 
 ### Core Implementation
-- ( ) **MARCH1-CORE-001**: Ship workspace-integrated AI chat end-to-end.
-  - ( ) Verify chat flow in workspace panel uses production IPC (`chat:stream`).
+- [/] **MARCH1-CORE-001**: Ship workspace-integrated AI chat end-to-end.
+  - [x] Verify chat flow in workspace panel uses production IPC (`chat:stream`).
   - ( ) Add regression tests for chat stream lifecycle (start/chunk/done/cancel/error).
-  - ( ) Add failure-state UX for provider unavailable / quota exhausted / timeout.
+  - [x] Add failure-state UX for provider unavailable / quota exhausted / timeout.
 
 ### Council Orchestration (President Flow)
 - [x] **MARCH1-COUNCIL-001**: Implement "Council President" flow with explicit pre-execution approval.
@@ -122,14 +122,7 @@
 - ( ) **PROVIDER-RESEARCH-001**: Research and integrate additional API providers.
   - ( ) Research Minimax API surface and compatibility path.
   - ( ) Research GLM API surface and compatibility path.
-  - ( ) Research Kimi API surface and compatibility path.
-
-### New Systems From Audit
-- ( ) **SYS-SEC-001**: Build a Security Posture dashboard for IPC exposure, secret storage, stale tokens, and trust-boundary warnings.
-- ( ) **SYS-PERF-001**: Build a Performance Budget dashboard for startup time, bundle size, main-thread blocking I/O, and renderer cold-start metrics.
-- ( ) **SYS-SCHEMA-001**: Build a Schema Drift Auditor that scans IPC handlers and flags channels missing shared schemas or using unsafe casts.
-- ( ) **SYS-ASSET-001**: Build a Generated Asset Registry to track large generated files, lazy-load policy, and lint/test exclusions.
-- ( ) **SYS-AUTH-001**: Build a Runtime Capability Gate that can automatically downgrade dual-login providers to single-login when auth capabilities overlap safely.
+  - ( ) Research Kimi API surface and compatibility path. 
 
 ---
 
@@ -166,19 +159,12 @@
 - ( ) **AI-SYS-07**: Add conversational AI builder assistant.
 - ( ) **AI-SYS-11**: Add autonomous "AI Architect" mode for project scaffolding.
 - ( ) **AI-SYS-12**: Build local "AI Red Team" simulator for jailbreak testing.
+- ( ) **AI-SYS-16**: Model fine-tuning interface with progress monitoring.
+- ( ) **AI-SYS-17**: Domain-specific embedding training and visualization.
+- ( ) **AI-SYS-18**: Integrated hardware-aware model fit estimator (TPS/VRAM estimates).
 - [x] **AI-SYS-13**: Refactor `AgentTaskExecutor.ts` (2410 lines) into domain services (Git, HIL, Planning).
 - [x] **AI-SYS-14**: Refactor `AgentCollaborationService.ts` (1774 lines) to extract Debate and Voting.
-- [x] **AI-SYS-15**: Implement semantic/robust consensus logic in `AgentCollaborationService` (with arbitration).
-
-### Voice & Speech AI
-- ( ) **VOICE-01**: Implement local wake-word model (Porcupine/precise).
-- ( ) **VOICE-02**: Add Real-time voice processing with voice cloning.
-- ( ) **VOICE-03**: Automatic transcription and meeting notes assistant.
-
-### Local AI Enhancements
-- ( ) **LOCAL-01**: Model fine-tuning interface with progress monitoring.
-- ( ) **LOCAL-02**: Domain-specific embedding training and visualization.
-- ( ) **LOCAL-03**: Integrated hardware-aware model fit estimator (TPS/VRAM estimates).
+- [x] **AI-SYS-15**: Implement semantic/robust consensus logic in `AgentCollaborationService` (with arbitration). 
 
 ---
 

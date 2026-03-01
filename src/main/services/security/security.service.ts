@@ -39,7 +39,7 @@ export class SecurityService extends BaseService implements ISecurityService {
     }
 
     override async initialize(): Promise<void> {
-        this.loadOrCreateMasterKey();
+        await this.loadOrCreateMasterKey();
         this.testEncryption();
     }
 
@@ -52,20 +52,19 @@ export class SecurityService extends BaseService implements ISecurityService {
         this.logInfo('Security service cleaned up');
     }
 
-    private loadOrCreateMasterKey() {
+    private async loadOrCreateMasterKey() {
         try {
-            if (fs.existsSync(this.keyPath)) {
-                const rawContent = fs.readFileSync(this.keyPath, 'utf8').trim();
+            const keyExists = await fs.promises.access(this.keyPath).then(() => true).catch(() => false);
+            if (keyExists) {
+                const rawContent = (await fs.promises.readFile(this.keyPath, 'utf8')).trim();
 
                 if (rawContent.startsWith('v2:')) {
-                    // Encrypted format
                     this.loadEncryptedKey(rawContent);
                 } else {
                     throw new Error('Legacy plaintext master key format is no longer supported');
                 }
             } else {
-                // New initialization
-                this.generateNewMasterKey();
+                await this.generateNewMasterKey();
             }
         } catch (e) {
             appLogger.error('SecurityService', `Failed to load/create Master Key: ${getErrorMessage(e)}`);
@@ -89,20 +88,20 @@ export class SecurityService extends BaseService implements ISecurityService {
         appLogger.info('SecurityService', 'Master Key (Encrypted V2) loaded successfully.');
     }
 
-    private generateNewMasterKey() {
+    private async generateNewMasterKey() {
         this.masterKey = crypto.randomBytes(32);
-        this.saveMasterKeyEncrypted();
+        await this.saveMasterKeyEncrypted();
         appLogger.info('SecurityService', 'New Master Key generated and saved securely.');
     }
 
-    private saveMasterKeyEncrypted() {
+    private async saveMasterKeyEncrypted() {
         if (!this.masterKey) { return; }
 
         if (safeStorage.isEncryptionAvailable()) {
             const hexKey = this.masterKey.toString('hex');
             const encryptedBuffer = safeStorage.encryptString(hexKey);
             const content = `v2:${encryptedBuffer.toString('base64')}`;
-            fs.writeFileSync(this.keyPath, content, 'utf8');
+            await fs.promises.writeFile(this.keyPath, content, 'utf8');
         } else {
             throw new Error('safeStorage not available for saving master key securely');
         }
@@ -311,7 +310,7 @@ export class SecurityService extends BaseService implements ISecurityService {
             }
 
             this.masterKey = decrypted;
-            this.saveMasterKeyEncrypted();
+            await this.saveMasterKeyEncrypted();
             return { success: true };
         } catch (error) {
             this.logError('Master key backup restore failed', error);

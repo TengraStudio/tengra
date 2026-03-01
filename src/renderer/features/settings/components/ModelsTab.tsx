@@ -6,6 +6,7 @@ import type { ModelInfo } from '@/types';
 import { AppSettings } from '@/types/settings';
 
 import { InstalledModelsList } from './models/InstalledModelsList';
+import { ModelGovernancePanel } from './models/ModelGovernancePanel';
 
 interface ModelsTabProps {
     settings: AppSettings | null
@@ -50,6 +51,8 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({ settings, installedModels,
         });
     }, [combined, showHiddenModels, hiddenModels, modelSearch]);
 
+    const allModelIds = useMemo(() => Array.from(combined.keys()), [combined]);
+
     if (!settings) { return null; }
 
     const updateHidden = (modelId: string, hide: boolean) => {
@@ -76,18 +79,27 @@ export const ModelsTab: React.FC<ModelsTabProps> = ({ settings, installedModels,
             </div>
 
             {modelsTab === 'installed' ? (
-                <InstalledModelsList
-                    filtered={filtered}
-                    modelSearch={modelSearch}
-                    setModelSearch={setModelSearch}
-                    showHiddenModels={showHiddenModels}
-                    setShowHiddenModels={setShowHiddenModels}
-                    hiddenModels={hiddenModels}
-                    defaultModel={defaultModel}
-                    setDefault={setDefault}
-                    updateHidden={updateHidden}
-                    t={t}
-                />
+                <>
+                    <InstalledModelsList
+                        filtered={filtered}
+                        modelSearch={modelSearch}
+                        setModelSearch={setModelSearch}
+                        showHiddenModels={showHiddenModels}
+                        setShowHiddenModels={setShowHiddenModels}
+                        hiddenModels={hiddenModels}
+                        defaultModel={defaultModel}
+                        setDefault={setDefault}
+                        updateHidden={updateHidden}
+                        t={t}
+                    />
+                    <ModelGovernancePanel
+                        settings={settings}
+                        allModelIds={allModelIds}
+                        setSettings={setSettings}
+                        handleSave={handleSave}
+                        t={t}
+                    />
+                </>
             ) : (
                 <div className="flex-1 min-h-0">
                     <ModelExplorer onRefreshModels={onRefreshModels} installedModels={installedModels} language={settings.general.language} />

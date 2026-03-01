@@ -14,6 +14,18 @@
 - **Tip Güvenliği**: Ajan alanında 40'tan fazla yapısal tip hatası çözüldü ve 100'den fazla güvensiz dönüşüm temizlendi.
 - **Güvenilirlik**: Yardımcı ajan devirleri için buluşsal birleştirme kapısı değerlendirmesi ve tahkim tabanlı konsensüs oluşturma uygulandı.
 
+### Global Sohbet Hata Yönetimi ve Başarısızlık Durumu Deneyimi
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Uygulama genelinde sohbet hata türleri birleştirildi ve sınıflandırma ile yeniden deneme özelliklerini içeren tutarlı bir başarısızlık durumu kullanıcı deneyimi yapay zeka asistanı kenar çubuğuna uygulandı.
+
+- **Paylaşılan Hata Türleri**: `ChatError` ve `ChatErrorKind` global paylaşılan türler olarak tanımlandı, ana ve renderer süreçleri arasında tutarlılık sağlandı.
+- **Hata Sınıflandırma**: Akış hatalarını `quota_exhausted`, `provider_unavailable`, `timeout` veya `generic` türlerine ayıran `categorizeError` yardımcısı uygulandı.
+- **Başarısızlık Durumu Deneyimi (MARCH1-CORE-001)**: Yapay zeka asistanı kenar çubuğuna, koşullu oluşturma ve bağlamsal yeniden deneme eylemleriyle birlikte `ChatErrorBanner` entegre edildi.
+- **Akış Entegrasyonu**: `process-stream` ve `useChatManager`, sınıflandırılmış hata durumlarını bileşen hiyerarşisi boyunca yayacak şekilde güncellendi.
+- **Tip Güvenliği**: Sohbet hook'ları ve UI bileşenleri genelinde eksik hata özelliği tanımlarıyla ilgili 10'dan fazla katı TypeScript hatası çözüldü.
+
 ## [2026-02-28]
 
 ### AUDIT-TOOLING-001: Operasyonel Depo Çapında Lint ve Tip Kontrolü

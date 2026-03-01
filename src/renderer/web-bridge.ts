@@ -1934,6 +1934,16 @@ export const webElectronMock: ElectronAPI = {
         stop: async () => { },
         onUpdate: (_callback) => () => { },
     },
+    metrics: {
+        getProviderStats: async () => ({}),
+        getSummary: async () => ({ totalRequests: 0, successRate: 0, avgLatencyMs: 0, providers: [] }),
+        reset: async () => false,
+    },
+    usage: {
+        checkLimit: async () => ({ allowed: true }),
+        getUsageCount: async () => 0,
+        recordUsage: async () => ({ success: true }),
+    },
     workflow: {
         getAll: async () => [],
         get: async (_id: string) => null,

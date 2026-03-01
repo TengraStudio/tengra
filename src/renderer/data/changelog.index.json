@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-03-01T06:20:16.946Z",
+  "generatedAt": "2026-03-01T12:53:09.008Z",
   "locales": [
     "en",
     "tr",
@@ -118,6 +118,115 @@
             "- **AgentTaskExecutor (AI-SYS-13)**: دمج CouncilService لإثراء الخطط ومعالجة فجوات القابلية للتوسع الأفقي.",
             "- **سلامة النوع**: حل أكثر من 40 خطأ في النوع الهيكلي وإزالة أكثر من 100 تحويل غير آمن عبر نطاق الوكيل.",
             "- **الموثوقية**: تنفيذ تقييم بوابة الدمج الاستدلالي لتسليم الوكلاء المساعدين وبناء الإجماع القائم على التحكيم."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-03-01-chat-error-handling-refactor",
+      "date": "2026-03-01",
+      "channel": "stable",
+      "type": "refactor",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "Chat",
+        "Renderer",
+        "Shared Types",
+        "AIAssistantSidebar"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Global Chat Error Handling & Failure-State UX",
+          "summary": "Unified chat error types across the application and implemented a consistent failure-state UX in the AI Assistant sidebar with categorization and retry capabilities.",
+          "items": [
+            "- **Shared Error Types**: Defined `ChatError` and `ChatErrorKind` as global shared types, ensuring consistency between main and renderer processes.",
+            "- **Error Categorization**: Implemented a `categorizeError` utility to classify stream errors into `quota_exhausted`, `provider_unavailable`, `timeout`, or `generic` kinds.",
+            "- **Failure-State UX (MARCH1-CORE-001)**: Integrated `ChatErrorBanner` into the workspace AI Assistant sidebar with conditional rendering and contextual retry actions.",
+            "- **Stream Integration**: Updated `process-stream` and `useChatManager` to propagate categorized error states through the component hierarchy.",
+            "- **Type Safety Hardening**: Resolved 10+ strict TypeScript errors related to missing error property definitions across chat hooks and UI components."
+          ]
+        },
+        "tr": {
+          "title": "Global Sohbet Hata Yönetimi ve Başarısızlık Durumu Deneyimi",
+          "summary": "Uygulama genelinde sohbet hata türleri birleştirildi ve sınıflandırma ile yeniden deneme özelliklerini içeren tutarlı bir başarısızlık durumu kullanıcı deneyimi yapay zeka asistanı kenar çubuğuna uygulandı.",
+          "items": [
+            "- **Paylaşılan Hata Türleri**: `ChatError` ve `ChatErrorKind` global paylaşılan türler olarak tanımlandı, ana ve renderer süreçleri arasında tutarlılık sağlandı.",
+            "- **Hata Sınıflandırma**: Akış hatalarını `quota_exhausted`, `provider_unavailable`, `timeout` veya `generic` türlerine ayıran `categorizeError` yardımcısı uygulandı.",
+            "- **Başarısızlık Durumu Deneyimi (MARCH1-CORE-001)**: Yapay zeka asistanı kenar çubuğuna, koşullu oluşturma ve bağlamsal yeniden deneme eylemleriyle birlikte `ChatErrorBanner` entegre edildi.",
+            "- **Akış Entegrasyonu**: `process-stream` ve `useChatManager`, sınıflandırılmış hata durumlarını bileşen hiyerarşisi boyunca yayacak şekilde güncellendi.",
+            "- **Tip Güvenliği**: Sohbet hook'ları ve UI bileşenleri genelinde eksik hata özelliği tanımlarıyla ilgili 10'dan fazla katı TypeScript hatası çözüldü."
+          ]
+        },
+        "de": {
+          "title": "Globales Chat-Fehlermanagement & UX im Fehlerfall",
+          "summary": "Vereinheitlichte Chat-Fehlertypen in der gesamten Anwendung und Implementierung einer konsistenten UX im Fehlerfall in der KI-Assistenten-Sidebar mit Kategorisierung und Wiederholungsfunktionen.",
+          "items": [
+            "- **Gemeinsame Fehlertypen**: Festlegung von `ChatError` und `ChatErrorKind` als globale gemeinsame Typen zur Sicherstellung der Konsistenz zwischen Haupt- und Renderer-Prozessen.",
+            "- **Fehlerkategorisierung**: Implementierung eines `categorizeError`-Utilities zur Klassifizierung von Stream-Fehlern in die Kategorien `quota_exhausted`, `provider_unavailable`, `timeout` oder `generic`.",
+            "- **UX im Fehlerfall (MARCH1-CORE-001)**: Integration des `ChatErrorBanner` in die Workspace KI-Assistenten-Sidebar mit bedingtem Rendering und kontextbezogenen Wiederholungsaktionen.",
+            "- **Stream-Integration**: Aktualisierung von `process-stream` und `useChatManager` zur Weitergabe kategorisierter Fehlerzustände durch die Komponentenhierarchie.",
+            "- **Härtung der Typsicherheit**: Behebung von über 10 strikten TypeScript-Fehlern im Zusammenhang mit fehlenden Fehler-Eigenschaftsdefinitionen in Chat-Hooks und UI-Komponenten."
+          ]
+        },
+        "fr": {
+          "title": "Gestion globale des erreurs de chat et UX en cas d'échec",
+          "summary": "Unification des types d'erreurs de chat dans toute l'application et implémentation d'une UX cohérente en cas d'échec dans la barre latérale de l'assistant IA avec catégorisation et capacités de réessai.",
+          "items": [
+            "- **Types d'erreurs partagés**: Définition de `ChatError` et `ChatErrorKind` comme types partagés globaux, assurant la cohérence entre les processus principaux et de rendu.",
+            "- **Catégorisation des erreurs**: Implémentation d'un utilitaire `categorizeError` pour classer les erreurs de flux en types `quota_exhausted`, `provider_unavailable`, `timeout` ou `generic`.",
+            "- **UX en cas d'échec (MARCH1-CORE-001)**: Intégration du `ChatErrorBanner` dans la barre latérale de l'assistant IA de l'espace de travail avec rendu conditionnel et actions de réessai contextuelles.",
+            "- **Intégration du flux**: Mise à jour de `process-stream` et `useChatManager` pour propager les états d'erreur catégorisés à travers la hiérarchie des composants.",
+            "- **Renforcement de la sécurité des types**: Résolution de plus de 10 erreurs TypeScript strictes liées aux définitions de propriétés d'erreur manquantes dans les hooks de chat et les composants UI."
+          ]
+        },
+        "es": {
+          "title": "Gestión global de errores de chat y UX en estado de fallo",
+          "summary": "Unificación de los tipos de errores de chat en toda la aplicación e implementación de una UX de estado de fallo consistente en la barra lateral del asistente de IA con categorización y capacidades de reintento.",
+          "items": [
+            "- **Tipos de errores compartidos**: Definición de `ChatError` y `ChatErrorKind` como tipos compartidos globales, asegurando la consistencia entre los procesos principal y de renderizado.",
+            "- **Categorización de errores**: Implementación de una utilidad `categorizeError` para clasificar los errores de flujo en tipos `quota_exhausted`, `provider_unavailable`, `timeout` o `generic`.",
+            "- **UX en estado de fallo (MARCH1-CORE-001)**: Integración de `ChatErrorBanner` en la barra lateral del asistente de IA del espacio de trabajo con renderizado condicional y acciones de reintento contextuales.",
+            "- **Integración de flujo**: Actualización de `process-stream` y `useChatManager` para propagar los estados de error categorizados a través de la jerarquía de componentes.",
+            "- **Refuerzo de seguridad de tipos**: Resolución de más de 10 errores estrictos de TypeScript relacionados con definiciones de propiedades de error ausentes en ganchos de chat y componentes de UI."
+          ]
+        },
+        "ja": {
+          "title": "グローバルチャットエラーハンドリングと失敗時のUX",
+          "summary": "アプリケーション全体でチャットエラータイプを統一し、AIアシスタントのサイドバーにカテゴリー分類と再試行機能を備えた一貫した失敗時のUXを実装しました。",
+          "items": [
+            "- **共有エラータイプ**: `ChatError`と`ChatErrorKind`をグローバル共有タイプとして定義し、メインプロセスとレンダラープロセス間の一貫性を確保しました。",
+            "- **エラーのカテゴリー分類**: `categorizeError`ユーティリティを実装し、ストリームエラーを`quota_exhausted`、`provider_unavailable`、`timeout`、または`generic`の種類に分類するようにしました。",
+            "- **失敗時のUX (MARCH1-CORE-001)**: `ChatErrorBanner`をワークスペースのAIアシスタントサイドバーに統合し、条件付きレンダリングとコンテキストに応じた再試行アクションを追加しました。",
+            "- **ストリーム統合**: `process-stream`と`useChatManager`を更新し、カテゴリー分類されたエラー状態をコンポーネント階層全体に伝播させるようにしました。",
+            "- **型安全性の強化**: チャットフックとUIコンポーネントにおける不足しているエラープロパティ定義に関連する10個以上の厳格なTypeScriptエラーを解決しました。"
+          ]
+        },
+        "zh": {
+          "title": "全局聊天错误处理及失败状态 UX",
+          "summary": "统一了整个应用程序的操作聊天错误类型，并在 AI 助手侧边栏中实现了一致的失败状态 UX，包括分类和重试功能。",
+          "items": [
+            "- **共享错误类型**：定义了 `ChatError` 和 `ChatErrorKind` 作为全局共享类型，确保主进程和渲染进程之间的一致性。",
+            "- **错误分类**：更新了 `categorizeError` 工具，将流错误分类为 `quota_exhausted`（配额用尽）、`provider_unavailable`（提供商不可用）、`timeout`（超时）或 `generic`（通用）类型。",
+            "- **失败状态 UX (MARCH1-CORE-001)**：将 `ChatErrorBanner` 集成到工作区 AI 助手侧边栏中，具有条件渲染和上下文重试操作。",
+            "- **流集成**：更新了 `process-stream` 和 `useChatManager`，使分类后的错误状态在组件层次结构中传播。",
+            "- **型安全加固**：解决了 10 多个与聊天钩子和 UI 组件中缺失错误属性定义相关的严格 TypeScript 错误。"
+          ]
+        },
+        "ar": {
+          "title": "المعالجة الشاملة لأخطاء الدردشة وتجربة المستخدم في حالة الفشل",
+          "summary": "توحيد أنواع أخطاء الدردشة عبر التطبيق وتنفيذ تجربة مستخدم متسقة لحالة الفشل في الشريط الجانبي لمساعد الذكاء الاصطناعي مع التصنيف وقدرات إعادة المحاولة.",
+          "items": [
+            "- **أنواع الأخطاء المشتركة**: تحديد `ChatError` و `ChatErrorKind` كأنواع مشتركة عالمية، مما يضمن الاتساق بين العمليات الرئيسية وعمليات العرض.",
+            "- **تصنيف الأخطاء**: تنفيذ أداة `categorizeError` لتصنيف أخطاء البث إلى أنواع `quota_exhausted` أو `provider_unavailable` أو `timeout` أو `generic`.",
+            "- **تجربة المستخدم في حالة الفشل (MARCH1-CORE-001)**: دمج `ChatErrorBanner` في الشريط الجانبي لمساعد الذكاء الاصطناعي لمساحة العمل مع العرض الشرطي وإجراءات إعادة المحاولة السياقية.",
+            "- **تكامل البث**: تحديث `process-stream` و `useChatManager` لنشر حالات الأخطاء المصنفة عبر تسلسل المكونات.",
+            "- **تعزيز سلامة الأنواع**: حل أكثر من 10 أخطاء TypeScript صارمة تتعلق بتعريفات خصائص الخطأ المفقودة عبر خطافات الدردشة ومكونات واجهة المستخدم."
           ]
         }
       }

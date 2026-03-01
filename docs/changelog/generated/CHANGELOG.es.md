@@ -14,6 +14,18 @@
 - **Seguridad de tipos**: Resolución de más de 40 errores de tipo estructural y eliminación de más de 100 conversiones inseguras en el dominio de agentes.
 - **Fiabilidad**: Implementación de evaluación heurística de compuerta de fusión para traspasos de agentes ayudantes y construcción de consenso basada en arbitraje.
 
+### Gestión global de errores de chat y UX en estado de fallo
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Unificación de los tipos de errores de chat en toda la aplicación e implementación de una UX de estado de fallo consistente en la barra lateral del asistente de IA con categorización y capacidades de reintento.
+
+- **Tipos de errores compartidos**: Definición de `ChatError` y `ChatErrorKind` como tipos compartidos globales, asegurando la consistencia entre los procesos principal y de renderizado.
+- **Categorización de errores**: Implementación de una utilidad `categorizeError` para clasificar los errores de flujo en tipos `quota_exhausted`, `provider_unavailable`, `timeout` o `generic`.
+- **UX en estado de fallo (MARCH1-CORE-001)**: Integración de `ChatErrorBanner` en la barra lateral del asistente de IA del espacio de trabajo con renderizado condicional y acciones de reintento contextuales.
+- **Integración de flujo**: Actualización de `process-stream` y `useChatManager` para propagar los estados de error categorizados a través de la jerarquía de componentes.
+- **Refuerzo de seguridad de tipos**: Resolución de más de 10 errores estrictos de TypeScript relacionados con definiciones de propiedades de error ausentes en ganchos de chat y componentes de UI.
+
 ## [2026-02-28]
 
 ### AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking

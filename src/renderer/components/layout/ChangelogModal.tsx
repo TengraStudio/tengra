@@ -464,3 +464,5 @@ export const ChangelogModal = memo(({ isOpen, onClose }: ChangelogModalProps) =>
 });
 
 ChangelogModal.displayName = 'ChangelogModal';
+
+export default ChangelogModal;

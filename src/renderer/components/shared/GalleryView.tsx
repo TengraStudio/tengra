@@ -65,6 +65,13 @@ const trackGalleryEvent = <TEvent extends GalleryAnalyticsEvent>(
     appLogger.info('GalleryAnalytics', event, payload);
 };
 
+/** Height in px for each gallery card in the virtualized grid */
+const CARD_HEIGHT = 300;
+/** Gap in px between grid items (matches Tailwind gap-4) */
+const GRID_GAP = 16;
+/** Number of extra rows rendered above and below the visible area */
+const OVERSCAN_ROWS = 3;
+
 const formatDate = (timestamp: number, locale: string): string => {
     const date = new Date(timestamp);
     return date.toLocaleDateString(locale, {
@@ -156,7 +163,7 @@ const GalleryCard = memo(({ img, deleting, selected, onPreview, onDelete, onOpen
     return (
         <div
             key={img.path}
-            className="group relative mb-4 break-inside-avoid bg-card/40 rounded-xl overflow-hidden border border-border/20 hover:border-primary/50 transition-all"
+            className="group relative h-full bg-card/40 rounded-xl overflow-hidden border border-border/20 hover:border-primary/50 transition-all"
             onMouseEnter={() => setShowDetails(true)}
             onMouseLeave={() => setShowDetails(false)}
         >
@@ -173,13 +180,13 @@ const GalleryCard = memo(({ img, deleting, selected, onPreview, onDelete, onOpen
             <button
                 type="button"
                 onClick={() => onPreview(img)}
-                className="block w-full text-left"
+                className="block w-full h-full text-left"
                 aria-label={t('gallery.openPreview')}
             >
                 <img
                     src={img.url}
                     alt={img.name}
-                    className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     loading="lazy"
                 />
             </button>
@@ -258,6 +265,9 @@ export function GalleryView({ language }: GalleryViewProps) {
     const [isPanning, setIsPanning] = useState(false);
     const [lastPointer, setLastPointer] = useState<PanPosition>({ x: 0, y: 0 });
     const previousSearchQuery = useRef('');
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [scrollTop, setScrollTop] = useState(0);
+    const [viewportSize, setViewportSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
 
     const loadImages = useCallback(async () => {
         setLoading(true);
@@ -276,6 +286,29 @@ export function GalleryView({ language }: GalleryViewProps) {
     useEffect(() => {
         void loadImages();
     }, [loadImages]);
+
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (!container) { return; }
+        const handleContainerScroll = (): void => {
+            setScrollTop(container.scrollTop);
+        };
+        const resizeObserver = new ResizeObserver((entries: ResizeObserverEntry[]) => {
+            const entry = entries[0];
+            if (entry) {
+                setViewportSize({
+                    width: entry.contentRect.width,
+                    height: entry.contentRect.height,
+                });
+            }
+        });
+        container.addEventListener('scroll', handleContainerScroll, { passive: true });
+        resizeObserver.observe(container);
+        return () => {
+            container.removeEventListener('scroll', handleContainerScroll);
+            resizeObserver.disconnect();
+        };
+    }, []);
 
     const handleDelete = useCallback(async (path: string) => {
         setDeleting(path);
@@ -348,6 +381,14 @@ export function GalleryView({ language }: GalleryViewProps) {
         }
     }, [isBatchDownloading, loadImages, selectedPaths]);
 
+    const columnCount = useMemo(() => {
+        const w = viewportSize.width;
+        if (w >= 1280) { return 4; }
+        if (w >= 1024) { return 3; }
+        if (w >= 640) { return 2; }
+        return 1;
+    }, [viewportSize.width]);
+
     const filteredImages = useMemo(() => {
         const normalizedQuery = searchQuery.trim().toLowerCase();
         if (!normalizedQuery) {
@@ -361,6 +402,27 @@ export function GalleryView({ language }: GalleryViewProps) {
             return nameMatch || promptMatch || modelMatch || seedMatch;
         });
     }, [images, searchQuery]);
+
+    const virtualWindow = useMemo(() => {
+        const empty = { visibleItems: [] as GalleryItem[], totalHeight: 0, offsetTop: 0 };
+        if (viewportSize.height === 0 || filteredImages.length === 0) {
+            return empty;
+        }
+        const rowHeight = CARD_HEIGHT + GRID_GAP;
+        const totalRows = Math.ceil(filteredImages.length / columnCount);
+        const totalHeight = totalRows > 0 ? totalRows * rowHeight - GRID_GAP : 0;
+        const firstVisibleRow = Math.floor(scrollTop / rowHeight);
+        const lastVisibleRow = Math.ceil((scrollTop + viewportSize.height) / rowHeight);
+        const startRow = Math.max(0, firstVisibleRow - OVERSCAN_ROWS);
+        const endRow = Math.min(totalRows, lastVisibleRow + OVERSCAN_ROWS);
+        const startIdx = startRow * columnCount;
+        const endIdx = Math.min(filteredImages.length, endRow * columnCount);
+        return {
+            visibleItems: filteredImages.slice(startIdx, endIdx),
+            totalHeight,
+            offsetTop: startRow * rowHeight,
+        };
+    }, [filteredImages, columnCount, scrollTop, viewportSize.height]);
 
     const handleClosePreview = useCallback(() => {
         if (previewImage) {
@@ -468,7 +530,7 @@ export function GalleryView({ language }: GalleryViewProps) {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6">
+            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6">
                 {images.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
                         <Image className="w-12 h-12 mb-3 opacity-20" />
@@ -481,21 +543,35 @@ export function GalleryView({ language }: GalleryViewProps) {
                         <p>{t('gallery.noResults')}</p>
                     </div>
                 ) : (
-                    <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4">
-                        {filteredImages.map((img) => (
-                            <GalleryCard
-                                key={img.path}
-                                img={img}
-                                deleting={deleting}
-                                selected={selectedPaths.includes(img.path)}
-                                onPreview={handleOpenPreview}
-                                onDelete={(path) => void handleDelete(path)}
-                                onOpen={(path) => void handleOpen(path)}
-                                onReveal={(path) => void handleReveal(path)}
-                                onToggleSelection={handleToggleSelection}
-                                t={t}
-                            />
-                        ))}
+                    <div style={{ height: virtualWindow.totalHeight, position: 'relative' }}>
+                        <div style={{
+                            position: 'absolute',
+                            top: virtualWindow.offsetTop,
+                            left: 0,
+                            right: 0,
+                        }}>
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: `repeat(${columnCount}, 1fr)`,
+                                gap: GRID_GAP,
+                            }}>
+                                {virtualWindow.visibleItems.map((img) => (
+                                    <div key={img.path} style={{ height: CARD_HEIGHT }} className="overflow-hidden rounded-xl">
+                                        <GalleryCard
+                                            img={img}
+                                            deleting={deleting}
+                                            selected={selectedPaths.includes(img.path)}
+                                            onPreview={handleOpenPreview}
+                                            onDelete={(path) => void handleDelete(path)}
+                                            onOpen={(path) => void handleOpen(path)}
+                                            onReveal={(path) => void handleReveal(path)}
+                                            onToggleSelection={handleToggleSelection}
+                                            t={t}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>

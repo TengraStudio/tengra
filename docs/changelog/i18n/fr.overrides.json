@@ -1,4 +1,15 @@
 {
+  "2026-03-01-chat-error-handling-refactor": {
+    "title": "Gestion globale des erreurs de chat et UX en cas d'échec",
+    "summary": "Unification des types d'erreurs de chat dans toute l'application et implémentation d'une UX cohérente en cas d'échec dans la barre latérale de l'assistant IA avec catégorisation et capacités de réessai.",
+    "items": [
+      "- **Types d'erreurs partagés**: Définition de `ChatError` et `ChatErrorKind` comme types partagés globaux, assurant la cohérence entre les processus principaux et de rendu.",
+      "- **Catégorisation des erreurs**: Implémentation d'un utilitaire `categorizeError` pour classer les erreurs de flux en types `quota_exhausted`, `provider_unavailable`, `timeout` ou `generic`.",
+      "- **UX en cas d'échec (MARCH1-CORE-001)**: Intégration du `ChatErrorBanner` dans la barre latérale de l'assistant IA de l'espace de travail avec rendu conditionnel et actions de réessai contextuelles.",
+      "- **Intégration du flux**: Mise à jour de `process-stream` et `useChatManager` pour propager les états d'erreur catégorisés à travers la hiérarchie des composants.",
+      "- **Renforcement de la sécurité des types**: Résolution de plus de 10 erreurs TypeScript strictes liées aux définitions de propriétés d'erreur manquantes dans les hooks de chat et les composants UI."
+    ]
+  },
   "2026-03-01-agent-service-refactor-council-orchestration": {
     "title": "Durcissement de l'architecture des agents : refactorisation du service monolithique et orchestration du conseil",
     "summary": "Déconstruction de l'AgentCollaborationService monolithique en six services spécifiques au domaine et mise en œuvre du CouncilService pour une préparation de plan améliorée et un routage sensible aux quotas.",

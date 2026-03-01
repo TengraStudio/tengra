@@ -1,4 +1,5 @@
 import { AppSettings, CodexUsage, QuotaResponse } from '@shared/types';
+import { ChatError } from '@shared/types/chat';
 import React, { lazy, Suspense } from 'react';
 
 import { LoadingState } from '@/components/ui/LoadingState';
@@ -27,6 +28,7 @@ interface ProjectsViewProps {
     onSendMessage: (text?: string) => void
     displayMessages: Message[]
     isLoading: boolean
+    chatError?: ChatError
 }
 
 export const ProjectsView: React.FC<ProjectsViewProps> = ({
@@ -47,7 +49,8 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
     appSettings,
     onSendMessage,
     displayMessages,
-    isLoading
+    isLoading,
+    chatError
 }) => {
     return (
         <Suspense fallback={<LoadingState size="md" />}>
@@ -70,6 +73,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                 sendMessage={onSendMessage}
                 messages={displayMessages}
                 isLoading={isLoading}
+                chatError={chatError}
             />
         </Suspense>
     );

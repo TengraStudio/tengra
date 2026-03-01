@@ -14,6 +14,18 @@
 - **Sécurité des types** : Résolution de plus de 40 erreurs de type structurel et élimination de plus de 100 casts dangereux dans le domaine des agents.
 - **Fiabilité** : Mise en œuvre de l'évaluation heuristique de la porte de fusion pour les transferts d'agents assistants et construction de consensus basée sur l'arbitrage.
 
+### Gestion globale des erreurs de chat et UX en cas d'échec
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Unification des types d'erreurs de chat dans toute l'application et implémentation d'une UX cohérente en cas d'échec dans la barre latérale de l'assistant IA avec catégorisation et capacités de réessai.
+
+- **Types d'erreurs partagés**: Définition de `ChatError` et `ChatErrorKind` comme types partagés globaux, assurant la cohérence entre les processus principaux et de rendu.
+- **Catégorisation des erreurs**: Implémentation d'un utilitaire `categorizeError` pour classer les erreurs de flux en types `quota_exhausted`, `provider_unavailable`, `timeout` ou `generic`.
+- **UX en cas d'échec (MARCH1-CORE-001)**: Intégration du `ChatErrorBanner` dans la barre latérale de l'assistant IA de l'espace de travail avec rendu conditionnel et actions de réessai contextuelles.
+- **Intégration du flux**: Mise à jour de `process-stream` et `useChatManager` pour propager les états d'erreur catégorisés à travers la hiérarchie des composants.
+- **Renforcement de la sécurité des types**: Résolution de plus de 10 erreurs TypeScript strictes liées aux définitions de propriétés d'erreur manquantes dans les hooks de chat et les composants UI.
+
 ## [2026-02-28]
 
 ### AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking

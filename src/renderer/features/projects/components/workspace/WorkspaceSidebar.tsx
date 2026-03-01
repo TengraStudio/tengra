@@ -2,7 +2,7 @@ import React from 'react';
 
 import { Language } from '@/i18n';
 import type { GroupedModels } from '@/types';
-import { AppSettings, CodexUsage, Message, QuotaResponse } from '@/types';
+import { AppSettings, ChatError, CodexUsage, Message, QuotaResponse } from '@/types';
 
 import { AIAssistantSidebar } from './AIAssistantSidebar';
 
@@ -24,6 +24,7 @@ interface WorkspaceSidebarProps {
     t: (key: string) => string;
     messages?: Message[];
     isLoading?: boolean;
+    chatError?: ChatError | null;
     language: Language;
     onSourceClick: (path: string) => void;
 }
@@ -46,14 +47,14 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
     t,
     messages,
     isLoading,
+    chatError,
     language,
     onSourceClick,
 }) => {
     return (
         <div
-            className={`border-l border-white/5 bg-background/40 backdrop-blur-xl shrink-0 transition-all duration-300 relative ${
-                showAgentPanel ? 'opacity-100' : 'w-0 opacity-0 overflow-hidden'
-            }`}
+            className={`border-l border-white/5 bg-background/40 backdrop-blur-xl shrink-0 transition-all duration-300 relative ${showAgentPanel ? 'opacity-100' : 'w-0 opacity-0 overflow-hidden'
+                }`}
             style={{ width: showAgentPanel ? 350 : 0 }}
         >
             <div className="h-full flex flex-col">
@@ -72,6 +73,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                     t={t}
                     messages={messages}
                     isLoading={isLoading}
+                    chatError={chatError}
                     language={language}
                     onSourceClick={onSourceClick}
                 />
