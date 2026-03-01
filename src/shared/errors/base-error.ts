@@ -4,13 +4,13 @@
  */
 export class AppError extends Error {
   /** Machine-readable error code for programmatic handling */
-  public readonly code: string
+  public readonly code: string;
   /** Optional underlying cause of this error */
-  public readonly cause?: Error
+  public readonly cause?: Error;
   /** Optional structured context for debugging */
-  public readonly context?: Record<string, unknown>
+  public readonly context?: Record<string, unknown>;
   /** ISO timestamp when the error was created */
-  public readonly timestamp: string
+  public readonly timestamp: string;
 
   /**
    * Creates a new AppError.
@@ -23,15 +23,15 @@ export class AppError extends Error {
     code: string,
     options?: { cause?: Error; context?: Record<string, unknown> }
   ) {
-    super(message)
-    this.name = this.constructor.name
-    this.code = code
-    this.cause = options?.cause
-    this.context = options?.context
-    this.timestamp = new Date().toISOString()
+    super(message);
+    this.name = this.constructor.name;
+    this.code = code;
+    this.cause = options?.cause;
+    this.context = options?.context;
+    this.timestamp = new Date().toISOString();
 
     // Restore prototype chain for proper instanceof checks
-    Object.setPrototypeOf(this, new.target.prototype)
+    Object.setPrototypeOf(this, new.target.prototype);
   }
 
   /** Serializes the error to a plain object */
@@ -43,6 +43,6 @@ export class AppError extends Error {
       timestamp: this.timestamp,
       context: this.context,
       cause: this.cause?.message
-    }
+    };
   }
 }

@@ -1,5 +1,5 @@
-import { appLogger } from '@main/logging/logger'
-import { IpcMainInvokeEvent } from 'electron'
+import { appLogger } from '@main/logging/logger';
+import { IpcMainInvokeEvent } from 'electron';
 
 /** Metrics snapshot for a single IPC channel. */
 export interface IpcChannelMetrics {
@@ -17,7 +17,7 @@ interface ChannelStats {
   maxDurationMs: number
 }
 
-const metricsStore = new Map<string, ChannelStats>()
+const metricsStore = new Map<string, ChannelStats>();
 
 /**
  * Wraps an IPC handler function to collect timing and error metrics.
@@ -30,36 +30,36 @@ export function withIpcMetrics<TArgs extends unknown[], TResult>(
   handler: (event: IpcMainInvokeEvent, ...args: TArgs) => Promise<TResult>
 ): (event: IpcMainInvokeEvent, ...args: TArgs) => Promise<TResult> {
   return async (event: IpcMainInvokeEvent, ...args: TArgs): Promise<TResult> => {
-    const start = performance.now()
-    let stats = metricsStore.get(channel)
+    const start = performance.now();
+    let stats = metricsStore.get(channel);
     if (!stats) {
-      stats = { callCount: 0, errorCount: 0, totalDurationMs: 0, maxDurationMs: 0 }
-      metricsStore.set(channel, stats)
+      stats = { callCount: 0, errorCount: 0, totalDurationMs: 0, maxDurationMs: 0 };
+      metricsStore.set(channel, stats);
     }
-    stats.callCount++
+    stats.callCount++;
 
     try {
-      const result = await handler(event, ...args)
-      return result
+      const result = await handler(event, ...args);
+      return result;
     } catch (error) {
-      stats.errorCount++
-      appLogger.warn('IpcMetrics', `Error on channel ${channel}`, error as Error)
-      throw error
+      stats.errorCount++;
+      appLogger.warn('IpcMetrics', `Error on channel ${channel}`, error as Error);
+      throw error;
     } finally {
-      const duration = performance.now() - start
-      stats.totalDurationMs += duration
+      const duration = performance.now() - start;
+      stats.totalDurationMs += duration;
       if (duration > stats.maxDurationMs) {
-        stats.maxDurationMs = duration
+        stats.maxDurationMs = duration;
       }
     }
-  }
+  };
 }
 
 /**
  * Returns a snapshot of metrics for all tracked IPC channels.
  */
 export function getIpcMetrics(): IpcChannelMetrics[] {
-  const results: IpcChannelMetrics[] = []
+  const results: IpcChannelMetrics[] = [];
   for (const [channel, stats] of metricsStore) {
     results.push({
       channel,
@@ -67,12 +67,12 @@ export function getIpcMetrics(): IpcChannelMetrics[] {
       errorCount: stats.errorCount,
       avgDurationMs: stats.callCount > 0 ? stats.totalDurationMs / stats.callCount : 0,
       maxDurationMs: stats.maxDurationMs
-    })
+    });
   }
-  return results
+  return results;
 }
 
 /** Resets all collected IPC metrics. Useful for testing. */
 export function resetIpcMetrics(): void {
-  metricsStore.clear()
+  metricsStore.clear();
 }

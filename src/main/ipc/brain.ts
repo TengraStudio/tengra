@@ -3,8 +3,8 @@
  * User-focused memory system
  */
 
-import { appLogger } from '@main/logging/logger';
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
+import { appLogger } from '@main/logging/logger';
 import { BrainService, UserFact } from '@main/services/llm/brain.service';
 import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { BrowserWindow, ipcMain } from 'electron';

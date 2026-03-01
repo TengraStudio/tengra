@@ -3,7 +3,7 @@ import { MessageSkeleton } from '@renderer/features/chat/components/MessageSkele
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 
-import { Language } from '@/i18n';
+import { Language, useTranslation } from '@/i18n';
 import { Message } from '@/types';
 
 interface MessageListProps {
@@ -48,6 +48,7 @@ export const MessageList = memo(({
     virtuosoRef
 }: MessageListProps) => {
     const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+    const { t } = useTranslation(language);
     const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
 
     const persistedFocusedIndex = useMemo(() => {
@@ -230,7 +231,7 @@ export const MessageList = memo(({
             tabIndex={0}
             onKeyDown={handleKeyboardNavigation}
             role="listbox"
-            aria-label="Message list"
+            aria-label={t('aria.messageList')}
             aria-describedby="message-list-keyboard-help"
             aria-activedescendant={
                 effectiveFocusedIndex >= 0 && messages[effectiveFocusedIndex]
@@ -244,6 +245,12 @@ export const MessageList = memo(({
             <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
                 {isLoading ? 'Assistant is streaming a new message.' : ''}
                 {messages.length > 0 && !isLoading ? `Message list now has ${messages.length} messages.` : ''}
+            </div>
+            <div aria-live="polite" aria-atomic="false" className="sr-only">
+                {isLoading && messages.length > 0 && messages[messages.length - 1].role === 'assistant'
+                    && typeof messages[messages.length - 1].content === 'string'
+                    ? (messages[messages.length - 1].content as string).slice(-200)
+                    : ''}
             </div>
             <Virtuoso
                 ref={virtuosoRef}

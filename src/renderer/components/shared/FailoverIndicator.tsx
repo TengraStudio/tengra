@@ -1,5 +1,6 @@
-import { AlertTriangle } from 'lucide-react'
-import { useTranslation } from '@/i18n'
+import { AlertTriangle } from 'lucide-react';
+
+import { useTranslation } from '@/i18n';
 
 /** Props for the FailoverIndicator component */
 interface FailoverIndicatorProps {
@@ -20,10 +21,10 @@ const FailoverIndicator: React.FC<FailoverIndicatorProps> = ({
   fallbackModel,
   isVisible
 }) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   if (!isVisible) {
-    return null
+    return null;
   }
 
   return (
@@ -33,7 +34,7 @@ const FailoverIndicator: React.FC<FailoverIndicatorProps> = ({
         {t('common.failoverModelUsed', { fallback: fallbackModel, original: originalModel })}
       </span>
     </div>
-  )
-}
+  );
+};
 
-export default FailoverIndicator
+export default FailoverIndicator;

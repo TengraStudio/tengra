@@ -44,7 +44,7 @@ const ProjectSettingsPanelBase: React.FC<ProjectSettingsPanelProps> = ({
 
     return (
         <section
-            aria-label="Project settings panel"
+            aria-label={t('aria.projectSettingsPanel')}
             className="h-full flex flex-col bg-background/50 backdrop-blur-md overflow-hidden"
         >
             <SettingsHeader
@@ -62,7 +62,7 @@ const ProjectSettingsPanelBase: React.FC<ProjectSettingsPanelProps> = ({
                     t={t}
                 />
 
-                <main className="flex-1 overflow-y-auto custom-scrollbar p-8" aria-label="Project settings content">
+                <main className="flex-1 overflow-y-auto custom-scrollbar p-8" aria-label={t('aria.projectSettingsContent')}>
                     <div className="max-w-3xl mx-auto space-y-10">
                         {activeSection === 'general' && (
                             <GeneralSection formData={formData} setFormData={setFormData} t={t} />

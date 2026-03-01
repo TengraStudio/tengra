@@ -1,4 +1,4 @@
-import { AppError } from './base-error'
+import { AppError } from './base-error';
 
 /**
  * Error thrown by service-layer operations.
@@ -6,7 +6,7 @@ import { AppError } from './base-error'
  */
 export class ServiceError extends AppError {
   /** The service that produced this error */
-  public readonly serviceName: string
+  public readonly serviceName: string;
 
   /**
    * Creates a new ServiceError.
@@ -21,7 +21,7 @@ export class ServiceError extends AppError {
     code: string = 'SERVICE_ERROR',
     options?: { cause?: Error; context?: Record<string, unknown> }
   ) {
-    super(message, code, options)
-    this.serviceName = serviceName
+    super(message, code, options);
+    this.serviceName = serviceName;
   }
 }

@@ -2,6 +2,7 @@ import { ToolCall } from '@main/types/llm.types';
 import { OpenAIResponse } from '@main/types/llm.types';
 import { JsonObject } from '@shared/types/common';
 import { ApiError } from '@shared/utils/error.util';
+
 import { validateLLMContent } from './llm-openai.helper';
 
 /**

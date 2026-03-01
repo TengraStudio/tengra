@@ -82,7 +82,7 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
         [activeLanguage, allSnippets, projectKey]
     );
     const viewStateStorageKey = `workspace.editor.viewstate:${projectKey}`;
-    const activeViewState = activeTab ? viewStateMap[activeTab.path] : undefined;
+    void (activeTab ? viewStateMap[activeTab.path] : undefined);
     const capabilityBadge = React.useMemo(() => {
         const completion = ['typescript', 'javascript', 'json', 'markdown', 'python'].includes(activeLanguage);
         const diagnostics = completion;
@@ -107,7 +107,7 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
         }
     }, [viewStateStorageKey]);
 
-    const persistViewState = React.useCallback((next: Record<string, EditorViewState>) => {
+    void React.useCallback((next: Record<string, EditorViewState>) => {
         setViewStateMap(next);
         localStorage.setItem(viewStateStorageKey, JSON.stringify(next));
     }, [viewStateStorageKey]);

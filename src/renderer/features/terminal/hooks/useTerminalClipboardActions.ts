@@ -1,15 +1,15 @@
-import { useCallback, type MutableRefObject } from 'react';
+import { type MutableRefObject,useCallback } from 'react';
 import { Terminal as XTerm } from 'xterm';
 
 import { appLogger } from '@/utils/renderer-logger';
 
 import {
     ANSI_ESCAPE_SEQUENCE_REGEX,
-    TERMINAL_PASTE_HISTORY_LIMIT,
     stripAnsiControlSequences,
+    TERMINAL_PASTE_HISTORY_LIMIT,
 } from '../constants/terminal-panel-constants';
-import { buildFormattedClipboardHtml, summarizePasteText } from '../utils/terminal-panel-helpers';
 import { alertDialog, confirmDialog } from '../utils/dialog';
+import { buildFormattedClipboardHtml, summarizePasteText } from '../utils/terminal-panel-helpers';
 
 interface UseTerminalClipboardActionsParams {
     activeTabIdRef: MutableRefObject<string | null>;

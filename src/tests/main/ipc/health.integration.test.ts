@@ -54,7 +54,7 @@ describe('Health IPC Integration', () => {
             checkNow: vi.fn(),
         };
 
-        registerHealthIpc(mockHealthCheckService);
+        registerHealthIpc(mockHealthCheckService as unknown as Parameters<typeof registerHealthIpc>[0]);
     });
 
     it('should register expected handlers', () => {
@@ -100,7 +100,7 @@ describe('Health IPC Integration', () => {
             const handler = mockIpcMainHandlers.get('health:status');
             const result = await handler!({});
 
-            expect(result.overall).toBe('degraded');
+            expect((result as Record<string, unknown>).overall).toBe('degraded');
         });
 
         it('should return unhealthy fallback on error', async () => {
@@ -111,8 +111,8 @@ describe('Health IPC Integration', () => {
             const handler = mockIpcMainHandlers.get('health:status');
             const result = await handler!({});
 
-            expect(result.overall).toBe('unhealthy');
-            expect(result.services).toEqual([]);
+            expect((result as Record<string, unknown>).overall).toBe('unhealthy');
+            expect((result as Record<string, unknown>).services).toEqual([]);
         });
     });
 

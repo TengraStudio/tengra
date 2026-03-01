@@ -187,7 +187,7 @@ describe('Export IPC Integration', () => {
             const result = await handler?.({} as IpcMainInvokeEvent, content, filePath);
 
             expect(mockExportService.exportToMarkdown).toHaveBeenCalledWith(content, '/exports/document.md');
-            expect(result.success).toBe(true);
+            expect((result as Record<string, unknown>).success).toBe(true);
         });
     });
 
@@ -307,7 +307,7 @@ describe('Export IPC Integration', () => {
             const result = await handler?.({} as IpcMainInvokeEvent, htmlContent, filePath);
 
             expect(mockExportService.exportToPDF).toHaveBeenCalledWith(htmlContent, '/exports/document.pdf');
-            expect(result.success).toBe(true);
+            expect((result as Record<string, unknown>).success).toBe(true);
         });
 
         it('should handle export service errors', async () => {

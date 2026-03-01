@@ -1,8 +1,8 @@
 /**
  * IPC handlers for Agent Service
  */
-import { AgentService } from '@main/services/llm/agent.service';
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
+import { AgentService } from '@main/services/llm/agent.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { BrowserWindow, ipcMain } from 'electron';
 import { z } from 'zod';

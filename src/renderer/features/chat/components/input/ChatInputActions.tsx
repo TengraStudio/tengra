@@ -1,7 +1,9 @@
-import { memo } from 'react';
 import { Mic, MicOff, Paperclip, Send, Sparkles, Square } from 'lucide-react';
+import { memo } from 'react';
+
 import { ModelSelector } from '@/components/shared/ModelSelector';
 import { cn } from '@/lib/utils';
+
 import { useChatInputController } from '../../hooks/useChatInputController';
 
 type ControllerType = ReturnType<typeof useChatInputController>;

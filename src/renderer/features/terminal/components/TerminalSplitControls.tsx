@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import type { SplitAnalytics, SplitPreset, SplitViewState } from '../utils/split-config';
 
 interface TerminalSplitControlsProps {
-    t: (key: string) => string;
+    t: (key: string, options?: Record<string, string | number>) => string;
     isSplitPresetMenuOpen: boolean;
     setIsSplitPresetMenuOpen: (value: boolean) => void;
     splitView: SplitViewState | null;

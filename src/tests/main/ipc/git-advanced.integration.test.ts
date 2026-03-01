@@ -59,7 +59,7 @@ describe('Git Advanced IPC Handlers', () => {
             }),
             cancelOperation: vi.fn((id: string) => id === 'op-1')
         };
-        registerGitAdvancedIpc(gitService, (_e) => {});
+        registerGitAdvancedIpc(gitService as unknown as Parameters<typeof registerGitAdvancedIpc>[0], (_e) => {});
     });
 
     it('registers advanced git handlers', () => {
@@ -81,9 +81,9 @@ describe('Git Advanced IPC Handlers', () => {
     it('returns repository stats and clamps invalid days', async () => {
         const handler = ipcHandlers.get('git:getRepositoryStats');
         const result = await handler?.({}, 'C:/repo', -1);
-        expect((result as never).success).toBe(true);
-        expect((result as never).stats.totalCommits).toBe(42);
-        expect((result as never).stats.days).toBe(365);
+        expect((result as Record<string, unknown>).success).toBe(true);
+        expect((result as Record<string, Record<string, unknown>>).stats.totalCommits).toBe(42);
+        expect((result as Record<string, Record<string, unknown>>).stats.days).toBe(365);
     });
 });
 

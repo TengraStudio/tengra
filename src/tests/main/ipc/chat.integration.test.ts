@@ -1,6 +1,14 @@
 import { registerChatIpc } from '@main/ipc/chat';
 import { ipcMain } from 'electron';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
+
+interface MockIpcEvent {
+    sender: {
+        id: number;
+        isDestroyed: Mock<() => boolean>;
+        send: Mock<(channel: string, ...args: unknown[]) => void>;
+    };
+}
 
 
 // Mock Electron ipcMain
@@ -73,13 +81,13 @@ const mockDatabaseService = {
 };
 
 describe('Chat IPC Integration', () => {
-    const mockEvent = {
+    const mockEvent: MockIpcEvent = {
         sender: {
             id: 1,
             isDestroyed: vi.fn().mockReturnValue(false),
             send: vi.fn()
         }
-    } as never;
+    };
 
     beforeEach(() => {
         ipcMainHandlers.clear();

@@ -3,8 +3,8 @@ import { LlamaService } from '@main/services/llm/llama.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { OllamaService } from '@main/services/llm/ollama.service';
 import { SettingsService } from '@main/services/system/settings.service';
-import { EmbeddingTextInputSchema } from '@shared/schemas/service-hardening.schema';
 import { withRetry } from '@main/utils/retry.util';
+import { EmbeddingTextInputSchema } from '@shared/schemas/service-hardening.schema';
 import { createHash } from 'node:crypto';
 
 export type EmbeddingProvider = 'ollama' | 'openai' | 'llama' | 'none';

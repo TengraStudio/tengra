@@ -54,7 +54,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
     };
 
     return (
-        <nav className="px-3 space-y-1" aria-label="Sidebar navigation">
+        <nav className="px-3 space-y-1" aria-label={t('aria.sidebarNavigation')}>
             {navItems.map((item, index) => (
                 <SidebarItem
                     key={item.view}

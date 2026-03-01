@@ -405,7 +405,8 @@ export class LocalAuthServer {
             request.on('response', (response) => {
                 let data = '';
                 response.on('data', chunk => data += chunk);
-                response.on('end', async () => {
+                response.on('end', () => {
+                    void (async () => {
                     if (response.statusCode && response.statusCode >= 400) {
                         const err = new Error(`Token exchange failed: ${response.statusCode} - ${data}`);
                         appLogger.error('LocalAuthServer', err.message);
@@ -442,6 +443,7 @@ export class LocalAuthServer {
                     } catch (e) {
                         reject(e);
                     }
+                    })();
                 });
             });
 
@@ -532,7 +534,8 @@ export class LocalAuthServer {
             request.on('response', (response) => {
                 let data = '';
                 response.on('data', chunk => data += chunk);
-                response.on('end', async () => {
+                response.on('end', () => {
+                    void (async () => {
                     if (response.statusCode && response.statusCode >= 400) {
                         const err = new Error(`Claude token exchange failed: ${response.statusCode} - ${data}`);
                         appLogger.error('LocalAuthServer', err.message);
@@ -559,6 +562,7 @@ export class LocalAuthServer {
                     } catch (e) {
                         reject(e);
                     }
+                    })();
                 });
             });
 

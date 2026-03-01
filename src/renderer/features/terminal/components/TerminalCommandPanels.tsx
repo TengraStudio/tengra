@@ -3,7 +3,7 @@ import { History, TerminalSquare, X } from 'lucide-react';
 import type { TaskRunnerEntry, TerminalHistoryEntry } from '../hooks/useTerminalCommandTools';
 
 interface TerminalCommandPanelsProps {
-    t: (key: string) => string;
+    t: (key: string, options?: Record<string, string | number>) => string;
     isCommandHistoryOpen: boolean;
     isCommandHistoryLoading: boolean;
     commandHistoryQuery: string;

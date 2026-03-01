@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Strategy, CollaborationResult, PresenceParticipant, CursorMarker, ChangeAnnotation } from './types';
+
 import { Message } from '@/types';
+
+import { ChangeAnnotation,CollaborationResult, CursorMarker, PresenceParticipant, Strategy } from './types';
 
 interface UseMultiModelCollaborationProps {
     messages: Message[];

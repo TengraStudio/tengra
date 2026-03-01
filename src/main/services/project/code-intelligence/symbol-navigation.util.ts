@@ -9,7 +9,7 @@ import { DatabaseService } from '@main/services/data/database.service';
 import { FileSearchResult } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 
-import { scanDirRecursively, scanDirForSymbols, scanDirForText } from './file-scanner.util';
+import { scanDirForSymbols, scanDirForText,scanDirRecursively } from './file-scanner.util';
 
 const CODE_FILE_PATTERN = /\.(ts|tsx|js|jsx|py|go|rs|java|kt|kts|cpp|c|h|hpp|cs)$/i;
 

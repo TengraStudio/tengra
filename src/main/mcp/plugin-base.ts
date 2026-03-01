@@ -9,6 +9,8 @@ export interface IMcpPlugin {
     readonly name: string;
     readonly description: string;
     readonly source: 'core' | 'user' | 'remote';
+    readonly version?: string;
+    readonly dependencies?: Record<string, string>;
 
     /** Initialize the plugin (e.g., start process, establish connection) */
     initialize(): Promise<void>;

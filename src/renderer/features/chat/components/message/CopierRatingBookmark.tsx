@@ -1,5 +1,6 @@
-import { memo, useState } from 'react';
 import { Bookmark, Check, Copy, ThumbsDown, ThumbsUp } from 'lucide-react';
+import { memo, useState } from 'react';
+
 import { cn } from '@/lib/utils';
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;

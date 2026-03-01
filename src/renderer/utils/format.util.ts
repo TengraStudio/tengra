@@ -3,12 +3,12 @@
  * @module format.util
  */
 
-const SECONDS_PER_MINUTE = 60
-const SECONDS_PER_HOUR = 3600
-const SECONDS_PER_DAY = 86400
-const SECONDS_PER_WEEK = 604800
-const SECONDS_PER_MONTH = 2592000
-const SECONDS_PER_YEAR = 31536000
+const SECONDS_PER_MINUTE = 60;
+const SECONDS_PER_HOUR = 3600;
+const SECONDS_PER_DAY = 86400;
+const SECONDS_PER_WEEK = 604800;
+const SECONDS_PER_MONTH = 2592000;
+const SECONDS_PER_YEAR = 31536000;
 
 /** Thresholds for relative time units, ordered from largest to smallest. */
 const RELATIVE_TIME_THRESHOLDS: ReadonlyArray<{
@@ -22,7 +22,7 @@ const RELATIVE_TIME_THRESHOLDS: ReadonlyArray<{
   { upperBound: SECONDS_PER_WEEK, unit: 'day', divisor: SECONDS_PER_DAY },
   { upperBound: SECONDS_PER_MONTH, unit: 'week', divisor: SECONDS_PER_WEEK },
   { upperBound: SECONDS_PER_YEAR, unit: 'month', divisor: SECONDS_PER_MONTH }
-]
+];
 
 /**
  * Formats a date according to the given locale and options using `Intl.DateTimeFormat`.
@@ -36,7 +36,7 @@ export function formatDate(
   locale: string,
   options?: Intl.DateTimeFormatOptions
 ): string {
-  return new Intl.DateTimeFormat(locale, options).format(date)
+  return new Intl.DateTimeFormat(locale, options).format(date);
 }
 
 /**
@@ -51,7 +51,7 @@ export function formatNumber(
   locale: string,
   options?: Intl.NumberFormatOptions
 ): string {
-  return new Intl.NumberFormat(locale, options).format(num)
+  return new Intl.NumberFormat(locale, options).format(num);
 }
 
 /**
@@ -62,15 +62,15 @@ export function formatNumber(
  * @returns A locale-aware relative time string.
  */
 export function formatRelativeTime(date: Date, locale: string): string {
-  const diffSeconds = Math.round((date.getTime() - Date.now()) / 1000)
-  const absDiff = Math.abs(diffSeconds)
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
+  const diffSeconds = Math.round((date.getTime() - Date.now()) / 1000);
+  const absDiff = Math.abs(diffSeconds);
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
 
   for (const { upperBound, unit, divisor } of RELATIVE_TIME_THRESHOLDS) {
     if (absDiff < upperBound) {
-      return rtf.format(Math.round(diffSeconds / divisor), unit)
+      return rtf.format(Math.round(diffSeconds / divisor), unit);
     }
   }
 
-  return rtf.format(Math.round(diffSeconds / SECONDS_PER_YEAR), 'year')
+  return rtf.format(Math.round(diffSeconds / SECONDS_PER_YEAR), 'year');
 }

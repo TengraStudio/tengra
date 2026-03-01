@@ -1241,4 +1241,18 @@ export interface ElectronAPI {
         resume: (downloadId: string) => Promise<void>;
         cancel: (downloadId: string) => Promise<void>;
     };
+
+    promptTemplates: {
+        getAll: () => Promise<unknown[]>;
+        getByCategory: (category: string) => Promise<unknown[]>;
+        getByTag: (tag: string) => Promise<unknown[]>;
+        search: (query: string) => Promise<unknown[]>;
+        get: (id: string) => Promise<unknown>;
+        create: (template: unknown) => Promise<unknown>;
+        update: (id: string, updates: unknown) => Promise<unknown>;
+        delete: (id: string) => Promise<{ success: boolean }>;
+        render: (templateId: string, variables: Record<string, string>) => Promise<string>;
+        getCategories: () => Promise<string[]>;
+        getTags: () => Promise<string[]>;
+    };
 }

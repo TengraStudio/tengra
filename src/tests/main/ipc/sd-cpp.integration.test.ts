@@ -54,7 +54,7 @@ describe('SD-CPP IPC Integration', () => {
             repairSDCpp: vi.fn(),
         };
 
-        registerSdCppIpc(mockLocalImageService);
+        registerSdCppIpc(mockLocalImageService as unknown as Parameters<typeof registerSdCppIpc>[0]);
     });
 
     it('should register expected handlers', () => {

@@ -3,19 +3,21 @@ import React from 'react';
 import { TerminalTab } from '@/types';
 
 import {
-    TERMINAL_THEME_PRESETS,
-    TERMINAL_FONT_PRESETS,
     TERMINAL_CURSOR_STYLES,
+    TERMINAL_FONT_PRESETS,
+    TERMINAL_THEME_PRESETS,
 } from '../constants/terminal-panel-constants';
-import type { TerminalAppearancePreferences, ResolvedTerminalAppearance } from '../types/terminal-appearance';
+import type { RemoteDockerContainer, RemoteSshProfile, ShellInfo,TerminalBackendInfo } from '../hooks/useTerminalBackendsAndRemote';
+import type { ResolvedTerminalAppearance,TerminalAppearancePreferences } from '../types/terminal-appearance';
+import type { TerminalShortcutPresetId } from '../utils/shortcut-config';
 import type { SplitAnalytics, SplitPreset } from '../utils/split-config';
 import { DEFAULT_SPLIT_ANALYTICS } from '../utils/split-config';
-import type { TerminalShortcutPresetId } from '../utils/shortcut-config';
+import type { RemoteConnectionTarget } from '../utils/terminal-panel-types';
 
 import { TerminalToolbar } from './TerminalToolbar';
 
 export interface TerminalPanelToolbarConnectorProps {
-    t: (key: string, params?: Record<string, unknown>) => string;
+    t: (path: string, options?: Record<string, string | number>) => string;
     displayTabs: TerminalTab[];
     activeTabId: string | null;
     draggingTabId: string | null;
@@ -29,23 +31,23 @@ export interface TerminalPanelToolbarConnectorProps {
     isNewTerminalMenuOpen: boolean;
     setIsNewTerminalMenuOpen: (open: boolean) => void;
     isLoadingLaunchOptions: boolean;
-    availableShells: { id: string; name: string }[];
-    selectableBackends: { id: string; name: string; available: boolean }[];
-    integratedBackend: { id: string; name: string; available: boolean } | undefined;
-    launchableExternalBackends: { id: string; name: string; available: boolean }[];
+    availableShells: ShellInfo[];
+    selectableBackends: TerminalBackendInfo[];
+    integratedBackend: TerminalBackendInfo | undefined;
+    launchableExternalBackends: TerminalBackendInfo[];
     defaultBackendName: string;
     resolvedDefaultBackendId: string | undefined;
-    persistPreferredBackendId: (id: string) => void;
+    persistPreferredBackendId: (backendId: string) => Promise<void>;
     createTerminal: (type: string, backendId?: string) => string;
     resolvePreferredShellId: () => string | undefined;
     isLoadingRemoteConnections: boolean;
-    remoteSshProfiles: { id: string; host: string; port: number; username: string }[];
-    remoteDockerContainers: { id: string; name: string; status: string }[];
+    remoteSshProfiles: RemoteSshProfile[];
+    remoteDockerContainers: RemoteDockerContainer[];
     hasRemoteConnections: boolean;
-    createRemoteTerminal: (target: { kind: 'ssh'; profile: { id: string; host: string; port: number; username: string } } | { kind: 'docker'; container: { id: string; name: string; status: string } }) => void;
+    createRemoteTerminal: (target: RemoteConnectionTarget) => void;
     isSplitPresetMenuOpen: boolean;
     setIsSplitPresetMenuOpen: (open: boolean) => void;
-    splitView: { primaryId: string; secondaryId: string; orientation: string } | null;
+    splitView: { orientation: 'horizontal' | 'vertical'; primaryId: string; secondaryId: string } | null;
     splitPresetOptions: SplitPreset[];
     splitAnalytics: SplitAnalytics;
     isSynchronizedInputEnabled: boolean;

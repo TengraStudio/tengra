@@ -416,7 +416,7 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({
                 className="flex-1 grid gap-4"
                 style={{ gridTemplateColumns: `repeat(${slots.length}, 1fr)` }}
                 role="list"
-                aria-label="Comparison slots"
+                aria-label={t('aria.comparisonSlots')}
             >
                 {slots.map(slot => (
                     <ResponseCard

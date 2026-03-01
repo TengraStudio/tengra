@@ -1,6 +1,8 @@
 import { X } from 'lucide-react';
 import React, { useEffect, useId, useRef } from 'react';
 
+import { useTranslation } from '@/i18n';
+
 interface ModalProps {
     isOpen: boolean
     onClose: () => void
@@ -49,6 +51,7 @@ const ModalBase: React.FC<ModalProps> = ({
     const previousActiveElementRef = useRef<HTMLElement | null>(null);
     const titleId = useId();
     const descriptionId = useId();
+    const { t } = useTranslation();
 
     useEffect(() => {
         if (!isOpen) {
@@ -189,7 +192,7 @@ const ModalBase: React.FC<ModalProps> = ({
                             type="button"
                             onClick={onClose}
                             className="self-end mb-2 inline-flex items-center justify-center rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
-                            aria-label="Close modal"
+                            aria-label={t('aria.closeModal')}
                         >
                             <X className="w-4 h-4" aria-hidden="true" />
                         </button>

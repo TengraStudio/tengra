@@ -1,5 +1,4 @@
 ﻿import React from 'react';
-import { useTranslation } from 'react-i18next';
 
 import {
     autocompleteMasteryGuide,
@@ -11,6 +10,7 @@ import {
     workspaceChangelogHighlights,
     workspaceSshPlaybook
 } from '@/data/workspace-content-packs';
+import { useTranslation } from '@/i18n';
 import { Project } from '@/types';
 
 interface WorkspaceContentHubProps {

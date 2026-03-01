@@ -9,8 +9,8 @@ import {
     THEME_ID_PATTERN,
     ThemeErrorCode,
 } from '@main/services/ui/theme-error';
-import { BUILTIN_THEMES, getThemeById } from '@main/utils/theme-constants';
 import { withRetry } from '@main/utils/retry.util';
+import { BUILTIN_THEMES, getThemeById } from '@main/utils/theme-constants';
 import { RETRY_DEFAULTS } from '@shared/constants/defaults';
 import { JsonObject } from '@shared/types/common';
 import { CustomTheme, DEFAULT_THEME_PRESETS, ThemeColors, ThemePreset } from '@shared/types/theme';

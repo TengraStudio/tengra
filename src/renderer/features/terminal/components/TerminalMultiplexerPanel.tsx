@@ -11,7 +11,7 @@ interface MultiplexerSession {
 }
 
 interface TerminalMultiplexerPanelProps {
-    t: (key: string) => string;
+    t: (key: string, options?: Record<string, string | number>) => string;
     hasActiveSession: boolean;
     multiplexerMode: MultiplexerMode;
     multiplexerSessionName: string;

@@ -11,7 +11,7 @@ type TerminalSemanticIssue = {
 };
 
 interface TerminalSemanticPanelProps {
-    t: (key: string) => string;
+    t: (key: string, options?: Record<string, string | number>) => string;
     activeSemanticIssues: TerminalSemanticIssue[];
     activeSemanticErrorCount: number;
     activeSemanticWarningCount: number;

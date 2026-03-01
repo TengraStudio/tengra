@@ -194,6 +194,7 @@ export const ActivityBarLayout: React.FC<{
 }) => {
     const { activeItem, collapsed, setCollapsed } = useActivityBar();
     const activeSidebar = sidebarContent[activeItem];
+    const { t } = useTranslation();
 
     return (
         <div className={cn("flex h-full w-full", className)}>
@@ -217,7 +218,7 @@ export const ActivityBarLayout: React.FC<{
                         <button
                             onClick={() => setCollapsed(true)}
                             className="p-1 rounded hover:bg-muted text-muted-foreground"
-                            aria-label="Collapse sidebar"
+                            aria-label={t('aria.collapseSidebar')}
                         >
                             <ChevronLeft className="w-4 h-4" />
                         </button>
@@ -234,7 +235,7 @@ export const ActivityBarLayout: React.FC<{
                 <button
                     onClick={() => setCollapsed(false)}
                     className="w-6 h-full flex items-center justify-center hover:bg-muted/50 text-muted-foreground border-r border-border/30"
-                    aria-label="Expand sidebar"
+                    aria-label={t('aria.expandSidebar')}
                 >
                     <ChevronRight className="w-4 h-4" />
                 </button>

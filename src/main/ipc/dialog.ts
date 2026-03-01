@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 
-import { appLogger } from '@main/logging/logger';
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
+import { appLogger } from '@main/logging/logger';
 import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { BrowserWindow, dialog, ipcMain } from 'electron';
 

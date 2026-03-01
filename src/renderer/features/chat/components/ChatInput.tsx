@@ -16,6 +16,7 @@ import {
 import React, { memo, useEffect, useRef } from 'react';
 
 import { ModelSelector } from '@/components/shared/ModelSelector';
+import { useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 import { Attachment } from '@/types';
@@ -32,6 +33,7 @@ interface ChatInputProps {
 export const ChatInput: React.FC<ChatInputProps> = memo(
     ({ fileInputRef: externalFileInputRef, textareaRef: externalTextareaRef }) => {
         const ctrl = useChatInputController();
+        const { t } = useTranslation();
 
         const localFileInputRef = useRef<HTMLInputElement>(null);
         const localTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -124,7 +126,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
         return (
             <div
                 role="group"
-                aria-label="Chat input"
+                aria-label={t('aria.chatInput')}
                 className={cn(
                     'p-4 border-t border-border/50 bg-background/50 backdrop-blur-sm relative z-30',
                     ctrl.isDragging && 'ring-2 ring-primary/50 border-primary/50'

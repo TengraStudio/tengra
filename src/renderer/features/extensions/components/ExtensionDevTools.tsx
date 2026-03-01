@@ -1,3 +1,4 @@
+import { ExtensionProfileData } from '@shared/types/extension';
 import {
     Activity,
     AlertCircle,
@@ -10,12 +11,11 @@ import {
     Trash2,
     X,
 } from 'lucide-react';
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useEffect,useMemo, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-import { ExtensionProfileData } from '@shared/types/extension';
 import { useExtensionLogs } from '../hooks/useExtensionLogs';
 import { useExtensions } from '../hooks/useExtensions';
 
@@ -63,18 +63,18 @@ export const ExtensionDevTools: React.FC<ExtensionDevToolsProps> = ({ onClose })
     useEffect(() => {
         let mounted = true;
         const fetchDetails = async () => {
-            if (!selectedExtensionId) return;
+            if (!selectedExtensionId) {return;}
             if (activeTab === 'state') {
                 const res = await getState(selectedExtensionId);
-                if (mounted && res.success && res.state) setExtensionState(res.state);
+                if (mounted && res.success && res.state) {setExtensionState(res.state);}
             } else if (activeTab === 'profiler') {
                 const res = await getProfile(selectedExtensionId);
-                if (mounted && res.success && res.profile) setExtensionProfile(res.profile);
+                if (mounted && res.success && res.profile) {setExtensionProfile(res.profile);}
             }
         };
 
         void fetchDetails();
-        const interval = setInterval(fetchDetails, 2000);
+        const interval = setInterval(() => void fetchDetails(), 2000);
         return () => {
             mounted = false;
             clearInterval(interval);

@@ -1,5 +1,5 @@
-import { appLogger } from '@main/logging/logger';
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
+import { appLogger } from '@main/logging/logger';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalAIService } from '@main/services/llm/local-ai.service';
 import { OllamaService } from '@main/services/llm/ollama.service';

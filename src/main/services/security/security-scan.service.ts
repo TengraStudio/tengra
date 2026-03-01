@@ -1,11 +1,11 @@
 import { execFile } from 'child_process';
-import { app } from 'electron';
 import * as path from 'path';
 
 import { BaseService } from '@main/services/base.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
 import { getErrorMessage } from '@shared/utils/error.util';
+import { app } from 'electron';
 
 /** Vulnerability counts by severity level. */
 export interface VulnerabilityCounts {
@@ -68,7 +68,7 @@ export class SecurityScanService extends BaseService {
         this.logInfo('Registering periodic npm audit scan');
         this.jobScheduler.registerRecurringJob(
             SCAN_JOB_ID,
-            () => this.runScan(),
+            async () => { await this.runScan(); },
             () => ONE_DAY_MS
         );
     }
@@ -186,7 +186,7 @@ export class SecurityScanService extends BaseService {
     /** Counts severity levels from the vulnerabilities record (npm audit v7+ format). */
     private countFromVulnerabilities(vulns?: NpmAuditMetadata['vulnerabilities']): VulnerabilityCounts {
         const counts: VulnerabilityCounts = { critical: 0, high: 0, moderate: 0, low: 0, info: 0, total: 0 };
-        if (!vulns) return counts;
+        if (!vulns) {return counts;}
 
         for (const key of Object.keys(vulns)) {
             const severity = vulns[key]?.severity ?? 'info';

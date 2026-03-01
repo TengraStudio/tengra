@@ -25,6 +25,7 @@ import { KnowledgeRepository } from './repositories/knowledge.repository';
 import { ProjectRepository } from './repositories/project.repository';
 import { SystemRepository } from './repositories/system.repository';
 import { UacRepository } from './repositories/uac.repository';
+import { UserBehaviorRepository } from './repositories/user-behavior.repository';
 import { DataService } from './data.service';
 import { DatabaseClientService } from './database-client.service';
 
@@ -238,12 +239,14 @@ export class DatabaseService extends BaseService {
     private _knowledge!: KnowledgeRepository;
     private _system!: SystemRepository;
     private _uac!: UacRepository;
+    private _userBehavior!: UserBehaviorRepository;
 
     get chats() { return this._chats; }
     get projects() { return this._projects; }
     get knowledge() { return this._knowledge; }
     get system() { return this._system; }
     get uac() { return this._uac; }
+    get userBehavior() { return this._userBehavior; }
 
     constructor(
         private dataService: DataService,
@@ -297,6 +300,7 @@ export class DatabaseService extends BaseService {
             this._knowledge = new KnowledgeRepository(adapter);
             this._system = new SystemRepository(adapter);
             this._uac = new UacRepository(adapter);
+            this._userBehavior = new UserBehaviorRepository(adapter);
 
             await this._uac.ensureTables();
             await this._knowledge.ensureFileDiffTable();

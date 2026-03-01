@@ -1,6 +1,7 @@
 import { ChevronRight, Home } from 'lucide-react';
 import React from 'react';
 
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 export interface BreadcrumbItem {
@@ -22,12 +23,14 @@ export function Breadcrumb({
     showHome = false,
     separator = <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 rtl-flip" />
 }: BreadcrumbProps) {
+    const { t } = useTranslation();
+
     if (items.length === 0) {return null;}
 
     return (
         <nav 
             className={cn("flex items-center gap-2 text-sm", className)}
-            aria-label="Breadcrumb"
+            aria-label={t('aria.breadcrumb')}
         >
             <ol className="flex items-center gap-2">
                 {showHome && (
@@ -36,7 +39,7 @@ export function Breadcrumb({
                             <button
                                 onClick={() => items[0]?.onClick?.()}
                                 className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
-                                aria-label="Home"
+                                aria-label={t('aria.home')}
                             >
                                 <Home className="w-4 h-4" />
                             </button>

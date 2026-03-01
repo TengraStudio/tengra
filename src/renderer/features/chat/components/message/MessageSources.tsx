@@ -1,5 +1,5 @@
-import { memo } from 'react';
 import { FileCode, Sparkles } from 'lucide-react';
+import { memo } from 'react';
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
 

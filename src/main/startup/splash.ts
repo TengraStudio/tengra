@@ -1,8 +1,7 @@
 import path from 'path';
 
-import { app, BrowserWindow, nativeImage } from 'electron';
-
 import { enforceNavigationRestrictions } from '@main/utils/navigation-security.util';
+import { app, BrowserWindow, nativeImage } from 'electron';
 
 let splashWindow: BrowserWindow | null = null;
 

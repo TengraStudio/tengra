@@ -38,7 +38,7 @@ export function setFlushHandler(handler: (prompts: QueuedPrompt[]) => void): voi
 }
 
 function flush(): void {
-    if (state.items.length === 0 || !onFlush) return;
+    if (state.items.length === 0 || !onFlush) {return;}
     const toSend = state.items.map((p) => ({ ...p, status: 'sending' as const }));
     state = { ...state, items: toSend };
     emit();

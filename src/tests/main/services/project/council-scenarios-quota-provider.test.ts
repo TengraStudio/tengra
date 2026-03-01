@@ -6,6 +6,7 @@ import { AgentExecutorService } from '@main/services/project/agent/agent-executo
 import { AgentPersistenceService } from '@main/services/project/agent/agent-persistence.service';
 import { AgentProviderRotationService } from '@main/services/project/agent/agent-provider-rotation.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { createMockPersistence, createMockPlan, createMockTaskState } from './council-scenarios.helpers';
 
 describe('Council Scenario 3 – Quota-End Flow: model switch and continuation', () => {

@@ -1,5 +1,5 @@
-import { appLogger } from '@main/logging/logger';
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
+import { appLogger } from '@main/logging/logger';
 import { ExportService } from '@main/services/export/export.service';
 import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';

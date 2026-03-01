@@ -1,5 +1,5 @@
-import { memo, useEffect, useId, useState } from 'react';
 import DOMPurify from 'dompurify';
+import { memo, useEffect, useId, useState } from 'react';
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
 

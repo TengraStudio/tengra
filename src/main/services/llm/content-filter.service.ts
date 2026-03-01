@@ -130,7 +130,7 @@ function matchesPattern(content: string, truncated: string, pattern: ContentFilt
     if (pattern.literal && content.includes(pattern.literal)) {
         return true;
     }
-    if (pattern.regex && pattern.regex.test(truncated)) {
+    if (pattern.regex?.test(truncated)) {
         return true;
     }
     return false;

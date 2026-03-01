@@ -506,24 +506,24 @@ export function TerminalPanelContentImpl({
         setIsRecordingPanelOpen(false);
         setIsMultiplexerOpen(true);
         void refreshMultiplexerSessions();
-    }, [refreshMultiplexerSessions, setIsCommandHistoryOpen, setIsTaskRunnerOpen]);
+    }, [refreshMultiplexerSessions, setIsCommandHistoryOpen, setIsTaskRunnerOpen, setTerminalContextMenu, setIsSearchOpen, setIsGalleryView, setIsSemanticPanelOpen, setIsRecordingPanelOpen, setIsMultiplexerOpen]);
 
     const closeMultiplexerPanel = useCallback(() => {
         setIsMultiplexerOpen(false);
-    }, []);
+    }, [setIsMultiplexerOpen]);
 
     const attachMultiplexerSession = useCallback(
         async (session: Parameters<typeof attachMultiplexerSessionCommand>[0]) => {
             await attachMultiplexerSessionCommand(session);
             setIsMultiplexerOpen(false);
         },
-        [attachMultiplexerSessionCommand]
+        [attachMultiplexerSessionCommand, setIsMultiplexerOpen]
     );
 
     const createMultiplexerSession = useCallback(async () => {
         await createMultiplexerSessionCommand();
         setIsMultiplexerOpen(false);
-    }, [createMultiplexerSessionCommand]);
+    }, [createMultiplexerSessionCommand, setIsMultiplexerOpen]);
 
     const setTerminalInstance = useCallback((id: string, terminal: XTerm | null) => {
         if (terminal) {
@@ -564,7 +564,7 @@ export function TerminalPanelContentImpl({
             completeRecording();
             stopReplay();
         }
-    }, [completeRecording, isOpen, stopReplay, setIsCommandHistoryOpen, setIsTaskRunnerOpen]);
+    }, [completeRecording, isOpen, stopReplay, setIsCommandHistoryOpen, setIsTaskRunnerOpen, setIsAppearanceMenuOpen, setIsGalleryView, setIsMultiplexerOpen, setIsRecordingPanelOpen, setIsSearchOpen, setIsSemanticPanelOpen, setSearchStatus, setSplitView]);
 
     // --- Bootstrap ---
     useTerminalBootstrapEffects({
@@ -608,7 +608,7 @@ export function TerminalPanelContentImpl({
             }
             setActiveTabId(tabs[tabs.length - 1]?.id ?? null);
         }
-    }, [activeTabId, displayTabs, projectIssuesTab, setActiveTabId, tabs]);
+    }, [activeTabId, displayTabs, projectIssuesTab, setActiveTabId, tabs, setIsGalleryView, setIsSemanticPanelOpen]);
 
     // --- splitView sync ---
     useEffect(() => {
@@ -645,7 +645,7 @@ export function TerminalPanelContentImpl({
                 orientation: splitView.orientation,
             });
         }
-    }, [activeTabId, splitView, tabs]);
+    }, [activeTabId, splitView, tabs, setSplitView]);
 
     // --- Terminal lifecycle ---
     useTerminalLifecycle({
@@ -678,7 +678,7 @@ export function TerminalPanelContentImpl({
             window.removeEventListener('resize', closeContextMenu);
             window.removeEventListener('keydown', onEsc);
         };
-    }, [terminalContextMenu]);
+    }, [terminalContextMenu, setTerminalContextMenu]);
 
     // --- Search focus ---
     useEffect(() => {
@@ -692,7 +692,7 @@ export function TerminalPanelContentImpl({
         return () => {
             window.clearTimeout(timer);
         };
-    }, [isSearchOpen]);
+    }, [isSearchOpen, searchInputRef]);
 
     // --- Search query live update ---
     useEffect(() => {
@@ -731,6 +731,9 @@ export function TerminalPanelContentImpl({
         searchActiveMatchIndex,
         searchQuery,
         searchStatus,
+        setSearchActiveMatchIndex,
+        setSearchMatches,
+        setSearchStatus,
     ]);
 
     // --- Reset search on tab change ---
@@ -739,7 +742,7 @@ export function TerminalPanelContentImpl({
         setSearchMatches([]);
         setSearchActiveMatchIndex(-1);
         resetActiveSearchCursor();
-    }, [activeTabId, resetActiveSearchCursor]);
+    }, [activeTabId, resetActiveSearchCursor, setSearchStatus, setSearchMatches, setSearchActiveMatchIndex]);
 
     // --- Reset search on regex toggle ---
     useEffect(() => {
@@ -747,7 +750,7 @@ export function TerminalPanelContentImpl({
         setSearchMatches([]);
         setSearchActiveMatchIndex(-1);
         resetActiveSearchCursor();
-    }, [resetActiveSearchCursor, searchUseRegex]);
+    }, [resetActiveSearchCursor, searchUseRegex, setSearchStatus, setSearchMatches, setSearchActiveMatchIndex]);
 
     // --- Shortcut event handler ---
     useEffect(() => {
@@ -788,7 +791,7 @@ export function TerminalPanelContentImpl({
             event.dataTransfer.effectAllowed = 'move';
             event.dataTransfer.setData('text/plain', tabId);
         },
-        []
+        [setDraggingTabId, setDragOverTabId]
     );
 
     const handleTabDragOver = useCallback(
@@ -800,13 +803,13 @@ export function TerminalPanelContentImpl({
             event.dataTransfer.dropEffect = 'move';
             setDragOverTabId(tabId);
         },
-        [draggingTabId]
+        [draggingTabId, setDragOverTabId]
     );
 
     const resetTabDragState = useCallback(() => {
         setDraggingTabId(null);
         setDragOverTabId(null);
-    }, []);
+    }, [setDraggingTabId, setDragOverTabId]);
 
     const handleTabDrop = useCallback(
         (event: React.DragEvent<HTMLButtonElement>, tabId: string) => {
@@ -866,6 +869,11 @@ export function TerminalPanelContentImpl({
             setSplitView,
             splitFocusedPane,
             splitView,
+            setIsGalleryView,
+            setIsSearchOpen,
+            setIsSemanticPanelOpen,
+            setIsMultiplexerOpen,
+            setIsRecordingPanelOpen,
         ]
     );
 
@@ -878,7 +886,7 @@ export function TerminalPanelContentImpl({
             }
             setSplitFocusedPane(splitView.primaryId === tabId ? 'primary' : 'secondary');
         },
-        [setActiveTabId, splitView]
+        [setActiveTabId, splitView, setSplitFocusedPane]
     );
 
     // --- Tab layout class ---

@@ -23,7 +23,7 @@ interface TerminalOverlaysProps {
     aiIsLoading: boolean;
     aiResult: AiResult | null;
     closeAiPanel: () => void;
-    t: (key: string) => string;
+    t: (key: string, options?: Record<string, string | number>) => string;
     handleAiApplyFix: (command: string) => Promise<void>;
     multiplexerPanelProps: ComponentProps<typeof TerminalMultiplexerPanel> | null;
     recordingPanelProps: ComponentProps<typeof TerminalRecordingPanel> | null;

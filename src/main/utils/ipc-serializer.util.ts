@@ -2,15 +2,15 @@
  * Type-safe serialization helpers for IPC boundary conversions.
  * Replaces ad-hoc `as unknown as` double-casts with explicit, auditable functions.
  */
-import { JsonObject, JsonValue } from '@shared/types/common'
+import { JsonObject, JsonValue } from '@shared/types/common';
 
 /**
  * Serializes a domain object (which may contain Dates, etc.) to an IPC-safe value.
  * Uses JSON round-trip to guarantee the result is a valid JsonValue.
  */
 export function serializeToIpc(value: object | object[] | null | undefined): JsonValue {
-    if (value == null) return null
-    return JSON.parse(JSON.stringify(value)) as JsonValue
+    if (value == null) {return null;}
+    return JSON.parse(JSON.stringify(value)) as JsonValue;
 }
 
 /**
@@ -18,11 +18,11 @@ export function serializeToIpc(value: object | object[] | null | undefined): Jso
  * The caller must ensure the value has been validated before calling this function.
  */
 export function validatedToJsonObject(value: Record<string, unknown>): JsonObject {
-    const result: JsonObject = {}
+    const result: JsonObject = {};
     for (const [key, val] of Object.entries(value)) {
-        result[key] = val as JsonObject[string]
+        result[key] = val as JsonObject[string];
     }
-    return result
+    return result;
 }
 
 /**
@@ -31,5 +31,5 @@ export function validatedToJsonObject(value: Record<string, unknown>): JsonObjec
  * The caller must ensure the value has been schema-validated before calling.
  */
 export function validatedAs<T extends object>(value: Partial<T> | Record<string, unknown>): T {
-    return { ...value } as T
+    return { ...value } as T;
 }

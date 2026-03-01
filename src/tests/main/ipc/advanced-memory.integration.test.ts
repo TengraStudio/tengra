@@ -30,7 +30,7 @@ vi.mock('@main/utils/ipc-wrapper.util', () => ({
             return await handler(event, ...args);
         } catch (error: unknown) {
             if (options?.onError) {
-                return options.onError(error);
+                return options.onError(error as Error);
             }
             throw error;
         }

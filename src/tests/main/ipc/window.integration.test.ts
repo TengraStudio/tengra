@@ -41,7 +41,7 @@ vi.mock('electron', () => ({
     },
     BrowserWindow: {
         fromWebContents: vi.fn((sender: unknown) => {
-            return sender.id === 1 ? mockMainWindow : null;
+            return (sender as Record<string, unknown>).id === 1 ? mockMainWindow : null;
         }),
     },
     shell: {
@@ -287,8 +287,8 @@ describe('Window IPC Handlers', () => {
 
             const result = await handler!(mockEvent, '');
 
-            expect(result.success).toBe(false);
-            expect(result.error).toBeDefined();
+            expect((result as Record<string, unknown>).success).toBe(false);
+            expect((result as Record<string, unknown>).error).toBeDefined();
         });
 
         it('should reject overly long URL', async () => {
@@ -297,11 +297,11 @@ describe('Window IPC Handlers', () => {
 
             const result = await handler!(mockEvent, longUrl);
 
-            expect(result.success).toBe(false);
+            expect((result as Record<string, unknown>).success).toBe(false);
         });
     });
 
-    describe('shell:openTerminal', () => {
+    describe('shell:openTerminal',() => {
         it('should open terminal with command', async () => {
             const handler = mockIpcMainHandlers.get('shell:openTerminal');
             expect(handler).toBeDefined();

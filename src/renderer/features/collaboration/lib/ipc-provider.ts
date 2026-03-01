@@ -55,7 +55,7 @@ export class IpcProvider extends Observable<string> {
             // 3. Local Doc Updates
             this.doc.on('update', (update, origin) => {
                 if (origin !== this) {
-                    window.electron.userCollaboration.sendUpdate({
+                    void window.electron.userCollaboration.sendUpdate({
                         roomId: this.roomId,
                         data: JSON.stringify(Array.from(update))
                     });
@@ -67,7 +67,7 @@ export class IpcProvider extends Observable<string> {
                 if (origin !== this) {
                     const changedClients = added.concat(updated).concat(removed);
                     const update = encodeAwarenessUpdate(this.awareness, changedClients);
-                    window.electron.userCollaboration.sendUpdate({
+                    void window.electron.userCollaboration.sendUpdate({
                         roomId: this.roomId,
                         data: JSON.stringify({ type: 'aw', data: Array.from(update) })
                     });
@@ -97,7 +97,7 @@ export class IpcProvider extends Observable<string> {
      */
     destroy() {
         this.unsubscribers.forEach(unsub => unsub());
-        window.electron.userCollaboration.leaveRoom(this.roomId);
+        void window.electron.userCollaboration.leaveRoom(this.roomId);
         super.destroy();
     }
 }

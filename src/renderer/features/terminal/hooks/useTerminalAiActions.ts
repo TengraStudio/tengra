@@ -1,18 +1,19 @@
-import { useCallback, type MutableRefObject } from 'react';
+import { useCallback } from 'react';
 import { z } from 'zod';
 
 import { invokeTypedIpc } from '@/lib/ipc-client';
 import { TerminalTab } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
-import type { AiPanelMode, AiResult } from './useTerminalAI';
-import { TerminalSemanticIssue } from '../utils/terminal-panel-types';
 import {
     explainErrorResultSchema,
     fixErrorResultSchema,
     terminalCommandHistoryEntrySchema,
     type TerminalIpcContract,
 } from '../utils/terminal-ipc';
+import { TerminalSemanticIssue } from '../utils/terminal-panel-types';
+
+import type { AiPanelMode, AiResult } from './useTerminalAI';
 
 interface UseTerminalAiActionsParams {
     activeTabId: string | null;

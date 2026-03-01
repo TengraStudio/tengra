@@ -1,6 +1,8 @@
-import React, { memo } from 'react';
 import { RotateCcw, Smile, Volume2, VolumeX } from 'lucide-react';
+import React, { memo } from 'react';
+
 import { Message } from '@/types';
+
 import { BookmarkButton, CopyButton, RatingButtons } from './CopierRatingBookmark';
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;

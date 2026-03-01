@@ -1,7 +1,8 @@
 import { memo } from 'react';
+
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 
 interface CollaborationMemoryProps {
     sharedMemoryNote: string;

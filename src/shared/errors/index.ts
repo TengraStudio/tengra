@@ -1,6 +1,6 @@
-export { AppError } from './base-error'
-export { ServiceError } from './service-error'
-export { IpcError } from './ipc-error'
-export { ValidationError } from './validation-error'
-export type { ValidationIssue } from './validation-error'
-export { NetworkError } from './network-error'
+export { AppError } from './base-error';
+export { IpcError } from './ipc-error';
+export { NetworkError } from './network-error';
+export { ServiceError } from './service-error';
+export type { ValidationIssue } from './validation-error';
+export { ValidationError } from './validation-error';

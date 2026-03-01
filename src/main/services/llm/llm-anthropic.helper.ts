@@ -1,11 +1,12 @@
+import { KeyRotationService } from '@main/services/security/key-rotation.service';
 import { ChatMessage } from '@main/types/llm.types';
+import { OpenAIResponse } from '@main/types/llm.types';
 import { MessageNormalizer } from '@main/utils/message-normalizer.util';
 import { Message } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
 import { ApiError, AuthenticationError, NetworkError } from '@shared/utils/error.util';
+
 import { validateLLMContent } from './llm-openai.helper';
-import { OpenAIResponse } from '@main/types/llm.types';
-import { KeyRotationService } from '@main/services/security/key-rotation.service';
 
 /**
  * Builds the Anthropic API request body.

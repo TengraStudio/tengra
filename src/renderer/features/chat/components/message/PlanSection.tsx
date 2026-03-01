@@ -1,5 +1,5 @@
-import { lazy, memo, Suspense } from 'react';
 import { Check, ListTodo } from 'lucide-react';
+import { lazy, memo, Suspense } from 'react';
 import remarkGfm from 'remark-gfm';
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;

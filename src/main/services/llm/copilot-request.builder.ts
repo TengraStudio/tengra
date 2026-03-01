@@ -1,19 +1,18 @@
 import { randomUUID } from 'crypto';
 
+import { appLogger } from '@main/logging/logger';
 import { sanitizePrompt, validatePromptSafety } from '@main/utils/prompt-sanitizer.util';
 import { Message, ToolDefinition } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
 
-import { appLogger } from '@main/logging/logger';
 import {
-    CopilotPayload,
-    CopilotState,
-    CopilotTool,
     COPILOT_API_VERSION,
     COPILOT_DEFAULT_TEMPERATURE,
     COPILOT_EDITOR_PLUGIN_VERSION,
-    COPILOT_USER_AGENT
-} from './copilot.types';
+    COPILOT_USER_AGENT,
+    CopilotPayload,
+    CopilotState,
+    CopilotTool} from './copilot.types';
 
 const SERVICE_NAME = 'CopilotRequestBuilder';
 

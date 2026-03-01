@@ -1,5 +1,5 @@
-import { appLogger } from '@main/logging/logger';
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
+import { appLogger } from '@main/logging/logger';
 import { CommandService } from '@main/services/system/command.service';
 import { ToolExecutor } from '@main/tools/tool-executor';
 import { createSafeIpcHandler,createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';

@@ -1,7 +1,8 @@
-import { memo } from 'react';
 import { Copy } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import { memo } from 'react';
+
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 
 interface CollaborationSessionProps {

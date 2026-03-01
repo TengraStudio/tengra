@@ -1,9 +1,9 @@
-import { ChevronDown, ChevronUp, Search, X } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ChevronDown, ChevronUp, Search, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { Language, useTranslation } from '@/i18n'
-import { cn } from '@/lib/utils'
-import { Message } from '@/types'
+import { Language, useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
+import { Message } from '@/types';
 
 interface ChatSearchOverlayProps {
     messages: Message[]
@@ -20,11 +20,11 @@ interface SearchMatch {
 
 /** Extract text content from a message */
 function getMessageText(message: Message): string {
-    if (typeof message.content === 'string') return message.content
+    if (typeof message.content === 'string') {return message.content;}
     return message.content
         .filter((p) => p.type === 'text')
         .map((p) => ('text' in p ? p.text : ''))
-        .join(' ')
+        .join(' ');
 }
 
 export const ChatSearchOverlay: React.FC<ChatSearchOverlayProps> = ({
@@ -34,74 +34,76 @@ export const ChatSearchOverlay: React.FC<ChatSearchOverlayProps> = ({
     onClose,
     isOpen
 }) => {
-    const { t } = useTranslation(language)
-    const inputRef = useRef<HTMLInputElement>(null)
-    const [query, setQuery] = useState('')
-    const [currentMatchIndex, setCurrentMatchIndex] = useState(0)
+    const { t } = useTranslation(language);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const [query, setQuery] = useState('');
+    const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
 
     const matches = useMemo<SearchMatch[]>(() => {
-        if (!query.trim()) return []
-        const lowerQuery = query.toLowerCase()
-        const result: SearchMatch[] = []
+        if (!query.trim()) {return [];}
+        const lowerQuery = query.toLowerCase();
+        const result: SearchMatch[] = [];
         for (const message of messages) {
-            if (message.role === 'system') continue
-            const text = getMessageText(message).toLowerCase()
-            let startPos = 0
-            let foundIndex = text.indexOf(lowerQuery, startPos)
+            if (message.role === 'system') {continue;}
+            const text = getMessageText(message).toLowerCase();
+            let startPos = 0;
+            let foundIndex = text.indexOf(lowerQuery, startPos);
             while (foundIndex !== -1) {
-                result.push({ messageId: message.id, index: foundIndex })
-                startPos = foundIndex + 1
-                foundIndex = text.indexOf(lowerQuery, startPos)
+                result.push({ messageId: message.id, index: foundIndex });
+                startPos = foundIndex + 1;
+                foundIndex = text.indexOf(lowerQuery, startPos);
             }
         }
-        return result
-    }, [query, messages])
+        return result;
+    }, [query, messages]);
 
     useEffect(() => {
         if (matches.length > 0) {
-            setCurrentMatchIndex(0)
+            requestAnimationFrame(() => setCurrentMatchIndex(0));
         }
-    }, [matches.length])
+    }, [matches.length]);
 
     useEffect(() => {
         if (isOpen) {
-            inputRef.current?.focus()
+            inputRef.current?.focus();
         } else {
-            setQuery('')
-            setCurrentMatchIndex(0)
+            requestAnimationFrame(() => {
+                setQuery('');
+                setCurrentMatchIndex(0);
+            });
         }
-    }, [isOpen])
+    }, [isOpen]);
 
     useEffect(() => {
         if (matches.length > 0 && onHighlightMessage) {
-            const match = matches[currentMatchIndex]
-            onHighlightMessage(match.messageId, match.index)
+            const match = matches[currentMatchIndex];
+            onHighlightMessage(match.messageId, match.index);
         }
-    }, [currentMatchIndex, matches, onHighlightMessage])
+    }, [currentMatchIndex, matches, onHighlightMessage]);
 
     const goToNext = useCallback(() => {
-        if (matches.length === 0) return
-        setCurrentMatchIndex((prev) => (prev + 1) % matches.length)
-    }, [matches.length])
+        if (matches.length === 0) {return;}
+        setCurrentMatchIndex((prev) => (prev + 1) % matches.length);
+    }, [matches.length]);
 
     const goToPrev = useCallback(() => {
-        if (matches.length === 0) return
-        setCurrentMatchIndex((prev) => (prev - 1 + matches.length) % matches.length)
-    }, [matches.length])
+        if (matches.length === 0) {return;}
+        setCurrentMatchIndex((prev) => (prev - 1 + matches.length) % matches.length);
+    }, [matches.length]);
 
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLInputElement>) => {
             if (e.key === 'Enter') {
-                e.shiftKey ? goToPrev() : goToNext()
+                if (e.shiftKey) { goToPrev(); } else { goToNext(); }
             }
             if (e.key === 'Escape') {
-                onClose()
+                onClose();
             }
         },
         [goToNext, goToPrev, onClose]
-    )
+    );
 
-    if (!isOpen) return null
+    if (!isOpen) {return null;}
 
     const matchLabel =
         matches.length > 0
@@ -111,7 +113,7 @@ export const ChatSearchOverlay: React.FC<ChatSearchOverlayProps> = ({
               })
             : query.trim()
               ? t('chatSearch.noResults')
-              : ''
+              : '';
 
     return (
         <div
@@ -157,7 +159,7 @@ export const ChatSearchOverlay: React.FC<ChatSearchOverlayProps> = ({
                 <X className="w-4 h-4" />
             </button>
         </div>
-    )
-}
+    );
+};
 
-ChatSearchOverlay.displayName = 'ChatSearchOverlay'
+ChatSearchOverlay.displayName = 'ChatSearchOverlay';

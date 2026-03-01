@@ -29,14 +29,15 @@ interface MockCodeIntelligenceService extends Partial<CodeIntelligenceService> {
 
 describe('Code Intelligence IPC Handlers', () => {
     let mockService: MockCodeIntelligenceService;
-    let registeredHandlers: Map<string, (...args: unknown[]) => Promise<unknown>>;
+    type IpcHandler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
+    let registeredHandlers: Map<string, IpcHandler>;
 
     beforeEach(() => {
         registeredHandlers = new Map();
 
-        vi.mocked(ipcMain.handle).mockImplementation((channel: string, listener: (...args: unknown[]) => unknown) => {
+        vi.mocked(ipcMain.handle).mockImplementation(((channel: string, listener: IpcHandler) => {
             registeredHandlers.set(channel, listener);
-        });
+        }) as typeof ipcMain.handle);
 
         mockService = {
             scanProjectTodos: vi.fn().mockResolvedValue([
@@ -224,7 +225,7 @@ describe('Code Intelligence IPC Handlers', () => {
             );
 
             expect(mockService.findDefinition).toHaveBeenCalledWith('/project', 'functionName');
-            expect(result?.line).toBe(5);
+            expect((result as { line: number } | null)?.line).toBe(5);
         });
     });
 
@@ -244,8 +245,9 @@ describe('Code Intelligence IPC Handlers', () => {
             );
 
             expect(mockService.findReferences).toHaveBeenCalledWith('/project', 'functionName');
-            expect(result).toHaveLength(1);
-            expect(result[0].line).toBe(25);
+            const refs = result as Array<{ line: number }>;
+            expect(refs).toHaveLength(1);
+            expect(refs[0].line).toBe(25);
         });
     });
 
@@ -263,7 +265,7 @@ describe('Code Intelligence IPC Handlers', () => {
             );
 
             expect(mockService.getFileOutline).toHaveBeenCalledWith('/project/src/main.ts');
-            expect(result[0].name).toBe('functionName');
+            expect((result as Array<{ name: string }>)[0].name).toBe('functionName');
         });
     });
 
@@ -293,8 +295,9 @@ describe('Code Intelligence IPC Handlers', () => {
                 false,
                 100
             );
-            expect(result.applied).toBe(false);
-            expect(result.totalOccurrences).toBe(2);
+            const renameResult = result as { applied: boolean; totalOccurrences: number };
+            expect(renameResult.applied).toBe(false);
+            expect(renameResult.totalOccurrences).toBe(2);
         });
     });
 
@@ -336,8 +339,9 @@ describe('Code Intelligence IPC Handlers', () => {
                 true,
                 100
             );
-            expect(result.applied).toBe(true);
-            expect(result.updatedFiles).toEqual(['src/main.ts']);
+            const applyResult = result as { applied: boolean; updatedFiles: string[] };
+            expect(applyResult.applied).toBe(true);
+            expect(applyResult.updatedFiles).toEqual(['src/main.ts']);
         });
     });
 
@@ -355,9 +359,10 @@ describe('Code Intelligence IPC Handlers', () => {
             );
 
             expect(mockService.getSymbolAnalytics).toHaveBeenCalledWith('/project');
-            expect(result.totalSymbols).toBe(10);
-            expect(result.byKind.function).toBe(6);
-            expect(result.topFiles[0].path).toBe('src/main.ts');
+            const analytics = result as { totalSymbols: number; byKind: Record<string, number>; topFiles: Array<{ path: string }> };
+            expect(analytics.totalSymbols).toBe(10);
+            expect(analytics.byKind.function).toBe(6);
+            expect(analytics.topFiles[0].path).toBe('src/main.ts');
         });
     });
 
@@ -377,8 +382,9 @@ describe('Code Intelligence IPC Handlers', () => {
             );
 
             expect(mockService.generateFileDocumentation).toHaveBeenCalledWith('/project/src/main.ts', 'markdown');
-            expect(result.success).toBe(true);
-            expect(result.symbolCount).toBe(3);
+            const docResult = result as { success: boolean; symbolCount: number };
+            expect(docResult.success).toBe(true);
+            expect(docResult.symbolCount).toBe(3);
         });
     });
 
@@ -398,8 +404,9 @@ describe('Code Intelligence IPC Handlers', () => {
             );
 
             expect(mockService.analyzeCodeQuality).toHaveBeenCalledWith('/project', 200);
-            expect(result.qualityScore).toBe(87);
-            expect(result.filesScanned).toBe(5);
+            const qualityResult = result as { qualityScore: number; filesScanned: number };
+            expect(qualityResult.qualityScore).toBe(87);
+            expect(qualityResult.filesScanned).toBe(5);
         });
     });
 });

@@ -3,13 +3,13 @@ import { AuthService } from '@main/services/security/auth.service';
 import { getErrorMessage } from '@shared/utils/error.util';
 
 import {
+    COPILOT_API_VERSION,
+    COPILOT_EDITOR_PLUGIN_VERSION,
+    COPILOT_USER_AGENT,
     CopilotAccountType,
     CopilotState,
     CopilotTokenResponse,
     CopilotUsageData,
-    COPILOT_API_VERSION,
-    COPILOT_EDITOR_PLUGIN_VERSION,
-    COPILOT_USER_AGENT,
     GITHUB_COPILOT_USER_URL,
     GITHUB_COPILOT_V1_TOKEN_URL,
     GITHUB_COPILOT_V2_TOKEN_URL
@@ -210,7 +210,7 @@ export class CopilotTokenManager {
         try {
             await this.authService.linkAccount('copilot', {
                 accessToken: authHeaderToken,
-                sessionToken: this.state.copilotSessionToken!,
+                sessionToken: this.state.copilotSessionToken ?? '',
                 expiresAt: this.state.tokenExpiresAt,
                 metadata: { plan: this.state.accountType }
             });

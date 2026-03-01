@@ -1,5 +1,5 @@
-import { appLogger } from '@main/logging/logger';
 import { Container } from '@main/core/container';
+import { appLogger } from '@main/logging/logger';
 
 /** Adjacency list representing service dependencies */
 export type DependencyGraph = Map<string, string[]>;
@@ -15,6 +15,38 @@ export function buildDependencyGraph(container: Container): DependencyGraph {
         graph.set(entry.name, [...entry.dependencies]);
     }
     return graph;
+}
+
+/** DFS traversal state used for cycle detection. */
+interface DfsState {
+    color: Map<string, number>;
+    parent: Map<string, string | null>;
+    stack: string[];
+    cycles: string[][];
+    gray: number;
+    white: number;
+}
+
+/**
+ * Processes a single dependency during DFS traversal.
+ */
+function processDependency(
+    dep: string,
+    node: string,
+    state: DfsState
+): void {
+    if (state.color.get(dep) === state.gray) {
+        const cycle = [dep, node];
+        let cur = node;
+        while (state.parent.get(cur) !== dep && state.parent.get(cur) != null) {
+            cur = state.parent.get(cur) as string;
+            cycle.push(cur);
+        }
+        state.cycles.push(cycle.reverse());
+    } else if (state.color.get(dep) === state.white) {
+        state.parent.set(dep, node);
+        state.stack.push(dep);
+    }
 }
 
 /**
@@ -33,23 +65,13 @@ export function findCircularDependencies(graph: DependencyGraph): string[][] {
     for (const start of graph.keys()) {
         if (color.get(start) !== WHITE) { continue; }
         const stack: string[] = [start];
+        const dfsState: DfsState = { color, parent, stack, cycles, gray: GRAY, white: WHITE };
         while (stack.length > 0) {
             const node = stack[stack.length - 1];
             if (color.get(node) === WHITE) {
                 color.set(node, GRAY);
                 for (const dep of graph.get(node) ?? []) {
-                    if (color.get(dep) === GRAY) {
-                        const cycle = [dep, node];
-                        let cur = node;
-                        while (parent.get(cur) !== dep && parent.get(cur) != null) {
-                            cur = parent.get(cur) as string;
-                            cycle.push(cur);
-                        }
-                        cycles.push(cycle.reverse());
-                    } else if (color.get(dep) === WHITE) {
-                        parent.set(dep, node);
-                        stack.push(dep);
-                    }
+                    processDependency(dep, node, dfsState);
                 }
             } else {
                 color.set(node, BLACK);

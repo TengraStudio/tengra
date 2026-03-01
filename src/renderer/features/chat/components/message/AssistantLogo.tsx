@@ -1,10 +1,11 @@
 import { memo } from 'react';
-import { cn } from '@/lib/utils';
+
 import LogoAntigravity from '@/assets/antigravity.svg';
 import LogoOpenAI from '@/assets/chatgpt.svg';
 import LogoClaude from '@/assets/claude.svg';
 import LogoCopilot from '@/assets/copilot.png';
 import LogoOllama from '@/assets/ollama.svg';
+import { cn } from '@/lib/utils';
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
 
@@ -43,10 +44,10 @@ const getSpecialModelLogo = (name: string, t: TranslationFn) => {
 };
 
 const getInferredProvider = (name: string) => {
-    if (name.startsWith('gpt-') || name.startsWith('o1-')) return 'openai';
-    if (name.startsWith('claude-')) return 'anthropic';
-    if (name.startsWith('grok-')) return 'groq';
-    if (name.startsWith('antigravity-')) return 'antigravity';
+    if (name.startsWith('gpt-') || name.startsWith('o1-')) {return 'openai';}
+    if (name.startsWith('claude-')) {return 'anthropic';}
+    if (name.startsWith('grok-')) {return 'groq';}
+    if (name.startsWith('antigravity-')) {return 'antigravity';}
     return null;
 };
 
@@ -68,7 +69,7 @@ const getProviderLogoInfo = (modelName: string, provider?: string, backend?: str
     };
 
     const matchedKey = Object.keys(logoMap).find(k => effective.includes(k));
-    if (matchedKey) return logoMap[matchedKey];
+    if (matchedKey) {return logoMap[matchedKey];}
     return { logo: LogoOllama, key: effective, color: 'muted' };
 };
 

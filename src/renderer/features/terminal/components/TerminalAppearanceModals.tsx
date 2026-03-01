@@ -32,7 +32,7 @@ interface TerminalAppearanceModalsProps {
     isAppearanceMenuOpen: boolean;
     setIsAppearanceMenuOpen: (open: boolean) => void;
     title: string;
-    t: (key: string) => string;
+    t: (key: string, options?: Record<string, string | number>) => string;
     terminalAppearance: TerminalAppearancePreferences;
     resolvedTerminalAppearance: ResolvedTerminalAppearance;
     themePresets: ThemePreset[];

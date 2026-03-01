@@ -19,7 +19,7 @@ type UseTerminalBootstrapEffectsParams = {
     fetchAvailableShells: () => Promise<ShellInfo[]>;
     fetchAvailableBackends: () => Promise<TerminalBackendInfo[]>;
     fetchRemoteConnections: () => Promise<void>;
-    resolveDefaultBackendId: (backends: TerminalBackendInfo[]) => string | undefined;
+    resolveDefaultBackendId: (backends: TerminalBackendInfo[], preferredId?: string | null) => string | undefined;
     createTerminal: (type: string, backendId?: string) => string;
 };
 

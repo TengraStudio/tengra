@@ -66,7 +66,7 @@ vi.mock('@codemirror/autocomplete', () => ({
 
 describe('Project CodeEditor integration', () => {
     it('renders empty state for blank content after initialization', async () => {
-        render(<CodeEditor content="" language="typescript" />);
+        render(<CodeEditor value="" language="typescript" />);
         expect(await screen.findByText('projectDashboard.editor.empty')).toBeInTheDocument();
     });
 });

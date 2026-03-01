@@ -23,9 +23,7 @@ export function installRendererLogger() {
         error: console.error.bind(console)
     };
 
-    const isProd = typeof import.meta !== 'undefined'
-        && import.meta.env != null
-        && import.meta.env.PROD === true;
+    const isProd = import.meta?.env?.PROD === true;
 
     const send = (level: LogLevel, args: LogValue[]) => {
         // In production, only forward errors and warnings to main via IPC

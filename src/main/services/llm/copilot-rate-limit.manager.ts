@@ -3,9 +3,9 @@ import { AuthService } from '@main/services/security/auth.service';
 import { getErrorMessage } from '@shared/utils/error.util';
 
 import {
+    COPILOT_USER_AGENT,
     CopilotNotificationService,
     CopilotState,
-    COPILOT_USER_AGENT,
     GITHUB_RATE_LIMIT_URL
 } from './copilot.types';
 

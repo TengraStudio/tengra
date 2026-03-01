@@ -1,12 +1,12 @@
 import { ChevronDown, ChevronUp, Search, X } from 'lucide-react';
-import { RefObject } from 'react';
+import { type Dispatch, type RefObject, type SetStateAction } from 'react';
 
 import { cn } from '@/lib/utils';
 
 import type { TerminalSearchMatch } from '../utils/terminal-search';
 
 interface TerminalSearchOverlayProps {
-    t: (key: string) => string;
+    t: (key: string, options?: Record<string, string | number>) => string;
     searchInputRef: RefObject<HTMLInputElement>;
     searchQuery: string;
     searchUseRegex: boolean;
@@ -16,7 +16,7 @@ interface TerminalSearchOverlayProps {
     searchHistory: string[];
     setSearchQuery: (value: string) => void;
     setSearchUseRegex: (value: boolean | ((prev: boolean) => boolean)) => void;
-    setSearchStatus: (value: 'idle' | 'found' | 'not-found' | 'invalid-regex') => void;
+    setSearchStatus: Dispatch<SetStateAction<'idle' | 'found' | 'not-found' | 'invalid-regex'>>;
     setSearchMatches: (value: TerminalSearchMatch[]) => void;
     setSearchActiveMatchIndex: (value: number) => void;
     setSearchHistoryIndex: (value: number) => void;
@@ -105,7 +105,7 @@ export function TerminalSearchOverlay({
                         runTerminalSearch('prev');
                     }}
                     className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label="Find previous"
+                    aria-label={t('aria.findPrevious')}
                 >
                     <ChevronUp className="w-3.5 h-3.5" />
                 </button>
@@ -114,7 +114,7 @@ export function TerminalSearchOverlay({
                         runTerminalSearch('next');
                     }}
                     className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label="Find next"
+                    aria-label={t('aria.findNext')}
                 >
                     <ChevronDown className="w-3.5 h-3.5" />
                 </button>

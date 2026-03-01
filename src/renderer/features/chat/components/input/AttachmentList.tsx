@@ -1,4 +1,3 @@
-import { memo } from 'react';
 import {
     AudioLines,
     File as FileIcon,
@@ -8,6 +7,8 @@ import {
     Video,
     X,
 } from 'lucide-react';
+import { memo } from 'react';
+
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 import { Attachment } from '@/types';
@@ -19,11 +20,11 @@ export interface AttachmentListProps {
 }
 
 const getFileIcon = (type: string) => {
-    if (type === 'image') return <ImageIcon size={14} />;
-    if (type === 'video') return <Video size={14} />;
-    if (type === 'audio') return <AudioLines size={14} />;
-    if (type.includes('text') || type.includes('json') || type.includes('md')) return <FileText size={14} />;
-    if (type.includes('code') || type.includes('javascript') || type.includes('python')) return <FileCode size={14} />;
+    if (type === 'image') {return <ImageIcon size={14} />;}
+    if (type === 'video') {return <Video size={14} />;}
+    if (type === 'audio') {return <AudioLines size={14} />;}
+    if (type.includes('text') || type.includes('json') || type.includes('md')) {return <FileText size={14} />;}
+    if (type.includes('code') || type.includes('javascript') || type.includes('python')) {return <FileCode size={14} />;}
     return <FileIcon size={14} />;
 };
 

@@ -63,8 +63,8 @@ interface TerminalToolbarProps {
     resolvedDefaultBackendId: string | undefined;
     persistPreferredBackendId: (backendId: string) => Promise<void>;
     createTerminal: (shellId: string, backendId?: string) => void;
-    resolvePreferredShellId: () => string | null;
-    t: (key: string) => string;
+    resolvePreferredShellId: () => string | undefined;
+    t: (key: string, options?: Record<string, string | number>) => string;
     isLoadingRemoteConnections: boolean;
     remoteSshProfiles: RemoteSshProfile[];
     remoteDockerContainers: RemoteDockerContainer[];

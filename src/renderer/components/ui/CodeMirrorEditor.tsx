@@ -1,4 +1,3 @@
-import { sanitizeCodeEditorLanguage } from './code-editor-validation';
 import {
     recordCodeEditorFailure,
     recordCodeEditorFallback,
@@ -10,6 +9,8 @@ import { useEffect, useRef, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { appLogger } from '@/utils/renderer-logger';
+
+import { sanitizeCodeEditorLanguage } from './code-editor-validation';
 
 interface CodeMirrorEditorProps {
     content: string

@@ -2105,6 +2105,34 @@ export const webElectronMock: ElectronAPI = {
             errors: [],
         }),
     },
+
+    codeSandbox: {
+        execute: async (_params: { language: string; code: string }) => ({
+            success: false,
+            stdout: '',
+            stderr: 'Code sandbox not available in web mode',
+            durationMs: 0,
+        }),
+    },
+
+    promptTemplates: {
+        getAll: async () => [],
+        search: async (_query: string) => [],
+        getCategories: async () => [],
+        create: async (_payload: { name: string; description: string; template: string; category: string; variables: import('@shared/types/templates').TemplateVariable[]; tags: string[] }) =>
+            ({ id: '', name: '', template: '', variables: [], createdAt: 0, updatedAt: 0 }) as import('@shared/types/templates').PromptTemplate,
+        update: async (_id: string, _payload: { name: string; description: string; template: string; category: string; variables: import('@shared/types/templates').TemplateVariable[]; tags: string[] }) =>
+            ({ id: '', name: '', template: '', variables: [], createdAt: 0, updatedAt: 0 }) as import('@shared/types/templates').PromptTemplate,
+        delete: async (_id: string) => { /* noop */ },
+    },
+
+    userCollaboration: {
+        joinRoom: async (_params: { type: string; id: string }) => { /* noop */ },
+        leaveRoom: async (_roomId: string) => { /* noop */ },
+        sendUpdate: async (_params: { roomId: string; data: string }) => { /* noop */ },
+        onSyncUpdate: (_callback: (payload: { roomId: string; data: string }) => void) => () => { /* noop */ },
+        onError: (_callback: (payload: { roomId: string; error: string }) => void) => () => { /* noop */ },
+    },
 };
 
 if (typeof window !== 'undefined' && !(window as unknown as Record<string, unknown>).electron) {

@@ -1,7 +1,8 @@
-import { memo } from 'react';
 import { Copy } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import { memo } from 'react';
+
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
@@ -21,7 +22,7 @@ export const PresenceSection = memo(({
     presence: PresenceParticipant[],
     allowGuests: boolean,
     onToggleGuests: () => void,
-    t: any
+    t: (key: string) => string
 }) => (
     <Card className="p-3 space-y-2">
         <div className="flex items-center justify-between">
@@ -62,7 +63,7 @@ export const MemorySection = memo(({
     sharedMemoryNote: string,
     onNoteChange: (v: string) => void,
     onAddMemory: () => void,
-    t: any
+    t: (key: string) => string
 }) => (
     <Card className="p-3 space-y-2">
         <label className="text-sm font-semibold">{t('chat.collaboration.sharedMemory')}</label>
@@ -91,11 +92,11 @@ export const ActivitySection = memo(({
     onAddAnnotation,
     t
 }: {
-    cursorMarkers: any[],
-    annotations: any[],
+    cursorMarkers: { id: string; user: string; target: string }[],
+    annotations: { id: string; author: string; note: string }[],
     onAddMarker: () => void,
     onAddAnnotation: () => void,
-    t: any
+    t: (key: string) => string
 }) => (
     <div className="grid gap-3 md:grid-cols-2">
         <Card className="p-3 space-y-2">
@@ -155,7 +156,7 @@ export const SharingSection = memo(({
     shareLink: string,
     onGenerateLink: () => void,
     recordedEvents: string[],
-    t: any
+    t: (key: string) => string
 }) => (
     <Card className="p-3 space-y-3">
         <div className="flex flex-wrap items-center gap-2">

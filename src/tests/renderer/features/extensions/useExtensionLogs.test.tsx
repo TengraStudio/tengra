@@ -1,0 +1,100 @@
+import { act, renderHook } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { ExtensionLogEntry,useExtensionLogs } from '@/features/extensions/hooks/useExtensionLogs';
+
+type LogCallback = (_event: unknown, log: ExtensionLogEntry) => void;
+
+describe('useExtensionLogs', () => {
+    let logCallback: LogCallback | null = null;
+    const removeListener = vi.fn();
+
+    beforeEach(() => {
+        logCallback = null;
+        removeListener.mockClear();
+
+        window.electron = {
+            ...window.electron,
+            ipcRenderer: {
+                ...window.electron?.ipcRenderer,
+                on: vi.fn((channel: string, callback: LogCallback) => {
+                    if (channel === 'extension:log-update') {
+                        logCallback = callback;
+                    }
+                    return removeListener;
+                }),
+            },
+        } as typeof window.electron;
+    });
+
+    it('should start with empty logs', () => {
+        const { result } = renderHook(() => useExtensionLogs('ext-1'));
+        expect(result.current.logs).toHaveLength(0);
+    });
+
+    it('should register listener on mount', () => {
+        renderHook(() => useExtensionLogs('ext-1'));
+        expect(window.electron.ipcRenderer.on).toHaveBeenCalledWith(
+            'extension:log-update',
+            expect.anything()
+        );
+    });
+
+    it('should add matching logs', () => {
+        const { result } = renderHook(() => useExtensionLogs('ext-1'));
+
+        act(() => {
+            logCallback?.(null, {
+                extensionId: 'ext-1',
+                level: 'info',
+                message: 'Hello',
+                timestamp: Date.now(),
+            });
+        });
+
+        expect(result.current.logs).toHaveLength(1);
+        expect(result.current.logs[0].message).toBe('Hello');
+    });
+
+    it('should filter logs by extensionId', () => {
+        const { result } = renderHook(() => useExtensionLogs('ext-1'));
+
+        act(() => {
+            logCallback?.(null, {
+                extensionId: 'ext-2',
+                level: 'info',
+                message: 'Wrong ext',
+                timestamp: Date.now(),
+            });
+        });
+
+        expect(result.current.logs).toHaveLength(0);
+    });
+
+    it('should clear logs', () => {
+        const { result } = renderHook(() => useExtensionLogs('ext-1'));
+
+        act(() => {
+            logCallback?.(null, {
+                extensionId: 'ext-1',
+                level: 'error',
+                message: 'Error!',
+                timestamp: Date.now(),
+            });
+        });
+
+        expect(result.current.logs).toHaveLength(1);
+
+        act(() => {
+            result.current.clearLogs();
+        });
+
+        expect(result.current.logs).toHaveLength(0);
+    });
+
+    it('should remove listener on unmount', () => {
+        const { unmount } = renderHook(() => useExtensionLogs('ext-1'));
+        unmount();
+        expect(removeListener).toHaveBeenCalled();
+    });
+});

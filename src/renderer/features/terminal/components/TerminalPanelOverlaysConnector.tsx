@@ -2,13 +2,17 @@ import React from 'react';
 
 import { TerminalTab } from '@/types';
 
-import type { TerminalSearchMatch } from '../utils/terminal-search';
+import type { AiPanelMode, AiResult } from '../hooks/useTerminalAI';
+import type { TaskRunnerEntry,TerminalHistoryEntry } from '../hooks/useTerminalCommandTools';
+import type { TerminalRecording } from '../hooks/useTerminalRecording';
+import type { MultiplexerMode, MultiplexerSession } from '../utils/terminal-panel-types';
 import type { TerminalSemanticIssue } from '../utils/terminal-panel-types';
+import type { TerminalSearchMatch } from '../utils/terminal-search';
 
 import { TerminalOverlays } from './TerminalOverlays';
 
 export interface TerminalPanelOverlaysConnectorProps {
-    t: (key: string, params?: Record<string, unknown>) => string;
+    t: (path: string, options?: Record<string, string | number>) => string;
     terminalContextMenu: { x: number; y: number } | null;
     displayTabs: TerminalTab[];
     isGalleryView: boolean;
@@ -29,10 +33,10 @@ export interface TerminalPanelOverlaysConnectorProps {
     revealSemanticIssue: (issue: TerminalSemanticIssue) => void;
     // AI
     isAiPanelOpen: boolean;
-    aiPanelMode: 'explain-error' | 'fix-error';
+    aiPanelMode: AiPanelMode;
     aiSelectedIssue: TerminalSemanticIssue | null;
     aiIsLoading: boolean;
-    aiResult: { type: string; data: Record<string, unknown> } | null;
+    aiResult: AiResult | null;
     closeAiPanel: () => void;
     handleAiApplyFix: (command: string) => Promise<void>;
     handleAiExplainError: (issue: TerminalSemanticIssue) => Promise<void>;
@@ -72,29 +76,29 @@ export interface TerminalPanelOverlaysConnectorProps {
     setIsRecordingPanelOpen: (open: boolean) => void;
     // Multiplexer
     isMultiplexerOpen: boolean;
-    multiplexerMode: string;
+    multiplexerMode: MultiplexerMode;
     multiplexerSessionName: string;
-    multiplexerSessions: unknown[];
+    multiplexerSessions: MultiplexerSession[];
     isMultiplexerLoading: boolean;
     multiplexerError: string | null;
     closeMultiplexerPanel: () => void;
-    setMultiplexerMode: (mode: string) => void;
-    refreshMultiplexerSessions: () => Promise<void>;
+    setMultiplexerMode: React.Dispatch<React.SetStateAction<MultiplexerMode>>;
+    refreshMultiplexerSessions: (mode?: MultiplexerMode) => Promise<void>;
     setMultiplexerSessionName: (name: string) => void;
     createMultiplexerSession: () => Promise<void>;
-    attachMultiplexerSession: (session: Record<string, unknown>) => Promise<void>;
+    attachMultiplexerSession: (session: MultiplexerSession) => Promise<void>;
     // Recording
     isRecordingPanelOpen: boolean;
-    recordings: unknown[];
+    recordings: TerminalRecording[];
     selectedRecordingId: string | null;
-    selectedRecording: { events: { type: string; data: string }[] } | null;
+    selectedRecording: TerminalRecording | null;
     selectedRecordingText: string;
     replayText: string;
     isReplayRunning: boolean;
     toggleRecordingForPanel: () => void;
-    startReplay: () => void;
+    startReplay: (recording: TerminalRecording) => void;
     stopReplay: () => void;
-    exportRecording: () => void;
+    exportRecording: (recording: TerminalRecording) => void;
     setSelectedRecordingId: (id: string | null) => void;
     setReplayText: (text: string) => void;
     // Search
@@ -102,13 +106,13 @@ export interface TerminalPanelOverlaysConnectorProps {
     searchInputRef: React.MutableRefObject<HTMLInputElement | null>;
     searchQuery: string;
     searchUseRegex: boolean;
-    searchStatus: string;
+    searchStatus: 'idle' | 'found' | 'not-found' | 'invalid-regex';
     searchMatches: TerminalSearchMatch[];
     searchActiveMatchIndex: number;
     searchHistory: string[];
     setSearchQuery: (query: string) => void;
-    setSearchUseRegex: (useRegex: boolean) => void;
-    setSearchStatus: (status: string) => void;
+    setSearchUseRegex: (useRegex: boolean | ((prev: boolean) => boolean)) => void;
+    setSearchStatus: React.Dispatch<React.SetStateAction<'idle' | 'found' | 'not-found' | 'invalid-regex'>>;
     setSearchMatches: (matches: TerminalSearchMatch[]) => void;
     setSearchActiveMatchIndex: (index: number) => void;
     setSearchHistoryIndex: (index: number) => void;
@@ -122,18 +126,18 @@ export interface TerminalPanelOverlaysConnectorProps {
     isCommandHistoryOpen: boolean;
     isCommandHistoryLoading: boolean;
     commandHistoryQuery: string;
-    commandHistoryItems: unknown[];
+    commandHistoryItems: TerminalHistoryEntry[];
     setCommandHistoryQuery: (query: string) => void;
     closeCommandHistory: () => void;
     clearCommandHistory: () => Promise<void>;
-    executeHistoryCommand: (entry: unknown) => Promise<void>;
+    executeHistoryCommand: (entry: TerminalHistoryEntry) => Promise<void>;
     isTaskRunnerOpen: boolean;
     isTaskRunnerLoading: boolean;
     taskRunnerQuery: string;
-    taskRunnerItems: unknown[];
+    taskRunnerItems: TaskRunnerEntry[];
     setTaskRunnerQuery: (query: string) => void;
     closeTaskRunner: () => void;
-    executeTaskRunnerEntry: (entry: unknown) => Promise<void>;
+    executeTaskRunnerEntry: (entry: TaskRunnerEntry) => Promise<void>;
 }
 
 export const TerminalPanelOverlaysConnector: React.FC<TerminalPanelOverlaysConnectorProps> = (p) => {

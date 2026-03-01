@@ -27,6 +27,7 @@ vi.mock('fs/promises', () => ({
 import * as fsp from 'fs/promises';
 import * as path from 'path';
 
+import type { TelemetryService } from '@main/services/analysis/telemetry.service';
 import {
     DATA_SERVICE_PERFORMANCE_BUDGETS,
     DataService,
@@ -34,7 +35,6 @@ import {
     DataServiceTelemetryEvent,
     DataType
 } from '@main/services/data/data.service';
-import type { TelemetryService } from '@main/services/analysis/telemetry.service';
 
 describe('DataService', () => {
     let service: DataService;

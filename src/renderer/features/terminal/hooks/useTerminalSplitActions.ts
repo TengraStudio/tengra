@@ -1,10 +1,11 @@
-import { useCallback, type MutableRefObject } from 'react';
+import { type MutableRefObject,useCallback } from 'react';
 import { z } from 'zod';
 
 import { invokeTypedIpc } from '@/lib/ipc-client';
 import { TerminalTab } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
+import { promptDialog } from '../utils/dialog';
 import {
     createCustomSplitPreset,
     incrementSplitAnalytics,
@@ -12,9 +13,8 @@ import {
     type SplitPreset,
     TERMINAL_SPLIT_PRESET_LIMIT,
 } from '../utils/split-config';
-import { resolveSecondarySplitTabId } from '../utils/terminal-panel-helpers';
 import type { TerminalIpcContract } from '../utils/terminal-ipc';
-import { promptDialog } from '../utils/dialog';
+import { resolveSecondarySplitTabId } from '../utils/terminal-panel-helpers';
 
 interface SplitView {
     primaryId: string;
@@ -36,7 +36,7 @@ interface UseTerminalSplitActionsParams {
     setIsSynchronizedInputEnabled: (fn: (prev: boolean) => boolean) => void;
     setTerminalContextMenu: (menu: { x: number; y: number } | null) => void;
     createTerminal: (type: string, backendId?: string) => string;
-    resolveDefaultBackendId: (backends: { id: string; available: boolean }[]) => string | undefined;
+    resolveDefaultBackendId: (backends: { id: string; name: string; available: boolean }[], preferredId?: string | null) => string | undefined;
     completeRecording: () => void;
     recordingCaptureRef: MutableRefObject<{ tabId: string } | null>;
     onToggle: () => void;

@@ -2553,6 +2553,49 @@ export interface ElectronAPI {
         }>;
         validate: (manifest: unknown) => Promise<{ valid: boolean; errors: string[] }>;
     };
+
+    codeSandbox: {
+        execute: (params: {
+            language: string;
+            code: string;
+        }) => Promise<{
+            success: boolean;
+            stdout: string;
+            stderr: string;
+            durationMs: number;
+        }>;
+    };
+
+    promptTemplates: {
+        getAll: () => Promise<import('@shared/types/templates').PromptTemplate[]>;
+        search: (query: string) => Promise<import('@shared/types/templates').PromptTemplate[]>;
+        getCategories: () => Promise<string[]>;
+        create: (payload: {
+            name: string;
+            description: string;
+            template: string;
+            category: string;
+            variables: import('@shared/types/templates').TemplateVariable[];
+            tags: string[];
+        }) => Promise<import('@shared/types/templates').PromptTemplate>;
+        update: (id: string, payload: {
+            name: string;
+            description: string;
+            template: string;
+            category: string;
+            variables: import('@shared/types/templates').TemplateVariable[];
+            tags: string[];
+        }) => Promise<import('@shared/types/templates').PromptTemplate>;
+        delete: (id: string) => Promise<void>;
+    };
+
+    userCollaboration: {
+        joinRoom: (params: { type: string; id: string }) => Promise<void>;
+        leaveRoom: (roomId: string) => Promise<void>;
+        sendUpdate: (params: { roomId: string; data: string }) => Promise<void>;
+        onSyncUpdate: (callback: (payload: { roomId: string; data: string }) => void) => () => void;
+        onError: (callback: (payload: { roomId: string; error: string }) => void) => () => void;
+    };
 }
 
 declare global {

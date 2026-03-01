@@ -5,38 +5,55 @@ import { Message, ToolDefinition } from '@shared/types/chat';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
-import { CopilotRateLimitManager } from './copilot-rate-limit.manager';
-import { CopilotRequestBuilder } from './copilot-request.builder';
-import { CopilotResponseParser } from './copilot-response.parser';
-import { CopilotTokenManager } from './copilot-token.manager';
 import {
-    CopilotChatResponse,
-    CopilotNotificationService,
-    CopilotPayload,
-    CopilotState,
     COPILOT_DEFAULT_MAX_TOKENS,
     COPILOT_DEFAULT_TEMPERATURE,
     COPILOT_GATEWAY_BUSINESS,
     COPILOT_GATEWAY_DEFAULT,
     COPILOT_GATEWAY_INDIVIDUAL,
+    CopilotChatResponse,
+    CopilotNotificationService,
+    CopilotPayload,
+    CopilotState,
     DiagnosticResponse,
     GatewayRequestOptions
 } from './copilot.types';
+import { CopilotRateLimitManager } from './copilot-rate-limit.manager';
+import { CopilotRequestBuilder } from './copilot-request.builder';
+import { CopilotResponseParser } from './copilot-response.parser';
+import { CopilotTokenManager } from './copilot-token.manager';
 
 const SERVICE_NAME = 'CopilotApiClient';
 
 /**
  * Handles Copilot API communication including chat, streaming, and gateway fallbacks.
  */
+/** Options for constructing a CopilotApiClient. */
+interface CopilotApiClientOptions {
+    state: CopilotState;
+    tokenManager: CopilotTokenManager;
+    rateLimitManager: CopilotRateLimitManager;
+    requestBuilder: CopilotRequestBuilder;
+    responseParser: CopilotResponseParser;
+    notificationService?: CopilotNotificationService;
+}
+
 export class CopilotApiClient {
-    constructor(
-        private state: CopilotState,
-        private tokenManager: CopilotTokenManager,
-        private rateLimitManager: CopilotRateLimitManager,
-        private requestBuilder: CopilotRequestBuilder,
-        private responseParser: CopilotResponseParser,
-        private notificationService?: CopilotNotificationService
-    ) {}
+    private state: CopilotState;
+    private tokenManager: CopilotTokenManager;
+    private rateLimitManager: CopilotRateLimitManager;
+    private requestBuilder: CopilotRequestBuilder;
+    private responseParser: CopilotResponseParser;
+    private notificationService?: CopilotNotificationService;
+
+    constructor(options: CopilotApiClientOptions) {
+        this.state = options.state;
+        this.tokenManager = options.tokenManager;
+        this.rateLimitManager = options.rateLimitManager;
+        this.requestBuilder = options.requestBuilder;
+        this.responseParser = options.responseParser;
+        this.notificationService = options.notificationService;
+    }
 
     /** Sends a non-streaming chat request */
     async chat(messages: Message[], model: string = 'gpt-4o', tools?: ToolDefinition[]): Promise<Message | null> {

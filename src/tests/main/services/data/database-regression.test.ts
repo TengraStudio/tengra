@@ -91,7 +91,7 @@ describe('Database Regression Tests', () => {
             let callCount = 0;
             mockQuery.mockImplementation(async () => {
                 callCount += 1;
-                if (callCount === 2) throw new Error('constraint violation');
+                if (callCount === 2) {throw new Error('constraint violation');}
                 return { rows: [], affectedRows: 1 };
             });
 
@@ -112,7 +112,7 @@ describe('Database Regression Tests', () => {
     describe('schema validation', () => {
         it('reports missing tables as invalid', async () => {
             mockQuery.mockImplementation(async (sql: string) => {
-                if (sql.includes('prompts')) throw new Error('no such table');
+                if (sql.includes('prompts')) {throw new Error('no such table');}
                 return { rows: [{ count: 1 }], affectedRows: 0 };
             });
 
@@ -134,7 +134,7 @@ describe('Database Regression Tests', () => {
     describe('schema diff', () => {
         it('detects removed tables', async () => {
             mockQuery.mockImplementation(async (sql: string) => {
-                if (sql.includes('legacy_table')) throw new Error('no such table');
+                if (sql.includes('legacy_table')) {throw new Error('no such table');}
                 return { rows: [{ count: 1 }], affectedRows: 0 };
             });
 

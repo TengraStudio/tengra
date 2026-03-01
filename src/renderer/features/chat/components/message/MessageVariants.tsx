@@ -1,7 +1,9 @@
-import { memo, useMemo, useState } from 'react';
 import { Check, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { memo, useMemo, useState } from 'react';
+
 import { cn } from '@/lib/utils';
 import { Message, MessageVariant } from '@/types';
+
 import { AssistantLogo } from './AssistantLogo';
 import { MessageBubbleContent } from './MarkdownContent';
 import { useMessageContent, useQuotaDetails } from './MessageUtils';

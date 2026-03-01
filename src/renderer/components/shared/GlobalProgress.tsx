@@ -2,33 +2,34 @@
  * Global thin progress bar rendered at the top of the application window.
  * Supports multiple concurrent operations with smooth CSS transitions.
  */
-import React, { useMemo } from 'react'
-import { useTranslation } from '@/i18n'
-import { useProgressStore, type ProgressItem } from '@/store/progress.store'
+import React, { useMemo } from 'react';
+
+import { useTranslation } from '@/i18n';
+import { type ProgressItem,useProgressStore } from '@/store/progress.store';
 
 /** Aggregate multiple progress items into a single percentage. */
 function aggregatePercent(items: ProgressItem[]): number {
-  if (items.length === 0) return 0
-  const sum = items.reduce((acc, item) => acc + item.percent, 0)
-  return Math.round(sum / items.length)
+  if (items.length === 0) {return 0;}
+  const sum = items.reduce((acc, item) => acc + item.percent, 0);
+  return Math.round(sum / items.length);
 }
 
 export const GlobalProgress: React.FC = () => {
-  const { t } = useTranslation()
-  const items = useProgressStore((s) => Array.from(s.items.values()))
+  const { t } = useTranslation();
+  const items = useProgressStore((s) => Array.from(s.items.values()));
 
   const activeItems = useMemo(
     () => items.filter((i) => i.status !== 'done'),
     [items]
-  )
+  );
 
-  if (activeItems.length === 0) return null
+  if (activeItems.length === 0) {return null;}
 
-  const percent = aggregatePercent(activeItems)
+  const percent = aggregatePercent(activeItems);
   const label =
     activeItems.length === 1
       ? activeItems[0].label
-      : t('common.operationsInProgress', { count: activeItems.length })
+      : t('common.operationsInProgress', { count: activeItems.length });
 
   return (
     <div
@@ -46,7 +47,7 @@ export const GlobalProgress: React.FC = () => {
         />
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default GlobalProgress
+export default GlobalProgress;

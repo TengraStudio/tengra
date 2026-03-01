@@ -1,5 +1,5 @@
-import { appLogger } from '@main/logging/logger';
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
+import { appLogger } from '@main/logging/logger';
 import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { LogoService } from '@main/services/external/logo.service';

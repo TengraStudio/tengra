@@ -57,6 +57,16 @@ export interface SystemEvents {
     'model-registry.provider.fetch.failed': { provider: string; error: string }
     'telemetry:model-registry': { name: SystemEventKey;[key: string]: unknown; timestamp: number }
     'security:vulnerabilities-found': { critical: number; high: number; timestamp: number }
+    // User behavior tracking events
+    'user:feature-used': { featureId: string; metadata?: Record<string, unknown> }
+    'user:model-selected': { provider: string; modelId: string }
+    'user:chat-sent': { modelId: string; messageLength: number }
+    'user:shortcut-used': { shortcut: string }
+    // Collaboration events
+    'collaboration:joined': { roomId: string }
+    'collaboration:left': { roomId: string }
+    'collaboration:sync': { roomId: string; data: string }
+    'collaboration:error': { roomId: string; error: string }
 }
 
 export type SystemEventKey = keyof SystemEvents

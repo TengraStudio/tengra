@@ -56,7 +56,7 @@ describe('Screenshot IPC Handlers', () => {
         
         // Get mocked electron after import
         const electron = await import('electron');
-        mockDesktopCapturer = electron.desktopCapturer;
+        mockDesktopCapturer = electron.desktopCapturer as unknown as Record<string, ReturnType<typeof vi.fn>>;
         
         // Create mock thumbnail
         mockThumbnail = {

@@ -1,14 +1,13 @@
-import { useCallback, type MutableRefObject } from 'react';
+import { type MutableRefObject, useCallback, useMemo } from 'react';
 import { z } from 'zod';
 
 import { invokeTypedIpc } from '@/lib/ipc-client';
 import { TerminalTab } from '@/types';
 
-import { buildDockerBootstrapCommand, buildSshBootstrapCommand } from '../utils/terminal-panel-helpers';
-import type { TerminalIpcContract } from '../utils/terminal-ipc';
-import { clearTerminalSessionFlags } from '../utils/session-registry';
-
 import type { RemoteConnectionTarget } from '../constants/terminal-panel-constants';
+import { clearTerminalSessionFlags } from '../utils/session-registry';
+import type { TerminalIpcContract } from '../utils/terminal-ipc';
+import { buildDockerBootstrapCommand, buildSshBootstrapCommand } from '../utils/terminal-panel-helpers';
 
 interface AvailableShell {
     id: string;
@@ -33,7 +32,7 @@ interface UseTerminalTabActionsParams {
     setIsNewTerminalMenuOpen: (open: boolean) => void;
     fetchAvailableShells: () => Promise<AvailableShell[]>;
     fetchAvailableBackends: () => Promise<AvailableBackend[]>;
-    resolveDefaultBackendId: (backends: AvailableBackend[]) => string | undefined;
+    resolveDefaultBackendId: (backends: AvailableBackend[], preferredId?: string | null) => string | undefined;
     clearSemanticIssues: (tabId: string) => void;
     completeRecording: () => void;
     recordingCaptureRef: MutableRefObject<{ tabId: string } | null>;
@@ -60,8 +59,8 @@ export function useTerminalTabActions({
     onToggle,
     projectIssuesTab,
 }: UseTerminalTabActionsParams) {
-    const shellNameById = new Map(availableShells.map(s => [s.id, s.name]));
-    const backendNameById = new Map(availableBackends.map(b => [b.id, b.name]));
+    const shellNameById = useMemo(() => new Map(availableShells.map(s => [s.id, s.name])), [availableShells]);
+    const backendNameById = useMemo(() => new Map(availableBackends.map(b => [b.id, b.name])), [availableBackends]);
 
     const createTerminal = useCallback(
         (

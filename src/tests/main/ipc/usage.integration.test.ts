@@ -29,7 +29,7 @@ vi.mock('@main/utils/rate-limiter.util', () => ({
 
 // Mock error util
 vi.mock('@shared/utils/error.util', () => ({
-    getErrorMessage: vi.fn((error: unknown) => error?.message || String(error)),
+    getErrorMessage: vi.fn((error: unknown) => (error as Record<string, unknown>)?.message || String(error)),
 }));
 
 // Mock services
@@ -73,7 +73,11 @@ describe('Usage IPC Integration', () => {
             getCopilotQuota: vi.fn(),
         };
 
-        registerUsageIpc(mockUsageTrackingService, mockSettingsService, mockProxyService);
+        registerUsageIpc(
+            mockUsageTrackingService as unknown as Parameters<typeof registerUsageIpc>[0],
+            mockSettingsService as unknown as Parameters<typeof registerUsageIpc>[1],
+            mockProxyService as unknown as Parameters<typeof registerUsageIpc>[2]
+        );
     });
 
     it('should register expected handlers', () => {

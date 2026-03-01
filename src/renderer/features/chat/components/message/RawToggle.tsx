@@ -1,5 +1,6 @@
-import { memo } from 'react';
 import { Code2, Eye } from 'lucide-react';
+import { memo } from 'react';
+
 import { cn } from '@/lib/utils';
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;

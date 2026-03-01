@@ -1,4 +1,4 @@
-import { AppError } from './base-error'
+import { AppError } from './base-error';
 
 /**
  * Error thrown during IPC communication between main and renderer processes.
@@ -6,7 +6,7 @@ import { AppError } from './base-error'
  */
 export class IpcError extends AppError {
   /** The IPC channel that produced this error */
-  public readonly channel: string
+  public readonly channel: string;
 
   /**
    * Creates a new IpcError.
@@ -21,7 +21,7 @@ export class IpcError extends AppError {
     code: string = 'IPC_ERROR',
     options?: { cause?: Error; context?: Record<string, unknown> }
   ) {
-    super(message, code, options)
-    this.channel = channel
+    super(message, code, options);
+    this.channel = channel;
   }
 }

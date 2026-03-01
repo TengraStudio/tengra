@@ -1,6 +1,7 @@
-import React, { memo } from 'react';
-import { Highlight, themes } from 'prism-react-renderer';
 import { Volume2, VolumeX } from 'lucide-react';
+import { Highlight, themes } from 'prism-react-renderer';
+import React, { memo } from 'react';
+
 import { CopyButton } from './CopierRatingBookmark';
 import { MermaidDiagram } from './MermaidDiagram';
 

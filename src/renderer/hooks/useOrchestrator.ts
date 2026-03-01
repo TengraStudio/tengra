@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { OrchestratorStateView } from '../electron';
 import { ProjectStep } from '@shared/types/project-agent';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+import { OrchestratorStateView } from '../electron';
 
 /**
  * Hook that wires the orchestrator IPC surface into React components.
@@ -23,7 +24,7 @@ export function useOrchestrator() {
             }
         );
 
-        window.electron.orchestrator.getState().then((initial) => {
+        void window.electron.orchestrator.getState().then((initial) => {
             if (mountedRef.current) {
                 setState(initial);
             }

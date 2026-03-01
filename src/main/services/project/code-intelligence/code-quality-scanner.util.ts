@@ -4,9 +4,9 @@
 
 import { promises as fs } from 'fs';
 
+import { scanDirRecursively } from './file-scanner.util';
 import { parseFileSymbols } from './symbol-parser.util';
 import { CodeQualityAnalysis, SecurityFinding } from './types';
-import { scanDirRecursively } from './file-scanner.util';
 
 const CODE_FILE_PATTERN = /\.(ts|tsx|js|jsx|py|go|rs|java|kt|kts|cpp|c|h|hpp|cs)$/i;
 

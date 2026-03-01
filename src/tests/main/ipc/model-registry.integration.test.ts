@@ -99,7 +99,7 @@ describe('Model Registry IPC Integration', () => {
 
             expect(Array.isArray(result)).toBe(true);
             expect(result).toHaveLength(1);
-            expect(result[0].isInstalled).toBe(true);
+            expect((result as Record<string, unknown>[])[0].isInstalled).toBe(true);
             expect(mockModelRegistryService.getInstalledModels).toHaveBeenCalledTimes(1);
         });
 

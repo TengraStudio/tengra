@@ -1,4 +1,5 @@
-﻿import {
+﻿import { useTranslation } from '@renderer/i18n';
+import {
     Check,
     GitBranch,
     GitCompareArrows,
@@ -15,7 +16,6 @@
     Wrench,
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useTranslation } from '@renderer/i18n';
 
 import { cn } from '@/lib/utils';
 
@@ -147,10 +147,10 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ projectPath 
                                 </div>
                                 <div className="text-muted-foreground">{conflict.explanation}</div>
                                 <div className="flex flex-wrap gap-1.5">
-                                    <button onClick={() => void git.resolveConflict(conflict.path, 'ours')} className="px-2 py-1 rounded border border-border/40 hover:bg-muted/40">Use Ours</button>
-                                    <button onClick={() => void git.resolveConflict(conflict.path, 'theirs')} className="px-2 py-1 rounded border border-border/40 hover:bg-muted/40">Use Theirs</button>
-                                    <button onClick={() => void git.resolveConflict(conflict.path, 'manual')} className="px-2 py-1 rounded border border-border/40 hover:bg-muted/40">Mark Resolved</button>
-                                    <button onClick={() => void git.openMergeTool(conflict.path)} className="px-2 py-1 rounded border border-border/40 hover:bg-muted/40">Merge Tool</button>
+                                    <button onClick={() => void git.resolveConflict(conflict.path, 'ours')} className="px-2 py-1 rounded border border-border/40 hover:bg-muted/40">{t('git.useOurs')}</button>
+                                    <button onClick={() => void git.resolveConflict(conflict.path, 'theirs')} className="px-2 py-1 rounded border border-border/40 hover:bg-muted/40">{t('git.useTheirs')}</button>
+                                    <button onClick={() => void git.resolveConflict(conflict.path, 'manual')} className="px-2 py-1 rounded border border-border/40 hover:bg-muted/40">{t('git.markResolved')}</button>
+                                    <button onClick={() => void git.openMergeTool(conflict.path)} className="px-2 py-1 rounded border border-border/40 hover:bg-muted/40">{t('git.mergeTool')}</button>
                                 </div>
                             </div>
                         ))}

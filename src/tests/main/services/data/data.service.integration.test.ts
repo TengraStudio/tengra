@@ -27,13 +27,13 @@ vi.mock('@main/logging/logger', () => ({
 import * as fsp from 'fs/promises';
 import * as path from 'path';
 
+import type { TelemetryService } from '@main/services/analysis/telemetry.service';
 import type { DataType } from '@main/services/data/data.service';
 import {
     DATA_SERVICE_PERFORMANCE_BUDGETS,
     DataService,
     DataServiceErrorCode,
     DataServiceTelemetryEvent} from '@main/services/data/data.service';
-import type { TelemetryService } from '@main/services/analysis/telemetry.service';
 
 describe('DataService Integration', () => {
     let service: DataService;

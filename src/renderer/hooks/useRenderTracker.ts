@@ -12,9 +12,8 @@ const IS_DEV = process.env.NODE_ENV === 'development';
 export function useRenderTracker(componentName: string): void {
     const renderCount = useRef(0);
 
-    renderCount.current += 1;
-
     useEffect(() => {
+        renderCount.current += 1;
         if (!IS_DEV) {
             return;
         }

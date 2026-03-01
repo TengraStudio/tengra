@@ -1,7 +1,9 @@
+import { Bookmark, ThumbsDown, ThumbsUp } from 'lucide-react';
 import { memo } from 'react';
-import { Bookmark } from 'lucide-react';
+
+import { Language,useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
 import { Message } from '@/types';
-import { useTranslation, Language } from '@/i18n';
 
 export interface MessageFooterProps {
     message: Message;
@@ -9,6 +11,7 @@ export interface MessageFooterProps {
     language: Language;
     isStreaming?: boolean;
     streamingSpeed?: number | null;
+    onRate?: (rating: number) => void;
 }
 
 /**
@@ -23,7 +26,7 @@ export interface MessageFooterProps {
  * - Streaming speed
  */
 export const MessageFooter = memo(
-    ({ message, displayContent, language, isStreaming, streamingSpeed }: MessageFooterProps) => {
+    ({ message, displayContent, language, isStreaming, streamingSpeed, onRate }: MessageFooterProps) => {
         const { t } = useTranslation(language);
         return (
             <div className="flex items-center gap-3 mt-2 text-xxs text-muted-foreground/40 font-medium">
@@ -70,7 +73,43 @@ export const MessageFooter = memo(
                         </span>
                     </>
                 )}
-            </div>
+                {onRate && (
+                    <>
+                        <span className="h-1 rounded-full bg-muted-foreground/20" />
+                        <span className="flex items-center gap-0.5">
+                            <button
+                                type="button"
+                                onClick={() => onRate(message.rating === 1 ? 0 : 1)}
+                                className={cn(
+                                    'p-0.5 rounded transition-colors',
+                                    message.rating === 1
+                                        ? 'text-success/80'
+                                        : 'text-muted-foreground/30 hover:text-success/60'
+                                )}
+                                title={t('messageReactions.thumbsUp')}
+                                aria-label={t('messageReactions.thumbsUp')}
+                                aria-pressed={message.rating === 1}
+                            >
+                                <ThumbsUp className={cn('w-2.5 h-2.5', message.rating === 1 && 'fill-current')} />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onRate(message.rating === -1 ? 0 : -1)}
+                                className={cn(
+                                    'p-0.5 rounded transition-colors',
+                                    message.rating === -1
+                                        ? 'text-destructive/80'
+                                        : 'text-muted-foreground/30 hover:text-destructive/60'
+                                )}
+                                title={t('messageReactions.thumbsDown')}
+                                aria-label={t('messageReactions.thumbsDown')}
+                                aria-pressed={message.rating === -1}
+                            >
+                                <ThumbsDown className={cn('w-2.5 h-2.5', message.rating === -1 && 'fill-current')} />
+                            </button>
+                        </span>
+                    </>
+                )}            </div>
         );
     }
 );

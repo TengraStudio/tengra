@@ -5,8 +5,8 @@ import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service'
 import { AuthService } from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
-import { createSafeIpcHandler as baseCreateSafeIpcHandler,createValidatedIpcHandler as baseCreateValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
+import { createSafeIpcHandler as baseCreateSafeIpcHandler,createValidatedIpcHandler as baseCreateValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { IpcValue } from '@shared/types/common';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';

@@ -1,3 +1,4 @@
+import { useFocusTrap } from '@renderer/utils/accessibility';
 import { AlertTriangle, X } from 'lucide-react';
 import React from 'react';
 
@@ -28,6 +29,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     isLoading = false,
 }) => {
     const { t } = useTranslation();
+    const focusTrapRef = useFocusTrap<HTMLDivElement>(isOpen);
 
     if (!isOpen) {
         return null;
@@ -54,14 +56,20 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                 onClick={isLoading ? undefined : onClose}
             />
 
-            <div className="relative w-full max-w-md bg-background border border-border/50 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div
+                ref={focusTrapRef as React.RefObject<HTMLDivElement>}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="confirmation-modal-title"
+                className="relative w-full max-w-md bg-background border border-border/50 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+            >
                 <div className="p-6">
                     <div className="flex items-start gap-4">
                         <div className={cn('p-3 rounded-xl border', variantStyles[variant])}>
                             <AlertTriangle className="w-6 h-6" />
                         </div>
                         <div className="flex-1">
-                            <h3 className="text-xl font-bold text-foreground leading-none mb-2">
+                            <h3 id="confirmation-modal-title" className="text-xl font-bold text-foreground leading-none mb-2">
                                 {title}
                             </h3>
                             <p className="text-muted-foreground text-sm leading-relaxed">
@@ -101,6 +109,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                 <button
                     onClick={onClose}
                     disabled={isLoading}
+                    aria-label={t('common.close')}
                     className="absolute top-4 right-4 p-2 text-muted-foreground/40 hover:text-foreground transition-colors rounded-lg"
                 >
                     <X className="w-4 h-4" />

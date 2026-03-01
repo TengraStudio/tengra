@@ -2,6 +2,8 @@ import { registerCollaborationIpc } from '@main/ipc/collaboration';
 import { IpcMainInvokeEvent } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+type MockFn = ReturnType<typeof vi.fn>;
+
 // Mock Electron ipcMain
 const ipcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
 
@@ -196,7 +198,7 @@ describe('Collaboration IPC Integration', () => {
 
                 const result = await handler?.({} as IpcMainInvokeEvent, request);
 
-                expect(result.success).toBe(true);
+                expect((result as { success: boolean }).success).toBe(true);
             }
 
             expect(mockCollaborationService.collaborate).toHaveBeenCalledTimes(4);
@@ -215,7 +217,7 @@ describe('Collaboration IPC Integration', () => {
                 averageLatency: 250
             };
 
-            (multiLLMOrchestrator.getProviderStats as never).mockReturnValue(stats);
+            (multiLLMOrchestrator.getProviderStats as MockFn).mockReturnValue(stats);
 
             const result = await handler?.({} as IpcMainInvokeEvent, 'openai');
 
@@ -230,7 +232,7 @@ describe('Collaboration IPC Integration', () => {
             initIPC();
             const handler = ipcMainHandlers.get('collaboration:getProviderStats');
 
-            (multiLLMOrchestrator.getProviderStats as never).mockReturnValue(undefined);
+            (multiLLMOrchestrator.getProviderStats as MockFn).mockReturnValue(undefined);
 
             const result = await handler?.({} as IpcMainInvokeEvent, 'non-existent');
 
@@ -250,7 +252,7 @@ describe('Collaboration IPC Integration', () => {
                 ['anthropic', { totalRequests: 50 }]
             ]);
 
-            (multiLLMOrchestrator.getAllStats as never).mockReturnValue(allStats);
+            (multiLLMOrchestrator.getAllStats as MockFn).mockReturnValue(allStats);
 
             const result = await handler?.({} as IpcMainInvokeEvent);
 
@@ -268,7 +270,7 @@ describe('Collaboration IPC Integration', () => {
             initIPC();
             const handler = ipcMainHandlers.get('collaboration:getProviderStats');
 
-            (multiLLMOrchestrator.getProviderStats as never).mockImplementation(() => {
+            (multiLLMOrchestrator.getProviderStats as MockFn).mockImplementation(() => {
                 throw new Error('Stats error');
             });
 
@@ -286,7 +288,7 @@ describe('Collaboration IPC Integration', () => {
             initIPC();
             const handler = ipcMainHandlers.get('collaboration:getActiveTaskCount');
 
-            (multiLLMOrchestrator.getActiveTaskCount as never).mockReturnValue(5);
+            (multiLLMOrchestrator.getActiveTaskCount as MockFn).mockReturnValue(5);
 
             const result = await handler?.({} as IpcMainInvokeEvent, 'openai');
 
@@ -314,7 +316,7 @@ describe('Collaboration IPC Integration', () => {
             initIPC();
             const handler = ipcMainHandlers.get('collaboration:getActiveTaskCount');
 
-            (multiLLMOrchestrator.getActiveTaskCount as never).mockImplementation(() => {
+            (multiLLMOrchestrator.getActiveTaskCount as MockFn).mockImplementation(() => {
                 throw new Error('Count error');
             });
 
@@ -332,7 +334,7 @@ describe('Collaboration IPC Integration', () => {
             initIPC();
             const handler = ipcMainHandlers.get('collaboration:setProviderConfig');
 
-            (multiLLMOrchestrator.setProviderConfig as never).mockReturnValue(undefined);
+            (multiLLMOrchestrator.setProviderConfig as MockFn).mockReturnValue(undefined);
 
             const config = {
                 maxConcurrent: 5,

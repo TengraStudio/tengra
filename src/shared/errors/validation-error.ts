@@ -1,4 +1,4 @@
-import { AppError } from './base-error'
+import { AppError } from './base-error';
 
 /** Describes a single validation failure */
 export interface ValidationIssue {
@@ -12,7 +12,7 @@ export interface ValidationIssue {
  */
 export class ValidationError extends AppError {
   /** List of individual validation issues */
-  public readonly issues: ReadonlyArray<ValidationIssue>
+  public readonly issues: ReadonlyArray<ValidationIssue>;
 
   /**
    * Creates a new ValidationError.
@@ -25,7 +25,7 @@ export class ValidationError extends AppError {
     issues: ValidationIssue[] = [],
     options?: { cause?: Error; context?: Record<string, unknown> }
   ) {
-    super(message, 'VALIDATION_ERROR', options)
-    this.issues = issues
+    super(message, 'VALIDATION_ERROR', options);
+    this.issues = issues;
   }
 }

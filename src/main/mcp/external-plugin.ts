@@ -67,7 +67,7 @@ interface McpResponse {
  * This satisfies the "plugin" requirement by allowing tools to run in separate processes.
  */
 export class ExternalMcpPlugin implements IMcpPlugin {
-    public readonly source: 'user' | 'remote';
+    public readonly source: 'core' | 'user' | 'remote';
     private server: ChildProcess | null = null;
     private requestQueue = new Map<string, PendingRequest>();
     private buffer = '';

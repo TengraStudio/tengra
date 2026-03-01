@@ -28,7 +28,7 @@ describe('SSH IPC Handlers', () => {
         const sshService = {
             on: vi.fn(),
             off: vi.fn(),
-            connect: vi.fn(async (payload: unknown) => ({ success: true, id: payload.id })),
+            connect: vi.fn(async (payload: unknown) => ({ success: true, id: (payload as Record<string, unknown>).id })),
             disconnect: vi.fn(async () => undefined),
             getAllConnections: vi.fn(() => [{ id: 'c1', host: '127.0.0.1', username: 'u', connected: true }]),
             isConnected: vi.fn(() => true),

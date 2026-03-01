@@ -1,6 +1,6 @@
-import { TerminalPanelContentImpl } from './TerminalPanelImpl';
-
 import type { TerminalTab } from '@/types';
+
+import { TerminalPanelContentImpl } from './TerminalPanelImpl';
 
 import 'xterm/css/xterm.css';
 

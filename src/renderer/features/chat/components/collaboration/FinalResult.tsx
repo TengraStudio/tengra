@@ -1,5 +1,6 @@
-import { memo } from 'react';
 import { CheckCircle2 } from 'lucide-react';
+import { memo } from 'react';
+
 import { Card } from '@/components/ui/card';
 
 interface FinalResultProps {
@@ -15,7 +16,7 @@ interface FinalResultProps {
 }
 
 export const FinalResult = memo(({ results, t }: FinalResultProps) => {
-    if (!results.consensus && !results.bestResponse) return null;
+    if (!results.consensus && !results.bestResponse) {return null;}
 
     return (
         <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2">

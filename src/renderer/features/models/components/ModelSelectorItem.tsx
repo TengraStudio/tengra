@@ -31,15 +31,15 @@ const ModelInfoBadges: React.FC<{ model: ModelListItem, t: (k: string) => string
     <>
         <ModelLifecycleBadge model={model} />
         {model.isLocal ? (
-            <span className="text-xxxs font-black text-info bg-info/10 px-1.5 py-0.5 rounded leading-none mr-1">Local</span>
+            <span className="text-xxxs font-black text-info bg-info/10 px-1.5 py-0.5 rounded leading-none mr-1">{t('modelSelector.local')}</span>
         ) : (
-            <span className="text-xxxs font-black text-muted-foreground bg-muted/30 px-1.5 py-0.5 rounded leading-none mr-1">Cloud</span>
+            <span className="text-xxxs font-black text-muted-foreground bg-muted/30 px-1.5 py-0.5 rounded leading-none mr-1">{t('modelSelector.cloud')}</span>
         )}
         {model.supportsReasoning && (
-            <span className="text-xxxs font-black text-accent bg-accent/10 px-1.5 py-0.5 rounded leading-none mr-1">Reasoning</span>
+            <span className="text-xxxs font-black text-accent bg-accent/10 px-1.5 py-0.5 rounded leading-none mr-1">{t('modelSelector.reasoningBadge')}</span>
         )}
         {model.isFree && (
-            <span className="text-xxxs font-black text-success bg-success/10 px-1.5 py-0.5 rounded leading-none mr-1">Free</span>
+            <span className="text-xxxs font-black text-success bg-success/10 px-1.5 py-0.5 rounded leading-none mr-1">{t('modelSelector.free')}</span>
         )}
         {model.type === 'image' && (
             <span className="text-xxxs font-black text-success bg-success/10 px-1.5 py-0.5 rounded leading-none mr-1">

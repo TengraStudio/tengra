@@ -72,7 +72,7 @@ describe('Audit IPC Integration', () => {
         const result = await handler({} as IpcMainInvokeEvent, { category: 'security' });
 
         expect(result).toHaveLength(1);
-        expect(result[0].category).toBe('security');
+        expect((result as Record<string, unknown>[])[0].category).toBe('security');
         expect(mockAuditLogService.getLogs).toHaveBeenCalledWith({ category: 'security' });
     });
 

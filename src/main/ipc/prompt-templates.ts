@@ -1,5 +1,5 @@
-import { PromptTemplatesService } from '@main/services/llm/prompt-templates.service';
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
+import { PromptTemplatesService } from '@main/services/llm/prompt-templates.service';
 import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { PromptTemplate } from '@main/utils/prompt-templates.util';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';

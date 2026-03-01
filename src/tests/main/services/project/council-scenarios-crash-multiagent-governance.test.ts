@@ -6,6 +6,7 @@ import { AgentCollaborationService } from '@main/services/project/agent/agent-co
 import { AgentExecutorService } from '@main/services/project/agent/agent-executor.service';
 import { AgentPersistenceService } from '@main/services/project/agent/agent-persistence.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { createMockPersistence, createMockPlan, createMockTaskState } from './council-scenarios.helpers';
 
 describe('Council Scenario 5 – Crash Flow: checkpoint → crash → resume', () => {

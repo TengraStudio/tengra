@@ -2,11 +2,14 @@ import React, { isValidElement, lazy, memo, Suspense, useMemo } from 'react';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
+
 import { cn } from '@/lib/utils';
+
+import { TypingIndicator } from '../TypingIndicator';
+
 import { CodeBlock } from './CodeBlock';
 import { MarkdownImage } from './MarkdownImage';
 import { QuotaErrorCard } from './QuotaErrorCard';
-import { TypingIndicator } from '../TypingIndicator';
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
 
@@ -126,6 +129,7 @@ export interface MessageBubbleContentProps {
     onStop?: () => void;
     isSpeaking?: boolean;
     onCodeConvert?: (imageUrl: string) => void;
+    attachments?: string[];
     t: TranslationFn;
     isUser: boolean;
 }

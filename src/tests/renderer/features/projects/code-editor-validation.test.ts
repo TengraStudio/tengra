@@ -1,5 +1,6 @@
-import { sanitizeCodeEditorLanguage } from '@/components/ui/code-editor-validation';
 import { describe, expect, it } from 'vitest';
+
+import { sanitizeCodeEditorLanguage } from '@/components/ui/code-editor-validation';
 
 describe('code editor validation', () => {
     it('keeps supported languages', () => {

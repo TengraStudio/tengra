@@ -4,8 +4,8 @@
  * B-0474 (error codes), B-0476 (performance budgets).
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ThemeErrorCode } from '@main/services/ui/theme-error';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ── Mocks ────────────────────────────────────────────────────────────
 

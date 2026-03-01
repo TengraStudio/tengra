@@ -1,4 +1,9 @@
 import { registerProjectIpc } from '@main/ipc/project';
+import { AuditLogService } from '@main/services/analysis/audit-log.service';
+import { LogoService } from '@main/services/external/logo.service';
+import { InlineSuggestionService } from '@main/services/llm/inline-suggestion.service';
+import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service';
+import { ProjectService } from '@main/services/project/project.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock Electron ipcMain
@@ -51,11 +56,11 @@ vi.mock('@main/utils/ipc-wrapper.util', () => ({
 
 // Mock Services
 // Mock Services
-let mockProjectService: Record<string, ReturnType<typeof vi.fn>>;
-let mockLogoService: Record<string, ReturnType<typeof vi.fn>>;
-let mockInlineSuggestionService: Record<string, ReturnType<typeof vi.fn>>;
-let mockCodeIntelligenceService: Record<string, ReturnType<typeof vi.fn>>;
-let mockAuditLogService: Record<string, ReturnType<typeof vi.fn>>;
+let mockProjectService: ProjectService;
+let mockLogoService: LogoService;
+let mockInlineSuggestionService: InlineSuggestionService;
+let mockCodeIntelligenceService: CodeIntelligenceService;
+let mockAuditLogService: AuditLogService;
 
 describe('Project IPC Integration', () => {
     const mockEvent = { sender: { id: 1 } } as never;
@@ -73,27 +78,27 @@ describe('Project IPC Integration', () => {
             stopWatch: vi.fn(),
             saveEnvVars: vi.fn(),
             getAuditContext: vi.fn((rootPath: string) => ({ rootPath, projectName: 'project' }))
-        };
+        } as unknown as ProjectService;
 
         mockLogoService = {
             generateLogo: vi.fn(),
             analyzeProjectIdentity: vi.fn(),
             applyLogo: vi.fn(),
             improveLogoPrompt: vi.fn()
-        };
+        } as unknown as LogoService;
 
         mockInlineSuggestionService = {
             getCompletion: vi.fn(),
             getInlineSuggestion: vi.fn(),
-        };
+        } as unknown as InlineSuggestionService;
 
         mockCodeIntelligenceService = {
             indexProject: vi.fn().mockResolvedValue(undefined)
-        };
+        } as unknown as CodeIntelligenceService;
 
         mockAuditLogService = {
             logFileSystemOperation: vi.fn().mockResolvedValue(undefined)
-        };
+        } as unknown as AuditLogService;
     });
 
     it('should register project handlers', () => {
@@ -133,7 +138,7 @@ describe('Project IPC Integration', () => {
         const result = await handler?.(mockEvent, '/root', 'proj-1');
 
         expect(analyzeProjectMock).toHaveBeenCalledWith('/root');
-        expect(mockCodeIntelligenceService.indexProject).toHaveBeenCalledWith('/root', 'proj-1');
+        expect(vi.mocked(mockCodeIntelligenceService.indexProject)).toHaveBeenCalledWith('/root', 'proj-1');
         expect(result).toMatchObject({
             success: true,
             data: mockResult
@@ -193,7 +198,7 @@ describe('Project IPC Integration', () => {
     });
 
     it('logs audit entry for env saves', async () => {
-        mockProjectService.saveEnvVars.mockResolvedValue(undefined);
+        vi.mocked(mockProjectService.saveEnvVars).mockResolvedValue(undefined);
         registerProjectIpc(() => null, {
             projectService: mockProjectService,
             logoService: mockLogoService,
@@ -210,7 +215,7 @@ describe('Project IPC Integration', () => {
             success: true,
             data: { success: true }
         });
-        expect(mockAuditLogService.logFileSystemOperation).toHaveBeenCalledWith(
+        expect(vi.mocked(mockAuditLogService!.logFileSystemOperation)).toHaveBeenCalledWith(
             'project.save-env',
             true,
             expect.objectContaining({ rootPath: '/root', variableCount: 1 })

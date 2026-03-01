@@ -19,7 +19,7 @@ interface TerminalRecordingItem {
 }
 
 interface TerminalRecordingPanelProps {
-    t: (key: string) => string;
+    t: (key: string, options?: Record<string, string | number>) => string;
     hasActiveSession: boolean;
     activeRecordingTabId: string | null;
     activeRecordingLabel: string | null;

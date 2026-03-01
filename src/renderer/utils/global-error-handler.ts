@@ -1,18 +1,18 @@
-import { appLogger } from '@/utils/renderer-logger'
+import { appLogger } from '@/utils/renderer-logger';
 
-const CONTEXT = 'GlobalErrorHandler'
+const CONTEXT = 'GlobalErrorHandler';
 
 /**
  * Extracts a readable message from an ErrorEvent or unknown error value.
  */
 function extractErrorMessage(error: unknown): string {
     if (error instanceof Error) {
-        return error.message
+        return error.message;
     }
     if (typeof error === 'string') {
-        return error
+        return error;
     }
-    return 'Unknown error'
+    return 'Unknown error';
 }
 
 /**
@@ -22,13 +22,13 @@ function extractErrorMessage(error: unknown): string {
 function handleWindowError(event: ErrorEvent): void {
     const message = event.error instanceof Error
         ? event.error.message
-        : event.message || 'Unknown error'
+        : event.message || 'Unknown error';
 
     const location = event.filename
         ? `${event.filename}:${String(event.lineno)}:${String(event.colno)}`
-        : 'unknown location'
+        : 'unknown location';
 
-    appLogger.error(CONTEXT, `Uncaught error at ${location}: ${message}`, event.error as Error)
+    appLogger.error(CONTEXT, `Uncaught error at ${location}: ${message}`, event.error as Error);
 }
 
 /**
@@ -36,14 +36,14 @@ function handleWindowError(event: ErrorEvent): void {
  * Logs the rejection reason with structured context.
  */
 function handleUnhandledRejection(event: PromiseRejectionEvent): void {
-    const reason: unknown = event.reason
-    const message = extractErrorMessage(reason)
+    const reason: unknown = event.reason;
+    const message = extractErrorMessage(reason);
 
     appLogger.error(
         CONTEXT,
         `Unhandled promise rejection: ${message}`,
         reason instanceof Error ? reason : undefined
-    )
+    );
 }
 
 /**
@@ -54,8 +54,8 @@ function handleUnhandledRejection(event: PromiseRejectionEvent): void {
  * Should be called once, early in the renderer entry point.
  */
 export function installGlobalErrorHandlers(): void {
-    window.addEventListener('error', handleWindowError)
-    window.addEventListener('unhandledrejection', handleUnhandledRejection)
+    window.addEventListener('error', handleWindowError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
 
-    appLogger.info(CONTEXT, 'Global error handlers installed')
+    appLogger.info(CONTEXT, 'Global error handlers installed');
 }

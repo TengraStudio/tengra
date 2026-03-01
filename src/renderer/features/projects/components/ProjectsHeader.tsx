@@ -118,24 +118,24 @@ export const ProjectsHeader: React.FC<ProjectsHeaderProps> = ({
                     <button
                         onClick={onExportList}
                         className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-background transition-colors"
-                        title="Export list"
-                        aria-label="Export list"
+                        title={t('aria.exportList')}
+                        aria-label={t('aria.exportList')}
                     >
                         <Download className="w-4 h-4" />
                     </button>
                     <button
                         onClick={() => onViewModeChange('grid')}
                         className={`p-2 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-background text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                        title="Grid view"
-                        aria-label="Grid view"
+                        title={t('aria.gridView')}
+                        aria-label={t('aria.gridView')}
                     >
                         <LayoutGrid className="w-4 h-4" />
                     </button>
                     <button
                         onClick={() => onViewModeChange('list')}
                         className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-background text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                        title="List view"
-                        aria-label="List view"
+                        title={t('aria.listView')}
+                        aria-label={t('aria.listView')}
                     >
                         <List className="w-4 h-4" />
                     </button>

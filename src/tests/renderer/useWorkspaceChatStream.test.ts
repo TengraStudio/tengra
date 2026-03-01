@@ -13,7 +13,7 @@ type ChunkListener = (chunk: ChatStreamChunk & { done?: boolean; chatId?: string
 let streamListener: ChunkListener | null = null;
 const mockUnsubscribe = vi.fn();
 const mockAbortChat = vi.fn();
-const mockChatStream = vi.fn<[], Promise<void>>();
+const mockChatStream = vi.fn<() => Promise<void>>();
 
 // Provide window.electron stubs used by chat-stream.ts
 Object.defineProperty(window, 'electron', {

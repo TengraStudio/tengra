@@ -109,9 +109,9 @@ describe('Performance IPC Handlers', () => {
             const handler = mockIpcMainHandlers.get('performance:get-memory-stats');
             const result = await handler!({});
             
-            expect(result.data.main).toHaveProperty('rss');
-            expect(result.data.main).toHaveProperty('heapTotal');
-            expect(result.data.main).toHaveProperty('heapUsed');
+            expect((result as Record<string, Record<string, unknown>>).data.main).toHaveProperty('rss');
+            expect((result as Record<string, Record<string, unknown>>).data.main).toHaveProperty('heapTotal');
+            expect((result as Record<string, Record<string, unknown>>).data.main).toHaveProperty('heapUsed');
         });
     });
 
@@ -156,7 +156,7 @@ describe('Performance IPC Handlers', () => {
             const handler = mockIpcMainHandlers.get('performance:detect-leak');
             const result = await handler!({});
             
-            expect(result.data.isPossibleLeak).toBe(false);
+            expect((result as Record<string, Record<string, unknown>>).data.isPossibleLeak).toBe(false);
         });
 
         it('should return default on error', async () => {
@@ -202,7 +202,7 @@ describe('Performance IPC Handlers', () => {
             const handler = mockIpcMainHandlers.get('performance:trigger-gc');
             const result = await handler!({});
             
-            expect(result.data.success).toBe(false);
+            expect((result as Record<string, Record<string, unknown>>).data.success).toBe(false);
         });
 
         it('should return default on error', async () => {

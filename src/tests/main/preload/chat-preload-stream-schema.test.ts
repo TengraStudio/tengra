@@ -2,10 +2,10 @@
  * QUALITY-061: Regression coverage for typed chat preload stream payloads.
  * Ensures ChatBridge interface and renderer bridge stay schema-aligned.
  */
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { IpcRendererEvent } from 'electron';
 import { Message, ToolDefinition } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
+import { IpcRendererEvent } from 'electron';
+import { beforeEach,describe, expect, it, vi } from 'vitest';
 
 // ── Mock electron ────────────────────────────────────────────────────────────
 
@@ -34,7 +34,7 @@ vi.mock('@main/logging/logger', () => ({
 
 // ── Import after mocks ──────────────────────────────────────────────────────
 
-import { createChatBridge, ChatBridge } from '@main/preload/domains/chat.preload';
+import { ChatBridge,createChatBridge } from '@main/preload/domains/chat.preload';
 import { ipcRenderer } from 'electron';
 
 // ── Stream chunk payload type (mirrors preload definition) ──────────────────

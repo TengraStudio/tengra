@@ -1,4 +1,4 @@
-import { AppError } from './base-error'
+import { AppError } from './base-error';
 
 /**
  * Error thrown during network operations.
@@ -6,9 +6,9 @@ import { AppError } from './base-error'
  */
 export class NetworkError extends AppError {
   /** HTTP status code, if applicable */
-  public readonly statusCode?: number
+  public readonly statusCode?: number;
   /** The URL that was being accessed */
-  public readonly url?: string
+  public readonly url?: string;
 
   /**
    * Creates a new NetworkError.
@@ -26,8 +26,8 @@ export class NetworkError extends AppError {
       url?: string
     }
   ) {
-    super(message, code, { cause: options?.cause, context: options?.context })
-    this.statusCode = options?.statusCode
-    this.url = options?.url
+    super(message, code, { cause: options?.cause, context: options?.context });
+    this.statusCode = options?.statusCode;
+    this.url = options?.url;
   }
 }

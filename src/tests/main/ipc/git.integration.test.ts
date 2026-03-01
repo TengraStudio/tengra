@@ -230,25 +230,27 @@ describe('Git IPC Integration', () => {
         );
         const cancelResult = await cancelHandler({} as IpcMainInvokeEvent, 'op-1');
 
-        expect(runResult.success).toBe(true);
-        expect(mockGitService.executeRaw).toHaveBeenCalledWith(
+        expect((runResult as { success: boolean }).success).toBe(true);
+        expect(executeRaw).toHaveBeenCalledWith(
             'C:/repo',
             'rebase --continue',
             { operationId: 'op-1', timeoutMs: 5000 }
         );
-        expect(cancelResult.success).toBe(true);
-        expect(mockGitService.cancelOperation).toHaveBeenCalledWith('op-1');
+        expect((cancelResult as { success: boolean }).success).toBe(true);
+        const cancelOp = (mockGitService as unknown as { cancelOperation: ReturnType<typeof vi.fn> }).cancelOperation;
+        expect(cancelOp).toHaveBeenCalledWith('op-1');
     });
 
     it('parses conflict entries and analytics', async () => {
         const handler = ipcMainHandlers.get('git:getConflicts')!;
         const result = await handler({} as IpcMainInvokeEvent, 'C:/repo');
 
-        expect(result.success).toBe(true);
-        expect(result.conflicts).toHaveLength(2);
-        expect(result.analytics.UU).toBe(1);
-        expect(result.analytics.AA).toBe(1);
-        expect(result.conflicts[0].path).toBe('src/conflict.ts');
+        const typed = result as { success: boolean; conflicts: { path: string }[]; analytics: Record<string, number> };
+        expect(typed.success).toBe(true);
+        expect(typed.conflicts).toHaveLength(2);
+        expect(typed.analytics.UU).toBe(1);
+        expect(typed.analytics.AA).toBe(1);
+        expect(typed.conflicts[0].path).toBe('src/conflict.ts');
     });
 
     it('returns stash list and supports export', async () => {
@@ -262,16 +264,18 @@ describe('Git IPC Integration', () => {
             'stash@{0}'
         );
 
-        expect(listResult.success).toBe(true);
-        expect(listResult.stashes[0].ref).toBe('stash@{0}');
-        expect(exportResult.success).toBe(true);
+        const typedList = listResult as { success: boolean; stashes: { ref: string }[] };
+        const typedExport = exportResult as { success: boolean };
+        expect(typedList.success).toBe(true);
+        expect(typedList.stashes[0].ref).toBe('stash@{0}');
+        expect(typedExport.success).toBe(true);
     });
 
     it('rejects invalid stash ref payloads with fallback', async () => {
         const handler = ipcMainHandlers.get('git:applyStash')!;
         const result = await handler({} as IpcMainInvokeEvent, 'C:/repo', 'stash@invalid', true);
 
-        expect(result.success).toBe(false);
+        expect((result as { success: boolean }).success).toBe(false);
     });
 
     it('parses blame lines and commit details', async () => {
@@ -289,11 +293,13 @@ describe('Git IPC Integration', () => {
             'abc12345'
         );
 
-        expect(blameResult.success).toBe(true);
-        expect(blameResult.lines[0].author).toBe('Jane');
-        expect(blameResult.lines[0].content).toContain('const foo = 1;');
-        expect(detailsResult.success).toBe(true);
-        expect(detailsResult.details.files).toContain('src/a.ts');
+        const typedBlame = blameResult as { success: boolean; lines: { author: string; content: string }[] };
+        const typedDetails = detailsResult as { success: boolean; details: { files: string[] } };
+        expect(typedBlame.success).toBe(true);
+        expect(typedBlame.lines[0].author).toBe('Jane');
+        expect(typedBlame.lines[0].content).toContain('const foo = 1;');
+        expect(typedDetails.success).toBe(true);
+        expect(typedDetails.details.files).toContain('src/a.ts');
     });
 
     it('returns rebase status and flow summaries', async () => {
@@ -303,13 +309,15 @@ describe('Git IPC Integration', () => {
         const rebaseResult = await rebaseHandler({} as IpcMainInvokeEvent, 'C:/repo');
         const flowResult = await flowHandler({} as IpcMainInvokeEvent, 'C:/repo');
 
-        expect(rebaseResult.success).toBe(true);
-        expect(rebaseResult.inRebase).toBe(true);
-        expect(rebaseResult.currentBranch).toBe('feature/new-ui');
+        const typedRebase = rebaseResult as { success: boolean; inRebase: boolean; currentBranch: string };
+        const typedFlow = flowResult as { success: boolean; byType: Record<string, string[]> };
+        expect(typedRebase.success).toBe(true);
+        expect(typedRebase.inRebase).toBe(true);
+        expect(typedRebase.currentBranch).toBe('feature/new-ui');
 
-        expect(flowResult.success).toBe(true);
-        expect(flowResult.byType.feature).toContain('feature/abc');
-        expect(flowResult.byType.release).toContain('release/1.0');
+        expect(typedFlow.success).toBe(true);
+        expect(typedFlow.byType.feature).toContain('feature/abc');
+        expect(typedFlow.byType.release).toContain('release/1.0');
     });
 
     it('returns submodule metadata and hook diagnostics', async () => {
@@ -319,13 +327,15 @@ describe('Git IPC Integration', () => {
         const submoduleResult = await submoduleHandler({} as IpcMainInvokeEvent, 'C:/repo');
         const hooksResult = await hooksHandler({} as IpcMainInvokeEvent, 'C:/repo');
 
-        expect(submoduleResult.success).toBe(true);
-        expect(submoduleResult.submodules[0].path).toBe('deps/lib');
-        expect(submoduleResult.submodules[0].url).toContain('example.com');
+        const typedSub = submoduleResult as { success: boolean; submodules: { path: string; url: string }[] };
+        const typedHooks = hooksResult as { success: boolean; hooks: { name: string; executable: boolean }[] };
+        expect(typedSub.success).toBe(true);
+        expect(typedSub.submodules[0].path).toBe('deps/lib');
+        expect(typedSub.submodules[0].url).toContain('example.com');
 
-        expect(hooksResult.success).toBe(true);
-        expect(hooksResult.hooks[0].name).toBe('pre-commit');
-        expect(hooksResult.hooks[0].executable).toBe(true);
+        expect(typedHooks.success).toBe(true);
+        expect(typedHooks.hooks[0].name).toBe('pre-commit');
+        expect(typedHooks.hooks[0].executable).toBe(true);
     });
 
     it('computes repository stats and exports CSV', async () => {
@@ -335,14 +345,16 @@ describe('Git IPC Integration', () => {
         const statsResult = await statsHandler({} as IpcMainInvokeEvent, 'C:/repo', 30);
         const exportResult = await exportHandler({} as IpcMainInvokeEvent, 'C:/repo', 30);
 
-        expect(statsResult.success).toBe(true);
-        expect(statsResult.stats.totalCommits).toBe(5);
-        expect(statsResult.stats.authorStats[0].commits).toBe(3);
-        expect(statsResult.stats.fileStats[0].file).toBe('src/a.ts');
-        expect(statsResult.stats.activity['2026-01-01']).toBe(2);
+        const typedStats = statsResult as { success: boolean; stats: { totalCommits: number; authorStats: { commits: number }[]; fileStats: { file: string }[]; activity: Record<string, number> } };
+        const typedExportStats = exportResult as { success: boolean; export: { authorsCsv: string } };
+        expect(typedStats.success).toBe(true);
+        expect(typedStats.stats.totalCommits).toBe(5);
+        expect(typedStats.stats.authorStats[0].commits).toBe(3);
+        expect(typedStats.stats.fileStats[0].file).toBe('src/a.ts');
+        expect(typedStats.stats.activity['2026-01-01']).toBe(2);
 
-        expect(exportResult.success).toBe(true);
-        expect(exportResult.export.authorsCsv).toContain('commits,author');
-        expect(exportResult.export.authorsCsv).toContain('Jane');
+        expect(typedExportStats.success).toBe(true);
+        expect(typedExportStats.export.authorsCsv).toContain('commits,author');
+        expect(typedExportStats.export.authorsCsv).toContain('Jane');
     });
 });

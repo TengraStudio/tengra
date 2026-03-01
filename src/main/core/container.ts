@@ -238,6 +238,16 @@ export class Container {
     }
 
     /**
+     * Returns an iterable of service entries with name and dependency info.
+     */
+    getServiceEntries(): Array<{ name: string; dependencies: string[] }> {
+        return Array.from(this.services.values()).map(def => ({
+            name: def.name,
+            dependencies: def.dependencies
+        }));
+    }
+
+    /**
      * Clear all registered services and reset initialization state.
      */
     clear(): void {

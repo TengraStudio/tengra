@@ -1,9 +1,10 @@
 import { appLogger } from '@main/logging/logger';
-import { sanitizePrompt, validatePromptSafety } from '@main/utils/prompt-sanitizer.util';
 import { SettingsService } from '@main/services/system/settings.service';
 import { ChatMessage, ContentPart } from '@main/types/llm.types';
+import { sanitizePrompt, validatePromptSafety } from '@main/utils/prompt-sanitizer.util';
 import { Message, MessageContentPart } from '@shared/types/chat';
 import { ValidationError } from '@shared/utils/error.util';
+
 import { getContextWindowService } from './context-window.service';
 
 /**

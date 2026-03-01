@@ -1,5 +1,4 @@
-import { useCallback, useMemo, type MutableRefObject } from 'react';
-import { type ITheme } from 'xterm';
+import { type MutableRefObject,useCallback, useMemo } from 'react';
 
 import { getTerminalTheme } from '@/lib/terminal-theme';
 import { appLogger } from '@/utils/renderer-logger';
@@ -11,8 +10,8 @@ import {
 import type {
     TerminalAppearancePreferences,
 } from '../types/terminal-appearance';
-import { validateTerminalAppearanceImport } from '../utils/terminal-panel-helpers';
 import { alertDialog } from '../utils/dialog';
+import { promptDialog } from '../utils/dialog';
 import {
     createShortcutShareCode,
     parseShortcutShareCode,
@@ -23,7 +22,7 @@ import {
     type TerminalShortcutBindings,
     type TerminalShortcutPresetId,
 } from '../utils/shortcut-config';
-import { promptDialog } from '../utils/dialog';
+import { validateTerminalAppearanceImport } from '../utils/terminal-panel-helpers';
 
 interface UseTerminalPreferenceActionsParams {
     theme: string;

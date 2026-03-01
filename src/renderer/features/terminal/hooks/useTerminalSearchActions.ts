@@ -1,13 +1,12 @@
-import { useCallback, type MutableRefObject } from 'react';
+import { type Dispatch, type MutableRefObject, type SetStateAction, useCallback } from 'react';
 import { Terminal as XTerm } from 'xterm';
 
+import { TERMINAL_SEARCH_HISTORY_LIMIT } from '../constants/terminal-panel-constants';
+import { TerminalSemanticIssue } from '../utils/terminal-panel-types';
 import {
     collectTerminalSearchMatches,
     type TerminalSearchMatch,
 } from '../utils/terminal-search';
-import { TerminalSemanticIssue } from '../utils/terminal-panel-types';
-
-import { TERMINAL_SEARCH_HISTORY_LIMIT } from '../constants/terminal-panel-constants';
 
 interface UseTerminalSearchActionsParams {
     activeTabIdRef: MutableRefObject<string | null>;
@@ -23,7 +22,7 @@ interface UseTerminalSearchActionsParams {
     getActiveTerminalInstance: () => XTerm | null;
     setSearchQuery: (query: string) => void;
     setSearchUseRegex: (useRegex: boolean) => void;
-    setSearchStatus: (status: string) => void;
+    setSearchStatus: Dispatch<SetStateAction<'idle' | 'found' | 'not-found' | 'invalid-regex'>>;
     setSearchMatches: (matches: TerminalSearchMatch[]) => void;
     setSearchActiveMatchIndex: (index: number) => void;
     setSearchHistory: (fn: (prev: string[]) => string[]) => void;

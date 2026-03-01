@@ -1,8 +1,9 @@
 import { type ITheme } from 'xterm';
+
 import type {
+    ResolvedTerminalAppearance,
     TerminalAppearancePreferences,
     TerminalCursorStyle,
-    ResolvedTerminalAppearance,
 } from '../types/terminal-appearance';
 import { serializeTerminalModuleVersion } from '../utils/module-version';
 

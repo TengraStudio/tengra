@@ -1,5 +1,6 @@
-import { Loader2 } from 'lucide-react'
-import { useTranslation } from '@/i18n'
+import { Loader2 } from 'lucide-react';
+
+import { useTranslation } from '@/i18n';
 
 /** Props for the RetryIndicator component */
 interface RetryIndicatorProps {
@@ -16,13 +17,13 @@ interface RetryIndicatorProps {
  * Optionally shows the current attempt out of max attempts.
  */
 const RetryIndicator: React.FC<RetryIndicatorProps> = ({ isRetrying, attempt, maxAttempts }) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   if (!isRetrying) {
-    return null
+    return null;
   }
 
-  const showAttempts = attempt !== undefined && maxAttempts !== undefined
+  const showAttempts = attempt !== undefined && maxAttempts !== undefined;
 
   return (
     <div className="flex items-center gap-2 text-sm text-yellow-500 dark:text-yellow-400">
@@ -33,7 +34,7 @@ const RetryIndicator: React.FC<RetryIndicatorProps> = ({ isRetrying, attempt, ma
           : t('common.retrying')}
       </span>
     </div>
-  )
-}
+  );
+};
 
-export default RetryIndicator
+export default RetryIndicator;

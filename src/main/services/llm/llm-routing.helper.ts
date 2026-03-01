@@ -1,8 +1,8 @@
 import { ProxyService } from '@main/services/proxy/proxy.service';
-import { SettingsService } from '@main/services/system/settings.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
-import { JsonObject } from '@shared/types/common';
+import { SettingsService } from '@main/services/system/settings.service';
 import { ToolDefinition } from '@shared/types/chat';
+import { JsonObject } from '@shared/types/common';
 import { AuthenticationError } from '@shared/utils/error.util';
 
 /** Route configuration for a provider request. */
@@ -86,17 +86,22 @@ export function normalizeModelName(model: string, provider?: string): string {
 /**
  * Gets OpenAI-compatible settings (base URL and API key).
  */
+/** Options for resolving OpenAI-compatible settings. */
+interface OpenAISettingsOptions {
+    baseUrlOverride: string | undefined;
+    apiKeyOverride: string | undefined;
+    provider: string | undefined;
+    defaultBaseUrl: string;
+    defaultApiKey: string;
+    keyRotationService: KeyRotationService;
+}
+
 export function getOpenAISettings(
-    baseUrlOverride: string | undefined,
-    apiKeyOverride: string | undefined,
-    provider: string | undefined,
-    defaultBaseUrl: string,
-    defaultApiKey: string,
-    keyRotationService: KeyRotationService
+    options: OpenAISettingsOptions
 ): { baseUrl: string; apiKey: string } {
-    const baseUrl = baseUrlOverride ?? defaultBaseUrl;
-    const keyProvider = (provider === 'openai' || !provider) ? 'openai' : provider;
-    const apiKey = apiKeyOverride ?? keyRotationService.getCurrentKey(keyProvider) ?? defaultApiKey;
+    const baseUrl = options.baseUrlOverride ?? options.defaultBaseUrl;
+    const keyProvider = (options.provider === 'openai' || !options.provider) ? 'openai' : options.provider;
+    const apiKey = options.apiKeyOverride ?? options.keyRotationService.getCurrentKey(keyProvider) ?? options.defaultApiKey;
 
     if (!apiKey && !baseUrl.match(/(localhost|127\.0\.0\.1)/)) {
         throw new AuthenticationError('OpenAI API Key not set');

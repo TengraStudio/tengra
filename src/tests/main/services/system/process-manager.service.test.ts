@@ -1,0 +1,123 @@
+import { ProcessManagerService } from '@main/services/system/process-manager.service';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('@main/logging/logger', () => ({
+    appLogger: { info: vi.fn(), error: vi.fn(), debug: vi.fn(), warn: vi.fn() }
+}));
+
+vi.mock('electron', () => ({
+    app: {
+        isPackaged: false,
+        getPath: vi.fn().mockReturnValue('/mock/appData')
+    }
+}));
+
+vi.mock('child_process', () => ({
+    exec: vi.fn(),
+    spawn: vi.fn(() => ({
+        pid: 9999,
+        stdout: { on: vi.fn() },
+        stderr: { on: vi.fn() },
+        on: vi.fn(),
+        unref: vi.fn(),
+        kill: vi.fn(),
+        removeAllListeners: vi.fn()
+    }))
+}));
+
+vi.mock('util', () => ({
+    promisify: () => vi.fn().mockResolvedValue({ stdout: '', stderr: '' })
+}));
+
+vi.mock('fs', () => ({
+    existsSync: vi.fn().mockReturnValue(false),
+    readFileSync: vi.fn().mockReturnValue(''),
+    unlinkSync: vi.fn()
+}));
+
+vi.mock('net', () => {
+    const mockSocket = {
+        setTimeout: vi.fn(),
+        on: vi.fn(),
+        connect: vi.fn(),
+        destroy: vi.fn()
+    };
+    return { Socket: vi.fn(() => mockSocket) };
+});
+
+vi.mock('axios', () => ({
+    default: {
+        post: vi.fn(),
+        get: vi.fn(),
+        isAxiosError: vi.fn().mockReturnValue(false)
+    }
+}));
+
+vi.mock('@shared/constants/timeouts', () => ({
+    OPERATION_TIMEOUTS: { PORT_CHECK_FAST: 500 }
+}));
+
+vi.mock('@shared/utils/error.util', () => ({
+    getErrorMessage: (e: Error) => e?.message ?? 'unknown'
+}));
+
+describe('ProcessManagerService', () => {
+    let service: ProcessManagerService;
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        service = new ProcessManagerService();
+    });
+
+    afterEach(async () => {
+        await service.cleanup();
+    });
+
+    describe('initialize', () => {
+        it('should initialize without errors', async () => {
+            await expect(service.initialize()).resolves.not.toThrow();
+        });
+    });
+
+    describe('cleanup', () => {
+        it('should clean up without errors', async () => {
+            await expect(service.cleanup()).resolves.not.toThrow();
+        });
+    });
+
+    describe('stopService', () => {
+        it('should not throw for unknown service', () => {
+            expect(() => service.stopService('unknown')).not.toThrow();
+        });
+    });
+
+    describe('killAll', () => {
+        it('should not throw when no processes exist', () => {
+            expect(() => service.killAll()).not.toThrow();
+        });
+
+        it('should accept force parameter', () => {
+            expect(() => service.killAll(true)).not.toThrow();
+        });
+    });
+
+    describe('getServicePort', () => {
+        it('should return undefined for unknown service', () => {
+            expect(service.getServicePort('nonexistent')).toBeUndefined();
+        });
+    });
+
+    describe('sendRequest', () => {
+        it('should throw when service port not discovered', async () => {
+            await expect(service.sendRequest('unknown', {}))
+                .rejects.toThrow('Service unknown port not discovered');
+        });
+    });
+
+    describe('sendGetRequest', () => {
+        it('should throw when service port not discovered', async () => {
+            await expect(service.sendGetRequest('unknown', '/health'))
+                .rejects.toThrow('Service unknown port not discovered');
+        });
+    });
+});

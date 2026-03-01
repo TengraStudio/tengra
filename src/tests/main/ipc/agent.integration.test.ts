@@ -88,7 +88,7 @@ describe('Agent IPC Integration', () => {
             recoverAgentFromArchive: vi.fn(),
         };
 
-        registerAgentIpc(() => null, mockAgentService);
+        registerAgentIpc(() => null, mockAgentService as unknown as Parameters<typeof registerAgentIpc>[1]);
     });
 
     it('should register expected handlers', () => {

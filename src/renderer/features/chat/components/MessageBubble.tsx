@@ -36,8 +36,8 @@ import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { Attachment, Message, MessageVariant } from '@/types';
 
-import { TypingIndicator } from './TypingIndicator';
 import { AttachmentList } from './input/AttachmentList';
+import { TypingIndicator } from './TypingIndicator';
 
 import 'katex/dist/katex.min.css';
 import '@renderer/features/chat/components/MessageBubble.css';
@@ -1578,6 +1578,7 @@ const MessageVariantCard = memo(
                         onSpeak={onSpeak}
                         onStop={onStop}
                         isSpeaking={isSpeaking}
+                        attachments={[]}
                         t={t}
                         isUser={isUser}
                     />
