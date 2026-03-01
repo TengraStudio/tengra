@@ -1,0 +1,131 @@
+import { AlertTriangle, ArrowRightLeft, Clock, RefreshCw, WifiOff, X } from 'lucide-react';
+import React, { useMemo } from 'react';
+
+import { useTranslation } from '@/i18n';
+import { ChatError, ChatErrorKind } from '@/types';
+
+interface ChatErrorStateProps {
+    error: ChatError;
+    onRetry: () => void;
+    onSwitchModel?: () => void;
+    onDismiss: () => void;
+}
+
+/** Accent color per error kind */
+const ERROR_STYLES: Record<ChatErrorKind, { border: string; bg: string; icon: string }> = {
+    provider_unavailable: { border: 'border-orange-500/40', bg: 'bg-orange-500/10', icon: 'text-orange-400' },
+    quota_exhausted: { border: 'border-red-500/40', bg: 'bg-red-500/10', icon: 'text-red-400' },
+    timeout: { border: 'border-yellow-500/40', bg: 'bg-yellow-500/10', icon: 'text-yellow-400' },
+    generic: { border: 'border-red-500/40', bg: 'bg-red-500/10', icon: 'text-red-400' },
+};
+
+const ERROR_TITLE_KEYS: Record<ChatErrorKind, string> = {
+    provider_unavailable: 'chat.errorProviderUnavailable',
+    quota_exhausted: 'chat.errorQuotaExhausted',
+    timeout: 'chat.errorTimeout',
+    generic: 'chat.errorGeneric',
+};
+
+const ERROR_ACTION_KEYS: Record<ChatErrorKind, string> = {
+    provider_unavailable: 'chat.errorProviderUnavailableAction',
+    quota_exhausted: 'chat.errorQuotaExhaustedAction',
+    timeout: 'chat.errorTimeoutAction',
+    generic: 'chat.errorRetry',
+};
+
+/** Icon component per error kind */
+const ErrorIcon: React.FC<{ kind: ChatErrorKind; className?: string }> = ({ kind, className }) => {
+    const iconClass = `w-5 h-5 ${className ?? ''}`;
+    if (kind === 'provider_unavailable') {
+        return <WifiOff className={iconClass} />;
+    }
+    if (kind === 'timeout') {
+        return <Clock className={iconClass} />;
+    }
+    return <AlertTriangle className={iconClass} />;
+};
+
+/**
+ * Displays a contextual error card inside the main chat view
+ * when a chat stream fails due to provider, quota, or timeout issues.
+ */
+export const ChatErrorState: React.FC<ChatErrorStateProps> = React.memo(({
+    error,
+    onRetry,
+    onSwitchModel,
+    onDismiss,
+}) => {
+    const { t } = useTranslation();
+    const style = ERROR_STYLES[error.kind];
+
+    const showSwitchModel = error.kind === 'provider_unavailable' || error.kind === 'quota_exhausted';
+
+    const resetTimeLabel = useMemo(() => {
+        if (!error.resetsAt) {
+            return null;
+        }
+        return t('chat.errorQuotaResetHint', { time: new Date(error.resetsAt * 1000).toLocaleString() });
+    }, [error.resetsAt, t]);
+
+    return (
+        <div
+            role="alert"
+            className={`mx-4 my-3 rounded-xl border ${style.border} ${style.bg} p-4 animate-in fade-in slide-in-from-bottom-2 duration-300`}
+        >
+            <div className="flex items-start gap-3">
+                <div className={`shrink-0 mt-0.5 ${style.icon}`}>
+                    <ErrorIcon kind={error.kind} />
+                </div>
+
+                <div className="flex-1 min-w-0 space-y-2">
+                    <p className="text-sm text-foreground/90 leading-relaxed">
+                        {t(ERROR_TITLE_KEYS[error.kind])}
+                    </p>
+
+                    {error.model && (
+                        <p className="text-xs text-muted-foreground">
+                            {error.model}
+                        </p>
+                    )}
+
+                    {resetTimeLabel && (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Clock className="w-3 h-3" />
+                            <span>{resetTimeLabel}</span>
+                        </div>
+                    )}
+
+                    <div className="flex items-center gap-2 pt-1">
+                        <button
+                            onClick={onRetry}
+                            className="flex items-center gap-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1.5 text-xs font-medium transition-colors"
+                        >
+                            <RefreshCw className="w-3.5 h-3.5" />
+                            {t(ERROR_ACTION_KEYS[error.kind])}
+                        </button>
+
+                        {showSwitchModel && onSwitchModel && (
+                            <button
+                                onClick={onSwitchModel}
+                                className="flex items-center gap-1.5 rounded-lg border border-white/10 hover:bg-white/5 text-muted-foreground hover:text-foreground px-3 py-1.5 text-xs font-medium transition-colors"
+                            >
+                                <ArrowRightLeft className="w-3.5 h-3.5" />
+                                {t('chat.errorSwitchModel')}
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                <button
+                    onClick={onDismiss}
+                    className="shrink-0 text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-white/5"
+                    aria-label={t('chat.errorDismiss')}
+                >
+                    <X className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    );
+});
+
+ChatErrorState.displayName = 'ChatErrorState';

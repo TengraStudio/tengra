@@ -1,3 +1,4 @@
+import { ChatErrorState } from '@renderer/features/chat/components/ChatErrorState';
 import { ChatHeader } from '@renderer/features/chat/components/ChatHeader';
 import { ChatInput } from '@renderer/features/chat/components/ChatInput';
 import { ExportModal } from '@renderer/features/chat/components/ExportModal';
@@ -5,7 +6,7 @@ import { MessageList } from '@renderer/features/chat/components/MessageList';
 import { WelcomeScreen } from '@renderer/features/chat/components/WelcomeScreen';
 import { ChatTemplate } from '@renderer/features/chat/types';
 import { ChevronDown } from 'lucide-react';
-import React, { useRef } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { VirtuosoHandle } from 'react-virtuoso';
 
 import { useAuth } from '@/context/AuthContext';
@@ -41,7 +42,8 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
     const {
         displayMessages, searchTerm, setSearchTerm, setInput,
         streamingReasoning, streamingSpeed, isLoading,
-        speakingMessageId, handleSpeak, handleStopSpeak, regenerateMessage
+        speakingMessageId, handleSpeak, handleStopSpeak, regenerateMessage,
+        chatError, clearChatError
     } = useChat();
 
     const { language } = useAuth();
@@ -51,8 +53,16 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
     const virtuosoRef = useRef<VirtuosoHandle>(null);
 
     const [showExportModal, setShowExportModal] = React.useState(false);
-    const { chats, currentChatId } = useChat();
+    const { chats, currentChatId, handleSend } = useChat();
     const activeChat = React.useMemo(() => chats.find(c => c.id === currentChatId), [chats, currentChatId]);
+
+    const handleErrorRetry = useCallback(() => {
+        clearChatError();
+        const lastUserMsg = [...displayMessages].reverse().find(m => m.role === 'user');
+        if (lastUserMsg && typeof lastUserMsg.content === 'string') {
+            void handleSend(lastUserMsg.content);
+        }
+    }, [clearChatError, displayMessages, handleSend]);
 
     // ... existing scroll handler ...
     const handleScrollToBottom = () => {
@@ -109,6 +119,14 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
                             }
                         }}
                         virtuosoRef={virtuosoRef}
+                    />
+                )}
+
+                {chatError && !isLoading && (
+                    <ChatErrorState
+                        error={chatError}
+                        onRetry={handleErrorRetry}
+                        onDismiss={clearChatError}
                     />
                 )}
             </div>

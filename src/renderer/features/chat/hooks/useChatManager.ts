@@ -149,7 +149,7 @@ export function useChatManager(options: UseChatManagerOptions) {
     const prevChatIdRef = useRef<string | null>(null);
 
     const { prompts, createPrompt, deletePrompt, updatePrompt } = usePromptManager();
-    const { streamingStates, generateResponse, stopGeneration } = useChatGenerator({
+    const { streamingStates, lastChatError, clearChatError, generateResponse, stopGeneration } = useChatGenerator({
         chats, setChats, appSettings, selectedModel, selectedProvider, selectedModels: options.selectedModels,
         language, selectedPersona, activeWorkspacePath: options.activeWorkspacePath, projectId: options.projectId,
         t, handleSpeak, autoReadEnabled, formatChatError, systemMode
@@ -179,6 +179,7 @@ export function useChatManager(options: UseChatManagerOptions) {
     const currentStreamState = currentChatId ? streamingStates[currentChatId] : undefined;
     const streamingReasoning = useMemo(() => currentStreamState?.reasoning ?? '', [currentStreamState]);
     const streamingSpeed = useMemo(() => currentStreamState?.speed ?? null, [currentStreamState]);
+    const chatError = useMemo(() => currentStreamState?.error ?? lastChatError, [currentStreamState, lastChatError]);
     const isLoading = useMemo(() => currentChatId ? Boolean(currentChat?.isGenerating) || Boolean(currentStreamState) : false, [currentChatId, currentChat?.isGenerating, currentStreamState]);
     const messages = useMemo(() => currentChat?.messages ?? [], [currentChat]);
     const deferredSearchTerm = useDeferredValue(searchTerm);
@@ -298,11 +299,11 @@ export function useChatManager(options: UseChatManagerOptions) {
 
     return useMemo(() => ({
         chats, setChats, currentChatId, setCurrentChatId, messages, displayMessages, searchTerm, setSearchTerm, input, setInput, isLoading,
-        streamingReasoning, streamingSpeed, contextTokens, handleSend, stopGeneration, createNewChat, deleteChat, clearMessages,
+        streamingReasoning, streamingSpeed, chatError, clearChatError, contextTokens, handleSend, stopGeneration, createNewChat, deleteChat, clearMessages,
         folders, createFolder, updateFolder, deleteFolder, moveChatToFolder, addMessage, prompts, createPrompt, deletePrompt, updatePrompt,
         isListening, startListening, stopListening, updateChat, togglePin, toggleFavorite, attachments, setAttachments, processFile, removeAttachment,
         t, handleSpeak, systemMode, setSystemMode, regenerateMessage, bulkDeleteChats
-    }), [chats, currentChatId, messages, displayMessages, searchTerm, input, isLoading, streamingReasoning, streamingSpeed, contextTokens,
+    }), [chats, currentChatId, messages, displayMessages, searchTerm, input, isLoading, streamingReasoning, streamingSpeed, chatError, clearChatError, contextTokens,
         handleSend, stopGeneration, createNewChat, deleteChat, clearMessages, folders, createFolder, updateFolder, deleteFolder, moveChatToFolder,
         addMessage, prompts, createPrompt, deletePrompt, updatePrompt, isListening, startListening, stopListening, updateChat, togglePin, toggleFavorite,
         attachments, setAttachments, processFile, removeAttachment, t, handleSpeak, systemMode, regenerateMessage, bulkDeleteChats]);
