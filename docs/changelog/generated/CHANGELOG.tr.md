@@ -1,5 +1,18 @@
 # Değişiklik Günlüğü
 
+## [2026-03-02]
+
+### Yapılandırılabilir Bellek Modelleri ve Güvenlik/Bellek İyileştirmeleri
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Daha iyi esneklik için kodda gömülü olan bellek modelleri kullanıcı ayarlarına taşındı, HTML temizleme güvenliği doğrulandı ve olay dinleyicisi bellek sızıntıları giderildi.
+
+- **PERF-005**: `AdvancedMemoryService.ts` içindeki `PREFERRED_MODELS` uygulama ayarlarına taşındı (`AppSettings.ai.preferredMemoryModels`).
+- **SEC-H-005**: `MessageBubble.tsx` ve `MarkdownRenderer.tsx` içindeki Mermaid diyagramları için tüm `dangerouslySetInnerHTML` kullanımları denetlendi ve `DOMPurify` ile doğru şekilde temizlendiği doğrulandı.
+- **DEBT-LEAK-02**: `AgentTaskExecutor.ts` içinde `project:plan-revised` olay aboneliği doğru şekilde kaldırılarak bir bellek sızıntısı giderildi.
+- **Tip Güvenliği**: `SettingsService` ve `AdvancedMemoryService`, yapay zeka modelleri için kesin olarak yazılmış yapılandırmaları kullanacak şekilde güncellendi.
+
 ## [2026-03-01]
 
 ### Ajan Mimarisi Sertleştirme: Monolitik Servis Refaktörü ve Konsey Orkestrasyonu

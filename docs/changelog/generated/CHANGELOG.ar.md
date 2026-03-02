@@ -1,5 +1,18 @@
 # سجل التغييرات
 
+## [2026-03-02]
+
+### Configurable Memory Models and Security/Memory Hardening
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Moved hardcoded memory models to user settings for better flexibility, verified HTML sanitization safety, and fixed event listener memory leaks.
+
+- **PERF-005**: Extracted `PREFERRED_MODELS` from `AdvancedMemoryService.ts` to application settings (`AppSettings.ai.preferredMemoryModels`).
+- **SEC-H-005**: Audited and verified that all `dangerouslySetInnerHTML` usages for Mermaid diagrams in `MessageBubble.tsx` and `MarkdownRenderer.tsx` are correctly sanitized using `DOMPurify`.
+- **DEBT-LEAK-02**: Fixed a memory leak in `AgentTaskExecutor.ts` by correctly unsubscribing from the `project:plan-revised` event.
+- **Type Safety**: Updated `SettingsService` and `AdvancedMemoryService` to use strictly typed configurations for AI models.
+
 ## [2026-03-01]
 
 ### تقوية بنية الوكيل: إعادة هيكلة الخدمة المتجانسة وتدبير المجلس

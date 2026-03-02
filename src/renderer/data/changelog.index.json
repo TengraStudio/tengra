@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-03-02T12:23:53.272Z",
+  "generatedAt": "2026-03-02T14:17:44.414Z",
   "locales": [
     "en",
     "tr",
@@ -12,6 +12,107 @@
     "ar"
   ],
   "entries": [
+    {
+      "id": "2026-03-02-perf-security-cleanup",
+      "date": "2026-03-02",
+      "channel": "stable",
+      "type": "refactor",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "AdvancedMemoryService",
+        "Settings",
+        "Security",
+        "AgentTaskExecutor"
+      ],
+      "breaking": false,
+      "security": true,
+      "contentByLocale": {
+        "en": {
+          "title": "Configurable Memory Models and Security/Memory Hardening",
+          "summary": "Moved hardcoded memory models to user settings for better flexibility, verified HTML sanitization safety, and fixed event listener memory leaks.",
+          "items": [
+            "- **PERF-005**: Extracted `PREFERRED_MODELS` from `AdvancedMemoryService.ts` to application settings (`AppSettings.ai.preferredMemoryModels`).",
+            "- **SEC-H-005**: Audited and verified that all `dangerouslySetInnerHTML` usages for Mermaid diagrams in `MessageBubble.tsx` and `MarkdownRenderer.tsx` are correctly sanitized using `DOMPurify`.",
+            "- **DEBT-LEAK-02**: Fixed a memory leak in `AgentTaskExecutor.ts` by correctly unsubscribing from the `project:plan-revised` event.",
+            "- **Type Safety**: Updated `SettingsService` and `AdvancedMemoryService` to use strictly typed configurations for AI models."
+          ]
+        },
+        "tr": {
+          "title": "Yapılandırılabilir Bellek Modelleri ve Güvenlik/Bellek İyileştirmeleri",
+          "summary": "Daha iyi esneklik için kodda gömülü olan bellek modelleri kullanıcı ayarlarına taşındı, HTML temizleme güvenliği doğrulandı ve olay dinleyicisi bellek sızıntıları giderildi.",
+          "items": [
+            "- **PERF-005**: `AdvancedMemoryService.ts` içindeki `PREFERRED_MODELS` uygulama ayarlarına taşındı (`AppSettings.ai.preferredMemoryModels`).",
+            "- **SEC-H-005**: `MessageBubble.tsx` ve `MarkdownRenderer.tsx` içindeki Mermaid diyagramları için tüm `dangerouslySetInnerHTML` kullanımları denetlendi ve `DOMPurify` ile doğru şekilde temizlendiği doğrulandı.",
+            "- **DEBT-LEAK-02**: `AgentTaskExecutor.ts` içinde `project:plan-revised` olay aboneliği doğru şekilde kaldırılarak bir bellek sızıntısı giderildi.",
+            "- **Tip Güvenliği**: `SettingsService` ve `AdvancedMemoryService`, yapay zeka modelleri için kesin olarak yazılmış yapılandırmaları kullanacak şekilde güncellendi."
+          ]
+        },
+        "de": {
+          "title": "Configurable Memory Models and Security/Memory Hardening",
+          "summary": "Moved hardcoded memory models to user settings for better flexibility, verified HTML sanitization safety, and fixed event listener memory leaks.",
+          "items": [
+            "- **PERF-005**: Extracted `PREFERRED_MODELS` from `AdvancedMemoryService.ts` to application settings (`AppSettings.ai.preferredMemoryModels`).",
+            "- **SEC-H-005**: Audited and verified that all `dangerouslySetInnerHTML` usages for Mermaid diagrams in `MessageBubble.tsx` and `MarkdownRenderer.tsx` are correctly sanitized using `DOMPurify`.",
+            "- **DEBT-LEAK-02**: Fixed a memory leak in `AgentTaskExecutor.ts` by correctly unsubscribing from the `project:plan-revised` event.",
+            "- **Type Safety**: Updated `SettingsService` and `AdvancedMemoryService` to use strictly typed configurations for AI models."
+          ]
+        },
+        "fr": {
+          "title": "Configurable Memory Models and Security/Memory Hardening",
+          "summary": "Moved hardcoded memory models to user settings for better flexibility, verified HTML sanitization safety, and fixed event listener memory leaks.",
+          "items": [
+            "- **PERF-005**: Extracted `PREFERRED_MODELS` from `AdvancedMemoryService.ts` to application settings (`AppSettings.ai.preferredMemoryModels`).",
+            "- **SEC-H-005**: Audited and verified that all `dangerouslySetInnerHTML` usages for Mermaid diagrams in `MessageBubble.tsx` and `MarkdownRenderer.tsx` are correctly sanitized using `DOMPurify`.",
+            "- **DEBT-LEAK-02**: Fixed a memory leak in `AgentTaskExecutor.ts` by correctly unsubscribing from the `project:plan-revised` event.",
+            "- **Type Safety**: Updated `SettingsService` and `AdvancedMemoryService` to use strictly typed configurations for AI models."
+          ]
+        },
+        "es": {
+          "title": "Configurable Memory Models and Security/Memory Hardening",
+          "summary": "Moved hardcoded memory models to user settings for better flexibility, verified HTML sanitization safety, and fixed event listener memory leaks.",
+          "items": [
+            "- **PERF-005**: Extracted `PREFERRED_MODELS` from `AdvancedMemoryService.ts` to application settings (`AppSettings.ai.preferredMemoryModels`).",
+            "- **SEC-H-005**: Audited and verified that all `dangerouslySetInnerHTML` usages for Mermaid diagrams in `MessageBubble.tsx` and `MarkdownRenderer.tsx` are correctly sanitized using `DOMPurify`.",
+            "- **DEBT-LEAK-02**: Fixed a memory leak in `AgentTaskExecutor.ts` by correctly unsubscribing from the `project:plan-revised` event.",
+            "- **Type Safety**: Updated `SettingsService` and `AdvancedMemoryService` to use strictly typed configurations for AI models."
+          ]
+        },
+        "ja": {
+          "title": "Configurable Memory Models and Security/Memory Hardening",
+          "summary": "Moved hardcoded memory models to user settings for better flexibility, verified HTML sanitization safety, and fixed event listener memory leaks.",
+          "items": [
+            "- **PERF-005**: Extracted `PREFERRED_MODELS` from `AdvancedMemoryService.ts` to application settings (`AppSettings.ai.preferredMemoryModels`).",
+            "- **SEC-H-005**: Audited and verified that all `dangerouslySetInnerHTML` usages for Mermaid diagrams in `MessageBubble.tsx` and `MarkdownRenderer.tsx` are correctly sanitized using `DOMPurify`.",
+            "- **DEBT-LEAK-02**: Fixed a memory leak in `AgentTaskExecutor.ts` by correctly unsubscribing from the `project:plan-revised` event.",
+            "- **Type Safety**: Updated `SettingsService` and `AdvancedMemoryService` to use strictly typed configurations for AI models."
+          ]
+        },
+        "zh": {
+          "title": "Configurable Memory Models and Security/Memory Hardening",
+          "summary": "Moved hardcoded memory models to user settings for better flexibility, verified HTML sanitization safety, and fixed event listener memory leaks.",
+          "items": [
+            "- **PERF-005**: Extracted `PREFERRED_MODELS` from `AdvancedMemoryService.ts` to application settings (`AppSettings.ai.preferredMemoryModels`).",
+            "- **SEC-H-005**: Audited and verified that all `dangerouslySetInnerHTML` usages for Mermaid diagrams in `MessageBubble.tsx` and `MarkdownRenderer.tsx` are correctly sanitized using `DOMPurify`.",
+            "- **DEBT-LEAK-02**: Fixed a memory leak in `AgentTaskExecutor.ts` by correctly unsubscribing from the `project:plan-revised` event.",
+            "- **Type Safety**: Updated `SettingsService` and `AdvancedMemoryService` to use strictly typed configurations for AI models."
+          ]
+        },
+        "ar": {
+          "title": "Configurable Memory Models and Security/Memory Hardening",
+          "summary": "Moved hardcoded memory models to user settings for better flexibility, verified HTML sanitization safety, and fixed event listener memory leaks.",
+          "items": [
+            "- **PERF-005**: Extracted `PREFERRED_MODELS` from `AdvancedMemoryService.ts` to application settings (`AppSettings.ai.preferredMemoryModels`).",
+            "- **SEC-H-005**: Audited and verified that all `dangerouslySetInnerHTML` usages for Mermaid diagrams in `MessageBubble.tsx` and `MarkdownRenderer.tsx` are correctly sanitized using `DOMPurify`.",
+            "- **DEBT-LEAK-02**: Fixed a memory leak in `AgentTaskExecutor.ts` by correctly unsubscribing from the `project:plan-revised` event.",
+            "- **Type Safety**: Updated `SettingsService` and `AdvancedMemoryService` to use strictly typed configurations for AI models."
+          ]
+        }
+      }
+    },
     {
       "id": "2026-03-01-agent-service-refactor-council-orchestration",
       "date": "2026-03-01",

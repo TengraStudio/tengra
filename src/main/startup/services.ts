@@ -496,13 +496,14 @@ function registerLLMServices() {
     );
     container.register(
         'advancedMemoryService',
-        (dbs, es, ls) =>
+        (dbs, es, ls, ss) =>
             new AdvancedMemoryService(
                 dbs as DatabaseService,
                 es as EmbeddingService,
-                ls as LLMService
+                ls as LLMService,
+                ss as SettingsService
             ),
-        ['databaseService', 'embeddingService', 'llmService']
+        ['databaseService', 'embeddingService', 'llmService', 'settingsService']
     );
     container.register('memoryService', ams => new MemoryService(ams as AdvancedMemoryService), [
         'advancedMemoryService',

@@ -134,6 +134,18 @@ const DEFAULT_SETTINGS: AppSettings = {
         cursorBlink: true,
         scrollback: 10000,
     },
+    ai: {
+        preferredMemoryModels: [
+            'llama3.2:1b',
+            'llama3.2:3b',
+            'phi3:mini',
+            'gemma2:2b',
+            'qwen2.5:0.5b',
+            'qwen2.5:1.5b',
+            'llama3.1:8b',
+            'mistral:7b',
+        ],
+    },
 };
 
 import { BaseService } from '@main/services/base.service';

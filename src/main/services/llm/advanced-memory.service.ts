@@ -14,6 +14,7 @@ import { appLogger } from '@main/logging/logger';
 import { DatabaseService, EntityKnowledge, EpisodicMemory } from '@main/services/data/database.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { LLMService } from '@main/services/llm/llm.service';
+import { SettingsService } from '@main/services/system/settings.service';
 import { ChatMessage } from '@main/types/llm.types';
 import { withRetry } from '@main/utils/retry.util';
 import {
@@ -87,11 +88,7 @@ export interface AdvancedMemoryHealthSnapshot {
     };
 }
 
-// Ollama models in order of preference (smallest first)
-const PREFERRED_MODELS = [
-    'llama3.2:1b', 'llama3.2:3b', 'phi3:mini', 'gemma2:2b',
-    'qwen2.5:0.5b', 'qwen2.5:1.5b', 'llama3.1:8b', 'mistral:7b'
-];
+// Models are now managed via SettingsService
 
 interface OllamaTagsResponse {
     models: { name: string }[];
@@ -143,6 +140,7 @@ export class AdvancedMemoryService {
         private db: DatabaseService,
         private embedding: EmbeddingService,
         private llmService: LLMService,
+        private settings: SettingsService,
         config?: Partial<AdvancedMemoryConfig>
     ) {
         this.config = { ...DEFAULT_MEMORY_CONFIG, ...config };
@@ -2014,8 +2012,9 @@ If no facts worth remembering, return [].`;
 
             const data = await res.json() as OllamaTagsResponse;
             const installed = data.models.map(m => m.name.toLowerCase());
+            const preferredModels = this.settings.getSettings().ai?.preferredMemoryModels ?? [];
 
-            for (const preferred of PREFERRED_MODELS) {
+            for (const preferred of preferredModels) {
                 const match = installed.find(m => m === preferred || m.startsWith(preferred.split(':')[0]));
                 if (match) {
                     this.cachedOllamaModel = match;

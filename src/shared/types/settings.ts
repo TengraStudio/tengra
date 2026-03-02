@@ -264,6 +264,7 @@ export type AppSettings = {
         modelUpdateInterval?: number; // ms, default 1 hour
         tokenRefreshInterval?: number; // ms, default 5 minutes
         copilotRefreshInterval?: number; // ms, default 15 minutes
+        preferredMemoryModels?: string[];
         agentProviderRotation?: {
             defaultProjectId?: string;
             byProject?: Record<string, {

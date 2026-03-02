@@ -31,7 +31,6 @@
 ### 🔐 Security Hardening
 - [ ] **SEC-H-002**: Audit 70+ raw `ipcMain.handle` calls for Zod `responseSchema`.
 - [ ] **SEC-H-004**: End-to-end injection audit for all `child_process` and `shell` usage. **(CRITICAL)**
-- [ ] **SEC-H-005**: Re-verify `dangerouslySetInnerHTML` in `MessageBubble.tsx` and `MarkdownRenderer.tsx`.
 - [ ] **SEC-H-006**: Implement strict Content Security Policy (CSP) for Renderer.
 - [ ] **SEC-PROT-001**: Harden `ExtensionService` sandboxing for 3rd-party code.
 
@@ -39,7 +38,7 @@
 - [ ] **GATEWAY-001**: Phased Gateway/Relay Implementation:
   - [ ] **Phase 1**: C++ Relay Server (Drogon) in `website/tengra-backend`.
   - [ ] **Phase 2**: E2EE tunnel launcher in Main process (outbound only).
-  - [] **Phase 3**: Social Media Webhook integration (Twitter, Telegram).
+  - [ ] **Phase 3**: Social Media Webhook integration (Twitter, Telegram).
   - [ ] **Phase 4**: Self-hosting Docker orchestration.
 
 ---
@@ -53,7 +52,7 @@
   - [ ] `SSHService.ts` (~2200 lines) -> `SSHKeyManager`, `SSHTunnelManager`.
   - [ ] `AdvancedMemoryService.ts` (~2500 lines) -> `ConsolidationLogic`, `EmbeddingRetriever`.
 - [ ] **DEBT-LEAK-02**: Memory Leak Audit:
-  - [ ] `AgentTaskExecutor.ts`: Verify `setupEventListeners` listener cleanups.
+  - [x] `AgentTaskExecutor.ts`: Verify `setupEventListeners` listener cleanups. (Fixed 'project:plan-revised' leak)
   - [ ] Global Audit: Ensure every `initialize()` has a matching `dispose()`.
 - [ ] **DEBT-TYPE-03**: Eliminate unsafe type debt (`as any`, `as unknown as`) in `src/main/services`.
 
@@ -64,7 +63,6 @@
 ### 🚀 Optimization
 - [ ] **PERF-001**: Implement Virtualization for `MessageList` (react-window).
 - [ ] **PERF-004**: Batch IPC updates for streaming logs/terminals (Max 20Hz).
-- [ ] **PERF-005**: Move hardcoded models in `AdvancedMemoryService.ts` to user settings.
 
 ### ✨ New Capabilities
 - [ ] **FEAT-006**: **Agent Execution Trace**: Visual timeline of agent logic.
@@ -74,6 +72,8 @@
 ---
 
 ## ✅ Completed Archive
+- [x] **PERF-005**: Move hardcoded models in `AdvancedMemoryService.ts` to user settings.
+- [x] **SEC-H-005**: Re-verify `dangerouslySetInnerHTML` in `MessageBubble.tsx` and `MarkdownRenderer.tsx`. (Verified: Sanitized with DOMPurify)
 - [x] **PERF-003**: Refactor Multi-Model Collaboration component (memoized components + hook).
 - [x] **CHG-001**: Fix changelog sync and quality validation issues.
 - [x] **AUD-ARCH-001**: Initial codebase scan for TODO/FIXME comments and technical debt.

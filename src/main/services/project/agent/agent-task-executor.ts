@@ -89,6 +89,7 @@ export class AgentTaskExecutor {
     // Event listeners
     private unsubscribeStepUpdate?: () => void;
     private unsubscribePlanProposed?: () => void;
+    private unsubscribePlanRevised?: () => void;
 
     constructor(
         public readonly taskId: string,
@@ -259,7 +260,7 @@ export class AgentTaskExecutor {
         });
 
         // AGT-PLN-02: Listen for plan revision events
-        this.services.eventBus.on('project:plan-revised', payload => {
+        this.unsubscribePlanRevised = this.services.eventBus.on('project:plan-revised', payload => {
             if (payload.taskId && payload.taskId !== this.taskId) { return; }
 
             this.logInfo(`Received plan revision: ${payload.action} - ${payload.reason}`);
@@ -473,8 +474,10 @@ export class AgentTaskExecutor {
     async cleanup(): Promise<void> {
         this.unsubscribeStepUpdate?.();
         this.unsubscribePlanProposed?.();
+        this.unsubscribePlanRevised?.();
         this.unsubscribeStepUpdate = undefined;
         this.unsubscribePlanProposed = undefined;
+        this.unsubscribePlanRevised = undefined;
         this.abortController?.abort();
         this.abortController = null;
     }

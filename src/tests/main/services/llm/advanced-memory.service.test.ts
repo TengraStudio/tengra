@@ -2,6 +2,7 @@ import { DatabaseService } from '@main/services/data/database.service';
 import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { LLMService } from '@main/services/llm/llm.service';
+import { SettingsService } from '@main/services/system/settings.service';
 import { AdvancedSemanticFragment, PendingMemory } from '@shared/types/advanced-memory';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -67,16 +68,16 @@ function createService() {
     };
 
     const db: Pick<
-    DatabaseService,
-    | 'storeAdvancedMemory'
-    | 'updateAdvancedMemory'
-    | 'savePendingMemory'
-    | 'getAllAdvancedMemories'
-    | 'searchAdvancedMemories'
-    | 'getAdvancedMemoryById'
-    | 'getAllPendingMemories'
-    | 'deleteAdvancedMemory'
-    | 'deletePendingMemory'
+        DatabaseService,
+        | 'storeAdvancedMemory'
+        | 'updateAdvancedMemory'
+        | 'savePendingMemory'
+        | 'getAllAdvancedMemories'
+        | 'searchAdvancedMemories'
+        | 'getAdvancedMemoryById'
+        | 'getAllPendingMemories'
+        | 'deleteAdvancedMemory'
+        | 'deletePendingMemory'
     > = {
         storeAdvancedMemory: mocks.storeAdvancedMemory,
         updateAdvancedMemory: mocks.updateAdvancedMemory,
@@ -97,10 +98,19 @@ function createService() {
         chat: mocks.chat
     };
 
+    const settings: Pick<SettingsService, 'getSettings'> = {
+        getSettings: vi.fn(() => ({
+            ai: {
+                preferredMemoryModels: ['llama3.2:1b']
+            }
+        }) as any)
+    };
+
     const service = new AdvancedMemoryService(
         db as DatabaseService,
         embedding as EmbeddingService,
-        llm as LLMService
+        llm as LLMService,
+        settings as SettingsService
     );
 
     return { service, mocks };
