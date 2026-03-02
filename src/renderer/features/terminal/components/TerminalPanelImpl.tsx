@@ -20,7 +20,7 @@ import { TerminalSplitView } from './TerminalSplitView';
  * side-effects to useTerminalPanelEffects,
  * and tab interactions / derived state to useTerminalPanelBehavior.
  */
-// eslint-disable-next-line max-lines-per-function
+ 
 export function TerminalPanelContentImpl(props: TerminalPanelProps) {
     const core = useTerminalPanelCore(props);
     const behavior = useTerminalPanelBehavior(core);

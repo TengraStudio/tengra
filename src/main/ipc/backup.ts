@@ -38,7 +38,7 @@ export function registerBackupIpc(getMainWindow: () => BrowserWindow | null, bac
     ): Promise<BackupResult> => {
         validateSender(event);
         return backupService.createBackup(options);
-    }));
+    }, { wrapResponse: true }));
 
     // Restore from a backup
     ipcMain.handle('backup:restore', createIpcHandler('backup:restore', async (
@@ -56,12 +56,12 @@ export function registerBackupIpc(getMainWindow: () => BrowserWindow | null, bac
             throw new Error('backupPath must be a non-empty string');
         }
         return backupService.restoreBackup(backupPath, options);
-    }));
+    }, { wrapResponse: true }));
 
     // List all backups
     ipcMain.handle('backup:list', createIpcHandler('backup:list', async (): Promise<BackupListItem[]> => {
         return backupService.listBackups();
-    }));
+    }, { wrapResponse: true }));
 
     // Delete a backup
     ipcMain.handle('backup:delete', createIpcHandler('backup:delete', async (
@@ -73,12 +73,12 @@ export function registerBackupIpc(getMainWindow: () => BrowserWindow | null, bac
             throw new Error('backupPath must be a non-empty string');
         }
         return backupService.deleteBackup(backupPath);
-    }));
+    }, { wrapResponse: true }));
 
     // Get backup directory
     ipcMain.handle('backup:getDir', createIpcHandler('backup:getDir', async (): Promise<string> => {
         return backupService.getBackupDir();
-    }));
+    }, { wrapResponse: true }));
 
     // Get auto-backup status
     ipcMain.handle('backup:getAutoBackupStatus', createIpcHandler('backup:getAutoBackupStatus', async (): Promise<{
@@ -92,7 +92,7 @@ export function registerBackupIpc(getMainWindow: () => BrowserWindow | null, bac
         cloudSyncDir?: string
     }> => {
         return backupService.getAutoBackupStatus();
-    }));
+    }, { wrapResponse: true }));
 
     // Configure auto-backup
     ipcMain.handle('backup:configureAutoBackup', createIpcHandler('backup:configureAutoBackup', async (
@@ -109,19 +109,19 @@ export function registerBackupIpc(getMainWindow: () => BrowserWindow | null, bac
     ): Promise<void> => {
         validateSender(event);
         return backupService.configureAutoBackup(config);
-    }));
+    }, { wrapResponse: true }));
 
     // Trigger auto-backup cleanup
     ipcMain.handle('backup:cleanup', createIpcHandler('backup:cleanup', async (): Promise<number> => {
         return backupService.cleanupOldBackups();
-    }));
+    }, { wrapResponse: true }));
 
     ipcMain.handle('backup:verify', createIpcHandler('backup:verify', async (
         _event: IpcMainInvokeEvent,
         backupPath: string
     ): Promise<{ valid: boolean; checksum?: string; error?: string }> => {
         return backupService.verifyBackup(backupPath);
-    }));
+    }, { wrapResponse: true }));
 
     ipcMain.handle('backup:syncToCloudDir', createIpcHandler('backup:syncToCloudDir', async (
         event: IpcMainInvokeEvent,
@@ -130,7 +130,7 @@ export function registerBackupIpc(getMainWindow: () => BrowserWindow | null, bac
     ): Promise<{ success: boolean; targetPath?: string; error?: string }> => {
         validateSender(event);
         return backupService.syncBackupToDirectory(backupPath, targetDir);
-    }));
+    }, { wrapResponse: true }));
 
     ipcMain.handle('backup:createDisasterRecoveryBundle', createIpcHandler('backup:createDisasterRecoveryBundle', async (
         event: IpcMainInvokeEvent,
@@ -138,7 +138,7 @@ export function registerBackupIpc(getMainWindow: () => BrowserWindow | null, bac
     ) => {
         validateSender(event);
         return backupService.createDisasterRecoveryBundle(targetDir);
-    }));
+    }, { wrapResponse: true }));
 
     ipcMain.handle('backup:restoreDisasterRecoveryBundle', createIpcHandler('backup:restoreDisasterRecoveryBundle', async (
         event: IpcMainInvokeEvent,
@@ -149,5 +149,5 @@ export function registerBackupIpc(getMainWindow: () => BrowserWindow | null, bac
             throw new Error('bundlePath must be a non-empty string');
         }
         return backupService.restoreDisasterRecoveryBundle(bundlePath);
-    }));
+    }, { wrapResponse: true }));
 }

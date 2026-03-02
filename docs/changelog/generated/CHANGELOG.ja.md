@@ -26,6 +26,48 @@
 - **ストリーム統合**: `process-stream`と`useChatManager`を更新し、カテゴリー分類されたエラー状態をコンポーネント階層全体に伝播させるようにしました。
 - **型安全性の強化**: チャットフックとUIコンポーネントにおける不足しているエラープロパティ定義に関連する10個以上の厳格なTypeScriptエラーを解決しました。
 
+### QUALITY-016: CodeIntelligenceService をインデックス統括へ縮小
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: CodeIntelligenceService はプロジェクトのインデックス調停のみを担い、スキャン、ナビゲーション、リネーム、ドキュメント生成、品質分析を抽出済みユーティリティへ委譲する構成にリファクタリングされました。
+
+- `CodeIntelligenceService` はインデックス調整、セマンティック断片の保存、進捗イベント、シンボル分析に集中します。
+- ファイルスキャン、シンボル解析/ナビゲーション、リネーム実行、ドキュメント生成、品質スキャンは専用の `code-intelligence/*` ユーティリティへ移行しました。
+- IPC 向けの既存 API を維持したまま、`code-intelligence.service.ts` を 1200 行超から大幅に小さいコーディネーターへ縮小しました。
+
+### QUALITY-017: CopilotService を責務別モジュールへ分割
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: 肥大化した CopilotService を、トークン管理、レート制限、リクエスト構築、レスポンス解析、API 呼び出しを専用モジュールへ委譲する薄いファサードに置き換えました。
+
+- `CopilotService` は共有状態、ライフサイクル処理、設定用セッター、公開 chat/token メソッドだけを担当します。
+- トークン更新、レート制限、リクエスト構築、レスポンス解析、ゲートウェイ通信は抽出済みの Copilot ヘルパークラス経由になりました。
+- `isConfigured()` と VS Code バージョン更新の挙動を維持したまま、`copilot.service.ts` を 1000 行超からコンパクトなファサードへ縮小しました。
+
+### Council シナリオテストを分割スイートとして完了
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: QUALITY-055 を完了しました。古いモノリシックな council scenario テストを削除し、分割されたシナリオファイルを唯一の正しい構成として残しました。
+
+- **QUALITY-055**: The legacy `council-scenarios.test.ts` file carrying the `max-lines-per-function` lint suppression was removed.
+- **Canonical Split Suites**: The shared helpers module and the three scenario-focused test files remain the active council scenario coverage.
+- **Maintenance**: Duplicate test execution was removed and the test directory now matches the intended smaller-file layout.
+
+### Secure Social Gateway Architecture & Codebase Audit
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Designed the Secure Social Gateway architecture, resolved build/lint errors, and completed a comprehensive codebase audit to identify security, performance, and technical debt issues.
+
+- **GATEWAY-001**: Added the Secure Social Gateway task to TODO.md with a phased 4-stage implementation plan.
+- **TODO-SCAN**: Scanned entire src directory for hidden TODOs, FIXMEs, and oversized components (e.g., MessageBubble.tsx at 2250+ lines).
+- **SEC-H-002**: Identified 70+ raw ipcMain.handle calls requiring standardization to validated handlers.
+- **PERF-001**: Identified missing virtualization in MessageList as a primary performance bottleneck.
+- **Build**: Fixed various build/lint errors and verified integrity with npm run type-check.
+
 ## [2026-02-28]
 
 ### AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking

@@ -245,6 +245,7 @@ export class GhosttyBackend implements ITerminalBackend {
                 // Sync I/O acceptable: one-time shell detection at backend init
                 if (fs.existsSync(p)) {
                     appLogger.info('GhosttyBackend', `Found Ghostty at common location: ${p}`);
+                    return p;
                 }
             } catch {
                 // Ignore

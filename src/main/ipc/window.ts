@@ -3,7 +3,7 @@ import * as path from 'path';
 
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
-import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { createIpcHandler, createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { RateLimiter } from '@main/utils/rate-limiter.util';
 import { validateCommandArgs } from '@main/utils/shell-command-policy.util';
 import { resolveWindowsCommand } from '@main/utils/windows-command.util';
@@ -399,6 +399,7 @@ function registerShellHandlers(getMainWindow: () => BrowserWindow | null, allowe
         }
     }, {
         argsSchema: z.tuple([urlSchema]),
+        wrapResponse: true,
         defaultValue: { success: false, error: 'Validation failed' }
     }));
 
@@ -451,6 +452,7 @@ function registerShellHandlers(getMainWindow: () => BrowserWindow | null, allowe
         return true;
     }, {
         argsSchema: z.tuple([commandSchema]),
+        wrapResponse: true,
         defaultValue: false
     }));
 
@@ -536,6 +538,7 @@ function registerShellHandlers(getMainWindow: () => BrowserWindow | null, allowe
         });
     }, {
         argsSchema: z.tuple([commandSchema, z.array(z.string()), cwdSchema]),
+        wrapResponse: true,
         defaultValue: { stdout: '', stderr: '', code: 1, error: 'Validation failed' }
     }));
 }
@@ -549,7 +552,7 @@ function registerCookieHandlers(getMainWindow: () => BrowserWindow | null) {
      * Opens a hidden BrowserWindow to capture cookies from a URL.
      * Useful for capturing session cookies after OAuth completes in an external browser.
      */
-    ipcMain.handle('window:captureCookies', async (event, url: string, timeoutMs = 5000) => {
+    ipcMain.handle('window:captureCookies', createIpcHandler('window:captureCookies', async (event, url: string, timeoutMs = 5000) => {
         validateSender(event);
         return new Promise<{ success: boolean }>(resolve => {
             try {
@@ -577,6 +580,7 @@ function registerCookieHandlers(getMainWindow: () => BrowserWindow | null) {
 
                 let resolved = false;
 
+                const timeoutDuration = typeof timeoutMs === 'number' ? timeoutMs : 5000;
                 // Close window after timeout
                 const timeout = setTimeout(() => {
                     if (!resolved) {
@@ -587,7 +591,7 @@ function registerCookieHandlers(getMainWindow: () => BrowserWindow | null) {
                         appLogger.info('WindowIPC', 'Cookie capture window closed after timeout');
                         resolve({ success: true });
                     }
-                }, timeoutMs);
+                }, timeoutDuration);
 
                 // Close window once page loads (cookies should be set by then)
                 hiddenWin.webContents.once('did-finish-load', () => {
@@ -625,5 +629,5 @@ function registerCookieHandlers(getMainWindow: () => BrowserWindow | null) {
                 resolve({ success: false });
             }
         });
-    });
+    }, { wrapResponse: true }));
 }

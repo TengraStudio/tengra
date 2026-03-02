@@ -8,7 +8,7 @@ import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
 import { createIpcHandler, createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { IpcValue } from '@shared/types/common';
 import { AppSettings } from '@shared/types/settings';
-import { getErrorMessage } from '@shared/utils/error.util';
+import { TengraError } from '@shared/utils/error.util';
 import { app, BrowserWindow, ipcMain } from 'electron';
 import { z } from 'zod';
 
@@ -24,10 +24,7 @@ const SETTINGS_ERROR_CODE = {
     SAVE_FAILED: 'SETTINGS_SAVE_FAILED',
 } as const;
 
-const SETTINGS_MESSAGE_KEY = {
-    VALIDATION: 'errors.settings.validation',
-    SAVE_FAILED: 'errors.settings.saveFailed',
-} as const;
+
 
 const SETTINGS_PERFORMANCE_BUDGET_MS = {
     GET: 40,
@@ -42,22 +39,9 @@ const getSettingsErrorCode = (error: Error): string => {
     return SETTINGS_ERROR_CODE.SAVE_FAILED;
 };
 
-const getSettingsMessageKey = (code: string): string => {
-    if (code === SETTINGS_ERROR_CODE.VALIDATION) {
-        return SETTINGS_MESSAGE_KEY.VALIDATION;
-    }
-    return SETTINGS_MESSAGE_KEY.SAVE_FAILED;
-};
 
-const formatSettingsError = (error: Error, code: string) => ({
-    success: false,
-    error: {
-        message: getErrorMessage(error),
-        code,
-        messageKey: getSettingsMessageKey(code),
-        uiState: 'failure'
-    }
-});
+
+
 
 // Define a stricter schema for AppSettings to prevent injection or invalid state
 const AppSettingsSchema = z.object({
@@ -68,6 +52,7 @@ const AppSettingsSchema = z.object({
     openai: settingsCredentialSchema.optional(),
     anthropic: settingsCredentialSchema.optional(),
     groq: settingsCredentialSchema.optional(),
+    nvidia: settingsCredentialSchema.optional(),
     github: settingsCredentialSchema.optional(),
     copilot: settingsCredentialSchema.optional(),
 }).passthrough();
@@ -302,23 +287,24 @@ export function registerSettingsIpc(options: {
     }
 
     // Register batchable settings handlers
-    registerBatchableHandler('getSettings', async (): Promise<IpcValue> => {
+    registerBatchableHandler('getSettings', createIpcHandler('getSettings', async (): Promise<IpcValue> => {
         const settings = settingsService.getSettings();
         await logApiKeyReadAccess(settings, 'batch');
         return settings;
-    });
+    }, { wrapResponse: true }));
 
     // Validated batch handler
-    const validatedSaveHandler = createValidatedIpcHandler<{ success: boolean }, [AppSettings]>(
+    const validatedSaveHandler = createValidatedIpcHandler<void, [AppSettings]>(
         'saveSettings',
         async (_event, settings) => {
             await handleSaveSettingsImplementation(settings);
-            return { success: true };
         },
         {
             argsSchema: z.tuple([AppSettingsSchema]),
-            onError: (error) => formatSettingsError(error, getSettingsErrorCode(error)),
-            responseSchema: z.object({ success: z.boolean() }),
+            wrapResponse: true,
+            onError: (error) => {
+                throw new TengraError(error.message, 'SETTINGS_SAVE_FAILED');
+            },
             onValidationFailed: () => {
                 settingsTelemetry.validationFailureCount += 1;
                 settingsTelemetry.lastErrorCode = SETTINGS_ERROR_CODE.VALIDATION;
@@ -326,6 +312,7 @@ export function registerSettingsIpc(options: {
                     code: SETTINGS_ERROR_CODE.VALIDATION
                 });
                 appLogger.warn('SettingsIPC', 'Settings batch validation failed');
+                throw new TengraError('Validation failed', 'SETTINGS_VALIDATION_ERROR');
             }
         }
     );
@@ -343,7 +330,7 @@ export function registerSettingsIpc(options: {
         trackSettingsBudget(durationMs, SETTINGS_PERFORMANCE_BUDGET_MS.GET);
         trackSettingsEvent('settings.get.success', { durationMs });
         return settings;
-    }));
+    }, { wrapResponse: true }));
 
     ipcMain.handle('settings:health', createIpcHandler(
         'settings:health',
@@ -360,7 +347,9 @@ export function registerSettingsIpc(options: {
         {
             argsSchema: z.tuple([AppSettingsSchema]),
             wrapResponse: true,
-            onError: (error) => formatSettingsError(error, getSettingsErrorCode(error)),
+            onError: (error) => {
+                throw new TengraError(error.message, 'SETTINGS_SAVE_FAILED');
+            },
             onValidationFailed: () => {
                 settingsTelemetry.validationFailureCount += 1;
                 settingsTelemetry.lastErrorCode = SETTINGS_ERROR_CODE.VALIDATION;
@@ -368,6 +357,7 @@ export function registerSettingsIpc(options: {
                     code: SETTINGS_ERROR_CODE.VALIDATION
                 });
                 appLogger.warn('SettingsIPC', 'Settings validation failed');
+                throw new TengraError('Validation failed', 'SETTINGS_VALIDATION_ERROR');
             }
         }
     ));

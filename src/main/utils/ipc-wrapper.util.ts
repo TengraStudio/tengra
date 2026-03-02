@@ -108,8 +108,11 @@ export const createIpcHandler = <T = JsonValue, Args extends unknown[] = unknown
 
             // If custom error handler is provided, use it
             if (onError) {
-                const errorResult = onError(errorObj, handlerName);
-                return errorResult as T | IpcResponse<T>;
+                const errorResult = await Promise.resolve(onError(errorObj, handlerName));
+                if (wrapResponse) {
+                    return { success: true, data: errorResult } as IpcResponse<T>;
+                }
+                return errorResult as T;
             }
 
             // Default error handling
@@ -159,22 +162,17 @@ export const createIpcHandler = <T = JsonValue, Args extends unknown[] = unknown
 export const createSafeIpcHandler = <T = JsonValue, Args extends unknown[] = unknown[]>(
     handlerName: string,
     handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>,
-    defaultValue: T
+    defaultValue: T,
+    options: IpcHandlerOptions = {}
 ) => {
-    return async (event: IpcMainInvokeEvent, ...args: unknown[]): Promise<T> => {
-        const startedAt = Date.now();
-        emitIpcLifecycleEvent('started', handlerName);
-
-        try {
-            const result = await handler(event, ...(args as Args));
-            emitIpcLifecycleEvent('succeeded', handlerName, Date.now() - startedAt);
-            return result;
-        } catch (error) {
-            appLogger.error('IpcHandler', `[${handlerName}] Failed: ${getErrorMessage(error as Error)}`);
-            emitIpcLifecycleEvent('failed', handlerName, Date.now() - startedAt, getErrorMessage(error as Error));
-            return defaultValue;
+    return createIpcHandler<T, Args>(
+        handlerName,
+        handler,
+        {
+            ...options,
+            onError: () => defaultValue
         }
-    };
+    );
 };
 
 interface ValidatedIpcHandlerOptions<T, Args extends unknown[]> extends IpcHandlerOptions {

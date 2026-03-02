@@ -41,7 +41,8 @@ const FORBIDDEN_PATH_PATTERNS = [
     /\.\./,           // Path traversal
     /[;&|`$]/,        // Shell metacharacters
     /\n|\r/,          // Newlines
-    /%[0-9a-f]{2}/i   // URL encoding
+    /%[0-9a-f]{2}/i,  // URL encoding
+    /\x00/            // eslint-disable-line no-control-regex -- Null byte injection detection requires matching \x00
 ];
 
 interface PendingRequest {

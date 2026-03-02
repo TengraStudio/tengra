@@ -10,22 +10,6 @@ vi.mock('@main/logging/logger', () => ({
     }
 }));
 
-vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createSafeIpcHandler: vi.fn((_name, handler, defaultValue) => {
-        return async (...args: unknown[]) => {
-            try {
-                return await handler(...args);
-            } catch {
-                return defaultValue;
-            }
-        };
-    }),
-    createValidatedIpcHandler: vi.fn((_name, handler, _schema) => {
-        return async (...args: unknown[]) => {
-            return await handler(...args);
-        };
-    })
-}));
 
 vi.mock('@main/startup/ollama', () => ({
     startOllama: vi.fn().mockResolvedValue({ success: true, message: 'Started' })

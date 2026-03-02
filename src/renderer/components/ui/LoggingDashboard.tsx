@@ -76,21 +76,38 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(
         const [autoScroll, setAutoScroll] = useState(true);
         const [isPaused, setIsPaused] = useState(false);
         const virtuosoRef = React.useRef<VirtuosoHandle>(null);
+        const logBufferRef = React.useRef<LogEntry[]>([]);
+        const rafIdRef = React.useRef<number>(0);
 
         useEffect(() => {
             if (!isOpen) {
                 return;
             }
+            const flushBuffer = () => {
+                const batch = logBufferRef.current;
+                if (batch.length === 0) {return;}
+                logBufferRef.current = [];
+                setLogs(prev => [...prev, ...batch].slice(-500));
+            };
             const handler = (_: IpcRendererEvent, log: LogEntry) => {
-                if (!isPaused) {
-                    setLogs(prev => [
-                        ...prev.slice(-500),
-                        { ...log, id: `${Date.now()}-${crypto.randomUUID().substring(0, 8)}` },
-                    ]);
+                if (isPaused) {return;}
+                logBufferRef.current.push({
+                    ...log,
+                    id: `${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
+                });
+                if (!rafIdRef.current) {
+                    rafIdRef.current = requestAnimationFrame(() => {
+                        rafIdRef.current = 0;
+                        flushBuffer();
+                    });
                 }
             };
             window.electron.ipcRenderer.on('log:entry', handler);
-            return () => window.electron.ipcRenderer.off('log:entry', handler);
+            return () => {
+                window.electron.ipcRenderer.off('log:entry', handler);
+                if (rafIdRef.current) {cancelAnimationFrame(rafIdRef.current);}
+                logBufferRef.current = [];
+            };
         }, [isOpen, isPaused]);
 
         const filteredLogs = useMemo(

@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock BrowserWindow
@@ -133,14 +134,13 @@ describe('Window IPC Handlers', () => {
         });
 
         it('should ignore unauthorized sender', async () => {
-            const logger = await import('@main/logging/logger');
             const handler = mockIpcMainListeners.get('window:minimize');
 
-            const mockEvent = { sender: { id: 999 } }; // Unauthorized
-            handler!(mockEvent);
+            const unauthorizedEvent = { sender: { id: 999 } }; // Unauthorized
+            handler!(unauthorizedEvent as any);
 
             expect(mockMainWindow.minimize).not.toHaveBeenCalled();
-            expect(vi.mocked(logger.appLogger.warn)).toHaveBeenCalledWith(
+            expect(appLogger.warn).toHaveBeenCalledWith(
                 'Security',
                 expect.stringContaining('Unauthorized window operation')
             );
@@ -278,7 +278,7 @@ describe('Window IPC Handlers', () => {
             const result = await handler!(mockEvent, 'https://example.com');
 
             expect(electron.shell.openExternal).toHaveBeenCalledWith('https://example.com/');
-            expect(result).toEqual({ success: true });
+            expect(result).toEqual({ success: true, data: { success: true } });
 
         });
 
@@ -287,8 +287,10 @@ describe('Window IPC Handlers', () => {
 
             const result = await handler!(mockEvent, '');
 
-            expect((result as Record<string, unknown>).success).toBe(false);
-            expect((result as Record<string, unknown>).error).toBeDefined();
+            expect(result).toMatchObject({
+                success: false,
+                error: { message: 'Validation failed' }
+            });
         });
 
         it('should reject overly long URL', async () => {
@@ -297,11 +299,11 @@ describe('Window IPC Handlers', () => {
 
             const result = await handler!(mockEvent, longUrl);
 
-            expect((result as Record<string, unknown>).success).toBe(false);
+            expect(result).toMatchObject({ success: false });
         });
     });
 
-    describe('shell:openTerminal',() => {
+    describe('shell:openTerminal', () => {
         it('should open terminal with command', async () => {
             const handler = mockIpcMainHandlers.get('shell:openTerminal');
             expect(handler).toBeDefined();
@@ -309,7 +311,7 @@ describe('Window IPC Handlers', () => {
             const result = await handler!(mockEvent, 'echo hello');
 
 
-            expect(result).toBe(true);
+            expect(result).toEqual({ success: true, data: true });
         });
     });
 
@@ -321,7 +323,7 @@ describe('Window IPC Handlers', () => {
             const result = await handler!(mockEvent, 'git', ['status'], '/app');
 
 
-            expect(result).toEqual({ stdout: '', stderr: '', code: 0, error: '' });
+            expect(result).toEqual({ success: true, data: { stdout: '', stderr: '', code: 0, error: '' } });
         });
     });
 

@@ -28,9 +28,11 @@ vi.mock('fs', async () => {
         mkdirSync: vi.fn(),
         statSync: vi.fn().mockReturnValue({ size: 0 }),
         promises: {
+            access: vi.fn().mockResolvedValue(undefined),
             copyFile: vi.fn().mockResolvedValue(undefined),
             readFile: vi.fn(),
-            unlink: vi.fn()
+            unlink: vi.fn(),
+            writeFile: vi.fn().mockResolvedValue(undefined)
         }
     };
 });
@@ -51,6 +53,7 @@ beforeEach(async () => {
 
     // Default setup: Key file does not exist, safeStorage available
     fsMock.existsSync.mockReturnValue(false);
+    fsMock.promises.access.mockRejectedValue(new Error('File not found'));
 
     // safeStorage is already mocked at top
 
@@ -125,22 +128,12 @@ describe('SecurityService - Encryption and Hashing', () => {
             expect(decrypted).toBe(original);
         });
 
-        it('should use Tengra:v1 format when master key is available', () => {
-            // Force master key to be loaded (it should be by default in test due to migrateLegacyKey/generateNewMasterKey logic simulation or mock)
-            // In the beforeEach, we create service. initialize() calls loadOrCreateMasterKey.
-            // We need to ensure initialize is called or manually set up the key if checking internal state isn't possible.
-            // However, we can check the output format.
-            // Note: In the mock at the top, we mocked electron safeStorage.
-            // The service tries to load/create master key.
-            // Let's call initialize first to ensure key is set up.
-            void service.initialize();
+        it('should use Tengra:v1 format when master key is available', async () => {
+            // Force master key to be loaded
+            await service.initialize();
 
             const original = 'Sensitive Data';
             const encrypted = service.encryptSync(original);
-            // We expect the custom encryption to be used because we are in a node env (test) 
-            // but we need to ensure the service thinks it has a master key.
-            // The mock for fs.existsSync returns undefined by default in strict mocks, or false? 
-            // We verify the output format.
             expect(encrypted).toMatch(/^Tengra:v1:/);
 
             const decrypted = service.decryptSync(encrypted);

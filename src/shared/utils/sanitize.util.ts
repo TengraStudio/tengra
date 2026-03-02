@@ -207,8 +207,14 @@ export function sanitizeObject<T extends Record<string, unknown>>(
 
     const sanitized = {} as T;
 
+    const PROTO_POLLUTION_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
     for (const [key, value] of Object.entries(obj)) {
         const sanitizedKey = sanitizeString(key, { maxLength: 100, allowNewlines: false });
+
+        if (PROTO_POLLUTION_KEYS.has(sanitizedKey)) {
+            continue;
+        }
 
         if (typeof value === 'string') {
             ; (sanitized as Record<string, unknown>)[sanitizedKey] = sanitizeString(value, options);

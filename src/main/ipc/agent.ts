@@ -54,7 +54,7 @@ export function registerAgentIpc(getMainWindow: () => BrowserWindow | null, agen
     ipcMain.handle('agent:get-all', createValidatedIpcHandler('agent:get-all', async (event) => {
         validateSender(event);
         return await agentService.getAllAgents();
-    }, { defaultValue: [] }));
+    }, { defaultValue: [], wrapResponse: true }));
 
     /**
      * Get a specific agent by ID
@@ -65,7 +65,8 @@ export function registerAgentIpc(getMainWindow: () => BrowserWindow | null, agen
         return await agentService.getAgent(id);
     }, {
         defaultValue: null,
-        argsSchema: z.tuple([z.string()])
+        argsSchema: z.tuple([z.string()]),
+        wrapResponse: true
     }));
 
     ipcMain.handle('agent:create', createValidatedIpcHandler('agent:create', async (event, payload: CreateAgentPayload) => {
@@ -85,7 +86,8 @@ export function registerAgentIpc(getMainWindow: () => BrowserWindow | null, agen
         }, options);
     }, {
         defaultValue: { success: false, error: 'create failed' },
-        argsSchema: z.tuple([createAgentPayloadSchema])
+        argsSchema: z.tuple([createAgentPayloadSchema]),
+        wrapResponse: true
     }));
 
     ipcMain.handle('agent:delete', createValidatedIpcHandler('agent:delete', async (event, id: string, options?: DeleteAgentOptions) => {
@@ -93,7 +95,8 @@ export function registerAgentIpc(getMainWindow: () => BrowserWindow | null, agen
         return await agentService.deleteAgent(id, options ?? { confirm: false });
     }, {
         defaultValue: { success: false, error: 'delete failed' },
-        argsSchema: z.tuple([z.string(), deleteAgentOptionsSchema])
+        argsSchema: z.tuple([z.string(), deleteAgentOptionsSchema]),
+        wrapResponse: true
     }));
 
     ipcMain.handle('agent:clone', createValidatedIpcHandler('agent:clone', async (event, id: string, newName?: string) => {
@@ -101,7 +104,8 @@ export function registerAgentIpc(getMainWindow: () => BrowserWindow | null, agen
         return await agentService.cloneAgent(id, newName);
     }, {
         defaultValue: { success: false, error: 'clone failed' },
-        argsSchema: z.tuple([z.string(), z.string().optional()])
+        argsSchema: z.tuple([z.string(), z.string().optional()]),
+        wrapResponse: true
     }));
 
     ipcMain.handle('agent:export', createValidatedIpcHandler('agent:export', async (event, id: string) => {
@@ -113,7 +117,8 @@ export function registerAgentIpc(getMainWindow: () => BrowserWindow | null, agen
         return agentService.exportAgent(agent);
     }, {
         defaultValue: null,
-        argsSchema: z.tuple([z.string()])
+        argsSchema: z.tuple([z.string()]),
+        wrapResponse: true
     }));
 
     ipcMain.handle('agent:import', createValidatedIpcHandler('agent:import', async (event, payload: string) => {
@@ -121,13 +126,14 @@ export function registerAgentIpc(getMainWindow: () => BrowserWindow | null, agen
         return await agentService.importAgent(payload);
     }, {
         defaultValue: { success: false, error: 'import failed' },
-        argsSchema: z.tuple([z.string()])
+        argsSchema: z.tuple([z.string()]),
+        wrapResponse: true
     }));
 
     ipcMain.handle('agent:get-templates-library', createValidatedIpcHandler('agent:get-templates-library', async (event) => {
         validateSender(event);
         return await agentService.getAgentTemplatesLibrary();
-    }, { defaultValue: [] }));
+    }, { defaultValue: [], wrapResponse: true }));
 
     ipcMain.handle('agent:validate-template', createValidatedIpcHandler('agent:validate-template', async (event, template: Template) => {
         validateSender(event);
@@ -141,7 +147,8 @@ export function registerAgentIpc(getMainWindow: () => BrowserWindow | null, agen
         });
     }, {
         defaultValue: { valid: false, errors: ['validation failed'] },
-        argsSchema: z.tuple([templateSchema])
+        argsSchema: z.tuple([templateSchema]),
+        wrapResponse: true
     }));
 
     ipcMain.handle('agent:recover', createValidatedIpcHandler('agent:recover', async (event, archiveId: string) => {
@@ -149,6 +156,7 @@ export function registerAgentIpc(getMainWindow: () => BrowserWindow | null, agen
         return await agentService.recoverAgentFromArchive(archiveId);
     }, {
         defaultValue: { success: false, error: 'recovery failed' },
-        argsSchema: z.tuple([z.string()])
+        argsSchema: z.tuple([z.string()]),
+        wrapResponse: true
     }));
 }

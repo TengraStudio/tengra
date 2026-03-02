@@ -1,0 +1,148 @@
+import type { PromptAnalysis, PromptSuggestion, PromptSuggestionType } from '@main/services/llm/prompt-optimizer.service';
+import {
+    AlertTriangle,
+    CheckCircle,
+    ChevronDown,
+    ChevronUp,
+    Info,
+    Lightbulb,
+    Sparkles,
+    X,
+    Zap,
+} from 'lucide-react';
+import React, { useState } from 'react';
+
+import { useTranslation } from '@/i18n';
+
+interface PromptSuggestionsProps {
+    analysis: PromptAnalysis | null;
+    isAnalyzing: boolean;
+    onApplySuggestion: (text: string) => void;
+    onDismiss: (index: number) => void;
+}
+
+const TYPE_ICONS: Record<PromptSuggestionType, React.ReactNode> = {
+    clarity: <Lightbulb className="w-3.5 h-3.5" />,
+    specificity: <Zap className="w-3.5 h-3.5" />,
+    structure: <Info className="w-3.5 h-3.5" />,
+    context: <Sparkles className="w-3.5 h-3.5" />,
+    constraint: <AlertTriangle className="w-3.5 h-3.5" />,
+    format: <CheckCircle className="w-3.5 h-3.5" />,
+};
+
+const SEVERITY_STYLES: Record<string, string> = {
+    warning: 'text-yellow-400',
+    improvement: 'text-blue-400',
+    info: 'text-muted-foreground',
+};
+
+/** Returns a CSS class for the score badge based on the value. */
+function getScoreColor(score: number): string {
+    if (score >= 75) {return 'text-green-400 bg-green-500/10';}
+    if (score >= 50) {return 'text-yellow-400 bg-yellow-500/10';}
+    return 'text-red-400 bg-red-500/10';
+}
+
+/** Single suggestion row with apply/dismiss actions. */
+const SuggestionItem: React.FC<{
+    suggestion: PromptSuggestion;
+    index: number;
+    onApply: (text: string) => void;
+    onDismiss: (index: number) => void;
+    t: (key: string) => string;
+}> = ({ suggestion, index, onApply, onDismiss, t }) => (
+    <div className="flex items-start gap-2 py-1.5 px-2 rounded-lg hover:bg-white/5 group transition-colors">
+        <span className={`mt-0.5 shrink-0 ${SEVERITY_STYLES[suggestion.severity]}`}>
+            {TYPE_ICONS[suggestion.type]}
+        </span>
+        <span className="text-xs text-muted-foreground flex-1 leading-relaxed">
+            {suggestion.message}
+        </span>
+        <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+            {suggestion.suggestedText && (
+                <button
+                    onClick={() => onApply(suggestion.suggestedText as string)}
+                    className="text-[10px] px-1.5 py-0.5 rounded bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
+                >
+                    {t('promptOptimizer.apply')}
+                </button>
+            )}
+            <button
+                onClick={() => onDismiss(index)}
+                className="p-0.5 rounded hover:bg-white/10 text-muted-foreground transition-colors"
+                aria-label={t('promptOptimizer.dismiss')}
+            >
+                <X className="w-3 h-3" />
+            </button>
+        </div>
+    </div>
+);
+
+/**
+ * Collapsible panel displaying prompt analysis results and improvement suggestions.
+ * Shown below the chat input area when analysis is available.
+ */
+export const PromptSuggestions: React.FC<PromptSuggestionsProps> = React.memo(({
+    analysis,
+    isAnalyzing,
+    onApplySuggestion,
+    onDismiss,
+}) => {
+    const { t } = useTranslation();
+    const [isExpanded, setIsExpanded] = useState(true);
+
+    if (!analysis && !isAnalyzing) {return null;}
+
+    if (isAnalyzing) {
+        return (
+            <div className="px-3 py-2 text-xs text-muted-foreground/60 animate-pulse">
+                {t('promptOptimizer.analyzing')}
+            </div>
+        );
+    }
+
+    if (!analysis) {return null;}
+
+    const hasSuggestions = analysis.suggestions.length > 0;
+
+    return (
+        <div className="border-t border-white/5 bg-background/50">
+            <button
+                onClick={() => setIsExpanded(prev => !prev)}
+                className="flex items-center gap-2 w-full px-3 py-1.5 text-xs hover:bg-white/5 transition-colors"
+            >
+                <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${getScoreColor(analysis.score)}`}>
+                    {analysis.score}
+                </span>
+                <span className="text-muted-foreground font-medium">
+                    {t('promptOptimizer.title')}
+                </span>
+                <span className="text-muted-foreground/50 ml-auto">
+                    {hasSuggestions
+                        ? `${analysis.suggestions.length} ${t('promptOptimizer.suggestions').toLowerCase()}`
+                        : t('promptOptimizer.noSuggestions')}
+                </span>
+                {isExpanded
+                    ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground/50" />
+                    : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/50" />}
+            </button>
+
+            {isExpanded && hasSuggestions && (
+                <div className="px-2 pb-2 space-y-0.5 max-h-40 overflow-y-auto">
+                    {analysis.suggestions.map((suggestion, index) => (
+                        <SuggestionItem
+                            key={`${suggestion.type}-${index}`}
+                            suggestion={suggestion}
+                            index={index}
+                            onApply={onApplySuggestion}
+                            onDismiss={onDismiss}
+                            t={t}
+                        />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+});
+
+PromptSuggestions.displayName = 'PromptSuggestions';

@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import * as fsp from 'fs/promises';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
@@ -42,12 +42,12 @@ export class OfflineQueueService extends BaseService {
     }
 
     override async initialize(): Promise<void> {
-        this.loadFromDisk();
+        await this.loadFromDisk();
         appLogger.info(this.name, `Initialized with ${this.queue.length} queued prompts`);
     }
 
     override async cleanup(): Promise<void> {
-        this.persistToDisk();
+        await this.persistToDisk();
         if (this.onlineHandler) {
             // Remove is safe even if never added in main process context
             this.onlineHandler = undefined;
@@ -59,7 +59,7 @@ export class OfflineQueueService extends BaseService {
      * Enqueue a prompt for later processing.
      * @returns true if enqueued, false if queue is full or network is available
      */
-    enqueue(prompt: Omit<QueuedPrompt, 'id' | 'queuedAt'>): boolean {
+    async enqueue(prompt: Omit<QueuedPrompt, 'id' | 'queuedAt'>): Promise<boolean> {
         if (this.queue.length >= MAX_QUEUE_SIZE) {
             appLogger.warn(this.name, `Queue full (${MAX_QUEUE_SIZE}), rejecting prompt`);
             return false;
@@ -72,7 +72,7 @@ export class OfflineQueueService extends BaseService {
         };
 
         this.queue.push(entry);
-        this.persistToDisk();
+        await this.persistToDisk();
         appLogger.info(this.name, `Queued prompt ${entry.id} (total: ${this.queue.length})`);
         return true;
     }
@@ -98,7 +98,7 @@ export class OfflineQueueService extends BaseService {
                 await this.promptProcessor(item);
                 this.queue.shift();
                 processed++;
-                this.persistToDisk();
+                await this.persistToDisk();
             } catch (error) {
                 appLogger.error(this.name, `Failed to process ${item.id}`, error as Error);
                 this.eventBus.emitCustom('offline-queue:failed', {
@@ -106,7 +106,7 @@ export class OfflineQueueService extends BaseService {
                     error: (error as Error).message,
                 });
                 this.queue.shift();
-                this.persistToDisk();
+                await this.persistToDisk();
             }
         }
 
@@ -125,30 +125,30 @@ export class OfflineQueueService extends BaseService {
         return [...this.queue];
     }
 
-    private loadFromDisk(): void {
+    private async loadFromDisk(): Promise<void> {
         try {
-            if (fs.existsSync(this.filePath)) {
-                const raw = fs.readFileSync(this.filePath, 'utf-8');
-                const parsed: unknown = JSON.parse(raw);
-                if (Array.isArray(parsed)) {
-                    this.queue = parsed.filter(
-                        (item): item is QueuedPrompt =>
-                            typeof item === 'object' &&
-                            item !== null &&
-                            typeof (item as QueuedPrompt).id === 'string' &&
-                            typeof (item as QueuedPrompt).prompt === 'string'
-                    );
-                }
+            const raw = await fsp.readFile(this.filePath, 'utf-8');
+            const parsed: unknown = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+                this.queue = parsed.filter(
+                    (item): item is QueuedPrompt =>
+                        typeof item === 'object' &&
+                        item !== null &&
+                        typeof (item as QueuedPrompt).id === 'string' &&
+                        typeof (item as QueuedPrompt).prompt === 'string'
+                );
             }
         } catch (error) {
-            appLogger.warn(this.name, 'Failed to load queue from disk', error as Error);
+            if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+                appLogger.warn(this.name, 'Failed to load queue from disk', error as Error);
+            }
             this.queue = [];
         }
     }
 
-    private persistToDisk(): void {
+    private async persistToDisk(): Promise<void> {
         try {
-            fs.writeFileSync(this.filePath, JSON.stringify(this.queue, null, 2), 'utf-8');
+            await fsp.writeFile(this.filePath, JSON.stringify(this.queue, null, 2), 'utf-8');
         } catch (error) {
             appLogger.error(this.name, 'Failed to persist queue to disk', error as Error);
         }

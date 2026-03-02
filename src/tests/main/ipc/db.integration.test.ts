@@ -15,31 +15,6 @@ vi.mock('electron', () => ({
     }
 }));
 
-vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown) => async (...args: unknown[]) => handler(...args),
-    createSafeIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown, defaultValue: unknown) => async (...args: unknown[]) => {
-        try {
-            return await handler(...args);
-        } catch {
-            return defaultValue;
-        }
-    },
-    createValidatedIpcHandler: (
-        _name: string,
-        handler: (...args: unknown[]) => unknown,
-        options?: { argsSchema?: { parse: (args: unknown[]) => unknown[] }; defaultValue?: unknown }
-    ) => async (event: unknown, ...args: unknown[]) => {
-        try {
-            const parsedArgs = options?.argsSchema ? options.argsSchema.parse(args) : args;
-            return await handler(event, ...(parsedArgs as unknown[]));
-        } catch {
-            if (options && Object.prototype.hasOwnProperty.call(options, 'defaultValue')) {
-                return options.defaultValue;
-            }
-            throw new Error('Validation failed');
-        }
-    },
-}));
 
 vi.mock('@main/utils/rate-limiter.util', () => ({
     withRateLimit: vi.fn(async (_bucket: string, fn: () => Promise<unknown>) => await fn()),

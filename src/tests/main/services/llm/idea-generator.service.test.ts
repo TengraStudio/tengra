@@ -112,7 +112,7 @@ describe('IdeaGeneratorService', () => {
 
             expect(session.id).toBe('test-uuid');
             expect(session.model).toBe('gpt-4o');
-            expect(session.categories).toEqual(['saas']);
+            expect(session.categories).toEqual(['website']);
             expect(session.status).toBe('active');
             expect(mockRun).toHaveBeenCalled();
         });

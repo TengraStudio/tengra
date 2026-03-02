@@ -26,6 +26,48 @@
 - **Akış Entegrasyonu**: `process-stream` ve `useChatManager`, sınıflandırılmış hata durumlarını bileşen hiyerarşisi boyunca yayacak şekilde güncellendi.
 - **Tip Güvenliği**: Sohbet hook'ları ve UI bileşenleri genelinde eksik hata özelliği tanımlarıyla ilgili 10'dan fazla katı TypeScript hatası çözüldü.
 
+### QUALITY-016: CodeIntelligenceService İndeksleme Orkestrasyonuna İndirildi
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: CodeIntelligenceService, proje indekslemeyi servis içinde tutarken tarama, gezinme, yeniden adlandırma, dokümantasyon üretimi ve kalite analizini çıkarılmış yardımcı modüllere devreden daha ince bir orkestratöre dönüştürüldü.
+
+- `CodeIntelligenceService` artık indeksleme koordinasyonu, semantik parça depolama, ilerleme olayları ve sembol analitiğine odaklanıyor.
+- Dosya tarama, sembol ayrıştırma/gezinme, yeniden adlandırma yürütme, dokümantasyon üretimi ve kalite taraması artık ayrılmış `code-intelligence/*` yardımcı modülleri üzerinden çalışıyor.
+- Mevcut IPC yüzeyi korunurken `code-intelligence.service.ts` 1200+ satırdan çok daha küçük bir koordinatöre düşürüldü.
+
+### QUALITY-017: Copilot Servisi Odaklı Modüllere Ayrıldı
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Tek parça Copilot servisi, token yönetimi, hız limiti, istek oluşturma, yanıt ayrıştırma ve API çağrılarını ayrı modüllere devreden ince bir cepheye dönüştürüldü.
+
+- `CopilotService` artık yalnızca paylaşılan durum, yaşam döngüsü kancaları, yapılandırma ayarlayıcıları ve genel chat/token yöntemlerini tutuyor.
+- Token yenileme, hız limiti, istek oluşturma, yanıt ayrıştırma ve ağ geçidi iletişimi çıkarılan Copilot yardımcı sınıfları üzerinden ilerliyor.
+- `isConfigured()` ve VS Code sürüm yenileme davranışı korunurken `copilot.service.ts` 1000+ satırlık yapıdan kompakt bir cepheye indirildi.
+
+### Konsey Senaryo Testleri Bölünmüş Paketler Olarak Tamamlandı
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: QUALITY-055 tamamlandı; eski monolitik konsey senaryo testi kaldırıldı ve bölünmüş senaryo dosyaları tek doğruluk kaynağı olarak bırakıldı.
+
+- **QUALITY-055**: `max-lines-per-function` lint bastırmasını taşıyan eski `council-scenarios.test.ts` dosyası silindi.
+- **Kanonik Bölünmüş Paketler**: Paylaşılan yardımcı modül ile üç senaryo odaklı test dosyası aktif konsey senaryo kapsamı olarak korundu.
+- **Bakım**: Yinelenen test çalıştırmaları kaldırıldı ve test dizini amaçlanan küçük dosya düzeniyle hizalandı.
+
+### Güvenli Sosyal Medya Geçidi Mimarisi ve Kod Tabanı Denetimi
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Güvenli Sosyal Medya Geçidi mimarisi tasarlandı, build/lint hataları giderildi ve güvenlik, performans ve teknik borç sorunlarını belirlemek için kapsamlı bir kod tabanı denetimi tamamlandı.
+
+- **GATEWAY-001**: Güvenli Sosyal Medya Geçidi görevi, 4 aşamalı bir uygulama planıyla TODO.md'ye eklendi.
+- **TODO-SCAN**: Tüm src dizini gizli TODO'lar, FIXME'ler ve aşırı büyük bileşenler (örneğin, 2250'den fazla satırlı MessageBubble.tsx) için tarandı.
+- **SEC-H-002**: Doğrulanmış işleyicilere standardizasyon gerektiren 70'ten fazla ham ipcMain.handle çağrısı belirlendi.
+- **PERF-001**: MessageList'teki eksik sanallaştırma, birincil performans darboğazı olarak belirlendi.
+- **Build**: Çeşitli build/lint hataları düzeltildi ve npm run type-check ile bütünlük doğrulandı.
+
 ## [2026-02-28]
 
 ### AUDIT-TOOLING-001: Operasyonel Depo Çapında Lint ve Tip Kontrolü

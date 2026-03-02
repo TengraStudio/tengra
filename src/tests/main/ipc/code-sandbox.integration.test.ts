@@ -13,25 +13,6 @@ vi.mock('electron', () => ({
     }
 }));
 
-vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createValidatedIpcHandler: (
-        _name: string,
-        handler: (...args: unknown[]) => unknown | Promise<unknown>,
-        options?: { argsSchema?: { parse: (args: unknown[]) => unknown[] }; defaultValue?: unknown }
-    ) => async (event: unknown, ...args: unknown[]) => {
-        try {
-            const parsedArgs = options?.argsSchema ? options.argsSchema.parse(args) : args;
-            const result = await handler(event, ...(parsedArgs as unknown[]));
-            return { success: true, data: result };
-        } catch (error) {
-            if (options && Object.prototype.hasOwnProperty.call(options, 'defaultValue')) {
-                return options.defaultValue;
-            }
-            const message = error instanceof Error ? error.message : 'Validation failed';
-            return { success: false, error: message };
-        }
-    }
-}));
 
 describe('Code Sandbox IPC Handlers', () => {
     beforeEach(() => {

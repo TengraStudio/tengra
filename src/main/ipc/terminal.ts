@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { DockerService } from '@main/services/project/docker.service';
@@ -169,7 +171,7 @@ function broadcastTerminalEvent(
 }
 
 function buildSessionId(): string {
-    return `term-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+    return `term-${randomUUID()}`;
 }
 
 // --- Registration Functions ---

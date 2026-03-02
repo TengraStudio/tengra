@@ -13,24 +13,6 @@ vi.mock('electron', () => ({
     }
 }));
 
-vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createValidatedIpcHandler: (
-        _name: string,
-        handler: (...args: unknown[]) => unknown | Promise<unknown>,
-        options?: { argsSchema?: { parse: (args: unknown[]) => unknown[] }; onError?: (error: Error) => unknown }
-    ) => async (event: unknown, ...args: unknown[]) => {
-        try {
-            const parsedArgs = options?.argsSchema ? options.argsSchema.parse(args) : args;
-            return await handler(event, ...(parsedArgs as unknown[]));
-        } catch (error) {
-            const normalizedError = error instanceof Error ? error : new Error('Validation failed');
-            if (options?.onError) {
-                return options.onError(normalizedError);
-            }
-            return { success: false, error: normalizedError.message };
-        }
-    }
-}));
 
 describe('MCP-Marketplace IPC Handlers', () => {
     interface MockSettingsState {

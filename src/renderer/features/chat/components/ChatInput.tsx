@@ -1,5 +1,6 @@
 import {
     AudioLines,
+    Code2,
     File as FileIcon,
     FileCode,
     FileText,
@@ -13,7 +14,7 @@ import {
     Video,
     X,
 } from 'lucide-react';
-import React, { memo, useEffect, useRef } from 'react';
+import React, { memo, useEffect, useRef, useState } from 'react';
 
 import { ModelSelector } from '@/components/shared/ModelSelector';
 import { useTranslation } from '@/i18n';
@@ -22,6 +23,8 @@ import { cn } from '@/lib/utils';
 import { Attachment } from '@/types';
 
 import { useChatInputController } from '../hooks/useChatInputController';
+
+import { CodeSandboxPanel } from './code-sandbox/CodeSandboxPanel';
 
 interface ChatInputProps {
     fileInputRef?: React.RefObject<HTMLInputElement>;
@@ -39,6 +42,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
         const localTextareaRef = useRef<HTMLTextAreaElement>(null);
         const fileInputRef = externalFileInputRef ?? localFileInputRef;
         const textareaRef = externalTextareaRef ?? localTextareaRef;
+        const [showCodeSandbox, setShowCodeSandbox] = useState(false);
 
         useEffect(() => {
             const area = textareaRef.current;
@@ -181,7 +185,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                     t={ctrl.t}
                 />
 
-	                <div className="relative flex items-end gap-2 bg-muted/30 border border-border/50 rounded-xl p-2 shadow-sm focus-within:ring-1 focus-within:ring-primary/50 focus-within:border-primary/50 transition-all">
+                <div className="relative flex items-end gap-2 bg-muted/30 border border-border/50 rounded-xl p-2 shadow-sm focus-within:ring-1 focus-within:ring-primary/50 focus-within:border-primary/50 transition-all">
                     <div className="flex items-center justify-center gap-1.5 px-1 py-0.5">
                         <div className="relative">
                             <button
@@ -254,19 +258,40 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                         aria-haspopup="listbox"
                     />
 
-	                    <EnhanceButton ctrl={ctrl} />
-	                    <SendButton ctrl={ctrl} />
-	                </div>
+                    <EnhanceButton ctrl={ctrl} />
+                    <button
+                        type="button"
+                        onClick={() => setShowCodeSandbox(!showCodeSandbox)}
+                        className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors"
+                        title={ctrl.t('input.openCodeSandbox')}
+                        aria-label={ctrl.t('input.openCodeSandbox')}
+                    >
+                        <Code2 size={20} aria-hidden="true" />
+                    </button>
+                    <SendButton ctrl={ctrl} />
+                </div>
+                <AnimatePresence>
+                    {showCodeSandbox && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="mt-2"
+                        >
+                            <CodeSandboxPanel />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
                 {ctrl.input.trim() === '' && ctrl.attachments.length === 0 && (
                     <p className="text-xxs text-muted-foreground mt-1 px-1">
                         {ctrl.t('input.placeholder.default')}
                     </p>
                 )}
-	                <p id="chat-input-hint" className="sr-only">
-	                    {ctrl.t('input.promptSuggestions')}
-	                </p>
-	            </div>
-	        );
+                <p id="chat-input-hint" className="sr-only">
+                    {ctrl.t('input.promptSuggestions')}
+                </p>
+            </div>
+        );
     },
     (prevProps, nextProps) => {
         return (
@@ -483,13 +508,13 @@ const SendButton: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
     return (
         <button
             type="button"
-	            onClick={
-	                isLoading
-	                    ? ctrl.stopGeneration
-	                    : () => {
-	                        void ctrl.sendMessageWithTelemetry();
-	                    }
-	            }
+            onClick={
+                isLoading
+                    ? ctrl.stopGeneration
+                    : () => {
+                        void ctrl.sendMessageWithTelemetry();
+                    }
+            }
             disabled={!isLoading && !hasContent}
             className={btnClass}
             aria-label={isLoading ? ctrl.t('common.stop') : ctrl.t('common.send')}

@@ -613,8 +613,8 @@ export class AuthService extends BaseService {
     /**
      * Restores master key from encrypted backup payload.
      */
-    restoreMasterKeyBackup(backupPayload: string, passphrase: string): void {
-        const result = this.securityService.restoreMasterKeyBackup(backupPayload, passphrase);
+    async restoreMasterKeyBackup(backupPayload: string, passphrase: string): Promise<void> {
+        const result = await this.securityService.restoreMasterKeyBackup(backupPayload, passphrase);
         if (!result.success) {
             throw new TengraError(result.error ?? 'Failed to restore master key backup', AppErrorCode.AUTH_ERROR);
         }

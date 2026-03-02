@@ -181,6 +181,8 @@ jobs:
       env:
         CI: true
         NODE_OPTIONS: --max-old-space-size=8192
+    - name: Check bundle sizes
+      run: npx tsx scripts/check-bundle-size.ts
     - name: Upload Preview Artifact
       uses: actions/upload-artifact@v4
       with:

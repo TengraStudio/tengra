@@ -72,6 +72,7 @@ export class AgentRoutingService extends BaseService {
         const config = this.routeByTaskType(taskType, availableProviders);
 
         this.track(AgentCollaborationTelemetryEvent.MODEL_ROUTED, {
+            stepId: step.id,
             taskType,
             provider: config.provider,
             model: config.model

@@ -574,14 +574,18 @@ export function registerCodeSandboxIpc(getMainWindow: () => BrowserWindow | null
             {
                 argsSchema: z.tuple([]),
                 responseSchema: LanguagesResponseSchema,
+                wrapResponse: true,
                 onError: (error) => {
                     const metadata = buildCodeSandboxErrorMetadata(error);
                     trackCodeSandboxFailure('code-sandbox:languages', 0, metadata.errorCode, metadata.errorCode === CODE_SANDBOX_ERROR_CODE.VALIDATION);
                     return {
-                        languages: [],
-                        ...metadata,
-                        uiState: 'failure',
-                        fallbackUsed: true
+                        success: true,
+                        data: {
+                            languages: [],
+                            ...metadata,
+                            uiState: 'failure',
+                            fallbackUsed: true
+                        }
                     };
                 }
             }
@@ -611,18 +615,21 @@ export function registerCodeSandboxIpc(getMainWindow: () => BrowserWindow | null
             {
                 argsSchema: z.tuple([ExecuteRequestSchema]),
                 responseSchema: ExecuteResponseSchema,
+                wrapResponse: true,
                 onError: (error) => {
                     const metadata = buildCodeSandboxErrorMetadata(error);
                     trackCodeSandboxFailure('code-sandbox:execute', 0, metadata.errorCode, metadata.errorCode === CODE_SANDBOX_ERROR_CODE.VALIDATION);
                     return {
                         success: false,
-                        stdout: '',
-                        stderr: getErrorMessage(error),
-                        durationMs: 0,
-                        language: 'javascript',
-                        ...metadata,
-                        uiState: 'failure',
-                        fallbackUsed: true
+                        error: {
+                            message: getErrorMessage(error),
+                            code: metadata.errorCode,
+                            context: {
+                                ...metadata,
+                                uiState: 'failure',
+                                fallbackUsed: true
+                            }
+                        }
                     };
                 }
             }
@@ -646,27 +653,29 @@ export function registerCodeSandboxIpc(getMainWindow: () => BrowserWindow | null
             {
                 argsSchema: z.tuple([]),
                 responseSchema: CodeSandboxHealthResponseSchema,
+                wrapResponse: true,
                 onError: (error) => {
                     const metadata = buildCodeSandboxErrorMetadata(error);
                     trackCodeSandboxFailure('code-sandbox:health', 0, metadata.errorCode, metadata.errorCode === CODE_SANDBOX_ERROR_CODE.VALIDATION);
                     return {
                         success: false,
-                        data: {
-                            status: 'degraded',
-                            uiState: 'failure',
-                            budgets: {
-                                fastMs: CODE_SANDBOX_PERFORMANCE_BUDGET_MS.FAST,
-                                executeMs: CODE_SANDBOX_PERFORMANCE_BUDGET_MS.EXECUTE
-                            },
-                            metrics: {
-                                ...codeSandboxTelemetry,
-                                errorRate: 1
+                        error: {
+                            message: getErrorMessage(error),
+                            code: metadata.errorCode,
+                            context: {
+                                status: 'degraded',
+                                uiState: 'failure',
+                                budgets: {
+                                    fastMs: CODE_SANDBOX_PERFORMANCE_BUDGET_MS.FAST,
+                                    executeMs: CODE_SANDBOX_PERFORMANCE_BUDGET_MS.EXECUTE
+                                },
+                                metrics: {
+                                    ...codeSandboxTelemetry,
+                                    errorRate: 1
+                                },
+                                fallbackUsed: true
                             }
-                        },
-                        error: getErrorMessage(error),
-                        ...metadata,
-                        uiState: 'failure',
-                        fallbackUsed: true
+                        }
                     };
                 }
             }

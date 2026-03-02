@@ -23,7 +23,7 @@ function validateCommand(value: unknown): string | null {
     const trimmed = value.trim();
     if (!trimmed || trimmed.length > MAX_COMMAND_LENGTH) {return null;}
     // Security: Block shell control characters (SEC-001-3)
-    if (/[;&|`$(){}<>]/.test(trimmed)) {return null;}
+    if (/[;&|`$(){}<>\r\n\0]/.test(trimmed)) {return null;}
     return trimmed;
 }
 

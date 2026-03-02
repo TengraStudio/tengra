@@ -3,7 +3,7 @@
  * Generate shareable JSON exports of conversations with deep link support.
  */
 
-import * as fs from 'fs';
+import * as fsp from 'fs/promises';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
@@ -58,16 +58,16 @@ export class ChatShareService extends BaseService {
         const basePath = this.dataService.getPath('config');
         this.registryPath = path.join(basePath, SHARE_REGISTRY_FILE);
         this.sharesDir = path.join(basePath, SHARES_DIR);
-        this.ensureDirectories();
+        await this.ensureDirectories();
     }
 
     /** Ensure required directories and registry file exist. */
-    private ensureDirectories(): void {
-        if (!fs.existsSync(this.sharesDir)) {
-            fs.mkdirSync(this.sharesDir, { recursive: true });
-        }
-        if (!fs.existsSync(this.registryPath)) {
-            this.writeRegistry({ entries: [] });
+    private async ensureDirectories(): Promise<void> {
+        await fsp.mkdir(this.sharesDir, { recursive: true });
+        try {
+            await fsp.access(this.registryPath);
+        } catch {
+            await this.writeRegistry({ entries: [] });
         }
     }
 
@@ -97,7 +97,7 @@ export class ChatShareService extends BaseService {
         };
 
         const sharePath = path.join(this.sharesDir, `${shareId}.json`);
-        fs.writeFileSync(sharePath, JSON.stringify(payload, null, 2), 'utf-8');
+        await fsp.writeFile(sharePath, JSON.stringify(payload, null, 2), 'utf-8');
 
         const entry: ChatShareEntry = {
             id: shareId,
@@ -107,20 +107,24 @@ export class ChatShareService extends BaseService {
             messageCount: messagesResult.rows.length,
         };
 
-        const registry = this.readRegistry();
+        const registry = await this.readRegistry();
         registry.entries.push(entry);
-        this.writeRegistry(registry);
+        await this.writeRegistry(registry);
 
         this.logInfo(`Created share ${shareId} for chat ${chatId}`);
         return entry;
     }
 
     /** Get a share payload by share ID. */
-    getShare(shareId: string): ChatSharePayload | undefined {
+    async getShare(shareId: string): Promise<ChatSharePayload | undefined> {
         const sharePath = path.join(this.sharesDir, `${shareId}.json`);
-        if (!fs.existsSync(sharePath)) {return undefined;}
         try {
-            const content = fs.readFileSync(sharePath, 'utf-8');
+            await fsp.access(sharePath);
+        } catch {
+            return undefined;
+        }
+        try {
+            const content = await fsp.readFile(sharePath, 'utf-8');
             return JSON.parse(content) as ChatSharePayload;
         } catch (error) {
             appLogger.error('ChatShareService', `Failed to read share ${shareId}`, error as Error);
@@ -129,23 +133,26 @@ export class ChatShareService extends BaseService {
     }
 
     /** Delete a share by its ID. */
-    deleteShare(shareId: string): boolean {
+    async deleteShare(shareId: string): Promise<boolean> {
         const sharePath = path.join(this.sharesDir, `${shareId}.json`);
-        if (fs.existsSync(sharePath)) {
-            fs.unlinkSync(sharePath);
+        try {
+            await fsp.access(sharePath);
+            await fsp.unlink(sharePath);
+        } catch {
+            // File doesn't exist, continue with registry cleanup
         }
-        const registry = this.readRegistry();
+        const registry = await this.readRegistry();
         const initialLength = registry.entries.length;
         registry.entries = registry.entries.filter((e) => e.id !== shareId);
-        this.writeRegistry(registry);
+        await this.writeRegistry(registry);
         const deleted = registry.entries.length < initialLength;
         if (deleted) {this.logInfo(`Deleted share: ${shareId}`);}
         return deleted;
     }
 
     /** List all share entries. */
-    listShares(): ChatShareEntry[] {
-        return this.readRegistry().entries;
+    async listShares(): Promise<ChatShareEntry[]> {
+        return (await this.readRegistry()).entries;
     }
 
     /** Generate a deep link URL for a share. */
@@ -163,9 +170,9 @@ export class ChatShareService extends BaseService {
     }
 
     /** Read the share registry from disk. */
-    private readRegistry(): ShareRegistryData {
+    private async readRegistry(): Promise<ShareRegistryData> {
         try {
-            const content = fs.readFileSync(this.registryPath, 'utf-8');
+            const content = await fsp.readFile(this.registryPath, 'utf-8');
             return JSON.parse(content) as ShareRegistryData;
         } catch {
             return { entries: [] };
@@ -173,8 +180,8 @@ export class ChatShareService extends BaseService {
     }
 
     /** Write the share registry to disk. */
-    private writeRegistry(data: ShareRegistryData): void {
-        fs.writeFileSync(this.registryPath, JSON.stringify(data, null, 2), 'utf-8');
+    private async writeRegistry(data: ShareRegistryData): Promise<void> {
+        await fsp.writeFile(this.registryPath, JSON.stringify(data, null, 2), 'utf-8');
     }
 
     async cleanup(): Promise<void> {

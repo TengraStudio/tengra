@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 
 import { TERMINAL_PROJECT_ISSUES_TAB_ID } from '../constants/terminal-panel-constants';
 import { DEFAULT_SPLIT_PRESETS } from '../utils/split-config';
+
 import type { TerminalPanelCoreResult } from './useTerminalPanelCore';
 
 /**
@@ -11,7 +12,7 @@ import type { TerminalPanelCoreResult } from './useTerminalPanelCore';
  * Handles tab drag/drop, selection, pane activation, layout classes,
  * and derived computations like semantic counts and backend categorization.
  */
-// eslint-disable-next-line max-lines-per-function
+ 
 export function useTerminalPanelBehavior(core: TerminalPanelCoreResult) {
     const {
         activeTabId, setActiveTabId,
@@ -67,7 +68,7 @@ export function useTerminalPanelBehavior(core: TerminalPanelCoreResult) {
             tabActions.reorderTabs(sourceId, tabId);
             resetTabDragState();
         },
-        [draggingTabId, tabActions.reorderTabs, resetTabDragState]
+        [draggingTabId, tabActions, resetTabDragState]
     );
 
     // --- Tab select ---
@@ -108,8 +109,7 @@ export function useTerminalPanelBehavior(core: TerminalPanelCoreResult) {
         },
         [
             setActiveTabId,
-            core.commandTools.setIsCommandHistoryOpen,
-            core.commandTools.setIsTaskRunnerOpen,
+            core.commandTools,
             setSplitFocusedPane,
             setSplitView,
             splitFocusedPane,
@@ -210,7 +210,7 @@ export function useTerminalPanelBehavior(core: TerminalPanelCoreResult) {
             launchableExternalBackends: launchable,
             defaultBackendName: defaultName,
         };
-    }, [backends.availableBackends, resolvedDefaultBackendId]);
+    }, [backends, resolvedDefaultBackendId]);
 
     // --- Misc derived ---
     const isLoadingLaunchOptions = backends.isLoadingShells || backends.isLoadingBackends;

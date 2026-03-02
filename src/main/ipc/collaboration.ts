@@ -44,7 +44,7 @@ export function registerCollaborationIpc(getMainWindow: () => BrowserWindow | nu
         }
 
         return await collaborationService.collaborate(request);
-    }));
+    }, { wrapResponse: true }));
 
     /**
      * Get provider statistics
@@ -58,7 +58,7 @@ export function registerCollaborationIpc(getMainWindow: () => BrowserWindow | nu
             return multiLLMOrchestrator.getProviderStats(provider) ?? null;
         }
         return Object.fromEntries(multiLLMOrchestrator.getAllStats());
-    }, {}));
+    }, {}, { wrapResponse: true }));
 
     /**
      * Get active task count for a provider
@@ -72,7 +72,7 @@ export function registerCollaborationIpc(getMainWindow: () => BrowserWindow | nu
             throw new Error('Provider must be a string');
         }
         return multiLLMOrchestrator.getActiveTaskCount(provider);
-    }, 0));
+    }, 0, { wrapResponse: true }));
 
     /**
      * Configure provider settings
@@ -102,5 +102,5 @@ export function registerCollaborationIpc(getMainWindow: () => BrowserWindow | nu
 
         multiLLMOrchestrator.setProviderConfig(provider, config);
         return { success: true };
-    }));
+    }, { wrapResponse: true }));
 }

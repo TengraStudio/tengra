@@ -24,16 +24,6 @@ vi.mock('@main/logging/logger', () => ({
     }
 }));
 
-vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown) => async (...args: unknown[]) => handler(...args),
-    createSafeIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown, defaultValue: unknown) => async (...args: unknown[]) => {
-        try {
-            return await handler(...args);
-        } catch {
-            return defaultValue;
-        }
-    }
-}));
 
 describe('Orchestrator IPC Integration', () => {
     const mockEventBus = {

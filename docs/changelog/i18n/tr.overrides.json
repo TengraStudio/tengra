@@ -1,4 +1,24 @@
 {
+  "2026-03-01-secure-gateway-and-todo-audit": {
+    "title": "Güvenli Sosyal Medya Geçidi Mimarisi ve Kod Tabanı Denetimi",
+    "summary": "Güvenli Sosyal Medya Geçidi mimarisi tasarlandı, build/lint hataları giderildi ve güvenlik, performans ve teknik borç sorunlarını belirlemek için kapsamlı bir kod tabanı denetimi tamamlandı.",
+    "items": [
+      "- **GATEWAY-001**: Güvenli Sosyal Medya Geçidi görevi, 4 aşamalı bir uygulama planıyla TODO.md'ye eklendi.",
+      "- **TODO-SCAN**: Tüm src dizini gizli TODO'lar, FIXME'ler ve aşırı büyük bileşenler (örneğin, 2250'den fazla satırlı MessageBubble.tsx) için tarandı.",
+      "- **SEC-H-002**: Doğrulanmış işleyicilere standardizasyon gerektiren 70'ten fazla ham ipcMain.handle çağrısı belirlendi.",
+      "- **PERF-001**: MessageList'teki eksik sanallaştırma, birincil performans darboğazı olarak belirlendi.",
+      "- **Build**: Çeşitli build/lint hataları düzeltildi ve npm run type-check ile bütünlük doğrulandı."
+    ]
+  },
+  "2026-03-01-quality-055-council-scenario-test-split-cleanup": {
+    "title": "Konsey Senaryo Testleri Bölünmüş Paketler Olarak Tamamlandı",
+    "summary": "QUALITY-055 tamamlandı; eski monolitik konsey senaryo testi kaldırıldı ve bölünmüş senaryo dosyaları tek doğruluk kaynağı olarak bırakıldı.",
+    "items": [
+      "- **QUALITY-055**: `max-lines-per-function` lint bastırmasını taşıyan eski `council-scenarios.test.ts` dosyası silindi.",
+      "- **Kanonik Bölünmüş Paketler**: Paylaşılan yardımcı modül ile üç senaryo odaklı test dosyası aktif konsey senaryo kapsamı olarak korundu.",
+      "- **Bakım**: Yinelenen test çalıştırmaları kaldırıldı ve test dizini amaçlanan küçük dosya düzeniyle hizalandı."
+    ]
+  },
   "2026-03-01-chat-error-handling-refactor": {
     "title": "Global Sohbet Hata Yönetimi ve Başarısızlık Durumu Deneyimi",
     "summary": "Uygulama genelinde sohbet hata türleri birleştirildi ve sınıflandırma ile yeniden deneme özelliklerini içeren tutarlı bir başarısızlık durumu kullanıcı deneyimi yapay zeka asistanı kenar çubuğuna uygulandı.",
@@ -4026,6 +4046,34 @@
       "- **CollaborationController (C++)**: Oda tabanlı eşitleme için gerçek zamanlı WebSocket denetleyicisi oluşturuldu.",
       "- **UserCollaborationService (Electron)**: İş birliği arka planına bağlanmak için yönetilen bir WebSocket istemci hizmeti uygulandı.",
       "- **IPC Sertleştirme**: Tüm iş birliği eşitleme IPC kanalları için katı Zod onaylı sözleşmeler tanımlandı."
+    ]
+  },
+  "2026-03-01-quality-017-copilot-facade": {
+    "title": "QUALITY-017: Copilot Servisi Odaklı Modüllere Ayrıldı",
+    "summary": "Tek parça Copilot servisi, token yönetimi, hız limiti, istek oluşturma, yanıt ayrıştırma ve API çağrılarını ayrı modüllere devreden ince bir cepheye dönüştürüldü.",
+    "items": [
+      "- `CopilotService` artık yalnızca paylaşılan durum, yaşam döngüsü kancaları, yapılandırma ayarlayıcıları ve genel chat/token yöntemlerini tutuyor.",
+      "- Token yenileme, hız limiti, istek oluşturma, yanıt ayrıştırma ve ağ geçidi iletişimi çıkarılan Copilot yardımcı sınıfları üzerinden ilerliyor.",
+      "- `isConfigured()` ve VS Code sürüm yenileme davranışı korunurken `copilot.service.ts` 1000+ satırlık yapıdan kompakt bir cepheye indirildi."
+    ]
+  },
+  "2026-03-01-quality-016-code-intelligence-facade": {
+    "title": "QUALITY-016: CodeIntelligenceService İndeksleme Orkestrasyonuna İndirildi",
+    "summary": "CodeIntelligenceService, proje indekslemeyi servis içinde tutarken tarama, gezinme, yeniden adlandırma, dokümantasyon üretimi ve kalite analizini çıkarılmış yardımcı modüllere devreden daha ince bir orkestratöre dönüştürüldü.",
+    "items": [
+      "- `CodeIntelligenceService` artık indeksleme koordinasyonu, semantik parça depolama, ilerleme olayları ve sembol analitiğine odaklanıyor.",
+      "- Dosya tarama, sembol ayrıştırma/gezinme, yeniden adlandırma yürütme, dokümantasyon üretimi ve kalite taraması artık ayrılmış `code-intelligence/*` yardımcı modülleri üzerinden çalışıyor.",
+      "- Mevcut IPC yüzeyi korunurken `code-intelligence.service.ts` 1200+ satırdan çok daha küçük bir koordinatöre düşürüldü."
+    ]
+  },
+  "2026-03-01-secure-social-gateway-foundation": {
+    "title": "Güvenli Sosyal Medya Geçidi Mimarisi ve Derleme Düzeltmeleri",
+    "summary": "Sosyal medya etkileşimi için güvenli 'Geçit + Röle' mimarisi tasarlandı ve IPC işleyicilerindeki derlemeyi engelleyen tip hataları ile kullanılmayan kodlar temizlendi.",
+    "items": [
+      "- **GATEWAY-001**: Güvenli Sosyal Medya Geçidi görevi, aşamalı bir uygulama planıyla TODO.md'ye eklendi.",
+      "- **Mimari Tasarım**: E2EE, kendi sunucusunu barındırma (BYOS) ve otonom çalışma zamanı kontrolü özelliklerini içeren 'Geçit + Röle' modeli tanımlandı.",
+      "- **Derleme Çözümü**: `chat.ts`, `settings.ts`, `window.ts`, `key-rotation.ts` ve `setup.ts` dosyalarındaki çok sayıda `TS6133` (kullanılmayan kod) ve `TS2769` (tip uyuşmazlığı) hatası düzeltildi.",
+      "- **Kod Hijyeni**: Eski atıl kodlar ve kullanılmayan şemalar temizlenerek depo tekrar derlenebilir hale getirildi."
     ]
   }
 }

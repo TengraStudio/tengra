@@ -43,6 +43,9 @@ export function useVoiceInput(onFinalResult: (text: string) => void, language: s
     });
 
     const manualStop = useRef(false);
+    const isListeningRef = useRef(false);
+
+    useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
 
     useEffect(() => {
         if (isSupported) {
@@ -71,7 +74,7 @@ export function useVoiceInput(onFinalResult: (text: string) => void, language: s
 
             recognitionInstance.onend = () => {
                 // If not manually stopped, try to restart (handling silence timeouts)
-                if (!manualStop.current && isListening) {
+                if (!manualStop.current && isListeningRef.current) {
                     try {
                         recognitionInstance.start();
                     } catch {
@@ -84,7 +87,7 @@ export function useVoiceInput(onFinalResult: (text: string) => void, language: s
 
             recognitionRef.current = recognitionInstance;
         }
-    }, [language, onFinalResult, isListening, isSupported]);
+    }, [language, onFinalResult, isSupported]);
 
     const startListening = useCallback(() => {
         if (recognitionRef.current) {

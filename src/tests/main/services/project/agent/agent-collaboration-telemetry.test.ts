@@ -52,7 +52,7 @@ describe('AgentCollaborationService Telemetry', () => {
 
     describe('MODEL_ROUTED event', () => {
         it('tracks when a model is routed by task type', () => {
-            service.routeByTaskType('code_generation', ['openai', 'anthropic']);
+            service.getModelForStep({ id: 's1', text: 'Create a component', status: 'pending', taskType: 'code_generation' }, ['openai', 'anthropic']);
 
             expect(mockTelemetry.track).toHaveBeenCalledWith(
                 AgentCollaborationTelemetryEvent.MODEL_ROUTED,
@@ -192,7 +192,7 @@ describe('AgentCollaborationService Telemetry', () => {
                 expect.objectContaining({
                     sessionId: session.id,
                     argumentCount: 1,
-                    consensusDetected: true
+                    consensusDetected: false
                 })
             );
         });

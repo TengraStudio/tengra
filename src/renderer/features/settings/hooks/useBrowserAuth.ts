@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { AppSettings } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
@@ -27,6 +27,18 @@ interface BrowserAuthOptions {
 export function useBrowserAuth(options: BrowserAuthOptions) {
     const { settings, updateSettings, authBusy, setAuthBusy, setAuthNotice, onRefreshModels, onRefreshAccounts, onShowManualSession } = options;
     const [authStatus, setAuthStatus] = useState<AuthStatusState>({ codex: false, claude: false, antigravity: false, copilot: false });
+    const mountedRef = useRef(true);
+    const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        return () => {
+            mountedRef.current = false;
+            if (pollTimeoutRef.current !== null) {
+                clearTimeout(pollTimeoutRef.current);
+                pollTimeoutRef.current = null;
+            }
+        };
+    }, []);
 
     const refreshAuthStatus = useCallback(async () => {
         try {
@@ -58,11 +70,13 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
     const pollConnection = useCallback((provider: string, identifiers: string[]) => {
         let attempts = 0;
         const poll = async () => {
+            if (!mountedRef.current) { return; }
             attempts++;
             try {
                 const accounts = await window.electron.getLinkedAccounts();
                 const matched = accounts.some(acc => identifiers.includes(acc.provider.toLowerCase()));
                 if (matched) {
+                    if (!mountedRef.current) { return; }
                     setAuthNotice(`${provider} success!`);
                     await refreshAuthStatus();
                     await onRefreshAccounts?.();
@@ -71,15 +85,15 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
                     if (provider === 'claude') { await handleClaudeAccountShow(); }
                     return;
                 }
-                if (attempts < 30) { setTimeout(() => { void poll(); }, 3000); }
-                else { setAuthNotice(`${provider} timeout`); setAuthBusy(null); }
+                if (attempts < 30) { pollTimeoutRef.current = setTimeout(() => { void poll(); }, 3000); }
+                else if (mountedRef.current) { setAuthNotice(`${provider} timeout`); setAuthBusy(null); }
             } catch (err) {
                 appLogger.error('BrowserAuth', 'pollConnection error', err as Error);
-                if (attempts < 30) { setTimeout(() => { void poll(); }, 3000); }
-                else { setAuthBusy(null); }
+                if (attempts < 30) { pollTimeoutRef.current = setTimeout(() => { void poll(); }, 3000); }
+                else if (mountedRef.current) { setAuthBusy(null); }
             }
         };
-        setTimeout(() => { void poll(); }, 2000);
+        pollTimeoutRef.current = setTimeout(() => { void poll(); }, 2000);
     }, [refreshAuthStatus, onRefreshAccounts, onRefreshModels, setAuthBusy, setAuthNotice, handleClaudeAccountShow]);
 
     const connectBrowserProvider = useCallback(async (provider: 'codex' | 'claude' | 'antigravity') => {

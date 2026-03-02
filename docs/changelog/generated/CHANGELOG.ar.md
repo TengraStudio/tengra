@@ -26,6 +26,48 @@
 - **تكامل البث**: تحديث `process-stream` و `useChatManager` لنشر حالات الأخطاء المصنفة عبر تسلسل المكونات.
 - **تعزيز سلامة الأنواع**: حل أكثر من 10 أخطاء TypeScript صارمة تتعلق بتعريفات خصائص الخطأ المفقودة عبر خطافات الدردشة ومكونات واجهة المستخدم.
 
+### QUALITY-016: تقليص CodeIntelligenceService إلى طبقة تنسيق للفهرسة
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: تمت إعادة هيكلة CodeIntelligenceService ليحتفظ بتنسيق فهرسة المشروع داخل الخدمة، بينما يفوض المسح، والتنقل، وإعادة التسمية، وتوليد التوثيق، وتحليل الجودة إلى وحدات مساعدة مستخرجة.
+
+- يركز `CodeIntelligenceService` الآن على تنسيق الفهرسة، وتخزين الأجزاء الدلالية، وأحداث التقدم، وتحليلات الرموز.
+- أصبح مسح الملفات، وتحليل/تنقل الرموز، وتنفيذ إعادة التسمية، وتوليد التوثيق، وفحص الجودة يمر عبر وحدات `code-intelligence/*` المخصصة.
+- تم الحفاظ على واجهة IPC الحالية مع تقليص `code-intelligence.service.ts` من أكثر من 1200 سطر إلى منسق أصغر بكثير.
+
+### QUALITY-017: تقسيم خدمة Copilot إلى وحدات متخصصة
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: تم استبدال خدمة Copilot الأحادية بواجهة خفيفة تفوض إدارة الرموز، وحدود المعدل، وبناء الطلبات، وتحليل الاستجابات، واستدعاءات API إلى وحدات منفصلة.
+
+- تحتفظ `CopilotService` الآن فقط بالحالة المشتركة، وخطافات دورة الحياة، ووسائل ضبط الإعدادات، وواجهات chat/token العامة.
+- تمر عمليات تحديث الرموز، وحدود المعدل، وبناء الطلبات، وتحليل الاستجابات، واتصالات البوابة الآن عبر أصناف Copilot المساعدة المستخرجة.
+- تم الحفاظ على سلوك `isConfigured()` وتحديث إصدار VS Code مع تقليص `copilot.service.ts` من أكثر من 1000 سطر إلى واجهة مدمجة.
+
+### اكتمل تقسيم اختبارات سيناريو المجلس إلى حزم منفصلة
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: تم إكمال QUALITY-055 عبر إزالة ملف اختبار سيناريو المجلس القديم ذي البنية الأحادية والإبقاء على الملفات المقسمة كمصدر الحقيقة الوحيد.
+
+- **QUALITY-055**: The legacy `council-scenarios.test.ts` file carrying the `max-lines-per-function` lint suppression was removed.
+- **Canonical Split Suites**: The shared helpers module and the three scenario-focused test files remain the active council scenario coverage.
+- **Maintenance**: Duplicate test execution was removed and the test directory now matches the intended smaller-file layout.
+
+### Secure Social Gateway Architecture & Codebase Audit
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Designed the Secure Social Gateway architecture, resolved build/lint errors, and completed a comprehensive codebase audit to identify security, performance, and technical debt issues.
+
+- **GATEWAY-001**: Added the Secure Social Gateway task to TODO.md with a phased 4-stage implementation plan.
+- **TODO-SCAN**: Scanned entire src directory for hidden TODOs, FIXMEs, and oversized components (e.g., MessageBubble.tsx at 2250+ lines).
+- **SEC-H-002**: Identified 70+ raw ipcMain.handle calls requiring standardization to validated handlers.
+- **PERF-001**: Identified missing virtualization in MessageList as a primary performance bottleneck.
+- **Build**: Fixed various build/lint errors and verified integrity with npm run type-check.
+
 ## [2026-02-28]
 
 ### AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking

@@ -41,16 +41,6 @@ vi.mock('@main/services/analysis/metrics.service', () => ({
 }));
 
 // Mock IPC wrapper
-vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createSafeIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown, fallback: unknown) => async (...args: unknown[]) => {
-        try {
-            const result = await handler(...args);
-            return result;
-        } catch {
-            return fallback;
-        }
-    },
-}));
 
 describe('Metrics IPC Handlers', () => {
     beforeEach(() => {

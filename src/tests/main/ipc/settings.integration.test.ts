@@ -1,6 +1,6 @@
 import { registerSettingsIpc } from '@main/ipc/settings';
 import { AppSettings } from '@shared/types/settings';
-import { ipcMain,IpcMainInvokeEvent } from 'electron';
+import { ipcMain, IpcMainInvokeEvent } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type IpcPayload = AppSettings | Partial<AppSettings> | object | string | number | boolean | null | undefined;
@@ -123,7 +123,7 @@ describe('Settings IPC Handlers', () => {
     it('returns settings from settings:get', async () => {
         const handler = ipcHandlers.get('settings:get')!;
         const result = await handler(mockEvent);
-        expect(result).toEqual(settingsState);
+        expect(result).toEqual({ success: true, data: settingsState });
     });
 
     it('saves settings and wraps response', async () => {

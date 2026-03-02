@@ -143,6 +143,8 @@ export class AgentDebateService extends BaseService {
 
         this.track(AgentCollaborationTelemetryEvent.DEBATE_COMPLETED, {
             sessionId,
+            taskId: session.taskId,
+            stepIndex: session.stepIndex,
             argumentCount: session.arguments.length,
             consensusDetected: session.consensus.detected,
             winningSide: session.consensus.winningSide ?? 'none'

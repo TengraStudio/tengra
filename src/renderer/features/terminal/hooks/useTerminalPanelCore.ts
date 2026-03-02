@@ -1,10 +1,11 @@
+import { useTranslation } from '@renderer/i18n';
 import { useCallback, useMemo, useRef } from 'react';
 import { Terminal as XTerm } from 'xterm';
 
-import { useTranslation } from '@renderer/i18n';
 import { useTheme } from '@/hooks/useTheme';
 import type { TerminalTab } from '@/types';
 
+import type { TerminalPanelProps } from '../components/TerminalPanel';
 import {
     DEFAULT_TERMINAL_APPEARANCE,
     TERMINAL_APPEARANCE_STORAGE_KEY,
@@ -21,7 +22,7 @@ import {
     TERMINAL_SYNC_INPUT_STORAGE_KEY,
 } from '../constants/terminal-panel-constants';
 import { TERMINAL_SPLIT_PRESET_LIMIT } from '../utils/split-config';
-import type { TerminalPanelProps } from '../components/TerminalPanel';
+import type { MultiplexerSession } from '../utils/terminal-panel-types';
 
 import { useTerminalAI } from './useTerminalAI';
 import { useTerminalAiActions } from './useTerminalAiActions';
@@ -48,7 +49,7 @@ import { useTerminalTabActions } from './useTerminalTabActions';
  * Core orchestrator hook that composes all terminal panel sub-hooks.
  * Returns all state and actions needed by the terminal panel.
  */
-// eslint-disable-next-line max-lines-per-function
+ 
 export function useTerminalPanelCore(props: TerminalPanelProps) {
     const {
         isOpen, onToggle,
@@ -295,24 +296,24 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
         setIsRecordingPanelOpen(false);
         setIsMultiplexerOpen(true);
         void multiplexer.refreshMultiplexerSessions();
-    }, [multiplexer.refreshMultiplexerSessions, commandTools.setIsCommandHistoryOpen, commandTools.setIsTaskRunnerOpen, setTerminalContextMenu, setIsSearchOpen, setIsGalleryView, setIsSemanticPanelOpen, setIsRecordingPanelOpen, setIsMultiplexerOpen]);
+    }, [multiplexer, commandTools, setTerminalContextMenu, setIsSearchOpen, setIsGalleryView, setIsSemanticPanelOpen, setIsRecordingPanelOpen, setIsMultiplexerOpen]);
 
     const closeMultiplexerPanel = useCallback(() => {
         setIsMultiplexerOpen(false);
     }, [setIsMultiplexerOpen]);
 
     const attachMultiplexerSession = useCallback(
-        async (session: Parameters<typeof multiplexer.attachMultiplexerSession>[0]) => {
+        async (session: MultiplexerSession) => {
             await multiplexer.attachMultiplexerSession(session);
             setIsMultiplexerOpen(false);
         },
-        [multiplexer.attachMultiplexerSession, setIsMultiplexerOpen]
+        [multiplexer, setIsMultiplexerOpen]
     );
 
     const createMultiplexerSession = useCallback(async () => {
         await multiplexer.createMultiplexerSession();
         setIsMultiplexerOpen(false);
-    }, [multiplexer.createMultiplexerSession, setIsMultiplexerOpen]);
+    }, [multiplexer, setIsMultiplexerOpen]);
 
     const setTerminalInstance = useCallback((id: string, terminal: XTerm | null) => {
         if (terminal) {

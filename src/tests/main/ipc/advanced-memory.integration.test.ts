@@ -20,22 +20,6 @@ vi.mock('@main/logging/logger', () => ({
     }
 }));
 
-vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: (
-        _name: string,
-        handler: (...args: unknown[]) => Promise<unknown>,
-        options?: { onError?: (error: Error) => unknown }
-    ) => async (event: unknown, ...args: unknown[]) => {
-        try {
-            return await handler(event, ...args);
-        } catch (error: unknown) {
-            if (options?.onError) {
-                return options.onError(error as Error);
-            }
-            throw error;
-        }
-    }
-}));
 
 describe('Advanced Memory IPC Handlers', () => {
     const buildService = () => ({

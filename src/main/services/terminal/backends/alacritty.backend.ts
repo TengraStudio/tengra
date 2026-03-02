@@ -1,4 +1,4 @@
-import { ChildProcess, execSync,spawn } from 'child_process';
+import { ChildProcess, execSync, spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -125,6 +125,7 @@ export class AlacrittyBackend implements ITerminalBackend {
                 // Sync I/O acceptable: one-time shell detection at backend init
                 if (fs.existsSync(p)) {
                     appLogger.info('AlacrittyBackend', `Found Alacritty at common location: ${p}`);
+                    return p;
                 }
             } catch {
                 // Ignore

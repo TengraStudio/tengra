@@ -1,9 +1,9 @@
 import { Code, Database, Globe, Smartphone, Terminal } from 'lucide-react';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 
+import { WizardProgress } from '@/components/shared/wizard';
 import { Modal } from '@/components/ui/modal';
 import { Language, useTranslation } from '@/i18n';
-import { cn } from '@/lib/utils';
 import { WorkspaceMount } from '@/types';
 
 import { useProjectWizardState } from '../hooks/useProjectWizardState';
@@ -56,6 +56,22 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
         error,
         setError
     } = useProjectWizardState(isOpen);
+
+    const isSSHFlow = !!sshConnectionId || step === 'ssh-connection' || step === 'ssh-browser';
+
+    const progressSteps = useMemo(() => {
+        const allSteps = [
+            { id: 'selection', label: t('projectWizard.title') },
+            { id: 'ssh-connection', label: t('projectWizard.connect') },
+            { id: 'ssh-browser', label: t('projectWizard.selectFolder') },
+            { id: 'details', label: t('projectWizard.projectName') },
+            { id: 'creating', label: t('projectWizard.creating') },
+        ];
+        if (!isSSHFlow) {
+            return allSteps.filter(s => s.id !== 'ssh-connection' && s.id !== 'ssh-browser');
+        }
+        return allSteps;
+    }, [t, isSSHFlow]);
 
     const loadRemoteDirectory = useCallback(async (connId: string, path: string) => {
         setIsLoading(true);
@@ -200,30 +216,10 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
             <div className="relative min-h-[620px] flex flex-col p-8 pt-5 bg-gradient-to-b from-background to-muted/10">
                 <div className="mb-7 space-y-3">
                     <h2 className="text-3xl font-black tracking-tight text-foreground">{t('projectWizard.title')}</h2>
-                    <div className="flex gap-2 h-1.5 px-0.5">
-                    {['selection', 'ssh-connection', 'ssh-browser', 'details', 'creating'].map((s, i) => {
-                        const stepOrder = ['selection', 'ssh-connection', 'ssh-browser', 'details', 'creating'];
-                        const currentIndex = stepOrder.indexOf(step);
-                        const isActive = i <= currentIndex;
-                        const isCurrent = i === currentIndex;
-
-                        // Hide SSH steps if we are in local flow
-                        if (!sshConnectionId && (s === 'ssh-connection' || s === 'ssh-browser') && step !== 'ssh-connection' && step !== 'ssh-browser') {
-                            return null;
-                        }
-
-                        return (
-                            <div
-                                key={s}
-                                className={cn(
-                                    'flex-1 rounded-full transition-all duration-500',
-                                    isActive ? 'bg-primary/90' : 'bg-border/40',
-                                    isCurrent ? 'shadow-[0_0_14px_rgba(var(--primary),0.45)]' : ''
-                                )}
-                            />
-                        );
-                    })}
-                    </div>
+                    <WizardProgress
+                        steps={progressSteps}
+                        currentStepIndex={progressSteps.findIndex(s => s.id === step)}
+                    />
                 </div>
 
                 <WizardLoadingOverlay

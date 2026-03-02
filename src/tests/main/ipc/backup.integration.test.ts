@@ -15,16 +15,6 @@ vi.mock('electron', () => ({
 }));
 
 // Mock IPC Wrapper
-vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown) => async (...args: unknown[]) => {
-        try {
-            const result = await handler(...args);
-            return { success: true, data: result };
-        } catch (error: unknown) {
-            return { success: false, error: (error instanceof Error ? error.message : 'Unknown Error') };
-        }
-    }
-}));
 
 // Mock BackupService
 const mockBackupService = {
@@ -105,7 +95,9 @@ describe('Backup IPC Integration', () => {
             expect(mockBackupService.createBackup).toHaveBeenCalledWith(options);
             expect(result).toMatchObject({
                 success: true,
-                data: { success: true }
+                data: {
+                    success: true
+                }
             });
         });
     });
@@ -125,7 +117,9 @@ describe('Backup IPC Integration', () => {
             expect(mockBackupService.restoreBackup).toHaveBeenCalledWith('/backups/backup.zip', undefined);
             expect(result).toMatchObject({
                 success: true,
-                data: { success: true }
+                data: {
+                    success: true
+                }
             });
         });
 
@@ -144,12 +138,10 @@ describe('Backup IPC Integration', () => {
                 mergeChats: true
             };
 
-            const result = await handler?.({} as IpcMainInvokeEvent, '/backups/backup.zip', options);
+            const result = await handler?.({} as IpcMainInvokeEvent, '/backups/backup.zip', options) as { success: boolean; data: any };
 
             expect(mockBackupService.restoreBackup).toHaveBeenCalledWith('/backups/backup.zip', options);
-            expect(result).toMatchObject({
-                success: true
-            });
+            expect(result.data.success).toBe(true);
         });
 
         it('should reject empty backup path', async () => {
@@ -158,11 +150,11 @@ describe('Backup IPC Integration', () => {
 
             const result = await handler?.({} as IpcMainInvokeEvent, '');
 
-            expect(mockBackupService.restoreBackup).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: 'backupPath must be a non-empty string'
+                error: { message: 'backupPath must be a non-empty string' }
             });
+            expect(mockBackupService.restoreBackup).not.toHaveBeenCalled();
         });
 
         it('should reject invalid backup path type', async () => {
@@ -171,11 +163,11 @@ describe('Backup IPC Integration', () => {
 
             const result = await handler?.({} as IpcMainInvokeEvent, 123);
 
-            expect(mockBackupService.restoreBackup).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: 'backupPath must be a non-empty string'
+                error: { message: 'backupPath must be a non-empty string' }
             });
+            expect(mockBackupService.restoreBackup).not.toHaveBeenCalled();
         });
 
         it('should reject whitespace-only backup path', async () => {
@@ -184,11 +176,11 @@ describe('Backup IPC Integration', () => {
 
             const result = await handler?.({} as IpcMainInvokeEvent, '   ');
 
-            expect(mockBackupService.restoreBackup).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: 'backupPath must be a non-empty string'
+                error: { message: 'backupPath must be a non-empty string' }
             });
+            expect(mockBackupService.restoreBackup).not.toHaveBeenCalled();
         });
     });
 
@@ -202,10 +194,7 @@ describe('Backup IPC Integration', () => {
             const result = await handler?.({} as IpcMainInvokeEvent, '/backups/old-backup.zip');
 
             expect(mockBackupService.deleteBackup).toHaveBeenCalledWith('/backups/old-backup.zip');
-            expect(result).toMatchObject({
-                success: true,
-                data: true
-            });
+            expect(result).toEqual({ success: true, data: true });
         });
 
         it('should reject empty backup path', async () => {
@@ -214,11 +203,11 @@ describe('Backup IPC Integration', () => {
 
             const result = await handler?.({} as IpcMainInvokeEvent, '');
 
-            expect(mockBackupService.deleteBackup).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: 'backupPath must be a non-empty string'
+                error: { message: 'backupPath must be a non-empty string' }
             });
+            expect(mockBackupService.deleteBackup).not.toHaveBeenCalled();
         });
 
         it('should reject invalid backup path type', async () => {
@@ -227,11 +216,11 @@ describe('Backup IPC Integration', () => {
 
             const result = await handler?.({} as IpcMainInvokeEvent, null);
 
-            expect(mockBackupService.deleteBackup).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: 'backupPath must be a non-empty string'
+                error: { message: 'backupPath must be a non-empty string' }
             });
+            expect(mockBackupService.deleteBackup).not.toHaveBeenCalled();
         });
     });
 
@@ -281,10 +270,7 @@ describe('Backup IPC Integration', () => {
             const result = await handler?.({} as IpcMainInvokeEvent);
 
             expect(mockBackupService.getBackupDir).toHaveBeenCalled();
-            expect(result).toMatchObject({
-                success: true,
-                data: '/home/user/backups'
-            });
+            expect(result).toEqual({ success: true, data: '/home/user/backups' });
         });
     });
 
@@ -349,9 +335,7 @@ describe('Backup IPC Integration', () => {
             const result = await handler?.({} as IpcMainInvokeEvent, config);
 
             expect(mockBackupService.configureAutoBackup).toHaveBeenCalledWith(config);
-            expect(result).toMatchObject({
-                success: true
-            });
+            expect(result).toEqual({ success: true, data: undefined });
         });
 
         it('should configure auto-backup with minimal config', async () => {
@@ -365,9 +349,7 @@ describe('Backup IPC Integration', () => {
             const result = await handler?.({} as IpcMainInvokeEvent, config);
 
             expect(mockBackupService.configureAutoBackup).toHaveBeenCalledWith(config);
-            expect(result).toMatchObject({
-                success: true
-            });
+            expect(result).toEqual({ success: true, data: undefined });
         });
     });
 
@@ -381,10 +363,7 @@ describe('Backup IPC Integration', () => {
             const result = await handler?.({} as IpcMainInvokeEvent);
 
             expect(mockBackupService.cleanupOldBackups).toHaveBeenCalled();
-            expect(result).toMatchObject({
-                success: true,
-                data: 3
-            });
+            expect(result).toEqual({ success: true, data: 3 });
         });
 
         it('should return zero when no backups cleaned up', async () => {
@@ -395,10 +374,7 @@ describe('Backup IPC Integration', () => {
 
             const result = await handler?.({} as IpcMainInvokeEvent);
 
-            expect(result).toMatchObject({
-                success: true,
-                data: 0
-            });
+            expect(result).toEqual({ success: true, data: 0 });
         });
     });
 });

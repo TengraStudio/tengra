@@ -11,7 +11,7 @@ import { CodeIntelligenceService } from '@main/services/project/code-intelligenc
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { SettingsService } from '@main/services/system/settings.service';
-import { createIpcHandler, createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { parseAIResponseContent } from '@main/utils/response-parser';
 import { StreamParser } from '@main/utils/stream-parser.util';
 import { Message, ToolDefinition } from '@shared/types/chat';
@@ -597,6 +597,21 @@ class ChatIpcManager {
         });
     }
 }
+/** Response schema for OpenAI-compatible chat results */
+const OpenAIResponseSchema = z.object({
+    content: z.string(),
+    reasoning: z.string().optional(),
+    images: z.array(z.string()).optional(),
+    role: z.enum(['assistant']),
+    sources: z.array(z.string()).optional()
+});
+
+/** Response schema for chat streaming initiation */
+const StreamChatResponseSchema = z.void();
+
+/** Response schema for retry operations */
+const RetryChatResponseSchema = z.union([z.boolean(), z.void()]);
+
 
 
 const ChatMessageSchema = z.object({
@@ -665,25 +680,46 @@ export function registerChatIpc(options: ChatIpcOptions) {
     ipcMain.handle('chat:openai', createValidatedIpcHandler(
         'chat:openai',
         (event, args: z.infer<typeof OpenAIChatSchema>) => { validateSender(event); return manager.handleOpenAIChat(event, toOpenAIChatParams(args)); },
-        { argsSchema: z.tuple([OpenAIChatSchema]) }
+        {
+            argsSchema: z.tuple([OpenAIChatSchema]),
+            responseSchema: OpenAIResponseSchema,
+            wrapResponse: true
+        }
     ));
 
     ipcMain.handle('chat:stream', createValidatedIpcHandler(
         'chat:stream',
         (event, args: z.infer<typeof StreamChatSchema>) => { validateSender(event); return manager.handleChatStream(event, toStreamChatParams(args)); },
-        { argsSchema: z.tuple([StreamChatSchema]) }
+        {
+            argsSchema: z.tuple([StreamChatSchema]),
+            responseSchema: StreamChatResponseSchema,
+            wrapResponse: true
+        }
     ));
 
-    ipcMain.handle('chat:copilot', createIpcHandler('chat:copilot', async (event, messages: Message[], model: string) => {
-        validateSender(event);
-        const res = await options.copilotService.chat(messages, model);
-        return { content: parseAIResponseContent(res?.content as JsonValue), role: 'assistant' };
-    }));
+    ipcMain.handle('chat:copilot', createValidatedIpcHandler(
+        'chat:copilot',
+        async (event, args: [Message[], string]) => {
+            const [messages, model] = args;
+            validateSender(event);
+            const res = await options.copilotService.chat(messages, model);
+            return { content: parseAIResponseContent(res?.content as JsonValue), role: 'assistant' as const };
+        },
+        {
+            argsSchema: z.tuple([z.array(z.any()), z.string()]),
+            responseSchema: OpenAIResponseSchema,
+            wrapResponse: true
+        }
+    ));
 
     ipcMain.handle('chat:retry-with-model', createValidatedIpcHandler(
         'chat:retry-with-model',
         (event, args: z.infer<typeof RetryWithModelSchema>) => { validateSender(event); return manager.handleRetryWithModel(event, toRetryParams(args)); },
-        { argsSchema: z.tuple([RetryWithModelSchema]) }
+        {
+            argsSchema: z.tuple([RetryWithModelSchema]),
+            responseSchema: RetryChatResponseSchema,
+            wrapResponse: true
+        }
     ));
 }
 

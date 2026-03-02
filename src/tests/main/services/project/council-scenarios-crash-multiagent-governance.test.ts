@@ -178,7 +178,7 @@ describe('Council Scenario 6 – Multi-Agent Help Flow: helper joins, merge acce
         const decision = collaboration.evaluateHelperMergeGate({
             acceptanceCriteria: ['tests pass', 'coverage above 80%'],
             constraints: [],
-            helperOutput: 'Build succeeded but some tests are skipped.'
+            helperOutput: 'Build succeeded but some tests failed.'
         });
 
         expect(decision.accepted).toBe(false);

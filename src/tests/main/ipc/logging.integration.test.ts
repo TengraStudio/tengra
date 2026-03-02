@@ -53,16 +53,6 @@ vi.mock('@main/logging/logger', () => ({
 }));
 
 // Mock IPC wrapper
-vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createSafeIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown, fallback: unknown) => async (...args: unknown[]) => {
-        try {
-            const result = await handler(...args);
-            return result;
-        } catch {
-            return fallback;
-        }
-    },
-}));
 
 // Import module under test AFTER mocks
 import { pushLogEntry,registerLoggingIpc } from '@main/ipc/logging';

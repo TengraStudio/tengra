@@ -19,40 +19,6 @@ vi.mock('electron', () => ({
 }));
 
 // Mock IPC Wrapper
-vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown) => async (event: unknown, ...args: unknown[]) => {
-        try {
-            const result = await handler(event, ...args);
-            return { success: true, data: result };
-        } catch (error: unknown) {
-            return { success: false, error: (error instanceof Error ? error.message : 'Unknown Error') };
-        }
-    },
-    createValidatedIpcHandler: (
-        _name: string,
-        handler: (...args: unknown[]) => unknown,
-        options?: { argsSchema?: { parse: (args: unknown[]) => unknown[] }; defaultValue?: unknown }
-    ) => async (event: unknown, ...args: unknown[]) => {
-        try {
-            const parsedArgs = options?.argsSchema ? options.argsSchema.parse(args) : args;
-            const result = await handler(event, ...(parsedArgs as unknown[]));
-            return { success: true, data: result };
-        } catch (error: unknown) {
-            if (options && Object.prototype.hasOwnProperty.call(options, 'defaultValue')) {
-                return options.defaultValue;
-            }
-            return { success: false, error: (error instanceof Error ? error.message : 'Validation failed') };
-        }
-    },
-    createSafeIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown, defaultValue: unknown) => async (...args: unknown[]) => {
-        try {
-            return await handler(...args);
-        } catch {
-            return defaultValue;
-        }
-    },
-}));
-
 
 // Mock Services
 // Mock Services
@@ -193,7 +159,10 @@ describe('Project IPC Integration', () => {
 
         expect(result).toEqual({
             success: false,
-            error: 'Analysis Failed'
+            error: {
+                message: 'Analysis Failed',
+                code: 'IPC_HANDLER_ERROR'
+            }
         });
     });
 

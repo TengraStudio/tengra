@@ -17,24 +17,6 @@ vi.mock('electron', () => ({
 }));
 
 // Mock IPC Wrapper
-vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown) => async (...args: unknown[]) => {
-        try {
-            const result = await handler(...args);
-            return { success: true, data: result };
-        } catch (error: unknown) {
-            return { success: false, error: (error instanceof Error ? error.message : 'Unknown Error') };
-        }
-    },
-    createSafeIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown, fallback: unknown) => async (...args: unknown[]) => {
-        try {
-            const result = await handler(...args);
-            return { success: true, data: result };
-        } catch {
-            return { success: true, data: fallback };
-        }
-    }
-}));
 
 // Mock multi-llm-orchestrator
 vi.mock('@main/services/llm/multi-llm-orchestrator.service', () => ({
@@ -47,7 +29,7 @@ vi.mock('@main/services/llm/multi-llm-orchestrator.service', () => ({
 }));
 
 // Import the mocked module to get access to the mock functions - currently not used but kept for potential future tests
- 
+
 const { multiLLMOrchestrator } = await import('@main/services/llm/multi-llm-orchestrator.service');
 
 // Mock ModelCollaborationService
@@ -117,11 +99,11 @@ describe('Collaboration IPC Integration', () => {
 
             const result = await handler?.({} as IpcMainInvokeEvent, request);
 
-            expect(mockCollaborationService.collaborate).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: 'Messages must be an array'
+                error: { message: 'Messages must be an array' }
             });
+            expect(mockCollaborationService.collaborate).not.toHaveBeenCalled();
         });
 
         it('should reject request with empty models array', async () => {
@@ -136,11 +118,11 @@ describe('Collaboration IPC Integration', () => {
 
             const result = await handler?.({} as IpcMainInvokeEvent, request);
 
-            expect(mockCollaborationService.collaborate).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: 'Models must be a non-empty array'
+                error: { message: 'Models must be a non-empty array' }
             });
+            expect(mockCollaborationService.collaborate).not.toHaveBeenCalled();
         });
 
         it('should reject request with non-array models', async () => {
@@ -155,11 +137,11 @@ describe('Collaboration IPC Integration', () => {
 
             const result = await handler?.({} as IpcMainInvokeEvent, request);
 
-            expect(mockCollaborationService.collaborate).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: 'Models must be a non-empty array'
+                error: { message: 'Models must be a non-empty array' }
             });
+            expect(mockCollaborationService.collaborate).not.toHaveBeenCalled();
         });
 
         it('should reject request with invalid strategy', async () => {
@@ -174,11 +156,11 @@ describe('Collaboration IPC Integration', () => {
 
             const result = await handler?.({} as IpcMainInvokeEvent, request);
 
-            expect(mockCollaborationService.collaborate).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: 'Strategy must be one of: consensus, vote, best-of-n, chain-of-thought'
+                error: { message: 'Strategy must be one of: consensus, vote, best-of-n, chain-of-thought' }
             });
+            expect(mockCollaborationService.collaborate).not.toHaveBeenCalled();
         });
 
         it('should accept all valid strategies', async () => {
@@ -196,9 +178,10 @@ describe('Collaboration IPC Integration', () => {
                     strategy
                 };
 
-                const result = await handler?.({} as IpcMainInvokeEvent, request);
+                const result = await handler?.({} as IpcMainInvokeEvent, request) as { success: boolean };
 
-                expect((result as { success: boolean }).success).toBe(true);
+                expect(result).toBeDefined();
+                expect(result.success).toBe(true);
             }
 
             expect(mockCollaborationService.collaborate).toHaveBeenCalledTimes(4);
@@ -363,11 +346,11 @@ describe('Collaboration IPC Integration', () => {
 
             const result = await handler?.({} as IpcMainInvokeEvent, 123, config);
 
-            expect(multiLLMOrchestrator.setProviderConfig).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: 'Provider must be a string'
+                error: { message: 'Provider must be a string' }
             });
+            expect(multiLLMOrchestrator.setProviderConfig).not.toHaveBeenCalled();
         });
 
         it('should reject invalid maxConcurrent', async () => {
@@ -382,11 +365,11 @@ describe('Collaboration IPC Integration', () => {
 
             const result = await handler?.({} as IpcMainInvokeEvent, 'openai', config);
 
-            expect(multiLLMOrchestrator.setProviderConfig).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: 'maxConcurrent must be a positive number'
+                error: { message: 'maxConcurrent must be a positive number' }
             });
+            expect(multiLLMOrchestrator.setProviderConfig).not.toHaveBeenCalled();
         });
 
         it('should reject non-number maxConcurrent', async () => {
@@ -401,11 +384,11 @@ describe('Collaboration IPC Integration', () => {
 
             const result = await handler?.({} as IpcMainInvokeEvent, 'openai', config);
 
-            expect(multiLLMOrchestrator.setProviderConfig).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: 'maxConcurrent must be a positive number'
+                error: { message: 'maxConcurrent must be a positive number' }
             });
+            expect(multiLLMOrchestrator.setProviderConfig).not.toHaveBeenCalled();
         });
 
         it('should reject non-number priority', async () => {
@@ -420,11 +403,11 @@ describe('Collaboration IPC Integration', () => {
 
             const result = await handler?.({} as IpcMainInvokeEvent, 'openai', config);
 
-            expect(multiLLMOrchestrator.setProviderConfig).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: 'priority must be a number'
+                error: { message: 'priority must be a number' }
             });
+            expect(multiLLMOrchestrator.setProviderConfig).not.toHaveBeenCalled();
         });
 
         it('should reject invalid rateLimitPerMinute', async () => {
@@ -439,11 +422,11 @@ describe('Collaboration IPC Integration', () => {
 
             const result = await handler?.({} as IpcMainInvokeEvent, 'openai', config);
 
-            expect(multiLLMOrchestrator.setProviderConfig).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: 'rateLimitPerMinute must be a positive number'
+                error: { message: 'rateLimitPerMinute must be a positive number' }
             });
+            expect(multiLLMOrchestrator.setProviderConfig).not.toHaveBeenCalled();
         });
 
         it('should reject non-number rateLimitPerMinute', async () => {
@@ -458,11 +441,11 @@ describe('Collaboration IPC Integration', () => {
 
             const result = await handler?.({} as IpcMainInvokeEvent, 'openai', config);
 
-            expect(multiLLMOrchestrator.setProviderConfig).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: 'rateLimitPerMinute must be a positive number'
+                error: { message: 'rateLimitPerMinute must be a positive number' }
             });
+            expect(multiLLMOrchestrator.setProviderConfig).not.toHaveBeenCalled();
         });
     });
 });

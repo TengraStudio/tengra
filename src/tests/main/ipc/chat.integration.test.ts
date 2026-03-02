@@ -29,33 +29,6 @@ vi.mock('electron', () => ({
 }));
 
 // Mock IPC Wrapper to avoid transitive dependency issues with error.util
-vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown) => async (event: unknown, ...args: unknown[]) => {
-        try {
-            const result = await handler(event, ...args);
-            return { success: true, data: result };
-        } catch (error: unknown) {
-            return { success: false, error: (error instanceof Error ? error.message : 'Unknown Error') };
-        }
-    },
-    createValidatedIpcHandler: (
-        _name: string,
-        handler: (...args: unknown[]) => unknown,
-        options?: { argsSchema?: { parse: (args: unknown[]) => unknown[] }; defaultValue?: unknown }
-    ) => async (event: unknown, ...args: unknown[]) => {
-        try {
-            const parsedArgs = options?.argsSchema ? options.argsSchema.parse(args) : args;
-            const result = await handler(event, ...(parsedArgs as unknown[]));
-            return { success: true, data: result };
-        } catch (error: unknown) {
-            if (options && Object.prototype.hasOwnProperty.call(options, 'defaultValue')) {
-                return options.defaultValue;
-            }
-            return { success: false, error: (error instanceof Error ? error.message : 'Validation failed') };
-        }
-    }
-}));
-
 
 // Mock Services
 const mockSettingsService = { getSettings: vi.fn().mockReturnValue({}) };
@@ -98,7 +71,7 @@ describe('Chat IPC Integration', () => {
 
     const initIPC = (overrides?: Record<string, unknown>) => {
         registerChatIpc({
-            getMainWindow: () => null,
+            getMainWindow: () => ({ webContents: { id: 1 } } as any),
             settingsService: mockSettingsService as never,
             copilotService: mockCopilotService as never,
             llmService: mockLLMService as never,
@@ -270,10 +243,13 @@ describe('Chat IPC Integration', () => {
 
         // The IPC wrapper usually catches errors and returns { success: false, error: ... }
         // BUT checking chat.ts: ipcMain.handle('chat:openai', createIpcHandler(...))
-        // createIpcHandler standardizes the response.
+        // createValidatedIpcHandler returns structured error object when wrapResponse is true
         expect(result).toEqual({
             success: false,
-            error: 'Simulated Fail'
+            error: {
+                message: 'Simulated Fail',
+                code: 'IPC_HANDLER_ERROR'
+            }
         });
     });
 

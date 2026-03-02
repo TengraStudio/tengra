@@ -2,7 +2,7 @@ import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { keyRotationKeysSchema, keyRotationProviderSchema } from '@main/ipc/validation';
 import { appLogger } from '@main/logging/logger';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
-import { createSafeIpcHandler, createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
 
@@ -16,11 +16,16 @@ export function registerKeyRotationIpc(getMainWindow: () => BrowserWindow | null
     /**
      * Get current key for a provider
      */
-    ipcMain.handle('key-rotation:getCurrentKey', createSafeIpcHandler('key-rotation:getCurrentKey',
+    ipcMain.handle('key-rotation:getCurrentKey', createValidatedIpcHandler('key-rotation:getCurrentKey',
         async (event: IpcMainInvokeEvent, provider: string) => {
             validateSender(event);
             return keyRotationService.getCurrentKey(provider) ?? null;
-        }, null
+        }, {
+        argsSchema: z.tuple([keyRotationProviderSchema]),
+        defaultValue: null,
+        schemaVersion: 1,
+        wrapResponse: true
+    }
     ));
 
     /**
@@ -32,9 +37,10 @@ export function registerKeyRotationIpc(getMainWindow: () => BrowserWindow | null
             const success = keyRotationService.rotateKey(provider);
             return { success, currentKey: keyRotationService.getCurrentKey(provider) ?? null };
         }, {
-            argsSchema: z.tuple([keyRotationProviderSchema]),
-            schemaVersion: 1
-        }
+        argsSchema: z.tuple([keyRotationProviderSchema]),
+        schemaVersion: 1,
+        wrapResponse: true
+    }
     ));
 
     /**
@@ -47,9 +53,10 @@ export function registerKeyRotationIpc(getMainWindow: () => BrowserWindow | null
             appLogger.info('KeyRotationIPC', `Initialized keys for provider: ${provider}`);
             return { success: true, currentKey: keyRotationService.getCurrentKey(provider) ?? null };
         }, {
-            argsSchema: z.tuple([keyRotationProviderSchema, keyRotationKeysSchema]),
-            schemaVersion: 1
-        }
+        argsSchema: z.tuple([keyRotationProviderSchema, keyRotationKeysSchema]),
+        schemaVersion: 1,
+        wrapResponse: true
+    }
     ));
 
     /**
@@ -65,9 +72,10 @@ export function registerKeyRotationIpc(getMainWindow: () => BrowserWindow | null
                 currentKey: currentKey ? `${currentKey.substring(0, 8)}...` : null
             };
         }, {
-            argsSchema: z.tuple([keyRotationProviderSchema]),
-            defaultValue: { provider: '', hasKey: false, currentKey: null },
-            schemaVersion: 1
-        }
+        argsSchema: z.tuple([keyRotationProviderSchema]),
+        defaultValue: { provider: '', hasKey: false, currentKey: null },
+        schemaVersion: 1,
+        wrapResponse: true
+    }
     ));
 }

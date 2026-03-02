@@ -32,12 +32,6 @@ vi.mock('@main/logging/logger', () => ({
     }
 }));
 
-vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createSafeIpcHandler: (
-        _channel: string,
-        handler: (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>
-    ) => handler
-}));
 
 vi.mock('@main/utils/path-security.util', () => ({
     assertPathWithinRoot: (inputPath: string, rootPath: string) => {

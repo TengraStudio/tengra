@@ -26,6 +26,48 @@
 - **Integración de flujo**: Actualización de `process-stream` y `useChatManager` para propagar los estados de error categorizados a través de la jerarquía de componentes.
 - **Refuerzo de seguridad de tipos**: Resolución de más de 10 errores estrictos de TypeScript relacionados con definiciones de propiedades de error ausentes en ganchos de chat y componentes de UI.
 
+### QUALITY-016: CodeIntelligenceService reducido a la orquestación de indexado
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: CodeIntelligenceService se refactorizó como un orquestador más ligero que conserva el indexado del proyecto dentro del servicio y delega el escaneo, la navegación, el renombrado, la documentación y el análisis de calidad a utilidades extraídas.
+
+- `CodeIntelligenceService` ahora se centra en la coordinación del indexado, el almacenamiento de fragmentos semánticos, los eventos de progreso y la analítica de símbolos.
+- El escaneo de archivos, el análisis/navegación de símbolos, la ejecución de renombrado, la generación de documentación y el análisis de calidad ahora pasan por las utilidades dedicadas `code-intelligence/*`.
+- Se preservó la superficie API orientada a IPC mientras `code-intelligence.service.ts` se redujo de 1200+ líneas a un coordinador mucho más pequeño.
+
+### QUALITY-017: CopilotService dividido en módulos enfocados
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: El servicio monolítico de Copilot se sustituyó por una fachada ligera que delega la gestión de tokens, el rate limiting, la construcción de solicitudes, el análisis de respuestas y las llamadas API a módulos dedicados.
+
+- `CopilotService` ahora mantiene solo el estado compartido, los hooks de ciclo de vida, los setters de configuración y los métodos públicos de fachada para chat/token.
+- La actualización de tokens, el rate limiting, la construcción de solicitudes, el análisis de respuestas y la comunicación con gateways ahora pasan por las clases auxiliares extraídas de Copilot.
+- Se preservó el comportamiento de `isConfigured()` y la actualización de versión de VS Code mientras `copilot.service.ts` se redujo de 1000+ líneas a una fachada compacta.
+
+### Pruebas de escenarios del consejo finalizadas como suites divididas
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: QUALITY-055 se completo: se elimino la suite monolitica obsoleta de escenarios del consejo y los archivos divididos quedan como la unica fuente de verdad.
+
+- **QUALITY-055**: The legacy `council-scenarios.test.ts` file carrying the `max-lines-per-function` lint suppression was removed.
+- **Canonical Split Suites**: The shared helpers module and the three scenario-focused test files remain the active council scenario coverage.
+- **Maintenance**: Duplicate test execution was removed and the test directory now matches the intended smaller-file layout.
+
+### Secure Social Gateway Architecture & Codebase Audit
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Designed the Secure Social Gateway architecture, resolved build/lint errors, and completed a comprehensive codebase audit to identify security, performance, and technical debt issues.
+
+- **GATEWAY-001**: Added the Secure Social Gateway task to TODO.md with a phased 4-stage implementation plan.
+- **TODO-SCAN**: Scanned entire src directory for hidden TODOs, FIXMEs, and oversized components (e.g., MessageBubble.tsx at 2250+ lines).
+- **SEC-H-002**: Identified 70+ raw ipcMain.handle calls requiring standardization to validated handlers.
+- **PERF-001**: Identified missing virtualization in MessageList as a primary performance bottleneck.
+- **Build**: Fixed various build/lint errors and verified integrity with npm run type-check.
+
 ## [2026-02-28]
 
 ### AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking

@@ -2,6 +2,8 @@ import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
+vi.unmock('@main/utils/ipc-wrapper.util');
+
 describe('createValidatedIpcHandler', () => {
     it('rejects invalid args payload', async () => {
         const handler = createValidatedIpcHandler(

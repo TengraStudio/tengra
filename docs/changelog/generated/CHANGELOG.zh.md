@@ -26,6 +26,48 @@
 - **流集成**：更新了 `process-stream` 和 `useChatManager`，使分类后的错误状态在组件层次结构中传播。
 - **型安全加固**：解决了 10 多个与聊天钩子和 UI 组件中缺失错误属性定义相关的严格 TypeScript 错误。
 
+### QUALITY-016：将 CodeIntelligenceService 收缩为索引编排层
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: 重构后的 CodeIntelligenceService 仅保留项目索引编排，把扫描、导航、重命名、文档生成和质量分析委托给已拆分的工具模块。
+
+- `CodeIntelligenceService` 现在专注于索引协调、语义片段存储、进度事件和符号分析。
+- 文件扫描、符号解析/导航、重命名执行、文档生成和质量扫描现在都通过专用的 `code-intelligence/*` 工具模块完成。
+- 在保留现有 IPC API 表面的同时，`code-intelligence.service.ts` 已从 1200+ 行缩减为小得多的协调器。
+
+### QUALITY-017：将 CopilotService 拆分为职责明确的模块
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: 将原本臃肿的 CopilotService 改为轻量门面，把令牌管理、限流、请求构建、响应解析和 API 调用委托给独立模块。
+
+- `CopilotService` 现在只负责共享状态、生命周期钩子、配置设置器以及公开的 chat/token 门面方法。
+- 令牌刷新、限流、请求构建、响应解析和网关通信现在统一走已拆分的 Copilot 辅助类。
+- 在保留 `isConfigured()` 和 VS Code 版本刷新行为的同时，`copilot.service.ts` 已从 1000+ 行缩减为紧凑门面。
+
+### Council 场景测试已完成拆分套件化
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: QUALITY-055 已完成：移除了旧的单体 council 场景测试文件，并将拆分后的场景文件保留为唯一可信来源。
+
+- **QUALITY-055**: The legacy `council-scenarios.test.ts` file carrying the `max-lines-per-function` lint suppression was removed.
+- **Canonical Split Suites**: The shared helpers module and the three scenario-focused test files remain the active council scenario coverage.
+- **Maintenance**: Duplicate test execution was removed and the test directory now matches the intended smaller-file layout.
+
+### Secure Social Gateway Architecture & Codebase Audit
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Designed the Secure Social Gateway architecture, resolved build/lint errors, and completed a comprehensive codebase audit to identify security, performance, and technical debt issues.
+
+- **GATEWAY-001**: Added the Secure Social Gateway task to TODO.md with a phased 4-stage implementation plan.
+- **TODO-SCAN**: Scanned entire src directory for hidden TODOs, FIXMEs, and oversized components (e.g., MessageBubble.tsx at 2250+ lines).
+- **SEC-H-002**: Identified 70+ raw ipcMain.handle calls requiring standardization to validated handlers.
+- **PERF-001**: Identified missing virtualization in MessageList as a primary performance bottleneck.
+- **Build**: Fixed various build/lint errors and verified integrity with npm run type-check.
+
 ## [2026-02-28]
 
 ### AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking

@@ -263,7 +263,7 @@ export class SecurityService extends BaseService implements ISecurityService {
      * @param passphrase - Passphrase used for backup encryption.
      * @returns Success response when key is restored and persisted.
      */
-    restoreMasterKeyBackup(backupPayload: string, passphrase: string): ServiceResponse {
+    async restoreMasterKeyBackup(backupPayload: string, passphrase: string): Promise<ServiceResponse> {
         if (!backupPayload) {
             return { success: false, error: 'Backup payload is required' };
         }

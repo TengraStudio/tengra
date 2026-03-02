@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-03-01T12:53:09.008Z",
+  "generatedAt": "2026-03-02T12:23:53.272Z",
   "locales": [
     "en",
     "tr",
@@ -227,6 +227,394 @@
             "- **تجربة المستخدم في حالة الفشل (MARCH1-CORE-001)**: دمج `ChatErrorBanner` في الشريط الجانبي لمساعد الذكاء الاصطناعي لمساحة العمل مع العرض الشرطي وإجراءات إعادة المحاولة السياقية.",
             "- **تكامل البث**: تحديث `process-stream` و `useChatManager` لنشر حالات الأخطاء المصنفة عبر تسلسل المكونات.",
             "- **تعزيز سلامة الأنواع**: حل أكثر من 10 أخطاء TypeScript صارمة تتعلق بتعريفات خصائص الخطأ المفقودة عبر خطافات الدردشة ومكونات واجهة المستخدم."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-03-01-quality-016-code-intelligence-facade",
+      "date": "2026-03-01",
+      "channel": "stable",
+      "type": "refactor",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "CodeIntelligenceService",
+        "file-scanner.util",
+        "symbol-parser.util",
+        "symbol-navigation.util",
+        "rename-symbol.util",
+        "documentation-generator.util",
+        "code-quality-scanner.util"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "QUALITY-016: Code Intelligence Service Reduced To Indexing Orchestration",
+          "summary": "Refactored CodeIntelligenceService into a slimmer orchestrator that keeps project indexing in-service while delegating scanners, navigation, rename flows, documentation generation, and quality analysis to extracted utilities.",
+          "items": [
+            "- `CodeIntelligenceService` now focuses on indexing coordination, semantic fragment storage, progress events, and symbol analytics.",
+            "- File scanning, symbol parsing/navigation, rename execution, documentation generation, and quality scanning now route through the dedicated `code-intelligence/*` utility modules.",
+            "- Preserved the existing IPC-facing API surface while cutting `code-intelligence.service.ts` down from 1200+ lines to a much smaller coordinator."
+          ]
+        },
+        "tr": {
+          "title": "QUALITY-016: CodeIntelligenceService İndeksleme Orkestrasyonuna İndirildi",
+          "summary": "CodeIntelligenceService, proje indekslemeyi servis içinde tutarken tarama, gezinme, yeniden adlandırma, dokümantasyon üretimi ve kalite analizini çıkarılmış yardımcı modüllere devreden daha ince bir orkestratöre dönüştürüldü.",
+          "items": [
+            "- `CodeIntelligenceService` artık indeksleme koordinasyonu, semantik parça depolama, ilerleme olayları ve sembol analitiğine odaklanıyor.",
+            "- Dosya tarama, sembol ayrıştırma/gezinme, yeniden adlandırma yürütme, dokümantasyon üretimi ve kalite taraması artık ayrılmış `code-intelligence/*` yardımcı modülleri üzerinden çalışıyor.",
+            "- Mevcut IPC yüzeyi korunurken `code-intelligence.service.ts` 1200+ satırdan çok daha küçük bir koordinatöre düşürüldü."
+          ]
+        },
+        "de": {
+          "title": "QUALITY-016: CodeIntelligenceService auf Indexierungs-Orchestrierung reduziert",
+          "summary": "CodeIntelligenceService wurde zu einem schlankeren Orchestrator umgebaut, der die Projektindexierung im Service behält und Scans, Navigation, Umbenennung, Dokumentation und Qualitätsanalyse an extrahierte Utilities delegiert.",
+          "items": [
+            "- `CodeIntelligenceService` konzentriert sich jetzt auf Indexierungskoordination, Speicherung semantischer Fragmente, Fortschrittsereignisse und Symbolanalyse.",
+            "- Dateiscans, Symbol-Parsing/Navigation, Rename-Ausführung, Dokumentationserzeugung und Quality-Scans laufen jetzt über die dedizierten `code-intelligence/*`-Utilities.",
+            "- Die bestehende IPC-Oberfläche blieb erhalten, während `code-intelligence.service.ts` von 1200+ Zeilen auf einen deutlich kleineren Koordinator reduziert wurde."
+          ]
+        },
+        "fr": {
+          "title": "QUALITY-016 : CodeIntelligenceService réduit à l'orchestration d'indexation",
+          "summary": "CodeIntelligenceService a été refactoré en orchestrateur plus léger qui conserve l'indexation du projet dans le service et délègue le scan, la navigation, le renommage, la documentation et l'analyse qualité à des utilitaires extraits.",
+          "items": [
+            "- `CodeIntelligenceService` se concentre désormais sur la coordination d'indexation, le stockage des fragments sémantiques, les événements de progression et l'analyse des symboles.",
+            "- Le scan de fichiers, l'analyse/navigation des symboles, l'exécution des renommages, la génération de documentation et l'analyse qualité passent maintenant par les utilitaires dédiés `code-intelligence/*`.",
+            "- La surface API orientée IPC est conservée tandis que `code-intelligence.service.ts` passe de plus de 1200 lignes à un coordinateur nettement plus compact."
+          ]
+        },
+        "es": {
+          "title": "QUALITY-016: CodeIntelligenceService reducido a la orquestación de indexado",
+          "summary": "CodeIntelligenceService se refactorizó como un orquestador más ligero que conserva el indexado del proyecto dentro del servicio y delega el escaneo, la navegación, el renombrado, la documentación y el análisis de calidad a utilidades extraídas.",
+          "items": [
+            "- `CodeIntelligenceService` ahora se centra en la coordinación del indexado, el almacenamiento de fragmentos semánticos, los eventos de progreso y la analítica de símbolos.",
+            "- El escaneo de archivos, el análisis/navegación de símbolos, la ejecución de renombrado, la generación de documentación y el análisis de calidad ahora pasan por las utilidades dedicadas `code-intelligence/*`.",
+            "- Se preservó la superficie API orientada a IPC mientras `code-intelligence.service.ts` se redujo de 1200+ líneas a un coordinador mucho más pequeño."
+          ]
+        },
+        "ja": {
+          "title": "QUALITY-016: CodeIntelligenceService をインデックス統括へ縮小",
+          "summary": "CodeIntelligenceService はプロジェクトのインデックス調停のみを担い、スキャン、ナビゲーション、リネーム、ドキュメント生成、品質分析を抽出済みユーティリティへ委譲する構成にリファクタリングされました。",
+          "items": [
+            "- `CodeIntelligenceService` はインデックス調整、セマンティック断片の保存、進捗イベント、シンボル分析に集中します。",
+            "- ファイルスキャン、シンボル解析/ナビゲーション、リネーム実行、ドキュメント生成、品質スキャンは専用の `code-intelligence/*` ユーティリティへ移行しました。",
+            "- IPC 向けの既存 API を維持したまま、`code-intelligence.service.ts` を 1200 行超から大幅に小さいコーディネーターへ縮小しました。"
+          ]
+        },
+        "zh": {
+          "title": "QUALITY-016：将 CodeIntelligenceService 收缩为索引编排层",
+          "summary": "重构后的 CodeIntelligenceService 仅保留项目索引编排，把扫描、导航、重命名、文档生成和质量分析委托给已拆分的工具模块。",
+          "items": [
+            "- `CodeIntelligenceService` 现在专注于索引协调、语义片段存储、进度事件和符号分析。",
+            "- 文件扫描、符号解析/导航、重命名执行、文档生成和质量扫描现在都通过专用的 `code-intelligence/*` 工具模块完成。",
+            "- 在保留现有 IPC API 表面的同时，`code-intelligence.service.ts` 已从 1200+ 行缩减为小得多的协调器。"
+          ]
+        },
+        "ar": {
+          "title": "QUALITY-016: تقليص CodeIntelligenceService إلى طبقة تنسيق للفهرسة",
+          "summary": "تمت إعادة هيكلة CodeIntelligenceService ليحتفظ بتنسيق فهرسة المشروع داخل الخدمة، بينما يفوض المسح، والتنقل، وإعادة التسمية، وتوليد التوثيق، وتحليل الجودة إلى وحدات مساعدة مستخرجة.",
+          "items": [
+            "- يركز `CodeIntelligenceService` الآن على تنسيق الفهرسة، وتخزين الأجزاء الدلالية، وأحداث التقدم، وتحليلات الرموز.",
+            "- أصبح مسح الملفات، وتحليل/تنقل الرموز، وتنفيذ إعادة التسمية، وتوليد التوثيق، وفحص الجودة يمر عبر وحدات `code-intelligence/*` المخصصة.",
+            "- تم الحفاظ على واجهة IPC الحالية مع تقليص `code-intelligence.service.ts` من أكثر من 1200 سطر إلى منسق أصغر بكثير."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-03-01-quality-017-copilot-facade",
+      "date": "2026-03-01",
+      "channel": "stable",
+      "type": "refactor",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "CopilotService",
+        "CopilotTokenManager",
+        "CopilotRateLimitManager",
+        "CopilotRequestBuilder",
+        "CopilotResponseParser",
+        "CopilotApiClient"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "QUALITY-017: Copilot Service Split Into Focused Modules",
+          "summary": "Replaced the monolithic Copilot service with a thin facade that delegates token management, rate limiting, request building, response parsing, and API calls to dedicated modules.",
+          "items": [
+            "- `CopilotService` now owns only shared state, lifecycle hooks, configuration setters, and the public chat/token facade methods.",
+            "- Token refresh, rate limiting, request construction, response parsing, and gateway communication now flow through the extracted Copilot helper classes.",
+            "- Preserved `isConfigured()` and VS Code version refresh behavior while reducing `copilot.service.ts` from 1000+ lines to a compact facade."
+          ]
+        },
+        "tr": {
+          "title": "QUALITY-017: Copilot Servisi Odaklı Modüllere Ayrıldı",
+          "summary": "Tek parça Copilot servisi, token yönetimi, hız limiti, istek oluşturma, yanıt ayrıştırma ve API çağrılarını ayrı modüllere devreden ince bir cepheye dönüştürüldü.",
+          "items": [
+            "- `CopilotService` artık yalnızca paylaşılan durum, yaşam döngüsü kancaları, yapılandırma ayarlayıcıları ve genel chat/token yöntemlerini tutuyor.",
+            "- Token yenileme, hız limiti, istek oluşturma, yanıt ayrıştırma ve ağ geçidi iletişimi çıkarılan Copilot yardımcı sınıfları üzerinden ilerliyor.",
+            "- `isConfigured()` ve VS Code sürüm yenileme davranışı korunurken `copilot.service.ts` 1000+ satırlık yapıdan kompakt bir cepheye indirildi."
+          ]
+        },
+        "de": {
+          "title": "QUALITY-017: CopilotService in fokussierte Module aufgeteilt",
+          "summary": "Der monolithische Copilot-Service wurde durch eine schlanke Fassade ersetzt, die Token-Verwaltung, Rate-Limiting, Request-Erstellung, Response-Parsing und API-Aufrufe an dedizierte Module delegiert.",
+          "items": [
+            "- `CopilotService` enthält jetzt nur noch den gemeinsamen Zustand, Lifecycle-Hooks, Konfigurations-Setter und die öffentlichen Chat-/Token-Fassadenmethoden.",
+            "- Token-Aktualisierung, Rate-Limiting, Request-Erstellung, Response-Parsing und Gateway-Kommunikation laufen jetzt über die extrahierten Copilot-Hilfsklassen.",
+            "- Das Verhalten von `isConfigured()` und der VS-Code-Versionsaktualisierung blieb erhalten, während `copilot.service.ts` von 1000+ Zeilen auf eine kompakte Fassade reduziert wurde."
+          ]
+        },
+        "fr": {
+          "title": "QUALITY-017 : CopilotService scindé en modules ciblés",
+          "summary": "Le service Copilot monolithique a été remplacé par une façade légère qui délègue la gestion des jetons, la limitation de débit, la construction des requêtes, l'analyse des réponses et les appels API à des modules dédiés.",
+          "items": [
+            "- `CopilotService` ne conserve plus que l'état partagé, les hooks de cycle de vie, les setters de configuration et les méthodes publiques de façade chat/token.",
+            "- Le rafraîchissement des jetons, la limitation de débit, la construction des requêtes, l'analyse des réponses et la communication passerelle passent désormais par les classes utilitaires Copilot extraites.",
+            "- Le comportement de `isConfigured()` et de mise à jour de version VS Code est préservé tandis que `copilot.service.ts` passe de plus de 1000 lignes à une façade compacte."
+          ]
+        },
+        "es": {
+          "title": "QUALITY-017: CopilotService dividido en módulos enfocados",
+          "summary": "El servicio monolítico de Copilot se sustituyó por una fachada ligera que delega la gestión de tokens, el rate limiting, la construcción de solicitudes, el análisis de respuestas y las llamadas API a módulos dedicados.",
+          "items": [
+            "- `CopilotService` ahora mantiene solo el estado compartido, los hooks de ciclo de vida, los setters de configuración y los métodos públicos de fachada para chat/token.",
+            "- La actualización de tokens, el rate limiting, la construcción de solicitudes, el análisis de respuestas y la comunicación con gateways ahora pasan por las clases auxiliares extraídas de Copilot.",
+            "- Se preservó el comportamiento de `isConfigured()` y la actualización de versión de VS Code mientras `copilot.service.ts` se redujo de 1000+ líneas a una fachada compacta."
+          ]
+        },
+        "ja": {
+          "title": "QUALITY-017: CopilotService を責務別モジュールへ分割",
+          "summary": "肥大化した CopilotService を、トークン管理、レート制限、リクエスト構築、レスポンス解析、API 呼び出しを専用モジュールへ委譲する薄いファサードに置き換えました。",
+          "items": [
+            "- `CopilotService` は共有状態、ライフサイクル処理、設定用セッター、公開 chat/token メソッドだけを担当します。",
+            "- トークン更新、レート制限、リクエスト構築、レスポンス解析、ゲートウェイ通信は抽出済みの Copilot ヘルパークラス経由になりました。",
+            "- `isConfigured()` と VS Code バージョン更新の挙動を維持したまま、`copilot.service.ts` を 1000 行超からコンパクトなファサードへ縮小しました。"
+          ]
+        },
+        "zh": {
+          "title": "QUALITY-017：将 CopilotService 拆分为职责明确的模块",
+          "summary": "将原本臃肿的 CopilotService 改为轻量门面，把令牌管理、限流、请求构建、响应解析和 API 调用委托给独立模块。",
+          "items": [
+            "- `CopilotService` 现在只负责共享状态、生命周期钩子、配置设置器以及公开的 chat/token 门面方法。",
+            "- 令牌刷新、限流、请求构建、响应解析和网关通信现在统一走已拆分的 Copilot 辅助类。",
+            "- 在保留 `isConfigured()` 和 VS Code 版本刷新行为的同时，`copilot.service.ts` 已从 1000+ 行缩减为紧凑门面。"
+          ]
+        },
+        "ar": {
+          "title": "QUALITY-017: تقسيم خدمة Copilot إلى وحدات متخصصة",
+          "summary": "تم استبدال خدمة Copilot الأحادية بواجهة خفيفة تفوض إدارة الرموز، وحدود المعدل، وبناء الطلبات، وتحليل الاستجابات، واستدعاءات API إلى وحدات منفصلة.",
+          "items": [
+            "- تحتفظ `CopilotService` الآن فقط بالحالة المشتركة، وخطافات دورة الحياة، ووسائل ضبط الإعدادات، وواجهات chat/token العامة.",
+            "- تمر عمليات تحديث الرموز، وحدود المعدل، وبناء الطلبات، وتحليل الاستجابات، واتصالات البوابة الآن عبر أصناف Copilot المساعدة المستخرجة.",
+            "- تم الحفاظ على سلوك `isConfigured()` وتحديث إصدار VS Code مع تقليص `copilot.service.ts` من أكثر من 1000 سطر إلى واجهة مدمجة."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-03-01-quality-055-council-scenario-test-split-cleanup",
+      "date": "2026-03-01",
+      "channel": "stable",
+      "type": "refactor",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Tests",
+        "Project Services"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Council Scenario Tests Finalized as Split Suites",
+          "summary": "Completed QUALITY-055 by removing the obsolete monolithic council scenario suite and keeping the split scenario files as the single source of truth.",
+          "items": [
+            "- **QUALITY-055**: Deleted the legacy `council-scenarios.test.ts` file that still carried the `max-lines-per-function` lint suppression.",
+            "- **Canonical Split Suites**: Kept the shared helpers module plus the three scenario-focused test files as the active council scenario coverage.",
+            "- **Maintenance**: Removed duplicate test execution and aligned the test directory with the intended smaller-file layout."
+          ]
+        },
+        "tr": {
+          "title": "Konsey Senaryo Testleri Bölünmüş Paketler Olarak Tamamlandı",
+          "summary": "QUALITY-055 tamamlandı; eski monolitik konsey senaryo testi kaldırıldı ve bölünmüş senaryo dosyaları tek doğruluk kaynağı olarak bırakıldı.",
+          "items": [
+            "- **QUALITY-055**: `max-lines-per-function` lint bastırmasını taşıyan eski `council-scenarios.test.ts` dosyası silindi.",
+            "- **Kanonik Bölünmüş Paketler**: Paylaşılan yardımcı modül ile üç senaryo odaklı test dosyası aktif konsey senaryo kapsamı olarak korundu.",
+            "- **Bakım**: Yinelenen test çalıştırmaları kaldırıldı ve test dizini amaçlanan küçük dosya düzeniyle hizalandı."
+          ]
+        },
+        "de": {
+          "title": "Council-Szenariotests als aufgeteilte Suites abgeschlossen",
+          "summary": "QUALITY-055 wurde abgeschlossen: Die veraltete monolithische Council-Szenario-Testdatei wurde entfernt und die aufgeteilten Szenario-Dateien bleiben die einzige Quelle der Wahrheit.",
+          "items": [
+            "- **QUALITY-055**: Die alte `council-scenarios.test.ts`-Datei mit der `max-lines-per-function`-Unterdrueckung wurde entfernt.",
+            "- **Canonical Split Suites**: The shared helpers module and the three scenario-focused test files remain the active council scenario coverage.",
+            "- **Maintenance**: Duplicate test execution was removed and the test directory now matches the intended smaller-file layout."
+          ]
+        },
+        "fr": {
+          "title": "Tests de scenarios du conseil finalises en suites separees",
+          "summary": "QUALITY-055 est termine : l'ancien test monolithique des scenarios du conseil a ete supprime et les fichiers de scenario decoupes restent la source de verite.",
+          "items": [
+            "- **QUALITY-055**: The legacy `council-scenarios.test.ts` file carrying the `max-lines-per-function` lint suppression was removed.",
+            "- **Canonical Split Suites**: The shared helpers module and the three scenario-focused test files remain the active council scenario coverage.",
+            "- **Maintenance**: Duplicate test execution was removed and the test directory now matches the intended smaller-file layout."
+          ]
+        },
+        "es": {
+          "title": "Pruebas de escenarios del consejo finalizadas como suites divididas",
+          "summary": "QUALITY-055 se completo: se elimino la suite monolitica obsoleta de escenarios del consejo y los archivos divididos quedan como la unica fuente de verdad.",
+          "items": [
+            "- **QUALITY-055**: The legacy `council-scenarios.test.ts` file carrying the `max-lines-per-function` lint suppression was removed.",
+            "- **Canonical Split Suites**: The shared helpers module and the three scenario-focused test files remain the active council scenario coverage.",
+            "- **Maintenance**: Duplicate test execution was removed and the test directory now matches the intended smaller-file layout."
+          ]
+        },
+        "ja": {
+          "title": "Council シナリオテストを分割スイートとして完了",
+          "summary": "QUALITY-055 を完了しました。古いモノリシックな council scenario テストを削除し、分割されたシナリオファイルを唯一の正しい構成として残しました。",
+          "items": [
+            "- **QUALITY-055**: The legacy `council-scenarios.test.ts` file carrying the `max-lines-per-function` lint suppression was removed.",
+            "- **Canonical Split Suites**: The shared helpers module and the three scenario-focused test files remain the active council scenario coverage.",
+            "- **Maintenance**: Duplicate test execution was removed and the test directory now matches the intended smaller-file layout."
+          ]
+        },
+        "zh": {
+          "title": "Council 场景测试已完成拆分套件化",
+          "summary": "QUALITY-055 已完成：移除了旧的单体 council 场景测试文件，并将拆分后的场景文件保留为唯一可信来源。",
+          "items": [
+            "- **QUALITY-055**: The legacy `council-scenarios.test.ts` file carrying the `max-lines-per-function` lint suppression was removed.",
+            "- **Canonical Split Suites**: The shared helpers module and the three scenario-focused test files remain the active council scenario coverage.",
+            "- **Maintenance**: Duplicate test execution was removed and the test directory now matches the intended smaller-file layout."
+          ]
+        },
+        "ar": {
+          "title": "اكتمل تقسيم اختبارات سيناريو المجلس إلى حزم منفصلة",
+          "summary": "تم إكمال QUALITY-055 عبر إزالة ملف اختبار سيناريو المجلس القديم ذي البنية الأحادية والإبقاء على الملفات المقسمة كمصدر الحقيقة الوحيد.",
+          "items": [
+            "- **QUALITY-055**: The legacy `council-scenarios.test.ts` file carrying the `max-lines-per-function` lint suppression was removed.",
+            "- **Canonical Split Suites**: The shared helpers module and the three scenario-focused test files remain the active council scenario coverage.",
+            "- **Maintenance**: Duplicate test execution was removed and the test directory now matches the intended smaller-file layout."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-03-01-secure-gateway-and-todo-audit",
+      "date": "2026-03-01",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "Social Gateway",
+        "Security",
+        "TODO",
+        "Performance"
+      ],
+      "breaking": false,
+      "security": true,
+      "contentByLocale": {
+        "en": {
+          "title": "Secure Social Gateway Architecture & Codebase Audit",
+          "summary": "Designed the Secure Social Gateway architecture, resolved build/lint errors, and completed a comprehensive codebase audit to identify security, performance, and technical debt issues.",
+          "items": [
+            "- **GATEWAY-001**: Added the Secure Social Gateway task to TODO.md with a phased 4-stage implementation plan.",
+            "- **TODO-SCAN**: Scanned entire src directory for hidden TODOs, FIXMEs, and oversized components (e.g., MessageBubble.tsx at 2250+ lines).",
+            "- **SEC-H-002**: Identified 70+ raw ipcMain.handle calls requiring standardization to validated handlers.",
+            "- **PERF-001**: Identified missing virtualization in MessageList as a primary performance bottleneck.",
+            "- **Build**: Fixed various build/lint errors and verified project integrity with npm run type-check."
+          ]
+        },
+        "tr": {
+          "title": "Güvenli Sosyal Medya Geçidi Mimarisi ve Kod Tabanı Denetimi",
+          "summary": "Güvenli Sosyal Medya Geçidi mimarisi tasarlandı, build/lint hataları giderildi ve güvenlik, performans ve teknik borç sorunlarını belirlemek için kapsamlı bir kod tabanı denetimi tamamlandı.",
+          "items": [
+            "- **GATEWAY-001**: Güvenli Sosyal Medya Geçidi görevi, 4 aşamalı bir uygulama planıyla TODO.md'ye eklendi.",
+            "- **TODO-SCAN**: Tüm src dizini gizli TODO'lar, FIXME'ler ve aşırı büyük bileşenler (örneğin, 2250'den fazla satırlı MessageBubble.tsx) için tarandı.",
+            "- **SEC-H-002**: Doğrulanmış işleyicilere standardizasyon gerektiren 70'ten fazla ham ipcMain.handle çağrısı belirlendi.",
+            "- **PERF-001**: MessageList'teki eksik sanallaştırma, birincil performans darboğazı olarak belirlendi.",
+            "- **Build**: Çeşitli build/lint hataları düzeltildi ve npm run type-check ile bütünlük doğrulandı."
+          ]
+        },
+        "de": {
+          "title": "Secure Social Gateway Architecture & Codebase Audit",
+          "summary": "Designed the Secure Social Gateway architecture, resolved build/lint errors, and completed a comprehensive codebase audit to identify security, performance, and technical debt issues.",
+          "items": [
+            "- **GATEWAY-001**: Added the Secure Social Gateway task to TODO.md with a phased 4-stage implementation plan.",
+            "- **TODO-SCAN**: Scanned entire src directory for hidden TODOs, FIXMEs, and oversized components (e.g., MessageBubble.tsx at 2250+ lines).",
+            "- **SEC-H-002**: Identified 70+ raw ipcMain.handle calls requiring standardization to validated handlers.",
+            "- **PERF-001**: Identified missing virtualization in MessageList as a primary performance bottleneck.",
+            "- **Build**: Fixed various build/lint errors and verified integrity with npm run type-check."
+          ]
+        },
+        "fr": {
+          "title": "Secure Social Gateway Architecture & Codebase Audit",
+          "summary": "Designed the Secure Social Gateway architecture, resolved build/lint errors, and completed a comprehensive codebase audit to identify security, performance, and technical debt issues.",
+          "items": [
+            "- **GATEWAY-001**: Added the Secure Social Gateway task to TODO.md with a phased 4-stage implementation plan.",
+            "- **TODO-SCAN**: Scanned entire src directory for hidden TODOs, FIXMEs, and oversized components (e.g., MessageBubble.tsx at 2250+ lines).",
+            "- **SEC-H-002**: Identified 70+ raw ipcMain.handle calls requiring standardization to validated handlers.",
+            "- **PERF-001**: Identified missing virtualization in MessageList as a primary performance bottleneck.",
+            "- **Build**: Fixed various build/lint errors and verified integrity with npm run type-check."
+          ]
+        },
+        "es": {
+          "title": "Secure Social Gateway Architecture & Codebase Audit",
+          "summary": "Designed the Secure Social Gateway architecture, resolved build/lint errors, and completed a comprehensive codebase audit to identify security, performance, and technical debt issues.",
+          "items": [
+            "- **GATEWAY-001**: Added the Secure Social Gateway task to TODO.md with a phased 4-stage implementation plan.",
+            "- **TODO-SCAN**: Scanned entire src directory for hidden TODOs, FIXMEs, and oversized components (e.g., MessageBubble.tsx at 2250+ lines).",
+            "- **SEC-H-002**: Identified 70+ raw ipcMain.handle calls requiring standardization to validated handlers.",
+            "- **PERF-001**: Identified missing virtualization in MessageList as a primary performance bottleneck.",
+            "- **Build**: Fixed various build/lint errors and verified integrity with npm run type-check."
+          ]
+        },
+        "ja": {
+          "title": "Secure Social Gateway Architecture & Codebase Audit",
+          "summary": "Designed the Secure Social Gateway architecture, resolved build/lint errors, and completed a comprehensive codebase audit to identify security, performance, and technical debt issues.",
+          "items": [
+            "- **GATEWAY-001**: Added the Secure Social Gateway task to TODO.md with a phased 4-stage implementation plan.",
+            "- **TODO-SCAN**: Scanned entire src directory for hidden TODOs, FIXMEs, and oversized components (e.g., MessageBubble.tsx at 2250+ lines).",
+            "- **SEC-H-002**: Identified 70+ raw ipcMain.handle calls requiring standardization to validated handlers.",
+            "- **PERF-001**: Identified missing virtualization in MessageList as a primary performance bottleneck.",
+            "- **Build**: Fixed various build/lint errors and verified integrity with npm run type-check."
+          ]
+        },
+        "zh": {
+          "title": "Secure Social Gateway Architecture & Codebase Audit",
+          "summary": "Designed the Secure Social Gateway architecture, resolved build/lint errors, and completed a comprehensive codebase audit to identify security, performance, and technical debt issues.",
+          "items": [
+            "- **GATEWAY-001**: Added the Secure Social Gateway task to TODO.md with a phased 4-stage implementation plan.",
+            "- **TODO-SCAN**: Scanned entire src directory for hidden TODOs, FIXMEs, and oversized components (e.g., MessageBubble.tsx at 2250+ lines).",
+            "- **SEC-H-002**: Identified 70+ raw ipcMain.handle calls requiring standardization to validated handlers.",
+            "- **PERF-001**: Identified missing virtualization in MessageList as a primary performance bottleneck.",
+            "- **Build**: Fixed various build/lint errors and verified integrity with npm run type-check."
+          ]
+        },
+        "ar": {
+          "title": "Secure Social Gateway Architecture & Codebase Audit",
+          "summary": "Designed the Secure Social Gateway architecture, resolved build/lint errors, and completed a comprehensive codebase audit to identify security, performance, and technical debt issues.",
+          "items": [
+            "- **GATEWAY-001**: Added the Secure Social Gateway task to TODO.md with a phased 4-stage implementation plan.",
+            "- **TODO-SCAN**: Scanned entire src directory for hidden TODOs, FIXMEs, and oversized components (e.g., MessageBubble.tsx at 2250+ lines).",
+            "- **SEC-H-002**: Identified 70+ raw ipcMain.handle calls requiring standardization to validated handlers.",
+            "- **PERF-001**: Identified missing virtualization in MessageList as a primary performance bottleneck.",
+            "- **Build**: Fixed various build/lint errors and verified integrity with npm run type-check."
           ]
         }
       }

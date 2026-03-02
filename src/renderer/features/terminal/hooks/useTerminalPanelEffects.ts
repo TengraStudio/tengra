@@ -1,15 +1,16 @@
 import { useEffect } from 'react';
 
+import { createTerminalShortcutEventHandler } from '../utils/terminal-event-handlers';
+
 import { useTerminalBootstrapEffects } from './useTerminalBootstrapEffects';
 import { useTerminalLifecycle } from './useTerminalLifecycle';
 import type { TerminalPanelCoreResult } from './useTerminalPanelCore';
-import { createTerminalShortcutEventHandler } from '../utils/terminal-event-handlers';
 
 /**
  * Runs all side-effect hooks for the terminal panel.
  * Handles ref syncing, panel reset, search, shortcuts, and lifecycle.
  */
-// eslint-disable-next-line max-lines-per-function
+ 
 export function useTerminalPanelEffects(core: TerminalPanelCoreResult): void {
     const {
         isOpen, tabs, activeTabId, setActiveTabId,
@@ -65,7 +66,7 @@ export function useTerminalPanelEffects(core: TerminalPanelCoreResult): void {
             recording.completeRecording();
             recording.stopReplay();
         }
-    }, [recording.completeRecording, isOpen, recording.stopReplay, core.commandTools.setIsCommandHistoryOpen, core.commandTools.setIsTaskRunnerOpen, setIsAppearanceMenuOpen, setIsGalleryView, setIsMultiplexerOpen, setIsRecordingPanelOpen, setIsSearchOpen, setIsSemanticPanelOpen, setSearchStatus, setSplitView, hasAutoCreatedRef, isCreatingRef]);
+    }, [recording, isOpen, core.commandTools, setIsAppearanceMenuOpen, setIsGalleryView, setIsMultiplexerOpen, setIsRecordingPanelOpen, setIsSearchOpen, setIsSemanticPanelOpen, setSearchStatus, setSplitView, hasAutoCreatedRef, isCreatingRef]);
 
     // --- Bootstrap ---
     useTerminalBootstrapEffects({

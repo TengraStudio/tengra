@@ -324,7 +324,7 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
         passphrase: string
     ) => {
         try {
-            authService.restoreMasterKeyBackup(backupPayload, passphrase);
+            await authService.restoreMasterKeyBackup(backupPayload, passphrase);
             await auditLogService?.logAuthenticationEvent('auth.restore-master-key-backup', true);
             return { success: true };
         } catch (error) {

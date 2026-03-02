@@ -2041,12 +2041,20 @@ export const tr = {
         "subtitle": "Birden fazla AI modelinden gelen yanıtları yan yana karşılaştırın",
         "promptPlaceholder": "Modelleri karşılaştırmak için bir istem girin...",
         "compare": "Karşılaştır",
+        "comparing": "Karşılaştırılıyor...",
         "addModel": "Model Ekle",
         "responsePlaceholder": "Yanıt burada görünecek",
         "copyResponse": "Yanıtı kopyala",
         "removeSlot": "Model slotunu kaldır",
         "loadingResponse": "Yanıt yükleniyor",
-        "metrics": "Karşılaştırma metrikleri"
+        "metrics": "Karşılaştırma metrikleri",
+        "selectModels": "Karşılaştırılacak modelleri seçin",
+        "enterPrompt": "Test etmek için bir istem girin",
+        "responseTime": "Yanıt süresi",
+        "tokenCount": "Token sayısı",
+        "tokensPerSecond": "Token/sn",
+        "noModels": "Lütfen en az iki model seçin",
+        "compareFailed": "Karşılaştırma başarısız oldu. Lütfen tekrar deneyin."
     },
     "council": {
         "title": "Ajan Konseyi",
@@ -3683,6 +3691,15 @@ export const tr = {
         "findPrevious": "Öncekini bul",
         "findNext": "Sonrakini bul"
     },
+    "promptOptimizer": {
+        "title": "Prompt Analizi",
+        "score": "Prompt Puanı",
+        "suggestions": "Öneriler",
+        "apply": "Uygula",
+        "dismiss": "Kapat",
+        "analyzing": "Analiz ediliyor...",
+        "noSuggestions": "Harika görünüyor! Öneri yok."
+    },
     "codeSandbox": {
         "title": "Kod Korumalı Alanı",
         "languageLabel": "Dil",
@@ -3694,6 +3711,14 @@ export const tr = {
         "executionTime": "Çalışma süresi: {{ms}}ms",
         "error": "Hata",
         "stderr": "Stderr"
+    },
+    "imageAttachment": {
+        "dropHere": "Görselleri buraya bırakın",
+        "pasteImage": "Panodan görsel yapıştır",
+        "tooLarge": "Görsel çok büyük (maks 10MB)",
+        "unsupportedFormat": "Desteklenmeyen görsel formatı",
+        "attached": "{{count}} görsel eklendi",
+        "remove": "Görseli kaldır"
     }
 };
 

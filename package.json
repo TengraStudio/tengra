@@ -54,6 +54,7 @@
         "deps:audit:report": "node scripts/dependency-audit.cjs",
         "bundle:analyze": "bundlewatch --config .bundlewatch.config.json",
         "check-bundle": "node scripts/check-bundle-size.cjs",
+        "perf:budget": "tsx scripts/check-bundle-size.ts",
         "audit:critical": "node scripts/audit-critical-priority.js",
         "metrics:code": "node scripts/code-metrics-report.cjs",
         "metrics:debt": "node scripts/technical-debt-report.cjs",

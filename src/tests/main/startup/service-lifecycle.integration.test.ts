@@ -37,7 +37,10 @@ describe('startup service lifecycle integration', () => {
     });
 
     it('initializes container safely without throwing on init failure', async () => {
-        const container = { init: vi.fn(async () => { throw new Error('boom'); }) };
+        const container = {
+            init: vi.fn(async () => { throw new Error('boom'); }),
+            markDeferred: vi.fn()
+        };
         await expect(initializeContainerSafely(container as never)).resolves.toBeUndefined();
     });
 

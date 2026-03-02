@@ -10,6 +10,23 @@ import { IpcValue, JsonValue } from '@shared/types/common';
 import { AppErrorCode, getErrorMessage } from '@shared/utils/error.util';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 
+/** Maximum content size for SSH file writes (50 MB) */
+const MAX_SSH_CONTENT_SIZE = 50 * 1024 * 1024;
+
+/** Validates an SSH path, rejecting traversal sequences and dangerous characters. */
+function validateSshPath(path: string, label: string): void {
+    if (path.includes('..') || path.includes('\0') || path.includes('\r') || path.includes('\n')) {
+        throw new Error(`Invalid SSH path for ${label}: path contains forbidden characters`);
+    }
+}
+
+/** Validates an SSH command, rejecting newlines and null bytes that enable injection. */
+function validateSshCommand(command: string): void {
+    if (command.includes('\n') || command.includes('\r') || command.includes('\0')) {
+        throw new Error('Invalid SSH command: command contains forbidden control characters');
+    }
+}
+
 function sanitizeConnectionForRenderer(connection: SSHConnection): Omit<SSHConnection, 'password' | 'privateKey' | 'passphrase'> {
     const safeConnection = { ...connection };
     delete safeConnection.password;
@@ -196,6 +213,8 @@ function registerCommandHandlers(
 ) {
     secureHandle('ssh:execute', async (_event, connectionId: string, command: string, options?: Record<string, IpcValue>) => {
         try {
+            validateSshCommand(command);
+            appLogger.info('SSH', `[ssh:execute] Executing command on ${connectionId}`);
             await rateLimitService.waitForToken('ssh:execute');
             return await sshService.executeCommand(connectionId, command, options);
         } catch (error) {
@@ -228,6 +247,7 @@ function registerFileSystemHandlers(
 ) {
     secureHandle('ssh:listDir', async (_event, payload: { connectionId: string; path: string }) => {
         try {
+            validateSshPath(payload.path, 'ssh:listDir');
             return await sshService.listDirectory(payload.connectionId, payload.path);
         } catch (_error) {
             return { success: false, error: getErrorMessage(_error as Error) };
@@ -236,6 +256,7 @@ function registerFileSystemHandlers(
 
     secureHandle('ssh:readFile', async (_event, payload: { connectionId: string; path: string }) => {
         try {
+            validateSshPath(payload.path, 'ssh:readFile');
             const content = await sshService.readFile(payload.connectionId, payload.path);
             return { success: true, content };
         } catch (_error) {
@@ -245,6 +266,10 @@ function registerFileSystemHandlers(
 
     secureHandle('ssh:writeFile', async (_event, payload: { connectionId: string; path: string; content: string }) => {
         try {
+            validateSshPath(payload.path, 'ssh:writeFile');
+            if (payload.content.length > MAX_SSH_CONTENT_SIZE) {
+                return { success: false, error: `Content exceeds maximum size of ${MAX_SSH_CONTENT_SIZE} bytes` };
+            }
             const success = await sshService.writeFile(payload.connectionId, payload.path, payload.content);
             return { success };
         } catch (_error) {
@@ -254,6 +279,7 @@ function registerFileSystemHandlers(
 
     secureHandle('ssh:deleteDir', async (_event, payload: { connectionId: string; path: string }) => {
         try {
+            validateSshPath(payload.path, 'ssh:deleteDir');
             const success = await sshService.deleteDirectory(payload.connectionId, payload.path);
             return { success };
         } catch (_error) {
@@ -263,6 +289,7 @@ function registerFileSystemHandlers(
 
     secureHandle('ssh:deleteFile', async (_event, payload: { connectionId: string; path: string }) => {
         try {
+            validateSshPath(payload.path, 'ssh:deleteFile');
             const success = await sshService.deleteFile(payload.connectionId, payload.path);
             return { success };
         } catch (_error) {
@@ -272,6 +299,7 @@ function registerFileSystemHandlers(
 
     secureHandle('ssh:mkdir', async (_event, payload: { connectionId: string; path: string }) => {
         try {
+            validateSshPath(payload.path, 'ssh:mkdir');
             const success = await sshService.createDirectory(payload.connectionId, payload.path);
             return { success };
         } catch (_error) {
@@ -281,6 +309,8 @@ function registerFileSystemHandlers(
 
     secureHandle('ssh:rename', async (_event, payload: { connectionId: string; oldPath: string; newPath: string }) => {
         try {
+            validateSshPath(payload.oldPath, 'ssh:rename oldPath');
+            validateSshPath(payload.newPath, 'ssh:rename newPath');
             const success = await sshService.rename(payload.connectionId, payload.oldPath, payload.newPath);
             return { success };
         } catch (_error) {
@@ -290,6 +320,8 @@ function registerFileSystemHandlers(
 
     secureHandle('ssh:upload', async (_event, payload: { connectionId: string; local: string; remote: string }) => {
         try {
+            validateSshPath(payload.local, 'ssh:upload local');
+            validateSshPath(payload.remote, 'ssh:upload remote');
             const success = await sshService.uploadFile(payload.connectionId, payload.local, payload.remote, (transferred, total) => {
                 send('ssh:uploadProgress', { connectionId: payload.connectionId, transferred, total });
             });
@@ -301,6 +333,8 @@ function registerFileSystemHandlers(
 
     secureHandle('ssh:download', async (_event, payload: { connectionId: string; remote: string; local: string }) => {
         try {
+            validateSshPath(payload.remote, 'ssh:download remote');
+            validateSshPath(payload.local, 'ssh:download local');
             const success = await sshService.downloadFile(payload.connectionId, payload.remote, payload.local, (transferred, total) => {
                 send('ssh:downloadProgress', { connectionId: payload.connectionId, transferred, total });
             });

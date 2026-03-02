@@ -10,9 +10,6 @@ vi.mock('@main/logging/logger', () => ({
     }
 }));
 
-vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: vi.fn((_name, handler) => handler)
-}));
 
 vi.mock('@main/utils/rate-limiter.util', () => ({
     withRateLimit: vi.fn(async (_key, fn) => await fn())

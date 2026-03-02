@@ -1,8 +1,80 @@
 {
   "version": 1,
   "generatedFrom": "docs/changelog/data/changelog.entries.json",
-  "generatedAt": "2026-02-28T21:00:00Z",
+  "generatedAt": "2026-03-01T21:00:00Z",
   "entries": [
+    {
+      "id": "2026-03-01-secure-gateway-and-todo-audit",
+      "date": "2026-03-01",
+      "channel": "stable",
+      "type": "feature",
+      "category": "ai",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "Social Gateway",
+        "Security",
+        "TODO",
+        "Performance"
+      ],
+      "breaking": false,
+      "security": true,
+      "translations": {
+        "en": {
+          "title": "Secure Social Gateway Architecture & Codebase Audit",
+          "summary": "Designed the Secure Social Gateway architecture, resolved build/lint errors, and completed a comprehensive codebase audit to identify security, performance, and technical debt issues.",
+          "items": [
+            "- **GATEWAY-001**: Added the Secure Social Gateway task to TODO.md with a phased 4-stage implementation plan.",
+            "- **TODO-SCAN**: Scanned entire src directory for hidden TODOs, FIXMEs, and oversized components (e.g., MessageBubble.tsx at 2250+ lines).",
+            "- **SEC-H-002**: Identified 70+ raw ipcMain.handle calls requiring standardization to validated handlers.",
+            "- **PERF-001**: Identified missing virtualization in MessageList as a primary performance bottleneck.",
+            "- **Build**: Fixed various build/lint errors and verified project integrity with npm run type-check."
+          ]
+        },
+        "tr": {
+          "title": "Güvenli Sosyal Medya Geçidi Mimarisi ve Kod Tabanı Denetimi",
+          "summary": "Güvenli Sosyal Medya Geçidi mimarisi tasarlandı, build/lint hataları giderildi ve güvenlik, performans ve teknik borç sorunlarını belirlemek için kapsamlı bir kod tabanı denetimi tamamlandı.",
+          "items": [
+            "- **GATEWAY-001**: Güvenli Sosyal Medya Geçidi görevi, 4 aşamalı bir uygulama planıyla TODO.md'ye eklendi.",
+            "- **TODO-SCAN**: Tüm src dizini gizli TODO'lar, FIXME'ler ve aşırı büyük bileşenler (örneğin, 2250'den fazla satırlı MessageBubble.tsx) için tarandı.",
+            "- **SEC-H-002**: Doğrulanmış işleyicilere standardizasyon gerektiren 70'ten fazla ham ipcMain.handle çağrısı belirlendi.",
+            "- **PERF-001**: MessageList'teki eksik sanallaştırma, birincil performans darboğazı olarak belirlendi.",
+            "- **Build**: Çeşitli build/lint hataları düzeltildi ve npm run type-check ile bütünlük doğrulandı."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-03-01-quality-055-council-scenario-test-split-cleanup",
+      "date": "2026-03-01",
+      "channel": "stable",
+      "type": "refactor",
+      "category": "testing",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Tests",
+        "Project Services"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Council Scenario Tests Finalized as Split Suites",
+          "summary": "Completed QUALITY-055 by removing the obsolete monolithic council scenario suite and keeping the split scenario files as the single source of truth.",
+          "items": [
+            "- **QUALITY-055**: Deleted the legacy `council-scenarios.test.ts` file that still carried the `max-lines-per-function` lint suppression.",
+            "- **Canonical Split Suites**: Kept the shared helpers module plus the three scenario-focused test files as the active council scenario coverage.",
+            "- **Maintenance**: Removed duplicate test execution and aligned the test directory with the intended smaller-file layout."
+          ]
+        }
+      }
+    },
     {
       "id": "2026-03-01-chat-error-handling-refactor",
       "date": "2026-03-01",
@@ -7393,6 +7465,71 @@
             "- Servis başına T-kodları, açıklamalar ve mevcut azaltma önlemleri ile 30+ tehdit vektörü belgelendi",
             "- Prompt enjeksiyonu, kaynak tüketimi, komut enjeksiyonu, yol geçişi ve kimlik bilgisi hırsızlığını kapsayan 24+ kötüye kullanım senaryosu belirlendi",
             "- Özet risk matrisi ve 6 uygulanabilir güvenlik önerisi eklendi"
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-03-01-quality-017-copilot-facade",
+      "date": "2026-03-01",
+      "channel": "stable",
+      "type": "refactor",
+      "category": "backend",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "CopilotService",
+        "CopilotTokenManager",
+        "CopilotRateLimitManager",
+        "CopilotRequestBuilder",
+        "CopilotResponseParser",
+        "CopilotApiClient"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "QUALITY-017: Copilot Service Split Into Focused Modules",
+          "summary": "Replaced the monolithic Copilot service with a thin facade that delegates token management, rate limiting, request building, response parsing, and API calls to dedicated modules.",
+          "items": [
+            "- `CopilotService` now owns only shared state, lifecycle hooks, configuration setters, and the public chat/token facade methods.",
+            "- Token refresh, rate limiting, request construction, response parsing, and gateway communication now flow through the extracted Copilot helper classes.",
+            "- Preserved `isConfigured()` and VS Code version refresh behavior while reducing `copilot.service.ts` from 1000+ lines to a compact facade."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-03-01-quality-016-code-intelligence-facade",
+      "date": "2026-03-01",
+      "channel": "stable",
+      "type": "refactor",
+      "category": "backend",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "CodeIntelligenceService",
+        "file-scanner.util",
+        "symbol-parser.util",
+        "symbol-navigation.util",
+        "rename-symbol.util",
+        "documentation-generator.util",
+        "code-quality-scanner.util"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "QUALITY-016: Code Intelligence Service Reduced To Indexing Orchestration",
+          "summary": "Refactored CodeIntelligenceService into a slimmer orchestrator that keeps project indexing in-service while delegating scanners, navigation, rename flows, documentation generation, and quality analysis to extracted utilities.",
+          "items": [
+            "- `CodeIntelligenceService` now focuses on indexing coordination, semantic fragment storage, progress events, and symbol analytics.",
+            "- File scanning, symbol parsing/navigation, rename execution, documentation generation, and quality scanning now route through the dedicated `code-intelligence/*` utility modules.",
+            "- Preserved the existing IPC-facing API surface while cutting `code-intelligence.service.ts` down from 1200+ lines to a much smaller coordinator."
           ]
         }
       }

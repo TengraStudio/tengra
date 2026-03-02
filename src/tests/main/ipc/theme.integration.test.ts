@@ -26,17 +26,6 @@ vi.mock('@main/logging/logger', () => ({
 }));
 
 // Mock IPC wrapper
-vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown) => handler,
-    createSafeIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown, fallback: unknown) => async (...args: unknown[]) => {
-        try {
-            const result = await handler(...args);
-            return result;
-        } catch {
-            return fallback;
-        }
-    },
-}));
 
 // Mock theme-store with inline factory
 vi.mock('@main/utils/theme-store.util', () => ({

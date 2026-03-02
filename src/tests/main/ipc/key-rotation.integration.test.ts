@@ -10,18 +10,6 @@ vi.mock('@main/logging/logger', () => ({
     }
 }));
 
-vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: vi.fn((_name, handler) => handler),
-    createSafeIpcHandler: vi.fn((_name, handler, defaultValue) => {
-        return async (...args: unknown[]) => {
-            try {
-                return await handler(...args);
-            } catch {
-                return defaultValue;
-            }
-        };
-    })
-}));
 
 vi.mock('electron', () => ({
     ipcMain: {
@@ -68,7 +56,7 @@ describe('Key Rotation IPC Handlers', () => {
             const result = await handler!(mockEvent, 'openai');
 
             expect(mockKeyRotationService.getCurrentKey).toHaveBeenCalledWith('openai');
-            expect(result).toBe('sk-test123');
+            expect(result).toEqual({ success: true, data: 'sk-test123' });
         });
 
         it('should return null when no key available', async () => {
@@ -77,21 +65,21 @@ describe('Key Rotation IPC Handlers', () => {
 
             const result = await handler!(mockEvent, 'openai');
 
-            expect(result).toBeNull();
+            expect(result).toEqual({ success: true, data: null });
         });
 
         it('should reject invalid provider names', async () => {
             const handler = ipcMainHandlers.get('key-rotation:getCurrentKey');
 
             const result = await handler!(mockEvent, '');
-            expect(result).toBeNull();
+            expect(result).toEqual({ success: true, data: null });
         });
 
         it('should reject non-alphanumeric provider names', async () => {
             const handler = ipcMainHandlers.get('key-rotation:getCurrentKey');
 
             const result = await handler!(mockEvent, 'invalid@provider!');
-            expect(result).toBeNull();
+            expect(result).toEqual({ success: true, data: null });
         });
 
         it('should accept provider names with hyphens and underscores', async () => {
@@ -107,7 +95,7 @@ describe('Key Rotation IPC Handlers', () => {
             const longProvider = 'a'.repeat(100);
 
             const result = await handler!(mockEvent, longProvider);
-            expect(result).toBeNull();
+            expect(result).toEqual({ success: true, data: null });
         });
     });
 
@@ -122,7 +110,10 @@ describe('Key Rotation IPC Handlers', () => {
             const result = await handler!(mockEvent, 'openai');
 
             expect(mockKeyRotationService.rotateKey).toHaveBeenCalledWith('openai');
-            expect(result).toEqual({ success: true, currentKey: 'sk-newkey456' });
+            expect(result).toEqual({
+                success: true,
+                data: { success: true, currentKey: 'sk-newkey456' }
+            });
         });
 
         it('should return failure status when rotation fails', async () => {
@@ -132,21 +123,36 @@ describe('Key Rotation IPC Handlers', () => {
 
             const result = await handler!(mockEvent, 'openai');
 
-            expect(result).toEqual({ success: false, currentKey: null });
+            expect(result).toEqual({
+                success: true,
+                data: { success: false, currentKey: null }
+            });
         });
 
         it('should reject invalid provider names', async () => {
             const handler = ipcMainHandlers.get('key-rotation:rotate');
 
-            await expect(handler!(mockEvent, '')).rejects.toThrow('Invalid provider name');
-            await expect(handler!(mockEvent, null)).rejects.toThrow('Invalid provider name');
-            await expect(handler!(mockEvent, 123)).rejects.toThrow('Invalid provider name');
+            const results = await Promise.all([
+                handler!(mockEvent, ''),
+                handler!(mockEvent, null),
+                handler!(mockEvent, 123)
+            ]);
+            for (const res of results) {
+                expect(res).toMatchObject({
+                    success: false,
+                    error: { message: expect.any(String) }
+                });
+            }
         });
 
         it('should reject provider names with special characters', async () => {
             const handler = ipcMainHandlers.get('key-rotation:rotate');
 
-            await expect(handler!(mockEvent, 'provider@special!')).rejects.toThrow('Invalid provider name');
+            const result = await handler!(mockEvent, 'provider@special!');
+            expect(result).toMatchObject({
+                success: false,
+                error: { message: expect.any(String) }
+            });
         });
     });
 
@@ -161,29 +167,52 @@ describe('Key Rotation IPC Handlers', () => {
             const result = await handler!(mockEvent, 'openai', keys);
 
             expect(mockKeyRotationService.initializeProviderKeys).toHaveBeenCalledWith('openai', keys);
-            expect(result).toEqual({ success: true, currentKey: 'sk-key1' });
+            expect(result).toEqual({
+                success: true,
+                data: { success: true, currentKey: 'sk-key1' }
+            });
         });
 
         it('should reject invalid provider names', async () => {
             const handler = ipcMainHandlers.get('key-rotation:initialize');
 
-            await expect(handler!(mockEvent, '', 'sk-key1')).rejects.toThrow('Invalid provider name or keys');
-            await expect(handler!(mockEvent, null, 'sk-key1')).rejects.toThrow('Invalid provider name or keys');
+            const results = await Promise.all([
+                handler!(mockEvent, '', 'sk-key1'),
+                handler!(mockEvent, null, 'sk-key1')
+            ]);
+            for (const res of results) {
+                expect(res).toMatchObject({
+                    success: false,
+                    error: { message: expect.any(String) }
+                });
+            }
         });
 
         it('should reject invalid keys string', async () => {
             const handler = ipcMainHandlers.get('key-rotation:initialize');
 
-            await expect(handler!(mockEvent, 'openai', '')).rejects.toThrow('Invalid provider name or keys');
-            await expect(handler!(mockEvent, 'openai', null)).rejects.toThrow('Invalid provider name or keys');
-            await expect(handler!(mockEvent, 'openai', 123)).rejects.toThrow('Invalid provider name or keys');
+            const results = await Promise.all([
+                handler!(mockEvent, 'openai', ''),
+                handler!(mockEvent, 'openai', null),
+                handler!(mockEvent, 'openai', 123)
+            ]);
+            for (const res of results) {
+                expect(res).toMatchObject({
+                    success: false,
+                    error: { message: expect.any(String) }
+                });
+            }
         });
 
         it('should reject keys string exceeding max length (4096)', async () => {
             const handler = ipcMainHandlers.get('key-rotation:initialize');
             const longKeys = 'sk-' + 'a'.repeat(5000);
 
-            await expect(handler!(mockEvent, 'openai', longKeys)).rejects.toThrow('Invalid provider name or keys');
+            const result = await handler!(mockEvent, 'openai', longKeys);
+            expect(result).toMatchObject({
+                success: false,
+                error: { message: expect.any(String) }
+            });
         });
 
         it('should accept single key', async () => {
@@ -215,9 +244,12 @@ describe('Key Rotation IPC Handlers', () => {
 
             expect(mockKeyRotationService.getCurrentKey).toHaveBeenCalledWith('openai');
             expect(result).toEqual({
-                provider: 'openai',
-                hasKey: true,
-                currentKey: 'sk-test1...' // Masked to first 8 chars
+                success: true,
+                data: {
+                    provider: 'openai',
+                    hasKey: true,
+                    currentKey: 'sk-test1...' // Masked to first 8 chars
+                }
             });
         });
 
@@ -228,9 +260,12 @@ describe('Key Rotation IPC Handlers', () => {
             const result = await handler!(mockEvent, 'openai');
 
             expect(result).toEqual({
-                provider: 'openai',
-                hasKey: false,
-                currentKey: null
+                success: true,
+                data: {
+                    provider: 'openai',
+                    hasKey: false,
+                    currentKey: null
+                }
             });
         });
 
@@ -238,10 +273,10 @@ describe('Key Rotation IPC Handlers', () => {
             const handler = ipcMainHandlers.get('key-rotation:getStatus');
             vi.mocked(mockKeyRotationService.getCurrentKey).mockReturnValue('sk-verylongkeythatshouldbemask');
 
-            const result = await handler!(mockEvent, 'openai');
+            const result = await handler!(mockEvent, 'openai') as { success: boolean, data: any };
 
-            expect(result.currentKey).toBe('sk-veryl...');
-            expect(result.currentKey).not.toContain('verylongkeythatshouldbemask');
+            expect(result.data.currentKey).toBe('sk-veryl...');
+            expect(result.data.currentKey).not.toContain('verylongkeythatshouldbemask');
         });
 
         it('should return default value on error', async () => {
@@ -253,9 +288,12 @@ describe('Key Rotation IPC Handlers', () => {
             const result = await handler!(mockEvent, 'openai');
 
             expect(result).toEqual({
-                provider: '',
-                hasKey: false,
-                currentKey: null
+                success: true,
+                data: {
+                    provider: '',
+                    hasKey: false,
+                    currentKey: null
+                }
             });
         });
 
@@ -265,9 +303,12 @@ describe('Key Rotation IPC Handlers', () => {
             const result = await handler!(mockEvent, '');
 
             expect(result).toEqual({
-                provider: '',
-                hasKey: false,
-                currentKey: null
+                success: true,
+                data: {
+                    provider: '',
+                    hasKey: false,
+                    currentKey: null
+                }
             });
         });
     });

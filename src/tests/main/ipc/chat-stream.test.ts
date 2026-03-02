@@ -23,32 +23,6 @@ vi.mock('electron', () => ({
     }
 }));
 
-vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown) => async (event: unknown, ...args: unknown[]) => {
-        try {
-            const result = await handler(event, ...args);
-            return { success: true, data: result };
-        } catch (error: unknown) {
-            return { success: false, error: (error instanceof Error ? error.message : 'Unknown Error') };
-        }
-    },
-    createValidatedIpcHandler: (
-        _name: string,
-        handler: (...args: unknown[]) => unknown,
-        options?: { argsSchema?: { parse: (args: unknown[]) => unknown[] }; defaultValue?: unknown }
-    ) => async (event: unknown, ...args: unknown[]) => {
-        try {
-            const parsedArgs = options?.argsSchema ? options.argsSchema.parse(args) : args;
-            const result = await handler(event, ...(parsedArgs as unknown[]));
-            return { success: true, data: result };
-        } catch (error: unknown) {
-            if (options && Object.prototype.hasOwnProperty.call(options, 'defaultValue')) {
-                return options.defaultValue;
-            }
-            return { success: false, error: (error instanceof Error ? error.message : 'Validation failed') };
-        }
-    }
-}));
 
 // Mock services
 const mockSettingsService = { getSettings: vi.fn().mockReturnValue({}) };
@@ -72,70 +46,69 @@ const mockDatabaseService = {
     chats: { addMessage: vi.fn() }
 };
 
-describe('Chat Stream Lifecycle (Regression)', () => {
-    const mockEvent = {
-        sender: {
-            id: 1,
-            isDestroyed: vi.fn().mockReturnValue(false),
-            send: vi.fn()
-        }
-    } as never;
+const mockEvent = {
+    sender: {
+        id: 1,
+        isDestroyed: vi.fn().mockReturnValue(false),
+        send: vi.fn()
+    }
+} as never;
 
-    const typedEvent = mockEvent as unknown as {
-        sender: {
-            id: number;
-            isDestroyed: ReturnType<typeof vi.fn>;
-            send: ReturnType<typeof vi.fn>;
-        };
+const typedEvent = mockEvent as unknown as {
+    sender: {
+        id: number;
+        isDestroyed: ReturnType<typeof vi.fn>;
+        send: ReturnType<typeof vi.fn>;
     };
+};
 
-    beforeEach(() => {
-        ipcMainHandlers.clear();
-        vi.clearAllMocks();
-        typedEvent.sender.isDestroyed.mockReturnValue(false);
-    });
+beforeEach(() => {
+    ipcMainHandlers.clear();
+    vi.clearAllMocks();
+    typedEvent.sender.isDestroyed.mockReturnValue(false);
+});
 
-    const mockMainWindow = {
-        webContents: { id: 1 }
-    };
+const mockMainWindow = {
+    webContents: { id: 1 }
+};
 
-    const initIPC = (overrides?: Record<string, unknown>) => {
-        registerChatIpc({
-            getMainWindow: () => mockMainWindow as never,
-            settingsService: mockSettingsService as never,
-            copilotService: mockCopilotService as never,
-            llmService: mockLLMService as never,
-            proxyService: mockProxyService as never,
-            codeIntelligenceService: mockCodeIntelligenceService as never,
-            contextRetrievalService: mockContextRetrievalService as never,
-            databaseService: mockDatabaseService as never,
-            ...(overrides ?? {})
-        });
-    };
-
-    const createStreamRequest = (overrides?: Record<string, unknown>) => ({
-        messages: [{ role: 'user', content: 'Hello AI' }],
-        model: 'gpt-4o',
-        tools: [],
-        provider: 'openai',
-        optionsJson: {},
-        chatId: 'stream-test-1',
-        projectId: 'proj-1',
-        systemMode: 'architect',
+const initIPC = (overrides?: Record<string, unknown>) => {
+    registerChatIpc({
+        getMainWindow: () => mockMainWindow as never,
+        settingsService: mockSettingsService as never,
+        copilotService: mockCopilotService as never,
+        llmService: mockLLMService as never,
+        proxyService: mockProxyService as never,
+        codeIntelligenceService: mockCodeIntelligenceService as never,
+        contextRetrievalService: mockContextRetrievalService as never,
+        databaseService: mockDatabaseService as never,
         ...(overrides ?? {})
     });
+};
 
-    const getStreamChunkCalls = (): Record<string, unknown>[] => {
-        return typedEvent.sender.send.mock.calls
-            .filter((call: unknown[]) => call[0] === 'ollama:streamChunk')
-            .map((call: unknown[]) => call[1] as Record<string, unknown>);
-    };
+const createStreamRequest = (overrides?: Record<string, unknown>) => ({
+    messages: [{ role: 'user', content: 'Hello AI' }],
+    model: 'gpt-4o',
+    tools: [],
+    provider: 'openai',
+    optionsJson: {},
+    chatId: 'stream-test-1',
+    projectId: 'proj-1',
+    systemMode: 'architect',
+    ...(overrides ?? {})
+});
 
-    const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void) | undefined => {
-        const calls = vi.mocked(ipcMain.on).mock.calls;
-        const call = calls.find(entry => entry[0] === 'chat:cancel');
-        return call?.[1] as ((_: unknown, payload: { chatId: string }) => void) | undefined;
-    };
+const getStreamChunkCalls = (): Record<string, unknown>[] => {
+    return typedEvent.sender.send.mock.calls
+        .filter((call: unknown[]) => call[0] === 'ollama:streamChunk')
+        .map((call: unknown[]) => call[1] as Record<string, unknown>);
+};
+
+const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void) | undefined => {
+    const calls = vi.mocked(ipcMain.on).mock.calls;
+    const call = calls.find(entry => entry[0] === 'chat:cancel');
+    return call?.[1] as ((_: unknown, payload: { chatId: string }) => void) | undefined;
+};
 
     // ─── Full Lifecycle: start → chunks → done ───────────────────────
 
@@ -879,4 +852,3 @@ describe('Chat Stream Lifecycle (Regression)', () => {
             expect(result).toMatchObject({ success: false });
         });
     });
-});

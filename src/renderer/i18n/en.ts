@@ -2370,12 +2370,20 @@ export const en = {
         subtitle: 'Compare responses from multiple AI models side by side',
         promptPlaceholder: 'Enter a prompt to compare models...',
         compare: 'Compare',
+        comparing: 'Comparing...',
         addModel: 'Add Model',
         responsePlaceholder: 'Response will appear here',
         copyResponse: 'Copy response',
         removeSlot: 'Remove model slot',
         loadingResponse: 'Loading response',
         metrics: 'Comparison metrics',
+        selectModels: 'Select models to compare',
+        enterPrompt: 'Enter a prompt to test',
+        responseTime: 'Response time',
+        tokenCount: 'Token count',
+        tokensPerSecond: 'Tokens/sec',
+        noModels: 'Please select at least two models',
+        compareFailed: 'Comparison failed. Please try again.',
     },
     council: {
         title: 'Agent Council',
@@ -3831,6 +3839,16 @@ export const en = {
         days: 'Days',
     },
     /** @context Code Sandbox - inline code execution panel */
+    /** @context Prompt Optimizer - AI prompt analysis and suggestions */
+    promptOptimizer: {
+        title: 'Prompt Analysis',
+        score: 'Prompt Score',
+        suggestions: 'Suggestions',
+        apply: 'Apply',
+        dismiss: 'Dismiss',
+        analyzing: 'Analyzing...',
+        noSuggestions: 'Looking good! No suggestions.',
+    },
     codeSandbox: {
         title: 'Code Sandbox',
         languageLabel: 'Language',
@@ -3842,6 +3860,14 @@ export const en = {
         executionTime: 'Execution time: {{ms}}ms',
         error: 'Error',
         stderr: 'Stderr',
+    },
+    imageAttachment: {
+        dropHere: 'Drop images here',
+        pasteImage: 'Paste image from clipboard',
+        tooLarge: 'Image too large (max 10MB)',
+        unsupportedFormat: 'Unsupported image format',
+        attached: '{{count}} image(s) attached',
+        remove: 'Remove image',
     },
 };
 

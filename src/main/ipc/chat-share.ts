@@ -22,19 +22,19 @@ export function registerChatShareIpc(service: ChatShareService): void {
 
     ipcMain.handle('chat:share-get', createIpcHandler('chat:share-get',
         async (_event: IpcMainInvokeEvent, shareId: string) => {
-            return service.getShare(shareId) ?? null;
+            return await service.getShare(shareId) ?? null;
         }
     ));
 
     ipcMain.handle('chat:share-delete', createIpcHandler('chat:share-delete',
         async (_event: IpcMainInvokeEvent, shareId: string) => {
-            return { success: service.deleteShare(shareId) };
+            return { success: await service.deleteShare(shareId) };
         }
     ));
 
     ipcMain.handle('chat:share-list', createIpcHandler('chat:share-list',
         async () => {
-            return service.listShares();
+            return await service.listShares();
         }
     ));
 }

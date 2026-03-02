@@ -1,10 +1,19 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { appLogger } from '@/utils/renderer-logger';
 
 export function useOllamaManager() {
     const [isOllamaRunning, setIsOllamaRunning] = useState(false);
     const [statusMessage, setStatusMessage] = useState('');
+    const statusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (statusTimeoutRef.current !== null) {
+                clearTimeout(statusTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const checkOllama = useCallback(async () => {
         try {
@@ -24,7 +33,7 @@ export function useOllamaManager() {
             const result = await window.electron.startOllama();
             if (result.message) {
                 setStatusMessage(result.message);
-                setTimeout(() => setStatusMessage(''), 2000);
+                statusTimeoutRef.current = setTimeout(() => setStatusMessage(''), 2000);
             }
         } catch (error) {
             appLogger.error('OllamaManager', 'Failed to start Ollama', error as Error);

@@ -46,7 +46,7 @@ export function registerExportIpc(getMainWindow: () => BrowserWindow | null, exp
                     throw new Error('Invalid export parameters');
                 }
                 return exportService.exportToMarkdown(validated.content, validated.filePath);
-            }
+            }, { wrapResponse: true }
         )
     );
 
@@ -61,7 +61,7 @@ export function registerExportIpc(getMainWindow: () => BrowserWindow | null, exp
                     throw new Error('Invalid export parameters');
                 }
                 return exportService.exportToPDF(validated.content, validated.filePath);
-            }
+            }, { wrapResponse: true }
         )
     );
 }

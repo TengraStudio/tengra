@@ -15,16 +15,6 @@ vi.mock('electron', () => ({
 }));
 
 // Mock IPC Wrapper
-vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown) => async (...args: unknown[]) => {
-        try {
-            const result = await handler(...args);
-            return { success: true, data: result };
-        } catch (error: unknown) {
-            return { success: false, error: (error instanceof Error ? error.message : 'Unknown Error') };
-        }
-    }
-}));
 
 // Mock logger
 vi.mock('@main/logging/logger', () => ({
@@ -90,7 +80,7 @@ describe('Export IPC Integration', () => {
             expect(mockExportService.exportToMarkdown).not.toHaveBeenCalled();
             expect(result).toEqual({
                 success: false,
-                error: 'Invalid export parameters'
+                error: { message: 'Invalid export parameters', code: 'ERROR' }
             });
         });
 
@@ -105,7 +95,7 @@ describe('Export IPC Integration', () => {
             expect(mockExportService.exportToMarkdown).not.toHaveBeenCalled();
             expect(result).toEqual({
                 success: false,
-                error: 'Invalid export parameters'
+                error: { message: 'Invalid export parameters', code: 'ERROR' }
             });
         });
 
@@ -121,7 +111,7 @@ describe('Export IPC Integration', () => {
             expect(mockExportService.exportToMarkdown).not.toHaveBeenCalled();
             expect(result).toEqual({
                 success: false,
-                error: 'Invalid export parameters'
+                error: { message: 'Invalid export parameters', code: 'ERROR' }
             });
         });
 
@@ -136,7 +126,7 @@ describe('Export IPC Integration', () => {
             expect(mockExportService.exportToMarkdown).not.toHaveBeenCalled();
             expect(result).toEqual({
                 success: false,
-                error: 'Invalid export parameters'
+                error: { message: 'Invalid export parameters', code: 'ERROR' }
             });
         });
 
@@ -151,7 +141,7 @@ describe('Export IPC Integration', () => {
             expect(mockExportService.exportToMarkdown).not.toHaveBeenCalled();
             expect(result).toEqual({
                 success: false,
-                error: 'Invalid export parameters'
+                error: { message: 'Invalid export parameters', code: 'ERROR' }
             });
         });
 
@@ -168,7 +158,7 @@ describe('Export IPC Integration', () => {
             expect(mockExportService.exportToMarkdown).not.toHaveBeenCalled();
             expect(result).toEqual({
                 success: false,
-                error: 'Invalid export parameters'
+                error: { message: 'Invalid export parameters', code: 'ERROR' }
             });
         });
 
@@ -225,7 +215,7 @@ describe('Export IPC Integration', () => {
             expect(mockExportService.exportToPDF).not.toHaveBeenCalled();
             expect(result).toEqual({
                 success: false,
-                error: 'Invalid export parameters'
+                error: { message: 'Invalid export parameters', code: 'ERROR' }
             });
         });
 
@@ -240,7 +230,7 @@ describe('Export IPC Integration', () => {
             expect(mockExportService.exportToPDF).not.toHaveBeenCalled();
             expect(result).toEqual({
                 success: false,
-                error: 'Invalid export parameters'
+                error: { message: 'Invalid export parameters', code: 'ERROR' }
             });
         });
 
@@ -256,7 +246,7 @@ describe('Export IPC Integration', () => {
             expect(mockExportService.exportToPDF).not.toHaveBeenCalled();
             expect(result).toEqual({
                 success: false,
-                error: 'Invalid export parameters'
+                error: { message: 'Invalid export parameters', code: 'ERROR' }
             });
         });
 
@@ -271,7 +261,7 @@ describe('Export IPC Integration', () => {
             expect(mockExportService.exportToPDF).not.toHaveBeenCalled();
             expect(result).toEqual({
                 success: false,
-                error: 'Invalid export parameters'
+                error: { message: 'Invalid export parameters', code: 'ERROR' }
             });
         });
 
@@ -288,7 +278,7 @@ describe('Export IPC Integration', () => {
             expect(mockExportService.exportToPDF).not.toHaveBeenCalled();
             expect(result).toEqual({
                 success: false,
-                error: 'Invalid export parameters'
+                error: { message: 'Invalid export parameters', code: 'ERROR' }
             });
         });
 
@@ -323,7 +313,7 @@ describe('Export IPC Integration', () => {
 
             expect(result).toEqual({
                 success: false,
-                error: 'PDF generation failed'
+                error: { message: 'PDF generation failed', code: 'ERROR' }
             });
         });
     });

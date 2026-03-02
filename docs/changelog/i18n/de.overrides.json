@@ -1,4 +1,13 @@
 {
+  "2026-03-01-quality-055-council-scenario-test-split-cleanup": {
+    "title": "Council-Szenariotests als aufgeteilte Suites abgeschlossen",
+    "summary": "QUALITY-055 wurde abgeschlossen: Die veraltete monolithische Council-Szenario-Testdatei wurde entfernt und die aufgeteilten Szenario-Dateien bleiben die einzige Quelle der Wahrheit.",
+    "items": [
+      "- **QUALITY-055**: Die alte `council-scenarios.test.ts`-Datei mit der `max-lines-per-function`-Unterdrueckung wurde entfernt.",
+      "- **Canonical Split Suites**: The shared helpers module and the three scenario-focused test files remain the active council scenario coverage.",
+      "- **Maintenance**: Duplicate test execution was removed and the test directory now matches the intended smaller-file layout."
+    ]
+  },
   "2026-03-01-chat-error-handling-refactor": {
     "title": "Globales Chat-Fehlermanagement & UX im Fehlerfall",
     "summary": "Vereinheitlichte Chat-Fehlertypen in der gesamten Anwendung und Implementierung einer konsistenten UX im Fehlerfall in der KI-Assistenten-Sidebar mit Kategorisierung und Wiederholungsfunktionen.",
@@ -4077,6 +4086,45 @@
       "- **CollaborationController (C++)**: Echtzeit-WebSocket-Controller für raumbasierte Synchronisierung erstellt.",
       "- **UserCollaborationService (Electron)**: Verwalteten WebSocket-Client-Dienst für das Kollaborations-Backend implementiert.",
       "- **IPC-Härtung**: Strikte Zod-validierte Verträge für alle Kollaborations-Sync-IPC-Kanäle definiert."
+    ]
+  },
+  "2026-03-01-quality-017-copilot-facade": {
+    "title": "QUALITY-017: CopilotService in fokussierte Module aufgeteilt",
+    "summary": "Der monolithische Copilot-Service wurde durch eine schlanke Fassade ersetzt, die Token-Verwaltung, Rate-Limiting, Request-Erstellung, Response-Parsing und API-Aufrufe an dedizierte Module delegiert.",
+    "items": [
+      "- `CopilotService` enthält jetzt nur noch den gemeinsamen Zustand, Lifecycle-Hooks, Konfigurations-Setter und die öffentlichen Chat-/Token-Fassadenmethoden.",
+      "- Token-Aktualisierung, Rate-Limiting, Request-Erstellung, Response-Parsing und Gateway-Kommunikation laufen jetzt über die extrahierten Copilot-Hilfsklassen.",
+      "- Das Verhalten von `isConfigured()` und der VS-Code-Versionsaktualisierung blieb erhalten, während `copilot.service.ts` von 1000+ Zeilen auf eine kompakte Fassade reduziert wurde."
+    ]
+  },
+  "2026-03-01-quality-016-code-intelligence-facade": {
+    "title": "QUALITY-016: CodeIntelligenceService auf Indexierungs-Orchestrierung reduziert",
+    "summary": "CodeIntelligenceService wurde zu einem schlankeren Orchestrator umgebaut, der die Projektindexierung im Service behält und Scans, Navigation, Umbenennung, Dokumentation und Qualitätsanalyse an extrahierte Utilities delegiert.",
+    "items": [
+      "- `CodeIntelligenceService` konzentriert sich jetzt auf Indexierungskoordination, Speicherung semantischer Fragmente, Fortschrittsereignisse und Symbolanalyse.",
+      "- Dateiscans, Symbol-Parsing/Navigation, Rename-Ausführung, Dokumentationserzeugung und Quality-Scans laufen jetzt über die dedizierten `code-intelligence/*`-Utilities.",
+      "- Die bestehende IPC-Oberfläche blieb erhalten, während `code-intelligence.service.ts` von 1200+ Zeilen auf einen deutlich kleineren Koordinator reduziert wurde."
+    ]
+  },
+  "2026-03-01-secure-social-gateway-foundation": {
+    "title": "Secure Social Gateway Architecture & Build Fixes",
+    "summary": "Designed the secure Gateway + Relay architecture for social media interaction and resolved multiple build-blocking type errors and unused code in IPC handlers.",
+    "items": [
+      "- **GATEWAY-001**: Added the Secure Social Gateway task to TODO.md with a phased implementation plan.",
+      "- **Architecture Design**: Defined the 'Gateway + Relay' model with E2EE, self-hosting options (BYOS), and autonomous runtime control.",
+      "- **Build Resolution**: Fixed multiple `TS6133` (unused imports/variables) and `TS2769` (type mismatch) errors across `chat.ts`, `settings.ts`, `window.ts`, `key-rotation.ts`, and `setup.ts`.",
+      "- **Code Hygiene**: Removed dead legacy code and unused schemas, restoring the repository to a clean buildable state."
+    ]
+  },
+  "2026-03-01-secure-gateway-and-todo-audit": {
+    "title": "Secure Social Gateway Architecture & Codebase Audit",
+    "summary": "Designed the Secure Social Gateway architecture, resolved build/lint errors, and completed a comprehensive codebase audit to identify security, performance, and technical debt issues.",
+    "items": [
+      "- **GATEWAY-001**: Added the Secure Social Gateway task to TODO.md with a phased 4-stage implementation plan.",
+      "- **TODO-SCAN**: Scanned entire src directory for hidden TODOs, FIXMEs, and oversized components (e.g., MessageBubble.tsx at 2250+ lines).",
+      "- **SEC-H-002**: Identified 70+ raw ipcMain.handle calls requiring standardization to validated handlers.",
+      "- **PERF-001**: Identified missing virtualization in MessageList as a primary performance bottleneck.",
+      "- **Build**: Fixed various build/lint errors and verified integrity with npm run type-check."
     ]
   }
 }

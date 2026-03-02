@@ -23,31 +23,6 @@ vi.mock('@main/logging/logger', () => ({
 }));
 
 // Mock IPC wrapper
-vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createSafeIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown, fallback: unknown) => async (...args: unknown[]) => {
-        try {
-            const result = await handler(...args);
-            return result;
-        } catch {
-            return fallback;
-        }
-    },
-    createValidatedIpcHandler: (
-        _name: string,
-        handler: (...args: unknown[]) => unknown,
-        options?: { argsSchema?: { parse: (args: unknown[]) => unknown[] }; defaultValue?: unknown }
-    ) => async (event: unknown, ...args: unknown[]) => {
-        try {
-            const parsedArgs = options?.argsSchema ? options.argsSchema.parse(args) : args;
-            return await handler(event, ...(parsedArgs as unknown[]));
-        } catch {
-            if (options && Object.prototype.hasOwnProperty.call(options, 'defaultValue')) {
-                return options.defaultValue;
-            }
-            throw new Error('Validation failed');
-        }
-    },
-}));
 
 // Mock sanitize util
 vi.mock('@shared/utils/sanitize.util', () => ({
@@ -119,7 +94,7 @@ describe('Agent IPC Integration', () => {
             const result = await handler!({});
 
             expect(mockAgentService.getAllAgents).toHaveBeenCalled();
-            expect(result).toEqual(mockAgents);
+            expect(result).toEqual({ success: true, data: mockAgents });
         });
 
         it('should return empty array when no agents', async () => {
@@ -128,7 +103,7 @@ describe('Agent IPC Integration', () => {
             const handler = mockIpcMainHandlers.get('agent:get-all');
             const result = await handler!({});
 
-            expect(result).toEqual([]);
+            expect(result).toEqual({ success: true, data: [] });
         });
 
         it('should return empty array on service error', async () => {
@@ -137,7 +112,7 @@ describe('Agent IPC Integration', () => {
             const handler = mockIpcMainHandlers.get('agent:get-all');
             const result = await handler!({});
 
-            expect(result).toEqual([]);
+            expect(result).toEqual({ success: true, data: [] });
         });
 
         it('should serialize agents to JSON safely', async () => {
@@ -147,10 +122,10 @@ describe('Agent IPC Integration', () => {
             vi.mocked(mockAgentService.getAllAgents).mockResolvedValue(mockAgents);
 
             const handler = mockIpcMainHandlers.get('agent:get-all');
-            const result = await handler!({});
+            const result = await handler!({}) as { success: boolean; data: any };
 
             // Result should be JSON-serializable
-            expect(JSON.stringify(result)).toBeTruthy();
+            expect(JSON.stringify(result.data)).toBeTruthy();
         });
     });
 
@@ -165,7 +140,7 @@ describe('Agent IPC Integration', () => {
             const result = await handler!({}, 'agent-1');
 
             expect(mockAgentService.getAgent).toHaveBeenCalledWith('agent-1');
-            expect(result).toEqual(mockAgent);
+            expect(result).toEqual({ success: true, data: mockAgent });
         });
 
         it('should return null for nonexistent agent', async () => {
@@ -174,7 +149,7 @@ describe('Agent IPC Integration', () => {
             const handler = mockIpcMainHandlers.get('agent:get');
             const result = await handler!({}, 'nonexistent-id');
 
-            expect(result).toBe(null);
+            expect(result).toEqual({ success: true, data: null });
         });
 
         it('should return null on service error', async () => {
@@ -183,7 +158,7 @@ describe('Agent IPC Integration', () => {
             const handler = mockIpcMainHandlers.get('agent:get');
             const result = await handler!({}, 'error-id');
 
-            expect(result).toBe(null);
+            expect(result).toEqual({ success: true, data: null });
         });
 
         it('should handle different ID formats', async () => {
@@ -233,8 +208,11 @@ describe('Agent IPC Integration', () => {
             }, { createWorkspace: true });
             expect(result).toEqual({
                 success: true,
-                id: 'agent-1',
-                workspacePath: '/tmp/workspace',
+                data: {
+                    success: true,
+                    id: 'agent-1',
+                    workspacePath: '/tmp/workspace',
+                }
             });
         });
     });
@@ -253,8 +231,11 @@ describe('Agent IPC Integration', () => {
             expect(mockAgentService.deleteAgent).toHaveBeenCalledWith('agent-1', { confirm: true, softDelete: true });
             expect(result).toEqual({
                 success: true,
-                archivedId: 'archive-1',
-                recoveryToken: 'recover_1',
+                data: {
+                    success: true,
+                    archivedId: 'archive-1',
+                    recoveryToken: 'recover_1',
+                }
             });
         });
     });

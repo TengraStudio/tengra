@@ -769,7 +769,7 @@ export class DatabaseService extends BaseService {
         for (const statement of migration.down) {
             await this.exec(statement);
         }
-        await this.exec(`UPDATE migration_history SET rolled_back_at = ${Date.now()} WHERE version = ${migration.version}`);
+        await this.query('UPDATE migration_history SET rolled_back_at = ? WHERE version = ?', [Date.now(), migration.version]);
         return {
             success: true,
             version: migration.version,
@@ -785,6 +785,14 @@ export class DatabaseService extends BaseService {
      * @returns Validation result with present/missing tables and warnings
      */
     async validateSchema(expectedTables: string[] = ['chats', 'messages', 'projects', 'folders', 'prompts', 'linked_accounts']): Promise<SchemaValidationResult> {
+        // Validate table names to prevent SQL injection
+        const validTableNames = ['chats', 'messages', 'projects', 'folders', 'prompts', 'linked_accounts', 'users', 'sessions', 'settings', 'attachments', 'memory', 'knowledge'];
+        for (const tableName of expectedTables) {
+            if (!validTableNames.includes(tableName)) {
+                throw new Error(`Invalid table name: ${tableName}`);
+            }
+        }
+
         const present: string[] = [];
         const missing: string[] = [];
         for (const tableName of expectedTables) {

@@ -264,10 +264,27 @@ export function invalidateCache(pattern: string | RegExp, cache: LRUCache<string
 }
 
 // Auto-cleanup expired entries every 5 minutes
-setInterval(() => {
-    const maxAge = 5 * 60 * 1000; // 5 minutes
-    dbQueryCache.evictExpired(maxAge);
-    chatCache.evictExpired(maxAge);
-    projectCache.evictExpired(maxAge);
-    settingsCache.evictExpired(maxAge);
-}, 5 * 60 * 1000);
+let cleanupIntervalId: ReturnType<typeof setInterval> | null = null;
+
+export function startCacheCleanupInterval(): void {
+    if (cleanupIntervalId) {
+        return; // Already running
+    }
+    cleanupIntervalId = setInterval(() => {
+        const maxAge = 5 * 60 * 1000; // 5 minutes
+        dbQueryCache.evictExpired(maxAge);
+        chatCache.evictExpired(maxAge);
+        projectCache.evictExpired(maxAge);
+        settingsCache.evictExpired(maxAge);
+    }, 5 * 60 * 1000);
+}
+
+export function stopCacheCleanupInterval(): void {
+    if (cleanupIntervalId) {
+        clearInterval(cleanupIntervalId);
+        cleanupIntervalId = null;
+    }
+}
+
+// Start the cleanup interval by default
+startCacheCleanupInterval();

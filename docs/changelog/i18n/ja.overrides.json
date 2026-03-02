@@ -1,4 +1,13 @@
 {
+  "2026-03-01-quality-055-council-scenario-test-split-cleanup": {
+    "title": "Council シナリオテストを分割スイートとして完了",
+    "summary": "QUALITY-055 を完了しました。古いモノリシックな council scenario テストを削除し、分割されたシナリオファイルを唯一の正しい構成として残しました。",
+    "items": [
+      "- **QUALITY-055**: The legacy `council-scenarios.test.ts` file carrying the `max-lines-per-function` lint suppression was removed.",
+      "- **Canonical Split Suites**: The shared helpers module and the three scenario-focused test files remain the active council scenario coverage.",
+      "- **Maintenance**: Duplicate test execution was removed and the test directory now matches the intended smaller-file layout."
+    ]
+  },
   "2026-03-01-chat-error-handling-refactor": {
     "title": "グローバルチャットエラーハンドリングと失敗時のUX",
     "summary": "アプリケーション全体でチャットエラータイプを統一し、AIアシスタントのサイドバーにカテゴリー分類と再試行機能を備えた一貫した失敗時のUXを実装しました。",
@@ -4077,6 +4086,45 @@
       "- **CollaborationController (C++)**: ルームベースの同期用リアルタイムWebSocketコントローラーを作成しました。",
       "- **UserCollaborationService (Electron)**: コラボレーションバックエンド用の管理型WebSocketクライアントサービスを実装しました。",
       "- **IPC強化**: すべてのコラボレーション同期IPCチャネルに対して厳密なZod検証済みコントラクトを定義しました。"
+    ]
+  },
+  "2026-03-01-quality-017-copilot-facade": {
+    "title": "QUALITY-017: CopilotService を責務別モジュールへ分割",
+    "summary": "肥大化した CopilotService を、トークン管理、レート制限、リクエスト構築、レスポンス解析、API 呼び出しを専用モジュールへ委譲する薄いファサードに置き換えました。",
+    "items": [
+      "- `CopilotService` は共有状態、ライフサイクル処理、設定用セッター、公開 chat/token メソッドだけを担当します。",
+      "- トークン更新、レート制限、リクエスト構築、レスポンス解析、ゲートウェイ通信は抽出済みの Copilot ヘルパークラス経由になりました。",
+      "- `isConfigured()` と VS Code バージョン更新の挙動を維持したまま、`copilot.service.ts` を 1000 行超からコンパクトなファサードへ縮小しました。"
+    ]
+  },
+  "2026-03-01-quality-016-code-intelligence-facade": {
+    "title": "QUALITY-016: CodeIntelligenceService をインデックス統括へ縮小",
+    "summary": "CodeIntelligenceService はプロジェクトのインデックス調停のみを担い、スキャン、ナビゲーション、リネーム、ドキュメント生成、品質分析を抽出済みユーティリティへ委譲する構成にリファクタリングされました。",
+    "items": [
+      "- `CodeIntelligenceService` はインデックス調整、セマンティック断片の保存、進捗イベント、シンボル分析に集中します。",
+      "- ファイルスキャン、シンボル解析/ナビゲーション、リネーム実行、ドキュメント生成、品質スキャンは専用の `code-intelligence/*` ユーティリティへ移行しました。",
+      "- IPC 向けの既存 API を維持したまま、`code-intelligence.service.ts` を 1200 行超から大幅に小さいコーディネーターへ縮小しました。"
+    ]
+  },
+  "2026-03-01-secure-social-gateway-foundation": {
+    "title": "Secure Social Gateway Architecture & Build Fixes",
+    "summary": "Designed the secure Gateway + Relay architecture for social media interaction and resolved multiple build-blocking type errors and unused code in IPC handlers.",
+    "items": [
+      "- **GATEWAY-001**: Added the Secure Social Gateway task to TODO.md with a phased implementation plan.",
+      "- **Architecture Design**: Defined the 'Gateway + Relay' model with E2EE, self-hosting options (BYOS), and autonomous runtime control.",
+      "- **Build Resolution**: Fixed multiple `TS6133` (unused imports/variables) and `TS2769` (type mismatch) errors across `chat.ts`, `settings.ts`, `window.ts`, `key-rotation.ts`, and `setup.ts`.",
+      "- **Code Hygiene**: Removed dead legacy code and unused schemas, restoring the repository to a clean buildable state."
+    ]
+  },
+  "2026-03-01-secure-gateway-and-todo-audit": {
+    "title": "Secure Social Gateway Architecture & Codebase Audit",
+    "summary": "Designed the Secure Social Gateway architecture, resolved build/lint errors, and completed a comprehensive codebase audit to identify security, performance, and technical debt issues.",
+    "items": [
+      "- **GATEWAY-001**: Added the Secure Social Gateway task to TODO.md with a phased 4-stage implementation plan.",
+      "- **TODO-SCAN**: Scanned entire src directory for hidden TODOs, FIXMEs, and oversized components (e.g., MessageBubble.tsx at 2250+ lines).",
+      "- **SEC-H-002**: Identified 70+ raw ipcMain.handle calls requiring standardization to validated handlers.",
+      "- **PERF-001**: Identified missing virtualization in MessageList as a primary performance bottleneck.",
+      "- **Build**: Fixed various build/lint errors and verified integrity with npm run type-check."
     ]
   }
 }
