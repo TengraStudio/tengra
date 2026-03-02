@@ -11,9 +11,9 @@
 ### 📦 v1.3.0 - Foundation & Marketplace (Q2 2026)
 | ID | Task | Priority | Difficulty | Status |
 |---|---|---|---|---|
-| **SEC-H-002** | IPC Response Validation (Zod) | 🔴 P0 | 💪 High | [ ] |
+| **SEC-H-002** | IPC Response Validation (Zod) | 🔴 P0 | 💪 High | [x] |
 | **GATEWAY-001** | Secure Social Gateway Phase 1 (Relay MVP) | 🔴 P0 | 🧠 Epic | [ ] |
-| **PERF-001** | MessageList Virtualization | 🟡 P1 | ⚡ Med | [ ] |
+| **PERF-001** | MessageList Virtualization | 🟡 P1 | ⚡ Med | [x] | *(react-virtuoso)*
 | **MKT-001** | Marketplace system MVP (C++ Backend) | 🟢 P1 | 💪 High | [/] |
 
 ### 🚀 v1.4.0 - Connectivity & Modularization (Q3 2026)
@@ -29,7 +29,12 @@
 ## 🛡️ Security & Infrastructure (SEC/GATEWAY)
 
 ### 🔐 Security Hardening
-- [ ] **SEC-H-002**: Audit 70+ raw `ipcMain.handle` calls for Zod `responseSchema`.
+- [x] **SEC-H-002**: Audit 70+ raw `ipcMain.handle` calls for Zod `responseSchema`.
+  - [x] `advanced-memory.ts` (100% Schema Coverage)
+  - [x] `agent.ts` (100% Schema Coverage)
+  - [x] `project.ts` (100% Schema Coverage)
+  - [x] `project-agent.ts` (100% Schema Coverage)
+  - [x] `code-sandbox.ts` (100% Schema Coverage)
 - [ ] **SEC-H-004**: End-to-end injection audit for all `child_process` and `shell` usage. **(CRITICAL)**
 - [ ] **SEC-H-006**: Implement strict Content Security Policy (CSP) for Renderer.
 - [ ] **SEC-PROT-001**: Harden `ExtensionService` sandboxing for 3rd-party code.
@@ -49,19 +54,19 @@
 - [ ] **DEBT-MON-01**: Partition services exceeding 1000 lines:
   - [ ] `IdeaGeneratorService.ts` (~2750 lines) -> `IdeaRepository`, `IdeaSessionManager`.
   - [ ] `AgentTaskExecutor.ts` (~2100 lines) -> `TaskStateMachine`, `ToolInvocationManager`.
-  - [ ] `SSHService.ts` (~2200 lines) -> `SSHKeyManager`, `SSHTunnelManager`.
+  - [x] `SSHService.ts` (~2200 lines) -> `SSHKeyManager`, `SSHTunnelManager`.
   - [ ] `AdvancedMemoryService.ts` (~2500 lines) -> `ConsolidationLogic`, `EmbeddingRetriever`.
 - [ ] **DEBT-LEAK-02**: Memory Leak Audit:
   - [x] `AgentTaskExecutor.ts`: Verify `setupEventListeners` listener cleanups. (Fixed 'project:plan-revised' leak)
   - [ ] Global Audit: Ensure every `initialize()` has a matching `dispose()`.
-- [ ] **DEBT-TYPE-03**: Eliminate unsafe type debt (`as any`, `as unknown as`) in `src/main/services`.
+- [x] **DEBT-TYPE-03**: Eliminate unsafe type debt (`as any`, `as unknown as`) in `src/main/services`. (Only 1 occurrence found in auth.service.ts)
 
 ---
 
 ## ⚡ Performance & UX (PERF/FEAT)
 
 ### 🚀 Optimization
-- [ ] **PERF-001**: Implement Virtualization for `MessageList` (react-window).
+- [x] **PERF-001**: Implement Virtualization for `MessageList` (react-window). *(Already uses react-virtuoso)*
 - [ ] **PERF-004**: Batch IPC updates for streaming logs/terminals (Max 20Hz).
 
 ### ✨ New Capabilities

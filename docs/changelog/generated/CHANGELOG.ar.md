@@ -2,6 +2,30 @@
 
 ## [2026-03-02]
 
+### 100% IPC Schema Coverage for Advanced Memory
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Implemented strict Zod validation for all 25+ Advanced Memory IPC handlers, ensuring robust data contracts and protection against malformed renderer requests.
+
+- **SEC-H-002**: Achieved 100% schema validation coverage for the Advanced Memory IPC module.
+- **Zod Integration**: Defined comprehensive schemas for recall, search, import, statistics, and shared namespaces in `service-hardening.schema.ts`.
+- **Refactoring**: Standardized all memory handlers using `createTelemetryAwareHandler` with full request/response validation.
+- **Type Safety**: Eliminated all unsafe `any` types in the memory IPC layer and resolved strict lint/type-check warnings.
+- **Health & Diagnostics**: Added validated health and telemetry endpoints for systemic memory performance monitoring.
+
+### 100% IPC Schema Coverage for Agent, Project & ProjectAgent Modules
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Implemented strict Zod validation for all IPC handlers in the Agent, Project, and ProjectAgent modules, achieving 100% request/response schema coverage for these critical core services.
+
+- **SEC-H-002**: Completed IPC hardening for 100+ handlers across `agent.ts`, `project.ts`, and `project-agent.ts`.
+- **Council Protocol**: Hardened all 60+ project agent handlers including council orchestration, voting sessions, and multi-model debates.
+- **Strict Validation**: All agent operations (creation, templates, recovery) and project operations (analysis, watching, environments) now enforce centralized Zod contracts.
+- **Type Safety**: Removed redundant local types and explicit `any` usage in the IPC layer, ensuring main-renderer data integrity.
+- **Standardization**: Refactored handlers to use `createValidatedIpcHandler` with mandatory `responseSchema` for predictable output validation.
+
 ### Configurable Memory Models and Security/Memory Hardening
 
 - **Type**: refactor

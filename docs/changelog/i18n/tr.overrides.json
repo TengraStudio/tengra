@@ -4085,5 +4085,27 @@
       "- **Derleme Çözümü**: `chat.ts`, `settings.ts`, `window.ts`, `key-rotation.ts` ve `setup.ts` dosyalarındaki çok sayıda `TS6133` (kullanılmayan kod) ve `TS2769` (tip uyuşmazlığı) hatası düzeltildi.",
       "- **Kod Hijyeni**: Eski atıl kodlar ve kullanılmayan şemalar temizlenerek depo tekrar derlenebilir hale getirildi."
     ]
+  },
+  "2026-03-02-advanced-memory-ipc-hardening": {
+    "title": "100% IPC Schema Coverage for Advanced Memory",
+    "summary": "Implemented strict Zod validation for all 25+ Advanced Memory IPC handlers, ensuring robust data contracts and protection against malformed renderer requests.",
+    "items": [
+      "- **SEC-H-002**: Achieved 100% schema validation coverage for the Advanced Memory IPC module.",
+      "- **Zod Integration**: Defined comprehensive schemas for recall, search, import, statistics, and shared namespaces in `service-hardening.schema.ts`.",
+      "- **Refactoring**: Standardized all memory handlers using `createTelemetryAwareHandler` with full request/response validation.",
+      "- **Type Safety**: Eliminated all unsafe `any` types in the memory IPC layer and resolved strict lint/type-check warnings.",
+      "- **Health & Diagnostics**: Added validated health and telemetry endpoints for systemic memory performance monitoring."
+    ]
+  },
+  "2026-03-02-agent-project-ipc-hardening": {
+    "title": "Ajan, Proje ve ProjeAjan Modülleri için %100 IPC Şema Kapsamı",
+    "summary": "Ajan, Proje ve ProjeAjan modüllerindeki tüm IPC işleyicileri için sıkı Zod doğrulaması uygulanarak bu kritik çekirdek servisler için %100 istek/yanıt şeması kapsamı sağlandı.",
+    "items": [
+      "- **SEC-H-002**: `agent.ts`, `project.ts` ve `project-agent.ts` genelindeki 100'den fazla işleyici için IPC güçlendirmesi tamamlandı.",
+      "- **Konsey Protokolü**: Konsey düzenleme, oylama oturumları ve çok modelli tartışmalar dahil olmak üzere 60'tan fazla proje ajanı işleyicisi güçlendirildi.",
+      "- **Sıkı Doğrulama**: Tüm ajan işlemleri (oluşturma, şablonlar, kurtarma) ve proje işlemleri (analiz, izleme, ortamlar) artık merkezi Zod sözleşmelerini zorunlu kılıyor.",
+      "- **Tip Güvenliği**: IPC katmanındaki gereksiz yerel tipler ve açık `any` kullanımı kaldırılarak ana-renderer veri bütünlüğü sağlandı.",
+      "- **Standardizasyon**: İşleyiciler, öngörülebilir çıktı doğrulaması için zorunlu `responseSchema` ile `createValidatedIpcHandler` kullanacak şekilde yeniden düzenlendi."
+    ]
   }
 }

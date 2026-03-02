@@ -287,7 +287,8 @@ appLogger.debug('ServiceName', 'Debug info', { data: someData });
 
 ### Log File Rules
 
-- Log files MUST be placed in `logs/` directory only
+- **Log files** MUST be placed in `logs/` directory only
+- **Test scripts** that create log files MUST be placed in `scripts/testScripts/` directory
 - Valid extensions: `.log`, `.txt`, `.json`
 - Format: `{service}_{date}.log`
 

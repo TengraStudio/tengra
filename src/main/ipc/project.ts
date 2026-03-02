@@ -13,6 +13,15 @@ import {
     inlineSuggestionResponseSchema,
     inlineSuggestionTelemetrySchema,
 } from '@shared/schemas/inline-suggestions.schema';
+import {
+    DirectoryAnalysisSchema,
+    GenerateLogoOptionsSchema,
+    ProjectAnalysisSchema,
+    ProjectEnvVarsSchema,
+    ProjectIdentitySchema,
+    ProjectIdSchema,
+    ProjectRootPathSchema,
+} from '@shared/schemas/service-hardening.schema';
 import { dialog, ipcMain } from 'electron';
 import { z } from 'zod';
 
@@ -34,16 +43,6 @@ export interface ProjectIpcDeps {
     auditLogService?: AuditLogService;
 }
 
-const PathSchema = z.string().min(1);
-const ProjectIdSchema = z.string().optional();
-const EnvVarsSchema = z.record(z.string(), z.string());
-
-const GenerateLogoOptionsSchema = z.object({
-    prompt: z.string(),
-    style: z.string(),
-    model: z.string(),
-    count: z.number().int().positive()
-});
 
 /**
  * Registers all project-related IPC handlers including analysis, file watching,
@@ -54,7 +53,7 @@ const GenerateLogoOptionsSchema = z.object({
 export const registerProjectIpc = (
     getWindow: () => Electron.BrowserWindow | null,
     deps: ProjectIpcDeps
-) => {
+): void => {
     const {
         projectService,
         logoService,
@@ -65,13 +64,16 @@ export const registerProjectIpc = (
         auditLogService,
     } = deps;
 
+    /**
+     * Internal utility for audit logging sensitive file system operations.
+     */
     const logDestructiveAction = async (
         action: string,
         rootPath: string,
         success: boolean,
         details?: Record<string, string | number | boolean>,
         error?: string
-    ) => {
+    ): Promise<void> => {
         if (!auditLogService) {
             return;
         }
@@ -85,21 +87,21 @@ export const registerProjectIpc = (
 
     const validateSender = createMainWindowSenderValidator(getWindow, 'project operation');
 
+    /**
+     * Start deep project analysis
+     */
     ipcMain.handle(
         'project:analyze',
-        createValidatedIpcHandler(
+        createValidatedIpcHandler<z.infer<typeof ProjectAnalysisSchema>, [string, string | undefined]>(
             'project:analyze',
-            async (event, rootPath: string, projectId: string | undefined) => {
+            async (event, rootPath: string, projectId: string | undefined): Promise<z.infer<typeof ProjectAnalysisSchema>> => {
                 validateSender(event);
                 appLogger.info(
                     'ProjectIPC',
-                    `[ProjectIPC] Analyze requested for ${rootPath} (ID: ${projectId})`
+                    `Analyze requested for ${rootPath} (ID: ${projectId})`
                 );
                 const results = await projectService.analyzeProject(rootPath);
-                appLogger.info(
-                    'ProjectIPC',
-                    `[ProjectIPC] Analysis returned ${results.files.length} files`
-                );
+
                 // Trigger background indexing
                 if (projectId) {
                     codeIntelligenceService.indexProject(rootPath, projectId).catch(err => {
@@ -109,12 +111,16 @@ export const registerProjectIpc = (
                 return results;
             },
             {
-                argsSchema: z.tuple([PathSchema, ProjectIdSchema]),
+                argsSchema: z.tuple([ProjectRootPathSchema, ProjectIdSchema]),
+                responseSchema: ProjectAnalysisSchema,
                 wrapResponse: true
             }
         )
     );
 
+    /**
+     * Start project file watching
+     */
     ipcMain.handle(
         'project:watch',
         createValidatedIpcHandler(
@@ -122,24 +128,23 @@ export const registerProjectIpc = (
             async (event, rootPath: string) => {
                 validateSender(event);
                 const win = getWindow();
-                await projectService.watchProject(rootPath, (event, filePath) => {
+                await projectService.watchProject(rootPath, (watchEvent, filePath) => {
                     void (async () => {
                         if (win && !win.isDestroyed()) {
                             win.webContents.send('project:file-change', {
-                                event,
+                                event: watchEvent,
                                 path: filePath,
                                 rootPath,
                             });
                         }
 
-                        // Proactive RAG Indexing
-                        if (event === 'change' || event === 'rename') {
+                        // Proactive Intelligence Indexing
+                        if (watchEvent === 'change' || watchEvent === 'rename') {
                             jobSchedulerService.schedule(
                                 `index:${filePath}`,
                                 async () => {
                                     try {
                                         const projects = await databaseService.getProjects();
-                                        // Ideally matches rootPath.
                                         const exactProject = projects.find(
                                             p => p.path === rootPath
                                         );
@@ -153,7 +158,7 @@ export const registerProjectIpc = (
                                     } catch (e) {
                                         appLogger.error(
                                             'ProjectIPC',
-                                            `[ProjectIPC] Auto-index failed: ${e}`
+                                            `Auto-index failed: ${e instanceof Error ? e.message : String(e)}`
                                         );
                                     }
                                 },
@@ -165,12 +170,16 @@ export const registerProjectIpc = (
                 return { success: true };
             },
             {
-                argsSchema: z.tuple([PathSchema]),
+                argsSchema: z.tuple([ProjectRootPathSchema]),
+                responseSchema: z.object({ success: z.boolean() }),
                 wrapResponse: true
             }
         )
     );
 
+    /**
+     * Stop project file watching
+     */
     ipcMain.handle(
         'project:unwatch',
         createValidatedIpcHandler(
@@ -181,12 +190,16 @@ export const registerProjectIpc = (
                 return { success: true };
             },
             {
-                argsSchema: z.tuple([PathSchema]),
+                argsSchema: z.tuple([ProjectRootPathSchema]),
+                responseSchema: z.object({ success: z.boolean() }),
                 wrapResponse: true
             }
         )
     );
 
+    /**
+     * Generate visual project logo
+     */
     ipcMain.handle(
         'project:generateLogo',
         createValidatedIpcHandler(
@@ -206,12 +219,16 @@ export const registerProjectIpc = (
                 );
             },
             {
-                argsSchema: z.tuple([PathSchema, GenerateLogoOptionsSchema]),
+                argsSchema: z.tuple([ProjectRootPathSchema, GenerateLogoOptionsSchema]),
+                responseSchema: z.array(z.string().max(4096)).max(10),
                 wrapResponse: true
             }
         )
     );
 
+    /**
+     * Run brand identity analysis for a project
+     */
     ipcMain.handle(
         'project:analyzeIdentity',
         createValidatedIpcHandler(
@@ -221,27 +238,35 @@ export const registerProjectIpc = (
                 return await logoService.analyzeProjectIdentity(projectPath);
             },
             {
-                argsSchema: z.tuple([PathSchema]),
+                argsSchema: z.tuple([ProjectRootPathSchema]),
+                responseSchema: ProjectIdentitySchema,
                 wrapResponse: true
             }
         )
     );
 
+    /**
+     * Analyze directory structure
+     */
     ipcMain.handle(
         'project:analyzeDirectory',
-        createValidatedIpcHandler(
+        createValidatedIpcHandler<z.infer<typeof DirectoryAnalysisSchema>, [string]>(
             'project:analyzeDirectory',
-            async (event, dirPath: string) => {
+            async (event, dirPath: string): Promise<z.infer<typeof DirectoryAnalysisSchema>> => {
                 validateSender(event);
                 return await projectService.analyzeDirectory(dirPath);
             },
             {
-                argsSchema: z.tuple([PathSchema]),
+                argsSchema: z.tuple([ProjectRootPathSchema]),
+                responseSchema: DirectoryAnalysisSchema,
                 wrapResponse: true
             }
         )
     );
 
+    /**
+     * Apply a generated logo to the project
+     */
     ipcMain.handle(
         'project:applyLogo',
         createValidatedIpcHandler(
@@ -261,12 +286,16 @@ export const registerProjectIpc = (
                 }
             },
             {
-                argsSchema: z.tuple([PathSchema, PathSchema]),
+                argsSchema: z.tuple([ProjectRootPathSchema, ProjectRootPathSchema]),
+                responseSchema: z.string().max(4096),
                 wrapResponse: true
             }
         )
     );
 
+    /**
+     * Get simple code completion (deprecated pattern, prefer inlineSuggestion)
+     */
     ipcMain.handle(
         'project:getCompletion',
         createValidatedIpcHandler(
@@ -276,13 +305,16 @@ export const registerProjectIpc = (
                 return await inlineSuggestionService.getCompletion(text);
             },
             {
-                argsSchema: z.tuple([z.string()]),
+                argsSchema: z.tuple([z.string().max(10000)]),
                 responseSchema: z.string(),
                 wrapResponse: true
             }
         )
     );
 
+    /**
+     * Get smart inline code suggestion
+     */
     ipcMain.handle(
         'project:getInlineSuggestion',
         createValidatedIpcHandler(
@@ -299,6 +331,9 @@ export const registerProjectIpc = (
         )
     );
 
+    /**
+     * Track user interaction with inline suggestions
+     */
     ipcMain.handle(
         'project:trackInlineSuggestionTelemetry',
         createValidatedIpcHandler(
@@ -315,6 +350,9 @@ export const registerProjectIpc = (
         )
     );
 
+    /**
+     * Refine and improve a logo prompt
+     */
     ipcMain.handle(
         'project:improveLogoPrompt',
         createValidatedIpcHandler(
@@ -324,12 +362,16 @@ export const registerProjectIpc = (
                 return await logoService.improveLogoPrompt(prompt);
             },
             {
-                argsSchema: z.tuple([z.string()]),
+                argsSchema: z.tuple([z.string().max(5000)]),
+                responseSchema: z.string().max(10000),
                 wrapResponse: true
             }
         )
     );
 
+    /**
+     * Use native dialog to upload an existing logo
+     */
     ipcMain.handle(
         'project:uploadLogo',
         createValidatedIpcHandler(
@@ -348,13 +390,16 @@ export const registerProjectIpc = (
                 return await logoService.applyLogo(projectPath, result.filePaths[0] || '');
             },
             {
-                argsSchema: z.tuple([PathSchema]),
+                argsSchema: z.tuple([ProjectRootPathSchema]),
+                responseSchema: z.string().max(4096).nullable(),
                 wrapResponse: true
             }
         )
     );
 
-    // Environment Manager
+    /**
+     * Retrieve environment variables for a project
+     */
     ipcMain.handle(
         'project:getEnv',
         createValidatedIpcHandler(
@@ -364,12 +409,16 @@ export const registerProjectIpc = (
                 return await projectService.getEnvVars(rootPath);
             },
             {
-                argsSchema: z.tuple([PathSchema]),
+                argsSchema: z.tuple([ProjectRootPathSchema]),
+                responseSchema: ProjectEnvVarsSchema,
                 wrapResponse: true
             }
         )
     );
 
+    /**
+     * Save environment variables for a project
+     */
     ipcMain.handle(
         'project:saveEnv',
         createValidatedIpcHandler(
@@ -391,7 +440,8 @@ export const registerProjectIpc = (
                 }
             },
             {
-                argsSchema: z.tuple([PathSchema, EnvVarsSchema]),
+                argsSchema: z.tuple([ProjectRootPathSchema, ProjectEnvVarsSchema]),
+                responseSchema: z.object({ success: z.boolean() }),
                 wrapResponse: true
             }
         )

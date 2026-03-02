@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-03-02T14:17:44.414Z",
+  "generatedAt": "2026-03-02T17:06:58.678Z",
   "locales": [
     "en",
     "tr",
@@ -12,6 +12,226 @@
     "ar"
   ],
   "entries": [
+    {
+      "id": "2026-03-02-advanced-memory-ipc-hardening",
+      "date": "2026-03-02",
+      "channel": "stable",
+      "type": "refactor",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "AdvancedMemoryService",
+        "IPC",
+        "Security",
+        "Zod Schemas"
+      ],
+      "breaking": false,
+      "security": true,
+      "contentByLocale": {
+        "en": {
+          "title": "100% IPC Schema Coverage for Advanced Memory",
+          "summary": "Implemented strict Zod validation for all 25+ Advanced Memory IPC handlers, ensuring robust data contracts and protection against malformed renderer requests.",
+          "items": [
+            "- **SEC-H-002**: Achieved 100% schema validation coverage for the Advanced Memory IPC module.",
+            "- **Zod Integration**: Defined comprehensive schemas for recall, search, import, statistics, and shared namespaces in `service-hardening.schema.ts`.",
+            "- **Refactoring**: Standardized all memory handlers using `createTelemetryAwareHandler` with full request/response validation.",
+            "- **Type Safety**: Eliminated all unsafe `any` types in the memory IPC layer and resolved strict lint/type-check warnings.",
+            "- **Health & Diagnostics**: Added validated health and telemetry endpoints for systemic memory performance monitoring."
+          ]
+        },
+        "tr": {
+          "title": "100% IPC Schema Coverage for Advanced Memory",
+          "summary": "Implemented strict Zod validation for all 25+ Advanced Memory IPC handlers, ensuring robust data contracts and protection against malformed renderer requests.",
+          "items": [
+            "- **SEC-H-002**: Achieved 100% schema validation coverage for the Advanced Memory IPC module.",
+            "- **Zod Integration**: Defined comprehensive schemas for recall, search, import, statistics, and shared namespaces in `service-hardening.schema.ts`.",
+            "- **Refactoring**: Standardized all memory handlers using `createTelemetryAwareHandler` with full request/response validation.",
+            "- **Type Safety**: Eliminated all unsafe `any` types in the memory IPC layer and resolved strict lint/type-check warnings.",
+            "- **Health & Diagnostics**: Added validated health and telemetry endpoints for systemic memory performance monitoring."
+          ]
+        },
+        "de": {
+          "title": "100% IPC Schema Coverage for Advanced Memory",
+          "summary": "Implemented strict Zod validation for all 25+ Advanced Memory IPC handlers, ensuring robust data contracts and protection against malformed renderer requests.",
+          "items": [
+            "- **SEC-H-002**: Achieved 100% schema validation coverage for the Advanced Memory IPC module.",
+            "- **Zod Integration**: Defined comprehensive schemas for recall, search, import, statistics, and shared namespaces in `service-hardening.schema.ts`.",
+            "- **Refactoring**: Standardized all memory handlers using `createTelemetryAwareHandler` with full request/response validation.",
+            "- **Type Safety**: Eliminated all unsafe `any` types in the memory IPC layer and resolved strict lint/type-check warnings.",
+            "- **Health & Diagnostics**: Added validated health and telemetry endpoints for systemic memory performance monitoring."
+          ]
+        },
+        "fr": {
+          "title": "100% IPC Schema Coverage for Advanced Memory",
+          "summary": "Implemented strict Zod validation for all 25+ Advanced Memory IPC handlers, ensuring robust data contracts and protection against malformed renderer requests.",
+          "items": [
+            "- **SEC-H-002**: Achieved 100% schema validation coverage for the Advanced Memory IPC module.",
+            "- **Zod Integration**: Defined comprehensive schemas for recall, search, import, statistics, and shared namespaces in `service-hardening.schema.ts`.",
+            "- **Refactoring**: Standardized all memory handlers using `createTelemetryAwareHandler` with full request/response validation.",
+            "- **Type Safety**: Eliminated all unsafe `any` types in the memory IPC layer and resolved strict lint/type-check warnings.",
+            "- **Health & Diagnostics**: Added validated health and telemetry endpoints for systemic memory performance monitoring."
+          ]
+        },
+        "es": {
+          "title": "100% IPC Schema Coverage for Advanced Memory",
+          "summary": "Implemented strict Zod validation for all 25+ Advanced Memory IPC handlers, ensuring robust data contracts and protection against malformed renderer requests.",
+          "items": [
+            "- **SEC-H-002**: Achieved 100% schema validation coverage for the Advanced Memory IPC module.",
+            "- **Zod Integration**: Defined comprehensive schemas for recall, search, import, statistics, and shared namespaces in `service-hardening.schema.ts`.",
+            "- **Refactoring**: Standardized all memory handlers using `createTelemetryAwareHandler` with full request/response validation.",
+            "- **Type Safety**: Eliminated all unsafe `any` types in the memory IPC layer and resolved strict lint/type-check warnings.",
+            "- **Health & Diagnostics**: Added validated health and telemetry endpoints for systemic memory performance monitoring."
+          ]
+        },
+        "ja": {
+          "title": "100% IPC Schema Coverage for Advanced Memory",
+          "summary": "Implemented strict Zod validation for all 25+ Advanced Memory IPC handlers, ensuring robust data contracts and protection against malformed renderer requests.",
+          "items": [
+            "- **SEC-H-002**: Achieved 100% schema validation coverage for the Advanced Memory IPC module.",
+            "- **Zod Integration**: Defined comprehensive schemas for recall, search, import, statistics, and shared namespaces in `service-hardening.schema.ts`.",
+            "- **Refactoring**: Standardized all memory handlers using `createTelemetryAwareHandler` with full request/response validation.",
+            "- **Type Safety**: Eliminated all unsafe `any` types in the memory IPC layer and resolved strict lint/type-check warnings.",
+            "- **Health & Diagnostics**: Added validated health and telemetry endpoints for systemic memory performance monitoring."
+          ]
+        },
+        "zh": {
+          "title": "100% IPC Schema Coverage for Advanced Memory",
+          "summary": "Implemented strict Zod validation for all 25+ Advanced Memory IPC handlers, ensuring robust data contracts and protection against malformed renderer requests.",
+          "items": [
+            "- **SEC-H-002**: Achieved 100% schema validation coverage for the Advanced Memory IPC module.",
+            "- **Zod Integration**: Defined comprehensive schemas for recall, search, import, statistics, and shared namespaces in `service-hardening.schema.ts`.",
+            "- **Refactoring**: Standardized all memory handlers using `createTelemetryAwareHandler` with full request/response validation.",
+            "- **Type Safety**: Eliminated all unsafe `any` types in the memory IPC layer and resolved strict lint/type-check warnings.",
+            "- **Health & Diagnostics**: Added validated health and telemetry endpoints for systemic memory performance monitoring."
+          ]
+        },
+        "ar": {
+          "title": "100% IPC Schema Coverage for Advanced Memory",
+          "summary": "Implemented strict Zod validation for all 25+ Advanced Memory IPC handlers, ensuring robust data contracts and protection against malformed renderer requests.",
+          "items": [
+            "- **SEC-H-002**: Achieved 100% schema validation coverage for the Advanced Memory IPC module.",
+            "- **Zod Integration**: Defined comprehensive schemas for recall, search, import, statistics, and shared namespaces in `service-hardening.schema.ts`.",
+            "- **Refactoring**: Standardized all memory handlers using `createTelemetryAwareHandler` with full request/response validation.",
+            "- **Type Safety**: Eliminated all unsafe `any` types in the memory IPC layer and resolved strict lint/type-check warnings.",
+            "- **Health & Diagnostics**: Added validated health and telemetry endpoints for systemic memory performance monitoring."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-03-02-agent-project-ipc-hardening",
+      "date": "2026-03-02",
+      "channel": "stable",
+      "type": "refactor",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "AgentService",
+        "ProjectService",
+        "ProjectAgentIPC",
+        "IPC",
+        "Security",
+        "Zod Schemas"
+      ],
+      "breaking": false,
+      "security": true,
+      "contentByLocale": {
+        "en": {
+          "title": "100% IPC Schema Coverage for Agent, Project & ProjectAgent Modules",
+          "summary": "Implemented strict Zod validation for all IPC handlers in the Agent, Project, and ProjectAgent modules, achieving 100% request/response schema coverage for these critical core services.",
+          "items": [
+            "- **SEC-H-002**: Completed IPC hardening for 100+ handlers across `agent.ts`, `project.ts`, and `project-agent.ts`.",
+            "- **Council Protocol**: Hardened all 60+ project agent handlers including council orchestration, voting sessions, and multi-model debates.",
+            "- **Strict Validation**: All agent operations (creation, templates, recovery) and project operations (analysis, watching, environments) now enforce centralized Zod contracts.",
+            "- **Type Safety**: Removed redundant local types and explicit `any` usage in the IPC layer, ensuring main-renderer data integrity.",
+            "- **Standardization**: Refactored handlers to use `createValidatedIpcHandler` with mandatory `responseSchema` for predictable output validation."
+          ]
+        },
+        "tr": {
+          "title": "Ajan, Proje ve ProjeAjan Modülleri için %100 IPC Şema Kapsamı",
+          "summary": "Ajan, Proje ve ProjeAjan modüllerindeki tüm IPC işleyicileri için sıkı Zod doğrulaması uygulanarak bu kritik çekirdek servisler için %100 istek/yanıt şeması kapsamı sağlandı.",
+          "items": [
+            "- **SEC-H-002**: `agent.ts`, `project.ts` ve `project-agent.ts` genelindeki 100'den fazla işleyici için IPC güçlendirmesi tamamlandı.",
+            "- **Konsey Protokolü**: Konsey düzenleme, oylama oturumları ve çok modelli tartışmalar dahil olmak üzere 60'tan fazla proje ajanı işleyicisi güçlendirildi.",
+            "- **Sıkı Doğrulama**: Tüm ajan işlemleri (oluşturma, şablonlar, kurtarma) ve proje işlemleri (analiz, izleme, ortamlar) artık merkezi Zod sözleşmelerini zorunlu kılıyor.",
+            "- **Tip Güvenliği**: IPC katmanındaki gereksiz yerel tipler ve açık `any` kullanımı kaldırılarak ana-renderer veri bütünlüğü sağlandı.",
+            "- **Standardizasyon**: İşleyiciler, öngörülebilir çıktı doğrulaması için zorunlu `responseSchema` ile `createValidatedIpcHandler` kullanacak şekilde yeniden düzenlendi."
+          ]
+        },
+        "de": {
+          "title": "100% IPC Schema Coverage for Agent, Project & ProjectAgent Modules",
+          "summary": "Implemented strict Zod validation for all IPC handlers in the Agent, Project, and ProjectAgent modules, achieving 100% request/response schema coverage for these critical core services.",
+          "items": [
+            "- **SEC-H-002**: Completed IPC hardening for 100+ handlers across `agent.ts`, `project.ts`, and `project-agent.ts`.",
+            "- **Council Protocol**: Hardened all 60+ project agent handlers including council orchestration, voting sessions, and multi-model debates.",
+            "- **Strict Validation**: All agent operations (creation, templates, recovery) and project operations (analysis, watching, environments) now enforce centralized Zod contracts.",
+            "- **Type Safety**: Removed redundant local types and explicit `any` usage in the IPC layer, ensuring main-renderer data integrity.",
+            "- **Standardization**: Refactored handlers to use `createValidatedIpcHandler` with mandatory `responseSchema` for predictable output validation."
+          ]
+        },
+        "fr": {
+          "title": "100% IPC Schema Coverage for Agent, Project & ProjectAgent Modules",
+          "summary": "Implemented strict Zod validation for all IPC handlers in the Agent, Project, and ProjectAgent modules, achieving 100% request/response schema coverage for these critical core services.",
+          "items": [
+            "- **SEC-H-002**: Completed IPC hardening for 100+ handlers across `agent.ts`, `project.ts`, and `project-agent.ts`.",
+            "- **Council Protocol**: Hardened all 60+ project agent handlers including council orchestration, voting sessions, and multi-model debates.",
+            "- **Strict Validation**: All agent operations (creation, templates, recovery) and project operations (analysis, watching, environments) now enforce centralized Zod contracts.",
+            "- **Type Safety**: Removed redundant local types and explicit `any` usage in the IPC layer, ensuring main-renderer data integrity.",
+            "- **Standardization**: Refactored handlers to use `createValidatedIpcHandler` with mandatory `responseSchema` for predictable output validation."
+          ]
+        },
+        "es": {
+          "title": "100% IPC Schema Coverage for Agent, Project & ProjectAgent Modules",
+          "summary": "Implemented strict Zod validation for all IPC handlers in the Agent, Project, and ProjectAgent modules, achieving 100% request/response schema coverage for these critical core services.",
+          "items": [
+            "- **SEC-H-002**: Completed IPC hardening for 100+ handlers across `agent.ts`, `project.ts`, and `project-agent.ts`.",
+            "- **Council Protocol**: Hardened all 60+ project agent handlers including council orchestration, voting sessions, and multi-model debates.",
+            "- **Strict Validation**: All agent operations (creation, templates, recovery) and project operations (analysis, watching, environments) now enforce centralized Zod contracts.",
+            "- **Type Safety**: Removed redundant local types and explicit `any` usage in the IPC layer, ensuring main-renderer data integrity.",
+            "- **Standardization**: Refactored handlers to use `createValidatedIpcHandler` with mandatory `responseSchema` for predictable output validation."
+          ]
+        },
+        "ja": {
+          "title": "100% IPC Schema Coverage for Agent, Project & ProjectAgent Modules",
+          "summary": "Implemented strict Zod validation for all IPC handlers in the Agent, Project, and ProjectAgent modules, achieving 100% request/response schema coverage for these critical core services.",
+          "items": [
+            "- **SEC-H-002**: Completed IPC hardening for 100+ handlers across `agent.ts`, `project.ts`, and `project-agent.ts`.",
+            "- **Council Protocol**: Hardened all 60+ project agent handlers including council orchestration, voting sessions, and multi-model debates.",
+            "- **Strict Validation**: All agent operations (creation, templates, recovery) and project operations (analysis, watching, environments) now enforce centralized Zod contracts.",
+            "- **Type Safety**: Removed redundant local types and explicit `any` usage in the IPC layer, ensuring main-renderer data integrity.",
+            "- **Standardization**: Refactored handlers to use `createValidatedIpcHandler` with mandatory `responseSchema` for predictable output validation."
+          ]
+        },
+        "zh": {
+          "title": "100% IPC Schema Coverage for Agent, Project & ProjectAgent Modules",
+          "summary": "Implemented strict Zod validation for all IPC handlers in the Agent, Project, and ProjectAgent modules, achieving 100% request/response schema coverage for these critical core services.",
+          "items": [
+            "- **SEC-H-002**: Completed IPC hardening for 100+ handlers across `agent.ts`, `project.ts`, and `project-agent.ts`.",
+            "- **Council Protocol**: Hardened all 60+ project agent handlers including council orchestration, voting sessions, and multi-model debates.",
+            "- **Strict Validation**: All agent operations (creation, templates, recovery) and project operations (analysis, watching, environments) now enforce centralized Zod contracts.",
+            "- **Type Safety**: Removed redundant local types and explicit `any` usage in the IPC layer, ensuring main-renderer data integrity.",
+            "- **Standardization**: Refactored handlers to use `createValidatedIpcHandler` with mandatory `responseSchema` for predictable output validation."
+          ]
+        },
+        "ar": {
+          "title": "100% IPC Schema Coverage for Agent, Project & ProjectAgent Modules",
+          "summary": "Implemented strict Zod validation for all IPC handlers in the Agent, Project, and ProjectAgent modules, achieving 100% request/response schema coverage for these critical core services.",
+          "items": [
+            "- **SEC-H-002**: Completed IPC hardening for 100+ handlers across `agent.ts`, `project.ts`, and `project-agent.ts`.",
+            "- **Council Protocol**: Hardened all 60+ project agent handlers including council orchestration, voting sessions, and multi-model debates.",
+            "- **Strict Validation**: All agent operations (creation, templates, recovery) and project operations (analysis, watching, environments) now enforce centralized Zod contracts.",
+            "- **Type Safety**: Removed redundant local types and explicit `any` usage in the IPC layer, ensuring main-renderer data integrity.",
+            "- **Standardization**: Refactored handlers to use `createValidatedIpcHandler` with mandatory `responseSchema` for predictable output validation."
+          ]
+        }
+      }
+    },
     {
       "id": "2026-03-02-perf-security-cleanup",
       "date": "2026-03-02",

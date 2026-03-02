@@ -323,11 +323,12 @@ container.register(
 
 ### 5.1 Mandatory Rules
 
-1.  **Log files MUST be placed in `logs/` directory only**
-2.  **Files WITHOUT extensions are FORBIDDEN**
-3.  Valid log extensions: `.log`, `.txt`, `.json`
-4.  Log file format: `{service}_{date}.log`
-5.  **Debugging Logs**: When an AI/agent/LLM creates a log file for debugging (format: .txt, .json, or .log), it MUST be created in the `logs/` folder at the project root. This folder is gitignored.
+1.  **Log files** MUST be placed in `logs/` directory only
+2.  **Test scripts** that create log files MUST be placed in `scripts/testScripts/` directory
+3.  **Files WITHOUT extensions are FORBIDDEN**
+4.  Valid log extensions: `.log`, `.txt`, `.json`
+5.  Log file format: `{service}_{date}.log`
+6.  **Debugging Logs**: When an AI/agent/LLM creates a log file for debugging (format: .txt, .json, or .log), it MUST be created in the `logs/` folder at the project root. This folder is gitignored.
 
 ### 5.2 Valid Log File Examples
 

@@ -11,10 +11,24 @@
 
 import { appLogger } from '@main/logging/logger';
 import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
-import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import {
+    AdvancedMemoryCategorySchema,
+    AdvancedMemoryHealthSchema,
+    AdvancedMemoryImportPayloadSchema,
+    AdvancedMemoryRecallContextSchema,
+    AdvancedSemanticFragmentSchema,
+    MemoryImportResultSchema,
+    MemoryStatisticsSchema,
+    PendingMemorySchema,
+    RecallResultSchema,
+    SharedMemoryNamespaceSchema,
+    SharedMemorySyncResultSchema
+} from '@shared/schemas/service-hardening.schema';
 import { MemoryCategory, RecallContext, SharedMemorySyncRequest } from '@shared/types/advanced-memory';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { ipcMain } from 'electron';
+import { z } from 'zod';
 
 
 
@@ -55,9 +69,7 @@ interface AdvancedMemoryResponseEnvelope {
     [key: string]: unknown;
 }
 
-type TelemetryAwareHandler<T extends AdvancedMemoryResponseEnvelope> = {
-    bivarianceHack(event: Electron.IpcMainInvokeEvent, ...args: unknown[]): Promise<T>;
-}['bivarianceHack'];
+// Removed unused TelemetryAwareHandler type in favor of inline arrow function types
 
 interface AdvancedMemoryTelemetryEvent {
     channel: string;
@@ -299,7 +311,11 @@ const createAdvancedMemoryHealthPayload = () => {
             heavyMs: ADVANCED_MEMORY_PERFORMANCE_BUDGET_MS.HEAVY
         },
         metrics: {
-            ...advancedMemoryTelemetry,
+            totalCalls: advancedMemoryTelemetry.totalCalls,
+            totalFailures: advancedMemoryTelemetry.totalFailures,
+            totalRetries: advancedMemoryTelemetry.totalRetries,
+            validationFailures: advancedMemoryTelemetry.validationFailures,
+            budgetExceededCount: advancedMemoryTelemetry.budgetExceededCount,
             errorRate
         }
     };
@@ -330,17 +346,19 @@ const inferUiStateFromResult = (result: Record<string, unknown>): AdvancedMemory
     return 'ready';
 };
 
-const createTelemetryAwareHandler = <T extends AdvancedMemoryResponseEnvelope = AdvancedMemoryResponseEnvelope>(
+const createTelemetryAwareHandler = <T extends AdvancedMemoryResponseEnvelope = AdvancedMemoryResponseEnvelope, Args extends unknown[] = unknown[]>(
     channel: string,
-    handler: TelemetryAwareHandler<T>,
+    handler: (event: Electron.IpcMainInvokeEvent, ...args: Args) => Promise<T>,
     options: {
         retries?: number;
         retryDelayMs?: number;
         onError?: (error: Error) => AdvancedMemoryResponseEnvelope;
         messageKey?: string;
+        argsSchema?: z.ZodTuple<[z.ZodTypeAny, ...z.ZodTypeAny[]]> | z.ZodTuple<[]>;
+        responseSchema?: z.ZodType<T>;
     } = {}
 ) => {
-    return createIpcHandler(channel, async (event: Electron.IpcMainInvokeEvent, ...args: unknown[]) => {
+    return createValidatedIpcHandler<T, Args>(channel, async (event, ...args) => {
         const startedAt = Date.now();
         try {
             const result = await executeWithAdvancedMemoryRetry(
@@ -373,6 +391,8 @@ const createTelemetryAwareHandler = <T extends AdvancedMemoryResponseEnvelope = 
             throw error;
         }
     }, {
+        argsSchema: options.argsSchema,
+        responseSchema: options.responseSchema,
         onError: (error: Error) => {
             if (options.onError) {
                 return withAdvancedMemoryErrorMetadata(options.onError(error), error, options.messageKey);
@@ -427,35 +447,60 @@ function registerPendingHandlers(advancedMemoryService: AdvancedMemoryService): 
         };
     }, {
         onError: handleListError,
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: z.array(PendingMemorySchema),
+            uiState: z.string()
+        })
     }));
 
-    ipcMain.handle('advancedMemory:confirm', createTelemetryAwareHandler('advancedMemory:confirm', async (
+    ipcMain.handle('advancedMemory:confirm', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string, unknown]>('advancedMemory:confirm', async (
         _event,
-        id: string,
-        adjustments?: {
+        id,
+        adjustments
+    ) => {
+        // SAFETY: adjustments is validated by argsSchema below
+        const adjustmentOptions = adjustments as {
             content?: string;
             category?: MemoryCategory;
             tags?: string[];
             importance?: number;
-        }
-    ) => {
-        const memory = await advancedMemoryService.confirmPendingMemory(id, 'user', adjustments);
+        } | undefined;
+        const memory = await advancedMemoryService.confirmPendingMemory(id, 'user', adjustmentOptions);
         return { success: true, data: memory };
     }, {
         onError: handleBasicError,
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([
+            z.string().uuid(),
+            z.object({
+                content: z.string().optional(),
+                category: AdvancedMemoryCategorySchema.optional(),
+                tags: z.array(z.string()).optional(),
+                importance: z.number().min(0).max(1).optional()
+            }).optional()
+        ]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: AdvancedSemanticFragmentSchema
+        })
     }));
 
-    ipcMain.handle('advancedMemory:reject', createTelemetryAwareHandler('advancedMemory:reject', async (_event, id: string, reason?: string) => {
+    ipcMain.handle('advancedMemory:reject', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string, string | undefined]>('advancedMemory:reject', async (_event, id, reason) => {
         await advancedMemoryService.rejectPendingMemory(id, reason);
         return { success: true };
     }, {
         onError: handleBasicError,
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([z.string().uuid(), z.string().optional()]),
+        responseSchema: z.object({
+            success: z.boolean()
+        })
     }));
 
-    ipcMain.handle('advancedMemory:confirmAll', createTelemetryAwareHandler('advancedMemory:confirmAll', async () => {
+    ipcMain.handle('advancedMemory:confirmAll', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, []>('advancedMemory:confirmAll', async () => {
         const pending = advancedMemoryService.getPendingMemories();
         let confirmed = 0;
 
@@ -473,10 +518,16 @@ function registerPendingHandlers(advancedMemoryService: AdvancedMemoryService): 
         };
     }, {
         onError: handleBulkError,
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            confirmed: z.number().int(),
+            uiState: z.string()
+        })
     }));
 
-    ipcMain.handle('advancedMemory:rejectAll', createTelemetryAwareHandler('advancedMemory:rejectAll', async () => {
+    ipcMain.handle('advancedMemory:rejectAll', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, []>('advancedMemory:rejectAll', async () => {
         const pending = advancedMemoryService.getPendingMemories();
 
         for (const p of pending) {
@@ -490,32 +541,52 @@ function registerPendingHandlers(advancedMemoryService: AdvancedMemoryService): 
         };
     }, {
         onError: handleBulkRejectError,
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            rejected: z.number().int(),
+            uiState: z.string()
+        })
     }));
 }
 
 
 function registerExplicitHandlers(advancedMemoryService: AdvancedMemoryService): void {
-    ipcMain.handle('advancedMemory:remember', createTelemetryAwareHandler('advancedMemory:remember', async (
+    ipcMain.handle('advancedMemory:remember', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string, unknown]>('advancedMemory:remember', async (
         _event,
-        content: string,
-        options?: {
+        content,
+        options
+    ) => {
+        // SAFETY: options is validated by argsSchema below
+        const memoryOptions = options as {
             category?: MemoryCategory;
             tags?: string[];
             projectId?: string;
-        }
-    ) => {
+        } | undefined;
         const memory = await advancedMemoryService.rememberExplicit(
             content,
             'user-explicit',
-            options?.category ?? 'fact',
-            options?.tags ?? [],
-            options?.projectId
+            memoryOptions?.category ?? 'fact',
+            memoryOptions?.tags ?? [],
+            memoryOptions?.projectId
         );
         return { success: true, data: memory };
     }, {
         onError: () => ({ success: false, uiState: 'failure' }),
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([
+            z.string().min(1).max(10000),
+            z.object({
+                category: AdvancedMemoryCategorySchema.optional(),
+                tags: z.array(z.string()).optional(),
+                projectId: z.string().optional()
+            }).optional()
+        ]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: AdvancedSemanticFragmentSchema
+        })
     }));
 }
 
@@ -532,10 +603,16 @@ function registerRecallHandlers(advancedMemoryService: AdvancedMemoryService): v
         };
     }, {
         onError: () => ({ success: true, data: { memories: [], totalMatches: 0 }, uiState: 'empty' }),
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([AdvancedMemoryRecallContextSchema]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: RecallResultSchema,
+            uiState: z.string()
+        })
     }));
 
-    ipcMain.handle('advancedMemory:search', createTelemetryAwareHandler('advancedMemory:search', async (_event, query: string, limit?: number) => {
+    ipcMain.handle('advancedMemory:search', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string, number | undefined]>('advancedMemory:search', async (_event, query, limit) => {
         const normalizedQuery = normalizeOptionalQuery(query);
         if (!normalizedQuery) {
             return { success: true, data: [], uiState: 'empty' };
@@ -544,10 +621,16 @@ function registerRecallHandlers(advancedMemoryService: AdvancedMemoryService): v
         return { success: true, data: memories, uiState: memories.length === 0 ? 'empty' : 'ready' };
     }, {
         onError: () => ({ success: true, data: [], uiState: 'empty' }),
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([z.string(), z.number().optional()]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: z.array(AdvancedSemanticFragmentSchema),
+            uiState: z.string()
+        })
     }));
 
-    ipcMain.handle('advancedMemory:getSearchAnalytics', createTelemetryAwareHandler('advancedMemory:getSearchAnalytics', async () => {
+    ipcMain.handle('advancedMemory:getSearchAnalytics', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, []>('advancedMemory:getSearchAnalytics', async () => {
         return { success: true, data: advancedMemoryService.getSearchAnalytics() };
     }, {
         onError: () => ({
@@ -562,10 +645,15 @@ function registerRecallHandlers(advancedMemoryService: AdvancedMemoryService): v
             },
             uiState: 'empty'
         }),
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: z.record(z.string(), z.unknown())
+        })
     }));
 
-    ipcMain.handle('advancedMemory:getSearchHistory', createTelemetryAwareHandler('advancedMemory:getSearchHistory', async (_event, limit?: number) => {
+    ipcMain.handle('advancedMemory:getSearchHistory', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [number | undefined]>('advancedMemory:getSearchHistory', async (_event, limit) => {
         const history = advancedMemoryService.getSearchHistory(limit ?? 25);
         return {
             success: true,
@@ -574,13 +662,19 @@ function registerRecallHandlers(advancedMemoryService: AdvancedMemoryService): v
         };
     }, {
         onError: () => ({ success: true, data: [], uiState: 'empty' }),
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([z.number().optional()]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: z.array(z.record(z.string(), z.unknown())),
+            uiState: z.string()
+        })
     }));
 
-    ipcMain.handle('advancedMemory:getSearchSuggestions', createTelemetryAwareHandler('advancedMemory:getSearchSuggestions', async (
+    ipcMain.handle('advancedMemory:getSearchSuggestions', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string | undefined, number | undefined]>('advancedMemory:getSearchSuggestions', async (
         _event,
-        prefix?: string,
-        limit?: number
+        prefix,
+        limit
     ) => {
         const suggestions = advancedMemoryService.getSearchSuggestions(prefix, limit ?? 8);
         return {
@@ -590,36 +684,48 @@ function registerRecallHandlers(advancedMemoryService: AdvancedMemoryService): v
         };
     }, {
         onError: () => ({ success: true, data: [], uiState: 'empty' }),
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([z.string().optional(), z.number().optional()]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: z.array(z.string()),
+            uiState: z.string()
+        })
     }));
 
-    ipcMain.handle('advancedMemory:export', createTelemetryAwareHandler('advancedMemory:export', async (
+    ipcMain.handle('advancedMemory:export', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string | undefined, number | undefined]>('advancedMemory:export', async (
         _event,
-        query?: string,
-        limit?: number
+        query,
+        limit
     ) => {
         const exported = await advancedMemoryService.exportMemories(normalizeOptionalQuery(query), normalizeSearchLimit(limit));
         return { success: true, data: exported };
     }, {
         onError: () => ({ success: false, uiState: 'failure' }),
         retries: 2,
-        messageKey: ADVANCED_MEMORY_MESSAGE_KEY.EXPORT_FAILED
+        messageKey: ADVANCED_MEMORY_MESSAGE_KEY.EXPORT_FAILED,
+        argsSchema: z.tuple([z.string().optional(), z.number().optional()]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: z.unknown()
+        })
     }));
 
-    ipcMain.handle('advancedMemory:import', createTelemetryAwareHandler('advancedMemory:import', async (
+    ipcMain.handle('advancedMemory:import', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [unknown]>('advancedMemory:import', async (
         _event,
-        payload: {
-            memories?: Array<Partial<import('@shared/types/advanced-memory').AdvancedSemanticFragment>>;
-            pendingMemories?: Array<Partial<import('@shared/types/advanced-memory').PendingMemory>>;
-            replaceExisting?: boolean;
-        }
+        payload
     ) => {
         const result = await advancedMemoryService.importMemories(payload ?? {});
         return { success: true, data: result };
     }, {
         onError: () => ({ success: false, uiState: 'failure' }),
         retries: 2,
-        messageKey: ADVANCED_MEMORY_MESSAGE_KEY.IMPORT_FAILED
+        messageKey: ADVANCED_MEMORY_MESSAGE_KEY.IMPORT_FAILED,
+        argsSchema: z.tuple([AdvancedMemoryImportPayloadSchema]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: MemoryImportResultSchema
+        })
     }));
 }
 
@@ -631,7 +737,12 @@ function registerMaintenanceHandlers(advancedMemoryService: AdvancedMemoryServic
         return { success: true, data: stats };
     }, {
         onError: handleBasicError,
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: MemoryStatisticsSchema
+        })
     }));
 
     ipcMain.handle('advancedMemory:runDecay', createTelemetryAwareHandler('advancedMemory:runDecay', async () => {
@@ -639,24 +750,32 @@ function registerMaintenanceHandlers(advancedMemoryService: AdvancedMemoryServic
         return { success: true };
     }, {
         onError: handleBasicError,
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([]),
+        responseSchema: z.object({
+            success: z.boolean()
+        })
     }));
 
-    ipcMain.handle('advancedMemory:recategorize', createTelemetryAwareHandler('advancedMemory:recategorize', async (_event, ids?: string[]) => {
+    ipcMain.handle('advancedMemory:recategorize', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string[] | undefined]>('advancedMemory:recategorize', async (_event, ids) => {
         await advancedMemoryService.recategorizeMemories(ids);
         return { success: true };
     }, {
         onError: handleBasicError,
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([z.array(z.string().uuid()).optional()]),
+        responseSchema: z.object({
+            success: z.boolean()
+        })
     }));
 }
 
 function registerExtractionHandlers(advancedMemoryService: AdvancedMemoryService): void {
-    ipcMain.handle('advancedMemory:extractFromMessage', createTelemetryAwareHandler('advancedMemory:extractFromMessage', async (
+    ipcMain.handle('advancedMemory:extractFromMessage', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string, string, string | undefined]>('advancedMemory:extractFromMessage', async (
         _event,
-        content: string,
-        sourceId: string,
-        projectId?: string
+        content,
+        sourceId,
+        projectId
     ) => {
         const pending = await advancedMemoryService.extractAndStageFromMessage(
             content,
@@ -670,7 +789,13 @@ function registerExtractionHandlers(advancedMemoryService: AdvancedMemoryService
         };
     }, {
         onError: () => ({ success: true, data: [], uiState: 'empty' }),
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([z.string().min(1), z.string().min(1), z.string().optional()]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: z.array(PendingMemorySchema),
+            uiState: z.string()
+        })
     }));
 }
 
@@ -678,15 +803,19 @@ function registerExtractionHandlers(advancedMemoryService: AdvancedMemoryService
 function registerManagementHandlers(advancedMemoryService: AdvancedMemoryService): void {
     const handleBasicError = () => ({ success: false, uiState: 'failure' });
 
-    ipcMain.handle('advancedMemory:delete', createTelemetryAwareHandler<{ success: boolean }>('advancedMemory:delete', async (_event, id: string) => {
+    ipcMain.handle('advancedMemory:delete', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string]>('advancedMemory:delete', async (_event, id) => {
         const success = await advancedMemoryService.deleteMemory(id);
         return { success };
     }, {
         onError: handleBasicError,
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([z.string().uuid()]),
+        responseSchema: z.object({
+            success: z.boolean()
+        })
     }));
 
-    ipcMain.handle('advancedMemory:deleteMany', createTelemetryAwareHandler('advancedMemory:deleteMany', async (_, ids: string[]) => {
+    ipcMain.handle('advancedMemory:deleteMany', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string[]]>('advancedMemory:deleteMany', async (_, ids) => {
         try {
             const result = await advancedMemoryService.deleteMemories(ids);
             return { success: true, ...result };
@@ -706,36 +835,54 @@ function registerManagementHandlers(advancedMemoryService: AdvancedMemoryService
         }
     }, {
         onError: () => ({ success: false, deleted: 0, failed: [], uiState: 'failure' }),
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([z.array(z.string().uuid())]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            deleted: z.number().int().optional(),
+            failed: z.array(z.string()).optional()
+        })
     }));
 
-    ipcMain.handle('advancedMemory:edit', createTelemetryAwareHandler('advancedMemory:edit', async (
+    ipcMain.handle('advancedMemory:edit', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string, { content?: string; category?: MemoryCategory; tags?: string[]; importance?: number; projectId?: string | null; }]>('advancedMemory:edit', async (
         _event,
-        id: string,
-        updates: {
-            content?: string;
-            category?: MemoryCategory;
-            tags?: string[];
-            importance?: number;
-            projectId?: string | null;
-        }
+        id,
+        updates
     ) => {
         const memory = await advancedMemoryService.editMemory(id, updates);
         return { success: !!memory, data: memory };
     }, {
         onError: handleBasicError,
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([
+            z.string().uuid(),
+            z.object({
+                content: z.string().optional(),
+                category: AdvancedMemoryCategorySchema.optional(),
+                tags: z.array(z.string()).optional(),
+                importance: z.number().min(0).max(1).optional(),
+                projectId: z.string().nullable().optional()
+            })
+        ]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: AdvancedSemanticFragmentSchema.nullable()
+        })
     }));
 
-    ipcMain.handle('advancedMemory:archive', createTelemetryAwareHandler<{ success: boolean }>('advancedMemory:archive', async (_event, id: string) => {
+    ipcMain.handle('advancedMemory:archive', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string]>('advancedMemory:archive', async (_event, id) => {
         const success = await advancedMemoryService.archiveMemory(id);
         return { success };
     }, {
         onError: handleBasicError,
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([z.string().uuid()]),
+        responseSchema: z.object({
+            success: z.boolean()
+        })
     }));
 
-    ipcMain.handle('advancedMemory:archiveMany', createTelemetryAwareHandler('advancedMemory:archiveMany', async (_, ids: string[]) => {
+    ipcMain.handle('advancedMemory:archiveMany', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string[]]>('advancedMemory:archiveMany', async (_, ids) => {
         try {
             const result = await advancedMemoryService.archiveMemories(ids);
             return { success: true, ...result };
@@ -755,72 +902,120 @@ function registerManagementHandlers(advancedMemoryService: AdvancedMemoryService
         }
     }, {
         onError: () => ({ success: false, archived: 0, failed: [], uiState: 'failure' }),
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([z.array(z.string().uuid())]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            archived: z.number().int().optional(),
+            failed: z.array(z.string()).optional()
+        })
     }));
 
-    ipcMain.handle('advancedMemory:restore', createTelemetryAwareHandler<{ success: boolean }>('advancedMemory:restore', async (_event, id: string) => {
+    ipcMain.handle('advancedMemory:restore', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string]>('advancedMemory:restore', async (_event, id) => {
         const success = await advancedMemoryService.restoreMemory(id);
         return { success };
     }, {
         onError: handleBasicError,
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([z.string().uuid()]),
+        responseSchema: z.object({
+            success: z.boolean()
+        })
     }));
 
 
-    ipcMain.handle('advancedMemory:get', createTelemetryAwareHandler('advancedMemory:get', async (_event, id: string) => {
+    ipcMain.handle('advancedMemory:get', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string]>('advancedMemory:get', async (_event, id) => {
         const memory = await advancedMemoryService.getMemory(id);
         return { success: !!memory, data: memory };
     }, {
         onError: handleBasicError,
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([z.string().uuid()]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: AdvancedSemanticFragmentSchema.nullable()
+        })
     }));
 
-    ipcMain.handle('advancedMemory:shareWithProject', createTelemetryAwareHandler('advancedMemory:shareWithProject', async (_event, memoryId: string, targetProjectId: string) => {
+    ipcMain.handle('advancedMemory:shareWithProject', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string, string]>('advancedMemory:shareWithProject', async (_event, memoryId, targetProjectId) => {
         const shared = await advancedMemoryService.shareMemoryWithProject(memoryId, targetProjectId);
         return { success: !!shared, data: shared };
     }, {
         onError: handleBasicError,
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([z.string().uuid(), z.string().min(1)]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: AdvancedSemanticFragmentSchema.nullable()
+        })
     }));
 
-    ipcMain.handle('advancedMemory:createSharedNamespace', createTelemetryAwareHandler('advancedMemory:createSharedNamespace', async (
+    ipcMain.handle('advancedMemory:createSharedNamespace', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [unknown]>('advancedMemory:createSharedNamespace', async (
         _event,
-        payload: { id: string; name: string; projectIds: string[]; accessControl?: Record<string, string[]> }
+        payload
     ) => {
-        const namespace = advancedMemoryService.createSharedNamespace(payload);
+        // SAFETY: payload is validated by argsSchema below
+        const namespace = advancedMemoryService.createSharedNamespace(payload as { id: string; name: string; projectIds: string[]; accessControl?: Record<string, string[]> });
         return { success: true, data: namespace };
     }, {
         onError: handleBasicError,
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([z.object({
+            id: z.string().uuid(),
+            name: z.string().min(1),
+            projectIds: z.array(z.string()),
+            accessControl: z.record(z.string(), z.array(z.string())).optional()
+        })]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: SharedMemoryNamespaceSchema
+        })
     }));
 
-    ipcMain.handle('advancedMemory:syncSharedNamespace', createTelemetryAwareHandler('advancedMemory:syncSharedNamespace', async (
+    ipcMain.handle('advancedMemory:syncSharedNamespace', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [SharedMemorySyncRequest]>('advancedMemory:syncSharedNamespace', async (
         _event,
-        request: SharedMemorySyncRequest
+        request
     ) => {
         const result = await advancedMemoryService.syncSharedNamespace(request);
         return { success: true, data: result };
     }, {
         onError: handleBasicError,
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([z.object({
+            namespaceId: z.string().uuid(),
+            sourceProjectId: z.string().min(1),
+            targetProjectIds: z.array(z.string()).optional(),
+            memoryIds: z.array(z.string().uuid()).optional(),
+            resolution: z.enum(['keep_source', 'keep_target', 'merge_copy', 'manual_review']).optional()
+        })]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: SharedMemorySyncResultSchema
+        })
     }));
 
-    ipcMain.handle('advancedMemory:getSharedNamespaceAnalytics', createTelemetryAwareHandler('advancedMemory:getSharedNamespaceAnalytics', async (
+    ipcMain.handle('advancedMemory:getSharedNamespaceAnalytics', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string]>('advancedMemory:getSharedNamespaceAnalytics', async (
         _event,
-        namespaceId: string
+        namespaceId
     ) => {
         const analytics = await advancedMemoryService.getSharedNamespaceAnalytics(namespaceId);
         return { success: true, data: analytics };
     }, {
         onError: handleBasicError,
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([z.string().uuid()]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: z.record(z.string(), z.unknown())
+        })
     }));
 
-    ipcMain.handle('advancedMemory:searchAcrossProjects', createTelemetryAwareHandler('advancedMemory:searchAcrossProjects', async (
+    ipcMain.handle('advancedMemory:searchAcrossProjects', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [unknown]>('advancedMemory:searchAcrossProjects', async (
         _event,
-        payload: { namespaceId: string; query: string; projectId: string; limit?: number }
+        payload
     ) => {
-        const result = await advancedMemoryService.searchAcrossProjects(payload);
+        // SAFETY: payload is validated by argsSchema below
+        const result = await advancedMemoryService.searchAcrossProjects(payload as { namespaceId: string; query: string; projectId: string; limit?: number });
         return {
             success: true,
             data: result,
@@ -828,10 +1023,21 @@ function registerManagementHandlers(advancedMemoryService: AdvancedMemoryService
         };
     }, {
         onError: () => ({ success: true, data: [], uiState: 'empty' }),
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([z.object({
+            namespaceId: z.string().uuid(),
+            query: z.string().min(1),
+            projectId: z.string().min(1),
+            limit: z.number().int().optional()
+        })]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: z.array(AdvancedSemanticFragmentSchema),
+            uiState: z.string()
+        })
     }));
 
-    ipcMain.handle('advancedMemory:getHistory', createTelemetryAwareHandler('advancedMemory:getHistory', async (_event, id: string) => {
+    ipcMain.handle('advancedMemory:getHistory', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string]>('advancedMemory:getHistory', async (_event, id) => {
         const history = await advancedMemoryService.getMemoryHistory(id);
         return {
             success: true,
@@ -840,15 +1046,26 @@ function registerManagementHandlers(advancedMemoryService: AdvancedMemoryService
         };
     }, {
         onError: () => ({ success: true, data: [], uiState: 'empty' }),
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([z.string().uuid()]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: z.array(z.record(z.string(), z.unknown())),
+            uiState: z.string()
+        })
     }));
 
-    ipcMain.handle('advancedMemory:rollback', createTelemetryAwareHandler('advancedMemory:rollback', async (_event, id: string, versionIndex: number) => {
+    ipcMain.handle('advancedMemory:rollback', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string, number]>('advancedMemory:rollback', async (_event, id, versionIndex) => {
         const memory = await advancedMemoryService.rollbackMemory(id, versionIndex);
         return { success: !!memory, data: memory };
     }, {
         onError: handleBasicError,
-        retries: 2
+        retries: 2,
+        argsSchema: z.tuple([z.string().uuid(), z.number().int()]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: AdvancedSemanticFragmentSchema.nullable()
+        })
     }));
 }
 
@@ -881,7 +1098,7 @@ function registerVisualizationHandlers(advancedMemoryService: AdvancedMemoryServ
 }
 
 function registerHealthHandlers(): void {
-    ipcMain.handle('advancedMemory:health', createTelemetryAwareHandler('advancedMemory:health', async () => {
+    ipcMain.handle('advancedMemory:health', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, []>('advancedMemory:health', async () => {
         return {
             success: true,
             data: createAdvancedMemoryHealthPayload(),
@@ -899,11 +1116,21 @@ function registerHealthHandlers(): void {
                     heavyMs: ADVANCED_MEMORY_PERFORMANCE_BUDGET_MS.HEAVY
                 },
                 metrics: {
-                    ...advancedMemoryTelemetry,
+                    totalCalls: advancedMemoryTelemetry.totalCalls,
+                    totalFailures: advancedMemoryTelemetry.totalFailures,
+                    totalRetries: advancedMemoryTelemetry.totalRetries,
+                    validationFailures: advancedMemoryTelemetry.validationFailures,
+                    budgetExceededCount: advancedMemoryTelemetry.budgetExceededCount,
                     errorRate: 1
                 }
             },
             uiState: 'failure'
+        }),
+        argsSchema: z.tuple([]),
+        responseSchema: z.object({
+            success: z.boolean(),
+            data: AdvancedMemoryHealthSchema,
+            uiState: z.string()
         })
     }));
 }
