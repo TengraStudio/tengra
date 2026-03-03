@@ -13,7 +13,7 @@ export function getMainWindow(): BrowserWindow | null {
     return mainWindow;
 }
 
-export function setMainWindow(win: BrowserWindow | null) {
+export function setMainWindow(win: BrowserWindow | null): void {
     mainWindow = win;
 }
 
@@ -52,7 +52,7 @@ export function createWindow(settingsService?: SettingsService): BrowserWindow {
     // SEC-H-001: Enforce navigation restrictions via shared utility
     enforceNavigationRestrictions(win, 'MainWindow');
 
-    if(!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) {
+    if (!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) {
         void win.loadURL(process.env['ELECTRON_RENDERER_URL']);
     } else {
         void win.loadFile(path.join(__dirname, '../renderer/index.html'));
@@ -74,7 +74,12 @@ function getWindowIconPath(): string {
 /**
  * Retrieves initial window dimensions and position from settings.
  */
-function getWindowInitialSettings(settingsService?: SettingsService) {
+function getWindowInitialSettings(settingsService?: SettingsService): {
+    width: number;
+    height: number;
+    x: number | undefined;
+    y: number | undefined;
+} {
     const settings = settingsService?.getSettings();
     const win = settings?.window;
     return {
@@ -120,7 +125,6 @@ function setupWebContentsSecurity(win: BrowserWindow) {
             `'self'`,
             `'nonce-${nonce}'`,
             'blob:',
-            ...(isDev ? [`'unsafe-eval'`, `'unsafe-inline'`] : [])
         ];
 
         const connectSources = [
@@ -155,7 +159,7 @@ function setupWebContentsSecurity(win: BrowserWindow) {
                 'X-Frame-Options': ['DENY'],
                 'X-XSS-Protection': ['1; mode=block'],
                 'Referrer-Policy': ['no-referrer-when-downgrade'],
-                ...(app.isPackaged ? { 'Strict-Transport-Security': ['max-age=31536000; includeSubDomains'] } : {})
+                ...(app.isPackaged ? { 'Strict-Transport-Security': ['max-age=31536000; includeSubDomains'] } : {}),
             },
         });
     });

@@ -98,6 +98,12 @@ export class SSHService extends EventEmitter {
     // Delegated managers
     private keyManager: SSHKeyManager;
     private _tunnelManager: SSHTunnelManager;
+    private readonly onTunnelCreated = (forward: SSHPortForward): void => {
+        this.emit('portForwardCreated', forward);
+    };
+    private readonly onTunnelClosed = (forwardId: string): void => {
+        this.emit('portForwardClosed', forwardId);
+    };
 
     /**
      * Get tunnel manager for SSH port forwarding operations
@@ -115,12 +121,8 @@ export class SSHService extends EventEmitter {
         this._tunnelManager = new SSHTunnelManager(storagePath);
 
         // Forward tunnel manager events
-        this._tunnelManager.on('portForwardCreated', (forward: SSHPortForward) => {
-            this.emit('portForwardCreated', forward);
-        });
-        this._tunnelManager.on('portForwardClosed', (forwardId: string) => {
-            this.emit('portForwardClosed', forwardId);
-        });
+        this._tunnelManager.on('portForwardCreated', this.onTunnelCreated);
+        this._tunnelManager.on('portForwardClosed', this.onTunnelClosed);
     }
 
     /**
@@ -1409,6 +1411,14 @@ export class SSHService extends EventEmitter {
         this.shellSessions.clear();
         this.keepaliveTimers.clear();
         this.emit('connectionsChanged', []);
+    }
+
+    async dispose(): Promise<void> {
+        await this.disconnectAll();
+        this._tunnelManager.off('portForwardCreated', this.onTunnelCreated);
+        this._tunnelManager.off('portForwardClosed', this.onTunnelClosed);
+        await this._tunnelManager.dispose();
+        this.removeAllListeners();
     }
 
     async getSystemStats(connectionId: string): Promise<SSHSystemStats> {

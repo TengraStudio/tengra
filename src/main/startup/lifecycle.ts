@@ -34,8 +34,11 @@ export function registerLifecycleHandlers(settingsService: SettingsService) {
         }
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    app.on('before-quit', async (event) => {
+    app.on('before-quit', (event) => {
+        void handleBeforeQuit(event);
+    });
+
+    async function handleBeforeQuit(event: Electron.Event): Promise<void> {
         // Prevent re-entry if already quitting
         if (isQuitting) { return; }
         isQuitting = true;
@@ -78,5 +81,5 @@ export function registerLifecycleHandlers(settingsService: SettingsService) {
             appLogger.error('Lifecycle', `Cleanup error: ${e}`);
             app.exit(1);
         }
-    }) as unknown as (event: Event) => void;
+    }
 }

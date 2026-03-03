@@ -14,6 +14,8 @@ export interface ProxyBridge {
     }>;
     getClaudeQuota: () => Promise<{ accounts: Array<import('@shared/types/quota').ClaudeQuota> }>;
     antigravityLogin: () => Promise<{ url: string; state: string }>;
+    codexLogin: () => Promise<{ url: string; state: string }>;
+    claudeLogin: () => Promise<{ url: string; state: string }>;
     saveClaudeSession: (
         sessionKey: string,
         accountId?: string
@@ -37,6 +39,8 @@ export function createProxyBridge(ipc: IpcRenderer): ProxyBridge {
         getCodexUsage: () => ipc.invoke('proxy:getCodexUsage'),
         getClaudeQuota: () => ipc.invoke('proxy:getClaudeQuota'),
         antigravityLogin: () => ipc.invoke('proxy:antigravityLogin'),
+        codexLogin: () => ipc.invoke('proxy:codexLogin'),
+        claudeLogin: () => ipc.invoke('proxy:claudeLogin'),
         saveClaudeSession: (sessionKey, accountId) =>
             ipc.invoke('proxy:saveClaudeSession', sessionKey, accountId),
         checkUsageLimit: (provider, model) => ipc.invoke('usage:checkLimit', provider, model),

@@ -165,6 +165,8 @@ export interface ElectronAPI {
         error?: string;
     }>;
     antigravityLogin: () => Promise<{ url: string; state: string }>;
+    codexLogin: () => Promise<{ url: string; state: string }>;
+    claudeLogin: () => Promise<{ url: string; state: string }>;
 
     saveClaudeSession: (
         sessionKey: string,

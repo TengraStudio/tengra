@@ -1,6 +1,7 @@
 # TENGRA PROJECT TODO LIST
 
 ## 🏛️ Architecture & Refactoring (NASA Power of Ten)
+- [x] **SYS-001**: Remove the structured changelog system.
 - [ ] **REF-001**: Refactor `src/main/services/project/ssh.service.ts` (1925 lines) into modular services.
 - [ ] **REF-002**: Refactor `src/main/ipc/project-agent.ts` (1858 lines) by splitting IPC domains.
 - [ ] **REF-003**: Refactor `src/main/services/project/project-agent.service.ts` (1201 lines) into task and council managers.
@@ -10,9 +11,9 @@
     - [ ] `SSHTunnelManager`
 
 ## 🐛 Existing Code Smells & TODOs
-- [ ] **BUG-001**: resolve `// TODO: Move to config` in `src/main/services/project/user-collaboration.service.ts:15`.
+- [x] **BUG-001**: resolve `// TODO: Move to config` in `src/main/services/project/user-collaboration.service.ts:15`.
 - [ ] **FEAT-001**: Implement provider health statistics tracked by `TODO-001-6` in `agent-provider-rotation.service.ts`.
-- [ ] **SAFE-001**: Remove unsafe `@ts-ignore` and `eslint-disable` in `src/main/startup/lifecycle.ts` and `src/main/utils/stream-parser.util.ts`.
+- [x] **SAFE-001**: Remove unsafe `@ts-ignore` and `eslint-disable` in `src/main/startup/lifecycle.ts` and `src/main/utils/stream-parser.util.ts`.
 
 ## 🧪 Testing & Validation
 - [x] **IPC-001**: Register 'model-registry:get-all' and standardize dash-case IPC names.

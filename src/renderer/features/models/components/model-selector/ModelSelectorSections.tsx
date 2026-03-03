@@ -291,9 +291,7 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
             .sort((a, b) => scoreModelForMode(b, chatMode) - scoreModelForMode(a, chatMode))
             .slice(0, 8)
     );
-    const connectedModels = dedupe(
-        allModels.filter(model => !model.disabled && model.lifecycle !== 'retired').slice(0, 20)
-    );
+
     const deprecatedModels = dedupe(
         allModels.filter(model => model.lifecycle === 'deprecated' || model.lifecycle === 'retired')
     );
@@ -315,19 +313,7 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
                 />
             )}
 
-            {showCuratedSections && connectedModels.length > 0 && (
-                <ModelSection
-                    title="Connected"
-                    icon={<Clock className="w-3.5 h-3.5 text-success" />}
-                    models={connectedModels}
-                    selectedModels={selectedModels}
-                    selectedModel={selectedModel}
-                    selectedProvider={selectedProvider}
-                    onSelect={onSelect}
-                    toggleFavorite={toggleFavorite}
-                    t={t}
-                />
-            )}
+
 
             {showCuratedSections && favoriteModels.length > 0 && (
                 <ModelSection

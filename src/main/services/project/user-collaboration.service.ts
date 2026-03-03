@@ -1,6 +1,8 @@
 import { BaseService } from '@main/services/base.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
+import { NETWORK_DEFAULTS } from '@shared/constants/app-config';
+import { JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { WebSocket } from 'ws';
 
@@ -12,8 +14,7 @@ import { WebSocket } from 'ws';
  */
 export class UserCollaborationService extends BaseService {
     private websockets: Map<string, WebSocket> = new Map();
-    // TODO: Move to config
-    private readonly BACKEND_URL = 'ws://localhost:8080/api/v1/collaboration';
+    private readonly backendUrl = process.env['COLLABORATION_WS_URL'] ?? NETWORK_DEFAULTS.COLLABORATION_WS_URL;
 
     constructor(
         private authService: AuthService,
@@ -45,7 +46,7 @@ export class UserCollaborationService extends BaseService {
                 throw new Error('Authentication required for collaboration (No active Tengra account)');
             }
 
-            const url = `${this.BACKEND_URL}/${type}/${id}`;
+            const url = `${this.backendUrl}/${type}/${id}`;
             const ws = new WebSocket(url, {
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -86,7 +87,7 @@ export class UserCollaborationService extends BaseService {
      * @param roomId - The room identifier (e.g., 'project:123')
      * @param data - The update payload (JSON object or string)
      */
-    async sendUpdate(roomId: string, data: unknown): Promise<void> {
+    async sendUpdate(roomId: string, data: JsonValue): Promise<void> {
         const ws = this.websockets.get(roomId);
         if (ws?.readyState !== WebSocket.OPEN) {
             throw new Error(`Not connected to collaborative room: ${roomId}`);

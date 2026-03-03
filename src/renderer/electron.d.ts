@@ -258,7 +258,6 @@ export interface ElectronAPI {
      * @returns Promise resolving to OAuth URL and state
      */
     antigravityLogin: () => Promise<{ url: string; state: string }>;
-
     claudeLogin: () => Promise<{ url: string; state: string }>;
     claudeBrowserLogin: () => Promise<{ sessionKey?: string; status?: string; error?: string }>;
     anthropicLogin: () => Promise<{ url: string; state: string }>;

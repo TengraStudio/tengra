@@ -299,4 +299,12 @@ export class SSHTunnelManager extends EventEmitter {
         this.portForwardClosers.delete(forwardId);
         return true;
     }
+
+    async dispose(): Promise<void> {
+        const forwardIds = Array.from(this.portForwards.keys());
+        for (const forwardId of forwardIds) {
+            await this.closePortForward(forwardId);
+        }
+        this.removeAllListeners();
+    }
 }

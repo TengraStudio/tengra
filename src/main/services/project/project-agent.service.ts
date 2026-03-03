@@ -128,6 +128,10 @@ export class ProjectAgentService extends BaseService {
         this.executors.clear();
     }
 
+    async dispose(): Promise<void> {
+        await this.cleanup();
+    }
+
     private async restoreActiveTasks(): Promise<void> {
         try {
             // Find tasks that were in running/planning/paused states

@@ -333,7 +333,7 @@ export class QuotaService {
                 results.push({ ...quota, accountId: account.id, email: account.email });
             }
         }
-        appLogger.info('QuotaService', `${QuotaTelemetryEvent.COPILOT_QUOTA_FETCHED}: ${results.length} accounts`);
+        appLogger.debug('QuotaService', `${QuotaTelemetryEvent.COPILOT_QUOTA_FETCHED}: ${results.length} accounts`);
         this.warnIfOverBudget('getCopilotQuota', start, QUOTA_PERFORMANCE_BUDGETS.FETCH_COPILOT_QUOTA_MS);
         return { accounts: results };
     }
