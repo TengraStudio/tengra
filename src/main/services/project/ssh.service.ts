@@ -1,7 +1,6 @@
 import * as crypto from 'crypto';
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
-import * as net from 'net';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
@@ -75,7 +74,7 @@ interface ShellSession {
     onExit: () => void;
 }
 
-type StoredTunnelPreset = SSHTunnelPreset;
+// StoredTunnelPreset moved to SSHTunnelManager
 type StoredSearchHistoryEntry = SSHSearchHistoryEntry;
 type StoredProfileTemplate = SSHProfileTemplate;
 
@@ -84,8 +83,6 @@ export class SSHService extends EventEmitter {
     private connectionDetails: Map<string, SSHConnection> = new Map();
     private connectionStats: Map<string, SSHConnectionStats> = new Map();
     private shellSessions: Map<string, ShellSession> = new Map();
-    private portForwards: Map<string, SSHPortForward> = new Map();
-    private portForwardClosers: Map<string, () => void> = new Map();
     private connectionPoolRefs: Map<string, number> = new Map();
     private transferQueue: SSHTransferTask[] = [];
     private transferQueueProcessing = false;
@@ -111,10 +108,19 @@ export class SSHService extends EventEmitter {
 
     constructor(storagePath: string, securityService?: SecurityService) {
         super();
-        this.storagePath = storagePath;
         this.securityService = securityService;
+        this.storagePath = storagePath;
+        this.ensureInitialization().catch(err => appLogger.error('SSHService', 'Init failed', err as Error));
         this.keyManager = new SSHKeyManager(storagePath);
         this._tunnelManager = new SSHTunnelManager(storagePath);
+
+        // Forward tunnel manager events
+        this._tunnelManager.on('portForwardCreated', (forward: SSHPortForward) => {
+            this.emit('portForwardCreated', forward);
+        });
+        this._tunnelManager.on('portForwardClosed', (forwardId: string) => {
+            this.emit('portForwardClosed', forwardId);
+        });
     }
 
     /**
@@ -278,14 +284,15 @@ export class SSHService extends EventEmitter {
         }
     }
 
-    private async readTunnelPresets(): Promise<StoredTunnelPreset[]> {
+
+    private async readProfileTemplates(): Promise<StoredProfileTemplate[]> {
         await this.ensureKeyStorageInitialized();
-        const content = await fs.promises.readFile(this.tunnelPresetsPath, 'utf-8');
-        return safeJsonParse<StoredTunnelPreset[]>(content, []);
+        const content = await fs.promises.readFile(this.profileTemplatesPath, 'utf-8');
+        return safeJsonParse<StoredProfileTemplate[]>(content, []);
     }
 
-    private async writeTunnelPresets(presets: StoredTunnelPreset[]): Promise<void> {
-        await fs.promises.writeFile(this.tunnelPresetsPath, JSON.stringify(presets, null, 2));
+    private async writeProfileTemplates(templates: StoredProfileTemplate[]): Promise<void> {
+        await fs.promises.writeFile(this.profileTemplatesPath, JSON.stringify(templates, null, 2));
     }
 
     private async readSearchHistory(): Promise<StoredSearchHistoryEntry[]> {
@@ -296,16 +303,6 @@ export class SSHService extends EventEmitter {
 
     private async writeSearchHistory(entries: StoredSearchHistoryEntry[]): Promise<void> {
         await fs.promises.writeFile(this.searchHistoryPath, JSON.stringify(entries, null, 2));
-    }
-
-    private async readProfileTemplates(): Promise<StoredProfileTemplate[]> {
-        await this.ensureKeyStorageInitialized();
-        const content = await fs.promises.readFile(this.profileTemplatesPath, 'utf-8');
-        return safeJsonParse<StoredProfileTemplate[]>(content, []);
-    }
-
-    private async writeProfileTemplates(templates: StoredProfileTemplate[]): Promise<void> {
-        await fs.promises.writeFile(this.profileTemplatesPath, JSON.stringify(templates, null, 2));
     }
 
     async getSavedProfiles(): Promise<SSHConnection[]> {
@@ -1304,47 +1301,13 @@ export class SSHService extends EventEmitter {
             return { success: false, error: 'Not connected' };
         }
 
-        const forwardId = crypto.randomUUID();
-
-        return new Promise(resolve => {
-            const server = net.createServer((socket: net.Socket) => {
-                conn.forwardOut(
-                    socket.remoteAddress ?? '127.0.0.1',
-                    socket.remotePort ?? 0,
-                    remoteHost,
-                    remotePort,
-                    (err: Error | undefined, stream: NodeJS.ReadWriteStream) => {
-                        if (err) {
-                            socket.end();
-                            return;
-                        }
-                        socket.pipe(stream).pipe(socket);
-                    }
-                );
-            });
-
-            server.listen(localPort, localHost, () => {
-                const forward: PortForward = {
-                    id: forwardId,
-                    connectionId,
-                    type: 'local',
-                    localHost,
-                    localPort,
-                    remoteHost,
-                    remotePort,
-                    active: true,
-                };
-                this.portForwards.set(forwardId, forward);
-                this.portForwardClosers.set(forwardId, () => {
-                    server.close();
-                });
-                this.emit('portForwardCreated', forward);
-                resolve({ success: true, forwardId });
-            });
-
-            server.on('error', (err: Error) => {
-                resolve({ success: false, error: err.message });
-            });
+        return this._tunnelManager.createLocalForward({
+            connectionId,
+            conn,
+            localHost,
+            localPort,
+            remoteHost,
+            remotePort
         });
     }
 
@@ -1360,31 +1323,13 @@ export class SSHService extends EventEmitter {
             return { success: false, error: 'Not connected' };
         }
 
-        const forwardId = crypto.randomUUID();
-        return new Promise(resolve => {
-            conn.forwardIn(remoteHost, remotePort, (error?: Error) => {
-                if (error) {
-                    resolve({ success: false, error: error.message });
-                    return;
-                }
-
-                const forward: PortForward = {
-                    id: forwardId,
-                    connectionId,
-                    type: 'remote',
-                    localHost,
-                    localPort,
-                    remoteHost,
-                    remotePort,
-                    active: true
-                };
-                this.portForwards.set(forwardId, forward);
-                this.portForwardClosers.set(forwardId, () => {
-                    conn.unforwardIn(remoteHost, remotePort, () => { });
-                });
-                this.emit('portForwardCreated', forward);
-                resolve({ success: true, forwardId });
-            });
+        return this._tunnelManager.createRemoteForward({
+            connectionId,
+            conn,
+            remoteHost,
+            remotePort,
+            localHost,
+            localPort
         });
     }
 
@@ -1398,157 +1343,50 @@ export class SSHService extends EventEmitter {
             return { success: false, error: 'Not connected' };
         }
 
-        const forwardId = crypto.randomUUID();
-        return new Promise(resolve => {
-            const server = net.createServer((socket: net.Socket) => {
-                socket.once('data', (chunk: Buffer) => {
-                    if (chunk[0] !== 0x05) {
-                        socket.end();
-                        return;
-                    }
-                    socket.write(Buffer.from([0x05, 0x00]));
-                    socket.once('data', (request: Buffer) => {
-                        this.handleDynamicForwardRequest(conn, socket, request);
-                    });
-                });
-            });
-
-            server.listen(localPort, localHost, () => {
-                const forward: PortForward = {
-                    id: forwardId,
-                    connectionId,
-                    type: 'dynamic',
-                    localHost,
-                    localPort,
-                    remoteHost: '0.0.0.0',
-                    remotePort: 0,
-                    active: true
-                };
-                this.portForwards.set(forwardId, forward);
-                this.portForwardClosers.set(forwardId, () => {
-                    server.close();
-                });
-                this.emit('portForwardCreated', forward);
-                resolve({ success: true, forwardId });
-            });
-
-            server.on('error', (error: Error) => {
-                resolve({ success: false, error: error.message });
-            });
-        });
+        return this._tunnelManager.createDynamicForward(connectionId, conn, localHost, localPort);
     }
 
     async saveTunnelPreset(preset: Omit<SSHTunnelPreset, 'id' | 'createdAt' | 'updatedAt'>): Promise<SSHTunnelPreset> {
-        const presets = await this.readTunnelPresets();
-        const now = Date.now();
-        const created: StoredTunnelPreset = {
-            id: crypto.randomUUID(),
-            createdAt: now,
-            updatedAt: now,
-            ...preset
-        };
-        presets.push(created);
-        await this.writeTunnelPresets(presets);
-        return created;
+        return this._tunnelManager.saveTunnelPreset(preset);
     }
 
     async listTunnelPresets(): Promise<SSHTunnelPreset[]> {
-        return this.readTunnelPresets();
+        return this._tunnelManager.listTunnelPresets();
     }
 
     async deleteTunnelPreset(id: string): Promise<boolean> {
-        const presets = await this.readTunnelPresets();
-        const filtered = presets.filter(preset => preset.id !== id);
-        if (filtered.length === presets.length) {
-            return false;
-        }
-        await this.writeTunnelPresets(filtered);
-        return true;
-    }
-
-    private handleDynamicForwardRequest(conn: Client, socket: net.Socket, request: Buffer): void {
-        if (request[0] !== 0x05 || request[1] !== 0x01) {
-            socket.end();
-            return;
-        }
-
-        const destination = this.parseSocksDestination(request);
-        if (!destination) {
-            socket.end();
-            return;
-        }
-
-        conn.forwardOut(
-            socket.remoteAddress ?? '127.0.0.1',
-            socket.remotePort ?? 0,
-            destination.host,
-            destination.port,
-            (error: Error | undefined, stream: NodeJS.ReadWriteStream) => {
-                if (error) {
-                    socket.end();
-                    return;
-                }
-                socket.write(Buffer.from([0x05, 0x00, 0x00, 0x01, 0, 0, 0, 0, 0, 0]));
-                socket.pipe(stream).pipe(socket);
-            }
-        );
-    }
-
-    private parseSocksDestination(request: Buffer): { host: string; port: number } | null {
-        const addressType = request[3];
-        if (addressType === 0x01 && request.length >= 10) {
-            const host = `${request[4]}.${request[5]}.${request[6]}.${request[7]}`;
-            const port = request.readUInt16BE(8);
-            return { host, port };
-        }
-        if (addressType === 0x03 && request.length >= 7) {
-            const length = request[4];
-            const end = 5 + length;
-            if (request.length < end + 2) {
-                return null;
-            }
-            const host = request.subarray(5, end).toString('utf-8');
-            const port = request.readUInt16BE(end);
-            return { host, port };
-        }
-        return null;
+        return this._tunnelManager.deleteTunnelPreset(id);
     }
 
     /**
      * Get all active port forwards
      */
-    getPortForwards(connectionId?: string): PortForward[] {
-        const forwards = Array.from(this.portForwards.values());
+    getPortForwards(connectionId?: string): SSHPortForward[] {
+        const allForwards = this._tunnelManager.getAllPortForwards();
         if (connectionId) {
-            return forwards.filter(f => f.connectionId === connectionId);
+            return allForwards.filter(f => f.connectionId === connectionId);
         }
-        return forwards;
+        return allForwards;
     }
 
     /**
      * Close a port forward
      */
-    closePortForward(forwardId: string): boolean {
-        const forward = this.portForwards.get(forwardId);
-        if (!forward) {
-            return false;
-        }
-
-        const close = this.portForwardClosers.get(forwardId);
-        if (close) {
-            close();
-            this.portForwardClosers.delete(forwardId);
-        }
-        forward.active = false;
-        this.portForwards.delete(forwardId);
-        this.emit('portForwardClosed', forwardId);
-        return true;
+    async closePortForward(forwardId: string): Promise<boolean> {
+        return await this._tunnelManager.closePortForward(forwardId);
     }
 
     /**
      * Disconnect all connections and cleanup
      */
     async disconnectAll(): Promise<void> {
+        // Close all port forwards
+        const forwards = this._tunnelManager.getAllPortForwards();
+        for (const forward of forwards) {
+            await this._tunnelManager.closePortForward(forward.id);
+        }
+
+        // Close all connections
         for (const [id, conn] of this.connections) {
             try {
                 conn.end();
@@ -1564,17 +1402,13 @@ export class SSHService extends EventEmitter {
         for (const timer of this.keepaliveTimers.values()) {
             clearInterval(timer);
         }
-        for (const close of this.portForwardClosers.values()) {
-            close();
-        }
 
         this.connections.clear();
         this.connectionDetails.clear();
         this.connectionStats.clear();
         this.shellSessions.clear();
-        this.portForwards.clear();
-        this.portForwardClosers.clear();
         this.keepaliveTimers.clear();
+        this.emit('connectionsChanged', []);
     }
 
     async getSystemStats(connectionId: string): Promise<SSHSystemStats> {
@@ -1874,7 +1708,7 @@ export class SSHService extends EventEmitter {
 
     async deleteProfileTemplate(id: string): Promise<boolean> {
         const templates = await this.readProfileTemplates();
-        const filtered = templates.filter(template => template.id !== id);
+        const filtered = templates.filter((t: SSHProfileTemplate) => t.id !== id);
         if (filtered.length === templates.length) {
             return false;
         }

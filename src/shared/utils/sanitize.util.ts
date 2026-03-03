@@ -1,3 +1,5 @@
+import { JsonObject } from '@shared/types/common';
+
 /**
  * Input sanitization utilities for user-provided data
  */
@@ -186,7 +188,7 @@ export function sanitizeStringArray(
  * @param options - Sanitization options
  * @returns Sanitized object
  */
-export function sanitizeObject<T extends Record<string, unknown>>(
+export function sanitizeObject<T extends JsonObject>(
     obj: T | null | undefined,
     options: Parameters<typeof sanitizeString>[1] = {}
 ): T | null | undefined {
@@ -197,7 +199,7 @@ export function sanitizeObject<T extends Record<string, unknown>>(
     if (Array.isArray(obj)) {
         const sanitizedArray: unknown = obj.map(item => {
             if (typeof item === 'object' && item !== null) {
-                return sanitizeObject(item as Record<string, unknown>, options);
+                return sanitizeObject(item as JsonObject, options);
             }
 
             return item;
@@ -217,11 +219,11 @@ export function sanitizeObject<T extends Record<string, unknown>>(
         }
 
         if (typeof value === 'string') {
-            ; (sanitized as Record<string, unknown>)[sanitizedKey] = sanitizeString(value, options);
+            ; (sanitized as JsonObject)[sanitizedKey] = sanitizeString(value, options);
         } else if (typeof value === 'object' && value !== null) {
-            ; (sanitized as Record<string, unknown>)[sanitizedKey] = sanitizeObject(value as Record<string, unknown>, options);
+            ; (sanitized as JsonObject)[sanitizedKey] = sanitizeObject(value as JsonObject, options);
         } else {
-            ; (sanitized as Record<string, unknown>)[sanitizedKey] = value;
+            ; (sanitized as JsonObject)[sanitizedKey] = value;
         }
     }
 

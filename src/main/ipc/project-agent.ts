@@ -1,5 +1,6 @@
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { DatabaseService } from '@main/services/data/database.service';
+import { UacCanvasEdgeRecord, UacCanvasNodeRecord } from '@main/services/data/repositories/uac.repository';
 import { ProjectAgentService } from '@main/services/project/project-agent.service';
 import { createSafeIpcHandler, createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import {
@@ -7,6 +8,7 @@ import {
     AgentCollaborationPrioritySchema,
     AgentProfileSchema,
     AgentStartOptionsSchema,
+    DebateCitationSchema,
     DebateSessionSchema,
     DebateSideSchema,
     ModelRoutingRuleSchema,
@@ -15,26 +17,46 @@ import {
     VotingConfigurationSchema,
     VotingSessionSchema,
 } from '@shared/schemas/project-agent-hardening.schema';
+import type { AgentEventRecord, TaskMetrics } from '@shared/types/agent-state';
 import type {
     AgentCollaborationIntent,
     AgentCollaborationPriority,
     AgentPerformanceMetrics,
     AgentProfile,
     AgentStartOptions,
+    AgentTaskHistoryItem,
     AgentTeamworkAnalytics,
     AgentTemplate,
     AgentTemplateCategory,
     AgentTemplateExport,
+    ConsensusResult,
     DebateCitation,
+    DebateReplay,
     DebateSession,
     DebateSide,
+    HelperCandidateInput,
+    HelperHandoffInput,
+    HelperMergeGateDecision,
+    HelperMergeGateInput,
     ModelRoutingRule,
     ProjectState,
     ProjectStep,
+    QuotaInterruptInput,
+    QuotaInterruptResult,
     VotingAnalytics,
     VotingConfiguration,
     VotingSession,
     VotingTemplate,
+    WorkerAvailabilityInput,
+    WorkerAvailabilityRecord,
+} from '@shared/types/project-agent';
+import type {
+    AgentCheckpointItem,
+    AgentCollaborationMessage,
+    HelperCandidateScore,
+    HelperHandoffPackage,
+    PlanVersionItem,
+    RollbackCheckpointResult,
 } from '@shared/types/project-agent';
 import { BrowserWindow, ipcMain } from 'electron';
 import { z } from 'zod';
@@ -52,6 +74,12 @@ interface CanvasEdge {
     target: string;
     sourceHandle?: string;
     targetHandle?: string;
+}
+
+interface AvailableModelInfo {
+    id: string;
+    name: string;
+    provider: string;
 }
 
 const PROJECT_UPDATE_THROTTLE_MS = 50;
@@ -347,9 +375,9 @@ export function registerProjectAgentIpc(
 
     ipcMain.handle(
         'project:get-events',
-        createValidatedIpcHandler<{ success: boolean; events: any[] }, [{ taskId: string }]>(
+        createValidatedIpcHandler<{ success: boolean; events: AgentEventRecord[] }, [{ taskId: string }]>(
             'project:get-events',
-            async (event, payload: { taskId: string }): Promise<{ success: boolean; events: any[] }> => {
+            async (event, payload: { taskId: string }): Promise<{ success: boolean; events: AgentEventRecord[] }> => {
                 validateSender(event);
                 return await projectAgentService.getTaskEvents(payload.taskId);
             },
@@ -482,9 +510,9 @@ export function registerProjectAgentIpc(
 
     ipcMain.handle(
         'project:council-get-timeline',
-        createValidatedIpcHandler<{ success: boolean; events: any[] }, [{ taskId: string }]>(
+        createValidatedIpcHandler<{ success: boolean; events: AgentEventRecord[] }, [{ taskId: string }]>(
             'project:council-get-timeline',
-            async (event, payload: { taskId: string }): Promise<{ success: boolean; events: any[] }> => {
+            async (event, payload: { taskId: string }): Promise<{ success: boolean; events: AgentEventRecord[] }> => {
                 validateSender(event);
                 const events = await projectAgentService.getTaskEvents(payload.taskId);
                 return { success: true, events: events.events || [] };
@@ -499,9 +527,9 @@ export function registerProjectAgentIpc(
 
     ipcMain.handle(
         'project:get-telemetry',
-        createValidatedIpcHandler<{ success: boolean; telemetry: any[] }, [{ taskId: string }]>(
+        createValidatedIpcHandler<{ success: boolean; telemetry: TaskMetrics[] }, [{ taskId: string }]>(
             'project:get-telemetry',
-            async (event, payload: { taskId: string }): Promise<{ success: boolean; telemetry: any[] }> => {
+            async (event, payload: { taskId: string }): Promise<{ success: boolean; telemetry: TaskMetrics[] }> => {
                 validateSender(event);
                 return await projectAgentService.getTaskTelemetry(payload.taskId);
             },
@@ -514,9 +542,9 @@ export function registerProjectAgentIpc(
 
     ipcMain.handle(
         'project:get-task-history',
-        createValidatedIpcHandler<any[], [{ projectId?: string } | undefined]>(
+        createValidatedIpcHandler<AgentTaskHistoryItem[], [{ projectId?: string } | undefined]>(
             'project:get-task-history',
-            async (event, payload?: { projectId?: string }): Promise<any[]> => {
+            async (event, payload?: { projectId?: string }): Promise<AgentTaskHistoryItem[]> => {
                 validateSender(event);
                 return await projectAgentService.getTaskHistory(payload?.projectId ?? '');
             },
@@ -548,9 +576,9 @@ export function registerProjectAgentIpc(
 
     ipcMain.handle(
         'project:get-available-models',
-        createValidatedIpcHandler<{ success: boolean; models: any[] }, []>(
+        createValidatedIpcHandler<{ success: boolean; models: AvailableModelInfo[] }, []>(
             'project:get-available-models',
-            async (event): Promise<{ success: boolean; models: any[] }> => {
+            async (event): Promise<{ success: boolean; models: AvailableModelInfo[] }> => {
                 validateSender(event);
                 const models = await projectAgentService.getAvailableModels();
                 return {
@@ -700,9 +728,9 @@ export function registerProjectAgentIpc(
 
     ipcMain.handle(
         'project:get-checkpoints',
-        createValidatedIpcHandler<any[], [string]>(
+        createValidatedIpcHandler<AgentCheckpointItem[], [string]>(
             'project:get-checkpoints',
-            async (event, taskId: string): Promise<any[]> => {
+            async (event, taskId: string): Promise<AgentCheckpointItem[]> => {
                 validateSender(event);
                 return await projectAgentService.getCheckpoints(taskId);
             },
@@ -715,9 +743,9 @@ export function registerProjectAgentIpc(
 
     ipcMain.handle(
         'project:rollback-checkpoint',
-        createValidatedIpcHandler<any | null, [string]>(
+        createValidatedIpcHandler<RollbackCheckpointResult | null, [string]>(
             'project:rollback-checkpoint',
-            async (event, checkpointId: string): Promise<any | null> => {
+            async (event, checkpointId: string): Promise<RollbackCheckpointResult | null> => {
                 validateSender(event);
                 return await projectAgentService.rollbackCheckpoint(checkpointId);
             },
@@ -730,9 +758,9 @@ export function registerProjectAgentIpc(
 
     ipcMain.handle(
         'project:get-plan-versions',
-        createValidatedIpcHandler<any[], [string]>(
+        createValidatedIpcHandler<PlanVersionItem[], [string]>(
             'project:get-plan-versions',
-            async (event, taskId: string): Promise<any[]> => {
+            async (event, taskId: string): Promise<PlanVersionItem[]> => {
                 validateSender(event);
                 return await projectAgentService.getPlanVersions(taskId);
             },
@@ -760,9 +788,9 @@ export function registerProjectAgentIpc(
 
     ipcMain.handle(
         'project:create-pr',
-        createValidatedIpcHandler<any | null, [{ taskId?: string } | undefined]>(
+        createValidatedIpcHandler<{ success: boolean; url?: string; error?: string } | null, [{ taskId?: string } | undefined]>(
             'project:create-pr',
-            async (event, payload?: { taskId?: string }): Promise<any | null> => {
+            async (event, payload?: { taskId?: string }): Promise<{ success: boolean; url?: string; error?: string } | null> => {
                 validateSender(event);
                 return await projectAgentService.createPullRequest(payload?.taskId);
             },
@@ -790,9 +818,9 @@ export function registerProjectAgentIpc(
 
     ipcMain.handle(
         'project:register-profile',
-        createValidatedIpcHandler<any | null, [AgentProfile]>(
+        createValidatedIpcHandler<AgentProfile | null, [AgentProfile]>(
             'project:register-profile',
-            async (event, profile: AgentProfile): Promise<any | null> => {
+            async (event, profile: AgentProfile): Promise<AgentProfile | null> => {
                 validateSender(event);
                 return await projectAgentService.registerProfile(profile);
             },
@@ -880,7 +908,7 @@ export function registerProjectAgentIpc(
 
     ipcMain.handle(
         'project:submit-vote',
-        createValidatedIpcHandler<any | null, [{
+        createValidatedIpcHandler<VotingSession | null, [{
             sessionId: string;
             modelId: string;
             provider: string;
@@ -899,7 +927,7 @@ export function registerProjectAgentIpc(
                     confidence: number;
                     reasoning?: string;
                 }
-            ): Promise<any | null> => {
+            ): Promise<VotingSession | null> => {
                 validateSender(event);
                 return await projectAgentService.submitVote({
                     sessionId: payload.sessionId,
@@ -926,9 +954,9 @@ export function registerProjectAgentIpc(
 
     ipcMain.handle(
         'project:request-votes',
-        createValidatedIpcHandler<any | null, [{ sessionId: string; models: Array<{ provider: string; model: string }> }]>(
+        createValidatedIpcHandler<VotingSession | null, [{ sessionId: string; models: Array<{ provider: string; model: string }> }]>(
             'project:request-votes',
-            async (event, payload: { sessionId: string; models: Array<{ provider: string; model: string }> }): Promise<any | null> => {
+            async (event, payload: { sessionId: string; models: Array<{ provider: string; model: string }> }): Promise<VotingSession | null> => {
                 validateSender(event);
                 return await projectAgentService.requestVotes(payload.sessionId, payload.models);
             },
@@ -944,9 +972,9 @@ export function registerProjectAgentIpc(
 
     ipcMain.handle(
         'project:resolve-voting',
-        createValidatedIpcHandler<any | null, [string]>(
+        createValidatedIpcHandler<VotingSession | null, [string]>(
             'project:resolve-voting',
-            async (event, sessionId: string): Promise<any | null> => {
+            async (event, sessionId: string): Promise<VotingSession | null> => {
                 validateSender(event);
                 return projectAgentService.resolveVoting(sessionId);
             },
@@ -991,12 +1019,12 @@ export function registerProjectAgentIpc(
 
     ipcMain.handle(
         'project:override-voting',
-        createValidatedIpcHandler<any | null, [{ sessionId: string; finalDecision: string; reason?: string }]>(
+        createValidatedIpcHandler<VotingSession | null, [{ sessionId: string; finalDecision: string; reason?: string }]>(
             'project:override-voting',
             async (
                 event,
                 payload: { sessionId: string; finalDecision: string; reason?: string }
-            ): Promise<any | null> => {
+            ): Promise<VotingSession | null> => {
                 validateSender(event);
                 return projectAgentService.overrideVotingDecision(
                     payload.sessionId,
@@ -1076,9 +1104,9 @@ export function registerProjectAgentIpc(
 
     ipcMain.handle(
         'project:build-consensus',
-        createValidatedIpcHandler<any | null, [Array<{ modelId: string; provider: string; output: string }>]>(
+        createValidatedIpcHandler<ConsensusResult | null, [Array<{ modelId: string; provider: string; output: string }>]>(
             'project:build-consensus',
-            async (event, outputs: Array<{ modelId: string; provider: string; output: string }>): Promise<any | null> => {
+            async (event, outputs: Array<{ modelId: string; provider: string; output: string }>): Promise<ConsensusResult | null> => {
                 validateSender(event);
                 return await projectAgentService.buildConsensus(outputs);
             },
@@ -1147,7 +1175,7 @@ export function registerProjectAgentIpc(
                     side: DebateSideSchema,
                     content: z.string().min(1),
                     confidence: z.number().min(0).max(100),
-                    citations: z.array(z.any()).optional()
+                    citations: z.array(DebateCitationSchema).optional()
                 })]),
                 wrapResponse: true
             }
@@ -1158,7 +1186,7 @@ export function registerProjectAgentIpc(
         'project:resolve-debate-session',
         createValidatedIpcHandler<DebateSession | null, [string]>(
             'project:resolve-debate-session',
-            async (event, sessionId: string): Promise<any | null> => {
+            async (event, sessionId: string): Promise<DebateSession | null> => {
                 validateSender(event);
                 return projectAgentService.resolveDebateSession(sessionId);
             },
@@ -1208,9 +1236,9 @@ export function registerProjectAgentIpc(
 
     ipcMain.handle(
         'project:list-debate-history',
-        createValidatedIpcHandler<any[], [{ taskId?: string } | undefined]>(
+        createValidatedIpcHandler<DebateSession[], [{ taskId?: string } | undefined]>(
             'project:list-debate-history',
-            async (event, payload?: { taskId?: string }): Promise<any[]> => {
+            async (event, payload?: { taskId?: string }): Promise<DebateSession[]> => {
                 validateSender(event);
                 return projectAgentService.getDebateHistory(payload?.taskId);
             },
@@ -1223,9 +1251,9 @@ export function registerProjectAgentIpc(
 
     ipcMain.handle(
         'project:get-debate-replay',
-        createValidatedIpcHandler<DebateSession | null, [string]>(
+        createValidatedIpcHandler<DebateReplay | null, [string]>(
             'project:get-debate-replay',
-            async (event, sessionId: string): Promise<any | null> => {
+            async (event, sessionId: string): Promise<DebateReplay | null> => {
                 validateSender(event);
                 return projectAgentService.getDebateReplay(sessionId);
             },
@@ -1314,7 +1342,7 @@ function registerCouncilMessagingHandlers(projectAgentService: ProjectAgentServi
 
     ipcMain.handle(
         'project:council-send-message',
-        createValidatedIpcHandler<any | null, [{
+        createValidatedIpcHandler<AgentCollaborationMessage | null, [{
             taskId: string;
             stageId: string;
             fromAgentId: string;
@@ -1325,7 +1353,7 @@ function registerCouncilMessagingHandlers(projectAgentService: ProjectAgentServi
             expiresAt?: number;
         }]>(
             'project:council-send-message',
-            async (event, payload): Promise<any | null> => {
+            async (event, payload): Promise<AgentCollaborationMessage | null> => {
                 validateSender(event);
                 return await projectAgentService.sendCollaborationMessage(payload);
             },
@@ -1337,7 +1365,7 @@ function registerCouncilMessagingHandlers(projectAgentService: ProjectAgentServi
                     toAgentId: z.string().optional(),
                     intent: AgentCollaborationIntentSchema,
                     priority: AgentCollaborationPrioritySchema.optional(),
-                    payload: z.record(z.string(), z.any()),
+                    payload: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])),
                     expiresAt: z.number().optional()
                 })]),
                 wrapResponse: true
@@ -1347,14 +1375,14 @@ function registerCouncilMessagingHandlers(projectAgentService: ProjectAgentServi
 
     ipcMain.handle(
         'project:council-get-messages',
-        createValidatedIpcHandler<any[], [{
+        createValidatedIpcHandler<AgentCollaborationMessage[], [{
             taskId: string;
             stageId?: string;
             agentId?: string;
             includeExpired?: boolean;
         }]>(
             'project:council-get-messages',
-            async (event, payload): Promise<any[]> => {
+            async (event, payload): Promise<AgentCollaborationMessage[]> => {
                 validateSender(event);
                 return await projectAgentService.getCollaborationMessages(payload);
             },
@@ -1388,16 +1416,9 @@ function registerCouncilMessagingHandlers(projectAgentService: ProjectAgentServi
 
     ipcMain.handle(
         'project:council-handle-quota-interrupt',
-        createValidatedIpcHandler<any | null, [{
-            taskId: string;
-            stageId?: string;
-            provider: string;
-            model: string;
-            reason?: string;
-            autoSwitch?: boolean;
-        }]>(
+        createValidatedIpcHandler<QuotaInterruptResult | null, [QuotaInterruptInput]>(
             'project:council-handle-quota-interrupt',
-            async (event, payload): Promise<any | null> => {
+            async (event, payload): Promise<QuotaInterruptResult | null> => {
                 validateSender(event);
                 const result = await projectAgentService.handleQuotaExhaustedInterrupt(payload);
                 councilEventSequence += 1;
@@ -1429,16 +1450,9 @@ function registerCouncilMessagingHandlers(projectAgentService: ProjectAgentServi
 
     ipcMain.handle(
         'project:council-register-worker-availability',
-        createValidatedIpcHandler<any | null, [{
-            taskId: string;
-            agentId: string;
-            status: 'available' | 'busy' | 'offline';
-            reason?: string;
-            skills?: string[];
-            contextReadiness?: number;
-        }]>(
+        createValidatedIpcHandler<WorkerAvailabilityRecord | null, [WorkerAvailabilityInput]>(
             'project:council-register-worker-availability',
-            async (event, payload): Promise<any | null> => {
+            async (event, payload): Promise<WorkerAvailabilityRecord | null> => {
                 validateSender(event);
                 return projectAgentService.registerWorkerAvailability(payload);
             },
@@ -1458,9 +1472,9 @@ function registerCouncilMessagingHandlers(projectAgentService: ProjectAgentServi
 
     ipcMain.handle(
         'project:council-list-available-workers',
-        createValidatedIpcHandler<any[], [{ taskId: string }]>(
+        createValidatedIpcHandler<WorkerAvailabilityRecord[], [{ taskId: string }]>(
             'project:council-list-available-workers',
-            async (event, payload): Promise<any[]> => {
+            async (event, payload): Promise<WorkerAvailabilityRecord[]> => {
                 validateSender(event);
                 return projectAgentService.listAvailableWorkers(payload.taskId);
             },
@@ -1473,15 +1487,9 @@ function registerCouncilMessagingHandlers(projectAgentService: ProjectAgentServi
 
     ipcMain.handle(
         'project:council-score-helper-candidates',
-        createValidatedIpcHandler<any[], [{
-            taskId: string;
-            stageId: string;
-            requiredSkills: string[];
-            blockedAgentIds?: string[];
-            contextReadinessOverrides?: Record<string, number>;
-        }]>(
+        createValidatedIpcHandler<HelperCandidateScore[], [HelperCandidateInput]>(
             'project:council-score-helper-candidates',
-            async (event, payload): Promise<any[]> => {
+            async (event, payload): Promise<HelperCandidateScore[]> => {
                 validateSender(event);
                 return projectAgentService.scoreHelperCandidates(payload);
             },
@@ -1499,19 +1507,10 @@ function registerCouncilMessagingHandlers(projectAgentService: ProjectAgentServi
     );
 
     ipcMain.handle(
-        'project:council-generate-helper-handoff',
-        createValidatedIpcHandler<any | null, [{
-            taskId: string;
-            stageId: string;
-            ownerAgentId: string;
-            helperAgentId: string;
-            stageGoal: string;
-            acceptanceCriteria: string[];
-            constraints: string[];
-            contextNotes?: string;
-        }]>(
-            'project:council-generate-helper-handoff',
-            async (event, payload): Promise<any | null> => {
+        'project:council-generate-helper-handoff-package',
+        createValidatedIpcHandler<HelperHandoffPackage, [HelperHandoffInput]>(
+            'project:council-generate-helper-handoff-package',
+            async (event, payload): Promise<HelperHandoffPackage> => {
                 validateSender(event);
                 return projectAgentService.generateHelperHandoffPackage(payload);
             },
@@ -1532,15 +1531,10 @@ function registerCouncilMessagingHandlers(projectAgentService: ProjectAgentServi
     );
 
     ipcMain.handle(
-        'project:council-review-helper-merge',
-        createValidatedIpcHandler<any, [{
-            acceptanceCriteria: string[];
-            constraints: string[];
-            helperOutput: string;
-            reviewerNotes?: string;
-        }]>(
-            'project:council-review-helper-merge',
-            async (event, payload): Promise<any> => {
+        'project:council-review-helper-merge-gate',
+        createValidatedIpcHandler<HelperMergeGateDecision, [HelperMergeGateInput]>(
+            'project:council-review-helper-merge-gate',
+            async (event, payload): Promise<HelperMergeGateDecision> => {
                 validateSender(event);
                 return projectAgentService.reviewHelperMergeGate(payload);
             },
@@ -1600,7 +1594,7 @@ function registerCanvasPersistenceHandlers(
                     return [];
                 }
                 const records = await databaseService.uac.getCanvasNodes();
-                return records.map((r: any) => ({
+                return records.map((r: UacCanvasNodeRecord) => ({
                     id: r.id,
                     type: r.type,
                     position: { x: r.position_x, y: r.position_y },
@@ -1659,7 +1653,7 @@ function registerCanvasPersistenceHandlers(
                     return [];
                 }
                 const records = await databaseService.uac.getCanvasEdges();
-                return records.map((r: any) => ({
+                return records.map((r: UacCanvasEdgeRecord) => ({
                     id: r.id,
                     source: r.source,
                     target: r.target,

@@ -114,7 +114,8 @@ export async function loadSettings(): Promise<void> {
     setState({ isLoading: true });
 
     try {
-        const persisted = await window.electron.getSettings();
+        const response = await window.electron.getSettings();
+        const persisted = 'data' in response ? response.data : response;
         const draft = readDraft();
         const resolved = draft ?? persisted;
 
@@ -136,8 +137,9 @@ export async function flushSettings(): Promise<void> {
     }
 
     try {
-        await window.electron.saveSettings(current);
-        setState({ originalSettings: structuredClone(current) });
+        const response = await window.electron.saveSettings(current);
+        const saved = 'data' in response ? response.data : response;
+        setState({ originalSettings: structuredClone(saved) });
         clearDraft();
     } catch (error) {
         window.electron.log.error('Failed to save settings', error as Error);

@@ -1,4 +1,5 @@
 import { sanitizePrompt, validatePromptSafety } from '@main/utils/prompt-sanitizer.util';
+import { JsonObject } from '@shared/types/common';
 import {
     quoteShellArg,
     safeJsonParse,
@@ -8,16 +9,17 @@ import {
     sanitizeSqlInput,
     sanitizeString,
     sanitizeStringArray,
-    sanitizeUrl} from '@shared/utils/sanitize.util';
-import { describe, expect,it } from 'vitest';
+    sanitizeUrl
+} from '@shared/utils/sanitize.util';
+import { describe, expect, it } from 'vitest';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 /** Builds a deeply nested object to the given depth. */
-function buildNestedObject(depth: number): Record<string, unknown> {
-    let obj: Record<string, unknown> = { value: 'leaf' };
+function buildNestedObject(depth: number): JsonObject {
+    let obj: JsonObject = { value: 'leaf' };
     for (let i = 0; i < depth; i++) {
         obj = { nested: obj };
     }
@@ -94,7 +96,7 @@ describe('Input Fuzzing – Unicode edge cases', () => {
 
     it('sanitizeObject handles homoglyph keys', () => {
         // Cyrillic 'а' (U+0430) looks like Latin 'a'
-        const obj = { '\u0430dmin': 'value' } as Record<string, unknown>;
+        const obj = { '\u0430dmin': 'value' } as JsonObject;
         const result = sanitizeObject(obj);
         expect(result).toBeDefined();
         expect(typeof result).toBe('object');
@@ -191,20 +193,20 @@ describe('Input Fuzzing – Deeply nested objects', () => {
 // ---------------------------------------------------------------------------
 describe('Input Fuzzing – Prototype pollution', () => {
     it('sanitizeObject strips __proto__ keys', () => {
-        const malicious = JSON.parse('{"__proto__": {"admin": true}, "safe": "value"}') as Record<string, unknown>;
+        const malicious = JSON.parse('{"__proto__": {"admin": true}, "safe": "value"}') as JsonObject;
         const result = sanitizeObject(malicious);
         expect(result).not.toHaveProperty('__proto__');
         expect(result).toHaveProperty('safe', 'value');
     });
 
     it('sanitizeObject strips constructor keys', () => {
-        const malicious = JSON.parse('{"constructor": {"prototype": {"admin": true}}}') as Record<string, unknown>;
+        const malicious = JSON.parse('{"constructor": {"prototype": {"admin": true}}}') as JsonObject;
         const result = sanitizeObject(malicious);
         expect(result).not.toHaveProperty('constructor');
     });
 
     it('sanitizeObject strips prototype keys', () => {
-        const malicious = { prototype: { polluted: true }, ok: 'fine' } as Record<string, unknown>;
+        const malicious = { prototype: { polluted: true }, ok: 'fine' } as JsonObject;
         const result = sanitizeObject(malicious);
         expect(result).not.toHaveProperty('prototype');
         expect(result).toHaveProperty('ok', 'fine');
@@ -216,7 +218,7 @@ describe('Input Fuzzing – Prototype pollution', () => {
                 __proto__: { admin: true },
                 value: 'safe'
             }
-        } as Record<string, unknown>;
+        } as JsonObject;
         const result = sanitizeObject(malicious);
         const data = (result as Record<string, Record<string, unknown>>)?.data;
         expect(data).toBeDefined();
@@ -226,7 +228,7 @@ describe('Input Fuzzing – Prototype pollution', () => {
     it('sanitizeJson re-serializes without proto pollution side effects', () => {
         const payload = '{"__proto__": {"isAdmin": true}}';
         const result = sanitizeJson(payload);
-        const parsed = JSON.parse(result) as Record<string, unknown>;
+        const parsed = JSON.parse(result) as JsonObject;
         // JSON.parse + JSON.stringify should preserve the key but not pollute Object.prototype
         expect(({} as Record<string, unknown>)['isAdmin']).toBeUndefined();
         expect(parsed).toBeDefined();
@@ -466,7 +468,7 @@ describe('Input Fuzzing – Edge cases', () => {
     });
 
     it('sanitizeObject handles arrays', () => {
-        const arr = [{ key: 'val\x00ue' }, { __proto__: { bad: true } }] as unknown as Record<string, unknown>;
+        const arr = [{ key: 'val\x00ue' }, { __proto__: { bad: true } }] as unknown as JsonObject;
         const result = sanitizeObject(arr);
         expect(Array.isArray(result)).toBe(true);
     });

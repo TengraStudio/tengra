@@ -34,6 +34,5 @@ Project backlog, upcoming milestones, and roadmap.
 ---
 
 ## Technical Resources
-- [Changelog History](./changelog/)
 - [Contributing Guidelines](./guides/CONTRIBUTING.md)
 - [User Guide](./guides/USER_GUIDE.md)

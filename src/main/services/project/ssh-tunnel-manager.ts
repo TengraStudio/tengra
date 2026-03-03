@@ -5,12 +5,30 @@ import * as net from 'net';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
-import { SSHPortForward,SSHTunnelPreset } from '@shared/types/ssh';
+import { SSHPortForward, SSHTunnelPreset } from '@shared/types/ssh';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { Client } from 'ssh2';
 
 type StoredTunnelPreset = SSHTunnelPreset;
+
+export interface LocalForwardOptions {
+    connectionId: string;
+    conn: Client;
+    localHost: string;
+    localPort: number;
+    remoteHost: string;
+    remotePort: number;
+}
+
+export interface RemoteForwardOptions {
+    connectionId: string;
+    conn: Client;
+    remoteHost: string;
+    remotePort: number;
+    localHost: string;
+    localPort: number;
+}
 
 /**
  * SSH Tunnel Manager
@@ -66,13 +84,9 @@ export class SSHTunnelManager extends EventEmitter {
     }
 
     async createLocalForward(
-        connectionId: string,
-        conn: Client,
-        localHost: string,
-        localPort: number,
-        remoteHost: string,
-        remotePort: number
+        options: LocalForwardOptions
     ): Promise<{ success: boolean; forwardId?: string; error?: string }> {
+        const { connectionId, conn, localHost, localPort, remoteHost, remotePort } = options;
         const forwardId = crypto.randomUUID();
 
         return new Promise(resolve => {
@@ -118,13 +132,9 @@ export class SSHTunnelManager extends EventEmitter {
     }
 
     async createRemoteForward(
-        connectionId: string,
-        conn: Client,
-        remoteHost: string,
-        remotePort: number,
-        localHost: string,
-        localPort: number
+        options: RemoteForwardOptions
     ): Promise<{ success: boolean; forwardId?: string; error?: string }> {
+        const { connectionId, conn, remoteHost, remotePort, localHost, localPort } = options;
         const forwardId = crypto.randomUUID();
         return new Promise(resolve => {
             conn.forwardIn(remoteHost, remotePort, (error?: Error) => {

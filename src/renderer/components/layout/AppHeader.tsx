@@ -1,7 +1,6 @@
 import {
     Container,
     Eraser,
-    FileText,
     LayoutGrid,
     MessageSquare,
     Minus,
@@ -13,9 +12,9 @@ import {
     X as ClearIcon,
     X,
 } from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
+import React from 'react';
 
-import { Modal } from '@/components/ui/modal';
+
 import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/context/ChatContext';
 import { useTranslation } from '@/i18n';
@@ -50,35 +49,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     };
 
     const Icon = viewIcons[currentView] ?? MessageSquare;
-    const [isChangelogOpen, setIsChangelogOpen] = useState(false);
-    const [changelogEntries, setChangelogEntries] = useState<ChangelogIndexEntry[]>([]);
 
-    useEffect(() => {
-        if (!isChangelogOpen || changelogEntries.length > 0) {
-            return;
-        }
-        let mounted = true;
-        void import('@/data/changelog.index.json').then((mod) => {
-            if (mounted) {
-                setChangelogEntries(mod.default.entries as ChangelogIndexEntry[]);
-            }
-        });
-        return () => { mounted = false; };
-    }, [isChangelogOpen, changelogEntries.length]);
-
-    const changelogGroups = useMemo(() => {
-        const grouped = new Map<string, ChangelogIndexEntry[]>();
-        for (const entry of changelogEntries) {
-            const bucket = grouped.get(entry.date) ?? [];
-            bucket.push(entry);
-            grouped.set(entry.date, bucket);
-        }
-
-        return Array.from(grouped.entries())
-            .sort(([a], [b]) => b.localeCompare(a))
-            .slice(0, 20)
-            .map(([date, items]) => ({ date, items }));
-    }, [changelogEntries]);
 
     const handleMinimize = () => {
         void window.electron.minimize();
@@ -142,13 +113,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                     <div className="h-4 w-[1px] bg-border/50 mx-2" />
 
                     <div className="flex items-center gap-1">
-                        <button
-                            onClick={() => setIsChangelogOpen(true)}
-                            className="p-2 hover:bg-primary/10 hover:text-primary rounded-lg text-muted-foreground transition-colors"
-                            title={t('titleBar.changelog')}
-                        >
-                            <FileText className="w-4 h-4" />
-                        </button>
+
                         {onExtensionClick && (
                             <>
                                 <button
@@ -195,83 +160,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 </div>
             </header >
 
-            <Modal
-                isOpen={isChangelogOpen}
-                onClose={() => setIsChangelogOpen(false)}
-                title={t('titleBar.changelogTitle')}
-                size="4xl"
-                height="auto"
-            >
-                {changelogGroups.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">{t('titleBar.changelogEmpty')}</p>
-                ) : (
-                    <div className="space-y-4">
-                        {changelogGroups.map(group => (
-                            <section key={group.date} className="rounded-xl border border-border/50 p-4">
-                                <h4 className="text-sm font-bold tracking-wide text-primary mb-3">
-                                    {group.date}
-                                </h4>
-                                <div className="space-y-4">
-                                    {group.items.map((item, index) => {
-                                        const content = getLocaleContent(item, language);
-                                        return (
-                                            <article key={`${group.date}-${item.id}-${index}`} className="space-y-1">
-                                                <h5 className="text-sm font-semibold text-foreground">
-                                                    {content.title}
-                                                </h5>
-                                                {content.summary && (
-                                                    <p className="text-xs text-muted-foreground leading-relaxed">
-                                                        {content.summary}
-                                                    </p>
-                                                )}
-                                                <div className="space-y-1">
-                                                    {content.items.slice(0, 5).map((line, lineIndex) => (
-                                                        <p
-                                                            key={`${item.id}-${lineIndex}`}
-                                                            className="text-xs text-muted-foreground leading-relaxed"
-                                                        >
-                                                            • {stripMarkdown(line)}
-                                                        </p>
-                                                    ))}
-                                                </div>
-                                            </article>
-                                        );
-                                    })}
-                                </div>
-                            </section>
-                        ))}
-                    </div>
-                )}
-            </Modal>
+
         </>
     );
 };
 
-interface ChangelogItem {
-    date: string;
-    id: string;
-    type: string;
-    status: string;
-    components?: string[];
-    contentByLocale: Record<string, ChangelogLocaleContent>;
-}
 
-interface ChangelogLocaleContent {
-    title: string;
-    summary?: string;
-    items: string[];
-}
-
-type ChangelogIndexEntry = ChangelogItem;
-
-function stripMarkdown(value: string): string {
-    return value.replace(/\*\*/g, '').replace(/`/g, '').trim();
-}
-
-function getLocaleContent(entry: ChangelogIndexEntry, language: string): ChangelogLocaleContent {
-    const normalized = language.toLowerCase();
-    const baseLanguage = normalized.split('-')[0];
-    return entry.contentByLocale[normalized] ?? entry.contentByLocale[baseLanguage] ?? entry.contentByLocale.en;
-}
 
 export const MemoizedAppHeader = React.memo(AppHeader);

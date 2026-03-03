@@ -106,7 +106,7 @@ class ChatUtils {
             function: {
                 name: tool.function.name,
                 description: tool.function.description,
-                parameters: tool.function.parameters ? sanitizeObject(tool.function.parameters as Record<string, unknown>) as JsonObject : undefined
+                parameters: tool.function.parameters ? sanitizeObject(tool.function.parameters) as JsonObject : undefined
             }
         }));
     }

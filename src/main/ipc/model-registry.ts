@@ -13,21 +13,26 @@ export function registerModelRegistryIpc(
     modelRegistryService: ModelRegistryService,
     rateLimitService?: RateLimitService
 ) {
-    ipcMain.handle('model-registry:getAllModels', createSafeIpcHandler('model-registry:getAllModels', async (): Promise<ModelProviderInfo[]> => {
+    ipcMain.handle('model-registry:get-all', createSafeIpcHandler('model-registry:get-all', async (): Promise<ModelProviderInfo[]> => {
         if (rateLimitService) {
             await rateLimitService.waitForToken('model-registry');
         }
         return await modelRegistryService.getAllModels();
     }, []));
 
-    ipcMain.handle('model-registry:getRemoteModels', createSafeIpcHandler('model-registry:getRemoteModels', async (): Promise<ModelProviderInfo[]> => {
+    // Alias for backward compatibility if needed, but we aligned preload
+    ipcMain.handle('model-registry:getAllModels', createSafeIpcHandler('model-registry:getAllModels', async (): Promise<ModelProviderInfo[]> => {
+        return await modelRegistryService.getAllModels();
+    }, []));
+
+    ipcMain.handle('model-registry:get-remote', createSafeIpcHandler('model-registry:get-remote', async (): Promise<ModelProviderInfo[]> => {
         if (rateLimitService) {
             await rateLimitService.waitForToken('model-registry');
         }
         return await modelRegistryService.getRemoteModels();
     }, []));
 
-    ipcMain.handle('model-registry:getInstalledModels', createSafeIpcHandler('model-registry:getInstalledModels', async (): Promise<ModelProviderInfo[]> => {
+    ipcMain.handle('model-registry:get-installed', createSafeIpcHandler('model-registry:get-installed', async (): Promise<ModelProviderInfo[]> => {
         if (rateLimitService) {
             await rateLimitService.waitForToken('model-registry');
         }

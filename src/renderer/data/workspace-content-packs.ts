@@ -109,8 +109,4 @@ export const walkthroughScripts = [
     'Create PR-ready commit using editor workflows and test panel',
 ];
 
-export const workspaceChangelogHighlights = [
-    'Latency-aware remote editing with offline save queue',
-    'SSH trust center with fingerprint review alerts',
-    'Workspace editor snippet manager with import/export/share',
-];
+

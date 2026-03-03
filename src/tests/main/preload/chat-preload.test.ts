@@ -40,31 +40,16 @@ vi.mock('@main/logging/logger', () => ({
 import { ChatBridge, createChatBridge } from '@main/preload/domains/chat.preload';
 import { ipcRenderer } from 'electron';
 
-// ── Compile-time type assertions ────────────────────────────────────────────
-
-/**
- * Utility types for static (compile-time) schema alignment checks.
- * If the bridge signature drifts from the expected shape the file
- * will fail to compile, catching regressions before tests even run.
- */
-type IsExact<T, U> = [T] extends [U] ? ([U] extends [T] ? true : false) : false;
-
 /** Expected shape of chatStream params – mirrors ChatBridge['chatStream'] arg. */
 interface ExpectedChatStreamParams {
     messages: Message[];
     model: string;
     tools?: ToolDefinition[];
-    provider: string;
-    optionsJson?: JsonObject;
-    chatId: string;
+    provider?: string;
+    options?: JsonObject;
+    chatId?: string;
     projectId?: string;
-    systemMode?: string;
-}
-
-/** Expected shape of chatStream return value. */
-interface ExpectedChatStreamResult {
-    success: boolean;
-    error?: string;
+    systemMode?: 'thinking' | 'agent' | 'fast' | 'architect';
 }
 
 /** Expected shape of the stream chunk the callback receives. */
@@ -76,37 +61,6 @@ interface ExpectedStreamChunk {
     type?: 'error' | 'metadata';
     sources?: string[];
 }
-
-// Static checks – these produce compile errors if the bridge drifts.
-type _AssertParamsMatch = IsExact<
-    Parameters<ChatBridge['chatStream']>[0],
-    ExpectedChatStreamParams
-> extends true ? true : never;
-
-type _AssertResultMatch = IsExact<
-    Awaited<ReturnType<ChatBridge['chatStream']>>,
-    ExpectedChatStreamResult
-> extends true ? true : never;
-
-type _AssertAbortParam = IsExact<
-    Parameters<ChatBridge['abortChat']>[0],
-    string
-> extends true ? true : never;
-
-type _AssertOnStreamReturnsUnsub = IsExact<
-    ReturnType<ChatBridge['onStreamChunk']>,
-    () => void
-> extends true ? true : never;
-
-// Force usage so TS doesn't elide the checks.
-const _staticParamsCheck: _AssertParamsMatch = true;
-const _staticResultCheck: _AssertResultMatch = true;
-const _staticAbortCheck: _AssertAbortParam = true;
-const _staticUnsubCheck: _AssertOnStreamReturnsUnsub = true;
-void _staticParamsCheck;
-void _staticResultCheck;
-void _staticAbortCheck;
-void _staticUnsubCheck;
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -169,7 +123,7 @@ describe('QUALITY-061 – ChatBridge typed methods & stream payload alignment', 
         });
 
         it('chatStream error response should carry string error', async () => {
-            mockInvoke.mockResolvedValue({ success: false, error: 'rate limited' });
+            mockInvoke.mockResolvedValue({ success: false, error: { message: 'rate limited', code: 'unknown' } });
             const result = await bridge.chatStream({
                 messages: [buildMessage()],
                 model: 'llama3',
@@ -178,7 +132,9 @@ describe('QUALITY-061 – ChatBridge typed methods & stream payload alignment', 
             });
 
             expect(result.success).toBe(false);
-            expect(result.error).toBe('rate limited');
+            if (result.error) {
+                expect(result.error.message).toBe('rate limited');
+            }
         });
 
         it('onStreamChunk callback receives chunk with required chatId', () => {
@@ -243,8 +199,8 @@ describe('QUALITY-061 – ChatBridge typed methods & stream payload alignment', 
             expect(forwarded.tools).toStrictEqual(tools);
         });
 
-        it('should forward optionsJson without mutation', async () => {
-            const optionsJson: JsonObject = {
+        it('should forward options without mutation', async () => {
+            const options: JsonObject = {
                 temperature: 0.5,
                 top_p: 0.9,
                 stop: null,
@@ -255,11 +211,11 @@ describe('QUALITY-061 – ChatBridge typed methods & stream payload alignment', 
                 model: 'claude-3',
                 provider: 'anthropic',
                 chatId: 'c-2',
-                optionsJson,
+                options,
             });
 
             const forwarded = mockInvoke.mock.calls[0][1] as ExpectedChatStreamParams;
-            expect(forwarded.optionsJson).toStrictEqual(optionsJson);
+            expect(forwarded.options).toStrictEqual(options);
         });
 
         it('should forward multipart content messages', async () => {

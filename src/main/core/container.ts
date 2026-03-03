@@ -187,7 +187,7 @@ export class Container {
         } catch (error) {
             throw new ValidationError(
                 `Failed to resolve service ${definition.name}: ${getErrorMessage(error as Error)}`,
-                { originalError: error instanceof Error ? error : String(error) }
+                { originalError: (error instanceof Error ? error.message : String(error)) }
             );
         }
     }

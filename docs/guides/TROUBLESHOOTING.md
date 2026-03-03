@@ -41,28 +41,6 @@ This guide provides solutions for common issues encountered during development a
 3. **Model Assets**: Verify that the SD-CPP model file has been correctly downloaded to the internal assets folder. You can trigger a re-download in the Stable Diffusion settings.
 4. **Logs**: Review `logs/main.log` for specific `sd-cpp` error codes or process exit statuses.
 
-### Changelog i18n Report Shows High `sameItems`
-**Problem**: `npm run changelog:i18n:report` reports large `sameItems` values even after localization work.
-**Solution**:
-1. Run `npm run changelog:i18n:report` and identify affected locales first.
-2. Confirm whether unchanged lines are technical-only:
-   - file paths (for example: `` `src/...` ``)
-   - env keys (for example: `` `MCP_REQUEST_TIMEOUT_MS` ``)
-   - markdown/code structure lines
-3. If technical lines dominate, verify `scripts/changelog/report-untranslated.cjs` ignore rules are up-to-date.
-4. If prose lines dominate, localize the matching `items` entries in `docs/changelog/i18n/<locale>.overrides.json`.
-5. Re-run:
-   - `npm run changelog:i18n:report`
-   - `npm run changelog:i18n:gate`
-
-### Changelog Locale Overrides Drift (`missing > 0`)
-**Problem**: Report indicates `missing > 0` for one or more locales.
-**Solution**:
-1. Seed missing entries: `npm run changelog:seed:all`
-2. Rebuild and validate:
-   - `npm run changelog:sync`
-   - `npm run changelog:i18n:report`
-3. If new entries are expected, check `docs/changelog/i18n/LOCALE_TODO.md` and finish locale updates.
 
 ## Log Locations
 

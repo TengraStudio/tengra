@@ -217,6 +217,14 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
         schemaVersion: 1
     }));
 
+    ipcMain.handle('auth:detect-auth-provider', createValidatedIpcHandler('auth:detect-auth-provider', async (_event, payload: { providerHint?: string, tokenData?: TokenData }) => {
+        const provider = authService.detectProvider(payload.providerHint, payload.tokenData);
+        return { provider };
+    }, {
+        argsSchema: z.tuple([z.object({ providerHint: providerSchema.optional(), tokenData: authTokenDataSchema.optional() }).optional()]),
+        schemaVersion: 1
+    }));
+
     ipcMain.handle('auth:get-provider-health', createValidatedIpcHandler('auth:get-provider-health', async (_event, provider?: string) => {
         return await authService.getProviderHealth(provider);
     }, {
@@ -390,6 +398,16 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
     }, { schemaVersion: 1 }));
 
     // Note: auth:has-linked-account is registered in batch handlers below
+
+    registerSecureBatchableHandler('auth:get-accounts-by-provider', async (_event, ...args): Promise<import('@shared/types/common').JsonValue> => {
+        const provider = args[0] as string;
+        try {
+            return serializeToIpc(await authService.getAccountsByProvider(provider));
+        } catch (error) {
+            appLogger.error('AuthIPC', 'Failed to get accounts by provider (batched)', error as Error);
+            return [];
+        }
+    });
 
     // Register commonly batched handlers
     registerSecureBatchableHandler('auth:get-linked-accounts', async (_event, ...args): Promise<import('@shared/types/common').JsonValue> => {

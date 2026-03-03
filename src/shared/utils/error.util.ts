@@ -1,4 +1,4 @@
-import { AppError, CatchError } from '@/types/common';
+import { AppError, CatchError, JsonObject } from '@shared/types/common';
 
 /**
  * Error handling utilities
@@ -77,12 +77,12 @@ export enum AppErrorCode {
 export class TengraError extends Error {
     public readonly timestamp: string;
     public readonly code: string;
-    public readonly context?: Record<string, unknown>;
+    public readonly context?: JsonObject;
 
     constructor(
         message: string,
         code: string = AppErrorCode.UNKNOWN,
-        context?: Record<string, unknown>
+        context?: JsonObject
     ) {
         super(message);
         this.name = this.constructor.name;
@@ -114,7 +114,7 @@ export class ApiError extends TengraError {
     public readonly provider: string;
     public readonly retryable: boolean;
 
-    constructor(message: string, provider: string, statusCode?: number, retryable: boolean = true, context?: Record<string, unknown>) {
+    constructor(message: string, provider: string, statusCode?: number, retryable: boolean = true, context?: JsonObject) {
         super(message, AppErrorCode.API_ERROR, context);
         this.provider = provider;
         this.statusCode = statusCode;
@@ -123,7 +123,7 @@ export class ApiError extends TengraError {
 }
 
 export class ValidationTengraError extends TengraError {
-    constructor(message: string, context?: Record<string, unknown>) {
+    constructor(message: string, context?: JsonObject) {
         super(message, AppErrorCode.VALIDATION_ERROR, context);
     }
 }
@@ -132,7 +132,7 @@ export class ValidationTengraError extends TengraError {
 export class ValidationError extends ValidationTengraError { }
 
 export class NetworkTengraError extends TengraError {
-    constructor(message: string, context?: Record<string, unknown>) {
+    constructor(message: string, context?: JsonObject) {
         super(message, AppErrorCode.NETWORK_ERROR, context);
     }
 }
@@ -141,20 +141,20 @@ export class NetworkTengraError extends TengraError {
 export class NetworkError extends NetworkTengraError { }
 
 export class NotFoundTengraError extends TengraError {
-    constructor(message: string, context?: Record<string, unknown>) {
+    constructor(message: string, context?: JsonObject) {
         super(message, AppErrorCode.NOT_FOUND, context);
     }
 }
 
 export class UnauthorizedTengraError extends TengraError {
-    constructor(message: string, context?: Record<string, unknown>) {
+    constructor(message: string, context?: JsonObject) {
         super(message, AppErrorCode.UNAUTHORIZED, context);
     }
 }
 
 // Alias for compatibility with main process code
 export class AuthenticationError extends UnauthorizedTengraError {
-    constructor(message: string, context?: Record<string, unknown>) {
+    constructor(message: string, context?: JsonObject) {
         super(message, context);
         // Ensure code is AUTH_ERROR if preferred, or generic UNAUTHORIZED
         // For now, mapping to UNAUTHORIZED via super call is safer for existing logic
@@ -171,7 +171,7 @@ export class ProxyServiceError extends TengraError {
         message: string,
         code: string = AppErrorCode.PROXY_REQUEST_FAILED,
         retryable: boolean = true,
-        context?: Record<string, unknown>
+        context?: JsonObject
     ) {
         super(message, code, context);
         this.retryable = retryable;
@@ -256,7 +256,7 @@ export function getErrorRecoveryStrategy(error: unknown): ErrorRecoveryStrategy 
 /**
  * Extracts error message from an object if present
  */
-const getMessageFromObject = (obj: Record<string, unknown>): string | null => {
+const getMessageFromObject = (obj: JsonObject): string | null => {
     if (typeof obj.message === 'string') {
         return obj.message;
     }
@@ -265,7 +265,7 @@ const getMessageFromObject = (obj: Record<string, unknown>): string | null => {
     }
 
     if (obj.error && typeof obj.error === 'object') {
-        const nested = obj.error as Record<string, unknown>;
+        const nested = obj.error as JsonObject;
         if (typeof nested.message === 'string') {
             return nested.message;
         }
@@ -287,7 +287,7 @@ export function getErrorMessage(error: unknown): string {
     }
 
     if (error && typeof error === 'object') {
-        const msg = getMessageFromObject(error as Record<string, unknown>);
+        const msg = getMessageFromObject(error as JsonObject);
         if (msg) {
             return msg;
         }
@@ -329,7 +329,7 @@ function isAppError(error: unknown): boolean {
         typeof error === 'object' &&
         'message' in error &&
         'code' in error &&
-        typeof (error as Record<string, unknown>).message === 'string'
+        typeof (error as JsonObject).message === 'string'
     );
 }
 
@@ -338,7 +338,7 @@ function isAppError(error: unknown): boolean {
  */
 function getErrorCode(error: unknown): string | null {
     if (error && typeof error === 'object' && 'code' in error) {
-        return String((error as Record<string, unknown>).code);
+        return String((error as JsonObject).code);
     }
     return null;
 }

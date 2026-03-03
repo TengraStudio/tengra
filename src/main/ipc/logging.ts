@@ -13,6 +13,39 @@ const logBuffer: Array<{
 }> = [];
 const MAX_BUFFER_SIZE = 1000;
 let streamingEnabled = false;
+const LOG_STREAM_BATCH_INTERVAL_MS = 50;
+const pendingLogEntries: Array<{
+    id: string
+    timestamp: Date
+    level: 'debug' | 'info' | 'warn' | 'error'
+    source: string
+    message: string
+}> = [];
+let pendingLogTimer: NodeJS.Timeout | null = null;
+
+function flushPendingLogEntries() {
+    if (pendingLogTimer) {
+        clearTimeout(pendingLogTimer);
+        pendingLogTimer = null;
+    }
+
+    if (pendingLogEntries.length === 0) {
+        return;
+    }
+
+    const batch = pendingLogEntries.splice(0, pendingLogEntries.length);
+    for (const win of BrowserWindow.getAllWindows()) {
+        const isDestroyed = typeof (win as { isDestroyed?: () => boolean }).isDestroyed === 'function'
+            ? (win as { isDestroyed: () => boolean }).isDestroyed()
+            : false;
+        if (isDestroyed) { continue; }
+        try {
+            win.webContents.send('log:entry-batch', batch);
+        } catch {
+            // Ignore transient renderer/window teardown races
+        }
+    }
+}
 
 /**
  * Add a log entry to the buffer and send to all renderer windows
@@ -34,16 +67,11 @@ export function pushLogEntry(level: 'debug' | 'info' | 'warn' | 'error', source:
 
     // Stream to all windows if enabled
     if (streamingEnabled) {
-        for (const win of BrowserWindow.getAllWindows()) {
-            const isDestroyed = typeof (win as { isDestroyed?: () => boolean }).isDestroyed === 'function'
-                ? (win as { isDestroyed: () => boolean }).isDestroyed()
-                : false;
-            if (isDestroyed) { continue; }
-            try {
-                win.webContents.send('log:entry', entry);
-            } catch {
-                // Ignore transient renderer/window teardown races
-            }
+        pendingLogEntries.push(entry);
+        if (!pendingLogTimer) {
+            pendingLogTimer = setTimeout(() => {
+                flushPendingLogEntries();
+            }, LOG_STREAM_BATCH_INTERVAL_MS);
         }
     }
 }
@@ -66,6 +94,7 @@ export function registerLoggingIpc() {
     ipcMain.handle('log:stream:stop', createSafeIpcHandler('log:stream:stop',
         async () => {
             streamingEnabled = false;
+            flushPendingLogEntries();
             return { success: true };
         }, { success: false }
     ));

@@ -15,9 +15,11 @@ import { AgentCollaborationService } from '@main/services/project/agent/agent-co
 import { AgentRegistryService } from '@main/services/project/agent/agent-registry.service';
 import { createInitialAgentState } from '@main/services/project/agent/agent-state-machine';
 import { AgentTestRunnerService, getAgentTestRunnerService } from '@main/services/project/agent/agent-test-runner.service';
+import { TaskStateMachine } from '@main/services/project/agent/task-state-machine';
+import { ToolInvocationManager } from '@main/services/project/agent/tool-invocation-manager';
 import { GitService } from '@main/services/project/git.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
-import { InternalToolResult, ToolExecutor } from '@main/tools/tool-executor';
+import { ToolExecutor } from '@main/tools/tool-executor';
 import { StateMachine } from '@main/utils/state-machine.util';
 import { AgentTaskState } from '@shared/types/agent-state';
 import { Message, ToolCall, ToolDefinition } from '@shared/types/chat';
@@ -52,6 +54,11 @@ interface GitExecutionContext {
     featureBranch: string;
     autoCreated: boolean;
     enabled: boolean;
+}
+
+interface ProviderModelConfig {
+    providerId: string;
+    modelId: string;
 }
 
 export class AgentTaskExecutor {
@@ -90,6 +97,8 @@ export class AgentTaskExecutor {
     private unsubscribeStepUpdate?: () => void;
     private unsubscribePlanProposed?: () => void;
     private unsubscribePlanRevised?: () => void;
+    private readonly taskStateMachine = new TaskStateMachine();
+    private readonly toolInvocationManager: ToolInvocationManager;
 
     constructor(
         public readonly taskId: string,
@@ -133,6 +142,16 @@ export class AgentTaskExecutor {
 
         // AGT-TST: Initialize test runner
         this.testRunner = services.testRunner ?? getAgentTestRunnerService();
+        this.toolInvocationManager = new ToolInvocationManager({
+            taskId: this.taskId,
+            getToolExecutor: () => this.toolExecutor,
+            shouldStop: () => this.shouldStop,
+            isBudgetLimited: () => Boolean(this.state.config?.budgetLimitUsd),
+            errorRecoveryTemplates: this.errorRecoveryTemplates,
+            logInfo: (message: string) => this.logInfo(message),
+            logWarn: (message: string) => this.logWarn(message),
+            logError: (message: string, error?: Error) => this.logError(message, error),
+        });
 
         this.setupEventListeners();
     }
@@ -1257,7 +1276,9 @@ export class AgentTaskExecutor {
                 const { modelId } = this.getModelConfig();
                 const optimizedHistory = await this.optimizeContext(currentHistory, modelId);
 
-                const msg = await this.executeStreamingStep(toolDefs, optimizedHistory);
+                const msg = this.getExecutionMode() === 'parallel'
+                    ? await this.executeParallelStreamingStep(toolDefs, optimizedHistory)
+                    : await this.executeStreamingStep(toolDefs, optimizedHistory);
                 this.emitUpdate();
 
                 if ((!msg.toolCalls || msg.toolCalls.length === 0) && !msg.content) {
@@ -1321,6 +1342,128 @@ export class AgentTaskExecutor {
             })
         );
 
+        await this.finalizeStep(msg);
+        return msg;
+    }
+
+    private getExecutionMode(): 'sequential' | 'parallel' {
+        return this.state.config?.executionMode === 'parallel' ? 'parallel' : 'sequential';
+    }
+
+    private async getParallelModelConfigs(): Promise<ProviderModelConfig[]> {
+        const current = this.getModelConfig();
+        const configs: ProviderModelConfig[] = [{ providerId: current.providerId, modelId: current.modelId }];
+        const providers = await this.getAvailableModelProviders();
+        const providerDefaults: Record<string, string> = {
+            anthropic: 'claude-3-5-sonnet-20241022',
+            openai: 'gpt-4o',
+            groq: 'llama-3.1-70b-versatile',
+            opencode: 'gpt-4o',
+            nvidia: 'meta/llama-3.1-70b-instruct',
+        };
+
+        for (const providerId of providers) {
+            if (configs.some(config => config.providerId === providerId)) {
+                continue;
+            }
+            configs.push({
+                providerId,
+                modelId: providerDefaults[providerId] ?? current.modelId,
+            });
+            if (configs.length >= 3) {
+                break;
+            }
+        }
+
+        return configs;
+    }
+
+    private async executeParallelStreamingStep(
+        toolDefs: ToolDefinition[],
+        currentHistory: Message[]
+    ): Promise<Message & { reasoning?: string }> {
+        const msg = this.createAssistantMessage();
+        this.pushToHistory(msg);
+
+        const modelConfigs = await this.getParallelModelConfigs();
+        if (modelConfigs.length < 2) {
+            const baseConfig = modelConfigs[0] ?? this.getModelConfig();
+            await this.processMessageStream(
+                msg,
+                this.services.llm.chatStream(currentHistory, baseConfig.modelId, toolDefs, baseConfig.providerId, {
+                    signal: this.abortController?.signal,
+                })
+            );
+            await this.finalizeStep(msg);
+            return msg;
+        }
+
+        const results = await Promise.allSettled(
+            modelConfigs.map(async config => {
+                const response = await this.services.llm.chat(
+                    currentHistory,
+                    config.modelId,
+                    toolDefs,
+                    config.providerId
+                );
+                return { config, response };
+            })
+        );
+
+        const successful: Array<{ config: ProviderModelConfig; response: { content: string; tool_calls?: ToolCall[]; reasoning_content?: string } }> = [];
+        for (const entry of results) {
+            if (entry.status !== 'fulfilled') {
+                continue;
+            }
+            const candidate = {
+                config: entry.value.config,
+                response: {
+                    content: entry.value.response.content,
+                    tool_calls: entry.value.response.tool_calls,
+                    reasoning_content: entry.value.response.reasoning_content,
+                },
+            };
+            if (
+                candidate.response.content.trim().length > 0 ||
+                (candidate.response.tool_calls?.length ?? 0) > 0
+            ) {
+                successful.push(candidate);
+            }
+        }
+
+        if (successful.length === 0) {
+            const baseConfig = modelConfigs[0];
+            await this.processMessageStream(
+                msg,
+                this.services.llm.chatStream(currentHistory, baseConfig.modelId, toolDefs, baseConfig.providerId, {
+                    signal: this.abortController?.signal,
+                })
+            );
+            await this.finalizeStep(msg);
+            return msg;
+        }
+
+        for (const candidate of successful) {
+            if (candidate.response.tool_calls && candidate.response.tool_calls.length > 0) {
+                this.mergeToolCalls(msg, candidate.response.tool_calls);
+            }
+        }
+
+        if (successful.length === 1) {
+            msg.content = successful[0].response.content;
+            msg.reasoning = successful[0].response.reasoning_content;
+        } else {
+            const consensus = await this.services.collaboration.buildConsensus(
+                successful.map(candidate => ({
+                    model: `${candidate.config.providerId}:${candidate.config.modelId}`,
+                    output: candidate.response.content,
+                }))
+            );
+            msg.content = consensus.mergedOutput ?? successful[0].response.content;
+            msg.reasoning = `Parallel execution consensus (${consensus.resolutionMethod})`;
+        }
+
+        this.emitUpdate();
         await this.finalizeStep(msg);
         return msg;
     }
@@ -1575,34 +1718,15 @@ ${content}`;
     }
 
     private async executeToolCalls(toolCalls: ToolCall[]) {
-        if (!this.toolExecutor) { return; }
-
-        this.logInfo(`Executing ${toolCalls.length} tool calls (AGT-10)`);
-
-        // AGT-10: Parallel tool execution with concurrency limit
-        const maxParallel = 3;
-        const results: Array<{ msg: Message; toolCallId: string }> = [];
-
-        for (let i = 0; i < toolCalls.length; i += maxParallel) {
-            const chunk = toolCalls.slice(i, i + maxParallel);
-            const chunkPromises = chunk.map(async (toolCall) => {
-                const result = await this.executeToolWithRetry(toolCall);
-                const msg = {
-                    id: randomUUID(),
-                    role: 'tool',
-                    content: JSON.stringify(result),
-                    toolCallId: toolCall.id,
-                    timestamp: new Date(),
-                } as Message;
-
-                return { msg, toolCallId: toolCall.id };
-            });
-
-            const chunkResults = await Promise.all(chunkPromises);
-            results.push(...chunkResults);
-        }
-
-        for (const { msg, toolCallId } of results) {
+        const invocationResults = await this.toolInvocationManager.executeToolCalls(toolCalls);
+        for (const { toolCallId, result } of invocationResults) {
+            const msg = {
+                id: randomUUID(),
+                role: 'tool',
+                content: JSON.stringify(result),
+                toolCallId,
+                timestamp: new Date(),
+            } as Message;
             this.pushToHistory(msg);
             await this.services.database.uac.addLog(
                 this.taskId,
@@ -1612,60 +1736,6 @@ ${content}`;
                 toolCallId
             );
         }
-    }
-
-    /**
-     * AGT-10 / AGT-12: Execute a single tool with retry logic
-     */
-    private async executeToolWithRetry(toolCall: ToolCall, maxRetries = 2): Promise<InternalToolResult> {
-        let lastResult: InternalToolResult = { success: false, error: 'Not started' };
-
-        for (let attempt = 0; attempt <= maxRetries; attempt++) {
-            if (this.shouldStop) { break; }
-
-            const timeoutMs = attempt > 0 ? 60000 : (this.state.config?.budgetLimitUsd ? 45000 : 30000);
-
-            try {
-                if (!this.toolExecutor) {
-                    this.logError('ToolExecutor is missing during retry', new Error('ToolExecutor not initialized'));
-                    break;
-                }
-                lastResult = await this.toolExecutor.execute(
-                    toolCall.function.name,
-                    safeJsonParse(toolCall.function.arguments, {}),
-                    { taskId: this.taskId, timeoutMs }
-                );
-
-                if (lastResult.success) {
-                    return lastResult;
-                }
-
-                // AGT-12: Add recovery context to the result for the agent
-                if (attempt === 0 && lastResult.errorType) {
-                    const advice = this.errorRecoveryTemplates[lastResult.errorType || 'unknown'];
-                    lastResult.error = `${lastResult.error}\n\nRecovery Advice: ${advice}`;
-                }
-
-                // Only retry on timeout or unknown errors
-                if (lastResult.errorType !== 'timeout' && lastResult.errorType !== 'unknown') {
-                    this.logWarn(`Tool ${toolCall.function.name} failed with non-retryable error: ${lastResult.errorType}`);
-                    break;
-                }
-
-                if (attempt < maxRetries) {
-                    const delay = Math.pow(2, attempt) * 1000;
-                    this.logWarn(`Tool ${toolCall.function.name} failed (${lastResult.errorType}, attempt ${attempt + 1}), retrying in ${delay}ms...`);
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                }
-            } catch (error) {
-                this.logError(`Unexpected error in executeToolWithRetry for ${toolCall.function.name}`, error as Error);
-                lastResult = { success: false, error: (error as Error).message, errorType: 'unknown' };
-                if (attempt >= maxRetries) { break; }
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-        }
-
-        return lastResult;
     }
 
     private getLogContent(content: string | Array<{ type: string; text?: string }>): string {
@@ -1906,39 +1976,15 @@ ${content}`;
     }
 
     private getPendingDependencyIds(index: number): string[] {
-        const currentStep = this.state.plan[index];
-        if (!currentStep) {
-            return [];
-        }
-        const dependencyIds = currentStep.dependsOn ?? [];
-        if (dependencyIds.length === 0) {
-            return [];
-        }
-        const completedStepIds = new Set(
-            this.state.plan.filter(step => step.status === 'completed').map(step => step.id)
-        );
-        return dependencyIds.filter(stepId => !completedStepIds.has(stepId));
+        return this.taskStateMachine.getPendingDependencyIds(this.state.plan, index);
     }
 
     private canRunStep(index: number): boolean {
-        return this.getPendingDependencyIds(index).length === 0;
+        return this.taskStateMachine.canRunStep(this.state.plan, index);
     }
 
     private activateReadyDependentSteps(): void {
-        const totalSteps = this.state.plan.length;
-        for (let i = 0; i < totalSteps; i += 1) {
-            const step = this.state.plan[i];
-            if (step.status !== 'pending') {
-                continue;
-            }
-            if (!this.canRunStep(i)) {
-                continue;
-            }
-            // Keep status as pending but mark timing baseline for queue readiness tracking.
-            if (!step.timing) {
-                step.timing = {};
-            }
-        }
+        this.taskStateMachine.activateReadyDependentSteps(this.state.plan);
     }
 
     private inferStepType(text: string): 'task' | 'fork' | 'join' {
@@ -2168,10 +2214,7 @@ ${content}`;
     }
 
     private startStep(stepIndex: number): void {
-        if (stepIndex < 0 || stepIndex >= this.state.plan.length) { return; }
-        const step = this.state.plan[stepIndex];
-        step.status = 'running';
-        step.timing = { startedAt: Date.now() };
+        this.taskStateMachine.startStep(this.state.plan, stepIndex);
         this.currentStepTokens = { prompt: 0, completion: 0 };
     }
 

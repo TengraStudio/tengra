@@ -5,12 +5,15 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import * as vm from 'vm';
 
 import { BaseService } from '@main/services/base.service';
 import {
     ExtensionContext,
     ExtensionDevOptions,
     ExtensionManifest,
+    ExtensionModule,
+    ExtensionPermission,
     ExtensionProfileData,
     ExtensionPublishOptions,
     ExtensionPublishResult,
@@ -26,7 +29,7 @@ interface ExtensionInstance {
     manifest: ExtensionManifest;
     context: ExtensionContext;
     status: ExtensionStatus;
-    module: unknown;
+    module: ExtensionModule | null;
     profileData: ExtensionProfileData;
 }
 
@@ -37,6 +40,19 @@ interface ExtensionServiceState {
     mainWindow: BrowserWindow | null;
     extensionsPath: string;
 }
+
+const ALLOWED_PERMISSIONS: ReadonlySet<ExtensionPermission> = new Set([
+    'filesystem',
+    'network',
+    'process',
+    'clipboard',
+    'notifications',
+    'database',
+    'git',
+    'terminal',
+    'ai',
+]);
+const MAX_EXTENSION_SCRIPT_BYTES = 1024 * 1024;
 
 /**
  * Extension Service
@@ -286,7 +302,12 @@ export class ExtensionService extends BaseService {
 
     /** Install an extension from a path */
     async installExtension(extensionPath: string): Promise<{ success: boolean; extensionId?: string; error?: string }> {
-        const manifestPath = path.join(extensionPath, 'package.json');
+        const resolvedExtensionPath = this.resolveAndValidateExtensionPath(extensionPath);
+        if (!resolvedExtensionPath) {
+            return { success: false, error: 'Extension path is not allowed' };
+        }
+
+        const manifestPath = path.join(resolvedExtensionPath, 'package.json');
 
         try {
             await fs.promises.access(manifestPath, fs.constants.F_OK);
@@ -307,10 +328,15 @@ export class ExtensionService extends BaseService {
             return { success: false, error: `Invalid manifest: ${validation.errors.join(', ')}` };
         }
 
+        const permissionValidation = this.validateDeclaredPermissions(manifest.permissions);
+        if (!permissionValidation.valid) {
+            return { success: false, error: permissionValidation.error };
+        }
+
         // Create extension context
         const context: ExtensionContext = {
             extensionId: manifest.id,
-            extensionPath,
+            extensionPath: resolvedExtensionPath,
             globalState: createExtensionState(`${manifest.id}:global`),
             workspaceState: createExtensionState(`${manifest.id}:workspace`),
             subscriptions: [],
@@ -420,11 +446,14 @@ export class ExtensionService extends BaseService {
         try {
             // Load extension module
             const modulePath = path.join(instance.context.extensionPath, instance.manifest.main);
-            if (await fs.promises.access(modulePath, fs.constants.F_OK).then(() => true).catch(() => false)) {
-                // In a real implementation, this would load the module in a sandboxed context
-                // For now, we just mock activity
-                instance.module = {};
+            const resolvedModulePath = this.resolveSafeChildPath(instance.context.extensionPath, modulePath);
+            if (!resolvedModulePath) {
+                throw new Error('Extension entry point resolves outside extension root');
             }
+            await fs.promises.access(resolvedModulePath, fs.constants.F_OK);
+            const loadedModule = await this.loadSandboxedExtensionModule(extensionId, resolvedModulePath);
+            instance.module = loadedModule;
+            await loadedModule.activate(instance.context);
 
             instance.status = 'active';
             instance.profileData.activationTime = Date.now() - startTime;
@@ -454,12 +483,8 @@ export class ExtensionService extends BaseService {
 
         try {
             // Call deactivate if available
-            if (
-                instance.module &&
-                typeof (instance.module as { deactivate?: () => Promise<void> | void }).deactivate ===
-                'function'
-            ) {
-                await (instance.module as { deactivate: () => Promise<void> | void }).deactivate();
+            if (instance.module && typeof instance.module.deactivate === 'function') {
+                await instance.module.deactivate();
             }
 
             // Clean up subscriptions
@@ -501,8 +526,9 @@ export class ExtensionService extends BaseService {
 
         // Start file watcher
         if (!this.state.watchers.has(extensionId)) {
+            const extensionRoot = this.state.extensions.get(extensionId)?.context.extensionPath ?? options.extensionPath;
             let debounceTimer: NodeJS.Timeout | null = null;
-            const watcher = fs.watch(options.extensionPath, { recursive: true }, (_event, filename) => {
+            const watcher = fs.watch(extensionRoot, { recursive: true }, (_event, filename) => {
                 if (filename && (filename.endsWith('.js') || filename.endsWith('package.json'))) {
                     // Debounce reload
                     if (debounceTimer) { clearTimeout(debounceTimer); }
@@ -573,6 +599,86 @@ export class ExtensionService extends BaseService {
     /** Get state data */
     getState(extensionId: string): { success: boolean; state?: { global: Record<string, unknown>, workspace: Record<string, unknown> } } {
         return this.handleGetState({} as Electron.IpcMainInvokeEvent, extensionId);
+    }
+
+    private validateDeclaredPermissions(
+        permissions: ExtensionManifest['permissions']
+    ): { valid: true } | { valid: false; error: string } {
+        if (!permissions) {
+            return { valid: true };
+        }
+
+        for (const permission of permissions) {
+            if (!ALLOWED_PERMISSIONS.has(permission)) {
+                return { valid: false, error: `Unsupported extension permission: ${permission}` };
+            }
+        }
+
+        return { valid: true };
+    }
+
+    private resolveAndValidateExtensionPath(extensionPath: string): string | null {
+        const normalizedCandidate = path.resolve(extensionPath);
+        if (!fs.existsSync(normalizedCandidate)) {
+            return null;
+        }
+
+        try {
+            const stats = fs.lstatSync(normalizedCandidate);
+            if (!stats.isDirectory() || stats.isSymbolicLink()) {
+                return null;
+            }
+            return normalizedCandidate;
+        } catch {
+            return null;
+        }
+    }
+
+    private resolveSafeChildPath(rootPath: string, targetPath: string): string | null {
+        const normalizedRoot = path.resolve(rootPath);
+        const normalizedTarget = path.resolve(targetPath);
+        if (
+            normalizedTarget === normalizedRoot ||
+            normalizedTarget.startsWith(`${normalizedRoot}${path.sep}`)
+        ) {
+            return normalizedTarget;
+        }
+
+        return null;
+    }
+
+    private async loadSandboxedExtensionModule(extensionId: string, modulePath: string): Promise<ExtensionModule> {
+        const source = await fs.promises.readFile(modulePath, 'utf8');
+        if (Buffer.byteLength(source, 'utf8') > MAX_EXTENSION_SCRIPT_BYTES) {
+            throw new Error('Extension script exceeds sandbox size limit');
+        }
+
+        const sandboxModule: { exports: unknown } = { exports: {} };
+        const sandbox = {
+            module: sandboxModule,
+            exports: sandboxModule.exports,
+            console: Object.freeze({
+                log: (...args: unknown[]) => this.streamLog(extensionId, 'info', args.map(String).join(' ')),
+                warn: (...args: unknown[]) => this.streamLog(extensionId, 'warn', args.map(String).join(' ')),
+                error: (...args: unknown[]) => this.streamLog(extensionId, 'error', args.map(String).join(' ')),
+            }),
+            setTimeout,
+            clearTimeout,
+        };
+
+        const context = vm.createContext(sandbox, {
+            codeGeneration: { strings: false, wasm: false },
+        });
+        const wrappedSource = `(function(){ "use strict";\n${source}\n})();`;
+        const script = new vm.Script(wrappedSource, { filename: modulePath });
+        script.runInContext(context, { timeout: 1000 });
+
+        const loaded = sandboxModule.exports as Partial<ExtensionModule>;
+        if (typeof loaded.activate !== 'function') {
+            throw new Error('Extension module must export an activate function');
+        }
+
+        return loaded as ExtensionModule;
     }
 
     /** Create configuration accessor */

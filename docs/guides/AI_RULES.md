@@ -948,7 +948,6 @@ Before submitting any change, verify:
 ### Documentation
 - [ ] Public APIs documented
 - [ ] Complex logic commented
-- [ ] CHANGELOG updated for features
 
 ### Security
 - [ ] No secrets in code
@@ -1030,36 +1029,7 @@ After:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 13.4 Structured Changelog Updates
 
-Every code change MUST be recorded in the structured changelog system.
-
-**Canonical source (single source of truth):**
-- `docs/changelog/data/changelog.entries.json` (English - ALWAYS update this first)
-
-**Locale overrides (TRANSLATIONS ONLY ON WEEKENDS):**
-- `docs/changelog/i18n/tr.overrides.json`
-- `docs/changelog/i18n/ar.overrides.json`
-- `docs/changelog/i18n/zh.overrides.json`
-- `docs/changelog/i18n/ja.overrides.json`
-
-**Changelog Rules:**
-1. **English First**: ALWAYS write changelog entries in the English file first (`changelog.entries.json`).
-2. **Translations on Weekends Only**: Locale/translation files can ONLY be updated on weekends (Saturday-Sunday).
-3. **No Translation Overload**: Do not write translations for every minor change during weekdays.
-
-**Generate + validate (mandatory):**
-```bash
-npm run changelog:sync
-```
-
-**Do not manually edit generated files:**
-- `docs/changelog/generated/CHANGELOG.en.md`
-- `docs/changelog/generated/CHANGELOG.tr.md`
-- `src/renderer/data/changelog.index.json`
-
-**Legacy note:**
-- `docs/CHANGELOG.md` is archive-only and must not be used for new updates.
 
 ### 13.5 Complete Workflow Example
 
@@ -1075,10 +1045,8 @@ npm run changelog:sync
 │ 6. Run: npm run type-check                                   │
 │ 7. If errors → fix and repeat steps 4-6                      │
 │ 8. Update docs/TODO.md (mark [x], DON'T delete)              │
-│ 9. Update English changelog (changelog.entries.json)         │
-│10. Run `npm run changelog:sync`                              │
-│11. COMMIT IMMEDIATELY (don't wait for more changes)          │
-│12. Push to repository                                        │
+│ 9. COMMIT IMMEDIATELY (don't wait for more changes)          │
+│10. Push to repository                                        │
 │                                                              │
 │ NOTE: Translations only on weekends (Saturday-Sunday)        │
 └──────────────────────────────────────────────────────────────┘
@@ -1104,8 +1072,6 @@ npm run changelog:sync
 │ WORKFLOW: build → lint → type-check → commit → push        │
 │ COMMITS:  After every TODO completion or minor change       │
 │ TODO:     Mark [x] done, NEVER delete, COMMIT IMMEDIATELY   │
-│ CHANGELOG: English first (entries.json), translations       │
-│           only on weekends (Saturday-Sunday)                │
 ├─────────────────────────────────────────────────────────────┤
 │ NEVER:    any | console.log | files without ext | @ts-ignore│
 └─────────────────────────────────────────────────────────────┘

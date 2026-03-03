@@ -4,9 +4,9 @@
 
 ## MANDATORY: Read Documentation First
 
-1. Read [AGENTS.md](../../AGENTS.md) - Complete project guide
-2. Read [docs/AI_RULES.md](../../docs/AI_RULES.md) - Comprehensive coding standards
-3. Check [docs/TODO.md](../../docs/TODO.md) - Current tasks and priorities
+1. Always read [AGENTS.md](../../AGENTS.md) - Complete project guide
+2. Always read [docs/AI_RULES.md](../../docs/AI_RULES.md) - Comprehensive coding standards
+3. Always check [docs/TODO.md](../../docs/TODO.md) - Current tasks and priorities
 
 ## Quick Reference
 
@@ -20,18 +20,16 @@ npm run test         # Run tests
 ```
 
 ### Workflow
-1. Read docs/AI_RULES.md
+1. Always read docs/AI_RULES.md
 2. Make changes
 3. `npm run build && npm run lint`
 4. Update docs/TODO.md (mark `[x]`, don't delete)
-5. Update `docs/changelog/data/changelog.entries.json`
-6. Run `npm run changelog:sync`
-7. Commit and push
+5. Commit and push
 
 ## Forbidden Actions
 
 ### Never Use
-- `any` type - FORBIDDEN
+- `any` and `unknown` types - FORBIDDEN
 - `console.log` - Use `appLogger` instead
 - `@ts-ignore` - NEVER
 - `// eslint-disable` - NEVER
@@ -55,7 +53,7 @@ npm run test         # Run tests
 5. Minimal variable scope
 
 ### Type Safety
-- Strict types, no `any`
+- Strict types, no `any` and `unknown`
 - All public methods need JSDoc
 - Check all return values
 - Handle all Promise rejections
@@ -159,8 +157,8 @@ console.log('message')
 - [ ] No TypeScript errors (`npm run type-check`)
 - [ ] All tests pass (`npm run test`)
 - [ ] TODO.md updated
-- [ ] Changelog updated
-- [ ] No `any` types used
+
+- [ ] No `any` and `unknown` types used
 - [ ] No `console.log` used
 - [ ] All public methods have JSDoc
 - [ ] User-facing strings use `t()`

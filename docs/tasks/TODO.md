@@ -1,89 +1,24 @@
-# 👑 Tengra Strategic Roadmap
+# TENGRA PROJECT TODO LIST
 
-> **Current Focus**: Secure Social Gateway & Technical Debt Reduction
-> **Last Updated**: 2026-03-02
-> **Project Health**: 🟡 Medium (High Tech Debt, Strong Foundation)
+## 🏛️ Architecture & Refactoring (NASA Power of Ten)
+- [ ] **REF-001**: Refactor `src/main/services/project/ssh.service.ts` (1925 lines) into modular services.
+- [ ] **REF-002**: Refactor `src/main/ipc/project-agent.ts` (1858 lines) by splitting IPC domains.
+- [ ] **REF-003**: Refactor `src/main/services/project/project-agent.service.ts` (1201 lines) into task and council managers.
+- [ ] **REF-004**: Implement missing `dispose()` methods in all services (mandatory for native handles).
+    - [ ] `SSHService`
+    - [ ] `ProjectAgentService`
+    - [ ] `SSHTunnelManager`
 
----
+## 🐛 Existing Code Smells & TODOs
+- [ ] **BUG-001**: resolve `// TODO: Move to config` in `src/main/services/project/user-collaboration.service.ts:15`.
+- [ ] **FEAT-001**: Implement provider health statistics tracked by `TODO-001-6` in `agent-provider-rotation.service.ts`.
+- [ ] **SAFE-001**: Remove unsafe `@ts-ignore` and `eslint-disable` in `src/main/startup/lifecycle.ts` and `src/main/utils/stream-parser.util.ts`.
 
-## 📍 Execution Roadmap
-
-### 📦 v1.3.0 - Foundation & Marketplace (Q2 2026)
-| ID | Task | Priority | Difficulty | Status |
-|---|---|---|---|---|
-| **SEC-H-002** | IPC Response Validation (Zod) | 🔴 P0 | 💪 High | [x] |
-| **GATEWAY-001** | Secure Social Gateway Phase 1 (Relay MVP) | 🔴 P0 | 🧠 Epic | [ ] |
-| **PERF-001** | MessageList Virtualization | 🟡 P1 | ⚡ Med | [x] | *(react-virtuoso)*
-| **MKT-001** | Marketplace system MVP (C++ Backend) | 🟢 P1 | 💪 High | [/] |
-
-### 🚀 v1.4.0 - Connectivity & Modularization (Q3 2026)
-| ID | Task | Priority | Difficulty | Status |
-|---|---|---|---|---|
-| **SEC-H-004** | Strict `spawn`/`exec` Validation | 🔴 P0 | 🛡️ High | [ ] |
-| **DEBT-002** | Modular Refactor: `MessageBubble.tsx` | 🟡 P1 | 💪 High | [ ] |
-| **DEBT-005** | Modular Refactor: `IdeaGeneratorService.ts` | 🟡 P1 | 💪 High | [ ] |
-| **CONN-001** | SSH Tunneling Core | 🟢 P2 | ⚡ Med | [ ] |
-
----
-
-## 🛡️ Security & Infrastructure (SEC/GATEWAY)
-
-### 🔐 Security Hardening
-- [x] **SEC-H-002**: Audit 70+ raw `ipcMain.handle` calls for Zod `responseSchema`.
-  - [x] `advanced-memory.ts` (100% Schema Coverage)
-  - [x] `agent.ts` (100% Schema Coverage)
-  - [x] `project.ts` (100% Schema Coverage)
-  - [x] `project-agent.ts` (100% Schema Coverage)
-  - [x] `code-sandbox.ts` (100% Schema Coverage)
-- [ ] **SEC-H-004**: End-to-end injection audit for all `child_process` and `shell` usage. **(CRITICAL)**
-- [ ] **SEC-H-006**: Implement strict Content Security Policy (CSP) for Renderer.
-- [ ] **SEC-PROT-001**: Harden `ExtensionService` sandboxing for 3rd-party code.
-
-### 🌐 Secure Social Gateway
-- [ ] **GATEWAY-001**: Phased Gateway/Relay Implementation:
-  - [ ] **Phase 1**: C++ Relay Server (Drogon) in `website/tengra-backend`.
-  - [ ] **Phase 2**: E2EE tunnel launcher in Main process (outbound only).
-  - [ ] **Phase 3**: Social Media Webhook integration (Twitter, Telegram).
-  - [ ] **Phase 4**: Self-hosting Docker orchestration.
-
----
-
-## 🧹 Technical Debt & Architecture (DEBT)
-
-### 🏛️ Monolith Deconstruction (NASA Rule #3)
-- [ ] **DEBT-MON-01**: Partition services exceeding 1000 lines:
-  - [ ] `IdeaGeneratorService.ts` (~2750 lines) -> `IdeaRepository`, `IdeaSessionManager`.
-  - [ ] `AgentTaskExecutor.ts` (~2100 lines) -> `TaskStateMachine`, `ToolInvocationManager`.
-  - [x] `SSHService.ts` (~2200 lines) -> `SSHKeyManager`, `SSHTunnelManager`.
-  - [ ] `AdvancedMemoryService.ts` (~2500 lines) -> `ConsolidationLogic`, `EmbeddingRetriever`.
-- [ ] **DEBT-LEAK-02**: Memory Leak Audit:
-  - [x] `AgentTaskExecutor.ts`: Verify `setupEventListeners` listener cleanups. (Fixed 'project:plan-revised' leak)
-  - [ ] Global Audit: Ensure every `initialize()` has a matching `dispose()`.
-- [x] **DEBT-TYPE-03**: Eliminate unsafe type debt (`as any`, `as unknown as`) in `src/main/services`. (Only 1 occurrence found in auth.service.ts)
-
----
-
-## ⚡ Performance & UX (PERF/FEAT)
-
-### 🚀 Optimization
-- [x] **PERF-001**: Implement Virtualization for `MessageList` (react-window). *(Already uses react-virtuoso)*
-- [ ] **PERF-004**: Batch IPC updates for streaming logs/terminals (Max 20Hz).
-
-### ✨ New Capabilities
-- [ ] **FEAT-006**: **Agent Execution Trace**: Visual timeline of agent logic.
-- [ ] **FEAT-007**: **Multi-Agent Collaboration**: Parallel LLM execution mode.
-- [ ] **FEAT-009**: **Advanced Quota Dashboard**: Real-time spending visualization.
-
----
-
-## ✅ Completed Archive
-- [x] **PERF-005**: Move hardcoded models in `AdvancedMemoryService.ts` to user settings.
-- [x] **SEC-H-005**: Re-verify `dangerouslySetInnerHTML` in `MessageBubble.tsx` and `MarkdownRenderer.tsx`. (Verified: Sanitized with DOMPurify)
-- [x] **PERF-003**: Refactor Multi-Model Collaboration component (memoized components + hook).
-- [x] **CHG-001**: Fix changelog sync and quality validation issues.
-- [x] **AUD-ARCH-001**: Initial codebase scan for TODO/FIXME comments and technical debt.
-
----
-
-"Code like it's a satellite. You can't reach out and fix it once it's launched."
- 
+## 🧪 Testing & Validation
+- [x] **IPC-001**: Register 'model-registry:get-all' and standardize dash-case IPC names.
+- [x] **IPC-002**: Fix 'auth:get-linked-accounts' registration mismatch.
+- [x] **STB-001**: Fix SettingsProvider crash with optional chaining on language settings.
+- [x] **STB-002**: Fix AuthProvider crash by exposing ipcRenderer.on in preload.
+- [ ] **TEST-001**: Add unit tests for `SSHTunnelManager` options-based refactor.
+- [ ] **TEST-002**: Add integration tests for project agent council IPC handlers with strict types.
+- [ ] **TEST-003**: Verify `dispose()` cleanup for all SSH tunnels in integration tests.

@@ -26,6 +26,7 @@ const MAX_ROWS = 200;
 const MAX_WRITE_SIZE = 1024 * 1024; // 1MB
 const MAX_SESSION_ID_LENGTH = 128;
 const SESSION_ID_PATTERN = /^[\w.:-]+$/;
+const TERMINAL_BATCH_INTERVAL_MS = 50;
 
 // --- Schemas ---
 
@@ -123,6 +124,8 @@ type TemplateSavePayload = z.infer<typeof templateSavePayloadSchema>;
 
 // --- Helpers ---
 let terminalWindowGetter: (() => BrowserWindow | null) | null = null;
+const terminalDataBuffers = new Map<string, string[]>();
+const terminalFlushTimers = new Map<string, NodeJS.Timeout>();
 
 function secureHandle(
     channel: string,
@@ -167,6 +170,44 @@ function broadcastTerminalEvent(
     const fallbackWindow = getWindow();
     if (fallbackWindow && !fallbackWindow.isDestroyed()) {
         fallbackWindow.webContents.send(channel, payload);
+    }
+}
+
+function flushTerminalData(sessionId: string): void {
+    const chunks = terminalDataBuffers.get(sessionId);
+    terminalDataBuffers.delete(sessionId);
+
+    const timer = terminalFlushTimers.get(sessionId);
+    if (timer) {
+        clearTimeout(timer);
+        terminalFlushTimers.delete(sessionId);
+    }
+
+    if (!chunks || chunks.length === 0) {
+        return;
+    }
+
+    const payload = chunks.join('');
+    const getWindow = terminalWindowGetter;
+    if (!getWindow) {
+        return;
+    }
+
+    broadcastTerminalEvent(getWindow, 'terminal:data', { id: sessionId, data: payload });
+    broadcastTerminalEvent(getWindow, `terminal:data:${sessionId}`, payload);
+}
+
+function queueTerminalData(sessionId: string, data: string): void {
+    const existing = terminalDataBuffers.get(sessionId);
+    if (existing) {
+        existing.push(data);
+    } else {
+        terminalDataBuffers.set(sessionId, [data]);
+    }
+
+    if (!terminalFlushTimers.has(sessionId)) {
+        const timer = setTimeout(() => flushTerminalData(sessionId), TERMINAL_BATCH_INTERVAL_MS);
+        terminalFlushTimers.set(sessionId, timer);
     }
 }
 
@@ -317,10 +358,10 @@ function registerSessionLifecycleIpc(getWindow: () => BrowserWindow | null, term
                     ...options,
                     id: sessionId,
                     onData: (data: string) => {
-                        broadcastTerminalEvent(getWindow, 'terminal:data', { id: sessionId, data });
-                        broadcastTerminalEvent(getWindow, `terminal:data:${sessionId}`, data);
+                        queueTerminalData(sessionId, data);
                     },
                     onExit: (code: number) => {
+                        flushTerminalData(sessionId);
                         broadcastTerminalEvent(getWindow, 'terminal:exit', { id: sessionId, code });
                     },
                 });
@@ -394,10 +435,10 @@ function registerSessionLifecycleIpc(getWindow: () => BrowserWindow | null, term
                 return terminalService.restoreSnapshotSession({
                     snapshotId,
                     onData: (data: string) => {
-                        broadcastTerminalEvent(getWindow, 'terminal:data', { id: snapshotId, data });
-                        broadcastTerminalEvent(getWindow, `terminal:data:${snapshotId}`, data);
+                        queueTerminalData(snapshotId, data);
                     },
                     onExit: (code: number) => {
+                        flushTerminalData(snapshotId);
                         broadcastTerminalEvent(getWindow, 'terminal:exit', { id: snapshotId, code });
                     },
                 });
@@ -647,13 +688,13 @@ function registerSessionTemplateIpc(getWindow: () => BrowserWindow | null, termi
                     onData: (data: string) => {
                         const id = activeSessionId;
                         if (id.trim().length > 0) {
-                            broadcastTerminalEvent(getWindow, 'terminal:data', { id, data });
-                            broadcastTerminalEvent(getWindow, `terminal:data:${id}`, data);
+                            queueTerminalData(id, data);
                         }
                     },
                     onExit: (code: number) => {
                         const id = activeSessionId;
                         if (id.trim().length > 0) {
+                            flushTerminalData(id);
                             broadcastTerminalEvent(getWindow, 'terminal:exit', { id, code });
                         }
                     },
@@ -681,10 +722,10 @@ function registerSessionTemplateIpc(getWindow: () => BrowserWindow | null, termi
             async () => {
                 return terminalService.restoreAllSnapshots({
                     onData: (sessionId: string, data: string) => {
-                        broadcastTerminalEvent(getWindow, 'terminal:data', { id: sessionId, data });
-                        broadcastTerminalEvent(getWindow, `terminal:data:${sessionId}`, data);
+                        queueTerminalData(sessionId, data);
                     },
                     onExit: (sessionId: string, code: number) => {
+                        flushTerminalData(sessionId);
                         broadcastTerminalEvent(getWindow, 'terminal:exit', { id: sessionId, code });
                     },
                 });

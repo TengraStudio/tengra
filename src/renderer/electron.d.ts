@@ -73,6 +73,7 @@ import {
     ResearchData,
     ResearchProgress,
     SemanticFragment,
+    ServiceResponse,
     SSHConfig,
     SSHConnection,
     SSHDevContainer,
@@ -1594,8 +1595,8 @@ export interface ElectronAPI {
     ) => Promise<{ success: boolean; error?: string }>;
 
     // Settings
-    getSettings: () => Promise<AppSettings>;
-    saveSettings: (settings: AppSettings) => Promise<void>;
+    getSettings: () => Promise<ServiceResponse<AppSettings>>;
+    saveSettings: (settings: AppSettings) => Promise<ServiceResponse<AppSettings>>;
 
     huggingface: {
         searchModels: (

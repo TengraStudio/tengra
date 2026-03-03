@@ -374,7 +374,7 @@ export class LLMService {
             this.recordTelemetryEvent('llm.openai.failure', provider);
             appLogger.error('LLMService', `[LLMService:OpenAI] Chat Error: ${getErrorMessage(error as Error)}`);
             if (error instanceof ApiError) { throw error; }
-            throw new NetworkError(error instanceof Error ? error.message : String(error), { originalError: error instanceof Error ? error : String(error) });
+            throw new NetworkError(error instanceof Error ? error.message : String(error), { originalError: (error instanceof Error ? error.message : String(error)) as unknown as JsonObject });
         }
     }
 
@@ -468,7 +468,7 @@ export class LLMService {
         const effectiveProvider = this.resolveProvider(model, provider);
 
         if (!tools || tools.length === 0) {
-            const cached = await this.deps.cacheService.get(messages as Message[], model, options as Record<string, unknown>);
+            const cached = await this.deps.cacheService.get(messages as Message[], model, options as JsonObject);
             if (cached) { return cached; }
         }
 
@@ -481,7 +481,7 @@ export class LLMService {
                     return { content: res.content, role: 'assistant', reasoning: res.reasoning_content } as Message;
                 },
                 tools,
-                options as Record<string, unknown>
+                options as JsonObject
             );
 
             if (result.success && result.data) {
@@ -500,7 +500,7 @@ export class LLMService {
         const response = await this.executeChatRoute(effectiveProvider, model, messages, tools, options);
 
         if (!tools || tools.length === 0) {
-            await this.deps.cacheService.set(messages as Message[], model, response, 3600000, options as Record<string, unknown>);
+            await this.deps.cacheService.set(messages as Message[], model, response, 3600000, options as JsonObject);
         }
 
         return response;

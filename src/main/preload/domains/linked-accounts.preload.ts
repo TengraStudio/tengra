@@ -88,29 +88,29 @@ export interface LinkedAccountsBridge {
 
 export function createLinkedAccountsBridge(ipc: IpcRenderer): LinkedAccountsBridge {
     return {
-        getLinkedAccounts: provider => ipc.invoke('auth:getLinkedAccounts', provider),
-        getActiveLinkedAccount: provider => ipc.invoke('auth:getActiveLinkedAccount', provider),
+        getLinkedAccounts: provider => ipc.invoke('auth:get-linked-accounts', provider),
+        getActiveLinkedAccount: provider => ipc.invoke('auth:get-active-linked-account', provider),
         setActiveLinkedAccount: (provider, accountId) =>
-            ipc.invoke('auth:setActiveLinkedAccount', { provider, accountId }),
+            ipc.invoke('auth:set-active-linked-account', provider, accountId),
         linkAccount: (provider, tokenData) =>
-            ipc.invoke('auth:linkAccount', { provider, tokenData }),
-        unlinkAccount: accountId => ipc.invoke('auth:unlinkAccount', accountId),
-        unlinkProvider: provider => ipc.invoke('auth:unlinkProvider', provider),
-        hasLinkedAccount: provider => ipc.invoke('auth:hasLinkedAccount', provider),
-        getAccountsByProvider: provider => ipc.invoke('auth:getAccountsByProvider', provider),
+            ipc.invoke('auth:link-account', provider, tokenData),
+        unlinkAccount: accountId => ipc.invoke('auth:unlink-account', accountId),
+        unlinkProvider: provider => ipc.invoke('auth:unlink-provider', provider),
+        hasLinkedAccount: provider => ipc.invoke('auth:has-linked-account', provider),
+        getAccountsByProvider: provider => ipc.invoke('auth:get-accounts-by-provider', provider),
         detectAuthProvider: (providerHint, tokenData) =>
-            ipc.invoke('auth:detectAuthProvider', { providerHint, tokenData }),
-        getAuthProviderHealth: provider => ipc.invoke('auth:getAuthProviderHealth', provider),
-        getAuthProviderAnalytics: () => ipc.invoke('auth:getAuthProviderAnalytics'),
-        rotateTokenEncryption: provider => ipc.invoke('auth:rotateTokenEncryption', provider),
+            ipc.invoke('auth:detect-auth-provider', { providerHint, tokenData }),
+        getAuthProviderHealth: provider => ipc.invoke('auth:get-provider-health', provider),
+        getAuthProviderAnalytics: () => ipc.invoke('auth:get-provider-analytics'),
+        rotateTokenEncryption: provider => ipc.invoke('auth:rotate-token-encryption', provider),
         revokeAccountToken: (accountId, options) =>
-            ipc.invoke('auth:revokeAccountToken', { accountId, options }),
-        getTokenAnalytics: provider => ipc.invoke('auth:getTokenAnalytics', provider),
-        exportCredentials: options => ipc.invoke('auth:exportCredentials', options),
+            ipc.invoke('auth:revoke-account-token', accountId, options),
+        getTokenAnalytics: provider => ipc.invoke('auth:get-token-analytics', provider),
+        exportCredentials: options => ipc.invoke('auth:export-credentials', options),
         importCredentials: (payload, password) =>
-            ipc.invoke('auth:importCredentials', { payload, password }),
-        createMasterKeyBackup: passphrase => ipc.invoke('auth:createMasterKeyBackup', passphrase),
+            ipc.invoke('auth:import-credentials', { payload, password }),
+        createMasterKeyBackup: passphrase => ipc.invoke('auth:create-master-key-backup', passphrase),
         restoreMasterKeyBackup: (backupPayload, passphrase) =>
-            ipc.invoke('auth:restoreMasterKeyBackup', { backupPayload, passphrase }),
+            ipc.invoke('auth:restore-master-key-backup', backupPayload, passphrase),
     };
 }

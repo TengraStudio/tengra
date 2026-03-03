@@ -89,12 +89,14 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(
                 logBufferRef.current = [];
                 setLogs(prev => [...prev, ...batch].slice(-500));
             };
-            const handler = (_: IpcRendererEvent, log: LogEntry) => {
+            const appendLogs = (incoming: LogEntry[]) => {
                 if (isPaused) {return;}
-                logBufferRef.current.push({
-                    ...log,
-                    id: `${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
-                });
+                for (const log of incoming) {
+                    logBufferRef.current.push({
+                        ...log,
+                        id: `${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
+                    });
+                }
                 if (!rafIdRef.current) {
                     rafIdRef.current = requestAnimationFrame(() => {
                         rafIdRef.current = 0;
@@ -102,9 +104,16 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(
                     });
                 }
             };
-            window.electron.ipcRenderer.on('log:entry', handler);
+            const singleHandler = (_: IpcRendererEvent, log: LogEntry) => appendLogs([log]);
+            const batchHandler = (_: IpcRendererEvent, logsBatch: LogEntry[]) => {
+                appendLogs(Array.isArray(logsBatch) ? logsBatch : []);
+            };
+
+            window.electron.ipcRenderer.on('log:entry', singleHandler);
+            window.electron.ipcRenderer.on('log:entry-batch', batchHandler);
             return () => {
-                window.electron.ipcRenderer.off('log:entry', handler);
+                window.electron.ipcRenderer.off('log:entry', singleHandler);
+                window.electron.ipcRenderer.off('log:entry-batch', batchHandler);
                 if (rafIdRef.current) {cancelAnimationFrame(rafIdRef.current);}
                 logBufferRef.current = [];
             };

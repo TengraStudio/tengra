@@ -1,6 +1,7 @@
 import { validatePromptSafety } from '@main/utils/prompt-sanitizer.util';
-import { safeJsonParse,sanitizeObject, sanitizeString } from '@shared/utils/sanitize.util';
-import { describe, expect,it } from 'vitest';
+import { JsonObject } from '@shared/types/common';
+import { safeJsonParse, sanitizeObject, sanitizeString } from '@shared/utils/sanitize.util';
+import { describe, expect, it } from 'vitest';
 
 // ---------------------------------------------------------------------------
 // SSH path & command validation logic (mirrors the private helpers in ssh.ts)
@@ -130,7 +131,7 @@ describe('IPC Fuzzing – Malformed payloads', () => {
     });
 
     it('sanitizeObject handles payload with missing fields gracefully', () => {
-        const partial = { host: 'example.com' } as Record<string, unknown>;
+        const partial = { host: 'example.com' } as JsonObject;
         const result = sanitizeObject(partial);
         expect(result).toHaveProperty('host', 'example.com');
     });
@@ -140,7 +141,7 @@ describe('IPC Fuzzing – Malformed payloads', () => {
             expected: 'value',
             __proto__: { injected: true },
             constructor: { prototype: { evil: true } }
-        } as Record<string, unknown>;
+        } as JsonObject;
         const result = sanitizeObject(extra);
         expect(result).not.toHaveProperty('constructor');
     });
@@ -208,7 +209,7 @@ describe('IPC Fuzzing – Rate limiting simulation', () => {
     });
 
     it('rapid sequential calls to sanitizeObject remain consistent', () => {
-        const input = { key: 'value', __proto__: { admin: true } } as Record<string, unknown>;
+        const input = { key: 'value', __proto__: { admin: true } } as JsonObject;
         const results: Array<Record<string, unknown> | null | undefined> = [];
         for (let i = 0; i < 500; i++) {
             results.push(sanitizeObject({ ...input }));
@@ -262,7 +263,7 @@ describe('IPC Fuzzing – Type confusion', () => {
     });
 
     it('sanitizeObject handles object with getter that throws', () => {
-        const tricky: Record<string, unknown> = {};
+        const tricky: JsonObject = {};
         Object.defineProperty(tricky, 'trap', {
             get() {
                 throw new Error('getter trap');
@@ -278,7 +279,7 @@ describe('IPC Fuzzing – Type confusion', () => {
     });
 
     it('sanitizeObject handles frozen objects', () => {
-        const frozen = Object.freeze({ key: 'value' }) as Record<string, unknown>;
+        const frozen = Object.freeze({ key: 'value' }) as JsonObject;
         const result = sanitizeObject(frozen);
         expect(result).toHaveProperty('key', 'value');
     });

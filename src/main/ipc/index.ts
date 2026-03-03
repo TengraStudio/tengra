@@ -25,6 +25,8 @@ import { registerMcpIpc } from '@main/ipc/mcp';
 import { registerMemoryIpc } from '@main/ipc/memory';
 import { registerMetricsIpc } from '@main/ipc/metrics';
 import { registerMigrationIpc } from '@main/ipc/migration';
+import { registerModelDownloaderIpc } from '@main/ipc/model-downloader';
+import { registerModelRegistryIpc } from '@main/ipc/model-registry';
 import { registerMultiModelIpc } from '@main/ipc/multi-model';
 import { registerOllamaIpc } from '@main/ipc/ollama';
 import { registerPerformanceIpc } from '@main/ipc/performance';
@@ -165,6 +167,8 @@ export async function registerAllIpc(
     });
     registerLlamaIpc(getWin, services.llamaService);
     registerHFModelIpc(services.llmService, services.huggingFaceService);
+    registerModelRegistryIpc(services.modelRegistryService, services.rateLimitService);
+    registerModelDownloaderIpc(services.modelDownloaderService);
     registerTokenEstimationIpc();
     registerVoiceIpc();
     registerKeyRotationIpc(getWin, services.keyRotationService);

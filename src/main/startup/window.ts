@@ -123,19 +123,28 @@ function setupWebContentsSecurity(win: BrowserWindow) {
             ...(isDev ? [`'unsafe-eval'`, `'unsafe-inline'`] : [])
         ];
 
+        const connectSources = [
+            `'self'`,
+            'https:',
+            ...(isDev ? ['http://localhost:*', 'http://127.0.0.1:*', 'ws://localhost:*', 'wss://localhost:*'] : []),
+        ];
+
         const csp = [
-            `default-src 'self' safe-file: https: http://localhost:* ws://localhost:* wss://localhost:*`,
+            `default-src 'self'`,
             `script-src ${scriptSources.join(' ')}`,
             `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
-            `img-src 'self' data: blob: safe-file: https: http://localhost:*`,
+            `img-src 'self' data: blob: safe-file: https:`,
             `media-src 'self' safe-file: https:`,
             `font-src 'self' data: https://fonts.gstatic.com`,
-            `connect-src 'self' https: http://localhost:* ws://localhost:* wss://localhost:* http://127.0.0.1:*`,
+            `connect-src ${connectSources.join(' ')}`,
             `object-src 'none'`,
             `base-uri 'self'`,
+            `frame-src 'none'`,
             `frame-ancestors 'none'`,
             `form-action 'self'`,
-            `worker-src 'self' blob:`
+            `worker-src 'self' blob:`,
+            `manifest-src 'self'`,
+            ...(isDev ? [] : [`upgrade-insecure-requests`]),
         ].join('; ');
 
         callback({

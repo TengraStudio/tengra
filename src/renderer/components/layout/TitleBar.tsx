@@ -1,10 +1,9 @@
-import { FileText, Loader2, Minus, Puzzle, Square, X } from 'lucide-react';
-import { type CSSProperties, lazy, type ReactNode, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { Loader2, Minus, Puzzle, Square, X } from 'lucide-react';
+import { type CSSProperties, type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-const LazyChangelogModal = lazy(() => import('./ChangelogModal'));
 
 type AppRegionStyle = CSSProperties & { WebkitAppRegion?: 'drag' | 'no-drag' };
 
@@ -17,7 +16,6 @@ interface TitleBarProps {
 
 export function TitleBar({ children, leftContent, className, onExtensionClick }: TitleBarProps) {
     const { t } = useTranslation();
-    const [isChangelogOpen, setIsChangelogOpen] = useState(false);
     const [lazyStatus, setLazyStatus] = useState<{ loaded: number; registered: number; loading: number }>({
         loaded: 0,
         registered: 0,
@@ -27,8 +25,6 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
     const dragStyle = useMemo<AppRegionStyle>(() => ({ WebkitAppRegion: 'drag' }), []);
     const noDragStyle = useMemo<AppRegionStyle>(() => ({ WebkitAppRegion: 'no-drag' }), []);
 
-    const openChangelog = useCallback(() => setIsChangelogOpen(true), []);
-    const closeChangelog = useCallback(() => setIsChangelogOpen(false), []);
     const handleMinimize = useCallback(() => window.electron.minimize(), []);
     const handleMaximize = useCallback(() => window.electron.maximize(), []);
     const handleClose = useCallback(() => window.electron.close(), []);
@@ -95,14 +91,6 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                             {lazyStatus.loading > 0 && <Loader2 className="w-3 h-3 animate-spin" />}
                             <span>{lazyStatus.loaded}/{lazyStatus.registered}</span>
                         </div>
-                        <button
-                            onClick={openChangelog}
-                            className="p-1.5 hover:bg-primary/10 hover:text-primary rounded-md transition-all duration-200 text-muted-foreground"
-                            title={t('titleBar.changelog')}
-                            aria-label={t('titleBar.changelog')}
-                        >
-                            <FileText className="w-4 h-4" />
-                        </button>
                         {onExtensionClick && (
                             <button
                                 onClick={onExtensionClick}
@@ -141,11 +129,7 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                 </div>
             </header>
 
-            {isChangelogOpen && (
-                <Suspense fallback={null}>
-                    <LazyChangelogModal isOpen={isChangelogOpen} onClose={closeChangelog} />
-                </Suspense>
-            )}
+
         </>
     );
 }

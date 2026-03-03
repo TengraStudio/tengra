@@ -3,6 +3,7 @@ import { promisify } from 'util';
 
 import { appLogger } from '@main/logging/logger';
 import { validateCommand } from '@main/utils/command-validator.util';
+import { validateCommandArgs } from '@main/utils/shell-command-policy.util';
 import { JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 
@@ -60,6 +61,48 @@ export class CommandService {
         return validateCommand(command);
     }
 
+    private normalizeExecutableName(command: string): string {
+        const trimmed = command.trim();
+        const baseName = trimmed.split(/[\\/]/).pop() ?? trimmed;
+        return baseName.replace(/\.(exe|cmd|bat)$/i, '').toLowerCase();
+    }
+
+    private parseCommand(command: string): { executable: string; args: string[] } | null {
+        const tokens = command.match(/(?:[^\s"]+|"[^"]*")+/g) ?? [];
+        if (tokens.length === 0) {
+            return null;
+        }
+
+        const [rawExecutable, ...rawArgs] = tokens;
+        if (!rawExecutable) {
+            return null;
+        }
+
+        const executable = rawExecutable.replace(/^"(.*)"$/u, '$1').trim();
+        if (executable.length === 0) {
+            return null;
+        }
+
+        return {
+            executable,
+            args: rawArgs.map(arg => arg.replace(/^"(.*)"$/u, '$1')),
+        };
+    }
+
+    private validateCommandExecution(command: string): { allowed: boolean; reason?: string } {
+        const parsed = this.parseCommand(command);
+        if (!parsed) {
+            return { allowed: false, reason: 'Invalid command format' };
+        }
+
+        const policy = validateCommandArgs(this.normalizeExecutableName(parsed.executable), parsed.args);
+        if (!policy.allowed) {
+            return { allowed: false, reason: policy.reason };
+        }
+
+        return { allowed: true };
+    }
+
     async executeCommand(
         command: string,
         options?: {
@@ -74,6 +117,14 @@ export class CommandService {
             return {
                 success: false,
                 error: safety.reason ?? 'Command blocked by safety policy'
+            };
+        }
+
+        const executionPolicy = this.validateCommandExecution(command);
+        if (!executionPolicy.allowed) {
+            return {
+                success: false,
+                error: executionPolicy.reason ?? 'Command blocked by argument policy'
             };
         }
 
@@ -183,9 +234,27 @@ export class CommandService {
                 return;
             }
 
-            const child = spawn(command, [], {
+            const executionPolicy = this.validateCommandExecution(command);
+            if (!executionPolicy.allowed) {
+                resolve({
+                    success: false,
+                    error: executionPolicy.reason ?? 'Command blocked by argument policy'
+                });
+                return;
+            }
+
+            const parsed = this.parseCommand(command);
+            if (!parsed) {
+                resolve({
+                    success: false,
+                    error: 'Invalid command format'
+                });
+                return;
+            }
+
+            const child = spawn(parsed.executable, parsed.args, {
                 cwd: options?.cwd ?? process.cwd(),
-                shell: 'powershell.exe',
+                shell: false,
                 stdio: ['ignore', 'pipe', 'pipe']
             });
 

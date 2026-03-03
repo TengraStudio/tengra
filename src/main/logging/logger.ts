@@ -55,6 +55,7 @@ class AppLogger {
     private logPath = '';
     private size = 0;
     private initialized = false;
+    private showDebugLogs = false;
     private queue: Promise<void> = Promise.resolve();
     private originalConsole: {
         debug: Console['debug'];
@@ -179,6 +180,21 @@ class AppLogger {
     }
 
     /**
+     * Returns whether debug logs are shown.
+     * @returns Whether debug logs are shown.
+     */
+    getShowDebugLogs(): boolean {
+        return this.showDebugLogs;
+    }
+
+    /**
+     * Sets whether debug logs are shown.
+     * @param showDebugLogs - Whether to show debug logs.
+     */
+    setShowDebugLogs(showDebugLogs: boolean) {
+        this.showDebugLogs = showDebugLogs;
+    }
+    /**
      * Returns the current minimum log level.
      * @returns The active log level.
      */
@@ -209,10 +225,12 @@ class AppLogger {
             error: console.error.bind(console),
         };
 
-        console.debug = (...args: Array<JsonValue | Error | object>) => {
-            this.debug('console', formatArgs(args));
-            this.safeConsoleCall('debug', ...args);
-        };
+        if (this.showDebugLogs) {
+            console.debug = (...args: Array<JsonValue | Error | object>) => {
+                this.debug('console', formatArgs(args));
+                this.safeConsoleCall('debug', ...args);
+            };
+        }
         console.log = (...args: Array<JsonValue | Error | object>) => {
             this.info('console', formatArgs(args));
             this.safeConsoleCall('log', ...args);
@@ -244,7 +262,7 @@ class AppLogger {
      * @param data - Optional metadata or error.
      */
     debug(context: string, message: string, data?: JsonValue | Error | AppError) {
-        if (this.currentLevel <= LogLevel.DEBUG) {
+        if (this.currentLevel <= LogLevel.DEBUG && this.showDebugLogs) {
             this.write({ level: LogLevel.DEBUG, message, context, data });
         }
     }

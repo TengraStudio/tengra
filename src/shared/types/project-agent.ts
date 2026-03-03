@@ -215,6 +215,8 @@ export interface AgentStartOptions {
     budgetLimitUsd?: number;
     /** I18N-05: User's preferred locale for agent responses */
     locale?: string;
+    /** FEAT-007: Parallel multi-agent/model execution mode */
+    executionMode?: 'sequential' | 'parallel';
 }
 
 export interface OrchestratorState extends ProjectState {
@@ -395,6 +397,61 @@ export interface HelperMergeGateDecision {
     reasons: string[];
     requiredFixes: string[];
     reviewedAt: number;
+}
+
+export interface QuotaInterruptResult {
+    success: boolean;
+    interruptId: string;
+    checkpointId?: string;
+    blockedByQuota: boolean;
+    switched: boolean;
+    selectedFallback?: { provider: string; model: string };
+    availableFallbacks: Array<{ provider: string; model: string }>;
+    message: string;
+}
+
+export interface QuotaInterruptInput {
+    taskId: string;
+    stageId?: string;
+    provider: string;
+    model: string;
+    reason?: string;
+    autoSwitch?: boolean;
+}
+
+export interface WorkerAvailabilityInput {
+    taskId: string;
+    agentId: string;
+    status: WorkerAvailabilityStatus;
+    reason?: string;
+    skills?: string[];
+    contextReadiness?: number;
+}
+
+export interface HelperCandidateInput {
+    taskId: string;
+    stageId: string;
+    requiredSkills: string[];
+    blockedAgentIds?: string[];
+    contextReadinessOverrides?: Record<string, number>;
+}
+
+export interface HelperHandoffInput {
+    taskId: string;
+    stageId: string;
+    ownerAgentId: string;
+    helperAgentId: string;
+    stageGoal: string;
+    acceptanceCriteria: string[];
+    constraints: string[];
+    contextNotes?: string;
+}
+
+export interface HelperMergeGateInput {
+    acceptanceCriteria: string[];
+    constraints: string[];
+    helperOutput: string;
+    reviewerNotes?: string;
 }
 
 /** AGT-COL-03: Vote for a decision */

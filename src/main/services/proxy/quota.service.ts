@@ -42,7 +42,7 @@ export enum QuotaErrorCode {
 export class QuotaError extends TengraError {
     public readonly quotaCode: QuotaErrorCode;
 
-    constructor(message: string, code: QuotaErrorCode, context?: Record<string, unknown>) {
+    constructor(message: string, code: QuotaErrorCode, context?: JsonObject) {
         super(message, code, context);
         this.quotaCode = code;
         Object.setPrototypeOf(this, new.target.prototype);

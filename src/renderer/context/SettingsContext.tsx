@@ -1,4 +1,3 @@
-
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo } from 'react';
 
 import { loadSettings, updateSettings as updateSettingsInStore, useSettingsStore } from '@/store/settings.store';
@@ -31,7 +30,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
     // Apply global appearances settings
     useEffect(() => {
-        if (!settings) { return; }
+        if (!settings?.general) { return; }
         if (settings.general.fontSize) {
             document.documentElement.style.setProperty('--font-size-base', `${settings.general.fontSize}px`);
         }

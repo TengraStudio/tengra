@@ -3,6 +3,7 @@ import * as path from 'path';
 
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
+import { validateCommand } from '@main/utils/command-validator.util';
 import { createIpcHandler, createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { RateLimiter } from '@main/utils/rate-limiter.util';
 import { validateCommandArgs } from '@main/utils/shell-command-policy.util';
@@ -412,6 +413,11 @@ function registerShellHandlers(getMainWindow: () => BrowserWindow | null, allowe
 
             if (command.length > MAX_COMMAND_LENGTH) {
                 appLogger.warn('WindowIPC', 'Command exceeds maximum length');
+                return false;
+            }
+            const commandPolicy = validateCommand(command);
+            if (!commandPolicy.allowed) {
+                appLogger.warn('WindowIPC', `Command blocked by validator: ${commandPolicy.reason}`);
                 return false;
             }
 

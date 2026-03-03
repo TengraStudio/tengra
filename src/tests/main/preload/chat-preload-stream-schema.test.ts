@@ -5,7 +5,7 @@
 import { Message, ToolDefinition } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
 import { IpcRendererEvent } from 'electron';
-import { beforeEach,describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ── Mock electron ────────────────────────────────────────────────────────────
 
@@ -34,7 +34,7 @@ vi.mock('@main/logging/logger', () => ({
 
 // ── Import after mocks ──────────────────────────────────────────────────────
 
-import { ChatBridge,createChatBridge } from '@main/preload/domains/chat.preload';
+import { ChatBridge, createChatBridge } from '@main/preload/domains/chat.preload';
 import { ipcRenderer } from 'electron';
 
 // ── Stream chunk payload type (mirrors preload definition) ──────────────────
@@ -54,11 +54,11 @@ interface ChatStreamParams {
     messages: Message[];
     model: string;
     tools?: ToolDefinition[];
-    provider: string;
-    optionsJson?: JsonObject;
-    chatId: string;
+    provider?: string;
+    options?: JsonObject;
+    chatId?: string;
     projectId?: string;
-    systemMode?: string;
+    systemMode?: 'thinking' | 'agent' | 'fast' | 'architect';
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -107,7 +107,7 @@ describe('ChatBridge stream payload schema regression', () => {
         it('should forward all optional fields when provided', async () => {
             const params = buildStreamParams({
                 tools: [{ type: 'function', function: { name: 'search', description: 'Search web' } }],
-                optionsJson: { temperature: 0.7 },
+                options: { temperature: 0.7 },
                 projectId: 'proj-42',
                 systemMode: 'thinking',
             });
@@ -116,7 +116,7 @@ describe('ChatBridge stream payload schema regression', () => {
 
             const invokedPayload = mockInvoke.mock.calls[0][1] as ChatStreamParams;
             expect(invokedPayload.tools).toHaveLength(1);
-            expect(invokedPayload.optionsJson).toEqual({ temperature: 0.7 });
+            expect(invokedPayload.options).toEqual({ temperature: 0.7 });
             expect(invokedPayload.projectId).toBe('proj-42');
             expect(invokedPayload.systemMode).toBe('thinking');
         });
@@ -269,10 +269,13 @@ describe('ChatBridge stream payload schema regression', () => {
         });
 
         it('chatStream response error field must be string or undefined', async () => {
-            mockInvoke.mockResolvedValue({ success: false, error: 'fail' });
+            mockInvoke.mockResolvedValue({ success: false, error: { message: 'fail', code: 'unknown' } });
             const result = await bridge.chatStream(buildStreamParams());
 
-            expect(typeof result.error === 'string' || result.error === undefined).toBe(true);
+            expect(result.success).toBe(false);
+            if (result.error) {
+                expect(typeof result.error.message).toBe('string');
+            }
         });
 
         it('stream chunk chatId must always be a string', () => {

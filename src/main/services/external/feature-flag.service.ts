@@ -3,6 +3,7 @@ import * as path from 'path';
 
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
+import { JsonObject } from '@shared/types/common';
 import { TengraError } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
@@ -17,7 +18,7 @@ export interface FeatureFlag {
 export interface EvaluationContext {
     userId?: string;
     environment?: string;
-    attributes?: Record<string, string | number | boolean>;
+    attributes?: JsonObject;
 }
 
 /**
@@ -40,7 +41,7 @@ export enum FeatureFlagErrorCode {
 export class FeatureFlagError extends TengraError {
     public readonly featureFlagCode: FeatureFlagErrorCode;
 
-    constructor(message: string, code: FeatureFlagErrorCode, context?: Record<string, unknown>) {
+    constructor(message: string, code: FeatureFlagErrorCode, context?: JsonObject) {
         super(message, code, context);
         this.featureFlagCode = code;
         Object.setPrototypeOf(this, new.target.prototype);
@@ -318,7 +319,7 @@ export class FeatureFlagService extends BaseService {
 
     /** Validates the attributes map on an evaluation context. */
     private validateContextAttributes(
-        attributes: Record<string, string | number | boolean>
+        attributes: JsonObject
     ): void {
         if (attributes === null || typeof attributes !== 'object' || Array.isArray(attributes)) {
             throw new FeatureFlagError(

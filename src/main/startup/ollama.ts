@@ -147,11 +147,18 @@ async function executeStartCommand(): Promise<boolean> {
         return true;
     } catch (e) {
         appLogger.warn('Ollama', `Failed to start via command: ${getErrorMessage(e as Error)}. Trying direct path...`);
+
+        const localAppData = process.env.LOCALAPPDATA;
+        const potentialPath = localAppData
+            ? `${localAppData}\\Programs\\Ollama\\ollama.exe`
+            : null;
+
         try {
-            await execAsync(
-                'Start-Process -FilePath "$env:LOCALAPPDATA\\Programs\\Ollama\\ollama.exe" -ArgumentList "serve" -WindowStyle Hidden',
-                { shell: 'powershell.exe' }
-            );
+            const command = potentialPath
+                ? `Start-Process -FilePath "${potentialPath}" -ArgumentList "serve" -WindowStyle Hidden`
+                : 'Start-Process -FilePath "$env:LOCALAPPDATA\\Programs\\Ollama\\ollama.exe" -ArgumentList "serve" -WindowStyle Hidden';
+
+            await execAsync(command, { shell: 'powershell.exe' });
             return true;
         } catch (e2) {
             appLogger.error('Ollama', `Failed to start via path: ${getErrorMessage(e2 as Error)}`);

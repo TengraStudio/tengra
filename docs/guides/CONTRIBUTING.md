@@ -26,8 +26,7 @@ Thank you for your interest in contributing to Tengra! To maintain high code qua
     npm run lint
     npm run type-check
     ```
-4.  **Changelog**: Update `docs/changelog/data/changelog.entries.json` (English first).
-5.  **Commit**: Use conventional commit messages.
+4.  **Commit**: Use conventional commit messages.
 
 ## 🎨 UI/UX Standards
 

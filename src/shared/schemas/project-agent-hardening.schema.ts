@@ -97,7 +97,8 @@ export const AgentStartOptionsSchema = z.object({
     })).optional(),
     systemMode: z.enum(['fast', 'thinking', 'architect']).optional(),
     budgetLimitUsd: z.number().optional(),
-    locale: z.string().optional()
+    locale: z.string().optional(),
+    executionMode: z.enum(['sequential', 'parallel']).optional()
 });
 
 /**

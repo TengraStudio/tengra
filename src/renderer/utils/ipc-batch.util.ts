@@ -5,6 +5,7 @@
 
 import { LinkedAccountInfo } from '@renderer/electron.d';
 import { Folder } from '@shared/types/chat';
+import { JsonObject } from '@shared/types/common';
 import { Project } from '@shared/types/project';
 import { ClaudeQuota, CodexUsage, CopilotQuota, QuotaResponse } from '@shared/types/quota';
 import { AppSettings } from '@shared/types/settings';
@@ -244,5 +245,5 @@ export const CommonBatches = {
 };
 
 function sanitizeChatUpdates(updates: Partial<Chat>): IpcValue {
-    return sanitizeObject(updates as Record<string, unknown>) as IpcValue;
+    return sanitizeObject(updates as JsonObject) as IpcValue;
 }

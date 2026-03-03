@@ -45,23 +45,12 @@ Before committing, you MUST run:
 
 **Only commit if ALL checks pass. If any fails, fix errors first.**
 
-## Changelog Rules
-
-- **English First**: ALWAYS write changelog entries in English (`changelog.entries.json`) first.
-- **Translations on Weekends**: Locale files (tr, ar, zh, ja) can ONLY be updated on weekends (Saturday-Sunday).
-- **No Translation Overload**: Do not write translations for every minor change during weekdays.
-
 ## After Making Changes
 
 1. Update `docs/TODO.md`:
    - Mark completed items as `[x]`
    - NEVER delete items
    - **COMMIT IMMEDIATELY** after marking done
-
-2. Update structured changelog:
-   - **English First**: Update `docs/changelog/data/changelog.entries.json` first
-   - **Translations on Weekends Only**: Locale files can ONLY be updated on weekends
-   - Run `npm run changelog:sync`
 
 3. Commit and push:
    ```bash

@@ -7,7 +7,7 @@ import {
     remoteTeamStandardsTemplates,
     troubleshootKnowledgeBase,
     walkthroughScripts,
-    workspaceChangelogHighlights,
+
     workspaceSshPlaybook
 } from '@/data/workspace-content-packs';
 import { useTranslation } from '@/i18n';
@@ -200,8 +200,7 @@ export const WorkspaceContentHub: React.FC<WorkspaceContentHubProps> = ({ projec
                     ))}
                 </section>
                 <section className="space-y-2">
-                    <div className="font-medium">Changelog Highlights</div>
-                    {workspaceChangelogHighlights.map(item => <div key={item}>• {item}</div>)}
+
                     <div className="font-medium mt-2">Walkthrough scripts</div>
                     {walkthroughScripts.map(script => <div key={script}>• {script}</div>)}
                 </section>

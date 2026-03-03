@@ -1,4 +1,5 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
+import { IpcValue } from '@shared/types/common';
 // Increase max listeners for ipcRenderer to handle multiple terminal/process streams
 ipcRenderer.setMaxListeners(60);
 
@@ -10,6 +11,7 @@ import { createAuthBridge } from './preload/domains/auth.preload';
 import { createAuthSessionBridge } from './preload/domains/auth-session.preload';
 import { createBatchBridge } from './preload/domains/batch.preload';
 import { createClipboardBridge } from './preload/domains/clipboard.preload';
+import { createChatBridge } from './preload/domains/chat.preload';
 import { createCodeBridge } from './preload/domains/code.preload';
 import { createCodeSandboxBridge } from './preload/domains/code-sandbox.preload';
 import { createCollaborationBridge } from './preload/domains/collaboration.preload';
@@ -62,10 +64,31 @@ const api = {
     ...createLinkedAccountsBridge(ipcRenderer),
     ...createAppBridge(ipcRenderer),
     ...createClipboardBridge(ipcRenderer),
+    ...createChatBridge(ipcRenderer),
     ...createSdCppBridge(ipcRenderer),
     ...createWorkflowBridge(ipcRenderer),
     ...createModelDownloaderBridge(ipcRenderer),
     ...createToolsBridge(ipcRenderer),
+
+    // Unified ipcRenderer exposure
+    ipcRenderer: {
+        on: (channel: string, listener: (event: IpcRendererEvent, ...args: IpcValue[]) => void) => {
+            ipcRenderer.on(channel, listener);
+            return () => ipcRenderer.removeListener(channel, listener);
+        },
+        off: (channel: string, listener: (event: IpcRendererEvent, ...args: IpcValue[]) => void) => {
+            ipcRenderer.off(channel, listener);
+        },
+        send: (channel: string, ...args: IpcValue[]) => ipcRenderer.send(channel, ...args),
+        invoke: (channel: string, ...args: IpcValue[]) => ipcRenderer.invoke(channel, ...args),
+        removeAllListeners: (channel: string) => ipcRenderer.removeAllListeners(channel)
+    },
+
+    // Backward compatibility for components using window.electron.on
+    on: (channel: string, listener: (event: IpcRendererEvent, ...args: IpcValue[]) => void) => {
+        ipcRenderer.on(channel, listener);
+        return () => ipcRenderer.removeListener(channel, listener);
+    },
 
     code: createCodeBridge(ipcRenderer),
     git: createGitBridge(ipcRenderer),

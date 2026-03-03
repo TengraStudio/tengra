@@ -72,7 +72,7 @@ export function SettingsPage({
         manualSessionModal, setManualSessionModal, handleSaveClaudeSession
     } = useSettingsLogic(onRefreshModels);
 
-    const { t } = useTranslation(settings?.general.language ?? 'tr');
+    const { t } = useTranslation(settings?.general?.language ?? 'tr');
 
     // Search query is controlled from the global app header.
     const normalizedSearchQuery = useMemo(
