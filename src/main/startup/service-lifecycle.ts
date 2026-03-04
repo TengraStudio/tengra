@@ -10,7 +10,8 @@ interface ServiceGroupRegistrations {
     registerDataServices: () => void;
     registerSecurityServices: () => void;
     registerLLMServices: () => void;
-    registerProjectServices: () => void;
+    registerProjectServices?: () => void;
+    registerWorkspaceServices?: () => void;
     registerAnalysisServices: () => void;
     registerMcpServices: () => void;
     registerLazyServices: () => void;
@@ -34,7 +35,9 @@ export function registerServiceGroups(registrations: ServiceGroupRegistrations):
     registrations.registerDataServices();
     registrations.registerSecurityServices();
     registrations.registerLLMServices();
-    registrations.registerProjectServices();
+    const registerWorkspaceLikeServices =
+        registrations.registerWorkspaceServices ?? registrations.registerProjectServices;
+    registerWorkspaceLikeServices?.();
     registrations.registerAnalysisServices();
     registrations.registerMcpServices();
     registrations.registerLazyServices();

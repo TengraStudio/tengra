@@ -5,8 +5,8 @@
 - [x] **REF-012**: Continue decomposing `src/main/services/llm/idea-generator.service.ts` (2448 lines) by extracting research and export orchestration.
 - [x] **REF-013**: Continue shrinking `src/main/services/llm/advanced-memory.service.ts` (1937 lines) by extracting persistence/normalization adapters.
 - [x] **TEST-005**: Eliminate recurring React `act(...)` warnings in renderer tests, especially the `WorkspaceEditor` suites.
-- [ ] **LINT-001**: Resolve repo-wide `simple-import-sort` warnings in touched main/renderer files to reduce diff noise and keep lint output actionable.
-- [ ] **SAFE-004**: Replace remaining `as unknown` and similarly broad cast patterns in IPC and translation-adjacent code with narrower typed helpers.
+- [x] **LINT-001**: Resolve repo-wide `simple-import-sort` warnings in touched main/renderer files to reduce diff noise and keep lint output actionable.
+- [x] **SAFE-004**: Replace remaining `as unknown` and similarly broad cast patterns in IPC and translation-adjacent code with narrower typed helpers.
 - [x] **REF-014**: Invert workspace compatibility shims so canonical implementations live in `Workspace*` files and `Project*` files are pure re-export shims only.
 - [x] **REF-015**: Rename remaining internal `Project*` local variables and prop names in workspace features (`projectSearchIndex`, `selectedProjectIds`, `onProjectCreated`, etc.) to `Workspace*`.
 - [x] **TEST-006**: Add renderer tests for the `WorkspaceHeader`, `WorkspaceModals`, and `VirtualizedWorkspaceGrid` compatibility wrappers.
@@ -26,7 +26,7 @@
   Scope: audit visible labels, button text, headings, empty states, modal titles, and status messages for inconsistent terms.
   Targets: `src/renderer/features/workspace/**`, `src/renderer/features/automation-workflow/**`, `src/renderer/i18n/en/**`, `src/renderer/i18n/tr/**`, `src/renderer/components/layout/**`.
   Deliverables: terminology map, updated user-facing strings, regression checklist for renamed UI terms.
-- [ ] **TEST-008**: Add offline-first smoke coverage for the critical path: local model available, no network, workspace operations, chat, and memory still usable.
+- [x] **TEST-008**: Add offline-first smoke coverage for the critical path: local model available, no network, workspace operations, chat, and memory still usable.
   Scope: simulate disconnected network state and validate local providers, local DB, workspace actions, and memory retrieval continue working.
   Targets: `src/tests/main/**`, `src/tests/renderer/**`, `src/main/services/analysis/health*`, `src/main/services/llm/ollama*`, `src/renderer/features/chat/**`, `src/renderer/features/workspace/**`.
   Deliverables: smoke tests for offline startup, local chat flow, workspace open, and memory access with cloud providers degraded.
@@ -56,7 +56,7 @@
   Scope: create a first-run wizard that detects available runtimes and leads users through the minimum viable setup.
   Targets: `src/renderer/features/onboarding/**`, `src/renderer/context/AppProviders.tsx`, `src/renderer/features/models/**`, `src/renderer/features/workspace/**`, `src/main/ipc/health.ts`, `src/main/ipc/settings.ts`.
   Deliverables: onboarding flow, setup checkpoints, skip/resume support, and default recommendations.
-- [ ] **SAFE-005**: Add IPC contract parity checks that verify preload exposure, shared schemas, and handler registration stay in sync.
+- [x] **SAFE-005**: Add IPC contract parity checks that verify preload exposure, shared schemas, and handler registration stay in sync.
   Scope: detect drift between preload bridges, IPC handlers, and shared Zod schemas before runtime regressions reach users.
   Targets: `src/main/preload/**`, `src/main/ipc/**`, `src/shared/schemas/**`, `src/tests/main/**`, `scripts/**`.
   Deliverables: parity test suite or validation script, mismatch reporting, and CI-safe failure output.
@@ -78,7 +78,7 @@
   Deliverables: permission schema, enforcement layer, consent UI, and audit logging hooks for sensitive actions.
 
 ### P2 - Quality And Maintainability
-- [ ] **LINT-002**: Reduce residual lint and test warning noise beyond import sorting, including recurring renderer warnings that hide real regressions.
+- [x] **LINT-002**: Reduce residual lint and test warning noise beyond import sorting, including recurring renderer warnings that hide real regressions.
   Scope: clear noisy warnings so future signal is meaningful and CI output remains usable.
   Targets: `eslint.config.mjs`, `src/renderer/**`, `src/main/**`, `src/tests/**`.
   Deliverables: reduced warning count, triage list for remaining intentional exceptions, and cleaner CI output.
@@ -86,7 +86,7 @@
   Scope: bring docs back in sync with the real architecture after Workspace and Workflow migrations.
   Targets: `docs/README.md`, `docs/architecture/**`, `docs/api/**`, `docs/guides/**`, `README.md`.
   Deliverables: updated docs index, corrected architecture references, and removed stale paths/instructions.
-- [ ] **TEST-009**: Add regression suites for compatibility shims and renamed Workspace/Workflow entry points so migration debt does not reappear.
+- [x] **TEST-009**: Add regression suites for compatibility shims and renamed Workspace/Workflow entry points so migration debt does not reappear.
   Scope: lock down renamed entry points and compatibility wrappers with explicit regression coverage.
   Targets: `src/tests/main/**`, `src/tests/renderer/**`, `src/renderer/features/workspace/**`, `src/main/ipc/workspace*.ts`, `src/main/ipc/workflow.ts`.
   Deliverables: regression tests covering canonical imports, compatibility shims, and renamed IPC/bridge paths.
@@ -98,11 +98,11 @@
   Scope: measure current performance so optimization work is driven by evidence instead of guesswork.
   Targets: `src/main/services/analysis/**`, `src/main/ipc/performance.ts`, `src/main/ipc/metrics.ts`, `src/renderer/features/showcase/**` or a new diagnostics panel, `scripts/tool.js`.
   Deliverables: baseline metrics dashboard/report, startup timing capture, idle CPU checklist, memory snapshots, and a repeatable profiling workflow.
-- [ ] **OPT-002**: Make startup service initialization aggressively lazy so only core services initialize on app launch and heavy domains load on first use.
+- [x] **OPT-002**: Make startup service initialization aggressively lazy so only core services initialize on app launch and heavy domains load on first use.
   Scope: reduce startup CPU/RAM by deferring non-essential services such as `workspace`, `ssh`, `docker`, `memory`, `extension`, `marketplace`, and heavy workflow services.
   Targets: `src/main/startup/**`, `src/main/services/**`, `src/main/ipc/lazy-services.ts`, `src/main/startup/services.ts`.
   Deliverables: startup service classification (`core`, `deferred`, `on-demand`), lazy initialization paths, and reduced cold-start resource usage.
-- [ ] **OPT-003**: Expand renderer-side code splitting and lazy loading so heavy feature bundles are only loaded when their screens/tabs are opened.
+- [x] **OPT-003**: Expand renderer-side code splitting and lazy loading so heavy feature bundles are only loaded when their screens/tabs are opened.
   Scope: defer loading of large UI modules such as `WorkspacePage`, `AutomationWorkflow`, `Models`, `Memory`, editors, graph views, markdown/math tooling, and terminal-heavy surfaces.
   Targets: `src/renderer/components/lazy/**`, `src/renderer/features/**`, `vite.config.ts`, `src/renderer/views/**`.
   Deliverables: new lazy boundaries, smaller initial renderer payload, and documented chunk ownership by feature.

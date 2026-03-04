@@ -63,23 +63,6 @@ import { PromptTemplatesService } from '@main/services/llm/prompt-templates.serv
 import { ResponseCacheService } from '@main/services/llm/response-cache.service';
 import { McpMarketplaceService } from '@main/services/mcp/mcp-marketplace.service';
 import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
-import { AgentCheckpointService } from '@main/services/project/agent/agent-checkpoint.service';
-import { AgentCollaborationService } from '@main/services/project/agent/agent-collaboration.service';
-import { AgentPerformanceService } from '@main/services/project/agent/agent-performance.service';
-import { AgentPersistenceService } from '@main/services/project/agent/agent-persistence.service';
-import { AgentRegistryService } from '@main/services/project/agent/agent-registry.service';
-import { AgentTemplateService } from '@main/services/project/agent/agent-template.service';
-import { CouncilService } from '@main/services/project/agent/council.service';
-import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service';
-import { DockerService } from '@main/services/project/docker.service';
-import { GitService } from '@main/services/project/git.service';
-import { MultiAgentOrchestratorService } from '@main/services/project/orchestrator.service';
-import { ProjectService } from '@main/services/project/project.service';
-import { ProjectAgentService } from '@main/services/project/project-agent.service';
-import { ProjectScaffoldService } from '@main/services/project/project-scaffold.service';
-import { SSHService } from '@main/services/project/ssh.service';
-import { TerminalService } from '@main/services/project/terminal.service';
-import { TerminalSmartService } from '@main/services/project/terminal-smart.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { QuotaService } from '@main/services/proxy/quota.service';
@@ -112,6 +95,23 @@ import { ClipboardService } from '@main/services/ui/clipboard.service';
 import { NotificationService } from '@main/services/ui/notification.service';
 import { ScreenshotService } from '@main/services/ui/screenshot.service';
 import { WorkflowService } from '@main/services/workflow/workflow.service';
+import { AgentCheckpointService } from '@main/services/workspace/agent/agent-checkpoint.service';
+import { AgentCollaborationService } from '@main/services/workspace/agent/agent-collaboration.service';
+import { AgentPerformanceService } from '@main/services/workspace/agent/agent-performance.service';
+import { AgentPersistenceService } from '@main/services/workspace/agent/agent-persistence.service';
+import { AgentRegistryService } from '@main/services/workspace/agent/agent-registry.service';
+import { AgentTemplateService } from '@main/services/workspace/agent/agent-template.service';
+import { CouncilService } from '@main/services/workspace/agent/council.service';
+import { CodeIntelligenceService } from '@main/services/workspace/code-intelligence.service';
+import { DockerService } from '@main/services/workspace/docker.service';
+import { GitService } from '@main/services/workspace/git.service';
+import { MultiAgentOrchestratorService } from '@main/services/workspace/orchestrator.service';
+import { SSHService } from '@main/services/workspace/ssh.service';
+import { TerminalService } from '@main/services/workspace/terminal.service';
+import { TerminalSmartService } from '@main/services/workspace/terminal-smart.service';
+import { WorkspaceService } from '@main/services/workspace/workspace.service';
+import { WorkspaceAgentService } from '@main/services/workspace/workspace-agent.service';
+import { WorkspaceScaffoldService } from '@main/services/workspace/workspace-scaffold.service';
 import {
     bootstrapCoreData,
     initDeferredServices,
@@ -155,7 +155,7 @@ export interface Services {
     ollamaHealthService: ReturnType<typeof getOllamaHealthService>;
     llamaService: LlamaService;
     huggingFaceService: HuggingFaceService;
-    projectService: ProjectService;
+    workspaceService: WorkspaceService;
     terminalService: TerminalService;
     inlineSuggestionService: InlineSuggestionService;
     logoService: LazyServiceDependency<LogoService>;
@@ -198,9 +198,12 @@ export interface Services {
     modelRegistryService: ModelRegistryService;
     eventBusService: EventBusService;
     marketResearchService: MarketResearchService;
-    projectScaffoldService: ProjectScaffoldService;
+    workspaceScaffoldService: WorkspaceScaffoldService;
+    projectScaffoldService: WorkspaceScaffoldService;
     ideaGeneratorService: IdeaGeneratorService;
-    projectAgentService: ProjectAgentService;
+    projectService: WorkspaceService;
+    workspaceAgentService: WorkspaceAgentService;
+    projectAgentService: WorkspaceAgentService;
     multiAgentOrchestratorService: MultiAgentOrchestratorService;
     agentRegistryService: AgentRegistryService;
     agentPersistenceService: AgentPersistenceService;
@@ -235,7 +238,7 @@ export async function createServices(allowedFileRoots: Set<string>): Promise<Ser
         registerDataServices,
         registerSecurityServices,
         registerLLMServices,
-        registerProjectServices,
+        registerWorkspaceServices,
         registerAnalysisServices,
         registerMcpServices,
         registerLazyServices,
@@ -603,24 +606,58 @@ function registerLLMServices() {
 }
 
 function registerLazyServices() {
+    lazyServiceRegistry.register('workspaceService', async () => {
+        const { WorkspaceService } = await import('@main/services/workspace/workspace.service');
+        return new WorkspaceService();
+    });
+
+    lazyServiceRegistry.register('advancedMemoryService', async () => {
+        const dbs = container.resolve<DatabaseService>('databaseService');
+        const es = container.resolve<EmbeddingService>('embeddingService');
+        const ls = container.resolve<LLMService>('llmService');
+        const ss = container.resolve<SettingsService>('settingsService');
+        const { AdvancedMemoryService } = await import('@main/services/llm/advanced-memory.service');
+        return new AdvancedMemoryService(dbs, es, ls, ss);
+    });
+
+    lazyServiceRegistry.register('memoryService', async () => {
+        const ams = await lazyServiceRegistry.get<AdvancedMemoryService>('advancedMemoryService');
+        const { MemoryService } = await import('@main/services/llm/memory.service');
+        return new MemoryService(ams);
+    });
+
+    lazyServiceRegistry.register('brainService', async () => {
+        const dbs = container.resolve<DatabaseService>('databaseService');
+        const es = container.resolve<EmbeddingService>('embeddingService');
+        const ls = container.resolve<LLMService>('llmService');
+        const pm = container.resolve<ProcessManagerService>('processManagerService');
+        const { BrainService } = await import('@main/services/llm/brain.service');
+        return new BrainService(dbs, es, ls, pm);
+    });
+
+    lazyServiceRegistry.register('workflowService', async () => {
+        const { WorkflowService } = await import('@main/services/workflow/workflow.service');
+        return new WorkflowService();
+    });
+
     // Register services that are only needed conditionally
     lazyServiceRegistry.register('dockerService', async () => {
         const commandService = container.resolve<CommandService>('commandService');
         const sshService = await lazyServiceRegistry.get<SSHService>('sshService');
-        const { DockerService } = await import('@main/services/project/docker.service');
+        const { DockerService } = await import('@main/services/workspace/docker.service');
         return new DockerService(commandService, sshService);
     });
 
     lazyServiceRegistry.register('sshService', async () => {
         const dataService = container.resolve<DataService>('dataService');
         const securityService = container.resolve<SecurityService>('securityService');
-        const { SSHService } = await import('@main/services/project/ssh.service');
+        const { SSHService } = await import('@main/services/workspace/ssh.service');
         return new SSHService(dataService.getPath('config'), securityService);
     });
 
     lazyServiceRegistry.register('logoService', async () => {
         const llmService = container.resolve<LLMService>('llmService');
-        const projectService = container.resolve<ProjectService>('projectService');
+        const projectService = container.resolve<WorkspaceService>('projectService');
         const localImageService = container.resolve<LocalImageService>('localImageService');
         const imagePersistenceService =
             container.resolve<ImagePersistenceService>('imagePersistenceService');
@@ -661,6 +698,13 @@ function registerLazyServices() {
 }
 
 function registerLazyProxies() {
+    container.register('workspaceService', () => createLazyServiceProxy('workspaceService'));
+    container.register('projectService', ws => ws, ['workspaceService']); // just pass proxy
+    container.register('advancedMemoryService', () => createLazyServiceProxy('advancedMemoryService'));
+    container.register('memoryService', () => createLazyServiceProxy('memoryService'));
+    container.register('brainService', () => createLazyServiceProxy('brainService'));
+    container.register('workflowService', () => createLazyServiceProxy('workflowService'));
+
     container.register('dockerService', () =>
         createLazyServiceProxy<DockerService>('dockerService')
     );
@@ -677,8 +721,7 @@ function registerLazyProxies() {
     );
 }
 
-function registerProjectServices() {
-    container.register('projectService', () => new ProjectService());
+function registerWorkspaceServices() {
     container.register(
         'terminalService',
         ss => {
@@ -713,7 +756,12 @@ function registerProjectServices() {
         ['databaseService', 'embeddingService']
     );
     // Logo and Market Research services are now lazy-loaded
-    container.register('projectScaffoldService', () => new ProjectScaffoldService());
+    container.register('workspaceScaffoldService', () => new WorkspaceScaffoldService());
+    container.register(
+        'projectScaffoldService',
+        wss => wss as WorkspaceScaffoldService,
+        ['workspaceScaffoldService']
+    );
     container.register('marketResearchService', ws => new MarketResearchService(ws as WebService), [
         'webService',
     ]);
@@ -725,7 +773,7 @@ function registerProjectServices() {
                 databaseService: dbs as DatabaseService,
                 llmService: ls as LLMService,
                 marketResearchService: mrs as MarketResearchService,
-                projectScaffoldService: pss as ProjectScaffoldService,
+                projectScaffoldService: pss as WorkspaceScaffoldService,
                 authService: as as AuthService,
                 eventBus: ebs as EventBusService,
                 localImageService: lis as LocalImageService,
@@ -736,7 +784,7 @@ function registerProjectServices() {
             'databaseService',
             'llmService',
             'marketResearchService',
-            'projectScaffoldService',
+            'workspaceScaffoldService',
             'authService',
             'eventBusService',
             'localImageService',
@@ -744,7 +792,7 @@ function registerProjectServices() {
         ]
     );
 
-    // Project Agent Service
+    // Workspace Agent Service
     container.register(
         'agentRegistryService',
         dbs => new AgentRegistryService(dbs as DatabaseService),
@@ -787,10 +835,10 @@ function registerProjectServices() {
         ['databaseService']
     );
     container.register(
-        'projectAgentService',
+        'workspaceAgentService',
         (...deps) => {
             const [dbs, ls, ebs, ars, acs, gs, col, tpl, perf, council] = deps;
-            return new ProjectAgentService({
+            return new WorkspaceAgentService({
                 databaseService: dbs as DatabaseService,
                 llmService: ls as LLMService,
                 eventBus: ebs as EventBusService,
@@ -815,6 +863,11 @@ function registerProjectServices() {
             'agentPerformanceService',
             'councilService',
         ]
+    );
+    container.register(
+        'projectAgentService',
+        was => was as WorkspaceAgentService,
+        ['workspaceAgentService']
     );
     container.register(
         'multiAgentOrchestratorService',
@@ -913,12 +966,12 @@ function registerAnalysisServices() {
     container.register('exportService', () => new ExportService());
     container.register(
         'workflowService',
-        (llmService, projectAgentService) =>
+        (llmService, workspaceAgentService) =>
             new WorkflowService({
                 llmService: llmService as LLMService,
-                projectAgentService: projectAgentService as ProjectAgentService,
+                projectAgentService: workspaceAgentService as WorkspaceAgentService,
             }),
-        ['llmService', 'projectAgentService']
+        ['llmService', 'workspaceAgentService']
     );
 }
 
@@ -1031,7 +1084,8 @@ function buildServicesMap(
 
         llamaService: container.resolve<LlamaService>('llamaService'),
         huggingFaceService: container.resolve<HuggingFaceService>('huggingFaceService'),
-        projectService: container.resolve<ProjectService>('projectService'),
+        workspaceService: container.resolve<WorkspaceService>('workspaceService'),
+        projectService: container.resolve<WorkspaceService>('workspaceService'),
         terminalService: container.resolve<TerminalService>('terminalService'),
         inlineSuggestionService: container.resolve<InlineSuggestionService>(
             'inlineSuggestionService'
@@ -1079,7 +1133,8 @@ function buildServicesMap(
         modelRegistryService: container.resolve<ModelRegistryService>('modelRegistryService'),
         eventBusService: container.resolve<EventBusService>('eventBusService'),
         marketResearchService: container.resolve<MarketResearchService>('marketResearchService'),
-        projectScaffoldService: container.resolve<ProjectScaffoldService>('projectScaffoldService'),
+        workspaceScaffoldService: container.resolve<WorkspaceScaffoldService>('workspaceScaffoldService'),
+        projectScaffoldService: container.resolve<WorkspaceScaffoldService>('workspaceScaffoldService'),
         ideaGeneratorService: container.resolve<IdeaGeneratorService>('ideaGeneratorService'),
         agentRegistryService: container.resolve<AgentRegistryService>('agentRegistryService'),
         agentPersistenceService:
@@ -1087,7 +1142,8 @@ function buildServicesMap(
         agentCheckpointService: container.resolve<AgentCheckpointService>('agentCheckpointService'),
         agentPerformanceService:
             container.resolve<AgentPerformanceService>('agentPerformanceService'),
-        projectAgentService: container.resolve<ProjectAgentService>('projectAgentService'),
+        workspaceAgentService: container.resolve<WorkspaceAgentService>('workspaceAgentService'),
+        projectAgentService: container.resolve<WorkspaceAgentService>('workspaceAgentService'),
         multiAgentOrchestratorService: container.resolve<MultiAgentOrchestratorService>(
             'multiAgentOrchestratorService'
         ),
