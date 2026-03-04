@@ -1,0 +1,48 @@
+import React from 'react';
+
+import { Modal } from '@/components/ui/modal';
+import { AnimatePresence } from '@/lib/framer-motion-compat';
+import { Project } from '@/types';
+
+import { DeleteFilesCheckbox } from './DeleteFilesCheckbox';
+
+interface DeleteProjectModalProps {
+    project: Project | null;
+    onClose: () => void;
+    onSubmit: (deleteFiles: boolean) => Promise<void>;
+    t: (key: string) => string;
+}
+
+export const DeleteProjectModal: React.FC<DeleteProjectModalProps> = ({ project, onClose, onSubmit, t }) => {
+    const [deleteFiles, setDeleteFiles] = React.useState(false);
+    React.useEffect(() => { if (!project) { setDeleteFiles(false); } }, [project]);
+
+    return (
+        <AnimatePresence>
+            {project && (
+                <Modal isOpen={!!project} onClose={onClose} title={t('projects.deleteProject')}>
+                    <div className="space-y-4 pt-2">
+                        <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                            <p className="text-sm text-destructive">
+                                {t('projects.deleteConfirmation')} <span className="font-bold text-foreground">{project.title}</span>?
+                                <span className="block mt-1 text-xs text-destructive/70 font-medium italic">{t('projects.deleteWarning')}</span>
+                            </p>
+                        </div>
+                        <DeleteFilesCheckbox checked={deleteFiles} onChange={setDeleteFiles} t={t} />
+                        <div className="flex justify-end gap-2 pt-2">
+                            <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors">
+                                {t('common.cancel')}
+                            </button>
+                            <button
+                                onClick={() => { void onSubmit(deleteFiles); }}
+                                className="px-6 py-2 rounded-lg text-sm font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-95 transition-all shadow-lg shadow-destructive/20"
+                            >
+                                {t('common.delete')}
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+        </AnimatePresence>
+    );
+};
