@@ -24,7 +24,7 @@ import type { GroupedModels } from '@/types';
 const DockerDashboard = lazy(() => import('@/features/mcp/DockerDashboard').then(m => ({ default: m.DockerDashboard })));
 const MemoryInspector = lazy(() => import('@/features/memory/components/MemoryInspector').then(m => ({ default: m.MemoryInspector })));
 const IdeasPage = lazy(() => import('@/features/ideas/IdeasPage').then(m => ({ default: m.IdeasPage })));
-const ProjectAgentView = lazy(() => import('@/features/project-agent/ProjectAgentView').then(m => ({ default: m.ProjectAgentView })));
+const AutomationWorkflowView = lazy(() => import('@/features/automation-workflow/AutomationWorkflowView').then(m => ({ default: m.AutomationWorkflowView })));
 const ModelsPage = lazy(() => import('@/features/models/pages/ModelsPage').then(m => ({ default: m.ModelsPage })));
 
 import { AppView } from '@renderer/hooks/useAppState';
@@ -173,7 +173,7 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
             );
             case 'memory': return <Suspense fallback={<LoadingState size="md" />}><MemoryInspector /></Suspense>;
             case 'ideas': return <Suspense fallback={<LoadingState size="md" />}><IdeasPage language={language} onNavigateToProject={(id) => void onNavigateToProject?.(id)} /></Suspense>;
-            case 'project-agent': return <Suspense fallback={<LoadingState size="md" />}><ProjectAgentView /></Suspense>;
+            case 'automation-workflow': return <Suspense fallback={<LoadingState size="md" />}><AutomationWorkflowView /></Suspense>;
             case 'models': return <Suspense fallback={<LoadingState size="md" />}><ModelsPage language={language} /></Suspense>;
             case 'docker': return (
                 <div className="h-full p-6 overflow-y-auto bg-tech-grid bg-tech-grid-sm">

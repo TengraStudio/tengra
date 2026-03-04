@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
 import { AppSettings, JsonValue } from '@/types';
+import { unwrapSettingsResponse } from '@/utils/app-settings.util';
 
 const SETTINGS_DRAFT_STORAGE_KEY = 'tengra.settings.draft.v1';
 const AUTO_SAVE_DELAY_MS = 2000;
@@ -115,7 +116,10 @@ export async function loadSettings(): Promise<void> {
 
     try {
         const response = await window.electron.getSettings();
-        const persisted = 'data' in response ? response.data : response;
+        const persisted = unwrapSettingsResponse(response);
+        if (!persisted) {
+            throw new Error('Invalid settings response');
+        }
         const draft = readDraft();
         const resolved = draft ?? persisted;
 
@@ -138,7 +142,10 @@ export async function flushSettings(): Promise<void> {
 
     try {
         const response = await window.electron.saveSettings(current);
-        const saved = 'data' in response ? response.data : response;
+        const saved = unwrapSettingsResponse(response);
+        if (!saved) {
+            throw new Error('Invalid settings save response');
+        }
         setState({ originalSettings: structuredClone(saved) });
         clearDraft();
     } catch (error) {

@@ -26,7 +26,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
         { view: 'models' as const, icon: Boxes, label: t('sidebar.models') },
         { view: 'memory' as const, icon: Brain, label: t('sidebar.memory') },
         { view: 'ideas' as const, icon: Lightbulb, label: t('sidebar.ideas') },
-        { view: 'project-agent' as const, icon: Bot, label: t('sidebar.agent') },
+        { view: 'automation-workflow' as const, icon: Bot, label: t('sidebar.agent') },
         { view: 'workflows' as const, icon: Zap, label: t('sidebar.workflows') }
     ]), [chatsCount, t]);
     const [focusedIndex, setFocusedIndex] = useState(0);

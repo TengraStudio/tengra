@@ -9,7 +9,7 @@ export type ViewSkeletonId =
     | 'mcp'
     | 'memory'
     | 'ideas'
-    | 'project-agent'
+    | 'automation-workflow'
     | 'models'
     | 'docker'
     | 'terminal'

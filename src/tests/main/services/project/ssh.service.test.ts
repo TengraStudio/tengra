@@ -2,7 +2,7 @@ import * as fs from 'fs';
 
 import { SSHConnection } from '@main/services/project/ssh.service';
 import { SSHService } from '@main/services/project/ssh.service';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, MockInstance, vi } from 'vitest';
 
 // Mock dependencies
 vi.mock('electron', () => ({
@@ -191,7 +191,7 @@ describe('SSHService', () => {
             const created = await service.createRemoteForward('conn-id', '0.0.0.0', 2222, '127.0.0.1', 22);
             expect(created.success).toBe(true);
             expect(created.forwardId).toBeDefined();
-            const closed = service.closePortForward(created.forwardId ?? '');
+            const closed = await service.closePortForward(created.forwardId ?? '');
             expect(closed).toBe(true);
             expect(mockConn.unforwardIn).toHaveBeenCalled();
         });
@@ -210,6 +210,25 @@ describe('SSHService', () => {
                 expect.stringContaining('ssh-tunnel-presets.json'),
                 expect.any(String)
             );
+        });
+
+        it('should dispose and close all active tunnels', async () => {
+            const mockConn = {
+                forwardIn: vi.fn((_host: string, _port: number, cb: (error?: Error) => void) => cb(undefined)),
+                unforwardIn: vi.fn((_host: string, _port: number, cb: () => void) => cb()),
+                end: vi.fn()
+            };
+            service['connections'].set('conn-id', mockConn as never);
+
+            const first = await service.createRemoteForward('conn-id', '0.0.0.0', 2201, '127.0.0.1', 22);
+            const second = await service.createRemoteForward('conn-id', '0.0.0.0', 2202, '127.0.0.1', 22);
+
+            await service.dispose();
+
+            expect(first.success).toBe(true);
+            expect(second.success).toBe(true);
+            expect(mockConn.unforwardIn).toHaveBeenCalledTimes(2);
+            expect(service.getPortForwards()).toEqual([]);
         });
     });
 
@@ -294,13 +313,13 @@ describe('SSHService', () => {
     });
 
     describe('Security & readLogFile', () => {
-        let executeSpy: any;
+        let executeSpy: MockInstance;
 
         beforeEach(() => {
             // Use spyOn to better track calls
             executeSpy = vi.spyOn(service, 'executeCommand').mockResolvedValue({ stdout: 'log content', stderr: '', code: 0 });
             // Mock connection existence check
-            service['connections'].set('test-id', {} as unknown as any);
+            service['connections'].set('test-id', {} as never);
         });
 
         it('should allow access to valid log files', async () => {

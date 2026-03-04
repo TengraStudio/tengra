@@ -29,6 +29,21 @@ interface RotationPreference {
     updatedAt: number;
 }
 
+interface ProviderHealthEntry {
+    successCount: number;
+    errorCount: number;
+    lastError?: string;
+    lastUsedAt?: Date;
+}
+
+interface ProviderStats {
+    requestCount: number;
+    errorCount: number;
+    lastError?: string;
+    lastUsedAt?: Date;
+    successRate: number;
+}
+
 const DEFAULT_PROJECT_ID = '__default__';
 const DEFAULT_ROTATION_STRATEGY: RotationStrategy = 'provider_priority';
 
@@ -46,12 +61,7 @@ export class AgentProviderRotationService extends BaseService {
     };
 
     /** In-memory health tracking for accounts */
-    private accountHealth: Map<string, {
-        successCount: number;
-        errorCount: number;
-        lastError?: string;
-        lastUsedAt?: Date;
-    }> = new Map();
+    private accountHealth: Map<string, ProviderHealthEntry> = new Map();
 
     /** Optional quota provider callback for cross-domain quota access. */
     private quotaProvider: QuotaProvider | null = null;
@@ -459,25 +469,15 @@ export class AgentProviderRotationService extends BaseService {
         lastUsedAt?: Date;
         successRate: number;
     }> {
-        const health = this.accountHealth.get(provider);
-        if (!health) {
+        const stats = this.aggregateProviderStats(provider);
+        if (!stats) {
             return {
                 requestCount: 0,
                 errorCount: 0,
                 successRate: 1.0 // Default to 100% for new providers
             };
         }
-
-        const totalRequests = health.successCount + health.errorCount;
-        const successRate = totalRequests > 0 ? health.successCount / totalRequests : 1.0;
-
-        return {
-            requestCount: totalRequests,
-            errorCount: health.errorCount,
-            lastError: health.lastError,
-            lastUsedAt: health.lastUsedAt,
-            successRate
-        };
+        return stats;
     }
 
     /**
@@ -516,32 +516,19 @@ export class AgentProviderRotationService extends BaseService {
     /**
      * TODO-001-6: Get all provider statistics
      */
-    async getAllProviderStats(): Promise<Map<string, {
-        requestCount: number;
-        errorCount: number;
-        lastError?: string;
-        lastUsedAt?: Date;
-        successRate: number;
-    }>> {
-        const allStats = new Map<string, {
-            requestCount: number;
-            errorCount: number;
-            lastError?: string;
-            lastUsedAt?: Date;
-            successRate: number;
-        }>();
+    async getAllProviderStats(): Promise<Map<string, ProviderStats>> {
+        const allStats = new Map<string, ProviderStats>();
+        const providers = new Set<string>();
 
-        for (const [provider, health] of this.accountHealth) {
-            const totalRequests = health.successCount + health.errorCount;
-            const successRate = totalRequests > 0 ? health.successCount / totalRequests : 1.0;
+        for (const key of this.accountHealth.keys()) {
+            providers.add(this.getProviderNameFromHealthKey(key));
+        }
 
-            allStats.set(provider, {
-                requestCount: totalRequests,
-                errorCount: health.errorCount,
-                lastError: health.lastError,
-                lastUsedAt: health.lastUsedAt,
-                successRate
-            });
+        for (const provider of providers) {
+            const stats = this.aggregateProviderStats(provider);
+            if (stats) {
+                allStats.set(provider, stats);
+            }
         }
 
         return allStats;
@@ -551,8 +538,56 @@ export class AgentProviderRotationService extends BaseService {
      * TODO-001-6: Reset statistics for a provider
      */
     resetProviderStats(provider: string): void {
-        this.accountHealth.delete(provider);
+        for (const key of Array.from(this.accountHealth.keys())) {
+            if (this.getProviderNameFromHealthKey(key) === provider) {
+                this.accountHealth.delete(key);
+            }
+        }
         this.logInfo(`Reset stats for provider: ${provider}`);
+    }
+
+    private getProviderNameFromHealthKey(key: string): string {
+        const separatorIndex = key.indexOf(':');
+        if (separatorIndex === -1) {
+            return key;
+        }
+        return key.slice(0, separatorIndex);
+    }
+
+    private aggregateProviderStats(provider: string): ProviderStats | null {
+        let successCount = 0;
+        let errorCount = 0;
+        let lastError: string | undefined;
+        let lastUsedAt: Date | undefined;
+        let lastErrorAt: Date | undefined;
+
+        for (const [key, health] of this.accountHealth.entries()) {
+            if (this.getProviderNameFromHealthKey(key) !== provider) {
+                continue;
+            }
+            successCount += health.successCount;
+            errorCount += health.errorCount;
+            if (health.lastUsedAt && (!lastUsedAt || health.lastUsedAt > lastUsedAt)) {
+                lastUsedAt = health.lastUsedAt;
+            }
+            if (health.lastError && health.lastUsedAt && (!lastErrorAt || health.lastUsedAt > lastErrorAt)) {
+                lastErrorAt = health.lastUsedAt;
+                lastError = health.lastError;
+            }
+        }
+
+        const totalRequests = successCount + errorCount;
+        if (totalRequests === 0 && !lastUsedAt && !lastError) {
+            return null;
+        }
+
+        return {
+            requestCount: totalRequests,
+            errorCount,
+            lastError,
+            lastUsedAt,
+            successRate: totalRequests > 0 ? successCount / totalRequests : 1.0
+        };
     }
 
     // ========================================================================

@@ -53,7 +53,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ModelSelector } from '@/components/shared/ModelSelector';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useModel } from '@/context/ModelContext';
-import { LogConsole } from '@/features/project-agent/components/LogConsole';
+import { LogConsole } from '@/features/automation-workflow/components/LogConsole';
 import { useProjectManager } from '@/features/projects/hooks/useProjectManager';
 import { useLanguage } from '@/i18n';
 import { cn } from '@/lib/utils';

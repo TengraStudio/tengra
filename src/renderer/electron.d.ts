@@ -4,6 +4,7 @@ import type {
     InlineSuggestionResponse,
     InlineSuggestionTelemetry,
 } from '@shared/schemas/inline-suggestions.schema';
+import type { AppSettings } from '@shared/types';
 import type { IpcRendererEvent } from 'electron';
 
 // Marketplace model from database
@@ -210,6 +211,8 @@ export interface ElectronAPI {
      * Closes the application window.
      */
     close: () => void;
+
+    getSettings: () => Promise<AppSettings>;
 
     /**
      * Resizes the window to a specific resolution.

@@ -1,10 +1,11 @@
-import * as crypto from 'crypto';
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { SSHKeyManager } from '@main/services/project/ssh-key-manager';
+import { SSHProfileManager } from '@main/services/project/ssh-profile-manager';
+import { SSHSessionRecordingManager } from '@main/services/project/ssh-session-recording-manager';
 import { SSHTunnelManager } from '@main/services/project/ssh-tunnel-manager';
 import { SecurityService } from '@main/services/security/security.service';
 import { validateCommand } from '@main/utils/command-validator.util';
@@ -27,7 +28,6 @@ import {
     SSHTunnelPreset
 } from '@shared/types/ssh';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { safeStorage } from 'electron';
 import { Client, ClientChannel } from 'ssh2';
 
@@ -74,10 +74,6 @@ interface ShellSession {
     onExit: () => void;
 }
 
-// StoredTunnelPreset moved to SSHTunnelManager
-type StoredSearchHistoryEntry = SSHSearchHistoryEntry;
-type StoredProfileTemplate = SSHProfileTemplate;
-
 export class SSHService extends EventEmitter {
     private connections: Map<string, Client> = new Map();
     private connectionDetails: Map<string, SSHConnection> = new Map();
@@ -86,7 +82,6 @@ export class SSHService extends EventEmitter {
     private connectionPoolRefs: Map<string, number> = new Map();
     private transferQueue: SSHTransferTask[] = [];
     private transferQueueProcessing = false;
-    private sessionRecordings: Map<string, SSHSessionRecording> = new Map();
     private keepaliveTimers: Map<string, NodeJS.Timeout> = new Map();
     private storagePath: string;
     private initPromise: Promise<void> | null = null;
@@ -97,6 +92,8 @@ export class SSHService extends EventEmitter {
 
     // Delegated managers
     private keyManager: SSHKeyManager;
+    private profileManager: SSHProfileManager;
+    private sessionRecordingManager: SSHSessionRecordingManager;
     private _tunnelManager: SSHTunnelManager;
     private readonly onTunnelCreated = (forward: SSHPortForward): void => {
         this.emit('portForwardCreated', forward);
@@ -118,6 +115,13 @@ export class SSHService extends EventEmitter {
         this.storagePath = storagePath;
         this.ensureInitialization().catch(err => appLogger.error('SSHService', 'Init failed', err as Error));
         this.keyManager = new SSHKeyManager(storagePath);
+        this.profileManager = new SSHProfileManager({
+            storagePath,
+            ensureInitialized: () => this.ensureInitialization(),
+            encryptCredential: value => this.encryptCredential(value),
+            decryptCredential: value => this.decryptCredential(value)
+        });
+        this.sessionRecordingManager = new SSHSessionRecordingManager();
         this._tunnelManager = new SSHTunnelManager(storagePath);
 
         // Forward tunnel manager events
@@ -205,41 +209,18 @@ export class SSHService extends EventEmitter {
         }
     }
 
-    private get profilesPath(): string {
-        return path.join(this.storagePath, 'ssh-profiles.json');
-    }
-
-    private get keysPath(): string {
-        return path.join(this.storagePath, 'ssh-keys.json');
-    }
-
-    private get knownHostsPath(): string {
-        return path.join(this.storagePath, 'known_hosts');
-    }
-
-    private get tunnelPresetsPath(): string {
-        return path.join(this.storagePath, 'ssh-tunnel-presets.json');
-    }
-
-    private get searchHistoryPath(): string {
-        return path.join(this.storagePath, 'ssh-search-history.json');
-    }
-
-    private get profileTemplatesPath(): string {
-        return path.join(this.storagePath, 'ssh-profile-templates.json');
-    }
-
     private async ensureInitialization(): Promise<void> {
         if (this.initPromise) {
             return this.initPromise;
         }
         this.initPromise = (async () => {
             try {
+                const profilesPath = path.join(this.storagePath, 'ssh-profiles.json');
                 await fs.promises.mkdir(this.storagePath, { recursive: true, mode: 0o700 });
                 try {
-                    await fs.promises.access(this.profilesPath);
+                    await fs.promises.access(profilesPath);
                 } catch {
-                    await fs.promises.writeFile(this.profilesPath, JSON.stringify([], null, 2));
+                    await fs.promises.writeFile(profilesPath, JSON.stringify([], null, 2));
                 }
             } catch (error) {
                 appLogger.error(
@@ -253,200 +234,54 @@ export class SSHService extends EventEmitter {
         return this.initPromise;
     }
 
-    private async ensureKeyStorageInitialized(): Promise<void> {
-        await this.ensureInitialization();
-        try {
-            await fs.promises.access(this.keysPath);
-        } catch {
-            await fs.promises.writeFile(this.keysPath, JSON.stringify([], null, 2));
-        }
-
-        try {
-            await fs.promises.access(this.knownHostsPath);
-        } catch {
-            await fs.promises.writeFile(this.knownHostsPath, '');
-        }
-
-        try {
-            await fs.promises.access(this.tunnelPresetsPath);
-        } catch {
-            await fs.promises.writeFile(this.tunnelPresetsPath, JSON.stringify([], null, 2));
-        }
-
-        try {
-            await fs.promises.access(this.searchHistoryPath);
-        } catch {
-            await fs.promises.writeFile(this.searchHistoryPath, JSON.stringify([], null, 2));
-        }
-
-        try {
-            await fs.promises.access(this.profileTemplatesPath);
-        } catch {
-            await fs.promises.writeFile(this.profileTemplatesPath, JSON.stringify([], null, 2));
-        }
-    }
-
-
-    private async readProfileTemplates(): Promise<StoredProfileTemplate[]> {
-        await this.ensureKeyStorageInitialized();
-        const content = await fs.promises.readFile(this.profileTemplatesPath, 'utf-8');
-        return safeJsonParse<StoredProfileTemplate[]>(content, []);
-    }
-
-    private async writeProfileTemplates(templates: StoredProfileTemplate[]): Promise<void> {
-        await fs.promises.writeFile(this.profileTemplatesPath, JSON.stringify(templates, null, 2));
-    }
-
-    private async readSearchHistory(): Promise<StoredSearchHistoryEntry[]> {
-        await this.ensureKeyStorageInitialized();
-        const content = await fs.promises.readFile(this.searchHistoryPath, 'utf-8');
-        return safeJsonParse<StoredSearchHistoryEntry[]>(content, []);
-    }
-
-    private async writeSearchHistory(entries: StoredSearchHistoryEntry[]): Promise<void> {
-        await fs.promises.writeFile(this.searchHistoryPath, JSON.stringify(entries, null, 2));
-    }
-
     async getSavedProfiles(): Promise<SSHConnection[]> {
-        try {
-            await this.ensureInitialization();
-            try {
-                await fs.promises.access(this.profilesPath);
-            } catch {
-                return [];
-            }
-            const content = await fs.promises.readFile(this.profilesPath, 'utf-8');
-            return safeJsonParse<SSHConnection[]>(content, []);
-        } catch (error) {
-            appLogger.error(
-                'SSHService',
-                `Failed to load SSH profiles: ${getErrorMessage(error as Error)}`
-            );
-            return [];
-        }
+        return this.profileManager.getSavedProfiles();
     }
 
     async saveProfile(profile: SSHConnection): Promise<boolean> {
-        try {
-            await this.ensureInitialization();
-            const profiles = await this.getSavedProfiles();
-
-            // Encrypt sensitive credentials
-            const safeProfile = { ...profile };
-            if (safeProfile.password) {
-                safeProfile.password = this.encryptCredential(safeProfile.password);
-            }
-            if (safeProfile.passphrase) {
-                safeProfile.passphrase = this.encryptCredential(safeProfile.passphrase);
-            }
-            if (safeProfile.privateKey) {
-                safeProfile.privateKey = this.encryptCredential(safeProfile.privateKey);
-            }
-
-            const profileIndex = profiles.findIndex(p => p.id === safeProfile.id);
-            if (profileIndex >= 0) {
-                profiles[profileIndex] = safeProfile;
-            } else {
-                profiles.push(safeProfile);
-            }
-
-            await fs.promises.writeFile(this.profilesPath, JSON.stringify(profiles, null, 2));
-            return true;
-        } catch (error) {
-            appLogger.error(
-                'SSHService',
-                `Failed to save SSH profile: ${getErrorMessage(error as Error)}`
-            );
-            return false;
-        }
+        return this.profileManager.saveProfile(profile);
     }
 
     /**
      * Get a profile with decrypted credentials
      */
     async getProfileWithCredentials(id: string): Promise<SSHConnection | null> {
-        const profiles = await this.getSavedProfiles();
-        const profile = profiles.find(p => p.id === id);
-        if (!profile) {
-            return null;
-        }
-
-        // Decrypt credentials
-        const decrypted = { ...profile };
-        if (decrypted.password) {
-            decrypted.password = this.decryptCredential(decrypted.password);
-        }
-        if (decrypted.passphrase) {
-            decrypted.passphrase = this.decryptCredential(decrypted.passphrase);
-        }
-        if (decrypted.privateKey) {
-            decrypted.privateKey = this.decryptCredential(decrypted.privateKey);
-        }
-        return decrypted;
+        return this.profileManager.getProfileWithCredentials(id);
     }
 
     /**
      * Toggle favorite status for a profile
      */
     async toggleFavorite(id: string): Promise<boolean> {
-        const profiles = await this.getSavedProfiles();
-        const index = profiles.findIndex(p => p.id === id);
-        if (index === -1) {
-            return false;
-        }
-
-        profiles[index].isFavorite = !profiles[index].isFavorite;
-        await fs.promises.writeFile(this.profilesPath, JSON.stringify(profiles, null, 2));
-        return true;
+        return this.profileManager.toggleFavorite(id);
     }
 
     /**
      * Get favorite profiles
      */
     async getFavorites(): Promise<SSHConnection[]> {
-        const profiles = await this.getSavedProfiles();
-        return profiles.filter(p => p.isFavorite);
+        return this.profileManager.getFavorites();
     }
 
     /**
      * Get recent connections sorted by last connected time
      */
     async getRecentConnections(limit: number = 10): Promise<SSHConnection[]> {
-        const profiles = await this.getSavedProfiles();
-        return profiles
-            .filter(p => p.lastConnected)
-            .sort((a, b) => (b.lastConnected ?? 0) - (a.lastConnected ?? 0))
-            .slice(0, limit);
+        return this.profileManager.getRecentConnections(limit);
     }
 
     /**
      * Add tags to a profile
      */
     async setProfileTags(id: string, tags: string[]): Promise<boolean> {
-        const profiles = await this.getSavedProfiles();
-        const index = profiles.findIndex(p => p.id === id);
-        if (index === -1) {
-            return false;
-        }
-
-        profiles[index].tags = tags;
-        await fs.promises.writeFile(this.profilesPath, JSON.stringify(profiles, null, 2));
-        return true;
+        return this.profileManager.setProfileTags(id, tags);
     }
 
     /**
      * Search profiles by name, host, or tags
      */
     async searchProfiles(query: string): Promise<SSHConnection[]> {
-        const profiles = await this.getSavedProfiles();
-        const q = query.toLowerCase();
-        return profiles.filter(
-            p =>
-                p.name.toLowerCase().includes(q) ||
-                p.host.toLowerCase().includes(q) ||
-                p.username.toLowerCase().includes(q) ||
-                p.tags?.some(t => t.toLowerCase().includes(q))
-        );
+        return this.profileManager.searchProfiles(query);
     }
 
     async listManagedKeys(): Promise<SSHManagedKey[]> {
@@ -490,18 +325,7 @@ export class SSHService extends EventEmitter {
     }
 
     async deleteProfile(id: string): Promise<boolean> {
-        try {
-            const profiles = await this.getSavedProfiles();
-            const filtered = profiles.filter(p => p.id !== id);
-            await fs.promises.writeFile(this.profilesPath, JSON.stringify(filtered, null, 2));
-            return true;
-        } catch (error) {
-            appLogger.error(
-                'SSHService',
-                `Failed to delete SSH profile: ${getErrorMessage(error as Error)}`
-            );
-            return false;
-        }
+        return this.profileManager.deleteProfile(id);
     }
 
     private buildConnectDiagnostics(errorMessage: string): SSHConnectDiagnostics {
@@ -654,18 +478,7 @@ export class SSHService extends EventEmitter {
     }
 
     private async updateConnectionHistory(connectionId: string) {
-        try {
-            const profiles = await this.getSavedProfiles();
-            const profileIndex = profiles.findIndex(p => p.id === connectionId);
-            if (profileIndex !== -1) {
-                profiles[profileIndex].lastConnected = Date.now();
-                profiles[profileIndex].connectionCount =
-                    (profiles[profileIndex].connectionCount ?? 0) + 1;
-                await fs.promises.writeFile(this.profilesPath, JSON.stringify(profiles, null, 2));
-            }
-        } catch {
-            // Ignore error updating history
-        }
+        await this.profileManager.updateConnectionHistory(connectionId);
     }
 
     private cleanupConnection(connectionId: string) {
@@ -1415,6 +1228,7 @@ export class SSHService extends EventEmitter {
 
     async dispose(): Promise<void> {
         await this.disconnectAll();
+        this.sessionRecordingManager.clear();
         this._tunnelManager.off('portForwardCreated', this.onTunnelCreated);
         this._tunnelManager.off('portForwardClosed', this.onTunnelClosed);
         await this._tunnelManager.dispose();
@@ -1558,25 +1372,16 @@ export class SSHService extends EventEmitter {
                 content: line.slice(secondColon + 1)
             };
         });
-        const history = await this.readSearchHistory();
-        history.push({
-            id: crypto.randomUUID(),
-            query,
-            createdAt: Date.now(),
-            connectionId
-        });
-        await this.writeSearchHistory(history.slice(-200));
+        await this.profileManager.recordSearchHistory(query, connectionId);
         return results;
     }
 
     async getSearchHistory(connectionId?: string): Promise<SSHSearchHistoryEntry[]> {
-        const history = await this.readSearchHistory();
-        return connectionId ? history.filter(entry => entry.connectionId === connectionId) : history;
+        return this.profileManager.getSearchHistory(connectionId);
     }
 
     async exportSearchHistory(): Promise<string> {
-        const history = await this.readSearchHistory();
-        return JSON.stringify(history, null, 2);
+        return this.profileManager.exportSearchHistory();
     }
 
     async reconnectConnection(connectionId: string, maxRetries: number = 3): Promise<{ success: boolean; error?: string }> {
@@ -1699,244 +1504,59 @@ export class SSHService extends EventEmitter {
     }
 
     async saveProfileTemplate(template: Omit<SSHProfileTemplate, 'id' | 'createdAt' | 'updatedAt'>): Promise<SSHProfileTemplate> {
-        const templates = await this.readProfileTemplates();
-        const now = Date.now();
-        const created: StoredProfileTemplate = {
-            id: crypto.randomUUID(),
-            createdAt: now,
-            updatedAt: now,
-            ...template
-        };
-        templates.push(created);
-        await this.writeProfileTemplates(templates);
-        return created;
+        return this.profileManager.saveProfileTemplate(template);
     }
 
     async listProfileTemplates(): Promise<SSHProfileTemplate[]> {
-        return this.readProfileTemplates();
+        return this.profileManager.listProfileTemplates();
     }
 
     async deleteProfileTemplate(id: string): Promise<boolean> {
-        const templates = await this.readProfileTemplates();
-        const filtered = templates.filter((t: SSHProfileTemplate) => t.id !== id);
-        if (filtered.length === templates.length) {
-            return false;
-        }
-        await this.writeProfileTemplates(filtered);
-        return true;
+        return this.profileManager.deleteProfileTemplate(id);
     }
 
     async exportProfiles(ids?: string[]): Promise<string> {
-        const profiles = await this.getSavedProfiles();
-        const selected = ids && ids.length > 0 ? profiles.filter(profile => ids.includes(profile.id)) : profiles;
-        return JSON.stringify(selected.map(profile => ({ ...profile, password: undefined, privateKey: undefined })), null, 2);
+        return this.profileManager.exportProfiles(ids);
     }
 
     async importProfiles(payload: string): Promise<number> {
-        const profiles = safeJsonParse<SSHConnection[]>(payload, []);
-        let savedCount = 0;
-        for (const profile of profiles) {
-            if (!profile.id || !profile.host || !profile.username) {
-                continue;
-            }
-            const success = await this.saveProfile(profile);
-            if (success) {
-                savedCount += 1;
-            }
-        }
-        return savedCount;
+        return this.profileManager.importProfiles(payload);
     }
 
     validateProfile(profile: Partial<SSHConnection>): { valid: boolean; errors: string[] } {
-        const errors: string[] = [];
-        if (!profile.host?.trim()) {
-            errors.push('Host is required');
-        }
-        if (!profile.username?.trim()) {
-            errors.push('Username is required');
-        }
-        if (!profile.port || profile.port < 1 || profile.port > 65535) {
-            errors.push('Port must be between 1 and 65535');
-        }
-        return { valid: errors.length === 0, errors };
+        return this.profileManager.validateProfile(profile);
     }
 
     async testProfile(profile: Partial<SSHConnection>): Promise<SSHProfileTestResult> {
-        const validation = this.validateProfile(profile);
-        if (!validation.valid) {
-            return {
-                success: false,
-                latencyMs: 0,
-                authMethod: profile.privateKey ? 'key' : 'password',
-                message: 'Profile validation failed',
-                error: validation.errors.join('; ')
-            };
-        }
-
-        const startedAt = Date.now();
-        let privateKey: string | undefined;
-
-        if (profile.privateKey) {
-            if (profile.privateKey.includes('BEGIN')) {
-                privateKey = profile.privateKey;
-            } else {
-                try {
-                    privateKey = await fs.promises.readFile(profile.privateKey, 'utf-8');
-                } catch (error) {
-                    return {
-                        success: false,
-                        latencyMs: Date.now() - startedAt,
-                        authMethod: 'key',
-                        message: 'Private key could not be loaded',
-                        error: getErrorMessage(error as Error)
-                    };
-                }
-            }
-        }
-
-        const password = profile.password ? this.decryptCredential(profile.password) : undefined;
-        const passphrase = profile.passphrase ? this.decryptCredential(profile.passphrase) : undefined;
-
-        return await new Promise<SSHProfileTestResult>(resolve => {
-            const conn = new Client();
-            const authMethod: 'password' | 'key' = privateKey ? 'key' : 'password';
-            let settled = false;
-
-            const finalize = (result: SSHProfileTestResult) => {
-                if (settled) {
-                    return;
-                }
-                settled = true;
-                clearTimeout(timeout);
-                conn.removeAllListeners();
-                try {
-                    conn.end();
-                } catch {
-                    // ignore connection teardown failures
-                }
-                resolve(result);
-            };
-
-            const timeout = setTimeout(() => {
-                finalize({
-                    success: false,
-                    latencyMs: Date.now() - startedAt,
-                    authMethod,
-                    message: 'SSH profile test timed out',
-                    error: 'Connection timed out'
-                });
-            }, 10000);
-
-            conn
-                .on('ready', () => {
-                    conn.exec('echo tengra-ssh-test', (error, stream) => {
-                        if (error) {
-                            finalize({
-                                success: false,
-                                latencyMs: Date.now() - startedAt,
-                                authMethod,
-                                message: 'Connected but command test failed',
-                                error: error.message
-                            });
-                            return;
-                        }
-
-                        stream.on('close', () => {
-                            finalize({
-                                success: true,
-                                latencyMs: Date.now() - startedAt,
-                                authMethod,
-                                message: 'SSH profile test passed'
-                            });
-                        });
-                    });
-                })
-                .on('error', error => {
-                    finalize({
-                        success: false,
-                        latencyMs: Date.now() - startedAt,
-                        authMethod,
-                        message: 'SSH profile test failed',
-                        error: error.message
-                    });
-                });
-
-            try {
-                conn.connect({
-                    host: profile.host ?? '',
-                    port: profile.port ?? 22,
-                    username: profile.username ?? '',
-                    password,
-                    privateKey,
-                    passphrase,
-                    readyTimeout: 10000
-                });
-            } catch (error) {
-                finalize({
-                    success: false,
-                    latencyMs: Date.now() - startedAt,
-                    authMethod,
-                    message: 'SSH profile test failed',
-                    error: getErrorMessage(error as Error)
-                });
-            }
-        });
+        return this.profileManager.testProfile(profile);
     }
 
     startSessionRecording(connectionId: string): SSHSessionRecording {
-        const recording: SSHSessionRecording = {
-            id: crypto.randomUUID(),
-            connectionId,
-            startedAt: Date.now(),
-            chunks: []
-        };
-        this.sessionRecordings.set(connectionId, recording);
-        return recording;
+        return this.sessionRecordingManager.start(connectionId);
     }
 
     stopSessionRecording(connectionId: string): SSHSessionRecording | null {
-        const recording = this.sessionRecordings.get(connectionId);
-        if (!recording) {
-            return null;
-        }
-        recording.endedAt = Date.now();
-        return recording;
+        return this.sessionRecordingManager.stop(connectionId);
     }
 
     private appendRecordingChunk(connectionId: string, chunk: string): void {
-        const recording = this.sessionRecordings.get(connectionId);
-        if (!recording) {
-            return;
-        }
-        recording.chunks.push(chunk);
-        if (recording.chunks.length > 10000) {
-            recording.chunks.shift();
-        }
+        this.sessionRecordingManager.append(connectionId, chunk);
     }
 
     getSessionRecording(connectionId: string): SSHSessionRecording | null {
-        return this.sessionRecordings.get(connectionId) ?? null;
+        return this.sessionRecordingManager.get(connectionId);
     }
 
     searchSessionRecording(connectionId: string, query: string): string[] {
-        const recording = this.sessionRecordings.get(connectionId);
-        if (!recording) {
-            return [];
-        }
-        const normalized = query.toLowerCase();
-        return recording.chunks.filter(chunk => chunk.toLowerCase().includes(normalized));
+        return this.sessionRecordingManager.search(connectionId, query);
     }
 
     exportSessionRecording(connectionId: string): string {
-        const recording = this.sessionRecordings.get(connectionId);
-        if (!recording) {
-            return '';
-        }
-        return recording.chunks.join('');
+        return this.sessionRecordingManager.export(connectionId);
     }
 
     listSessionRecordings(): SSHSessionRecording[] {
-        return Array.from(this.sessionRecordings.values());
+        return this.sessionRecordingManager.list();
     }
 }
 

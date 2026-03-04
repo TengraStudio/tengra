@@ -3,6 +3,8 @@ import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { MarketResearchService } from '@main/services/external/market-research.service';
 import { BrainService } from '@main/services/llm/brain.service';
+import { IdeaRepository } from '@main/services/llm/idea-repository';
+import { IdeaGeneratorValidationService } from '@main/services/llm/idea-generator-validation.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
 import { ProjectScaffoldService } from '@main/services/project/project-scaffold.service';
@@ -52,6 +54,8 @@ const DELAY_MULTIPLIER = Number.parseInt(process.env.IDEA_DELAY_MULTIPLIER ?? '0
  */
 export class IdeaGeneratorService extends BaseService {
     // private initialized = false; // Removed as unused
+    private ideaRepository: IdeaRepository | null = null;
+    private readonly validation = new IdeaGeneratorValidationService();
 
     constructor(
         private deps: {
@@ -76,8 +80,8 @@ export class IdeaGeneratorService extends BaseService {
 
         // Ensure database tables exist
         try {
-            const db = await this.getDb();
-            await this.ensureTables(db);
+            const repository = await this.getRepository();
+            await repository.ensureTables();
             appLogger.info(this.name, 'Idea generator service initialized');
         } catch (error) {
             appLogger.error(
@@ -97,26 +101,6 @@ export class IdeaGeneratorService extends BaseService {
         appLogger.info(this.name, 'Idea generator service cleaned up');
     }
 
-    /**
-     * Ensure database tables exist for idea generation
-     */
-    private async ensureTables(db: DatabaseAdapter): Promise<void> {
-        // Check if idea_sessions table exists, create if not
-        const tableCheck = await db
-            .prepare(
-                `
-            SELECT name FROM sqlite_master 
-            WHERE type='table' AND name='idea_sessions'
-        `
-            )
-            .get<{ name: string }>();
-
-        if (!tableCheck) {
-            this.logInfo('Creating idea_sessions table');
-            // Table creation would happen here if needed
-        }
-    }
-
     // ==================== Session Management ====================
 
     /**
@@ -127,31 +111,9 @@ export class IdeaGeneratorService extends BaseService {
             `Creating idea session: model=${config.model}, categories=${config.categories.join(', ')}`
         );
 
-        const db = await this.getDb();
         const id = uuidv4();
         const now = Date.now();
-
-        await db
-            .prepare(
-                `
-            INSERT INTO idea_sessions (id, model, provider, categories, max_ideas, ideas_generated, status, custom_prompt, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `
-            )
-            .run(
-                id,
-                config.model,
-                config.provider,
-                JSON.stringify(config.categories),
-                config.maxIdeas,
-                0,
-                'active',
-                config.customPrompt ?? null,
-                now,
-                now
-            );
-
-        return {
+        const session: IdeaSession = {
             id,
             model: config.model,
             provider: config.provider,
@@ -163,38 +125,33 @@ export class IdeaGeneratorService extends BaseService {
             createdAt: now,
             updatedAt: now,
         };
+        const repository = await this.getRepository();
+        await repository.createSession(session);
+        return session;
     }
 
     /**
      * Get a session by ID
      */
     async getSession(id: string): Promise<IdeaSession | null> {
-        const db = await this.getDb();
-        const row = await db
-            .prepare('SELECT * FROM idea_sessions WHERE id = ?')
-            .get<JsonObject>(id);
-        return row ? this.mapRowToSession(row) : null;
+        const repository = await this.getRepository();
+        return repository.getSession(id);
     }
 
     /**
      * Get all sessions
      */
     async getSessions(): Promise<IdeaSession[]> {
-        const db = await this.getDb();
-        const rows = await db
-            .prepare('SELECT * FROM idea_sessions ORDER BY created_at DESC')
-            .all<JsonObject>();
-        return rows.map(row => this.mapRowToSession(row));
+        const repository = await this.getRepository();
+        return repository.getSessions();
     }
 
     /**
      * Update session status
      */
     async updateSessionStatus(id: string, status: IdeaSessionStatus): Promise<void> {
-        const db = await this.getDb();
-        await db
-            .prepare('UPDATE idea_sessions SET status = ?, updated_at = ? WHERE id = ?')
-            .run(status, Date.now(), id);
+        const repository = await this.getRepository();
+        await repository.updateSessionStatus(id, status);
     }
 
     /**
@@ -357,10 +314,8 @@ Respond in JSON:
             }
 
             // Save research data to session
-            const db = await this.getDb();
-            await db
-                .prepare('UPDATE idea_sessions SET research_data = ?, updated_at = ? WHERE id = ?')
-                .run(JSON.stringify(researchData), Date.now(), sessionId);
+            const repository = await this.getRepository();
+            await repository.updateSessionResearchData(sessionId, researchData);
 
             this.emitResearchProgress(sessionId, 'complete', 100, 'Research complete!');
             this.logInfo(`Research pipeline completed for session ${sessionId}`);
@@ -379,51 +334,16 @@ Respond in JSON:
      * Get all previously generated ideas (for deduplication)
      */
     private async getAllPreviousIdeas(): Promise<ProjectIdea[]> {
-        const db = await this.getDb();
-        const rows = await db
-            .prepare('SELECT * FROM project_ideas ORDER BY created_at DESC LIMIT 200')
-            .all<JsonObject>();
-        return rows.map(row => this.mapRowToIdea(row));
+        const repository = await this.getRepository();
+        const ideas = await repository.getIdeas();
+        return ideas.slice(0, 200);
     }
 
     /**
      * Check if an idea title is too similar to existing ideas
      */
     private isTitleTooSimilar(newTitle: string, existingIdeas: ProjectIdea[]): boolean {
-        const normalizedNew = newTitle.toLowerCase().trim();
-
-        for (const existing of existingIdeas) {
-            const normalizedExisting = existing.title.toLowerCase().trim();
-
-            // Exact match
-            if (normalizedNew === normalizedExisting) {
-                return true;
-            }
-
-            // Check for high word overlap (>70% similarity)
-            const newWords = new Set(normalizedNew.split(/\s+/).filter(w => w.length > 2));
-            const existingWords = new Set(
-                normalizedExisting.split(/\s+/).filter(w => w.length > 2)
-            );
-
-            if (newWords.size === 0 || existingWords.size === 0) {
-                continue;
-            }
-
-            let matches = 0;
-            for (const word of newWords) {
-                if (existingWords.has(word)) {
-                    matches++;
-                }
-            }
-
-            const similarity = matches / Math.max(newWords.size, existingWords.size);
-            if (similarity > 0.7) {
-                return true;
-            }
-        }
-
-        return false;
+        return this.validation.isTitleTooSimilar(newTitle, existingIdeas);
     }
 
     /**
@@ -433,47 +353,7 @@ Respond in JSON:
         newIdea: { title: string; description: string },
         existingIdeas: ProjectIdea[]
     ): boolean {
-        // Check title similarity first
-        if (this.isTitleTooSimilar(newIdea.title, existingIdeas)) {
-            return true;
-        }
-
-        // Check description similarity
-        const newDescWords = new Set(
-            newIdea.description
-                .toLowerCase()
-                .split(/\s+/)
-                .filter(w => w.length > 3)
-        );
-        if (newDescWords.size === 0) {
-            return false;
-        }
-
-        for (const existing of existingIdeas) {
-            const existingWords = new Set(
-                existing.description
-                    .toLowerCase()
-                    .split(/\s+/)
-                    .filter(w => w.length > 3)
-            );
-            if (existingWords.size === 0) {
-                continue;
-            }
-
-            let matches = 0;
-            for (const word of newDescWords) {
-                if (existingWords.has(word)) {
-                    matches++;
-                }
-            }
-
-            const similarity = matches / Math.max(newDescWords.size, existingWords.size);
-            if (similarity > 0.5) {
-                return true;
-            }
-        }
-
-        return false;
+        return this.validation.isIdeaTooSimilar(newIdea, existingIdeas);
     }
 
     /**
@@ -483,29 +363,7 @@ Respond in JSON:
         ideas: ProjectIdea[],
         currentCategories: IdeaCategory[]
     ): string {
-        if (ideas.length === 0) {
-            return '';
-        }
-
-        // Filter to relevant categories and limit to recent ideas
-        const relevantIdeas = ideas
-            .filter(i => currentCategories.includes(i.category))
-            .slice(0, 50);
-
-        if (relevantIdeas.length === 0) {
-            return '';
-        }
-
-        const ideaList = relevantIdeas
-            .map(i => `- "${i.title}": ${i.description.slice(0, 100)}`)
-            .join('\n');
-
-        return `\n\n=== PREVIOUSLY GENERATED IDEAS (DO NOT REPEAT THESE) ===
-The following ideas have already been generated. You MUST create something COMPLETELY DIFFERENT:
-${ideaList}
-
-IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do not use similar names, concepts, or approaches.
-============================================\n\n`;
+        return this.validation.buildPreviousIdeasContext(ideas, currentCategories);
     }
 
     /**
@@ -520,18 +378,8 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
     /**
      * Check if an error is retryable (rate limit, timeout, network issues)
      */
-    private isRetryableError(error: unknown): boolean {
-        const errStr = String(error).toLowerCase();
-        return (
-            errStr.includes('rate limit') ||
-            errStr.includes('429') ||
-            errStr.includes('quota') ||
-            errStr.includes('timeout') ||
-            errStr.includes('econnreset') ||
-            errStr.includes('etimedout') ||
-            errStr.includes('network') ||
-            errStr.includes('temporarily unavailable')
-        );
+    private isRetryableError(error: Error): boolean {
+        return this.validation.isRetryableError(error);
     }
 
     /**
@@ -628,12 +476,8 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
                 sessionIdeas.push(idea);
 
                 // Update session counter
-                const db = await this.getDb();
-                await db
-                    .prepare(
-                        'UPDATE idea_sessions SET ideas_generated = ?, updated_at = ? WHERE id = ?'
-                    )
-                    .run(ideaIndex, Date.now(), sessionId);
+                const repository = await this.getRepository();
+                await repository.incrementIdeasGenerated(sessionId);
 
                 // Emit final completion
                 this.emitIdeaProgress({
@@ -1553,93 +1397,32 @@ Respond in JSON format:
      * Get an idea by ID
      */
     async getIdea(id: string): Promise<ProjectIdea | null> {
-        const db = await this.getDb();
-        const row = await db
-            .prepare('SELECT * FROM project_ideas WHERE id = ?')
-            .get<JsonObject>(id);
-        return row ? this.mapRowToIdea(row) : null;
+        const repository = await this.getRepository();
+        return repository.getIdea(id);
     }
 
     /**
      * Get ideas for a session
      */
     async getIdeas(sessionId?: string): Promise<ProjectIdea[]> {
-        const db = await this.getDb();
-        const sql = sessionId
-            ? 'SELECT * FROM project_ideas WHERE session_id = ? ORDER BY created_at DESC'
-            : 'SELECT * FROM project_ideas ORDER BY created_at DESC';
-
-        const rows = sessionId
-            ? await db.prepare(sql).all<JsonObject>(sessionId)
-            : await db.prepare(sql).all<JsonObject>();
-
-        return rows.map(row => this.mapRowToIdea(row));
+        const repository = await this.getRepository();
+        return repository.getIdeas(sessionId);
     }
 
     /**
      * Save a new idea with all pipeline-generated fields
      */
     private async saveIdea(idea: ProjectIdea): Promise<void> {
-        const db = await this.getDb();
-        const serialized = this.serializeIdeaForDb(idea);
-
-        await db
-            .prepare(
-                `
-            INSERT INTO project_ideas (
-                id, session_id, title, category, description, explanation, value_proposition,
-                name_suggestions, competitive_advantages, market_research, status, metadata,
-                long_description, roadmap, tech_stack, idea_competitors, generation_stage, research_context,
-                created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `
-            )
-            .run(
-                idea.id,
-                idea.sessionId,
-                idea.title,
-                idea.category,
-                idea.description,
-                idea.explanation ?? null,
-                idea.valueProposition ?? null,
-                serialized.nameSuggestions,
-                serialized.competitiveAdvantages,
-                serialized.marketResearch,
-                idea.status,
-                serialized.meta,
-                idea.longDescription ?? null,
-                serialized.roadmap,
-                serialized.techStack,
-                serialized.competitors,
-                idea.generationStage ?? 'complete',
-                idea.researchContext ?? null,
-                idea.createdAt,
-                idea.updatedAt
-            );
-    }
-
-    private serializeIdeaForDb(idea: ProjectIdea) {
-        return {
-            meta: JSON.stringify(idea.metadata ?? {}),
-            roadmap: idea.roadmap ? JSON.stringify(idea.roadmap) : null,
-            techStack: idea.techStack ? JSON.stringify(idea.techStack) : null,
-            competitors: idea.ideaCompetitors ? JSON.stringify(idea.ideaCompetitors) : null,
-            nameSuggestions: idea.nameSuggestions ? JSON.stringify(idea.nameSuggestions) : null,
-            competitiveAdvantages: idea.competitiveAdvantages
-                ? JSON.stringify(idea.competitiveAdvantages)
-                : null,
-            marketResearch: idea.marketResearch ? JSON.stringify(idea.marketResearch) : null,
-        };
+        const repository = await this.getRepository();
+        await repository.saveIdea(idea);
     }
 
     /**
      * Update idea status
      */
     async updateIdeaStatus(id: string, status: IdeaStatus): Promise<void> {
-        const db = await this.getDb();
-        await db
-            .prepare('UPDATE project_ideas SET status = ?, updated_at = ? WHERE id = ?')
-            .run(status, Date.now(), id);
+        const repository = await this.getRepository();
+        await repository.updateIdeaStatus(id, status);
     }
 
     // ==================== Approval Workflow ====================
@@ -1809,63 +1592,14 @@ The logo should be simple, memorable, and work well at small sizes.`;
         return this.deps.databaseService.getDatabase();
     }
 
-    private mapRowToSession(row: JsonObject): IdeaSession {
-        return {
-            id: String(row.id),
-            model: String(row.model),
-            provider: String(row.provider),
-            categories: safeJsonParse(row.categories as string, []) as IdeaCategory[],
-            maxIdeas: Number(row.max_ideas),
-            ideasGenerated: Number(row.ideas_generated),
-            status: String(row.status) as IdeaSessionStatus,
-            researchData: row.research_data
-                ? safeJsonParse<ResearchData>(row.research_data as string, {} as ResearchData)
-                : undefined,
-            customPrompt: row.custom_prompt ? String(row.custom_prompt) : undefined,
-            createdAt: Number(row.created_at),
-            updatedAt: Number(row.updated_at),
-        };
-    }
+    private async getRepository(): Promise<IdeaRepository> {
+        if (this.ideaRepository) {
+            return this.ideaRepository;
+        }
 
-    private mapRowToIdea(row: JsonObject): ProjectIdea {
-        return {
-            id: String(row.id),
-            sessionId: String(row.session_id),
-            title: String(row.title),
-            category: String(row.category) as IdeaCategory,
-            description: String(row.description ?? ''),
-            explanation: row.explanation as string | undefined,
-            valueProposition: row.value_proposition as string | undefined,
-            longDescription: row.long_description as string | undefined,
-            nameSuggestions: row.name_suggestions
-                ? (safeJsonParse(row.name_suggestions as string, []) as string[])
-                : undefined,
-            competitiveAdvantages: row.competitive_advantages
-                ? (safeJsonParse(row.competitive_advantages as string, []) as string[])
-                : undefined,
-            roadmap: row.roadmap
-                ? (safeJsonParse(row.roadmap as string, undefined) as ProjectRoadmap | undefined)
-                : undefined,
-            techStack: row.tech_stack
-                ? (safeJsonParse(row.tech_stack as string, undefined) as TechStack | undefined)
-                : undefined,
-            ideaCompetitors: row.idea_competitors
-                ? (safeJsonParse(row.idea_competitors as string, []) as IdeaCompetitor[])
-                : undefined,
-            marketResearch: row.market_research
-                ? safeJsonParse(row.market_research as string, undefined)
-                : undefined,
-            generationStage: row.generation_stage
-                ? (row.generation_stage as IdeaGenerationStage)
-                : 'complete',
-            researchContext: row.research_context as string | undefined,
-            status: String(row.status) as IdeaStatus,
-            projectId: row.project_id as string | undefined,
-            logoPath: row.logo_path as string | undefined,
-            metadata: safeJsonParse(row.metadata as string, {}),
-            createdAt: Number(row.created_at),
-            updatedAt: Number(row.updated_at),
-        };
+        const db = await this.getDb();
+        this.ideaRepository = new IdeaRepository(db);
+        return this.ideaRepository;
     }
 
     private emitResearchProgress(

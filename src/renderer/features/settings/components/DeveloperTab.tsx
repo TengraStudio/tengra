@@ -1,3 +1,4 @@
+import { JsonValue } from '@shared/types';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { RefreshCw, Terminal } from 'lucide-react';
 import React from 'react';
@@ -7,6 +8,7 @@ import { setAnimationDebugEnabled, useAnimationAnalyticsStore } from '@/store/an
 import { useResponsiveAnalyticsStore } from '@/store/responsive-analytics.store';
 import { exportUiLayoutState } from '@/store/ui-layout.store';
 import { AppSettings } from '@/types/settings';
+import { isAppSettings } from '@/utils/app-settings.util';
 
 interface DeveloperTabProps {
     settings: AppSettings | null
@@ -73,7 +75,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                     </div>
                     <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50">
                         <div><div className="text-sm font-bold text-foreground">{t('developer.importSettings')}</div><div className="text-xs text-muted-foreground">{t('developer.importSettingsDesc')}</div></div>
-                        <label className="px-3 py-2 rounded-lg text-xs font-bold bg-muted/30 text-muted-foreground border border-border/50 cursor-pointer">{t('developer.import')}<input type="file" accept=".json" className="hidden" onChange={(e) => { void (async () => { const file = e.target.files?.[0]; if (!file) { return; } try { const imported = safeJsonParse<Record<string, unknown> | null>(await file.text(), null); if (!imported) { throw new Error('Invalid JSON'); } await window.electron.saveSettings(imported); await loadSettings(); setStatusMessage(t('developer.settingsImported')); setTimeout(() => setStatusMessage(''), 3000); } catch { window.electron.log.warn(t('developer.invalidSettingsFile')); } })(); }} /></label>
+                        <label className="px-3 py-2 rounded-lg text-xs font-bold bg-muted/30 text-muted-foreground border border-border/50 cursor-pointer">{t('developer.import')}<input type="file" accept=".json" className="hidden" onChange={(e) => { void (async () => { const file = e.target.files?.[0]; if (!file) { return; } try { const imported = safeJsonParse<JsonValue | null>(await file.text(), null); if (!isAppSettings(imported)) { throw new Error('Invalid JSON'); } await window.electron.saveSettings(imported); await loadSettings(); setStatusMessage(t('developer.settingsImported')); setTimeout(() => setStatusMessage(''), 3000); } catch { window.electron.log.warn(t('developer.invalidSettingsFile')); } })(); }} /></label>
                     </div>
                     <div className="p-4 bg-muted/30 rounded-lg border border-border/50 space-y-3">
                         <div className="text-sm font-bold text-foreground">Animation Diagnostics</div>

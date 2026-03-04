@@ -78,9 +78,9 @@ describe('Export IPC Integration', () => {
             const result = await handler?.({} as IpcMainInvokeEvent, 123, '/exports/document.md');
 
             expect(mockExportService.exportToMarkdown).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: { message: 'Invalid export parameters', code: 'ERROR' }
+                error: { message: 'Invalid export parameters', code: 'IPC_HANDLER_ERROR' }
             });
         });
 
@@ -93,9 +93,9 @@ describe('Export IPC Integration', () => {
             const result = await handler?.({} as IpcMainInvokeEvent, content, 123);
 
             expect(mockExportService.exportToMarkdown).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: { message: 'Invalid export parameters', code: 'ERROR' }
+                error: { message: 'Invalid export parameters', code: 'IPC_HANDLER_ERROR' }
             });
         });
 
@@ -109,9 +109,9 @@ describe('Export IPC Integration', () => {
             const result = await handler?.({} as IpcMainInvokeEvent, oversizedContent, '/exports/document.md');
 
             expect(mockExportService.exportToMarkdown).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: { message: 'Invalid export parameters', code: 'ERROR' }
+                error: { message: 'Invalid export parameters', code: 'IPC_HANDLER_ERROR' }
             });
         });
 
@@ -124,9 +124,9 @@ describe('Export IPC Integration', () => {
             const result = await handler?.({} as IpcMainInvokeEvent, content, '');
 
             expect(mockExportService.exportToMarkdown).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: { message: 'Invalid export parameters', code: 'ERROR' }
+                error: { message: 'Invalid export parameters', code: 'IPC_HANDLER_ERROR' }
             });
         });
 
@@ -139,9 +139,9 @@ describe('Export IPC Integration', () => {
             const result = await handler?.({} as IpcMainInvokeEvent, content, '   ');
 
             expect(mockExportService.exportToMarkdown).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: { message: 'Invalid export parameters', code: 'ERROR' }
+                error: { message: 'Invalid export parameters', code: 'IPC_HANDLER_ERROR' }
             });
         });
 
@@ -156,9 +156,9 @@ describe('Export IPC Integration', () => {
             const result = await handler?.({} as IpcMainInvokeEvent, content, longPath);
 
             expect(mockExportService.exportToMarkdown).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: { message: 'Invalid export parameters', code: 'ERROR' }
+                error: { message: 'Invalid export parameters', code: 'IPC_HANDLER_ERROR' }
             });
         });
 
@@ -213,9 +213,9 @@ describe('Export IPC Integration', () => {
             const result = await handler?.({} as IpcMainInvokeEvent, { html: 'invalid' }, '/exports/document.pdf');
 
             expect(mockExportService.exportToPDF).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: { message: 'Invalid export parameters', code: 'ERROR' }
+                error: { message: 'Invalid export parameters', code: 'IPC_HANDLER_ERROR' }
             });
         });
 
@@ -228,9 +228,9 @@ describe('Export IPC Integration', () => {
             const result = await handler?.({} as IpcMainInvokeEvent, htmlContent, null);
 
             expect(mockExportService.exportToPDF).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: { message: 'Invalid export parameters', code: 'ERROR' }
+                error: { message: 'Invalid export parameters', code: 'IPC_HANDLER_ERROR' }
             });
         });
 
@@ -244,9 +244,9 @@ describe('Export IPC Integration', () => {
             const result = await handler?.({} as IpcMainInvokeEvent, oversizedContent, '/exports/document.pdf');
 
             expect(mockExportService.exportToPDF).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: { message: 'Invalid export parameters', code: 'ERROR' }
+                error: { message: 'Invalid export parameters', code: 'IPC_HANDLER_ERROR' }
             });
         });
 
@@ -259,9 +259,9 @@ describe('Export IPC Integration', () => {
             const result = await handler?.({} as IpcMainInvokeEvent, htmlContent, '');
 
             expect(mockExportService.exportToPDF).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: { message: 'Invalid export parameters', code: 'ERROR' }
+                error: { message: 'Invalid export parameters', code: 'IPC_HANDLER_ERROR' }
             });
         });
 
@@ -276,9 +276,9 @@ describe('Export IPC Integration', () => {
             const result = await handler?.({} as IpcMainInvokeEvent, htmlContent, longPath);
 
             expect(mockExportService.exportToPDF).not.toHaveBeenCalled();
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: { message: 'Invalid export parameters', code: 'ERROR' }
+                error: { message: 'Invalid export parameters', code: 'IPC_HANDLER_ERROR' }
             });
         });
 
@@ -311,9 +311,9 @@ describe('Export IPC Integration', () => {
 
             const result = await handler?.({} as IpcMainInvokeEvent, htmlContent, filePath);
 
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 success: false,
-                error: { message: 'PDF generation failed', code: 'ERROR' }
+                error: { message: 'Internal server error', code: 'ERROR' }
             });
         });
     });

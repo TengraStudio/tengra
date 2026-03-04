@@ -516,7 +516,7 @@ const useProjectAgentState = (
     }, [setNodes, isLoaded, updateNodeData, getNodes, syncPlanNodesForTask]);
 };
 
-const InternalProjectAgentView: React.FC = () => {
+const InternalAutomationWorkflowView: React.FC = () => {
     const { appSettings } = useAuth();
     const theme = appSettings?.general.theme ?? 'black';
     const isDark = theme !== 'white';
@@ -868,7 +868,7 @@ const InternalProjectAgentView: React.FC = () => {
                                 ? 'Wait for all parallel branches before continuing'
                                 : type === 'create-pr'
                                     ? 'Generate and open GitHub pull request URL for the active task'
-                                : undefined,
+                                    : undefined,
                 },
                 type: 'task',
             };
@@ -965,10 +965,10 @@ const InternalProjectAgentView: React.FC = () => {
  *
  * Provides an infinite canvas with a grid system for visualizing autonomous nodes.
  */
-export const ProjectAgentView: React.FC = () => {
+export const AutomationWorkflowView: React.FC = () => {
     return (
         <ReactFlowProvider>
-            <InternalProjectAgentView />
+            <InternalAutomationWorkflowView />
         </ReactFlowProvider>
     );
 };

@@ -2,14 +2,15 @@
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { LLMService } from '@main/services/llm/llm.service';
+import { AgentCheckpointService } from './agent/agent-checkpoint.service';
 import { AgentCollaborationService } from '@main/services/project/agent/agent-collaboration.service';
 import { AgentPerformanceService } from '@main/services/project/agent/agent-performance.service';
 import { AgentRegistryService } from '@main/services/project/agent/agent-registry.service';
 import { AgentTemplateService } from '@main/services/project/agent/agent-template.service';
+import { CouncilService } from './agent/council.service';
 import { GitService } from '@main/services/project/git.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { ToolExecutor } from '@main/tools/tool-executor';
-import { AgentEventRecord, TaskMetrics } from '@shared/types/agent-state';
 import {
     AgentCollaborationIntent,
     AgentCollaborationMessage,
@@ -39,17 +40,12 @@ import {
     VotingTemplate,
     WorkerAvailabilityRecord,
 } from '@shared/types/project-agent';
-import { safeJsonParse } from '@shared/utils/sanitize.util';
 
-import { AgentCheckpointService } from './agent/agent-checkpoint.service';
-import { AgentTaskExecutor } from './agent/agent-task-executor';
-
-type TaskPriority = NonNullable<AgentStartOptions['priority']>;
-
-interface QueuedExecutionTask {
-    taskId: string;
-    priority: TaskPriority;
-}
+import { ProjectAgentCollaborationManager } from './agent/project-agent-collaboration-manager';
+import { ProjectAgentProfileManager } from './agent/project-agent-profile-manager';
+import { ProjectAgentTemplateManager } from './agent/project-agent-template-manager';
+import { ProjectAgentTaskManager } from './agent/project-agent-task-manager';
+import { ProjectAgentCouncilManager } from './agent/project-agent-council-manager';
 
 interface ProjectAgentServiceDependencies {
     databaseService: DatabaseService;
@@ -61,593 +57,168 @@ interface ProjectAgentServiceDependencies {
     agentCollaborationService: AgentCollaborationService;
     agentTemplateService: AgentTemplateService;
     agentPerformanceService: AgentPerformanceService;
-    councilService: import('./agent/council.service').CouncilService;
+    councilService: CouncilService;
 }
 
-const TASK_PRIORITY_SCORE: Record<TaskPriority, number> = {
-    low: 1,
-    normal: 2,
-    high: 3,
-    critical: 4,
-};
-
 export class ProjectAgentService extends BaseService {
-    private executors = new Map<string, AgentTaskExecutor>();
-    private currentTaskId: string | null = null;
-    private toolExecutor?: ToolExecutor;
-    private readonly databaseService: DatabaseService;
-    private readonly llmService: LLMService;
     public readonly eventBus: EventBusService;
-    private readonly agentRegistryService: AgentRegistryService;
-    private readonly agentCheckpointService: AgentCheckpointService;
-    private readonly gitService: GitService;
-    private readonly agentCollaborationService: AgentCollaborationService;
-    private readonly agentTemplateService: AgentTemplateService;
-    private readonly agentPerformanceService: AgentPerformanceService;
-    private readonly councilService: import('./agent/council.service').CouncilService;
-    private readonly activeExecutionTaskIds = new Set<string>();
-    private readonly queuedExecutionTasks: QueuedExecutionTask[] = [];
-    private readonly taskAgentAssignments = new Map<string, string>();
-    private readonly maxConcurrentExecutionTasks = 3;
-    private unsubscribeExecutionObserver?: () => void;
+
+    private readonly profileManager: ProjectAgentProfileManager;
+    private readonly templateManager: ProjectAgentTemplateManager;
+    private readonly taskManager: ProjectAgentTaskManager;
+    private readonly councilManager: ProjectAgentCouncilManager;
 
     constructor(deps: ProjectAgentServiceDependencies) {
         super('ProjectAgentService');
-        this.databaseService = deps.databaseService;
-        this.llmService = deps.llmService;
         this.eventBus = deps.eventBus;
-        this.agentRegistryService = deps.agentRegistryService;
-        this.agentCheckpointService = deps.agentCheckpointService;
-        this.gitService = deps.gitService;
-        this.agentCollaborationService = deps.agentCollaborationService;
-        this.agentTemplateService = deps.agentTemplateService;
-        this.agentPerformanceService = deps.agentPerformanceService;
-        this.councilService = deps.councilService;
+
+        this.profileManager = new ProjectAgentProfileManager({
+            registryService: deps.agentRegistryService
+        });
+
+        this.templateManager = new ProjectAgentTemplateManager({
+            templateService: deps.agentTemplateService
+        });
+
+        const collaborationManager = new ProjectAgentCollaborationManager({
+            databaseService: deps.databaseService,
+            collaborationService: deps.agentCollaborationService
+        });
+
+        this.taskManager = new ProjectAgentTaskManager({
+            databaseService: deps.databaseService,
+            llmService: deps.llmService,
+            eventBus: deps.eventBus,
+            agentRegistryService: deps.agentRegistryService,
+            agentCheckpointService: deps.agentCheckpointService,
+            gitService: deps.gitService,
+            agentCollaborationService: deps.agentCollaborationService,
+            agentPerformanceService: deps.agentPerformanceService,
+            councilService: deps.councilService,
+            collaborationManager
+        });
+
+        this.councilManager = new ProjectAgentCouncilManager({
+            databaseService: deps.databaseService,
+            collaborationManager,
+            taskManager: this.taskManager
+        });
     }
 
     setToolExecutor(toolExecutor: ToolExecutor) {
-        this.toolExecutor = toolExecutor;
-        for (const executor of this.executors.values()) {
-            executor.setToolExecutor(toolExecutor);
-        }
+        this.taskManager.setToolExecutor(toolExecutor);
     }
 
     override async initialize(): Promise<void> {
         this.logInfo('Initializing ProjectAgentService...');
-        this.observeExecutionState();
-        await this.restoreActiveTasks();
+        await this.taskManager.initialize();
         this.logInfo('ProjectAgentService initialized');
     }
 
     override async cleanup(): Promise<void> {
-        this.unsubscribeExecutionObserver?.();
-        this.unsubscribeExecutionObserver = undefined;
-        for (const executor of this.executors.values()) {
-            await executor.cleanup();
-        }
-        this.executors.clear();
+        await this.taskManager.cleanup();
     }
 
     async dispose(): Promise<void> {
         await this.cleanup();
     }
 
-    private async restoreActiveTasks(): Promise<void> {
-        try {
-            // Find tasks that were in running/planning/paused states
-            // We might need a better query, but getting all tasks and filtering is safer for now if count is low
-            // Assuming we only care about "recent" or "active" ones.
-            // For now, let's look for tasks with status != completed/failed/idle?
-            // Or just restore the 'currentTaskId' if persisted?
-
-            // Getting all tasks might be expensive.
-            // Let's rely on finding ALL tasks and restoring them into executors if they are not terminal?
-            // For simplicity in this iteration, I'll just check if there's a way to identify active tasks.
-            // The previous code loaded 'currentTaskId' from something? No, it just `loadState`.
-
-            // `loadState` in previous code loaded the *last created task*?
-            /*
-            const tasks = await this.databaseService.uac.getTasks('');
-            if (tasks.length > 0) {
-               const lastTask = tasks[0]; // ordered by created_at desc
-               this.currentTaskId = lastTask.id;
-               ...
-            }
-            */
-
-            const tasks = await this.databaseService.uac.getTasks('');
-            if (tasks.length > 0) {
-                // Restore the most recent one as current
-                const lastTask = tasks[0];
-                this.currentTaskId = lastTask.id;
-
-                // We should potentially restore executors for all non-terminal tasks?
-                // For now, let's just restore the current one to match previous behavior,
-                // but ready to support more.
-
-                for (const task of tasks) {
-                    // If task is not in a terminal state, we should probably hydrade it.
-                    const isTerminal = ['completed', 'failed', 'idle'].includes(task.status);
-                    if (!isTerminal || task.id === this.currentTaskId) {
-                        const executor = await this.getOrCreateExecutor(task.id, {
-                            task: task.description,
-                            projectId: task.project_path,
-                            nodeId: task.node_id,
-                            // We might need to parse metadata for full options
-                            ...safeJsonParse<Record<string, unknown>>(task.metadata, {})
-                        });
-                        const metadata = safeJsonParse<Record<string, unknown>>(task.metadata, {});
-                        const restoredAgentId = typeof metadata['agentProfileId'] === 'string'
-                            ? metadata['agentProfileId']
-                            : 'default';
-                        this.taskAgentAssignments.set(task.id, restoredAgentId);
-                        // Restore state
-                        await executor.restoreStateFromDB();
-                        await this.restoreCollaborationMessagesForTask(task.id);
-                    }
-                }
-            }
-
-        } catch (error) {
-            this.logError('Failed to restore active tasks', error as Error);
-        }
-    }
-
-    private async getOrCreateExecutor(taskId: string, options: AgentStartOptions): Promise<AgentTaskExecutor> {
-        let executor = this.executors.get(taskId);
-        if (!executor) {
-            executor = new AgentTaskExecutor(
-                taskId,
-                options,
-                {
-                    database: this.databaseService,
-                    llm: this.llmService,
-                    eventBus: this.eventBus,
-                    registry: this.agentRegistryService,
-                    checkpoint: this.agentCheckpointService,
-                    git: this.gitService,
-                    collaboration: this.agentCollaborationService,
-                    council: this.councilService,
-                }
-            );
-            if (this.toolExecutor) {
-                executor.setToolExecutor(this.toolExecutor);
-            }
-            this.executors.set(taskId, executor);
-        }
-        return executor;
-    }
-
-    private observeExecutionState(): void {
-        this.unsubscribeExecutionObserver?.();
-        this.unsubscribeExecutionObserver = this.eventBus.on('project:update', payload => {
-            const taskId = payload.taskId;
-            if (!taskId) {
-                return;
-            }
-            if (payload.status === 'running') {
-                this.activeExecutionTaskIds.add(taskId);
-                const agentId = this.taskAgentAssignments.get(taskId);
-                if (agentId) {
-                    this.agentCollaborationService.recordAgentTaskProgress({
-                        agentId,
-                        status: 'in_progress',
-                        taskId
-                    });
-                }
-                return;
-            }
-            const isTerminalState = ['idle', 'failed', 'completed', 'error', 'paused'].includes(
-                payload.status
-            );
-            if (isTerminalState && this.activeExecutionTaskIds.delete(taskId)) {
-                const agentId = this.taskAgentAssignments.get(taskId);
-                if (agentId && (payload.status === 'completed' || payload.status === 'failed' || payload.status === 'error')) {
-                    const durationMs = payload.timing?.startedAt
-                        ? Date.now() - payload.timing.startedAt
-                        : undefined;
-                    this.agentCollaborationService.recordAgentTaskProgress({
-                        agentId,
-                        status: payload.status === 'completed' ? 'completed' : 'failed',
-                        durationMs,
-                        taskId
-                    });
-                }
-                void this.drainExecutionQueue();
-            }
-        });
-    }
-
-    private getPriority(priority?: AgentStartOptions['priority']): TaskPriority {
-        return priority ?? 'normal';
-    }
-
-    private enqueueExecutionTask(task: QueuedExecutionTask): void {
-        this.queuedExecutionTasks.push(task);
-        this.queuedExecutionTasks.sort((left, right) => {
-            const leftScore = TASK_PRIORITY_SCORE[left.priority];
-            const rightScore = TASK_PRIORITY_SCORE[right.priority];
-            if (leftScore === rightScore) {
-                return 0;
-            }
-            return rightScore - leftScore;
-        });
-    }
-
-    private async scheduleExecutionStart(taskId: string, priority?: AgentStartOptions['priority']): Promise<boolean> {
-        const normalizedPriority = this.getPriority(priority);
-        if (this.activeExecutionTaskIds.has(taskId)) {
-            return true;
-        }
-        if (this.activeExecutionTaskIds.size >= this.maxConcurrentExecutionTasks) {
-            const alreadyQueued = this.queuedExecutionTasks.some(t => t.taskId === taskId);
-            if (!alreadyQueued) {
-                this.enqueueExecutionTask({ taskId, priority: normalizedPriority });
-            }
-            this.logInfo(`Queued task ${taskId} with priority ${normalizedPriority}`);
-            return false;
-        }
-        this.activeExecutionTaskIds.add(taskId);
-        return true;
-    }
-
-    private async drainExecutionQueue(): Promise<void> {
-        while (
-            this.activeExecutionTaskIds.size < this.maxConcurrentExecutionTasks &&
-            this.queuedExecutionTasks.length > 0
-        ) {
-            const nextTask = this.queuedExecutionTasks.shift();
-            if (!nextTask) {
-                return;
-            }
-            const executor = this.executors.get(nextTask.taskId);
-            if (!executor) {
-                continue;
-            }
-            this.activeExecutionTaskIds.add(nextTask.taskId);
-            try {
-                await executor.start();
-            } catch (error) {
-                this.activeExecutionTaskIds.delete(nextTask.taskId);
-                this.logError(`Failed to start queued task ${nextTask.taskId}`, error as Error);
-                // Record error in performance metrics
-                this.agentPerformanceService.recordError(nextTask.taskId, {
-                    type: 'execution_start_failed',
-                    message: (error as Error).message || 'Unknown error'
-                });
-            }
-        }
-    }
-
     // --- Public API delegations ---
 
     public getCurrentTaskId(): string | null {
-        return this.currentTaskId;
-    }
-
-    public getPerformanceService(): AgentPerformanceService {
-        return this.agentPerformanceService;
+        return this.taskManager.getCurrentTaskId();
     }
 
     async start(options: AgentStartOptions): Promise<string> {
-        // ALWAYS create a new task for 'start', as per original behavior
-        const taskId = await this.databaseService.uac.createTask({
-            description: options.task,
-            status: 'idle', // Will be updated to running by executor
-            projectId: options.projectId || '',
-            nodeId: options.nodeId,
-            metadata: {
-                ...options,
-                agentProfileId: options.agentProfileId ?? 'default'
-            } as Record<string, unknown>,
-        });
-
-        this.currentTaskId = taskId;
-        const taskAgentId = options.agentProfileId ?? 'default';
-        this.taskAgentAssignments.set(taskId, taskAgentId);
-
-        // Initialize performance metrics for the new task
-        this.agentPerformanceService.initializeMetrics(taskId);
-        this.agentCollaborationService.recordAgentTaskProgress({
-            agentId: taskAgentId,
-            status: 'in_progress',
-            taskId
-        });
-        const executor = await this.getOrCreateExecutor(taskId, options);
-        const canStartNow = await this.scheduleExecutionStart(taskId, options.priority);
-        if (canStartNow) {
-            try {
-                await executor.start();
-            } catch (error) {
-                this.activeExecutionTaskIds.delete(taskId);
-                // Record error in performance metrics
-                this.agentPerformanceService.recordError(taskId, {
-                    type: 'task_start_failed',
-                    message: (error as Error).message || 'Unknown error'
-                });
-                throw error;
-            }
-        }
-
-        return taskId;
+        return await this.taskManager.start(options);
     }
 
     async generatePlan(options: AgentStartOptions): Promise<void> {
-        const taskId = await this.databaseService.uac.createTask({
-            description: options.task,
-            status: 'idle',
-            projectId: options.projectId || '',
-            nodeId: options.nodeId,
-            metadata: {
-                ...options,
-                agentProfileId: options.agentProfileId ?? 'default'
-            } as Record<string, unknown>,
-        });
-
-        this.currentTaskId = taskId;
-        const taskAgentId = options.agentProfileId ?? 'default';
-        this.taskAgentAssignments.set(taskId, taskAgentId);
-
-        // Initialize performance metrics for the new task
-        this.agentPerformanceService.initializeMetrics(taskId);
-        this.agentCollaborationService.recordAgentTaskProgress({
-            agentId: taskAgentId,
-            status: 'in_progress',
-            taskId
-        });
-        const executor = await this.getOrCreateExecutor(taskId, options);
-        await executor.generatePlan();
+        await this.taskManager.generatePlan(options);
     }
 
     async stop(taskId?: string): Promise<void> {
-        const targetId = taskId || this.currentTaskId;
-        if (!targetId) { return; }
-
-        this.activeExecutionTaskIds.delete(targetId);
-        const queueIndex = this.queuedExecutionTasks.findIndex(entry => entry.taskId === targetId);
-        if (queueIndex !== -1) {
-            this.queuedExecutionTasks.splice(queueIndex, 1);
-        }
-
-        const executor = this.executors.get(targetId);
-        if (executor) {
-            await executor.stop();
-        }
+        await this.taskManager.stop(taskId);
     }
 
     async pauseTask(taskId?: string): Promise<void> {
-        const targetId = taskId || this.currentTaskId;
-        if (!targetId) { return; }
-
-        const executor = this.executors.get(targetId);
-        if (executor) {
-            await executor.pause();
-        }
+        await this.taskManager.pauseTask(taskId);
     }
 
     async resumeTask(taskId: string): Promise<boolean> {
-        const executor = this.executors.get(taskId);
-        if (executor) {
-            // Re-start? or resume? 
-            // AgentTaskExecutor.start() checks state.
-            // If paused, start() transitions to running.
-            await executor.start();
-            return true;
-        }
-        return false;
+        return await this.taskManager.resumeTask(taskId);
     }
 
     async approvePlan(plan: ProjectStep[] | string[], taskId?: string): Promise<void> {
-        const targetId = taskId || this.currentTaskId;
-        if (!targetId) { return; }
-
-        const executor = this.executors.get(targetId);
-        if (executor) {
-            this.activeExecutionTaskIds.add(targetId);
-            await executor.approvePlan(plan);
-        }
+        await this.taskManager.approvePlan(plan, taskId);
     }
 
     async approveCurrentPlan(taskId: string): Promise<boolean> {
-        const executor = this.executors.get(taskId);
-        if (!executor) { return false; }
-
-        const status = executor.getStatus();
-        if (status.status !== 'waiting_for_approval') { return false; }
-
-        await executor.approvePlan(status.plan);
-        return true;
+        return await this.taskManager.approveCurrentPlan(taskId);
     }
 
-    async rejectCurrentPlan(taskId: string, _reason?: string): Promise<boolean> {
-        const executor = this.executors.get(taskId);
-        if (!executor) { return false; }
-
-        // Logic for rejection is essentially stopping or requesting retry?
-        // Previous logic was: transition to planning (retry) or failed?
-        // Original code had `rejectPlan` but I don't see it in the interface I just wrote.
-        // I should probably add it to AgentTaskExecutor.
-        // For now, I'll stop it.
-        await executor.stop();
-        return true;
+    async rejectCurrentPlan(taskId: string, reason?: string): Promise<boolean> {
+        return await this.taskManager.rejectCurrentPlan(taskId, reason);
     }
 
     async getStatus(taskId?: string): Promise<ProjectState> {
-        const targetId = taskId || this.currentTaskId;
-        if (!targetId) {
-            return {
-                status: 'idle',
-                currentTask: '',
-                plan: [],
-                history: [],
-                totalTokens: { prompt: 0, completion: 0 }
-            };
-        }
-
-        const executor = this.executors.get(targetId);
-        if (executor) {
-            return executor.getStatus();
-        }
-
-        // If not in memory, try to load from DB (read-only view)
-        // This handles "viewing old tasks" without reviving them fully as executors?
-        // Reuse buildHistoryItem logic or similar?
-        // For now, return idle.
-        return {
-            status: 'idle',
-            currentTask: '',
-            plan: [],
-            history: [],
-            totalTokens: { prompt: 0, completion: 0 }
-        };
+        return await this.taskManager.getStatus(taskId);
     }
 
     async retryStep(index: number, taskId?: string): Promise<void> {
-        const targetId = taskId || this.currentTaskId;
-        if (!targetId) { return; }
-
-        const executor = this.executors.get(targetId);
-        if (executor) {
-            await executor.retryStep(index);
-        }
+        await this.taskManager.retryStep(index, taskId);
     }
 
     // --- AGT-HIL: Human-in-the-Loop Step Methods ---
 
-    /** AGT-HIL-01: Approve a step awaiting user approval */
     async approveStep(taskId: string, stepId: string): Promise<void> {
-        const executor = this.executors.get(taskId);
-        if (executor) {
-            await executor.approveStep(stepId);
-        }
+        await this.taskManager.approveStep(taskId, stepId);
     }
 
-    /** AGT-HIL-03: Skip a step */
     async skipStep(taskId: string, stepId: string): Promise<void> {
-        const executor = this.executors.get(taskId);
-        if (executor) {
-            await executor.skipStep(stepId);
-        }
+        await this.taskManager.skipStep(taskId, stepId);
     }
 
-    /** AGT-HIL-02: Edit a pending step's text */
     async editStep(taskId: string, stepId: string, newText: string): Promise<void> {
-        const executor = this.executors.get(taskId);
-        if (executor) {
-            await executor.editStep(stepId, newText);
-        }
+        await this.taskManager.editStep(taskId, stepId, newText);
     }
 
-    /** AGT-HIL-05: Add a comment to a step */
     async addStepComment(taskId: string, stepId: string, comment: string): Promise<void> {
-        const executor = this.executors.get(taskId);
-        if (executor) {
-            await executor.addStepComment(stepId, comment);
-        }
+        await this.taskManager.addStepComment(taskId, stepId, comment);
     }
 
-    /** AGT-HIL-04: Insert an intervention point after a step */
     async insertInterventionPoint(taskId: string, afterStepId: string): Promise<void> {
-        const executor = this.executors.get(taskId);
-        if (executor) {
-            await executor.insertInterventionPoint(afterStepId);
-        }
+        await this.taskManager.insertInterventionPoint(taskId, afterStepId);
     }
 
     async resetState(taskId?: string): Promise<void> {
-        const targetId = taskId || this.currentTaskId;
-        if (!targetId) { return; }
-
-        await this.stop(targetId);
-        this.executors.delete(targetId);
-        this.taskAgentAssignments.delete(targetId);
-
-        if (targetId === this.currentTaskId) {
-            this.currentTaskId = null;
-        }
+        await this.taskManager.resetState(taskId);
     }
 
     // --- History & Checkpoints wrappers ---
 
     async getTaskHistory(projectId: string): Promise<AgentTaskHistoryItem[]> {
-        try {
-            const tasks = await this.databaseService.uac.getTasks(projectId);
-            // We can reuse the logic from original service, or simplify.
-            // I'll re-implement the helper here.
-            return await Promise.all(tasks.map(async task => {
-                const metadata = safeJsonParse<Record<string, unknown>>(task.metadata, {});
-                const modelData = metadata['model'] as { provider?: string; model?: string } | undefined;
-
-                // Active status check
-                const isRunning = ['running', 'planning', 'waiting_for_approval'].includes(task.status);
-                let latestCheckpointId;
-                if (!isRunning) {
-                    const checkpoint = await this.agentCheckpointService.getLatestCheckpoint(task.id);
-                    latestCheckpointId = checkpoint?.id;
-                }
-
-                return {
-                    id: task.id,
-                    description: task.description,
-                    provider: modelData?.provider ?? 'unknown',
-                    model: modelData?.model ?? 'unknown',
-                    status: task.status as AgentTaskHistoryItem['status'],
-                    createdAt: task.created_at,
-                    updatedAt: task.updated_at,
-                    latestCheckpointId,
-                };
-            }));
-        } catch (error) {
-            this.logError('Failed to get task history', error as Error);
-            return [];
-        }
+        return await this.taskManager.getTaskHistory(projectId);
     }
 
     async getCheckpoints(taskId: string) {
-        return this.agentCheckpointService.getCheckpoints(taskId);
+        return await this.taskManager.getCheckpoints(taskId);
     }
 
     async getPlanVersions(taskId: string) {
-        return this.agentCheckpointService.getPlanVersions(taskId);
+        return await this.taskManager.getPlanVersions(taskId);
     }
 
     async resumeFromCheckpoint(checkpointId: string): Promise<void> {
-        const checkpoint = await this.agentCheckpointService.loadCheckpoint(checkpointId);
-        if (!checkpoint) { return; }
-
-        const taskId = checkpoint.taskId;
-        const executor = await this.getOrCreateExecutor(taskId, {
-            task: 'Resumed Task',
-            projectId: ''
-        });
-
-        await executor.rollback(checkpointId);
+        await this.taskManager.resumeFromCheckpoint(checkpointId);
     }
 
     async rollbackCheckpoint(checkpointId: string): Promise<RollbackCheckpointResult> {
-        const checkpoint = await this.agentCheckpointService.loadCheckpoint(checkpointId);
-        if (!checkpoint) { throw new Error('Checkpoint not found'); }
-
-        const executor = await this.getOrCreateExecutor(checkpoint.taskId, {
-            task: 'Resumed Task',
-            projectId: ''
-        });
-
-        return await executor.rollback(checkpointId);
+        return await this.taskManager.rollbackCheckpoint(checkpointId);
     }
 
     async saveSnapshot(taskId: string): Promise<string> {
-        const executor = this.executors.get(taskId);
-        if (executor) {
-            return await executor.saveManualSnapshot();
-        }
-
-        const latestCheckpoint = await this.agentCheckpointService.getLatestCheckpoint(taskId);
-        if (latestCheckpoint?.id) {
-            return latestCheckpoint.id;
-        }
-
-        throw new Error(`Unable to save snapshot for task ${taskId}`);
+        return await this.taskManager.saveSnapshot(taskId);
     }
 
     async handleQuotaExhaustedInterrupt(input: {
@@ -657,158 +228,27 @@ export class ProjectAgentService extends BaseService {
         model: string;
         reason?: string;
         autoSwitch?: boolean;
-    }): Promise<{
-        success: boolean;
-        interruptId: string;
-        checkpointId?: string;
-        blockedByQuota: boolean;
-        switched: boolean;
-        selectedFallback?: { provider: string; model: string };
-        availableFallbacks: Array<{ provider: string; model: string }>;
-        message: string;
-    }> {
-        const interruptId = `${input.taskId}:${Date.now()}`;
-        const reason = input.reason ?? 'quota_exhausted';
-        let checkpointId: string | undefined;
-
-        try {
-            checkpointId = await this.saveSnapshot(input.taskId);
-        } catch {
-            // Continue even if checkpoint save fails; caller still needs fallback data.
-        }
-
-        await this.databaseService.uac.addLog(
-            input.taskId,
-            'system',
-            JSON.stringify({
-                type: 'QUOTA_EXHAUSTED',
-                interruptId,
-                stageId: input.stageId ?? null,
-                provider: input.provider,
-                model: input.model,
-                reason,
-                checkpointId: checkpointId ?? null,
-                timestamp: Date.now()
-            })
-        );
-
-        const availableModels = await this.getAvailableModels();
-        const availableFallbacks = availableModels
-            .filter(item => item.provider !== input.provider || item.id !== input.model)
-            .map(item => ({ provider: item.provider, model: item.id }));
-
-        if (availableFallbacks.length === 0) {
-            const task = await this.databaseService.uac.getTask(input.taskId);
-            if (task) {
-                const metadata = safeJsonParse<Record<string, unknown>>(task.metadata, {});
-                metadata['blockedByQuota'] = true;
-                metadata['lastQuotaInterruptId'] = interruptId;
-                await this.databaseService.uac.updateTaskMetadata(input.taskId, metadata);
-            }
-            await this.databaseService.uac.updateTaskStatus(input.taskId, 'paused');
-            return {
-                success: true,
-                interruptId,
-                checkpointId,
-                blockedByQuota: true,
-                switched: false,
-                availableFallbacks,
-                message: 'No eligible fallback model/account found. Task paused for user action.'
-            };
-        }
-
-        if (input.autoSwitch === false) {
-            return {
-                success: true,
-                interruptId,
-                checkpointId,
-                blockedByQuota: false,
-                switched: false,
-                availableFallbacks,
-                message: 'Fallback candidates prepared. Waiting for manual user selection.'
-            };
-        }
-
-        const selectedFallback = availableFallbacks[0];
-        let resumedFromCheckpoint = false;
-        if (checkpointId) {
-            try {
-                await this.resumeFromCheckpoint(checkpointId);
-                resumedFromCheckpoint = true;
-            } catch {
-                resumedFromCheckpoint = false;
-            }
-        }
-
-        const switched = await this.selectModel(
-            input.taskId,
-            selectedFallback.provider,
-            selectedFallback.model
-        );
-        let resumed = false;
-        if (switched) {
-            try {
-                resumed = await this.resumeTask(input.taskId);
-            } catch {
-                resumed = false;
-            }
-        }
-
-        await this.databaseService.uac.addLog(
-            input.taskId,
-            'system',
-            JSON.stringify({
-                type: 'FORCED_MODEL_SWITCH',
-                interruptId,
-                previous: { provider: input.provider, model: input.model },
-                next: selectedFallback,
-                switched,
-                resumedFromCheckpoint,
-                resumed,
-                timestamp: Date.now()
-            })
-        );
-
-        return {
-            success: true,
-            interruptId,
-            checkpointId,
-            blockedByQuota: false,
-            switched,
-            selectedFallback: switched ? selectedFallback : undefined,
-            availableFallbacks,
-            message: switched
-                ? resumed
-                    ? resumedFromCheckpoint
-                        ? 'Quota exhaustion handled via checkpoint restore, fallback switch, and resume.'
-                        : 'Quota exhaustion handled via automatic fallback switch and resume.'
-                    : resumedFromCheckpoint
-                        ? 'Fallback switched after checkpoint restore, but resume did not start.'
-                        : 'Quota exhaustion handled via automatic fallback switch.'
-                : 'Fallback switch attempt failed. Manual intervention required.'
-        };
+    }) {
+        return await this.councilManager.handleQuotaExhaustedInterrupt(input);
     }
 
     // --- Profile Management ---
 
     async getProfiles(): Promise<AgentProfile[]> {
-        return this.agentRegistryService.getAllProfiles();
+        return await this.profileManager.getProfiles();
     }
 
     async registerProfile(profile: AgentProfile): Promise<AgentProfile> {
-        await this.agentRegistryService.registerProfile(profile);
-        return profile;
+        return await this.profileManager.registerProfile(profile);
     }
 
     async deleteProfile(id: string): Promise<boolean> {
-        await this.agentRegistryService.deleteProfile(id);
-        return true;
+        return await this.profileManager.deleteProfile(id);
     }
 
     // --- Legacy / Misc ---
 
     async getAvailableModels() {
-        // Mock or proxy to LLMService
         return [
             { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet', provider: 'anthropic' },
             { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai' },
@@ -816,102 +256,49 @@ export class ProjectAgentService extends BaseService {
     }
 
     async deleteTask(taskId: string): Promise<boolean> {
-        await this.stop(taskId);
-        this.executors.delete(taskId);
-        this.taskAgentAssignments.delete(taskId);
-        await this.databaseService.uac.deleteTask(taskId);
-        return true;
+        return await this.taskManager.deleteTask(taskId);
     }
 
     async deleteTaskByNodeId(nodeId: string): Promise<boolean> {
-        // Find task by node
-        const tasks = await this.databaseService.uac.getTasks(''); // Optimization needed
-        const task = tasks.find(t => t.node_id === nodeId);
-        if (task) {
-            return this.deleteTask(task.id);
-        }
-        return false;
+        return await this.taskManager.deleteTaskByNodeId(nodeId);
     }
 
     async selectModel(taskId: string, provider: string, model: string): Promise<boolean> {
-        const executor = this.executors.get(taskId);
-        if (executor) {
-            const status = executor.getStatus();
-            if (status.config) {
-                status.config.model = { provider, model };
-            }
-        }
-
-        const task = await this.databaseService.uac.getTask(taskId);
-        if (!task) {
-            return false;
-        }
-
-        const metadata = safeJsonParse<Record<string, unknown>>(task.metadata, {});
-        metadata['model'] = { provider, model };
-        await this.databaseService.uac.updateTaskMetadata(taskId, metadata);
-        return true;
+        return await this.taskManager.selectModel(taskId, provider, model);
     }
 
     // Stub methods for legacy compatibility that returns data
-    async getTaskStatusDetails(taskId: string) { return this.getStatus(taskId); }
+    async getTaskStatusDetails(taskId: string) {
+        return await this.taskManager.getTaskStatusDetails(taskId);
+    }
+
     async getTaskMessages(taskId: string) {
-        const status = await this.getStatus(taskId);
-        return { success: true, messages: status.history };
+        return await this.taskManager.getTaskMessages(taskId);
     }
+
     async getTaskEvents(taskId: string) {
-        const latestCheckpoint = await this.agentCheckpointService.getLatestCheckpoint(taskId);
-        const events = latestCheckpoint?.state?.eventHistory ?? [];
-        return { success: true, events: events as AgentEventRecord[] };
+        return await this.taskManager.getTaskEvents(taskId);
     }
+
     async getTaskTelemetry(taskId: string) {
-        const metrics = await this.agentPerformanceService.loadMetrics(taskId);
-        if (!metrics) {
-            return { success: true, telemetry: [] as TaskMetrics[] };
-        }
+        return await this.taskManager.getTaskTelemetry(taskId);
+    }
 
-        const checkpoint = await this.agentCheckpointService.getLatestCheckpoint(taskId);
-        const state = checkpoint?.state;
-
-        const providerNames = (state?.providerHistory ?? []).map(
-            (p: { provider: string }) => p.provider
-        );
-        const uniqueProviders = Array.from(new Set(providerNames));
-
-        const telemetry: TaskMetrics = {
-            duration: metrics.resources.totalExecutionTimeMs,
-            llmCalls: metrics.resources.apiCallCount,
-            toolCalls: state?.metrics?.toolCalls ?? 0,
-            tokensUsed: metrics.resources.totalTokensUsed,
-            providersUsed: uniqueProviders,
-            errorCount: metrics.errors.totalErrors,
-            recoveryCount: state?.recoveryAttempts ?? 0,
-            estimatedCost: metrics.resources.totalCostUsd,
-        };
-        return { success: true, telemetry: [telemetry] };
+    async getPerformanceMetrics(taskId: string) {
+        return await this.taskManager.getPerformanceMetrics(taskId);
     }
 
     async createPullRequest(taskId?: string): Promise<{ success: boolean; url?: string; error?: string }> {
-        const targetId = taskId || this.currentTaskId;
-        if (!targetId) {
-            return { success: false, error: 'taskId is required' };
-        }
-
-        const executor = this.executors.get(targetId);
-        if (!executor) {
-            return { success: false, error: 'Task not found' };
-        }
-
-        return await executor.createPullRequest();
+        return await this.taskManager.createPullRequest(taskId);
     }
 
     // ===== AGT-COL: Collaboration Methods =====
     getRoutingRules(): ModelRoutingRule[] {
-        return this.agentCollaborationService.getRoutingRules();
+        return this.councilManager.getRoutingRules();
     }
 
     setRoutingRules(rules: ModelRoutingRule[]): void {
-        this.agentCollaborationService.setRoutingRules(rules);
+        this.councilManager.setRoutingRules(rules);
     }
 
     createVotingSession(
@@ -920,7 +307,7 @@ export class ProjectAgentService extends BaseService {
         question: string,
         options: string[]
     ): VotingSession {
-        return this.agentCollaborationService.createVotingSession(taskId, stepIndex, question, options);
+        return this.councilManager.createVotingSession(taskId, stepIndex, question, options);
     }
 
     async submitVote(options: {
@@ -931,26 +318,26 @@ export class ProjectAgentService extends BaseService {
         confidence: number;
         reasoning?: string;
     }): Promise<VotingSession | null> {
-        return await this.agentCollaborationService.submitVote(options);
+        return await this.councilManager.submitVote(options);
     }
 
     async requestVotes(
         sessionId: string,
         models: Array<{ provider: string; model: string }>
     ): Promise<VotingSession | null> {
-        return await this.agentCollaborationService.requestVotes(sessionId, models);
+        return await this.councilManager.requestVotes(sessionId, models);
     }
 
     resolveVoting(sessionId: string): VotingSession | null {
-        return this.agentCollaborationService.resolveVoting(sessionId);
+        return this.councilManager.resolveVoting(sessionId);
     }
 
     getVotingSession(sessionId: string): VotingSession | null {
-        return this.agentCollaborationService.getVotingSession(sessionId);
+        return this.councilManager.getVotingSession(sessionId);
     }
 
     getVotingSessions(taskId?: string): VotingSession[] {
-        return this.agentCollaborationService.getVotingSessions(taskId);
+        return this.councilManager.getVotingSessions(taskId);
     }
 
     overrideVotingDecision(
@@ -958,35 +345,33 @@ export class ProjectAgentService extends BaseService {
         finalDecision: string,
         reason?: string
     ): VotingSession | null {
-        return this.agentCollaborationService.overrideVotingDecision(sessionId, finalDecision, reason);
+        return this.councilManager.overrideVotingDecision(sessionId, finalDecision, reason);
     }
 
     getVotingAnalytics(taskId?: string): VotingAnalytics {
-        return this.agentCollaborationService.getVotingAnalytics(taskId);
+        return this.councilManager.getVotingAnalytics(taskId);
     }
 
     getVotingConfiguration(): VotingConfiguration {
-        return this.agentCollaborationService.getVotingConfiguration();
+        return this.councilManager.getVotingConfiguration();
     }
 
     updateVotingConfiguration(patch: Partial<VotingConfiguration>): VotingConfiguration {
-        return this.agentCollaborationService.updateVotingConfiguration(patch);
+        return this.councilManager.updateVotingConfiguration(patch);
     }
 
     getVotingTemplates(): VotingTemplate[] {
-        return this.agentCollaborationService.getVotingTemplates();
+        return this.councilManager.getVotingTemplates();
     }
 
     async buildConsensus(
         outputs: Array<{ modelId: string; provider: string; output: string }>
     ): Promise<ConsensusResult> {
-        return await this.agentCollaborationService.buildConsensus(
-            outputs.map(o => ({ model: o.modelId, output: o.output }))
-        );
+        return await this.councilManager.buildConsensus(outputs);
     }
 
     createDebateSession(taskId: string, stepIndex: number, topic: string): DebateSession {
-        return this.agentCollaborationService.createDebateSession(taskId, stepIndex, topic);
+        return this.councilManager.createDebateSession(taskId, stepIndex, topic);
     }
 
     submitDebateArgument(options: {
@@ -998,11 +383,11 @@ export class ProjectAgentService extends BaseService {
         confidence: number;
         citations?: DebateCitation[];
     }): DebateSession | null {
-        return this.agentCollaborationService.submitDebateArgument(options);
+        return this.councilManager.submitDebateArgument(options);
     }
 
     resolveDebateSession(sessionId: string): DebateSession | null {
-        return this.agentCollaborationService.resolveDebateSession(sessionId);
+        return this.councilManager.resolveDebateSession(sessionId);
     }
 
     overrideDebateSession(
@@ -1011,27 +396,27 @@ export class ProjectAgentService extends BaseService {
         decision: DebateSide | 'balanced',
         reason?: string
     ): DebateSession | null {
-        return this.agentCollaborationService.overrideDebateSession(sessionId, moderatorId, decision, reason);
+        return this.councilManager.overrideDebateSession(sessionId, moderatorId, decision, reason);
     }
 
     getDebateSession(sessionId: string): DebateSession | null {
-        return this.agentCollaborationService.getDebateSession(sessionId);
+        return this.councilManager.getDebateSession(sessionId);
     }
 
     getDebateHistory(taskId?: string): DebateSession[] {
-        return this.agentCollaborationService.getDebateHistory(taskId);
+        return this.councilManager.getDebateHistory(taskId);
     }
 
     getDebateReplay(sessionId: string): DebateReplay | null {
-        return this.agentCollaborationService.getDebateReplay(sessionId);
+        return this.councilManager.getDebateReplay(sessionId);
     }
 
     generateDebateSummary(sessionId: string): string | null {
-        return this.agentCollaborationService.generateDebateSummary(sessionId);
+        return this.councilManager.generateDebateSummary(sessionId);
     }
 
     getTeamworkAnalytics(): AgentTeamworkAnalytics {
-        return this.agentCollaborationService.getTeamworkAnalytics();
+        return this.councilManager.getTeamworkAnalytics();
     }
 
     async sendCollaborationMessage(input: {
@@ -1044,9 +429,7 @@ export class ProjectAgentService extends BaseService {
         payload: Record<string, string | number | boolean | null>;
         expiresAt?: number;
     }): Promise<AgentCollaborationMessage> {
-        const message = this.agentCollaborationService.sendCollaborationMessage(input);
-        await this.databaseService.uac.addCollaborationMessage(message);
-        return message;
+        return await this.councilManager.sendCollaborationMessage(input);
     }
 
     registerWorkerAvailability(input: {
@@ -1057,11 +440,11 @@ export class ProjectAgentService extends BaseService {
         skills?: string[];
         contextReadiness?: number;
     }): WorkerAvailabilityRecord {
-        return this.agentCollaborationService.registerWorkerAvailability(input);
+        return this.councilManager.registerWorkerAvailability(input);
     }
 
     listAvailableWorkers(taskId: string): WorkerAvailabilityRecord[] {
-        return this.agentCollaborationService.listAvailableWorkers(taskId);
+        return this.councilManager.listAvailableWorkers(taskId);
     }
 
     scoreHelperCandidates(input: {
@@ -1071,7 +454,7 @@ export class ProjectAgentService extends BaseService {
         blockedAgentIds?: string[];
         contextReadinessOverrides?: Record<string, number>;
     }): HelperCandidateScore[] {
-        return this.agentCollaborationService.scoreHelperCandidates(input);
+        return this.councilManager.scoreHelperCandidates(input);
     }
 
     generateHelperHandoffPackage(input: {
@@ -1084,7 +467,7 @@ export class ProjectAgentService extends BaseService {
         constraints: string[];
         contextNotes?: string;
     }): HelperHandoffPackage {
-        return this.agentCollaborationService.generateHelperHandoffPackage(input);
+        return this.councilManager.generateHelperHandoffPackage(input);
     }
 
     reviewHelperMergeGate(input: {
@@ -1093,7 +476,7 @@ export class ProjectAgentService extends BaseService {
         helperOutput: string;
         reviewerNotes?: string;
     }): HelperMergeGateDecision {
-        return this.agentCollaborationService.evaluateHelperMergeGate(input);
+        return this.councilManager.reviewHelperMergeGate(input);
     }
 
     async getCollaborationMessages(input: {
@@ -1102,103 +485,43 @@ export class ProjectAgentService extends BaseService {
         agentId?: string;
         includeExpired?: boolean;
     }): Promise<AgentCollaborationMessage[]> {
-        await this.ensureCollaborationMessagesLoaded(input.taskId);
-        return this.agentCollaborationService.getCollaborationMessages(input);
+        return await this.councilManager.getCollaborationMessages(input);
     }
 
     async cleanupExpiredCollaborationMessages(taskId?: string): Promise<number> {
-        await this.ensureCollaborationMessagesLoaded(taskId);
-        const removedFromMemory = this.agentCollaborationService.cleanupExpiredCollaborationMessages(taskId);
-        const removedFromDb = await this.databaseService.uac.deleteExpiredCollaborationMessages(taskId);
-        return Math.max(removedFromMemory, removedFromDb);
-    }
-
-    private async ensureCollaborationMessagesLoaded(taskId?: string): Promise<void> {
-        if (!taskId) {
-            return;
-        }
-        const existing = this.agentCollaborationService.getCollaborationMessages({
-            taskId,
-            includeExpired: true
-        });
-        if (existing.length > 0) {
-            return;
-        }
-        await this.restoreCollaborationMessagesForTask(taskId);
-    }
-
-    private async restoreCollaborationMessagesForTask(taskId: string): Promise<void> {
-        const rows = await this.databaseService.uac.getCollaborationMessages(taskId);
-        const messages: AgentCollaborationMessage[] = rows.map(row => ({
-            id: row.id,
-            taskId: row.task_id,
-            stageId: row.stage_id,
-            fromAgentId: row.from_agent_id,
-            toAgentId: row.to_agent_id,
-            channel: row.channel,
-            intent: row.intent as AgentCollaborationIntent,
-            priority: row.priority as AgentCollaborationPriority,
-            payload: safeJsonParse<Record<string, string | number | boolean | null>>(row.payload_json, {}),
-            createdAt: row.created_at,
-            expiresAt: row.expires_at
-        }));
-        this.agentCollaborationService.restoreCollaborationMessages(taskId, messages);
+        return await this.councilManager.cleanupExpiredCollaborationMessages(taskId);
     }
 
     // ===== AGT-TPL: Template Methods =====
     getTemplates(): AgentTemplate[] {
-        return this.agentTemplateService.getAllTemplates();
+        return this.templateManager.getTemplates();
     }
 
     getTemplatesByCategory(category: AgentTemplateCategory): AgentTemplate[] {
-        return this.agentTemplateService.getTemplatesByCategory(category);
+        return this.templateManager.getTemplatesByCategory(category);
     }
 
     async saveTemplate(template: AgentTemplate): Promise<{ success: boolean; template: AgentTemplate }> {
-        const existing = this.agentTemplateService.getTemplate(template.id);
-        const saved = existing
-            ? await this.agentTemplateService.updateTemplate(template.id, template) ?? template
-            : await this.agentTemplateService.createTemplate({
-                name: template.name,
-                description: template.description,
-                category: template.category,
-                systemPromptOverride: template.systemPromptOverride,
-                taskTemplate: template.taskTemplate,
-                predefinedSteps: template.predefinedSteps,
-                variables: template.variables,
-                modelRouting: template.modelRouting,
-                tags: template.tags,
-                isBuiltIn: false,
-                authorId: template.authorId,
-            });
-        return { success: true, template: saved };
+        return await this.templateManager.saveTemplate(template);
     }
 
     async deleteTemplate(id: string): Promise<boolean> {
-        return await this.agentTemplateService.deleteTemplate(id);
+        return await this.templateManager.deleteTemplate(id);
     }
 
     exportTemplate(id: string): AgentTemplateExport | null {
-        return this.agentTemplateService.exportTemplate(id);
+        return this.templateManager.exportTemplate(id);
     }
 
     async importTemplate(exported: AgentTemplateExport): Promise<AgentTemplate> {
-        return await this.agentTemplateService.importTemplate(exported);
+        return await this.templateManager.importTemplate(exported);
     }
 
     applyTemplate(
         templateId: string,
         values: Record<string, string | number | boolean>
     ): { template: AgentTemplate; task: string; steps: string[] } {
-        const template = this.agentTemplateService.getTemplate(templateId);
-        if (!template) {
-            throw new Error('Template not found');
-        }
-        const validation = this.agentTemplateService.validateVariables(template, values);
-        if (!validation.valid) {
-            throw new Error(validation.errors.join('; '));
-        }
-        const applied = this.agentTemplateService.applyVariables(template, values);
-        return { template, ...applied };
+        return this.templateManager.applyTemplate(templateId, values);
     }
 }
+

@@ -25,13 +25,6 @@ export class IdeaRepository {
     // ==================== Session Operations ====================
 
     async createSession(session: IdeaSession): Promise<void> {
-        await this.db.exec(
-            `INSERT INTO idea_sessions (
-                id, model, provider, categories, max_ideas, ideas_generated,
-                status, research_data, custom_prompt, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        );
-        // Use prepare for parameterized queries
         const stmt = this.db.prepare(
             `INSERT INTO idea_sessions (
                 id, model, provider, categories, max_ideas, ideas_generated,
@@ -90,14 +83,15 @@ export class IdeaRepository {
     }
 
     async deleteSession(id: string): Promise<void> {
-        await this.db.exec(`DELETE FROM idea_sessions WHERE id = '${id}'`);
+        const stmt = this.db.prepare('DELETE FROM idea_sessions WHERE id = ?');
+        await stmt.run(id);
     }
 
     // ==================== Idea Operations ====================
 
     async saveIdea(idea: ProjectIdea): Promise<void> {
         const stmt = this.db.prepare(
-            `INSERT OR REPLACE INTO ideas (
+            `INSERT OR REPLACE INTO project_ideas (
                 id, session_id, title, category, description, explanation,
                 value_proposition, long_description, name_suggestions,
                 competitive_advantages, roadmap, tech_stack, idea_competitors,
@@ -133,7 +127,7 @@ export class IdeaRepository {
 
     async getIdea(id: string): Promise<ProjectIdea | null> {
         const result = await this.db.query<JsonObject>(
-            'SELECT * FROM ideas WHERE id = ?',
+            'SELECT * FROM project_ideas WHERE id = ?',
             [id]
         );
         return result.rows.length > 0 ? this.mapRowToIdea(result.rows[0]) : null;
@@ -141,8 +135,8 @@ export class IdeaRepository {
 
     async getIdeas(sessionId?: string): Promise<ProjectIdea[]> {
         const query = sessionId
-            ? 'SELECT * FROM ideas WHERE session_id = ? ORDER BY created_at DESC'
-            : 'SELECT * FROM ideas ORDER BY created_at DESC';
+            ? 'SELECT * FROM project_ideas WHERE session_id = ? ORDER BY created_at DESC'
+            : 'SELECT * FROM project_ideas ORDER BY created_at DESC';
         const params = sessionId ? [sessionId] : [];
 
         const result = await this.db.query<JsonObject>(query, params);
@@ -150,28 +144,29 @@ export class IdeaRepository {
     }
 
     async updateIdeaStatus(id: string, status: IdeaStatus): Promise<void> {
-        const stmt = this.db.prepare('UPDATE ideas SET status = ?, updated_at = ? WHERE id = ?');
+        const stmt = this.db.prepare('UPDATE project_ideas SET status = ?, updated_at = ? WHERE id = ?');
         await stmt.run(status, Date.now(), id);
     }
 
     async deleteIdea(id: string): Promise<void> {
-        await this.db.exec(`DELETE FROM ideas WHERE id = '${id}'`);
+        const stmt = this.db.prepare('DELETE FROM project_ideas WHERE id = ?');
+        await stmt.run(id);
     }
 
     async archiveIdea(id: string): Promise<void> {
-        const stmt = this.db.prepare('UPDATE ideas SET status = ?, updated_at = ? WHERE id = ?');
+        const stmt = this.db.prepare('UPDATE project_ideas SET status = ?, updated_at = ? WHERE id = ?');
         await stmt.run('archived', Date.now(), id);
     }
 
     async restoreIdea(id: string): Promise<void> {
-        const stmt = this.db.prepare('UPDATE ideas SET status = ?, updated_at = ? WHERE id = ?');
+        const stmt = this.db.prepare('UPDATE project_ideas SET status = ?, updated_at = ? WHERE id = ?');
         await stmt.run('pending', Date.now(), id);
     }
 
     async getArchivedIdeas(sessionId?: string): Promise<ProjectIdea[]> {
         const query = sessionId
-            ? "SELECT * FROM ideas WHERE session_id = ? AND status = 'archived' ORDER BY created_at DESC"
-            : "SELECT * FROM ideas WHERE status = 'archived' ORDER BY created_at DESC";
+            ? "SELECT * FROM project_ideas WHERE session_id = ? AND status = 'archived' ORDER BY created_at DESC"
+            : "SELECT * FROM project_ideas WHERE status = 'archived' ORDER BY created_at DESC";
         const params = sessionId ? [sessionId] : [];
 
         const result = await this.db.query<JsonObject>(query, params);
@@ -180,7 +175,7 @@ export class IdeaRepository {
 
     async getIdeasByStatus(status: IdeaStatus): Promise<ProjectIdea[]> {
         const result = await this.db.query<JsonObject>(
-            'SELECT * FROM ideas WHERE status = ? ORDER BY created_at DESC',
+            'SELECT * FROM project_ideas WHERE status = ? ORDER BY created_at DESC',
             [status]
         );
         return result.rows.map((row) => this.mapRowToIdea(row));
@@ -206,7 +201,7 @@ export class IdeaRepository {
         `);
 
         await this.db.exec(`
-            CREATE TABLE IF NOT EXISTS ideas (
+            CREATE TABLE IF NOT EXISTS project_ideas (
                 id TEXT PRIMARY KEY,
                 session_id TEXT NOT NULL,
                 title TEXT NOT NULL,
@@ -235,10 +230,10 @@ export class IdeaRepository {
 
         // Create indexes
         await this.db.exec(
-            'CREATE INDEX IF NOT EXISTS idx_ideas_session_id ON ideas(session_id)'
+            'CREATE INDEX IF NOT EXISTS idx_project_ideas_session_id ON project_ideas(session_id)'
         );
         await this.db.exec(
-            'CREATE INDEX IF NOT EXISTS idx_ideas_status ON ideas(status)'
+            'CREATE INDEX IF NOT EXISTS idx_project_ideas_status ON project_ideas(status)'
         );
     }
 

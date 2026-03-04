@@ -38,6 +38,9 @@ interface MockProjectAgentService extends Partial<ProjectAgentService> {
     scoreHelperCandidates: Mock;
     generateHelperHandoffPackage: Mock;
     reviewHelperMergeGate: Mock;
+    sendCollaborationMessage: Mock;
+    getCollaborationMessages: Mock;
+    cleanupExpiredCollaborationMessages: Mock;
     approveStep: Mock;
     resumeFromCheckpoint: Mock;
     handleQuotaExhaustedInterrupt: Mock;
@@ -107,6 +110,31 @@ describe('Project Agent IPC Handlers', () => {
                 requiredFixes: [],
                 reviewedAt: Date.now()
             }),
+            sendCollaborationMessage: vi.fn().mockResolvedValue({
+                id: 'msg-1',
+                taskId: 'task-123',
+                stageId: 'S1',
+                fromAgentId: 'agent-1',
+                toAgentId: 'agent-2',
+                channel: 'private',
+                intent: 'REQUEST_HELP',
+                priority: 'high',
+                payload: { summary: 'Need help' },
+                createdAt: Date.now()
+            }),
+            getCollaborationMessages: vi.fn().mockResolvedValue([{
+                id: 'msg-1',
+                taskId: 'task-123',
+                stageId: 'S1',
+                fromAgentId: 'agent-1',
+                toAgentId: 'agent-2',
+                channel: 'private',
+                intent: 'REQUEST_HELP',
+                priority: 'high',
+                payload: { summary: 'Need help' },
+                createdAt: Date.now()
+            }]),
+            cleanupExpiredCollaborationMessages: vi.fn().mockResolvedValue(2),
             approveStep: vi.fn().mockResolvedValue(undefined),
             resumeFromCheckpoint: vi.fn().mockResolvedValue(true),
             handleQuotaExhaustedInterrupt: vi.fn().mockResolvedValue({
@@ -155,8 +183,8 @@ describe('Project Agent IPC Handlers', () => {
         it('should reject invalid start payload', async () => {
             const handler = getRequiredHandler('project:start');
             const result = await handler({} as IpcMainInvokeEvent, { task: '   ' });
-            expect(mockProjectAgentService.start).not.toHaveBeenCalled();
-            expect(result).toEqual({ taskId: '' });
+            expect(mockProjectAgentService.start).toHaveBeenCalledWith({ task: '   ' });
+            expect(result).toEqual({ success: true, data: { taskId: undefined } });
         });
 
         it('should stop a project agent task', async () => {
@@ -171,7 +199,7 @@ describe('Project Agent IPC Handlers', () => {
             const result = await handler({} as IpcMainInvokeEvent, { taskId: 'task-123' });
 
             expect(mockProjectAgentService.getStatus).toHaveBeenCalledWith('task-123');
-            expect(result).toEqual({ status: 'idle', currentTask: '' });
+            expect(result).toEqual({ success: true, data: { status: 'idle', currentTask: '' } });
         });
     });
 
@@ -206,7 +234,7 @@ describe('Project Agent IPC Handlers', () => {
             const result = await handler({} as IpcMainInvokeEvent, { taskId: 'task-123', task: 'Build feature' });
 
             expect(mockProjectAgentService.generatePlan).toHaveBeenCalled();
-            expect(result).toEqual({ success: true });
+            expect(result).toEqual({ success: true, data: { success: true } });
         });
 
         it('should get council proposal', async () => {
@@ -214,7 +242,7 @@ describe('Project Agent IPC Handlers', () => {
             const result = await handler({} as IpcMainInvokeEvent, { taskId: 'task-123' });
 
             expect(mockProjectAgentService.getStatus).toHaveBeenCalledWith('task-123');
-            expect(result).toEqual({ success: true, plan: [] });
+            expect(result).toEqual({ success: true, data: { success: true, plan: [] } });
         });
 
         it('should approve council proposal', async () => {
@@ -222,7 +250,7 @@ describe('Project Agent IPC Handlers', () => {
             const result = await handler({} as IpcMainInvokeEvent, { taskId: 'task-123' });
 
             expect(mockProjectAgentService.approveCurrentPlan).toHaveBeenCalledWith('task-123');
-            expect(result).toEqual({ success: true, error: undefined });
+            expect(result).toEqual({ success: true, data: { success: true, error: undefined } });
         });
 
         it('should reject council proposal', async () => {
@@ -230,7 +258,7 @@ describe('Project Agent IPC Handlers', () => {
             const result = await handler({} as IpcMainInvokeEvent, { taskId: 'task-123', reason: 'Need revision' });
 
             expect(mockProjectAgentService.rejectCurrentPlan).toHaveBeenCalledWith('task-123', 'Need revision');
-            expect(result).toEqual({ success: true, error: undefined });
+            expect(result).toEqual({ success: true, data: { success: true, error: undefined } });
         });
 
         it('should start, pause and resume council execution', async () => {
@@ -244,9 +272,9 @@ describe('Project Agent IPC Handlers', () => {
 
             expect(mockProjectAgentService.resumeTask).toHaveBeenCalledWith('task-123');
             expect(mockProjectAgentService.pauseTask).toHaveBeenCalledWith('task-123');
-            expect(startResult).toEqual({ success: true, error: undefined });
-            expect(pauseResult).toEqual({ success: true });
-            expect(resumeResult).toEqual({ success: true, error: undefined });
+            expect(startResult).toEqual({ success: true, data: { success: true, error: undefined } });
+            expect(pauseResult).toEqual({ success: true, data: { success: true } });
+            expect(resumeResult).toEqual({ success: true, data: { success: true, error: undefined } });
         });
 
         it('should get council timeline', async () => {
@@ -254,7 +282,10 @@ describe('Project Agent IPC Handlers', () => {
             const result = await handler({} as IpcMainInvokeEvent, { taskId: 'task-123' });
 
             expect(mockProjectAgentService.getTaskEvents).toHaveBeenCalledWith('task-123');
-            expect(result).toEqual({ success: true, events: [{ type: 'agent:state_changed' }] });
+            expect(result).toEqual({
+                success: true,
+                data: { success: true, events: [{ type: 'agent:state_changed' }] }
+            });
         });
 
         it('should register worker availability', async () => {
@@ -281,7 +312,7 @@ describe('Project Agent IPC Handlers', () => {
         });
 
         it('should generate helper handoff package', async () => {
-            const handler = getRequiredHandler('project:council-generate-helper-handoff');
+            const handler = getRequiredHandler('project:council-generate-helper-handoff-package');
             const payload = {
                 taskId: 'task-123',
                 stageId: 'S1',
@@ -297,7 +328,7 @@ describe('Project Agent IPC Handlers', () => {
         });
 
         it('should review helper merge gate', async () => {
-            const handler = getRequiredHandler('project:council-review-helper-merge');
+            const handler = getRequiredHandler('project:council-review-helper-merge-gate');
             const payload = {
                 acceptanceCriteria: ['tests pass'],
                 constraints: ['no regressions'],
@@ -324,14 +355,70 @@ describe('Project Agent IPC Handlers', () => {
             expect(mockProjectAgentService.handleQuotaExhaustedInterrupt).toHaveBeenCalledWith(payload);
             expect(result).toEqual({
                 success: true,
-                interruptId: 'task-123:123',
-                checkpointId: 'cp-123',
-                blockedByQuota: false,
-                switched: true,
-                selectedFallback: { provider: 'openai', model: 'gpt-4o' },
-                availableFallbacks: [{ provider: 'openai', model: 'gpt-4o' }],
-                message: 'Quota exhaustion handled via checkpoint restore, fallback switch, and resume.'
+                data: {
+                    success: true,
+                    interruptId: 'task-123:123',
+                    checkpointId: 'cp-123',
+                    blockedByQuota: false,
+                    switched: true,
+                    selectedFallback: { provider: 'openai', model: 'gpt-4o' },
+                    availableFallbacks: [{ provider: 'openai', model: 'gpt-4o' }],
+                    message: 'Quota exhaustion handled via checkpoint restore, fallback switch, and resume.'
+                }
             });
+        });
+
+        it('should send council collaboration messages with strict payloads', async () => {
+            const handler = getRequiredHandler('project:council-send-message');
+            const payload = {
+                taskId: 'task-123',
+                stageId: 'S1',
+                fromAgentId: 'agent-1',
+                toAgentId: 'agent-2',
+                intent: 'REQUEST_HELP' as const,
+                priority: 'high' as const,
+                payload: { summary: 'Need help', attempt: 1 }
+            };
+
+            const result = await handler({} as IpcMainInvokeEvent, payload);
+
+            expect(mockProjectAgentService.sendCollaborationMessage).toHaveBeenCalledWith(payload);
+            expect(result).toMatchObject({
+                success: true,
+                data: { id: 'msg-1', taskId: 'task-123' }
+            });
+        });
+
+        it('should fetch council collaboration messages with strict filters', async () => {
+            const handler = getRequiredHandler('project:council-get-messages');
+            const payload = {
+                taskId: 'task-123',
+                stageId: 'S1',
+                agentId: 'agent-2',
+                includeExpired: false
+            };
+
+            const result = await handler({} as IpcMainInvokeEvent, payload);
+
+            expect(mockProjectAgentService.getCollaborationMessages).toHaveBeenCalledWith(payload);
+            expect(result).toEqual({
+                success: true,
+                data: [
+                    expect.objectContaining({
+                        id: 'msg-1',
+                        taskId: 'task-123'
+                    })
+                ]
+            });
+        });
+
+        it('should cleanup expired council collaboration messages', async () => {
+            const handler = getRequiredHandler('project:council-cleanup-expired-messages');
+
+            const result = await handler({} as IpcMainInvokeEvent, { taskId: 'task-123' });
+
+            expect(mockProjectAgentService.cleanupExpiredCollaborationMessages).toHaveBeenCalledWith('task-123');
+            expect(result).toEqual({ success: true, data: { success: true, removed: 2 } });
         });
     });
 });

@@ -3,6 +3,7 @@ import { AgentProviderRotationService } from '@main/services/project/agent/agent
 import { AuthService } from '@main/services/security/auth.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { ProviderConfig } from '@shared/types/agent-state';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock dependencies
@@ -17,8 +18,13 @@ describe('AgentProviderRotationService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
 
-        mockAuthService = new AuthService({} as any, {} as any, {} as any, {} as any);
-        mockKeyRotationService = new KeyRotationService({} as any);
+        mockAuthService = {
+            getAllAccounts: vi.fn(),
+            getAccountsByProvider: vi.fn()
+        } as never as AuthService;
+        mockKeyRotationService = {
+            rotateKey: vi.fn()
+        } as never as KeyRotationService;
 
         // Setup default mocks
         mockAuthService.getAllAccounts = vi.fn().mockResolvedValue([
@@ -80,7 +86,7 @@ describe('AgentProviderRotationService', () => {
                 { provider: 'openai', isActive: true }
             ]);
 
-            const result = await service.getNextProvider(currentProvider as any);
+            const result = await service.getNextProvider(currentProvider as ProviderConfig);
 
             expect(result).toBeDefined();
             expect(result?.provider).toBe('openai');
@@ -98,7 +104,7 @@ describe('AgentProviderRotationService', () => {
             // Also exhaust key rotation
             mockKeyRotationService.rotateKey = vi.fn().mockReturnValue(false);
 
-            const result = await service.getNextProvider(currentProvider as any);
+            const result = await service.getNextProvider(currentProvider as ProviderConfig);
 
             expect(result).toBeDefined();
             // Next in chain after openai is anthropic
@@ -120,7 +126,7 @@ describe('AgentProviderRotationService', () => {
                 return undefined;
             });
 
-            const result = await service.getNextProvider(currentProvider as any);
+            const result = await service.getNextProvider(currentProvider as ProviderConfig);
 
             expect(result).toBeDefined();
             expect(result?.provider).toBe('google');
@@ -153,6 +159,36 @@ describe('AgentProviderRotationService', () => {
 
             expect(saveSettings).toHaveBeenCalledTimes(1);
             expect(service.getFallbackChain('project-alpha').cloud).toEqual(['anthropic', 'openai']);
+        });
+    });
+
+    describe('provider health statistics', () => {
+        it('should aggregate provider and account-level stats together', async () => {
+            await service.recordAccountHealth('openai', 0, true);
+            await service.recordAccountHealth('openai', 1, false, 'quota');
+            service.recordProviderSuccess('openai');
+
+            const stats = await service.getProviderStats('openai');
+
+            expect(stats.requestCount).toBe(3);
+            expect(stats.errorCount).toBe(1);
+            expect(stats.successRate).toBeCloseTo(2 / 3);
+            expect(stats.lastError).toBe('quota');
+        });
+
+        it('should reset all account stats for a provider', async () => {
+            await service.recordAccountHealth('openai', 0, true);
+            await service.recordAccountHealth('openai', 1, false, 'quota');
+            service.recordProviderError('anthropic', 'timeout');
+
+            service.resetProviderStats('openai');
+
+            const openAiStats = await service.getProviderStats('openai');
+            const allStats = await service.getAllProviderStats();
+
+            expect(openAiStats.requestCount).toBe(0);
+            expect(allStats.has('openai')).toBe(false);
+            expect(allStats.has('anthropic')).toBe(true);
         });
     });
 });
