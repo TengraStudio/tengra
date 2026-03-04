@@ -1,15 +1,16 @@
-import { WorkspaceDetails } from '@renderer/features/workspace/components/WorkspaceDetails';
-import { WorkspaceWizardModal } from '@renderer/features/workspace/components/WorkspaceWizardModal';
 import { AppSettings, ChatError } from '@shared/types';
 import { CodexUsage, QuotaResponse } from '@shared/types/quota';
 import { Archive, ArrowDownUp, Edit, FolderOpen, Monitor, Trash2 } from 'lucide-react';
-import React, { memo, useState } from 'react';
+import React, { lazy, memo, useState } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
 import { Language, useTranslation } from '@/i18n';
 import type { GroupedModels } from '@/types';
 import { Message, TerminalTab, Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
+
+const WorkspaceDetails = lazy(() => import('@renderer/features/workspace/components/WorkspaceDetails').then(m => ({ default: m.WorkspaceDetails })));
+const WorkspaceWizardModal = lazy(() => import('@renderer/features/workspace/components/WorkspaceWizardModal').then(m => ({ default: m.WorkspaceWizardModal })));
 
 import { VirtualizedWorkspaceGrid } from './components/VirtualizedWorkspaceGrid';
 import { WorkspaceHeader } from './components/WorkspaceHeader';

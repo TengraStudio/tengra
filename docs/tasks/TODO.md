@@ -4,7 +4,7 @@
 - [x] **REF-011**: Split `src/renderer/electron.d.ts` (2633 lines) into domain-specific declaration modules.
 - [x] **REF-012**: Continue decomposing `src/main/services/llm/idea-generator.service.ts` (2448 lines) by extracting research and export orchestration.
 - [x] **REF-013**: Continue shrinking `src/main/services/llm/advanced-memory.service.ts` (1937 lines) by extracting persistence/normalization adapters.
-- [ ] **TEST-005**: Eliminate recurring React `act(...)` warnings in renderer tests, especially the `WorkspaceEditor` suites.
+- [x] **TEST-005**: Eliminate recurring React `act(...)` warnings in renderer tests, especially the `WorkspaceEditor` suites.
 - [ ] **LINT-001**: Resolve repo-wide `simple-import-sort` warnings in touched main/renderer files to reduce diff noise and keep lint output actionable.
 - [ ] **SAFE-004**: Replace remaining `as unknown` and similarly broad cast patterns in IPC and translation-adjacent code with narrower typed helpers.
 - [x] **REF-014**: Invert workspace compatibility shims so canonical implementations live in `Workspace*` files and `Project*` files are pure re-export shims only.

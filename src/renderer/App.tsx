@@ -14,7 +14,6 @@ import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech';
 import { useVoiceInput } from '@renderer/features/chat/hooks/useVoiceInput';
 import { ChatTemplate } from '@renderer/features/chat/types';
 import { SettingsCategory } from '@renderer/features/settings/types';
-import { DetachedTerminalWindow } from '@renderer/features/terminal/components/DetachedTerminalWindow';
 import { useVoiceActions } from '@renderer/features/voice/hooks/useVoiceActions';
 import { useAppInitialization } from '@renderer/hooks/useAppInitialization';
 import { AppView, useAppState } from '@renderer/hooks/useAppState';
@@ -29,7 +28,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react
 import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/context/ChatContext';
 import { useModel } from '@/context/ModelContext';
-import { useProject } from '@/context/ProjectContext';
+import { useWorkspace } from '@/context/WorkspaceContext';
 
 import '@renderer/App.css';
 
@@ -38,8 +37,8 @@ const ExtensionInstallPrompt = lazy(() => import('@renderer/components/Extension
 const CommandPalette = lazy(() => import('@renderer/components/layout/CommandPalette').then(m => ({ default: m.CommandPalette })));
 const UpdateNotification = lazy(() => import('@renderer/components/layout/UpdateNotification').then(m => ({ default: m.UpdateNotification })));
 const QuickActionBar = lazy(() => import('@renderer/components/layout/QuickActionBar').then(m => ({ default: m.QuickActionBar })));
-const ExtensionDevTools = lazy(() => import('@renderer/features/extensions/components/ExtensionDevTools').then(m => ({ default: m.ExtensionDevTools })));
 const VoiceOverlay = lazy(() => import('@renderer/features/voice/components/VoiceOverlay').then(m => ({ default: m.VoiceOverlay })));
+const DetachedTerminalWindow = lazy(() => import('@renderer/features/terminal/components/DetachedTerminalWindow').then(m => ({ default: m.DetachedTerminalWindow })));
 
 const getChatTemplates = (t: (key: string) => string): ChatTemplate[] => [
     {
@@ -78,6 +77,12 @@ const getChatTemplates = (t: (key: string) => string): ChatTemplate[] => [
 
 const isDetachedTerminalWindow = new URLSearchParams(window.location.search).get('detachedTerminal') === '1';
 
+interface RateLimitWarningPayload {
+    provider?: string
+    remaining?: number
+    limit?: number
+}
+
 export default function App() {
     if (isDetachedTerminalWindow) {
         return <DetachedTerminalWindow />;
@@ -111,7 +116,7 @@ function MainApp() {
     const { isListening, startListening, stopListening } = useVoiceInput(handleVoiceInput);
     const { stop: handleStopSpeak, isSpeaking } = useTextToSpeech();
     const { models, loadModels, selectedModel, setSelectedModel } = useModel();
-    const { projects, selectedProject, setSelectedProject } = useProject();
+    const { projects, selectedProject, setSelectedProject } = useWorkspace();
     const appState = useAppState();
     const {
         currentView,
@@ -140,9 +145,9 @@ function MainApp() {
 
     useAppInitialization(); // Keep initialization but don't use auto-warning
 
-    // Auto-collapse sidebar when entering projects view or selecting a project
+    // Auto-collapse sidebar when entering the workspace view or selecting a workspace
     useEffect(() => {
-        if (!isSidebarCollapsed && (currentView === 'projects' || selectedProject)) {
+        if (!isSidebarCollapsed && (currentView === 'workspace' || selectedProject)) {
             setIsSidebarCollapsed(true);
         }
     }, [currentView, selectedProject, isSidebarCollapsed, setIsSidebarCollapsed]);
@@ -244,12 +249,8 @@ function MainApp() {
     useEffect(() => {
         const remove = window.electron.ipcRenderer.on(
             'proxy:rate-limit-warning',
-            (_event, payload: unknown) => {
-                const data = (payload ?? {}) as {
-                    provider?: string;
-                    remaining?: number;
-                    limit?: number;
-                };
+            (_event, payload: RateLimitWarningPayload | null | undefined) => {
+                const data = payload ?? {};
                 const provider = data.provider ?? 'provider';
                 const remaining = typeof data.remaining === 'number' ? data.remaining : 0;
                 const limit = typeof data.limit === 'number' ? data.limit : 0;
@@ -274,7 +275,7 @@ function MainApp() {
 
     useEffect(() => {
         if (selectedProject?.id) {
-            localStorage.setItem('app.lastProjectId', selectedProject.id);
+            localStorage.setItem('app.lastWorkspaceId', selectedProject.id);
         }
     }, [selectedProject?.id]);
 
@@ -304,7 +305,6 @@ function MainApp() {
                                         settingsSearchQuery={settingsSearchQuery}
                                         setSettingsSearchQuery={setSettingsSearchQuery}
                                         onExtensionClick={() => setShowExtensionModal(true)}
-                                        onExtensionDevToolsClick={() => appState.setShowExtensionDevTools(!appState.showExtensionDevTools)}
                                     />
                                     <ErrorFallback
                                         error={error || new Error(t('errors.unexpected'))}
@@ -314,7 +314,8 @@ function MainApp() {
                                         }}
                                     />
                                 </>
-                            } />
+                            }
+                        />
                     </div>
                 </div>
             )}
@@ -390,7 +391,7 @@ function MainApp() {
                             const p = projects.find(pro => pro.id === id);
                             if (p) {
                                 setSelectedProject(p);
-                                setCurrentView('projects');
+                                setCurrentView('workspace');
                             }
                         }}
                         onOpenSettings={handleOpenSettings}
@@ -430,7 +431,6 @@ function MainApp() {
                                     settingsSearchQuery={settingsSearchQuery}
                                     setSettingsSearchQuery={setSettingsSearchQuery}
                                     onExtensionClick={() => setShowExtensionModal(true)}
-                                    onExtensionDevToolsClick={() => appState.setShowExtensionDevTools(!appState.showExtensionDevTools)}
                                 />
                                 <DragDropWrapper
                                     isDragging={appState.isDragging}
@@ -466,12 +466,6 @@ function MainApp() {
                                     <div id="modal-root" />
                                 </DragDropWrapper>
                             </>
-                        }
-                        showRightSidebar={appState.showExtensionDevTools}
-                        rightSidebarContent={
-                            <Suspense fallback={null}>
-                                <ExtensionDevTools onClose={() => appState.setShowExtensionDevTools(false)} />
-                            </Suspense>
                         }
                     />
                 </div>
