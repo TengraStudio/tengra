@@ -7,7 +7,7 @@ import { Language } from '@/i18n';
 import type { GroupedModels } from '@/types';
 import { Message, Project, TerminalTab } from '@/types';
 
-const ProjectsPage = lazy(() => import('@/features/projects/ProjectsPage').then(m => ({ default: m.ProjectsPage })));
+const ProjectsPage = lazy(() => import('@/features/workspace/WorkspacePage').then(m => ({ default: m.WorkspacesPage })));
 
 interface ProjectsViewProps {
     projects: Project[]
@@ -55,9 +55,9 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
     return (
         <Suspense fallback={<LoadingState size="md" />}>
             <ProjectsPage
-                projects={projects}
-                selectedProject={selectedProject}
-                onSelectProject={setSelectedProject}
+                workspaces={projects}
+                selectedWorkspace={selectedProject}
+                onSelectWorkspace={setSelectedProject}
                 language={language}
                 tabs={terminalTabs}
                 activeTabId={activeTerminalId}

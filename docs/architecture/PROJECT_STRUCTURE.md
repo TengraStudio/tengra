@@ -158,8 +158,16 @@ src/renderer/
 │   └── view-manager/       # View wrappers
 ├── i18n/                   # Internationalization
 │   ├── index.ts            # i18n setup
-│   ├── en.ts               # English (base)
-│   ├── tr.ts               # Turkish
+│   ├── en/                 # English translations
+│   │   ├── index.ts        # Aggregates section files
+│   │   ├── common.ts
+│   │   ├── settings.ts
+│   │   └── ...
+│   ├── tr/                 # Turkish translations
+│   │   ├── index.ts        # Aggregates section files
+│   │   ├── common.ts
+│   │   ├── settings.ts
+│   │   └── ...
 │   └── ...                 # Other languages
 ├── themes/                 # Theme system
 │   ├── README.md

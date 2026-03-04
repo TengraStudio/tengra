@@ -1,7 +1,7 @@
 import { useAuth } from '@renderer/context/AuthContext';
 import { useChat } from '@renderer/context/ChatContext';
 import { useModel } from '@renderer/context/ModelContext';
-import { useProject } from '@renderer/context/ProjectContext';
+import { useWorkspace } from '@renderer/context/WorkspaceContext';
 import { ChatTemplate } from '@renderer/features/chat/types';
 import React, { lazy, Suspense, useEffect, useMemo } from 'react';
 
@@ -30,7 +30,7 @@ const ModelsPage = lazy(() => import('@/features/models/pages/ModelsPage').then(
 import { AppView } from '@renderer/hooks/useAppState';
 
 const ChatViewWrapper = lazy(() => import('./view-manager/ChatViewWrapper').then(m => ({ default: m.ChatViewWrapper })));
-const ProjectsView = lazy(() => import('./view-manager/ProjectsView').then(m => ({ default: m.ProjectsView })));
+const WorkspaceView = lazy(() => import('@/features/workspace/WorkspacePage').then(m => ({ default: m.MemoizedWorkspacesPage })));
 const SettingsView = lazy(() => import('./view-manager/SettingsView').then(m => ({ default: m.SettingsView })));
 const WorkflowsPage = lazy(() => import('@/features/workflows/WorkflowsPage').then(m => ({ default: m.WorkflowsPage })));
 
@@ -57,29 +57,29 @@ const ChatSection: React.FC<Omit<ViewManagerProps, 'currentView' | 'onNavigateTo
 );
 
 /**
- * Projects component wrapper to isolate hook consumption
+ * Workspace component wrapper to isolate hook consumption
  */
-const ProjectsSection: React.FC<{ language: Language }> = ({ language }) => {
+const WorkspaceSection: React.FC<{ language: Language }> = ({ language }) => {
     const {
         projects, selectedProject, setSelectedProject,
         terminalTabs, activeTerminalId, setTerminalTabs, setActiveTerminalId
-    } = useProject();
+    } = useWorkspace();
     const {
         selectedProvider, selectedModel, setSelectedProvider, setSelectedModel,
         persistLastSelection, groupedModels
     } = useModel();
-    const { quotas, codexUsage, appSettings } = useAuth();
-    const { isLoading, handleSend: sendMessage, setInput, displayMessages } = useChat();
+    const { quotas, codexUsage, settings } = useAuth();
+    const { isLoading, handleSend, messages, chatError } = useChat();
 
     return (
-        <ProjectsView
-            projects={projects}
-            selectedProject={selectedProject}
-            setSelectedProject={setSelectedProject}
+        <WorkspaceView
+            workspaces={projects}
+            selectedWorkspace={selectedProject}
+            onSelectWorkspace={setSelectedProject}
             language={language}
-            terminalTabs={terminalTabs}
-            activeTerminalId={activeTerminalId}
-            setTerminalTabs={setTerminalTabs}
+            tabs={terminalTabs}
+            activeTabId={activeTerminalId}
+            setTabs={setTerminalTabs}
             setActiveTabId={setActiveTerminalId}
             selectedProvider={selectedProvider}
             selectedModel={selectedModel}
@@ -88,16 +88,16 @@ const ProjectsSection: React.FC<{ language: Language }> = ({ language }) => {
                 setSelectedModel(m);
                 void persistLastSelection(p, m);
             }}
-            groupedModels={groupedModels}
+            groupedModels={groupedModels ?? undefined}
             quotas={quotas}
             codexUsage={codexUsage}
-            appSettings={appSettings}
-            onSendMessage={(text) => {
-                setInput(text ?? '');
-                void sendMessage(text ?? '');
+            settings={settings}
+            sendMessage={content => {
+                void handleSend(content);
             }}
-            displayMessages={displayMessages}
+            messages={messages}
             isLoading={isLoading}
+            chatError={chatError}
         />
     );
 };
@@ -132,11 +132,8 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
     const { t } = useTranslation(language);
     const { stopListening, isListening } = useChat();
     const { setIsModelMenuOpen } = useModel();
-    const { handleOpenTerminal } = useProject();
+    const { handleOpenTerminal } = useWorkspace();
     const prefersReducedMotion = usePrefersReducedMotion();
-
-
-
 
     const pagePreset = useMemo(
         () => resolveAnimationPreset('page', prefersReducedMotion),
@@ -163,8 +160,7 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
     const renderView = () => {
         switch (currentView) {
             case 'chat': return <ChatSection {...props} />;
-            case 'projects': return <ProjectsSection language={language} />;
-
+            case 'workspace': return <WorkspaceSection language={language} />;
             case 'settings': return <SettingsSection />;
             case 'mcp': return (
                 <div className="h-full p-6 overflow-y-auto bg-tech-grid bg-tech-grid-sm">
@@ -217,3 +213,4 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
         </AnimatePresence>
     );
 };
+

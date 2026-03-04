@@ -226,6 +226,7 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
         connectGitHubProfile: auth.connectGitHubProfile,
         connectCopilot: auth.connectCopilot,
         connectBrowserProvider: auth.connectBrowserProvider,
+        cancelAuthFlow: auth.cancelAuthFlow,
         disconnectProvider: auth.disconnectProvider,
         deviceCodeModal: auth.deviceCodeModal,
         closeDeviceCodeModal: auth.closeDeviceCodeModal,

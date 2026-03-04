@@ -12,17 +12,17 @@ import React, { createContext, ReactNode, useCallback, useContext, useEffect, us
 import { useSettings } from '@/context/SettingsContext';
 
 export type Language = 'tr' | 'en' | 'de' | 'fr' | 'es' | 'ja' | 'zh' | 'ar';
-export type TranslationKeys = typeof tr;
+export type TranslationKeys = JsonValue;
 
 const translations: Partial<Record<Language, TranslationKeys>> = {
     tr,
     en,
-    de: de as unknown as TranslationKeys,
-    fr: fr as unknown as TranslationKeys,
-    es: es as unknown as TranslationKeys,
-    ja: ja as unknown as TranslationKeys,
-    zh: zh as unknown as TranslationKeys,
-    ar: ar as unknown as TranslationKeys
+    de,
+    fr,
+    es,
+    ja,
+    zh,
+    ar
 };
 
 const TRANSLATION_MEMORY_STORAGE_KEY = 'tengra.i18n.translation-memory.v1';

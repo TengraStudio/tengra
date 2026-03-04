@@ -18,7 +18,7 @@ You are in a high-stakes environment. Every decision you make must be justified 
 - [ ] Is my function under 150 lines?
 - [ ] Did I run `npm run lint`?
 - [ ] Did I run `npm run build` and `npm run type-check`?
-- [ ] Did I update `docs/changelog/data/changelog.entries.json` (English first)?
+- [ ] Did I update the relevant markdown docs if this changes user-facing behavior?
 - [ ] Did I COMMIT after completing the TODO or minor change?
 - [ ] Are translations only being done on weekends (Saturday-Sunday)?
 

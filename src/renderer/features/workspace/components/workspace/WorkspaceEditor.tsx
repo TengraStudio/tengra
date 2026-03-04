@@ -108,24 +108,17 @@ function useUnsavedChangesGuard(hasUnsavedChanges: boolean): void {
 
 /** Persists and restores per-file view state from localStorage. */
 function useViewStatePersistence(storageKey: string): Record<string, EditorViewState> {
-    const [viewStateMap, setViewStateMap] = React.useState<Record<string, EditorViewState>>({});
-
-    React.useEffect(() => {
+    const [viewStateMap] = React.useState<Record<string, EditorViewState>>(() => {
         try {
             const raw = localStorage.getItem(storageKey);
             if (!raw) {
-                return;
+                return {};
             }
-            setViewStateMap(JSON.parse(raw) as Record<string, EditorViewState>);
+            return JSON.parse(raw) as Record<string, EditorViewState>;
         } catch {
-            setViewStateMap({});
+            return {};
         }
-    }, [storageKey]);
-
-    void React.useCallback((next: Record<string, EditorViewState>) => {
-        setViewStateMap(next);
-        localStorage.setItem(storageKey, JSON.stringify(next));
-    }, [storageKey]);
+    });
 
     return viewStateMap;
 }

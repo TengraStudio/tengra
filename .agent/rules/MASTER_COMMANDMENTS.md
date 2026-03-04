@@ -62,7 +62,7 @@ Use these for direct system and environment interaction:
 2.  **VALIDATE**: Ensure your plan obeys all NASA rules and fixed-loop bounds.
 3.  **IMPLEMENT**: Targeted edits. Full logic. Fix existing warnings in the file.
 4.  **PURIFY**: Run `npm run lint`, `npm run build`, and `npm run type-check`.
-5.  **RECORD**: Update `docs/changelog/data/changelog.entries.json` (English first), run `npm run changelog:sync`, and update `TODO.md`.
+5.  **RECORD**: Update current markdown docs when behavior changes and update `TODO.md`. The old structured changelog source is no longer part of this repo.
 6.  **COMMIT**: Commit IMMEDIATELY after TODO completion or minor change. No uncommitted work.
 7.  **DELIVER**: Only after purification and commit is complete.
 
@@ -74,9 +74,9 @@ Use these for direct system and environment interaction:
 
 
 ## 🌍 CHANGELOG RULES
-- **English First**: ALWAYS update `changelog.entries.json` first.
+- **No Structured Source**: `docs/changelog/data/changelog.entries.json` is no longer used in this repo.
+- **Docs First**: Update the current markdown documentation when a user-facing workflow changes.
 - **Translations on Weekends**: Locale files (tr, ar, zh, ja) can ONLY be updated on weekends (Saturday-Sunday).
-- **No Overload**: Don't write translations for every minor change during weekdays.
 
 ---
 "Leave no warning behind. Code for performance, type for safety."

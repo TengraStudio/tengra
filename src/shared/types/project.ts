@@ -44,6 +44,11 @@ export interface Project {
     };
 }
 
+export type Workspace = Project;
+export type WorkspaceStats = ProjectStats;
+export type WorkspaceIssue = ProjectIssue;
+export type WorkspaceAnalysis = ProjectAnalysis;
+
 export interface CouncilMessage extends Message {
     votes?: Record<string, 'agree' | 'disagree' | 'neutral'>;
     consensusReached?: boolean;

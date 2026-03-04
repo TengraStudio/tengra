@@ -1,0 +1,31 @@
+const sectionData = {
+    "title": "Keyboard Shortcuts",
+    "general": "General",
+    "navigation": "Navigation",
+    "chat": "Chat",
+    "newChat": "New Chat",
+    "ctrl": "Ctrl",
+    "openSettings": "Open Settings",
+    "commandPalette": "Command Palette",
+    "toggleSidebar": "Toggle Sidebar",
+    "goToChat": "Go to Chat",
+    "goToProjects": "Go to Projects",
+    "goToCouncil": "Go to Council",
+    "goToSettings": "Go to Settings",
+    "sendMessage": "Send Message",
+    "newLine": "New Line",
+    "clearChat": "Clear Chat",
+    "searchChat": "Search Chat",
+    "showShortcuts": "Show Shortcuts",
+    "close": "Close",
+    "footer": "Press Esc to close",
+    "pressKeys": "Press keys...",
+    "resetToDefault": "Reset to default",
+    "searchPlaceholder": "Search shortcuts",
+    "export": "Export",
+    "import": "Import",
+    "resetAll": "Reset all",
+    "closeModal": "Close modal"
+};
+
+export default sectionData;

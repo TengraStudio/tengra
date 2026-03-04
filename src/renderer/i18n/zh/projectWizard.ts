@@ -1,0 +1,51 @@
+const sectionData = {
+    "title": "项目向导",
+    "localProject": "本地项目",
+    "localProjectDesc": "在您的计算机上创建一个新项目。",
+    "remoteSSH": "远程 SSH",
+    "remoteSSHDesc": "连接到远程服务器进行开发。",
+    "import": "导入",
+    "importDesc": "将现有项目或文件夹添加到工作区。",
+    "projectName": "项目名称",
+    "namePlaceholder": "例如：CRM 仪表板",
+    "placeholder": {
+        "example": "example.com"
+    },
+    "description": "描述（可选）",
+    "descPlaceholder": "这个项目的目标是什么？",
+    "host": "主机",
+    "port": "端口",
+    "username": "用户名",
+    "password": "密码",
+    "privateKey": "私钥",
+    "keyPath": "密钥路径",
+    "creating": "正在创建项目",
+    "sshSetup": "正在建立 SSH 连接并准备远程环境...",
+    "configuring": "正在配置项目文件和 AI 内存...",
+    "back": "返回",
+    "next": "下一步",
+    "create": "创建",
+    "connect": "连接",
+    "selectFolder": "选择文件夹",
+    "alreadyExists": "已存在",
+    "alreadyExistsDesc": "链接计算机上的现有项目文件夹。",
+    "sshTodo": "SSH（即将推出）",
+    "sshTodoDesc": "在远程服务器上开发。当前已禁用。",
+    "newCreateTodo": "新建（即将推出）",
+    "newCreateTodoDesc": "从头开始创建新的项目目录。当前已禁用。",
+    "emptyDir": "此目录为空。",
+    "listingDir": "正在列出目录...",
+    "selectRootDesc": "选择项目元数据的根目录。",
+    "connectionFailed": "连接失败",
+    "connectionIdNotFound": "连接已建立但未找到 ID。",
+    "listFailed": "目录列表获取失败",
+    "categories": {
+        "web": "Web 应用程序",
+        "backend": "后端服务",
+        "cli": "CLI / 脚本",
+        "mobile": "移动应用",
+        "other": "自定义项目"
+    }
+};
+
+export default sectionData;

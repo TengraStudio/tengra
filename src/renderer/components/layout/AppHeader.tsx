@@ -8,12 +8,10 @@ import {
     Search,
     Settings as SettingsIcon,
     Square,
-    Terminal as TerminalIcon,
     X as ClearIcon,
     X,
 } from 'lucide-react';
 import React from 'react';
-
 
 import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/context/ChatContext';
@@ -24,7 +22,6 @@ interface AppHeaderProps {
     settingsSearchQuery?: string;
     setSettingsSearchQuery?: (query: string) => void;
     onExtensionClick?: () => void;
-    onExtensionDevToolsClick?: () => void;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
@@ -32,7 +29,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     settingsSearchQuery,
     setSettingsSearchQuery,
     onExtensionClick,
-    onExtensionDevToolsClick,
 }) => {
     const { chats, currentChatId, clearMessages } = useChat();
     const { language } = useAuth();
@@ -63,7 +59,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
     return (
         <>
-            <header className="h-14 flex items-center justify-between px-6 bg-background/95 z-50 app-drag-region">
+            <header className="h-14 flex items-center justify-between px-6 bg-background/95 z-20 app-drag-region">
                 <div className="flex items-center gap-4 no-drag">
                     <div className="p-2 rounded-xl bg-primary/10 text-primary">
                         <Icon className="w-5 h-5" />
@@ -123,15 +119,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                                 >
                                     <Puzzle className="w-4 h-4 group-hover:rotate-12 transition-transform" />
                                 </button>
-                                {onExtensionDevToolsClick && (
-                                    <button
-                                        onClick={onExtensionDevToolsClick}
-                                        className="p-2 hover:bg-primary/10 hover:text-primary rounded-lg text-muted-foreground transition-colors group"
-                                        title="Extension Developer Tools"
-                                    >
-                                        <TerminalIcon className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-                                    </button>
-                                )}
                                 <div className="h-4 w-[1px] bg-border/50 mx-1" />
                             </>
                         )}

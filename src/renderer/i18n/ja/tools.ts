@@ -1,0 +1,30 @@
+const sectionData = {
+    "usingTool": "ツールを使用中",
+    "searching": "ウェブを検索中...",
+    "readingFiles": "ファイルを読み込み中...",
+    "executingCmd": "コマンドを実行中...",
+    "screenshotting": "スクリーンショットを撮っています...",
+    "failed": "失敗",
+    "completed": "完了",
+    "input": "入力",
+    "output": "出力",
+    "filePreview": "ファイルプレビュー",
+    "path": "パス:",
+    "command": "指示",
+    "error": "エラー",
+    "executing": "実行中",
+    "executingCommand": "コマンドを実行中...",
+    "running": "ランニング",
+    "forceStop": "強制停止",
+    "noOutput": "出力なし",
+    "noOutputReturned": "出力は返されませんでした",
+    "stop": "停止",
+    "terminalHost": "管理者@macbook",
+    "terminalShell": "zsh",
+    "stderrLabel": "標準エラー:",
+    "errorLabel": "エラー：",
+    "taskTitlePlaceholder": "タスクのタイトル (オプション)",
+    "taskDescriptionPlaceholder": "作りたいものを説明してください..."
+};
+
+export default sectionData;

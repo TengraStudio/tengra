@@ -142,7 +142,7 @@ export class SecurityScanService extends BaseService {
             execFile(
                 'npm',
                 ['audit', '--json'],
-                { cwd: appRoot, timeout: EXEC_TIMEOUT_MS, shell: true, maxBuffer: 5 * 1024 * 1024 },
+                { cwd: appRoot, timeout: EXEC_TIMEOUT_MS, shell: false, maxBuffer: 5 * 1024 * 1024 },
                 (error, stdout, _stderr) => {
                     // npm audit returns exit code 1 when vulnerabilities exist
                     if (stdout && stdout.trim().length > 0) {

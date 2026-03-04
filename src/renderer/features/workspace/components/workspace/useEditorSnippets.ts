@@ -39,16 +39,12 @@ function useSnippetCollection(activeLanguage: string, projectKey: string): {
     snippets: WorkspaceSnippet[];
     persistSnippets: (next: WorkspaceSnippet[]) => void;
 } {
-    const [allSnippets, setAllSnippets] = React.useState<WorkspaceSnippet[]>([]);
+    const [allSnippets, setAllSnippets] = React.useState<WorkspaceSnippet[]>(() => loadWorkspaceSnippets());
 
     const snippets = React.useMemo(
         () => filterWorkspaceSnippets(allSnippets, activeLanguage, projectKey),
         [activeLanguage, allSnippets, projectKey]
     );
-
-    React.useEffect(() => {
-        setAllSnippets(loadWorkspaceSnippets());
-    }, []);
 
     const persistSnippets = React.useCallback((next: WorkspaceSnippet[]) => {
         setAllSnippets(next);

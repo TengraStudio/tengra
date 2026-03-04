@@ -15,17 +15,17 @@ import { IpcValue, JsonObject, JsonValue } from '@shared/types/common';
 import { DatabaseAdapter, SqlParams, SqlValue } from '@shared/types/database';
 import { DbDetailedStats, DbStats, DbTokenStats } from '@shared/types/db-api';
 import { FileDiff } from '@shared/types/file-diff';
-import { Project } from '@shared/types/project';
-import { AgentProfile } from '@shared/types/project-agent';
+import { Workspace } from '@shared/types/project';
+import { AgentProfile } from '@shared/types/workspace-agent';
 import { AppErrorCode, TengraError, ValidationError } from '@shared/utils/error.util';
 import { v4 as uuidv4 } from 'uuid';
 
 import { ChatRepository } from './repositories/chat.repository';
 import { KnowledgeRepository } from './repositories/knowledge.repository';
-import { ProjectRepository } from './repositories/project.repository';
 import { SystemRepository } from './repositories/system.repository';
 import { UacRepository } from './repositories/uac.repository';
 import { UserBehaviorRepository } from './repositories/user-behavior.repository';
+import { WorkspaceRepository } from './repositories/workspace.repository';
 import { DataService } from './data.service';
 import { DatabaseClientService } from './database-client.service';
 
@@ -54,6 +54,7 @@ export interface LinkedAccount {
 export interface TokenUsageRecord {
     messageId?: string;
     chatId: string;
+    workspaceId?: string;
     projectId?: string;
     provider: string;
     model: string;
@@ -66,7 +67,7 @@ export interface TokenUsageRecord {
 export interface Folder { id: string; name: string; color?: string | undefined; createdAt: number; updatedAt: number; }
 export interface Prompt { id: string; title: string; content: string; tags: string[]; createdAt: number; updatedAt: number; }
 export interface ChatMessage { role: string; content: string; timestamp?: number; vector?: number[];[key: string]: JsonValue | undefined }
-export interface SemanticFragment { id: string; content: string; embedding: number[]; source: string; sourceId: string; tags: string[]; importance: number; projectPath?: string | undefined; createdAt: number; updatedAt: number;[key: string]: JsonValue | undefined }
+export interface SemanticFragment { id: string; content: string; embedding: number[]; source: string; sourceId: string; tags: string[]; importance: number; workspacePath?: string | undefined; createdAt: number; updatedAt: number;[key: string]: JsonValue | undefined }
 export interface EpisodicMemory {
     id: string;
     title: string;
@@ -84,10 +85,10 @@ export interface EpisodicMemory {
 export interface EntityKnowledge { id: string; entityType: string; entityName: string; key: string; value: string; confidence: number; source: string; updatedAt: number }
 
 
-export interface Chat { id: string; title: string; model?: string | undefined; messages: JsonObject[]; createdAt: Date; updatedAt: Date; isPinned?: boolean | undefined; isFavorite?: boolean | undefined; folderId?: string | undefined; projectId?: string | undefined; isGenerating?: boolean | undefined; backend?: string | undefined; metadata?: JsonObject | undefined; }
+export interface Chat { id: string; title: string; model?: string | undefined; messages: JsonObject[]; createdAt: Date; updatedAt: Date; isPinned?: boolean | undefined; isFavorite?: boolean | undefined; folderId?: string | undefined; workspaceId?: string | undefined; projectId?: string | undefined; isGenerating?: boolean | undefined; backend?: string | undefined; metadata?: JsonObject | undefined; }
 
 export interface CodeSymbolSearchResult { id: string; name: string; path: string; line: number; kind: string; signature: string; docstring: string; score?: number; }
-export interface CodeSymbolRecord { id: string; project_path?: string; projectId?: string; file_path?: string; name: string; path?: string; line: number; kind: string; signature?: string; docstring?: string; embedding?: number[]; vector?: number[]; }
+export interface CodeSymbolRecord { id: string; workspace_path?: string; project_path?: string; workspaceId?: string; file_path?: string; name: string; path?: string; line: number; kind: string; signature?: string; docstring?: string; embedding?: number[]; vector?: number[]; }
 
 export interface SearchChatsOptions {
     query?: string;
@@ -235,14 +236,15 @@ export class DatabaseService extends BaseService {
     private compressionStats = { compressedBytes: 0, rawBytes: 0, operations: 0 };
 
     private _chats!: ChatRepository;
-    private _projects!: ProjectRepository;
+    private _workspaces!: WorkspaceRepository;
     private _knowledge!: KnowledgeRepository;
     private _system!: SystemRepository;
     private _uac!: UacRepository;
     private _userBehavior!: UserBehaviorRepository;
 
     get chats() { return this._chats; }
-    get projects() { return this._projects; }
+    get workspaces() { return this._workspaces; }
+    get projects() { return this._workspaces; }
     get knowledge() { return this._knowledge; }
     get system() { return this._system; }
     get uac() { return this._uac; }
@@ -296,7 +298,7 @@ export class DatabaseService extends BaseService {
 
             const adapter = this.createAdapter();
             this._chats = new ChatRepository(adapter);
-            this._projects = new ProjectRepository(adapter);
+            this._workspaces = new WorkspaceRepository(adapter);
             this._knowledge = new KnowledgeRepository(adapter);
             this._system = new SystemRepository(adapter);
             this._uac = new UacRepository(adapter);
@@ -1027,38 +1029,52 @@ export class DatabaseService extends BaseService {
     /** Deletes a prompt by ID. */
     async deletePrompt(id: string): Promise<void> { return this._system.deletePrompt(id); }
 
-    // Projects
+    // Workspaces
     /** Retrieves all projects. */
-    async getProjects(): Promise<Project[]> { return this._projects.getProjects(); }
+    async getWorkspaces(): Promise<Workspace[]> { return this._workspaces.getWorkspaces(); }
+    async getProjects(): Promise<Workspace[]> { return this.getWorkspaces(); }
     /** Retrieves a project by ID. */
-    async getProject(id: string): Promise<Project | null | undefined> { return this._projects.getProject(id); }
+    async getWorkspace(id: string): Promise<Workspace | null | undefined> { return this._workspaces.getWorkspace(id); }
+    async getProject(id: string): Promise<Workspace | null | undefined> { return this.getWorkspace(id); }
     /** Checks whether a project path has indexed symbols. */
-    async hasIndexedSymbols(projectPath: string): Promise<boolean> { return this._projects.hasIndexedSymbols(projectPath); }
+    async hasIndexedSymbols(workspacePath: string): Promise<boolean> { return this._workspaces.hasIndexedSymbols(workspacePath); }
     /** Creates a new project with the given title, path, description, and optional metadata. */
-    async createProject(title: string, path: string, desc: string = '', m?: string, c?: string): Promise<Project> { return this._projects.createProject(title, path, desc, m, c); }
+    async createWorkspace(title: string, path: string, desc: string = '', m?: string, c?: string): Promise<Workspace> { return this._workspaces.createWorkspace(title, path, desc, m, c); }
+    async createProject(title: string, path: string, desc: string = '', m?: string, c?: string): Promise<Workspace> { return this.createWorkspace(title, path, desc, m, c); }
     /** Updates a project by ID with the provided partial updates. */
-    async updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined> { return this._projects.updateProject(id, updates); }
+    async updateWorkspace(id: string, updates: Partial<Workspace>): Promise<Workspace | undefined> { return this._workspaces.updateWorkspace(id, updates); }
+    async updateProject(id: string, updates: Partial<Workspace>): Promise<Workspace | undefined> { return this.updateWorkspace(id, updates); }
     /** Deletes a project by ID, optionally removing associated files. */
-    async deleteProject(id: string, deleteFiles: boolean = false): Promise<void> { return this._projects.deleteProject(id, deleteFiles); }
+    async deleteWorkspace(id: string, deleteFiles: boolean = false): Promise<void> { return this._workspaces.deleteWorkspace(id, deleteFiles); }
+    async deleteProject(id: string, deleteFiles: boolean = false): Promise<void> { return this.deleteWorkspace(id, deleteFiles); }
     /** Archives or unarchives a project by ID. */
-    async archiveProject(id: string, isArchived: boolean): Promise<Project | undefined> { return this._projects.updateProject(id, { status: isArchived ? 'archived' : 'active' }); }
+    async archiveWorkspace(id: string, isArchived: boolean): Promise<Workspace | undefined> { return this._workspaces.updateWorkspace(id, { status: isArchived ? 'archived' : 'active' }); }
+    async archiveProject(id: string, isArchived: boolean): Promise<Workspace | undefined> { return this.archiveWorkspace(id, isArchived); }
 
     /** Deletes multiple projects by ID, optionally removing associated files. */
-    async bulkDeleteProjects(ids: string[], deleteFiles: boolean = false) {
+    async bulkDeleteWorkspaces(ids: string[], deleteFiles: boolean = false) {
         this.validateArray(ids, 'ids');
         for (const id of ids) {
-            this.validateId(id, 'projectId');
-            await this.deleteProject(id, deleteFiles);
+            this.validateId(id, 'workspaceId');
+            await this.deleteWorkspace(id, deleteFiles);
         }
     }
 
+    async bulkDeleteProjects(ids: string[], deleteFiles: boolean = false) {
+        return this.bulkDeleteWorkspaces(ids, deleteFiles);
+    }
+
     /** Archives or unarchives multiple projects by ID. */
-    async bulkArchiveProjects(ids: string[], isArchived: boolean) {
+    async bulkArchiveWorkspaces(ids: string[], isArchived: boolean) {
         this.validateArray(ids, 'ids');
         for (const id of ids) {
-            this.validateId(id, 'projectId');
-            await this.archiveProject(id, isArchived);
+            this.validateId(id, 'workspaceId');
+            await this.archiveWorkspace(id, isArchived);
         }
+    }
+
+    async bulkArchiveProjects(ids: string[], isArchived: boolean) {
+        return this.bulkArchiveWorkspaces(ids, isArchived);
     }
 
     // Chats & Messages
@@ -1069,7 +1085,7 @@ export class DatabaseService extends BaseService {
     /** Retrieves a chat by ID. */
     async getChat(id: string) { return this._chats.getChat(id); }
     /** Retrieves chats, optionally filtered by project ID. */
-    async getChats(projectId?: string) { return this._chats.getChats(projectId); }
+    async getChats(workspaceId?: string) { return this._chats.getChats(workspaceId); }
     /** Updates a chat by ID with the provided partial updates. */
     async updateChat(id: string, updates: Partial<Chat>) { return this._chats.updateChat(id, updates); }
     /** Deletes a chat by ID. */
@@ -1103,13 +1119,14 @@ export class DatabaseService extends BaseService {
     }
 
     // Knowledge & Memories
-    async findCodeSymbolsByName(projectPath: string, name: string) { return this._knowledge.findCodeSymbolsByName(projectPath, name); }
-    async getCodeSymbolsByProjectPath(projectPath: string) { return this._knowledge.getCodeSymbolsByProjectPath(projectPath); }
-    async searchCodeSymbols(vec: number[], projectPath?: string, options: VectorSearchOptions = {}): Promise<CodeSymbolSearchResult[]> {
+    async findCodeSymbolsByName(workspacePath: string, name: string) { return this._knowledge.findCodeSymbolsByName(workspacePath, name); }
+    async getCodeSymbolsByWorkspacePath(workspacePath: string) { return this._knowledge.getCodeSymbolsByWorkspacePath(workspacePath); }
+    async getCodeSymbolsByProjectPath(workspacePath: string) { return this.getCodeSymbolsByWorkspacePath(workspacePath); }
+    async searchCodeSymbols(vec: number[], workspacePath?: string, options: VectorSearchOptions = {}): Promise<CodeSymbolSearchResult[]> {
         const limit = 10;
         const useCache = options.useCache !== false;
         const approximate = options.approximate === true;
-        const cacheKey = this.buildVectorCacheKey('code', vec, limit, projectPath, approximate);
+        const cacheKey = this.buildVectorCacheKey('code', vec, limit, workspacePath, approximate);
         const startedAt = Date.now();
 
         if (useCache) {
@@ -1122,7 +1139,7 @@ export class DatabaseService extends BaseService {
         }
 
         const searchLimit = approximate ? limit : Math.min(limit * 2, 30);
-        const results = await this.dbClient.searchCodeSymbols({ embedding: vec, limit: searchLimit, project_path: projectPath });
+        const results = await this.dbClient.searchCodeSymbols({ embedding: vec, limit: searchLimit, workspace_path: workspacePath });
         const mapped = results.map(r => ({
             id: r.id,
             name: r.name,
@@ -1145,7 +1162,7 @@ export class DatabaseService extends BaseService {
         // Use HTTP API for storing code symbols with embeddings
         await this.dbClient.storeCodeSymbol({
             id: symbol.id,
-            project_path: symbol.project_path ?? symbol.projectId ?? '',
+            workspace_path: symbol.workspace_path ?? symbol.workspaceId ?? '',
             file_path: symbol.file_path ?? symbol.path ?? '',
             name: symbol.name,
             line: symbol.line,
@@ -1155,9 +1172,9 @@ export class DatabaseService extends BaseService {
             embedding: symbol.embedding ?? symbol.vector
         });
     }
-    async clearCodeSymbols(projectPath: string) { return this._knowledge.clearCodeSymbols(projectPath); }
-    async deleteCodeSymbolsForFile(projectPath: string, filePath: string) { return this._knowledge.deleteCodeSymbolsForFile(projectPath, filePath); }
-    async searchCodeContentByText(projectPath: string, query: string) { return this._knowledge.searchCodeContentByText(projectPath, query); }
+    async clearCodeSymbols(workspacePath: string) { return this._knowledge.clearCodeSymbols(workspacePath); }
+    async deleteCodeSymbolsForFile(workspacePath: string, filePath: string) { return this._knowledge.deleteCodeSymbolsForFile(workspacePath, filePath); }
+    async searchCodeContentByText(workspacePath: string, query: string) { return this._knowledge.searchCodeContentByText(workspacePath, query); }
     async storeSemanticFragment(f: SemanticFragment) {
         // Use HTTP API for storing semantic fragments with embeddings
         await this.dbClient.storeSemanticFragment({
@@ -1168,13 +1185,13 @@ export class DatabaseService extends BaseService {
             source_id: f.sourceId,
             tags: f.tags,
             importance: f.importance,
-            project_path: f.projectPath
+            workspace_path: f.workspacePath
         });
     }
-    async searchSemanticFragments(v: number[], l: number, projectPath?: string, options: VectorSearchOptions = {}): Promise<SemanticFragment[]> {
+    async searchSemanticFragments(v: number[], l: number, workspacePath?: string, options: VectorSearchOptions = {}): Promise<SemanticFragment[]> {
         const useCache = options.useCache !== false;
         const approximate = options.approximate === true;
-        const cacheKey = this.buildVectorCacheKey('semantic', v, l, projectPath, approximate);
+        const cacheKey = this.buildVectorCacheKey('semantic', v, l, workspacePath, approximate);
         const startedAt = Date.now();
 
         if (useCache) {
@@ -1187,7 +1204,7 @@ export class DatabaseService extends BaseService {
         }
 
         const searchLimit = approximate ? l : Math.min(Math.max(l * 2, l + 4), 60);
-        const results = await this.dbClient.searchSemanticFragments({ embedding: v, limit: searchLimit, project_path: projectPath });
+        const results = await this.dbClient.searchSemanticFragments({ embedding: v, limit: searchLimit, workspace_path: workspacePath });
         const mapped = results.map(r => ({
             id: r.id,
             content: r.content,
@@ -1196,7 +1213,7 @@ export class DatabaseService extends BaseService {
             sourceId: r.source_id,
             tags: r.tags,
             importance: r.importance,
-            projectPath: r.project_path,
+            workspacePath: r.workspace_path,
             createdAt: r.created_at,
             updatedAt: r.updated_at
         }));
@@ -1235,9 +1252,9 @@ export class DatabaseService extends BaseService {
         return dot / (Math.sqrt(normA) * Math.sqrt(normB));
     }
 
-    private buildVectorCacheKey(type: 'code' | 'semantic', vector: number[], limit: number, projectPath?: string, approximate: boolean = false): string {
+    private buildVectorCacheKey(type: 'code' | 'semantic', vector: number[], limit: number, workspacePath?: string, approximate: boolean = false): string {
         const projected = vector.slice(0, 24).map(n => n.toFixed(3)).join(',');
-        return `${type}:${projectPath ?? '*'}:${limit}:${approximate ? 'ann' : 'exact'}:${projected}`;
+        return `${type}:${workspacePath ?? '*'}:${limit}:${approximate ? 'ann' : 'exact'}:${projected}`;
     }
 
     private readVectorCache<T>(key: string): T | null {
@@ -1290,8 +1307,8 @@ export class DatabaseService extends BaseService {
         };
     }
     async getAllSemanticFragments() { return this._knowledge.getAllSemanticFragments(); }
-    async clearSemanticFragments(projectPath: string) { return this._knowledge.clearSemanticFragments(projectPath); }
-    async deleteSemanticFragmentsForFile(projectPath: string, filePath: string) { return this._knowledge.deleteSemanticFragmentsForFile(projectPath, filePath); }
+    async clearSemanticFragments(workspacePath: string) { return this._knowledge.clearSemanticFragments(workspacePath); }
+    async deleteSemanticFragmentsForFile(workspacePath: string, filePath: string) { return this._knowledge.deleteSemanticFragmentsForFile(workspacePath, filePath); }
     async storeEpisodicMemory(m: EpisodicMemory) { return this._knowledge.storeEpisodicMemory(m); }
     async searchEpisodicMemories(e: number[], l: number = 10) {
         // Delegate to repository which handles both vector search and fallback to recent memories
@@ -1314,14 +1331,14 @@ export class DatabaseService extends BaseService {
     async getMigrationStatus(): Promise<{ version: number; lastMigration: number }> { return this._system.getMigrationStatus(); }
     /** Records token usage, resolving project UUID to path if needed. */
     async addTokenUsage(record: TokenUsageRecord) {
-        let projectPath = record.projectId;
-        if (projectPath && !projectPath.includes('/') && !projectPath.includes('\\')) {
+        let workspacePath = record.workspaceId;
+        if (workspacePath && !workspacePath.includes('/') && !workspacePath.includes('\\')) {
             // It looks like a UUID, try to resolve to path
-            const projects = await this.getProjects();
-            const project = projects.find(p => p.id === projectPath);
-            if (project) { projectPath = project.path; }
+            const projects = await this.getWorkspaces();
+            const project = projects.find(p => p.id === workspacePath);
+            if (project) { workspacePath = project.path; }
         }
-        return this._system.addTokenUsage({ ...record, projectId: projectPath });
+        return this._system.addTokenUsage({ ...record, workspaceId: workspacePath });
     }
     /** Returns token usage statistics for the given period. */
     async getTokenUsageStats(period: 'daily' | 'weekly' | 'monthly'): Promise<DbTokenStats> { return this._system.getTokenUsageStats(period); }
@@ -1373,13 +1390,13 @@ export class DatabaseService extends BaseService {
     }
 
     /** Returns counts of archived vs active chats and projects. */
-    async getArchiveStats(): Promise<{ archivedChats: number; activeChats: number; archivedProjects: number; activeProjects: number }> {
-        const [chats, projects] = await Promise.all([this.getAllChats(), this.getProjects()]);
+    async getArchiveStats(): Promise<{ archivedChats: number; activeChats: number; archivedWorkspaces: number; activeWorkspaces: number }> {
+        const [chats, projects] = await Promise.all([this.getAllChats(), this.getWorkspaces()]);
         const archivedChats = chats.filter(chat => Boolean(chat.metadata?.isArchived)).length;
         const activeChats = chats.length - archivedChats;
-        const archivedProjects = projects.filter(project => project.status === 'archived').length;
-        const activeProjects = projects.length - archivedProjects;
-        return { archivedChats, activeChats, archivedProjects, activeProjects };
+        const archivedWorkspaces = projects.filter(project => project.status === 'archived').length;
+        const activeWorkspaces = projects.length - archivedWorkspaces;
+        return { archivedChats, activeChats, archivedWorkspaces, activeWorkspaces };
     }
 
     /**
@@ -1490,15 +1507,15 @@ export class DatabaseService extends BaseService {
     // File Diffs
     async getFileDiff(id: string) { return this._knowledge.getFileDiff(id); }
     async storeFileDiff(diff: FileDiff) {
-        // Resolve project by path to get its root path for the project_path column
-        const projects = await this.getProjects();
+        // Resolve project by path to get its root path for the workspace_path column
+        const projects = await this.getWorkspaces();
         // Sort projects by path length descending to find the closest match (most specific root)
-        const sortedProjects = [...projects].sort((a, b) => b.path.length - a.path.length);
-        const project = sortedProjects.find(p => diff.filePath.startsWith(p.path));
+        const sortedWorkspaces = [...projects].sort((a, b) => b.path.length - a.path.length);
+        const project = sortedWorkspaces.find(p => diff.filePath.startsWith(p.path));
 
         return this._knowledge.storeFileDiff({
             id: diff.id,
-            projectId: project?.path ?? '', // Use path for project_path column
+            workspaceId: project?.path ?? '', // Use path for workspace_path column
             filePath: diff.filePath,
             diffContent: diff.diffContent,
             createdAt: diff.timestamp,
@@ -1536,7 +1553,7 @@ export class DatabaseService extends BaseService {
         return memories.find(m => m.metadata?.key === key);
     }
     async deleteEntityKnowledge(name: string) { return this._knowledge.deleteEntityKnowledge(name); }
-    async searchSemanticFragmentsByText(projectPath: string, query: string) { return this._knowledge.searchSemanticFragmentsByText(projectPath, query); }
+    async searchSemanticFragmentsByText(workspacePath: string, query: string) { return this._knowledge.searchSemanticFragmentsByText(workspacePath, query); }
     async getSemanticFragmentsByIds(ids: string[]) { return this._knowledge.getSemanticFragmentsByIds(ids); }
     async searchEpisodicMemoriesByText(query: string) { return this._knowledge.searchEpisodicMemoriesByText(query); }
     async getEpisodicMemoriesByIds(ids: string[]) { return this._knowledge.getEpisodicMemoriesByIds(ids); }
@@ -1583,11 +1600,11 @@ export class DatabaseService extends BaseService {
 
     // --- Agent Template Methods ---
 
-    async getAgentTemplates(): Promise<import('@shared/types/project-agent').AgentTemplate[]> {
+    async getAgentTemplates(): Promise<import('@shared/types/workspace-agent').AgentTemplate[]> {
         return this._system.getAgentTemplates();
     }
 
-    async saveAgentTemplate(template: import('@shared/types/project-agent').AgentTemplate): Promise<void> {
+    async saveAgentTemplate(template: import('@shared/types/workspace-agent').AgentTemplate): Promise<void> {
         return this._system.saveAgentTemplate(template);
     }
 

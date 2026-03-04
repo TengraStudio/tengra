@@ -1,0 +1,30 @@
+const sectionData = {
+    "title": "Modeller",
+    "subtitle": "Tüm sağlayıcılardaki AI modellerinizi yönetin",
+    "installedModels": "Kurulu Modeller",
+    "marketplace": "Mağaza",
+    "modelsAvailable": "model mevcut",
+    "modelsCount": "model",
+    "accounts": "hesap",
+    "loadingModels": "Modeller yükleniyor...",
+    "searchPlaceholder": "Model ara...",
+    "refresh": "Yenile",
+    "noModelsFound": "Model bulunamadı",
+    "marketplaceComingSoon": "Mağaza yakında...",
+    "context": "Bağlam",
+    "pricing": "Fiyat",
+    "thinkingLevels": "Düşünme",
+    "quotaReset": "Kota Sıfırlanma",
+    "free": "Ücretsiz",
+    "default": "Varsayılan",
+    "setDefault": "Varsayılan Yap",
+    "isDefault": "Bu varsayılan model",
+    "favorite": "Favorilere ekle",
+    "unfavorite": "Favorilerden çıkar",
+    "hide": "Modeli gizle",
+    "show": "Modeli göster",
+    "showHidden": "Gizlileri Göster",
+    "hideHidden": "Gizlileri Gizle"
+};
+
+export default sectionData;

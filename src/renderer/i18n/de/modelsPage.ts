@@ -1,0 +1,30 @@
+const sectionData = {
+    "title": "Modelle",
+    "subtitle": "Verwalten Sie Ihre KI-Modelle anbieterübergreifend",
+    "installedModels": "Installierte Modelle",
+    "marketplace": "Marktplatz",
+    "modelsAvailable": "Modelle verfügbar",
+    "modelsCount": "Modelle",
+    "accounts": "Konten",
+    "loadingModels": "Modelle werden geladen...",
+    "searchPlaceholder": "Modelle suchen...",
+    "refresh": "Aktualisieren",
+    "noModelsFound": "Keine Modelle gefunden",
+    "marketplaceComingSoon": "Marktplatz kommt bald...",
+    "context": "Kontext",
+    "pricing": "Preise",
+    "thinkingLevels": "Denken",
+    "quotaReset": "Kontingent-Reset",
+    "free": "Frei",
+    "default": "Standard",
+    "setDefault": "Standard festlegen",
+    "isDefault": "Dies ist das Standardmodell",
+    "favorite": "Zu Favoriten hinzufügen",
+    "unfavorite": "Aus Favoriten entfernen",
+    "hide": "Modell ausblenden",
+    "show": "Modell anzeigen",
+    "showHidden": "Versteckt anzeigen",
+    "hideHidden": "Versteckt verstecken"
+};
+
+export default sectionData;

@@ -21,7 +21,7 @@ The following actions are strictly FORBIDDEN. Violating these rules will result 
 
 ## 4. Workflow Integrity
 - **NO SILENT FAILURES**: If a command fails, STOP and report. Do not try to "wing it".
-- **NO DELETING HISTORY**: Never delete completed items in `TODO.md` or existing entries in the structured changelog source (`docs/changelog/data/changelog.entries.json`).
+- **NO DELETING HISTORY**: Never delete completed items in `TODO.md` or remove historical entries from current markdown changelog documentation.
 
 > "Rules are not suggestions; they are the framework of our success."
 

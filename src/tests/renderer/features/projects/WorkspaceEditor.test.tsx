@@ -1,25 +1,25 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { WorkspaceEditor, WorkspaceEditorProps } from '@/features/projects/components/workspace/WorkspaceEditor';
-import type { ProjectSnippet } from '@/features/projects/utils/snippet-manager';
+import { WorkspaceEditor, WorkspaceEditorProps } from '@/features/workspace/components/workspace/WorkspaceEditor';
+import type { WorkspaceSnippet } from '@/features/workspace/utils/snippet-manager';
 import { EditorTab } from '@/types';
 
 const {
-    mockCreateShareCode,
-    mockFilterSnippets,
-    mockLoadProjectSnippets,
+    mockCreateWorkspaceShareCode,
+    mockFilterWorkspaceSnippets,
+    mockLoadWorkspaceSnippets,
     mockLoadReviewRuleConfig,
-    mockParseShareCode,
+    mockParseWorkspaceShareCode,
     mockRunBugDetectionAnalysis,
     mockRunCodeReviewAnalysis,
     mockRunPerformanceSuggestionAnalysis,
-    mockSaveProjectSnippets,
+    mockSaveWorkspaceSnippets,
     mockSaveReviewRuleConfig,
 } = vi.hoisted(() => ({
-    mockCreateShareCode: vi.fn(() => 'share-code'),
-    mockFilterSnippets: vi.fn((snippets: ProjectSnippet[]) => snippets),
-    mockLoadProjectSnippets: vi.fn(() => [
+    mockCreateWorkspaceShareCode: vi.fn(() => 'share-code'),
+    mockFilterWorkspaceSnippets: vi.fn((snippets: WorkspaceSnippet[]) => snippets),
+    mockLoadWorkspaceSnippets: vi.fn(() => [
         {
             id: 'snippet-1',
             name: 'Reusable snippet',
@@ -34,7 +34,7 @@ const {
         detectAnyType: true,
         detectUnsafeEval: false,
     })),
-    mockParseShareCode: vi.fn((): ProjectSnippet | null => null),
+    mockParseWorkspaceShareCode: vi.fn((): WorkspaceSnippet | null => null),
     mockRunBugDetectionAnalysis: vi.fn(() => ({
         classification: 'safe',
         confidenceScore: 0.75,
@@ -54,7 +54,7 @@ const {
         buildTimeNotes: [],
         runtimeMonitoringNotes: [],
     })),
-    mockSaveProjectSnippets: vi.fn(),
+    mockSaveWorkspaceSnippets: vi.fn(),
     mockSaveReviewRuleConfig: vi.fn(),
 }));
 
@@ -79,7 +79,7 @@ vi.mock('@/components/ui/CodeMirrorEditor', () => ({
     ),
 }));
 
-vi.mock('@/features/projects/utils/dev-ai-assistant', () => ({
+vi.mock('@/features/workspace/utils/dev-ai-assistant', () => ({
     loadReviewRuleConfig: mockLoadReviewRuleConfig,
     runBugDetectionAnalysis: mockRunBugDetectionAnalysis,
     runCodeReviewAnalysis: mockRunCodeReviewAnalysis,
@@ -87,12 +87,17 @@ vi.mock('@/features/projects/utils/dev-ai-assistant', () => ({
     saveReviewRuleConfig: mockSaveReviewRuleConfig,
 }));
 
-vi.mock('@/features/projects/utils/snippet-manager', () => ({
-    createShareCode: mockCreateShareCode,
-    filterSnippets: mockFilterSnippets,
-    loadProjectSnippets: mockLoadProjectSnippets,
-    parseShareCode: mockParseShareCode,
-    saveProjectSnippets: mockSaveProjectSnippets,
+vi.mock('@/features/workspace/utils/snippet-manager', () => ({
+    createWorkspaceShareCode: mockCreateWorkspaceShareCode,
+    filterWorkspaceSnippets: mockFilterWorkspaceSnippets,
+    loadWorkspaceSnippets: mockLoadWorkspaceSnippets,
+    parseWorkspaceShareCode: mockParseWorkspaceShareCode,
+    saveWorkspaceSnippets: mockSaveWorkspaceSnippets,
+    createShareCode: mockCreateWorkspaceShareCode,
+    filterSnippets: mockFilterWorkspaceSnippets,
+    loadProjectSnippets: mockLoadWorkspaceSnippets,
+    parseShareCode: mockParseWorkspaceShareCode,
+    saveProjectSnippets: mockSaveWorkspaceSnippets,
 }));
 
 vi.mock('@/i18n', () => ({
@@ -144,6 +149,13 @@ function createMockProps(overrides?: Partial<WorkspaceEditorProps>): WorkspaceEd
     };
 }
 
+async function clickAndFlush(label: string): Promise<void> {
+    await act(async () => {
+        fireEvent.click(screen.getByText(label));
+        await Promise.resolve();
+    });
+}
+
 describe('WorkspaceEditor', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -166,8 +178,8 @@ describe('WorkspaceEditor', () => {
 
         fireEvent.click(screen.getByText('projectDashboard.editor.saveSnippet'));
 
-        expect(mockSaveProjectSnippets).toHaveBeenCalledTimes(1);
-        expect(mockSaveProjectSnippets).toHaveBeenCalledWith(
+        expect(mockSaveWorkspaceSnippets).toHaveBeenCalledTimes(1);
+        expect(mockSaveWorkspaceSnippets).toHaveBeenCalledWith(
             expect.arrayContaining([
                 expect.objectContaining({
                     name: 'file.ts',
@@ -284,7 +296,7 @@ describe('WorkspaceEditor', () => {
         it('exports snippets to clipboard as JSON', async () => {
             render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
 
-            fireEvent.click(screen.getByText('projectDashboard.editor.exportSnippets'));
+            await clickAndFlush('projectDashboard.editor.exportSnippets');
 
             await vi.waitFor(() => {
                 expect(mockWriteText).toHaveBeenCalledWith(
@@ -307,10 +319,10 @@ describe('WorkspaceEditor', () => {
 
             render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
 
-            fireEvent.click(screen.getByText('projectDashboard.editor.importSnippets'));
+            await clickAndFlush('projectDashboard.editor.importSnippets');
 
             await vi.waitFor(() => {
-                expect(mockSaveProjectSnippets).toHaveBeenCalled();
+                expect(mockSaveWorkspaceSnippets).toHaveBeenCalled();
             });
             expect(screen.getByText('projectDashboard.editor.snippetImported')).toBeInTheDocument();
         });
@@ -320,7 +332,7 @@ describe('WorkspaceEditor', () => {
 
             render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
 
-            fireEvent.click(screen.getByText('projectDashboard.editor.importSnippets'));
+            await clickAndFlush('projectDashboard.editor.importSnippets');
 
             await vi.waitFor(() => {
                 expect(screen.getByText('projectDashboard.editor.snippetImportFailed')).toBeInTheDocument();
@@ -332,7 +344,7 @@ describe('WorkspaceEditor', () => {
 
             render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
 
-            fireEvent.click(screen.getByText('projectDashboard.editor.importSnippets'));
+            await clickAndFlush('projectDashboard.editor.importSnippets');
 
             await vi.waitFor(() => {
                 expect(screen.getByText('projectDashboard.editor.snippetImportFailed')).toBeInTheDocument();
@@ -344,10 +356,10 @@ describe('WorkspaceEditor', () => {
 
             // Select the snippet first
             fireEvent.change(screen.getByRole('combobox'), { target: { value: 'snippet-1' } });
-            fireEvent.click(screen.getByText('projectDashboard.editor.shareSnippet'));
+            await clickAndFlush('projectDashboard.editor.shareSnippet');
 
             await vi.waitFor(() => {
-                expect(mockCreateShareCode).toHaveBeenCalled();
+                expect(mockCreateWorkspaceShareCode).toHaveBeenCalled();
                 expect(mockWriteText).toHaveBeenCalledWith('share-code');
                 expect(screen.getByText('projectDashboard.editor.snippetShareCodeCopied')).toBeInTheDocument();
             });
@@ -363,26 +375,26 @@ describe('WorkspaceEditor', () => {
                 createdAt: Date.now(),
             };
             mockReadText.mockResolvedValueOnce({ success: true, text: 'valid-share-code' });
-            mockParseShareCode.mockReturnValueOnce(parsedSnippet);
+            mockParseWorkspaceShareCode.mockReturnValueOnce(parsedSnippet);
 
             render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
 
-            fireEvent.click(screen.getByText('projectDashboard.editor.importShareCode'));
+            await clickAndFlush('projectDashboard.editor.importShareCode');
 
             await vi.waitFor(() => {
-                expect(mockParseShareCode).toHaveBeenCalledWith('valid-share-code');
-                expect(mockSaveProjectSnippets).toHaveBeenCalled();
+                expect(mockParseWorkspaceShareCode).toHaveBeenCalledWith('valid-share-code');
+                expect(mockSaveWorkspaceSnippets).toHaveBeenCalled();
             });
             expect(screen.getByText('projectDashboard.editor.snippetImported')).toBeInTheDocument();
         });
 
         it('shows error when share code is invalid', async () => {
             mockReadText.mockResolvedValueOnce({ success: true, text: 'invalid-code' });
-            mockParseShareCode.mockReturnValueOnce(null);
+            mockParseWorkspaceShareCode.mockReturnValueOnce(null);
 
             render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
 
-            fireEvent.click(screen.getByText('projectDashboard.editor.importShareCode'));
+            await clickAndFlush('projectDashboard.editor.importShareCode');
 
             await vi.waitFor(() => {
                 expect(screen.getByText('projectDashboard.editor.snippetImportFailed')).toBeInTheDocument();
@@ -417,7 +429,7 @@ describe('WorkspaceEditor', () => {
             const scratchTextarea = textareas.find(el => el.tagName === 'TEXTAREA' && el.classList.contains('min-h-[70px]'));
             expect(scratchTextarea).toBeDefined();
             fireEvent.change(scratchTextarea!, { target: { value: 'echo hello' } });
-            fireEvent.click(screen.getByText('projectDashboard.editor.runScratch'));
+            await clickAndFlush('projectDashboard.editor.runScratch');
 
             await vi.waitFor(() => {
                 expect(mockRunCommand).toHaveBeenCalledWith('echo', ['hello'], 'C:\\workspace');
@@ -430,7 +442,7 @@ describe('WorkspaceEditor', () => {
             const textareas = screen.getAllByRole('textbox');
             const scratchTextarea = textareas.find(el => el.tagName === 'TEXTAREA' && el.classList.contains('min-h-[70px]'));
             fireEvent.change(scratchTextarea!, { target: { value: 'My documentation notes' } });
-            fireEvent.click(screen.getByText('projectDashboard.editor.saveScratchDoc'));
+            await clickAndFlush('projectDashboard.editor.saveScratchDoc');
 
             await vi.waitFor(() => {
                 expect(mockWriteFile).toHaveBeenCalledWith(
@@ -446,7 +458,7 @@ describe('WorkspaceEditor', () => {
             const textareas = screen.getAllByRole('textbox');
             const scratchTextarea = textareas.find(el => el.tagName === 'TEXTAREA' && el.classList.contains('min-h-[70px]'));
             fireEvent.change(scratchTextarea!, { target: { value: 'Task description' } });
-            fireEvent.click(screen.getByText('projectDashboard.editor.saveScratchTask'));
+            await clickAndFlush('projectDashboard.editor.saveScratchTask');
 
             await vi.waitFor(() => {
                 expect(mockWriteFile).toHaveBeenCalledWith(
@@ -459,7 +471,7 @@ describe('WorkspaceEditor', () => {
         it('does not run scratch command when scratchpad is empty', async () => {
             render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
 
-            fireEvent.click(screen.getByText('projectDashboard.editor.runScratch'));
+            await clickAndFlush('projectDashboard.editor.runScratch');
 
             await vi.waitFor(() => {
                 expect(mockRunCommand).not.toHaveBeenCalled();

@@ -14,6 +14,29 @@ import * as pty from 'node-pty';
 
 
 const execAsync = promisify(exec);
+const SENSITIVE_FLAG_PATTERN = /^(?:--?(?:token|password|pass|secret|api[-_]?key|auth|authorization)|\/(?:p|pass|password))$/i;
+
+function redactSensitiveArgs(args: string[]): string {
+    const redacted: string[] = [];
+    for (let i = 0; i < args.length; i += 1) {
+        const current = args[i];
+        const [key, value] = current.split('=', 2);
+        if (SENSITIVE_FLAG_PATTERN.test(key) && typeof value === 'string') {
+            redacted.push(`${key}=***`);
+            continue;
+        }
+        if (SENSITIVE_FLAG_PATTERN.test(current)) {
+            redacted.push(current);
+            if (i + 1 < args.length) {
+                redacted.push('***');
+                i += 1;
+            }
+            continue;
+        }
+        redacted.push(current);
+    }
+    return redacted.join(' ');
+}
 
 // Interface for a running task
 export interface TaskProcess {
@@ -43,7 +66,7 @@ export class ProcessService extends EventEmitter {
         const id = crypto.randomUUID().substring(0, 8);
         const resolvedCommand = resolveWindowsCommand(command);
 
-        appLogger.info('process.service', `[ProcessService] Spawning: ${resolvedCommand} ${args.join(' ')} in ${cwd} `);
+        appLogger.info('process.service', `[ProcessService] Spawning: ${resolvedCommand} ${redactSensitiveArgs(args)} in ${cwd} `);
 
         // Quote arguments to prevent injection
         const safeArgs = args.map(quoteShellArg);

@@ -20,7 +20,7 @@ const PROVIDER_SETTINGS_UPDATERS: Record<ProviderType, (s: AppSettings, setStatu
 
 interface BrowserAuthOptions {
     settings: AppSettings | null; updateSettings: (s: AppSettings, save: boolean) => Promise<void>;
-    authBusy: string | null; setAuthBusy: (b: string | null) => void; setAuthNotice: (msg: string) => void;
+    authBusy: string | null; setAuthBusy: (b: string | null) => void; setAuthNotice: (msg: string, duration?: number) => void;
     onRefreshModels?: () => void; onRefreshAccounts?: () => Promise<void>; onShowManualSession?: (id: string, email?: string) => void;
 }
 
@@ -29,6 +29,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
     const [authStatus, setAuthStatus] = useState<AuthStatusState>({ codex: false, claude: false, antigravity: false, copilot: false });
     const mountedRef = useRef(true);
     const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const activeRequestRef = useRef(0);
 
     useEffect(() => {
         return () => {
@@ -68,12 +69,14 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
     }, [onShowManualSession]);
 
     const pollConnection = useCallback((provider: string, identifiers: string[]) => {
+        const requestId = activeRequestRef.current;
         let attempts = 0;
         const poll = async () => {
-            if (!mountedRef.current) { return; }
+            if (!mountedRef.current || requestId !== activeRequestRef.current) { return; }
             attempts++;
             try {
                 const accounts = await window.electron.getLinkedAccounts();
+                if (!mountedRef.current || requestId !== activeRequestRef.current) { return; }
                 const matched = accounts.some(acc => identifiers.includes(acc.provider.toLowerCase()));
                 if (matched) {
                     if (!mountedRef.current) { return; }
@@ -89,6 +92,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
                 else if (mountedRef.current) { setAuthNotice(`${provider} timeout`); setAuthBusy(null); }
             } catch (err) {
                 appLogger.error('BrowserAuth', 'pollConnection error', err as Error);
+                if (!mountedRef.current || requestId !== activeRequestRef.current) { return; }
                 if (attempts < 30) { pollTimeoutRef.current = setTimeout(() => { void poll(); }, 3000); }
                 else if (mountedRef.current) { setAuthBusy(null); }
             }
@@ -98,18 +102,32 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
 
     const connectBrowserProvider = useCallback(async (provider: 'codex' | 'claude' | 'antigravity') => {
         if (authBusy) { return; }
+        const requestId = activeRequestRef.current + 1;
+        activeRequestRef.current = requestId;
         setAuthBusy(provider); setAuthNotice('Connecting...');
         try {
             const res = provider === 'codex' ? await window.electron.codexLogin() : provider === 'claude' ? await window.electron.claudeLogin() : await window.electron.antigravityLogin();
+            if (requestId !== activeRequestRef.current) { return; }
             if (res.url) {
                 window.electron.openExternal(res.url); setAuthNotice('Login in browser.');
                 pollConnection(provider, provider === 'codex' ? ['codex', 'openai'] : provider === 'claude' ? ['claude', 'anthropic'] : ['antigravity']);
             } else { setAuthNotice(`Failed URL for ${provider}`); setAuthBusy(null); }
         } catch (e) {
             appLogger.error('BrowserAuth', 'Conn failure', e as Error);
+            if (requestId !== activeRequestRef.current) { return; }
             setAuthNotice('Connection failed.'); setAuthBusy(null);
         }
     }, [authBusy, setAuthBusy, setAuthNotice, pollConnection]);
+
+    const cancelBrowserAuth = useCallback(() => {
+        activeRequestRef.current += 1;
+        if (pollTimeoutRef.current !== null) {
+            clearTimeout(pollTimeoutRef.current);
+            pollTimeoutRef.current = null;
+        }
+        setAuthBusy(null);
+        setAuthNotice('Connection cancelled.', 2000);
+    }, [setAuthBusy, setAuthNotice]);
 
     const handleSaveClaudeSession = useCallback(async (key: string, id?: string) => {
         setAuthNotice('Saving session...');
@@ -135,5 +153,5 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
         await refreshAuthStatus();
     }, [settings, updateSettings, refreshAuthStatus]);
 
-    return { authStatus, refreshAuthStatus, connectBrowserProvider, handleSaveClaudeSession, disconnectProvider };
+    return { authStatus, refreshAuthStatus, connectBrowserProvider, cancelBrowserAuth, handleSaveClaudeSession, disconnectProvider };
 }

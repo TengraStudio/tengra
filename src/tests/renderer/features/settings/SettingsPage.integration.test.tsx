@@ -48,6 +48,7 @@ function createLogicMock(overrides: Partial<ReturnType<typeof useSettingsLogic>>
         connectGitHubProfile: vi.fn().mockResolvedValue(undefined),
         connectCopilot: vi.fn().mockResolvedValue(undefined),
         connectBrowserProvider: vi.fn().mockResolvedValue(undefined),
+        cancelAuthFlow: vi.fn(),
         disconnectProvider: vi.fn().mockResolvedValue(undefined),
         statsLoading: false,
         statsPeriod: 'daily' as const,

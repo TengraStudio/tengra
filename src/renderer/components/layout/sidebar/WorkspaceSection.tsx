@@ -47,12 +47,12 @@ const CollapsedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) =>
         </Button>
         <Button
             variant="ghost"
-            onClick={() => onChangeView('projects')}
+            onClick={() => onChangeView('workspace')}
             className={cn(
                 'nav-item justify-center',
-                currentView === 'projects' && 'nav-item-active'
+                currentView === 'workspace' && 'nav-item-active'
             )}
-            title={t('sidebar.projects')}
+            title={t('sidebar.workspace')}
         >
             <Rocket className="w-4 h-4 shrink-0" />
         </Button>
@@ -84,11 +84,11 @@ const ExpandedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) => 
             badge={chatsCount}
         />
         <SidebarMenuItem
-            id="projects"
+            id="workspace"
             icon={<Rocket className="w-4 h-4" />}
-            label={t('sidebar.projects')}
-            onClick={() => onChangeView('projects')}
-            isActive={currentView === 'projects'}
+            label={t('sidebar.workspace')}
+            onClick={() => onChangeView('workspace')}
+            isActive={currentView === 'workspace'}
             status={selectedProject ? 'online' : undefined}
             statusLabel={selectedProject ? t('sidebar.active') : undefined}
         />

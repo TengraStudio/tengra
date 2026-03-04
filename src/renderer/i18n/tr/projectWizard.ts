@@ -1,0 +1,51 @@
+const sectionData = {
+    "title": "Proje Sihirbazı",
+    "localProject": "Yerel Proje",
+    "localProjectDesc": "Bilgisayarınızda yeni bir proje oluşturun.",
+    "remoteSSH": "Uzak SSH",
+    "remoteSSHDesc": "Uzak bir sunucuya bağlanın ve geliştirme yapın.",
+    "import": "İçe Aktar",
+    "importDesc": "Mevcut bir projeyi veya klasörü çalışma alanına ekleyin.",
+    "projectName": "PROJE ADI",
+    "namePlaceholder": "Örn: CRM Dashboard",
+    "placeholder": {
+        "example": "ornek.com"
+    },
+    "description": "AÇIKLAMA (OPSİYONEL)",
+    "descPlaceholder": "Projenin amacı nedir?",
+    "host": "SUNUCU (HOST)",
+    "port": "PORT",
+    "username": "KULLANICI ADI",
+    "password": "Şifre",
+    "privateKey": "Özel Anahtar (Key)",
+    "keyPath": "ANAHTAR DOSYA YOLU",
+    "creating": "Proje Oluşturuluyor",
+    "sshSetup": "SSH bağlantısı kuruluyor ve uzak ortam hazırlanıyor...",
+    "configuring": "Proje dosyaları ve yapay zeka hafızası yapılandırılıyor...",
+    "back": "Geri",
+    "next": "İleri",
+    "create": "Oluştur",
+    "connect": "Bağlan",
+    "selectFolder": "Klasörü Seç",
+    "alreadyExists": "Zaten var",
+    "alreadyExistsDesc": "Bilgisayarınızdaki mevcut bir proje klasörünü bağlayın.",
+    "sshTodo": "SSH (Yakında)",
+    "sshTodoDesc": "Uzak sunucudaki projenizi geliştirin. Şimdilik devre dışı.",
+    "newCreateTodo": "Yeni Oluştur (Yakında)",
+    "newCreateTodoDesc": "Sıfırdan yeni bir proje dizini oluşturun. Şimdilik devre dışı.",
+    "emptyDir": "Bu klasör boş.",
+    "listingDir": "Dizin listeleniyor...",
+    "selectRootDesc": "Proje metadataları için kök dizini seçin.",
+    "connectionFailed": "Bağlantı başarısız",
+    "connectionIdNotFound": "Bağlantı kuruldu fakat ID bulunamadı.",
+    "listFailed": "Dizin listeleme başarısız",
+    "categories": {
+        "web": "Web Uygulaması",
+        "backend": "Backend Servisi",
+        "cli": "CLI / Script",
+        "mobile": "Mobil Uygulama",
+        "other": "Özel Proje"
+    }
+};
+
+export default sectionData;

@@ -30,14 +30,18 @@ export interface ScoredTranslationEntry extends TranslationEntry {
 /** Supported language codes for translation memory */
 type LangCode = 'tr' | 'de' | 'fr' | 'es' | 'ja' | 'zh' | 'ar';
 
+function toTranslationRecord<T extends object>(value: T): Record<string, unknown> {
+    return value as Record<string, unknown>;
+}
+
 const LANG_MAP: Record<LangCode, Record<string, unknown>> = {
-    tr: tr as unknown as Record<string, unknown>,
-    de: de as unknown as Record<string, unknown>,
-    fr: fr as unknown as Record<string, unknown>,
-    es: es as unknown as Record<string, unknown>,
-    ja: ja as unknown as Record<string, unknown>,
-    zh: zh as unknown as Record<string, unknown>,
-    ar: ar as unknown as Record<string, unknown>,
+    tr: toTranslationRecord(tr),
+    de: toTranslationRecord(de),
+    fr: toTranslationRecord(fr),
+    es: toTranslationRecord(es),
+    ja: toTranslationRecord(ja),
+    zh: toTranslationRecord(zh),
+    ar: toTranslationRecord(ar),
 };
 
 /**
@@ -149,7 +153,7 @@ function resolveKey(obj: Record<string, unknown>, key: string): string | undefin
  * Returns entries that can be searched for similar strings.
  */
 export function buildTranslationMemory(): TranslationEntry[] {
-    const enFlat = flattenObject(en as unknown as Record<string, unknown>);
+    const enFlat = flattenObject(toTranslationRecord(en));
     const entries: TranslationEntry[] = [];
 
     for (const [key, enValue] of enFlat) {

@@ -38,10 +38,9 @@ This workflow ensures consistent and traceable commits.
    If a task was completed, mark it with `[x]` in `docs/TODO.md`.
    NEVER delete completed items.
 
-5. **Update structured changelog**
-   - Update `docs/changelog/data/changelog.entries.json`
-   - Update `docs/changelog/i18n/tr.overrides.json` if needed
-   - Run `npm run changelog:sync`
+5. **Review changelog docs only if needed**
+   - The old structured changelog source has been removed from this repo.
+   - If a user-facing change needs release notes, update the current markdown changelog docs directly.
 
 6. **Push changes**
    ```bash

@@ -124,6 +124,13 @@ export default tseslint.config(
     },
 
     {
+        files: ['src/**/*.d.ts'],
+        rules: {
+            '@typescript-eslint/no-unused-vars': 'off'
+        }
+    },
+
+    {
         files: ['**/utils/dialog.ts'],
         rules: {
             'no-alert': 'off'

@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useWorkspaceManager } from '@/features/projects/hooks/useWorkspaceManager';
+import { useWorkspaceManager } from '@/features/workspace/hooks/useWorkspaceManager';
 import { Project } from '@/types';
 import { webElectronMock } from '@/web-bridge';
 

@@ -32,7 +32,7 @@ export const AdvancedMemorySourceSchema = z.enum([
 
 export const AdvancedMemoryRecallContextSchema = z.object({
     query: z.string().trim().max(5000),
-    projectId: z.string().trim().max(200).optional(),
+    workspaceId: z.string().trim().max(200).optional(),
     categories: z.array(AdvancedMemoryCategorySchema).max(16).optional(),
     tags: z.array(z.string().trim()).max(32).optional(),
     createdAfter: z.number().finite().optional(),
@@ -65,7 +65,7 @@ export const AdvancedSemanticFragmentSchema = z.object({
     relatedMemoryIds: z.array(z.string().uuid()).max(50),
     contradictsIds: z.array(z.string().uuid()).max(20),
     mergedIntoId: z.string().uuid().optional(),
-    projectId: z.string().max(200).optional(),
+    workspaceId: z.string().max(200).optional(),
     createdAt: z.number(),
     updatedAt: z.number()
 });
@@ -84,7 +84,7 @@ export const PendingMemorySchema = z.object({
     relevanceScore: z.number().min(0).max(1),
     noveltyScore: z.number().min(0).max(1),
     requiresUserValidation: z.boolean(),
-    projectId: z.string().max(200).optional()
+    workspaceId: z.string().max(200).optional()
 });
 
 export const RecallResultSchema = z.object({
@@ -122,7 +122,7 @@ export const MemoryStatisticsSchema = z.object({
 export const SharedMemoryNamespaceSchema = z.object({
     id: z.string().uuid(),
     name: z.string().min(1).max(200),
-    projectIds: z.array(z.string()).max(100),
+    workspaceIds: z.array(z.string()).max(100),
     accessControl: z.record(z.string(), z.array(z.string())).optional(),
     createdAt: z.number(),
     updatedAt: z.number()
@@ -156,7 +156,7 @@ export const AdvancedMemoryHealthSchema = z.object({
 
 export const ContextRetrievalInputSchema = z.object({
     query: z.string().trim().max(5000),
-    projectId: z.string().trim().max(200).optional(),
+    workspaceId: z.string().trim().max(200).optional(),
     limit: z.number().int().min(1).max(20).optional()
 });
 
@@ -164,9 +164,9 @@ export const EmbeddingTextInputSchema = z.object({
     text: z.string().max(20000)
 });
 
-export const ProjectRootPathSchema = z.string().trim().min(1).max(4096);
-export const ProjectEnvKeySchema = z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/);
-export const ProjectEnvVarsSchema = z.record(ProjectEnvKeySchema, z.string().max(20000));
+export const WorkspaceRootPathSchema = z.string().trim().min(1).max(4096);
+export const WorkspaceEnvKeySchema = z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/);
+export const WorkspaceEnvVarsSchema = z.record(WorkspaceEnvKeySchema, z.string().max(20000));
 
 /**
  * Agent Service Schemas
@@ -223,10 +223,10 @@ export const AgentValidationResultSchema = z.object({
 });
 
 /**
- * Project Service Schemas
+ * Workspace Service Schemas
  */
 
-export const ProjectStatsSchema = z.object({
+export const WorkspaceStatsSchema = z.object({
     fileCount: z.number().int().nonnegative(),
     totalSize: z.number().int().nonnegative(),
     loc: z.number().int().nonnegative(),
@@ -236,21 +236,21 @@ export const ProjectStatsSchema = z.object({
 /**
  * Unique project identifier
  */
-export const ProjectIdSchema = z.string().max(128).optional();
+export const WorkspaceIdSchema = z.string().max(128).optional();
 
-export const ProjectIssueSchema = z.object({
+export const WorkspaceIssueSchema = z.object({
     type: z.enum(['error', 'warning']),
     message: z.string(),
     file: z.string(),
     line: z.number().int().nonnegative()
 });
 
-export const ProjectAnalysisSchema = z.object({
+export const WorkspaceAnalysisSchema = z.object({
     type: z.string().max(100),
     frameworks: z.array(z.string().max(100)).max(100),
     dependencies: z.record(z.string(), z.string()),
     devDependencies: z.record(z.string(), z.string()),
-    stats: ProjectStatsSchema,
+    stats: WorkspaceStatsSchema,
     languages: z.record(z.string(), z.number()).optional(),
     files: z.array(z.string().max(4096)).optional(),
     filesPage: z.object({
@@ -264,7 +264,7 @@ export const ProjectAnalysisSchema = z.object({
         packages: z.array(z.string().max(256)).max(1000)
     }).optional(),
     todos: z.array(z.string().max(500)).max(1000),
-    issues: z.array(ProjectIssueSchema).max(1000).optional()
+    issues: z.array(WorkspaceIssueSchema).max(1000).optional()
 });
 
 /**
@@ -274,7 +274,7 @@ export const DirectoryAnalysisSchema = z.object({
     hasPackageJson: z.boolean(),
     pkg: z.record(z.string(), z.any()),
     readme: z.string().nullable(),
-    stats: ProjectStatsSchema
+    stats: WorkspaceStatsSchema
 });
 
 /**
@@ -287,7 +287,7 @@ export const GenerateLogoOptionsSchema = z.object({
     count: z.number().int().positive().max(10)
 });
 
-export const ProjectIdentitySchema = z.object({
+export const WorkspaceIdentitySchema = z.object({
     suggestedPrompts: z.array(z.string().max(1000)).max(50),
     colors: z.array(z.string().max(64)).max(20)
 });

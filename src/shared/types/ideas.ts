@@ -41,7 +41,7 @@ export type IdeaGenerationStage =
     | 'idea-research'          // Stage 3: Targeted idea-specific research
     | 'naming'                 // Stage 4: Generate 10 project names
     | 'long-description'       // Stage 5: Long-form description
-    | 'roadmap'                // Stage 6: Project roadmap
+    | 'roadmap'                // Stage 6: Workspace roadmap
     | 'tech-stack'             // Stage 7: Technology stack
     | 'competitor-analysis'    // Stage 8: Idea-specific competitor analysis
     | 'personas'               // Stage 9: User personas & journey maps
@@ -230,9 +230,9 @@ export interface RoadmapPhase {
 }
 
 /**
- * Project roadmap
+ * Workspace roadmap
  */
-export interface ProjectRoadmap {
+export interface WorkspaceRoadmap {
     mvp: RoadmapPhase
     phases: RoadmapPhase[]
     totalDuration: string
@@ -275,7 +275,7 @@ export interface IdeaCompetitor {
 /**
  * Generated project idea
  */
-export interface ProjectIdea {
+export interface WorkspaceIdea {
     id: string
     sessionId: string
     title: string
@@ -287,7 +287,7 @@ export interface ProjectIdea {
     longDescription?: string           // Stage 5: Detailed professional description
     nameSuggestions?: string[]         // Stage 4: 10 project names
     competitiveAdvantages?: string[]
-    roadmap?: ProjectRoadmap           // Stage 6: MVP and development phases
+    roadmap?: WorkspaceRoadmap           // Stage 6: MVP and development phases
     techStack?: TechStack              // Stage 7: Technology recommendations
     ideaCompetitors?: IdeaCompetitor[] // Stage 8: Idea-specific competitor analysis
     personas?: UserPersona[]           // Stage 9: User profiles
@@ -303,6 +303,7 @@ export interface ProjectIdea {
     researchContext?: string           // Stage 3: Idea-specific research context
     // Status and references
     status: IdeaStatus
+    workspaceId?: string
     projectId?: string
     logoPath?: string
     metadata?: JsonObject
@@ -313,16 +314,19 @@ export interface ProjectIdea {
 /**
  * Enriched project idea with all fields populated
  */
-export interface EnrichedIdea extends ProjectIdea {
+export interface EnrichedIdea extends WorkspaceIdea {
     explanation: string
     valueProposition: string
     longDescription: string
     nameSuggestions: string[]
     competitiveAdvantages: string[]
-    roadmap: ProjectRoadmap
+    roadmap: WorkspaceRoadmap
     techStack: TechStack
     ideaCompetitors: IdeaCompetitor[]
 }
+
+export type ProjectRoadmap = WorkspaceRoadmap;
+export type ProjectIdea = WorkspaceIdea;
 
 /**
  * Research progress event
@@ -342,7 +346,7 @@ export interface IdeaProgress {
     sessionId: string
     ideaIndex: number
     totalIdeas: number
-    currentIdea?: Partial<ProjectIdea>
+    currentIdea?: Partial<WorkspaceIdea>
     stage: IdeaGenerationStage
     stageProgress?: number  // 0-100 progress within current stage
     stageMessage?: string   // Human-readable stage message

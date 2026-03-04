@@ -1,0 +1,30 @@
+const sectionData = {
+    "title": "Models",
+    "subtitle": "Manage your AI models across all providers",
+    "installedModels": "Installed Models",
+    "marketplace": "Marketplace",
+    "modelsAvailable": "models available",
+    "modelsCount": "models",
+    "accounts": "accounts",
+    "loadingModels": "Loading models...",
+    "searchPlaceholder": "Search models...",
+    "refresh": "Refresh",
+    "noModelsFound": "No models found",
+    "marketplaceComingSoon": "Marketplace coming soon...",
+    "context": "Context",
+    "pricing": "Pricing",
+    "thinkingLevels": "Thinking",
+    "quotaReset": "Quota Reset",
+    "free": "Free",
+    "default": "Default",
+    "setDefault": "Set Default",
+    "isDefault": "This is the default model",
+    "favorite": "Add to favorites",
+    "unfavorite": "Remove from favorites",
+    "hide": "Hide model",
+    "show": "Show model",
+    "showHidden": "Show Hidden",
+    "hideHidden": "Hide Hidden"
+};
+
+export default sectionData;

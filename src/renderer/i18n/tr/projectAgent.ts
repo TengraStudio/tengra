@@ -1,0 +1,81 @@
+const sectionData = {
+    "changePreview": "Değişiklik önizlemesi",
+    "reasoningTitle": "Akıl Yürütme",
+    "consoleTitle": "Konsol",
+    "consoleTab": "Konsol",
+    "planTab": "Plan",
+    "eventCount": "{{count}} olay",
+    "waitingLogs": "Günlükler bekleniyor...",
+    "toolSummary": {
+        "editing": "Dosyalar düzenleniyor",
+        "command": "Komut çalıştırılıyor",
+        "running": "Araç çalışıyor",
+        "fileFallback": "Dosya değişikliği"
+    },
+    "newTask": "Yeni Görev",
+    "generatingPlan": "Plan oluşturuluyor...",
+    "executingTask": "Görev yürütülüyor...",
+    "waitingApproval": "Onay bekleniyor",
+    "newStep": "Yeni adım",
+    "addStep": "Adım ekle",
+    "noPlan": "Henüz plan yok",
+    "overallProgress": "Genel ilerleme",
+    "selectAgentProfile": "Ajan profili seç",
+    "agentSelected": "Ajan seçildi",
+    "defaultAgent": "Varsayılan Ajan",
+    "defaultAgentDesc": "Genel amaçlı proje ajanı",
+    "approveAndRun": "Onayla ve Çalıştır",
+    "planning": "Planlama",
+    "running": "Çalışıyor",
+    "stopLabel": "Durdur",
+    "planAction": "Planla",
+    "executeAction": "Yürüt",
+    "thinkingOn": "Düşünme açık",
+    "thinkingOff": "Düşünme kapalı",
+    "selectAction": "Eylem seç",
+    "noDescription": "Açıklama yok",
+    "selectProject": "Proje seç",
+    "votingPanel": {
+        "title": "Oylama Oturumları",
+        "sessionCount": "{{count}} oturum",
+        "pending": "Beklemede",
+        "resolved": "Çözüldü",
+        "deadlocked": "Çıkmaz",
+        "noSessions": "Henüz oylama oturumu yok",
+        "votesCount": "{{count}} oy",
+        "disagreementDetails": "Görüş ayrılığı detayları",
+        "noDisagreement": "Görüş ayrılığı tespit edilmedi",
+        "manualOverride": "Manuel geçersiz kılma",
+        "overrideReasonPlaceholder": "Geçersiz kılma nedeni (isteğe bağlı)",
+        "applyOverride": "Geçersiz kılmayı uygula",
+        "applyingOverride": "Uygulanıyor...",
+        "configSummary": "Yapılandırma: minimum {{minVotes}} oy, çıkmaz eşiği %{{deadlock}}",
+        "status": {
+            "pending": "Beklemede",
+            "voting": "Oylanıyor",
+            "resolved": "Çözüldü",
+            "deadlocked": "Çıkmaz"
+        }
+    },
+    "statePanel": {
+        "title": "Durum Makinesi",
+        "currentState": "Geçerli durumlar",
+        "allowedTransitions": "İzin verilen geçişler",
+        "noTransitions": "Geçiş bulunmuyor",
+        "recentTransitions": "Son geçişler",
+        "noHistory": "Henüz durum geçişi yok",
+        "status": {
+            "idle": "Boşta",
+            "planning": "Planlama",
+            "waiting_for_approval": "Onay bekleniyor",
+            "running": "Çalışıyor",
+            "paused": "Duraklatıldı",
+            "completed": "Tamamlandı",
+            "failed": "Başarısız",
+            "error": "Hata"
+        }
+    },
+    "unnamedGroup": "Adsız Grup"
+};
+
+export default sectionData;

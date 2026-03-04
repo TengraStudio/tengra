@@ -39,9 +39,9 @@ Thank you for your interest in contributing to Tengra! To maintain high code qua
 
 - Never hardcode user-facing strings.
 - Use `t('key')` for translations.
-- Update `en.ts` and `tr.ts` when adding new strings.
+- Update the matching section files in `src/renderer/i18n/en/` and `src/renderer/i18n/tr/` when adding new strings.
+- Keep the same section files and nested keys synchronized across all language folders.
 
 ---
 
 For more details, see [AI_RULES.md](./AI_RULES.md).
-

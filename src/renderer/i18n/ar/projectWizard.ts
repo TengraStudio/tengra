@@ -1,0 +1,51 @@
+const sectionData = {
+    "title": "معالج المشروع",
+    "localProject": "مشروع محلي",
+    "localProjectDesc": "إنشاء مشروع جديد على جهاز الكمبيوتر الخاص بك.",
+    "remoteSSH": "SSH عن بعد",
+    "remoteSSHDesc": "الاتصال بخادم بعيد للتطوير.",
+    "import": "استيراد",
+    "importDesc": "إضافة مشروع أو مجلد موجود إلى مساحة العمل.",
+    "projectName": "اسم المشروع",
+    "namePlaceholder": "مثال: لوحة تحكم CRM",
+    "placeholder": {
+        "example": "example.com"
+    },
+    "description": "الوصف (اختياري)",
+    "descPlaceholder": "ما هو هدف هذا المشروع؟",
+    "host": "المضيف",
+    "port": "المنفذ",
+    "username": "اسم المستخدم",
+    "password": "كلمة المرور",
+    "privateKey": "المفتاح الخاص",
+    "keyPath": "مسار المفتاح",
+    "creating": "جاري إنشاء المشروع",
+    "sshSetup": "جاري إنشاء اتصال SSH وتجهيز البيئة البعيدة...",
+    "configuring": "جاري تكوين ملفات المشروع وذاكرة الذكاء الاصطناعي...",
+    "back": "رجوع",
+    "next": "التالي",
+    "create": "إنشاء",
+    "connect": "اتصال",
+    "selectFolder": "تحديد مجلد",
+    "alreadyExists": "موجود بالفعل",
+    "alreadyExistsDesc": "ربط مجلد مشروع موجود على جهاز الكمبيوتر الخاص بك.",
+    "sshTodo": "SSH (قريباً)",
+    "sshTodoDesc": "التطوير على خادم بعيد. معطل حالياً.",
+    "newCreateTodo": "إنشاء جديد (قريباً)",
+    "newCreateTodoDesc": "إنشاء دليل مشروع جديد من الصفر. معطل حالياً.",
+    "emptyDir": "هذا الدليل فارغ.",
+    "listingDir": "جاري سرد الدليل...",
+    "selectRootDesc": "حدد الدليل الجذري لبيانات المشروع الوصفية.",
+    "connectionFailed": "فشل الاتصال",
+    "connectionIdNotFound": "تم تأسيس الاتصال ولكن لم يتم العثور على المعرف.",
+    "listFailed": "فشل سرد الدليل",
+    "categories": {
+        "web": "تطبيق ويب",
+        "backend": "خدمة خلفية",
+        "cli": "واجهة سطر أوامر / سكريبت",
+        "mobile": "تطبيق جوال",
+        "other": "مشروع مخصص"
+    }
+};
+
+export default sectionData;

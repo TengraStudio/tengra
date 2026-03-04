@@ -31,7 +31,6 @@ import { registerMultiModelIpc } from '@main/ipc/multi-model';
 import { registerOllamaIpc } from '@main/ipc/ollama';
 import { registerPerformanceIpc } from '@main/ipc/performance';
 import { registerProcessIpc, setupProcessEvents } from '@main/ipc/process';
-import { registerProjectIpc } from '@main/ipc/project';
 import { registerPromptTemplatesIpc } from '@main/ipc/prompt-templates';
 import { registerProxyIpc } from '@main/ipc/proxy';
 import { registerProxyEmbedIpc } from '@main/ipc/proxy-embed';
@@ -46,6 +45,7 @@ import { registerUsageIpc } from '@main/ipc/usage';
 import { registerVoiceIpc } from '@main/ipc/voice';
 // Import all IPC registration functions
 import { registerWindowIpc } from '@main/ipc/window';
+import { registerWorkspaceIpc } from '@main/ipc/workspace';
 import { appLogger } from '@main/logging/logger';
 import { McpDispatcher } from '@main/mcp/dispatcher';
 import { Services } from '@main/startup/services';
@@ -182,8 +182,8 @@ export async function registerAllIpc(
 
     // Productivity & Tools
     registerSshIpc(getWin, sshService, services.rateLimitService);
-    registerProjectIpc(getWin, {
-        projectService: services.projectService,
+    registerWorkspaceIpc(getWin, {
+        workspaceService: services.workspaceService,
         logoService,
         inlineSuggestionService: services.inlineSuggestionService,
         codeIntelligenceService: services.codeIntelligenceService,

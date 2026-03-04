@@ -44,9 +44,8 @@ trigger: always_on
 2. Make changes
 3. `npm run build && npm run lint`
 4. Update docs/TODO.md (mark `[x]`, don't delete)
-5. Update `docs/changelog/data/changelog.entries.json`
-6. Run `npm run changelog:sync`
-7. Commit and push
+5. Update the relevant markdown docs if user-facing behavior changed
+6. Commit and push
 
 For complete details, see [AGENTS.md](../../AGENTS.md) and [docs/AI_RULES.md](../../docs/AI_RULES.md).
 

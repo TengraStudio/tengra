@@ -64,7 +64,7 @@ export function SettingsPage({
     const {
         settings, setSettings, isLoading, settingsUiState, lastErrorCode, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
         updateGeneral, updateSpeech, handleSave, startOllama, checkOllama, refreshAuthStatus,
-        connectGitHubProfile, connectCopilot, connectBrowserProvider, disconnectProvider,
+        connectGitHubProfile, connectCopilot, connectBrowserProvider, cancelAuthFlow, disconnectProvider,
         statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, setReloadTrigger,
         benchmarkResult, isBenchmarking, handleRunBenchmark,
         editingPersonaId, setEditingPersonaId, personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona,
@@ -188,7 +188,7 @@ export function SettingsPage({
     const sharedProps = useMemo(() => ({
         settings, setSettings, isLoading, settingsUiState, lastErrorCode, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
         updateGeneral, updateSpeech, handleSave, startOllama, checkOllama, refreshAuthStatus,
-        connectGitHubProfile, connectCopilot, connectBrowserProvider, disconnectProvider,
+        connectGitHubProfile, connectCopilot, connectBrowserProvider, cancelAuthFlow, disconnectProvider,
         statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, setReloadTrigger,
         benchmarkResult, isBenchmarking, handleRunBenchmark,
         editingPersonaId, setEditingPersonaId, personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona,
@@ -198,7 +198,7 @@ export function SettingsPage({
     }), [
         settings, setSettings, isLoading, settingsUiState, lastErrorCode, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
         updateGeneral, updateSpeech, handleSave, startOllama, checkOllama, refreshAuthStatus,
-        connectGitHubProfile, connectCopilot, connectBrowserProvider, disconnectProvider,
+        connectGitHubProfile, connectCopilot, connectBrowserProvider, cancelAuthFlow, disconnectProvider,
         statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, setReloadTrigger,
         benchmarkResult, isBenchmarking, handleRunBenchmark,
         editingPersonaId, setEditingPersonaId, personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona,

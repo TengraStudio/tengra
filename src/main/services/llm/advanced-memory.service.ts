@@ -12,6 +12,11 @@
 
 import { appLogger } from '@main/logging/logger';
 import { DatabaseService, EntityKnowledge, EpisodicMemory } from '@main/services/data/database.service';
+import { AdvancedMemoryIndexingService } from '@main/services/llm/advanced-memory-indexing.service';
+import { AdvancedMemoryMaintenanceService } from '@main/services/llm/advanced-memory-maintenance.service';
+import { AdvancedMemoryNormalizationAdapter } from '@main/services/llm/advanced-memory-normalization.adapter';
+import { AdvancedMemoryPersistenceAdapter } from '@main/services/llm/advanced-memory-persistence.adapter';
+import { AdvancedMemoryRetrievalService } from '@main/services/llm/advanced-memory-retrieval.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { SettingsService } from '@main/services/system/settings.service';
@@ -135,6 +140,11 @@ export class AdvancedMemoryService {
         lastDurationMs: 0,
         lastErrorCode: undefined as AdvancedMemoryErrorCode | undefined
     };
+    private readonly retrievalService: AdvancedMemoryRetrievalService;
+    private readonly maintenanceService: AdvancedMemoryMaintenanceService;
+    private readonly indexingService: AdvancedMemoryIndexingService;
+    private readonly normalizationAdapter: AdvancedMemoryNormalizationAdapter;
+    private readonly persistenceAdapter: AdvancedMemoryPersistenceAdapter;
 
     constructor(
         private db: DatabaseService,
@@ -144,6 +154,46 @@ export class AdvancedMemoryService {
         config?: Partial<AdvancedMemoryConfig>
     ) {
         this.config = { ...DEFAULT_MEMORY_CONFIG, ...config };
+        this.normalizationAdapter = new AdvancedMemoryNormalizationAdapter({
+            generateId: this.generateId.bind(this)
+        });
+        this.persistenceAdapter = new AdvancedMemoryPersistenceAdapter(this.db);
+        this.retrievalService = new AdvancedMemoryRetrievalService({
+            config: this.config,
+            searchAnalytics: this.searchAnalytics,
+            recall: this.recall.bind(this),
+            scoreMemory: this.calculateMemoryScore.bind(this),
+            searchMemoriesByVector: this.searchMemoriesByVector.bind(this),
+            getAllAdvancedMemories: this.getAllAdvancedMemories.bind(this),
+            updateAccessTracking: this.updateAccessTracking.bind(this),
+            recallEpisodes: this.recallEpisodes.bind(this),
+            getAvailableModel: this.getAvailableModel.bind(this),
+            callLLM: this.callLLM.bind(this),
+        });
+        this.maintenanceService = new AdvancedMemoryMaintenanceService({
+            config: this.config,
+            db: this.db,
+            stagingBuffer: this.stagingBuffer,
+            getAllAdvancedMemories: this.getAllAdvancedMemories.bind(this),
+            updateAdvancedMemory: this.updateAdvancedMemory.bind(this),
+            getMemoryById: this.getMemoryById.bind(this),
+            getPendingMemories: this.getPendingMemories.bind(this),
+            getAvailableModel: this.getAvailableModel.bind(this),
+            callLLM: this.callLLM.bind(this),
+            editMemory: this.editMemory.bind(this),
+            calculateDecayedImportance: this.calculateDecayedImportance.bind(this),
+        });
+        this.indexingService = new AdvancedMemoryIndexingService({
+            config: this.config,
+            generateEmbedding: this.embedding.generateEmbedding.bind(this.embedding),
+            searchMemoriesByVector: this.searchMemoriesByVector.bind(this),
+            getAvailableModel: this.getAvailableModel.bind(this),
+            callLLM: this.callLLM.bind(this),
+            getMemoryById: this.getMemoryById.bind(this),
+            updateAdvancedMemory: this.updateAdvancedMemory.bind(this),
+            updateMemoryStatus: this.updateMemoryStatus.bind(this),
+            cosineSimilarity: this.cosineSimilarity.bind(this),
+        });
     }
 
     async initialize(): Promise<void> {
@@ -545,53 +595,7 @@ export class AdvancedMemoryService {
         try {
             const recallContext = parsed.data as RecallContext;
             const queryEmbedding = await this.generateEmbeddingWithRetry(recallContext.query);
-            const limit = recallContext.limit ?? this.config.defaultRecallLimit;
-
-            // Get candidate memories
-            let candidates = await this.searchMemoriesByVector(queryEmbedding, limit * 3);
-
-            // Apply filters
-            candidates = this.applyRecallFilters(candidates, recallContext);
-
-            // Calculate final scores with all factors
-            const scores = new Map<string, MemoryScoreFactors>();
-            const scoredCandidates: Array<{ memory: AdvancedSemanticFragment; finalScore: number }> = [];
-
-            for (const memory of candidates) {
-                const factors = this.calculateMemoryScore(memory, queryEmbedding);
-                scores.set(memory.id, factors);
-
-                const finalScore =
-                    factors.baseImportance * 0.2 +
-                    factors.recencyBoost * 0.15 +
-                    factors.accessBoost * 0.1 +
-                    factors.relevanceScore * 0.4 +
-                    factors.confidenceWeight * 0.15;
-
-                scoredCandidates.push({ memory, finalScore });
-            }
-
-            // Sort by score and apply diversity
-            scoredCandidates.sort((a, b) => b.finalScore - a.finalScore);
-
-            let results = scoredCandidates.slice(0, limit).map(c => c.memory);
-
-            // Apply diversity if requested
-            if (recallContext.diversityFactor && recallContext.diversityFactor > 0) {
-                results = this.applyDiversity(scoredCandidates, limit, recallContext.diversityFactor);
-            }
-
-            // Update access tracking
-            for (const memory of results) {
-                await this.updateAccessTracking(memory.id);
-            }
-
-            const output = {
-                memories: results,
-                scores,
-                totalMatches: candidates.length,
-                queryEmbedding
-            };
+            const output = await this.retrievalService.performRecall(recallContext, queryEmbedding);
             this.operationalAnalytics.lastErrorCode = undefined;
             this.finalizeOperationDuration(startedAt);
             return output;
@@ -614,32 +618,11 @@ export class AdvancedMemoryService {
      * Simple recall for backwards compatibility
      */
     async recallRelevantFacts(query: string, limit: number = 5): Promise<AdvancedSemanticFragment[]> {
-        const result = await this.recall({ query, limit });
-        this.recordSearchAnalytics(query, 'semantic', result.memories.length);
-        return result.memories;
+        return this.retrievalService.recallRelevantFacts(query, limit);
     }
 
     async searchMemoriesHybrid(query: string, limit: number = 10): Promise<AdvancedSemanticFragment[]> {
-        const normalizedQuery = query.trim().toLowerCase();
-        if (!normalizedQuery) {
-            return [];
-        }
-
-        const safeLimit = Math.max(1, Math.min(100, limit));
-        const semantic = await this.recall({ query: normalizedQuery, limit: safeLimit * 2 });
-        const lexical = this.rankLexicalMatches(normalizedQuery, await this.getAllAdvancedMemories(), safeLimit * 2);
-
-        const combined = new Map<string, { memory: AdvancedSemanticFragment; score: number }>();
-        this.mergeScoredResults(combined, semantic.memories, 0.7);
-        this.mergeScoredResults(combined, lexical, 0.3);
-
-        const ranked = Array.from(combined.values())
-            .sort((left, right) => right.score - left.score)
-            .slice(0, safeLimit)
-            .map(item => item.memory);
-
-        this.recordSearchAnalytics(normalizedQuery, 'hybrid', ranked.length);
-        return ranked;
+        return this.retrievalService.searchMemoriesHybrid(query, limit);
     }
 
     async exportMemories(query?: string, limit: number = 200): Promise<{
@@ -648,17 +631,7 @@ export class AdvancedMemoryService {
         count: number;
         memories: AdvancedSemanticFragment[];
     }> {
-        const safeLimit = Math.max(1, Math.min(1000, limit));
-        const memories = query?.trim()
-            ? await this.searchMemoriesHybrid(query, safeLimit)
-            : (await this.getAllAdvancedMemories()).slice(0, safeLimit);
-
-        return {
-            exportedAt: new Date().toISOString(),
-            query: query?.trim() || undefined,
-            count: memories.length,
-            memories
-        };
+        return this.retrievalService.exportMemories(query, limit);
     }
 
     async importMemories(payload: {
@@ -697,7 +670,7 @@ export class AdvancedMemoryService {
         }
 
         for (let index = 0; index < memories.length; index++) {
-            const candidate = this.normalizeMemoryRecord(memories[index]);
+            const candidate = this.normalizationAdapter.normalizeMemoryRecord(memories[index]);
             if (!candidate) {
                 result.skipped++;
                 result.errors.push(`Invalid memory record at index ${index}`);
@@ -718,7 +691,7 @@ export class AdvancedMemoryService {
         }
 
         for (let index = 0; index < pendingMemories.length; index++) {
-            const pending = this.normalizePendingMemoryRecord(pendingMemories[index]);
+            const pending = this.normalizationAdapter.normalizePendingMemoryRecord(pendingMemories[index]);
             if (!pending) {
                 result.skipped++;
                 result.errors.push(`Invalid pending memory record at index ${index}`);
@@ -970,17 +943,7 @@ ${transcript}`;
      * High-level context gathering combining fragments and episodes
      */
     async gatherContext(query: string): Promise<string> {
-        const facts = await this.recallRelevantFacts(query, 3);
-        const episodes = await this.recallEpisodes(query, 2);
-
-        let context = '';
-        if (facts.length > 0) {
-            context += 'Related Facts:\n' + facts.map(f => `- ${f.content}`).join('\n') + '\n\n';
-        }
-        if (episodes.length > 0) {
-            context += 'Related Episodes:\n' + episodes.map(e => `- ${e.summary}`).join('\n');
-        }
-        return context;
+        return this.retrievalService.gatherContext(query);
     }
 
     // ========================================================================
@@ -994,87 +957,14 @@ ${transcript}`;
         content: string,
         embedding: number[]
     ): Promise<ContradictionCandidate[]> {
-        const similar = await this.searchMemoriesByVector(embedding, 10);
-        const candidates: ContradictionCandidate[] = [];
-
-        if (similar.length === 0) { return candidates; }
-
-        // Use LLM to detect contradictions
-        const model = await this.getAvailableModel();
-        if (!model) { return candidates; }
-
-        const existingContents = similar.map(m => ({
-            id: m.id,
-            content: m.content
-        }));
-
-        const prompt = `Analyze if the new fact contradicts any existing facts.
-
-New Fact: "${content}"
-
-Existing Facts:
-${existingContents.map((e, i) => `${i + 1}. [${e.id}] ${e.content}`).join('\n')}
-
-Return a JSON array of contradictions found. For each contradiction include:
-- existingId: the ID of the contradicting fact
-- conflictType: "direct" (complete opposite), "partial" (some conflict), or "temporal" (outdated info)
-- explanation: brief explanation of the conflict
-- resolution: "keep_new", "keep_old", "keep_both", or "merge"
-
-If no contradictions, return an empty array [].
-
-Example output:
-[{"existingId": "abc123", "conflictType": "direct", "explanation": "User previously preferred dark mode, now prefers light", "resolution": "keep_new"}]`;
-
-        try {
-            const response = await this.callLLM(
-                [{ role: 'user', content: prompt }],
-                model
-            );
-
-            const parsed = safeJsonParse<Array<{
-                existingId: string;
-                conflictType: string;
-                explanation: string;
-                resolution: string;
-            }>>(response.content.replace(/```json|```/g, '').trim(), []);
-
-            for (const c of parsed) {
-                const existing = similar.find(m => m.id === c.existingId);
-                if (existing) {
-                    candidates.push({
-                        existingMemoryId: c.existingId,
-                        existingContent: existing.content,
-                        conflictType: c.conflictType as 'direct' | 'partial' | 'temporal',
-                        conflictExplanation: c.explanation,
-                        suggestedResolution: c.resolution as 'keep_new' | 'keep_old' | 'keep_both' | 'merge'
-                    });
-                }
-            }
-        } catch (error) {
-            appLogger.warn(SERVICE_NAME, `Contradiction detection failed: ${error}`);
-        }
-
-        return candidates;
+        return this.indexingService.findContradictions(content, embedding);
     }
 
     /**
      * Handle contradictions when storing a new memory
      */
     private async handleContradictions(memory: AdvancedSemanticFragment): Promise<void> {
-        const contradictions = await this.findContradictions(memory.content, memory.embedding);
-
-        for (const contradiction of contradictions) {
-            if (contradiction.suggestedResolution === 'keep_new') {
-                // Archive the old memory
-                await this.updateMemoryStatus(contradiction.existingMemoryId, 'contradicted');
-                memory.contradictsIds.push(contradiction.existingMemoryId);
-            } else if (contradiction.suggestedResolution === 'merge') {
-                // Will be handled by consolidation
-                memory.relatedMemoryIds.push(contradiction.existingMemoryId);
-            }
-            // 'keep_both' and 'keep_old' - no action needed
-        }
+        await this.indexingService.handleContradictions(memory);
     }
 
     // ========================================================================
@@ -1085,24 +975,7 @@ Example output:
      * Find similar memories for potential consolidation
      */
     private async findSimilarMemories(embedding: number[]): Promise<SimilarMemoryCandidate[]> {
-        const similar = await this.searchMemoriesByVector(embedding, 5);
-        const candidates: SimilarMemoryCandidate[] = [];
-
-        for (const memory of similar) {
-            const similarity = this.cosineSimilarity(embedding, memory.embedding);
-
-            if (similarity >= this.config.consolidation.similarityThreshold) {
-                candidates.push({
-                    memoryId: memory.id,
-                    content: memory.content,
-                    similarityScore: similarity,
-                    canMerge: similarity >= this.config.consolidation.autoMergeThreshold,
-                    mergeStrategy: similarity >= 0.95 ? 'replace' : similarity >= 0.85 ? 'append' : 'generalize'
-                });
-            }
-        }
-
-        return candidates;
+        return this.indexingService.findSimilarMemories(embedding);
     }
 
     /**
@@ -1112,94 +985,7 @@ Example output:
         newMemory: AdvancedSemanticFragment,
         similarCandidates: SimilarMemoryCandidate[]
     ): Promise<ConsolidationResult> {
-        if (!this.config.consolidation.enabled || similarCandidates.length === 0) {
-            return { action: 'none', affectedMemoryIds: [], explanation: 'Consolidation disabled or no candidates' };
-        }
-
-        const autoMergeCandidates = similarCandidates.filter(c => c.canMerge);
-
-        if (autoMergeCandidates.length === 0) {
-            // Just link related memories
-            for (const candidate of similarCandidates) {
-                newMemory.relatedMemoryIds.push(candidate.memoryId);
-            }
-            return { action: 'linked', affectedMemoryIds: similarCandidates.map(c => c.memoryId), explanation: 'Linked to similar memories' };
-        }
-
-        // Merge with the most similar
-        const bestMatch = autoMergeCandidates.sort((a, b) => b.similarityScore - a.similarityScore)[0];
-        const existingMemory = await this.getMemoryById(bestMatch.memoryId);
-
-        if (!existingMemory) {
-            return { action: 'none', affectedMemoryIds: [], explanation: 'Could not find existing memory' };
-        }
-
-        if (bestMatch.mergeStrategy === 'replace') {
-            // New memory is essentially the same - update existing
-            existingMemory.content = newMemory.content;
-            existingMemory.updatedAt = Date.now();
-            existingMemory.accessCount++;
-            await this.updateAdvancedMemory(existingMemory);
-
-            return {
-                action: 'merged',
-                resultingMemoryId: existingMemory.id,
-                affectedMemoryIds: [existingMemory.id],
-                explanation: 'Replaced with more recent identical memory'
-            };
-        }
-
-        if (bestMatch.mergeStrategy === 'append') {
-            // Append new information
-            const model = await this.getAvailableModel();
-            if (model) {
-                const mergedContent = await this.mergeMemoryContents(
-                    existingMemory.content,
-                    newMemory.content,
-                    model
-                );
-
-                existingMemory.content = mergedContent;
-                existingMemory.embedding = await this.embedding.generateEmbedding(mergedContent);
-                existingMemory.updatedAt = Date.now();
-                await this.updateAdvancedMemory(existingMemory);
-
-                return {
-                    action: 'merged',
-                    resultingMemoryId: existingMemory.id,
-                    affectedMemoryIds: [existingMemory.id],
-                    explanation: 'Appended new information to existing memory'
-                };
-            }
-        }
-
-        return { action: 'none', affectedMemoryIds: [], explanation: 'No consolidation action taken' };
-    }
-
-    /**
-     * Merge two memory contents using LLM
-     */
-    private async mergeMemoryContents(
-        existing: string,
-        newContent: string,
-        model: string
-    ): Promise<string> {
-        const prompt = `Merge these two related facts into a single, comprehensive fact:
-
-Existing: "${existing}"
-New: "${newContent}"
-
-Return only the merged fact, no explanation.`;
-
-        try {
-            const response = await this.callLLM(
-                [{ role: 'user', content: prompt }],
-                model
-            );
-            return response.content.trim().replace(/^["']|["']$/g, '');
-        } catch {
-            return `${existing}. Additionally: ${newContent}`;
-        }
+        return this.indexingService.attemptConsolidation(newMemory, similarCandidates);
     }
 
     // ========================================================================
@@ -1210,38 +996,7 @@ Return only the merged fact, no explanation.`;
      * Run decay maintenance on all memories
      */
     async runDecayMaintenance(): Promise<void> {
-        if (!this.config.decay.enabled) { return; }
-
-        const allMemories = await this.getAllAdvancedMemories();
-        const now = Date.now();
-
-        for (const memory of allMemories) {
-            if (memory.status !== 'confirmed') { continue; }
-
-            // Check expiration
-            if (memory.expiresAt && memory.expiresAt < now) {
-                memory.status = 'archived';
-                await this.updateAdvancedMemory(memory);
-                continue;
-            }
-
-            const newImportance = this.calculateDecayedImportance(memory, now);
-
-            if (newImportance !== memory.importance) {
-                memory.importance = newImportance;
-                memory.updatedAt = now;
-
-                // Auto-archive if below threshold
-                if (newImportance < this.config.decay.archiveThreshold) {
-                    memory.status = 'archived';
-                    appLogger.debug(SERVICE_NAME, `Auto-archived memory: ${memory.id}`);
-                }
-
-                await this.updateAdvancedMemory(memory);
-            }
-        }
-
-        appLogger.info(SERVICE_NAME, `Decay maintenance completed for ${allMemories.length} memories`);
+        await this.maintenanceService.runDecayMaintenance();
     }
 
     /**
@@ -1490,383 +1245,11 @@ If no facts worth remembering, return [].`;
     // ========================================================================
 
     async getStatistics(): Promise<MemoryStatistics> {
-        const allMemories = await this.getAllAdvancedMemories();
-        const pending = this.getPendingMemories();
-
-        const byStatus: Record<MemoryStatus, number> = {
-            pending: pending.length,
-            confirmed: 0,
-            archived: 0,
-            contradicted: 0,
-            merged: 0
-        };
-
-        const byCategory: Record<MemoryCategory, number> = {
-            preference: 0,
-            personal: 0,
-            project: 0,
-            technical: 0,
-            workflow: 0,
-            relationship: 0,
-            fact: 0,
-            instruction: 0
-        };
-
-        const bySource: Record<MemorySource, number> = {
-            user_explicit: 0,
-            user_implicit: 0,
-            system: 0,
-            conversation: 0,
-            tool_result: 0
-        };
-
-        let totalConfidence = 0;
-        let totalImportance = 0;
-        let contradictions = 0;
-        const now = Date.now();
-        const oneDayAgo = now - 24 * 60 * 60 * 1000;
-        let recentlyAccessed = 0;
-        let recentlyCreated = 0;
-
-        for (const memory of allMemories) {
-            byStatus[memory.status]++;
-            byCategory[memory.category]++;
-            bySource[memory.source]++;
-            totalConfidence += memory.confidence;
-            totalImportance += memory.importance;
-            contradictions += memory.contradictsIds.length;
-
-            if (memory.lastAccessedAt > oneDayAgo) { recentlyAccessed++; }
-            if (memory.createdAt > oneDayAgo) { recentlyCreated++; }
-        }
-
-        return {
-            total: allMemories.length,
-            byStatus,
-            byCategory,
-            bySource,
-            averageConfidence: allMemories.length > 0 ? totalConfidence / allMemories.length : 0,
-            averageImportance: allMemories.length > 0 ? totalImportance / allMemories.length : 0,
-            pendingValidation: pending.length,
-            contradictions,
-            recentlyAccessed,
-            recentlyCreated,
-            totalEmbeddingSize: allMemories.reduce((sum, m) => sum + m.embedding.length * 4, 0)
-        };
-    }
-
-    // ========================================================================
-    // UTILITY METHODS
-    // ========================================================================
-
-    /**
-     * Apply diversity to search results
-     */
-    private applyDiversity(
-        scoredCandidates: Array<{ memory: AdvancedSemanticFragment; finalScore: number }>,
-        limit: number,
-        diversityFactor: number
-    ): AdvancedSemanticFragment[] {
-        const results: AdvancedSemanticFragment[] = [];
-        const usedCategories = new Set<MemoryCategory>();
-
-        for (const candidate of scoredCandidates) {
-            if (results.length >= limit) { break; }
-
-            const categoryPenalty = usedCategories.has(candidate.memory.category)
-                ? diversityFactor * 0.3
-                : 0;
-
-            if (candidate.finalScore - categoryPenalty > 0.1 || results.length < 3) {
-                results.push(candidate.memory);
-                usedCategories.add(candidate.memory.category);
-            }
-        }
-
-        return results;
-    }
-
-    /**
-     * Apply recall filters
-     */
-    private applyRecallFilters(
-        memories: AdvancedSemanticFragment[],
-        context: RecallContext
-    ): AdvancedSemanticFragment[] {
-        return memories.filter(m => this.matchesRecallFilters(m, context));
-    }
-
-    private matchesRecallFilters(m: AdvancedSemanticFragment, context: RecallContext): boolean {
-        return (
-            this.matchesBasicFilters(m, context) &&
-            this.matchesTimeFilters(m, context) &&
-            this.matchesScoreFilters(m, context) &&
-            this.matchesStatusFilters(m, context)
-        );
-    }
-
-    private matchesBasicFilters(m: AdvancedSemanticFragment, context: RecallContext): boolean {
-        if (context.projectId && m.projectId !== context.projectId) { return false; }
-        if (context.categories && !context.categories.includes(m.category)) { return false; }
-        if (context.tags && !context.tags.some(t => m.tags.includes(t))) { return false; }
-        return true;
-    }
-
-    private matchesTimeFilters(m: AdvancedSemanticFragment, context: RecallContext): boolean {
-        if (context.createdAfter && m.createdAt < context.createdAfter) { return false; }
-        if (context.createdBefore && m.createdAt > context.createdBefore) { return false; }
-        return true;
-    }
-
-    private matchesScoreFilters(m: AdvancedSemanticFragment, context: RecallContext): boolean {
-        if (context.minConfidence && m.confidence < context.minConfidence) { return false; }
-        if (context.minImportance && m.importance < context.minImportance) { return false; }
-        return true;
-    }
-
-    private matchesStatusFilters(m: AdvancedSemanticFragment, context: RecallContext): boolean {
-        if (!context.includeArchived && m.status === 'archived') { return false; }
-        if (!context.includePending && m.status === 'pending') { return false; }
-        return true;
-    }
-
-    private rankLexicalMatches(
-        query: string,
-        memories: AdvancedSemanticFragment[],
-        limit: number
-    ): AdvancedSemanticFragment[] {
-        const queryTerms = query.split(/\s+/).filter(Boolean);
-        if (queryTerms.length === 0) {
-            return [];
-        }
-
-        const scored = memories
-            .map(memory => {
-                const haystack = `${memory.content} ${memory.tags.join(' ')}`.toLowerCase();
-                let score = 0;
-                for (const term of queryTerms) {
-                    if (haystack.includes(term)) {
-                        score += 1;
-                    }
-                }
-                if (score === 0) {
-                    return null;
-                }
-                return { memory, score };
-            })
-            .filter((item): item is { memory: AdvancedSemanticFragment; score: number } => item !== null)
-            .sort((left, right) => right.score - left.score)
-            .slice(0, limit);
-
-        this.recordSearchAnalytics(query, 'text', scored.length);
-        return scored.map(item => item.memory);
-    }
-
-    private mergeScoredResults(
-        target: Map<string, { memory: AdvancedSemanticFragment; score: number }>,
-        memories: AdvancedSemanticFragment[],
-        weight: number
-    ): void {
-        for (let index = 0; index < memories.length; index++) {
-            const memory = memories[index];
-            const rankScore = weight * (1 / (index + 1));
-            const existing = target.get(memory.id);
-            if (existing) {
-                existing.score += rankScore;
-            } else {
-                target.set(memory.id, { memory, score: rankScore });
-            }
-        }
-    }
-
-    private recordSearchAnalytics(query: string, type: 'semantic' | 'text' | 'hybrid', resultCount: number): void {
-        this.searchAnalytics.totalQueries++;
-        this.searchAnalytics.lastQueryAt = Date.now();
-        this.searchAnalytics.totalResultsReturned += resultCount;
-        if (type === 'semantic') { this.searchAnalytics.semanticQueries++; }
-        if (type === 'text') { this.searchAnalytics.textQueries++; }
-        if (type === 'hybrid') { this.searchAnalytics.hybridQueries++; }
-
-        const normalizedQuery = query.trim().slice(0, 120);
-        if (!normalizedQuery) {
-            return;
-        }
-        const current = this.searchAnalytics.queryCounts.get(normalizedQuery) ?? 0;
-        this.searchAnalytics.queryCounts.set(normalizedQuery, current + 1);
-        this.searchAnalytics.history.push({
-            query: normalizedQuery,
-            type,
-            resultCount,
-            timestamp: this.searchAnalytics.lastQueryAt
-        });
-        if (this.searchAnalytics.history.length > 200) {
-            this.searchAnalytics.history = this.searchAnalytics.history.slice(-200);
-        }
+        return this.maintenanceService.getStatistics();
     }
 
     private async clearExistingMemories(): Promise<void> {
-        const existing = await this.getAllAdvancedMemories();
-        for (let index = 0; index < existing.length; index++) {
-            await this.db.deleteAdvancedMemory(existing[index].id);
-        }
-
-        const pending = await this.db.getAllPendingMemories();
-        for (let index = 0; index < pending.length; index++) {
-            await this.db.deletePendingMemory(pending[index].id);
-        }
-
-        this.stagingBuffer.clear();
-    }
-
-    private normalizeMemoryRecord(input: Partial<AdvancedSemanticFragment>): AdvancedSemanticFragment | null {
-        const rawContent = typeof input.content === 'string'
-            ? input.content
-            : (typeof input.sourceContext === 'string' ? input.sourceContext : '');
-        const content = rawContent.trim();
-        if (!content) {
-            return null;
-        }
-
-        const now = Date.now();
-        const id = typeof input.id === 'string' && input.id.trim()
-            ? input.id.trim()
-            : this.generateId();
-        const source = this.normalizeMemorySource(input.source);
-        const category = this.normalizeMemoryCategory(input.category);
-        const status = this.normalizeMemoryStatus(input.status);
-        const tags = this.normalizeTags(input.tags);
-        const embedding = this.normalizeEmbeddingVector(input.embedding);
-
-        const confidence = this.normalizeUnitNumber(input.confidence, 0.7);
-        const importance = this.normalizeUnitNumber(input.importance, 0.5);
-        const initialImportance = this.normalizeUnitNumber(input.initialImportance, importance);
-
-        return {
-            id,
-            content,
-            embedding,
-            source,
-            sourceId: typeof input.sourceId === 'string' && input.sourceId.trim() ? input.sourceId.trim() : 'import',
-            sourceContext: typeof input.sourceContext === 'string' ? input.sourceContext : undefined,
-            category,
-            tags,
-            confidence,
-            importance,
-            initialImportance,
-            status,
-            validatedAt: typeof input.validatedAt === 'number' ? input.validatedAt : undefined,
-            validatedBy: input.validatedBy === 'user' || input.validatedBy === 'auto' || input.validatedBy === 'system'
-                ? input.validatedBy
-                : undefined,
-            accessCount: typeof input.accessCount === 'number' && input.accessCount > 0 ? Math.floor(input.accessCount) : 0,
-            lastAccessedAt: typeof input.lastAccessedAt === 'number' ? input.lastAccessedAt : now,
-            relatedMemoryIds: this.normalizeIds(input.relatedMemoryIds),
-            contradictsIds: this.normalizeIds(input.contradictsIds),
-            mergedIntoId: typeof input.mergedIntoId === 'string' ? input.mergedIntoId : undefined,
-            projectId: typeof input.projectId === 'string' && input.projectId.trim() ? input.projectId.trim() : undefined,
-            contextTags: this.normalizeTags(input.contextTags),
-            createdAt: typeof input.createdAt === 'number' ? input.createdAt : now,
-            updatedAt: typeof input.updatedAt === 'number' ? input.updatedAt : now,
-            expiresAt: typeof input.expiresAt === 'number' ? input.expiresAt : undefined,
-            metadata: input.metadata
-        };
-    }
-
-    private normalizePendingMemoryRecord(input: Partial<PendingMemory>): PendingMemory | null {
-        const rawContent = typeof input.content === 'string'
-            ? input.content
-            : (typeof input.sourceContext === 'string' ? input.sourceContext : '');
-        const content = rawContent.trim();
-        if (!content) {
-            return null;
-        }
-
-        const now = Date.now();
-        const id = typeof input.id === 'string' && input.id.trim()
-            ? input.id.trim()
-            : this.generateId();
-        const source = this.normalizeMemorySource(input.source);
-        const category = this.normalizeMemoryCategory(input.suggestedCategory);
-
-        return {
-            id,
-            content,
-            embedding: this.normalizeEmbeddingVector(input.embedding),
-            source,
-            sourceId: typeof input.sourceId === 'string' && input.sourceId.trim() ? input.sourceId.trim() : 'import',
-            sourceContext: typeof input.sourceContext === 'string' ? input.sourceContext : content,
-            extractedAt: typeof input.extractedAt === 'number' ? input.extractedAt : now,
-            suggestedCategory: category,
-            suggestedTags: this.normalizeTags(input.suggestedTags),
-            extractionConfidence: this.normalizeUnitNumber(input.extractionConfidence, 0.7),
-            relevanceScore: this.normalizeUnitNumber(input.relevanceScore, 0.6),
-            noveltyScore: this.normalizeUnitNumber(input.noveltyScore, 0.6),
-            requiresUserValidation: Boolean(input.requiresUserValidation),
-            autoConfirmReason: typeof input.autoConfirmReason === 'string' ? input.autoConfirmReason : undefined,
-            potentialContradictions: Array.isArray(input.potentialContradictions) ? input.potentialContradictions : [],
-            similarMemories: Array.isArray(input.similarMemories) ? input.similarMemories : [],
-            projectId: typeof input.projectId === 'string' && input.projectId.trim() ? input.projectId.trim() : undefined
-        };
-    }
-
-    private normalizeMemorySource(source?: MemorySource | string): MemorySource {
-        const valid: MemorySource[] = ['user_explicit', 'user_implicit', 'system', 'conversation', 'tool_result'];
-        if (typeof source === 'string' && valid.includes(source as MemorySource)) {
-            return source as MemorySource;
-        }
-        return 'system';
-    }
-
-    private normalizeMemoryCategory(category?: MemoryCategory | string): MemoryCategory {
-        const valid: MemoryCategory[] = ['preference', 'personal', 'project', 'technical', 'workflow', 'relationship', 'fact', 'instruction'];
-        if (typeof category === 'string' && valid.includes(category as MemoryCategory)) {
-            return category as MemoryCategory;
-        }
-        return 'fact';
-    }
-
-    private normalizeMemoryStatus(status?: MemoryStatus | string): MemoryStatus {
-        const valid: MemoryStatus[] = ['pending', 'confirmed', 'archived', 'contradicted', 'merged'];
-        if (typeof status === 'string' && valid.includes(status as MemoryStatus)) {
-            return status as MemoryStatus;
-        }
-        return 'confirmed';
-    }
-
-    private normalizeTags(tags?: string[]): string[] {
-        if (!tags) {
-            return [];
-        }
-        return tags
-            .map(tag => tag.trim())
-            .filter(Boolean)
-            .slice(0, 50);
-    }
-
-    private normalizeIds(ids?: string[]): string[] {
-        if (!ids) {
-            return [];
-        }
-        return ids
-            .map(id => id.trim())
-            .filter(Boolean)
-            .slice(0, 100);
-    }
-
-    private normalizeEmbeddingVector(value?: number[]): number[] {
-        if (!value) {
-            return [];
-        }
-        return value
-            .filter(entry => Number.isFinite(entry))
-            .slice(0, 4096);
-    }
-
-    private normalizeUnitNumber(value: number | undefined, fallback: number): number {
-        if (value === undefined || !Number.isFinite(value)) {
-            return fallback;
-        }
-        return Math.max(0, Math.min(1, value));
+        await this.maintenanceService.clearExistingMemories();
     }
 
     private finalizeOperationDuration(startedAt: number): void {
@@ -1946,23 +1329,23 @@ If no facts worth remembering, return [].`;
     // ========================================================================
 
     private async storeAdvancedMemory(memory: AdvancedSemanticFragment): Promise<void> {
-        await this.db.storeAdvancedMemory(memory);
+        await this.persistenceAdapter.storeAdvancedMemory(memory);
     }
 
     private async updateAdvancedMemory(memory: AdvancedSemanticFragment): Promise<void> {
-        await this.db.updateAdvancedMemory(memory);
+        await this.persistenceAdapter.updateAdvancedMemory(memory);
     }
 
     private async getMemoryById(id: string): Promise<AdvancedSemanticFragment | null> {
-        return this.db.getAdvancedMemoryById(id);
+        return this.persistenceAdapter.getMemoryById(id);
     }
 
     public async getAllAdvancedMemories(): Promise<AdvancedSemanticFragment[]> {
-        return this.db.getAllAdvancedMemories();
+        return this.persistenceAdapter.getAllAdvancedMemories();
     }
 
     private async searchMemoriesByVector(embedding: number[], limit: number): Promise<AdvancedSemanticFragment[]> {
-        return this.db.searchAdvancedMemories(embedding, limit);
+        return this.persistenceAdapter.searchMemoriesByVector(embedding, limit);
     }
 
     private async updateMemoryStatus(id: string, status: MemoryStatus): Promise<void> {
@@ -1984,19 +1367,16 @@ If no facts worth remembering, return [].`;
     }
 
     private async savePendingMemory(pending: PendingMemory): Promise<void> {
-        await this.db.savePendingMemory(pending);
+        await this.persistenceAdapter.savePendingMemory(pending);
     }
 
     private async deletePendingMemory(id: string): Promise<void> {
-        await this.db.deletePendingMemory(id);
+        await this.persistenceAdapter.deletePendingMemory(id);
     }
 
     private async loadPendingMemories(): Promise<void> {
-        const pending = await this.db.getAllPendingMemories();
-        for (const p of pending) {
-            this.stagingBuffer.set(p.id, p);
-        }
-        appLogger.info(SERVICE_NAME, `Loaded ${pending.length} pending memories`);
+        const pendingCount = await this.persistenceAdapter.loadPendingMemories(this.stagingBuffer);
+        appLogger.info(SERVICE_NAME, `Loaded ${pendingCount} pending memories`);
     }
 
     // ========================================================================
@@ -2371,51 +1751,21 @@ If no facts worth remembering, return [].`;
      * Archive a memory (soft delete)
      */
     async archiveMemory(id: string): Promise<boolean> {
-        const memory = await this.getMemoryById(id);
-        if (!memory) {
-            return false;
-        }
-
-        memory.status = 'archived';
-        memory.updatedAt = Date.now();
-        await this.updateAdvancedMemory(memory);
-        appLogger.info(SERVICE_NAME, `Memory archived: ${id}`);
-        return true;
+        return this.maintenanceService.archiveMemory(id);
     }
 
     /**
      * Restore an archived memory
      */
     async restoreMemory(id: string): Promise<boolean> {
-        const memory = await this.getMemoryById(id);
-        if (memory?.status !== 'archived') {
-            return false;
-        }
-
-        memory.status = 'confirmed';
-        memory.updatedAt = Date.now();
-        await this.updateAdvancedMemory(memory);
-        appLogger.info(SERVICE_NAME, `Memory restored: ${id}`);
-        return true;
+        return this.maintenanceService.restoreMemory(id);
     }
 
     /**
      * Archive multiple memories
      */
     async archiveMemories(ids: string[]): Promise<{ archived: number; failed: string[] }> {
-        let archived = 0;
-        const failed: string[] = [];
-
-        for (const id of ids) {
-            const success = await this.archiveMemory(id);
-            if (success) {
-                archived++;
-            } else {
-                failed.push(id);
-            }
-        }
-
-        return { archived, failed };
+        return this.maintenanceService.archiveMemories(ids);
     }
 
     /**
@@ -2429,56 +1779,13 @@ If no facts worth remembering, return [].`;
      * Manually trigger re-categorization of memories
      */
     async recategorizeMemories(memoryIds?: string[]): Promise<number> {
-        const memories = memoryIds
-            ? await Promise.all(memoryIds.map(id => this.getMemoryById(id)))
-            : await this.getAllAdvancedMemories();
-
-        const validMemories = memories.filter((m): m is AdvancedSemanticFragment => m !== null);
-        const model = await this.getAvailableModel();
-        if (!model || validMemories.length === 0) { return 0; }
-
-        let updatedCount = 0;
-        for (const memory of validMemories) {
-            const prompt = `Identify the best category for this fact from: preference, personal, project, technical, workflow, relationship, fact, instruction.
-Fact: "${memory.content}"
-Current Category: ${memory.category}
-Return only the category name.`;
-
-            try {
-                const res = await this.callLLM([{ role: 'user', content: prompt }], model);
-                const newCategory = res.content.trim().toLowerCase().replace(/[^a-z]/g, '') as MemoryCategory;
-
-                const validCategories = ['preference', 'personal', 'project', 'technical', 'workflow', 'relationship', 'fact', 'instruction'];
-                if (validCategories.includes(newCategory) && newCategory !== memory.category) {
-                    await this.editMemory(memory.id, { category: newCategory, editReason: 'Auto-recategorization' });
-                    updatedCount++;
-                }
-            } catch (error) {
-                appLogger.warn(SERVICE_NAME, `Recategorization failed for ${memory.id}: ${error}`);
-            }
-        }
-
-        return updatedCount;
+        return this.maintenanceService.recategorizeMemories(memoryIds);
     }
 
     /**
      * Clean up expired memories
      */
     async cleanupExpiredMemories(): Promise<number> {
-        const now = Date.now();
-        const allMemories = await this.getAllAdvancedMemories();
-        let count = 0;
-
-        for (const memory of allMemories) {
-            if (memory.expiresAt && memory.expiresAt < now && memory.status !== 'archived') {
-                await this.archiveMemory(memory.id);
-                count++;
-            }
-        }
-
-        if (count > 0) {
-            appLogger.info(SERVICE_NAME, `Cleaned up ${count} expired memories`);
-        }
-        return count;
+        return this.maintenanceService.cleanupExpiredMemories();
     }
 }

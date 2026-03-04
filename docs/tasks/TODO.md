@@ -12,7 +12,7 @@
 - [x] **TEST-006**: Add renderer tests for the `WorkspaceHeader`, `WorkspaceModals`, and `VirtualizedWorkspaceGrid` compatibility wrappers.
 - [x] **PERF-001**: Split `src/renderer/features/workspace/WorkspacePage.tsx` into smaller sections/hooks to reduce complexity and isolate state.
 - [x] **DOC-001**: Update project workflow/rules docs that still reference the removed structured changelog file path.
-- [ ] **TEST-007**: Add direct renderer tests for `src/renderer/features/workspace/utils/workspace-startup-preflight.ts` runbook and issue-filtering behavior.
+- [x] **TEST-007**: Add direct renderer tests for `src/renderer/features/workspace/utils/workspace-startup-preflight.ts` runbook and issue-filtering behavior.
 - [x] **REF-016**: Standardize remaining `Project Agent` bridge naming in renderer hooks/components to `workspaceAgent` or `automationWorkflow` to match the UI rename.
 
 ## 🎯 March 2026 Priority Plan (Target: complete before 2026-03-31)

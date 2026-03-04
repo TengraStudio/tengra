@@ -1,5 +1,5 @@
-import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 import { IpcValue } from '@shared/types/common';
+import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 // Increase max listeners for ipcRenderer to handle multiple terminal/process streams
 ipcRenderer.setMaxListeners(60);
 
@@ -10,8 +10,8 @@ import { createAuditBridge } from './preload/domains/audit.preload';
 import { createAuthBridge } from './preload/domains/auth.preload';
 import { createAuthSessionBridge } from './preload/domains/auth-session.preload';
 import { createBatchBridge } from './preload/domains/batch.preload';
-import { createClipboardBridge } from './preload/domains/clipboard.preload';
 import { createChatBridge } from './preload/domains/chat.preload';
+import { createClipboardBridge } from './preload/domains/clipboard.preload';
 import { createCodeBridge } from './preload/domains/code.preload';
 import { createCodeSandboxBridge } from './preload/domains/code-sandbox.preload';
 import { createCollaborationBridge } from './preload/domains/collaboration.preload';
@@ -88,6 +88,30 @@ const api = {
     on: (channel: string, listener: (event: IpcRendererEvent, ...args: IpcValue[]) => void) => {
         ipcRenderer.on(channel, listener);
         return () => ipcRenderer.removeListener(channel, listener);
+    },
+
+    openExternal: (url: string) => {
+        void ipcRenderer.invoke('shell:openExternal', url);
+    },
+
+    isOllamaRunning: () => ipcRenderer.invoke('ollama:isRunning'),
+    startOllama: () => ipcRenderer.invoke('ollama:start'),
+    getOllamaHealthStatus: async () => {
+        const status = await ipcRenderer.invoke('ollama:healthStatus') as { online?: boolean };
+        return { status: status.online ? 'ok' as const : 'error' as const };
+    },
+    forceOllamaHealthCheck: async () => {
+        const status = await ipcRenderer.invoke('ollama:forceHealthCheck') as { online?: boolean };
+        return { status: status.online ? 'ok' as const : 'error' as const };
+    },
+    onOllamaStatusChange: (
+        callback: (status: { status: string }) => void
+    ) => {
+        const listener = (_event: IpcRendererEvent, status: { online?: boolean }) => {
+            callback({ status: status.online ? 'ok' : 'error' });
+        };
+        ipcRenderer.on('ollama:statusChange', listener);
+        return () => ipcRenderer.removeListener('ollama:statusChange', listener);
     },
 
     code: createCodeBridge(ipcRenderer),

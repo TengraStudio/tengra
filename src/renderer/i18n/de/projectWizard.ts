@@ -1,0 +1,51 @@
+const sectionData = {
+    "title": "Projekt-Assistent",
+    "localProject": "Lokales Projekt",
+    "localProjectDesc": "Erstellen Sie ein neues Projekt auf Ihrem Computer.",
+    "remoteSSH": "Remote SSH",
+    "remoteSSHDesc": "Verbinden Sie sich mit einem Remote-Server.",
+    "import": "Importieren",
+    "importDesc": "Fügen Sie ein bestehendes Projekt zum Arbeitsbereich hinzu.",
+    "projectName": "PROJEKTNAME",
+    "namePlaceholder": "z.B. CRM Dashboard",
+    "placeholder": {
+        "example": "beispiel.de"
+    },
+    "description": "BESCHREIBUNG (OPTIONAL)",
+    "descPlaceholder": "Was ist das Ziel dieses Projekts?",
+    "host": "HOST",
+    "port": "PORT",
+    "username": "BENUTZERNAME",
+    "password": "Passwort",
+    "privateKey": "Privater Schlüssel",
+    "keyPath": "SCHLÜSSELPFAD",
+    "creating": "Projekt wird erstellt",
+    "sshSetup": "SSH-Verbindung wird hergestellt...",
+    "configuring": "Projektdateien werden konfiguriert...",
+    "back": "Zurück",
+    "next": "Weiter",
+    "create": "Erstellen",
+    "connect": "Verbinden",
+    "selectFolder": "Ordner auswählen",
+    "alreadyExists": "Bereits vorhanden",
+    "alreadyExistsDesc": "Verknüpfen Sie einen vorhandenen Projektordner.",
+    "sshTodo": "SSH (Demnächst)",
+    "sshTodoDesc": "Entwickeln Sie auf einem Remote-Server. Derzeit deaktiviert.",
+    "newCreateTodo": "Neu erstellen (Demnächst)",
+    "newCreateTodoDesc": "Erstellen Sie ein neues Projektverzeichnis. Derzeit deaktiviert.",
+    "emptyDir": "Dieses Verzeichnis ist leer.",
+    "listingDir": "Verzeichnis wird aufgelistet...",
+    "selectRootDesc": "Wählen Sie das Stammverzeichnis für Projekt-Metadaten.",
+    "connectionFailed": "Verbindung fehlgeschlagen",
+    "connectionIdNotFound": "Verbindung hergestellt, aber ID nicht gefunden.",
+    "listFailed": "Verzeichnisauflistung fehlgeschlagen",
+    "categories": {
+        "web": "Webanwendung",
+        "backend": "Backend-Dienst",
+        "cli": "CLI / Skript",
+        "mobile": "Mobile App",
+        "other": "Benutzerdefiniertes Projekt"
+    }
+};
+
+export default sectionData;

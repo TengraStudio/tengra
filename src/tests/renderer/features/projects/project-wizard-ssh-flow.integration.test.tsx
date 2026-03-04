@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { WizardStepRenderer } from '@/features/projects/components/WizardStepRenderer';
+import { WizardStepRenderer } from '@/features/workspace/components/WizardStepRenderer';
 import { SSHFile } from '@/types';
 
 const baseFormData = {

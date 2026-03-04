@@ -1,0 +1,30 @@
+const sectionData = {
+    "usingTool": "Usando herramienta",
+    "searching": "Buscando en la web...",
+    "readingFiles": "Leyendo archivos...",
+    "executingCmd": "Ejecutando comando...",
+    "screenshotting": "Tomando captura de pantalla...",
+    "failed": "Fallido",
+    "completed": "Completado",
+    "input": "ENTRADA",
+    "output": "SALIDA",
+    "filePreview": "Vista previa del archivo",
+    "path": "Ruta:",
+    "command": "Dominio",
+    "error": "Error",
+    "executing": "ejecutando",
+    "executingCommand": "Ejecutando comando...",
+    "running": "Correr",
+    "forceStop": "Forzar parada",
+    "noOutput": "Sin salida",
+    "noOutputReturned": "No se devolvió ningún resultado",
+    "stop": "Detener",
+    "terminalHost": "administrador@macbook",
+    "terminalShell": "zsh",
+    "stderrLabel": "estándar:",
+    "errorLabel": "error:",
+    "taskTitlePlaceholder": "Título de la tarea (opcional)",
+    "taskDescriptionPlaceholder": "Describe lo que quieres construir..."
+};
+
+export default sectionData;

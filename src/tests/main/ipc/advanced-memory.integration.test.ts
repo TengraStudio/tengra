@@ -22,9 +22,28 @@ vi.mock('@main/logging/logger', () => ({
 
 
 describe('Advanced Memory IPC Handlers', () => {
+    const pendingId = '11111111-1111-4111-8111-111111111111';
     const buildService = () => ({
         getPendingMemories: vi.fn(() => []),
-        confirmPendingMemory: vi.fn(async () => ({ id: 'p1' })),
+        confirmPendingMemory: vi.fn(async () => ({
+            id: pendingId,
+            content: 'Remember this preference',
+            embedding: [0.1, 0.2],
+            source: 'user_explicit',
+            sourceId: 'chat-1',
+            category: 'preference',
+            tags: ['ui'],
+            confidence: 0.9,
+            importance: 0.8,
+            initialImportance: 0.8,
+            status: 'confirmed',
+            accessCount: 0,
+            lastAccessedAt: 1,
+            relatedMemoryIds: [],
+            contradictsIds: [],
+            createdAt: 1,
+            updatedAt: 1
+        })),
         rejectPendingMemory: vi.fn(async () => undefined),
         rememberExplicit: vi.fn(async () => ({ id: 'm1' })),
         recall: vi.fn(async () => ({ memories: [], totalMatches: 0 })),
@@ -69,9 +88,9 @@ describe('Advanced Memory IPC Handlers', () => {
         const pendingResult = await handlers.get('advancedMemory:getPending')?.({});
         expect(pendingResult).toMatchObject({ success: true, data: [], uiState: 'empty' });
 
-        const confirmResult = await handlers.get('advancedMemory:confirm')?.({}, 'p1');
-        expect(confirmResult).toMatchObject({ success: true, data: { id: 'p1' } });
-        expect(service.confirmPendingMemory).toHaveBeenCalledWith('p1', 'user', undefined);
+        const confirmResult = await handlers.get('advancedMemory:confirm')?.({}, pendingId);
+        expect(confirmResult).toMatchObject({ success: true, data: { id: pendingId } });
+        expect(service.confirmPendingMemory).toHaveBeenCalledWith(pendingId, 'user', undefined);
     });
 
     it('normalizes invalid search inputs and avoids service call on empty query', async () => {

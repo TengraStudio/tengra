@@ -1,0 +1,30 @@
+const sectionData = {
+    "title": "Stimme & Sprache",
+    "subtitle": "Spracheinstellungen für Assistentenantworten konfigurieren.",
+    "voiceSelection": "Stimmauswahl",
+    "systemDefault": "Systemstandard",
+    "test": "Stimme testen",
+    "speed": "Sprachgeschwindigkeit",
+    "previewText": "Willkommen in der Zukunft mit Tengra. Ich bin Ihr KI-Assistent.",
+    "microphone": "Mikrofon",
+    "speaker": "Lautsprecher / Kopfhörer",
+    "microphoneSelection": "Mikrofoneingabe",
+    "speakerSelection": "Audioausgabe",
+    "voiceCloning": "Stimmklonen",
+    "voiceCloningDesc": "Integrieren Sie Ihre eigene Stimme in das Tengra-Ökosystem.",
+    "voiceCloningTitle": "Verwenden Sie Ihre eigene Stimme!",
+    "voiceCloningTeaser": "Sprechen Sie 1 Minute und lassen Sie die KI Ihre Stimme imitieren. Diese Funktion ist jetzt aktiv!",
+    "record": "Aufnahme starten",
+    "stopRecord": "Aufnahme beenden",
+    "recording": "Aufnahme läuft...",
+    "startTraining": "Klonen starten",
+    "training": "Stimme wird modelliert...",
+    "trainingDesc": "Bitte warten Sie, dies kann je nach Computergeschwindigkeit einige Minuten dauern.",
+    "downloadModel": "Modell herunterladen (2GB)",
+    "modelRequired": "XTTS v2 Modell erforderlich",
+    "modelRequiredDesc": "Um die Stimmklonfunktion zu verwenden, müssen Sie das KI-Modell (~2GB) herunterladen.",
+    "downloadingModel": "Modell wird heruntergeladen...",
+    "downloadComplete": "Download abgeschlossen"
+};
+
+export default sectionData;

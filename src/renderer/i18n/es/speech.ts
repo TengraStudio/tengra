@@ -1,0 +1,30 @@
+const sectionData = {
+    "title": "Voz y habla",
+    "subtitle": "Configurar ajustes de voz para respuestas del asistente.",
+    "voiceSelection": "Selección de voz",
+    "systemDefault": "Predeterminado del sistema",
+    "test": "Probar voz",
+    "speed": "Velocidad de habla",
+    "previewText": "Bienvenido al futuro con Tengra. Soy tu asistente de IA.",
+    "microphone": "Micrófono",
+    "speaker": "Altavoz / Auriculares",
+    "microphoneSelection": "Entrada de micrófono",
+    "speakerSelection": "Salida de audio",
+    "voiceCloning": "Clonación de voz",
+    "voiceCloningDesc": "Integra tu propia voz en el ecosistema Tengra.",
+    "voiceCloningTitle": "¡Usa tu propia voz!",
+    "voiceCloningTeaser": "Habla durante 1 minuto y deja que la IA imite tu voz. ¡Esta función ya está activa!",
+    "record": "Comenzar grabación",
+    "stopRecord": "Detener grabación",
+    "recording": "Grabando...",
+    "startTraining": "Comenzar clonación",
+    "training": "Modelando voz...",
+    "trainingDesc": "Por favor espera, esto puede tardar unos minutos dependiendo de la velocidad de tu computadora.",
+    "downloadModel": "Descargar modelo (2GB)",
+    "modelRequired": "Modelo XTTS v2 requerido",
+    "modelRequiredDesc": "Para usar la función de clonación de voz, necesitas descargar el modelo de IA (~2GB).",
+    "downloadingModel": "Descargando modelo...",
+    "downloadComplete": "Descarga completada"
+};
+
+export default sectionData;

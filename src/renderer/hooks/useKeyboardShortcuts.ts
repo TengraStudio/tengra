@@ -86,7 +86,7 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
             toggleSidebar: onToggleSidebar,
             showShortcuts: onShowShortcuts,
             goToChat: () => onSwitchView('chat'),
-            goToProjects: () => onSwitchView('projects'),
+            goToProjects: () => onSwitchView('workspace'),
             goToSettings: () => onSwitchView('settings'),
         };
 

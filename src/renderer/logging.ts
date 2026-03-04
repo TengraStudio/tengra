@@ -1,13 +1,18 @@
 import { JsonValue } from '@shared/types/common';
 
-let installed = false;
+interface RendererLoggingWindow extends Window {
+    __tengraRendererLoggerInstalled__?: boolean;
+    __tengraRendererWindowErrorHandler__?: (event: ErrorEvent) => void;
+    __tengraRendererUnhandledRejectionHandler__?: (event: PromiseRejectionEvent) => void;
+}
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 type LogValue = JsonValue | Error | object
 
 export function installRendererLogger() {
-    if (installed) {return;}
-    installed = true;
+    const loggingWindow = window as RendererLoggingWindow;
+    if (loggingWindow.__tengraRendererLoggerInstalled__ === true) {return;}
+    loggingWindow.__tengraRendererLoggerInstalled__ = true;
 
     const logger = window.electron.log;
     if (!('log' in window.electron)) {return;}
@@ -77,7 +82,7 @@ export function installRendererLogger() {
         }
     };
 
-    window.addEventListener('error', (event) => {
+    const onWindowError = (event: ErrorEvent): void => {
         const error = event.error instanceof Error ? event.error : null;
         const parts = [
             `message=${event.message}`,
@@ -87,11 +92,24 @@ export function installRendererLogger() {
             `stack=${error?.stack ?? 'n/a'}`
         ];
         logger.write('error', `window error ${parts.join(' | ')}`);
-    });
+    };
 
-    window.addEventListener('unhandledrejection', (event) => {
+    const onUnhandledRejection = (event: PromiseRejectionEvent): void => {
         logger.write('error', `unhandledrejection reason=${formatValue(event.reason)}`);
-    });
+    };
+
+    if (loggingWindow.__tengraRendererWindowErrorHandler__) {
+        window.removeEventListener('error', loggingWindow.__tengraRendererWindowErrorHandler__);
+    }
+    if (loggingWindow.__tengraRendererUnhandledRejectionHandler__) {
+        window.removeEventListener('unhandledrejection', loggingWindow.__tengraRendererUnhandledRejectionHandler__);
+    }
+
+    loggingWindow.__tengraRendererWindowErrorHandler__ = onWindowError;
+    loggingWindow.__tengraRendererUnhandledRejectionHandler__ = onUnhandledRejection;
+
+    window.addEventListener('error', onWindowError);
+    window.addEventListener('unhandledrejection', onUnhandledRejection);
 }
 
 function formatArgs(args: LogValue[]): string {

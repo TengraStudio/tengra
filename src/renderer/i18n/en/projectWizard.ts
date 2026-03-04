@@ -1,0 +1,51 @@
+const sectionData = {
+    "title": "Project Wizard",
+    "localProject": "Local Project",
+    "localProjectDesc": "Create a new project on your computer.",
+    "remoteSSH": "Remote SSH",
+    "remoteSSHDesc": "Connect to a remote server and develop.",
+    "import": "Import",
+    "importDesc": "Add an existing project or folder to the workspace.",
+    "projectName": "PROJECT NAME",
+    "namePlaceholder": "Ex: CRM Dashboard",
+    "placeholder": {
+        "example": "example.com"
+    },
+    "description": "DESCRIPTION (OPTIONAL)",
+    "descPlaceholder": "What is the goal of this project?",
+    "host": "HOST",
+    "port": "PORT",
+    "username": "USERNAME",
+    "password": "Password",
+    "privateKey": "Private Key",
+    "keyPath": "KEY PATH",
+    "creating": "Creating Project",
+    "sshSetup": "Establishing SSH connection and preparing remote environment...",
+    "configuring": "Configuring project files and AI memory...",
+    "back": "Back",
+    "next": "Next",
+    "create": "Create",
+    "connect": "Connect",
+    "selectFolder": "Select Folder",
+    "alreadyExists": "Already Exists",
+    "alreadyExistsDesc": "Link an existing project folder on your computer.",
+    "sshTodo": "SSH (Coming Soon)",
+    "sshTodoDesc": "Develop on a remote server. Currently disabled.",
+    "newCreateTodo": "Create New (Coming Soon)",
+    "newCreateTodoDesc": "Create a fresh project directory from scratch. Currently disabled.",
+    "emptyDir": "This directory is empty.",
+    "listingDir": "Listing directory...",
+    "selectRootDesc": "Select the root directory for project metadata.",
+    "connectionFailed": "Connection failed",
+    "connectionIdNotFound": "Connection established but ID not found.",
+    "listFailed": "Failed to list directory",
+    "categories": {
+        "web": "Web Application",
+        "backend": "Backend Service",
+        "cli": "CLI / Script",
+        "mobile": "Mobile App",
+        "other": "Custom Project"
+    }
+};
+
+export default sectionData;

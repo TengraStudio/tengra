@@ -31,14 +31,8 @@ export const WizardOptionCard: React.FC<WizardOptionCardProps> = ({
     return (
         <button
             onClick={onClick}
-            className={`group relative h-[19rem] bg-card hover:bg-muted/10 border border-border/30 hover:border-[var(--border-primary)]/50 rounded-3xl p-7 flex flex-col items-start justify-between text-left transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-[0_14px_30px_rgba(var(--primary),0.12)] overflow-hidden ${className}`}
-            style={{
-                ['--tw-border-opacity' as string]: undefined,
-            }}
+            className={`relative h-[19rem] bg-card border border-border/30 rounded-3xl p-7 flex flex-col items-start justify-between text-left shadow-sm overflow-hidden ${className}`}
         >
-            <div
-                className={`absolute inset-0 bg-gradient-to-br from-${option.accentColor}/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
-            />
             <div
                 className={`w-14 h-14 rounded-2xl ${option.accentBg} flex items-center justify-center ${option.accentColor} ring-1 ${option.accentRing}`}
             >
@@ -52,7 +46,7 @@ export const WizardOptionCard: React.FC<WizardOptionCardProps> = ({
                     {option.description}
                 </p>
             </div>
-            <div className="opacity-80 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300">
+            <div className="opacity-80">
                 <div className={`flex items-center gap-2 ${option.accentColor} font-semibold text-sm`}>
                     <span>Next</span>
                     <ArrowRight className="w-4 h-4" />

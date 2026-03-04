@@ -22,8 +22,8 @@ vi.mock('@/context/ChatContext', () => ({
     }),
 }));
 
-vi.mock('@/context/ProjectContext', () => ({
-    useProject: () => ({
+vi.mock('@/context/WorkspaceContext', () => ({
+    useWorkspace: () => ({
         selectedProject: null,
     }),
 }));

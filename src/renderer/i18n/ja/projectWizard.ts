@@ -1,0 +1,51 @@
+const sectionData = {
+    "title": "プロジェクトウィザード",
+    "localProject": "ローカルプロジェクト",
+    "localProjectDesc": "お使いのコンピュータに新しいプロジェクトを作成します。",
+    "remoteSSH": "リモートSSH",
+    "remoteSSHDesc": "リモートサーバーに接続して開発します。",
+    "import": "インポート",
+    "importDesc": "既存のプロジェクトやフォルダをワークスペースに追加します。",
+    "projectName": "プロジェクト名",
+    "namePlaceholder": "例: CRMダッシュボード",
+    "placeholder": {
+        "example": "example.com"
+    },
+    "description": "説明（任意）",
+    "descPlaceholder": "このプロジェクトの目的は何ですか？",
+    "host": "ホスト",
+    "port": "ポート",
+    "username": "ユーザー名",
+    "password": "パスワード",
+    "privateKey": "秘密鍵",
+    "keyPath": "鍵のパス",
+    "creating": "プロジェクトを作成中",
+    "sshSetup": "SSH接続を確立し、リモート環境を準備しています...",
+    "configuring": "プロジェクトファイルとAIメモリを構成しています...",
+    "back": "戻る",
+    "next": "次へ",
+    "create": "作成",
+    "connect": "接続",
+    "selectFolder": "フォルダを選択",
+    "alreadyExists": "既に存在します",
+    "alreadyExistsDesc": "お使いのコンピュータにある既存のプロジェクトフォルダをリンクします。",
+    "sshTodo": "SSH（近日公開）",
+    "sshTodoDesc": "リモートサーバーでの開発。現在は無効です。",
+    "newCreateTodo": "新規作成（近日公開）",
+    "newCreateTodoDesc": "新しいプロジェクトディレクトリをゼロから作成。現在は無効です。",
+    "emptyDir": "このディレクトリは空です。",
+    "listingDir": "ディレクトリをリスト中...",
+    "selectRootDesc": "プロジェクトメタデータのルートディレクトリを選択してください。",
+    "connectionFailed": "接続に失敗しました",
+    "connectionIdNotFound": "接続は確立されましたが、IDが見つかりませんでした。",
+    "listFailed": "ディレクトリの一覧取得に失敗しました",
+    "categories": {
+        "web": "Webアプリケーション",
+        "backend": "バックエンドサービス",
+        "cli": "CLI / スクリプト",
+        "mobile": "モバイルアプリ",
+        "other": "カスタムプロジェクト"
+    }
+};
+
+export default sectionData;

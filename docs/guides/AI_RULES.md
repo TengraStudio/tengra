@@ -1045,8 +1045,9 @@ After:
 │ 6. Run: npm run type-check                                   │
 │ 7. If errors → fix and repeat steps 4-6                      │
 │ 8. Update docs/TODO.md (mark [x], DON'T delete)              │
-│ 9. COMMIT IMMEDIATELY (don't wait for more changes)          │
-│10. Push to repository                                        │
+│ 9. Update markdown docs if user-facing behavior changed      │
+│10. COMMIT IMMEDIATELY (don't wait for more changes)          │
+│11. Push to repository                                        │
 │                                                              │
 │ NOTE: Translations only on weekends (Saturday-Sunday)        │
 └──────────────────────────────────────────────────────────────┘

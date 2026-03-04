@@ -1,0 +1,30 @@
+const sectionData = {
+    "usingTool": "Araç Kullanılıyor",
+    "searching": "Web'de Aranıyor...",
+    "readingFiles": "Dosyalar Okunuyor...",
+    "executingCmd": "Komut Yürütülüyor...",
+    "screenshotting": "Ekran Görüntüsü Alınıyor...",
+    "failed": "Başarısız",
+    "completed": "Tamamlandı",
+    "input": "GİRDİ",
+    "output": "ÇIKTI",
+    "filePreview": "Dosya Önizleme",
+    "path": "Yol:",
+    "command": "Komut",
+    "error": "Hata",
+    "executing": "Yürütülüyor",
+    "executingCommand": "Komut yürütülüyor...",
+    "running": "Çalışıyor",
+    "forceStop": "Zorla durdur",
+    "noOutput": "Çıktı yok",
+    "noOutputReturned": "Çıktı dönmedi",
+    "stop": "Durdur",
+    "terminalHost": "admin@macbook",
+    "terminalShell": "zsh",
+    "stderrLabel": "stderr:",
+    "errorLabel": "error:",
+    "taskTitlePlaceholder": "Görev Başlığı (Opsiyonel)",
+    "taskDescriptionPlaceholder": "Ne yapmak istediğinizi açıklayın..."
+};
+
+export default sectionData;

@@ -51,7 +51,9 @@ export const WorkspacePreflightBanner: React.FC<WorkspacePreflightBannerProps> =
         setActiveRunbookId(null);
     }, [preflightWorkspace]);
 
-    if (!preflightResult) return null;
+    if (!preflightResult) {
+        return null;
+    }
 
     return (
         <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 space-y-3">

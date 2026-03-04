@@ -1,0 +1,81 @@
+const sectionData = {
+    "unnamedGroup": "Unnamed Group",
+    "changePreview": "Change preview",
+    "reasoningTitle": "Reasoning",
+    "consoleTitle": "Console",
+    "consoleTab": "Console",
+    "planTab": "Plan",
+    "eventCount": "{{count}} events",
+    "waitingLogs": "Waiting for logs...",
+    "toolSummary": {
+        "editing": "Editing files",
+        "command": "Running command",
+        "running": "Running tool",
+        "fileFallback": "File change"
+    },
+    "newTask": "New Task",
+    "generatingPlan": "Generating plan...",
+    "executingTask": "Executing task...",
+    "waitingApproval": "Waiting for approval",
+    "newStep": "New step",
+    "addStep": "Add step",
+    "noPlan": "No plan yet",
+    "overallProgress": "Overall progress",
+    "selectAgentProfile": "Select agent profile",
+    "agentSelected": "Agent selected",
+    "defaultAgent": "Default Agent",
+    "defaultAgentDesc": "General-purpose project agent",
+    "approveAndRun": "Approve & Run",
+    "planning": "Planning",
+    "running": "Running",
+    "stopLabel": "Stop",
+    "planAction": "Plan",
+    "executeAction": "Execute",
+    "thinkingOn": "Thinking on",
+    "thinkingOff": "Thinking off",
+    "selectAction": "Select action",
+    "noDescription": "No description provided",
+    "selectProject": "Select project",
+    "votingPanel": {
+        "title": "Voting Sessions",
+        "sessionCount": "{{count}} sessions",
+        "pending": "Pending",
+        "resolved": "Resolved",
+        "deadlocked": "Deadlocked",
+        "noSessions": "No voting sessions yet",
+        "votesCount": "{{count}} votes",
+        "disagreementDetails": "Disagreement details",
+        "noDisagreement": "No disagreement detected",
+        "manualOverride": "Manual override",
+        "overrideReasonPlaceholder": "Override reason (optional)",
+        "applyOverride": "Apply override",
+        "applyingOverride": "Applying override...",
+        "configSummary": "Config: minimum {{minVotes}} votes, deadlock threshold {{deadlock}}%",
+        "status": {
+            "pending": "Pending",
+            "voting": "Voting",
+            "resolved": "Resolved",
+            "deadlocked": "Deadlocked"
+        }
+    },
+    "statePanel": {
+        "title": "State Machine",
+        "currentState": "Current states",
+        "allowedTransitions": "Allowed transitions",
+        "noTransitions": "No transitions available",
+        "recentTransitions": "Recent transitions",
+        "noHistory": "No state transitions yet",
+        "status": {
+            "idle": "Idle",
+            "planning": "Planning",
+            "waiting_for_approval": "Waiting for approval",
+            "running": "Running",
+            "paused": "Paused",
+            "completed": "Completed",
+            "failed": "Failed",
+            "error": "Error"
+        }
+    }
+};
+
+export default sectionData;

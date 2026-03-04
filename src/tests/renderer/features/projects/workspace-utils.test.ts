@@ -5,7 +5,7 @@ import {
     getWorkspaceTreeStorageKey,
     loadExpandedTreeState,
     saveExpandedTreeState,
-} from '@/features/projects/utils/workspaceUtils';
+} from '@/features/workspace/utils/workspaceUtils';
 import { WorkspaceMount } from '@/types';
 
 const mounts: WorkspaceMount[] = [

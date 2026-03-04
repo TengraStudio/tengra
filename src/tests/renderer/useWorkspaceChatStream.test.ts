@@ -41,7 +41,7 @@ vi.mock('@/lib/identity', () => ({
 }));
 
 // Import after mocks are set up
-import { useWorkspaceChatStream } from '@/features/projects/hooks/useWorkspaceChatStream';
+import { useWorkspaceChatStream } from '@/features/workspace/hooks/useWorkspaceChatStream';
 
 const DEFAULT_OPTIONS = {
     provider: 'ollama',

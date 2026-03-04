@@ -8,7 +8,7 @@ import { useCallback, useEffect } from 'react';
 import { useTranslation } from '@/i18n';
 
 interface UseVoiceActionsParams {
-    setCurrentView: (view: 'chat' | 'projects' | 'settings' | 'models') => void
+    setCurrentView: (view: 'chat' | 'workspace' | 'settings' | 'models') => void
     addToast: (toast: { type: 'info'; message: string }) => void
     createNewChat: () => void
     handleSend: () => Promise<void> | void
@@ -40,7 +40,8 @@ export function useVoiceActions({
                 setCurrentView('chat');
                 break;
             case 'projects':
-                setCurrentView('projects');
+            case 'workspace':
+                setCurrentView('workspace');
                 break;
             case 'models':
                 setCurrentView('models');

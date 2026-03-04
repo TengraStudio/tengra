@@ -3,8 +3,10 @@ import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { MarketResearchService } from '@main/services/external/market-research.service';
 import { BrainService } from '@main/services/llm/brain.service';
-import { IdeaRepository } from '@main/services/llm/idea-repository';
+import { IdeaExportOrchestrationService } from '@main/services/llm/idea/export-orchestration.service';
+import { IdeaResearchOrchestrationService } from '@main/services/llm/idea/research-orchestration.service';
 import { IdeaGeneratorValidationService } from '@main/services/llm/idea-generator-validation.service';
+import { IdeaRepository } from '@main/services/llm/idea-repository';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
 import { ProjectScaffoldService } from '@main/services/project/project-scaffold.service';
@@ -12,8 +14,7 @@ import { AuthService } from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { withRetry } from '@main/utils/retry.util';
 import { Message } from '@shared/types/chat';
-import { JsonObject } from '@shared/types/common';
-import { DatabaseAdapter } from '@shared/types/database';
+import { CatchError } from '@shared/types/common';
 import {
     BusinessModel,
     IdeaCategory,
@@ -29,8 +30,6 @@ import {
     ProjectIdea,
     ProjectRoadmap,
     ResearchData,
-    ResearchProgress,
-    ResearchStage,
     RoadmapPhase,
     SWOTAnalysis,
     TechChoice,
@@ -56,6 +55,8 @@ export class IdeaGeneratorService extends BaseService {
     // private initialized = false; // Removed as unused
     private ideaRepository: IdeaRepository | null = null;
     private readonly validation = new IdeaGeneratorValidationService();
+    private readonly researchOrchestration: IdeaResearchOrchestrationService;
+    private readonly exportOrchestration: IdeaExportOrchestrationService;
 
     constructor(
         private deps: {
@@ -70,6 +71,14 @@ export class IdeaGeneratorService extends BaseService {
         }
     ) {
         super('IdeaGeneratorService');
+        this.researchOrchestration = new IdeaResearchOrchestrationService(
+            this.deps.marketResearchService,
+            this.deps.eventBus
+        );
+        this.exportOrchestration = new IdeaExportOrchestrationService(
+            this.deps.projectScaffoldService,
+            this.deps.databaseService
+        );
     }
 
     /**
@@ -257,69 +266,17 @@ Respond in JSON:
         this.logInfo(`Starting research pipeline for session ${sessionId}`);
         await this.updateSessionStatus(sessionId, 'researching');
 
-        const researchData: ResearchData = {
-            categoryAnalysis: '',
-            sectors: [],
-            marketTrends: [],
-            competitors: [],
-            opportunities: [],
-        };
-
         try {
-            // Stage 1: Initial Analysis
-            this.emitResearchProgress(
+            const researchData = await this.researchOrchestration.runResearchPipeline({
                 sessionId,
-                'understanding',
-                10,
-                'Analyzing selected categories...'
-            );
-
-            for (let i = 0; i < session.categories.length; i++) {
-                const category = session.categories[i];
-
-                // Perform DEEP, granular research sequentially
-                const marketData = await this.deps.marketResearchService.getDeepMarketData(
-                    category,
-                    stageMessage => {
-                        const baseProgress = 10 + Math.floor((i / session.categories.length) * 80);
-                        this.emitResearchProgress(
-                            sessionId,
-                            'market-research',
-                            baseProgress,
-                            stageMessage
-                        );
-                    }
-                );
-
-                researchData.categoryAnalysis += marketData.categoryAnalysis + '\n\n';
-                researchData.sectors.push(...marketData.sectors);
-                researchData.marketTrends.push(...marketData.marketTrends);
-                researchData.competitors.push(...marketData.competitors);
-                researchData.opportunities.push(...marketData.opportunities);
-
-                if (marketData.productHuntProducts) {
-                    researchData.productHuntProducts = [
-                        ...(researchData.productHuntProducts ?? []),
-                        ...marketData.productHuntProducts,
-                    ];
-                }
-                if (marketData.crunchbaseCompanies) {
-                    researchData.crunchbaseCompanies = [
-                        ...(researchData.crunchbaseCompanies ?? []),
-                        ...marketData.crunchbaseCompanies,
-                    ];
-                }
-
-                await this.delay(1000);
-            }
-
-            // Save research data to session
-            const repository = await this.getRepository();
-            await repository.updateSessionResearchData(sessionId, researchData);
-
-            this.emitResearchProgress(sessionId, 'complete', 100, 'Research complete!');
+                categories: session.categories,
+                persistResearchData: async data => {
+                    const repository = await this.getRepository();
+                    await repository.updateSessionResearchData(sessionId, data);
+                },
+                delay: async ms => await this.delay(ms),
+            });
             this.logInfo(`Research pipeline completed for session ${sessionId}`);
-
             return researchData;
         } catch (error) {
             this.logError(`Research pipeline failed: ${getErrorMessage(error as Error)}`);
@@ -337,13 +294,6 @@ Respond in JSON:
         const repository = await this.getRepository();
         const ideas = await repository.getIdeas();
         return ideas.slice(0, 200);
-    }
-
-    /**
-     * Check if an idea title is too similar to existing ideas
-     */
-    private isTitleTooSimilar(newTitle: string, existingIdeas: ProjectIdea[]): boolean {
-        return this.validation.isTitleTooSimilar(newTitle, existingIdeas);
     }
 
     /**
@@ -378,7 +328,7 @@ Respond in JSON:
     /**
      * Check if an error is retryable (rate limit, timeout, network issues)
      */
-    private isRetryableError(error: Error): boolean {
+    private isRetryableError(error: CatchError): boolean {
         return this.validation.isRetryableError(error);
     }
 
@@ -1453,23 +1403,11 @@ Respond in JSON format:
             enrichedIdea.title = selectedName;
         }
 
-        // Scaffold the project
-        await this.deps.projectScaffoldService.scaffoldProject(enrichedIdea, projectPath);
-
-        // Create project in database
-        const project = await this.deps.databaseService.createProject(
-            enrichedIdea.title,
+        const project = await this.exportOrchestration.exportIdeaToProject({
+            ideaId,
+            idea: enrichedIdea,
             projectPath,
-            enrichedIdea.description
-        );
-
-        // Update idea with project reference
-        const db = await this.getDb();
-        await db
-            .prepare(
-                'UPDATE project_ideas SET status = ?, project_id = ?, updated_at = ? WHERE id = ?'
-            )
-            .run('approved', project.id, Date.now(), ideaId);
+        });
 
         this.logInfo(`Project created: ${project.id} from idea ${ideaId}`);
 
@@ -1602,16 +1540,6 @@ The logo should be simple, memorable, and work well at small sizes.`;
         return this.ideaRepository;
     }
 
-    private emitResearchProgress(
-        sessionId: string,
-        stage: ResearchStage,
-        progress: number,
-        message?: string
-    ): void {
-        const event: ResearchProgress = { sessionId, stage, progress, message };
-        this.deps.eventBus.emit('ideas:research-progress', event);
-    }
-
     private emitIdeaProgress(options: {
         sessionId: string;
         ideaIndex: number;
@@ -1634,49 +1562,7 @@ The logo should be simple, memorable, and work well at small sizes.`;
     }
 
     private buildResearchContext(research: ResearchData): string {
-        let context = '';
-
-        if (research.categoryAnalysis) {
-            context += `Category Analysis:\n${research.categoryAnalysis}\n\n`;
-        }
-
-        if (research.sectors.length > 0) {
-            context += `Relevant Sectors: ${Array.from(new Set(research.sectors)).join(', ')}\n\n`;
-        }
-
-        if (research.marketTrends.length > 0) {
-            context += `Market Trends:\n${research.marketTrends
-                .slice(0, 10)
-                .map(t => `- ${t.title}: ${t.description}`)
-                .join('\n')}\n\n`;
-        }
-
-        if (research.competitors.length > 0) {
-            context += `Top Competitors:\n${research.competitors
-                .slice(0, 10)
-                .map(c => `- ${c.name}: ${c.description}`)
-                .join('\n')}\n\n`;
-        }
-
-        if (research.productHuntProducts && research.productHuntProducts.length > 0) {
-            context += `Successful Products (Product Hunt):\n${research.productHuntProducts
-                .slice(0, 5)
-                .map(p => `- ${p.name}: ${p.tagline} (${p.votesCount} votes)`)
-                .join('\n')}\n\n`;
-        }
-
-        if (research.crunchbaseCompanies && research.crunchbaseCompanies.length > 0) {
-            context += `Funded Companies (Crunchbase):\n${research.crunchbaseCompanies
-                .slice(0, 5)
-                .map(c => `- ${c.name}: ${c.description} (Funding: ${c.fundingTotal ?? 'N/A'})`)
-                .join('\n')}\n\n`;
-        }
-
-        if (research.opportunities.length > 0) {
-            context += `Potential Opportunities:\n${research.opportunities.map(o => `- ${o}`).join('\n')}\n\n`;
-        }
-
-        return context;
+        return this.researchOrchestration.buildResearchContext(research);
     }
 
     // ==================== Seed Generation Helpers ====================
@@ -2030,11 +1916,7 @@ Respond ONLY with valid JSON:
      * Sanitize custom prompt to prevent prompt injection
      */
     private sanitizeCustomPrompt(prompt: string): string {
-        return prompt
-            .replace(/```/g, '') // Remove code block markers
-            .replace(/===+/g, '---') // Prevent section marker injection
-            .replace(/(\r?\n){3,}/g, '\n\n') // Limit excessive newlines
-            .slice(0, 1000); // Limit length
+        return this.validation.sanitizeCustomPrompt(prompt);
     }
 
     private parseCompetitorResponse(content: string): {
@@ -2241,14 +2123,10 @@ Respond in JSON:
      * Interactive Research Chat
      */
     async queryIdeaResearch(ideaId: string, question: string): Promise<string> {
-        const db = await this.getDb();
-        const row = await db
-            .prepare('SELECT * FROM project_ideas WHERE id = ?')
-            .get<JsonObject>(ideaId);
-        if (!row) {
+        const idea = await this.getIdea(ideaId);
+        if (!idea) {
             throw new Error('Idea not found');
         }
-        const idea = this.mapRowToIdea(row);
 
         const context = `
 Title: ${idea.title}
@@ -2415,8 +2293,8 @@ Competitive Landscape: ${JSON.stringify(idea.ideaCompetitors)}
      * Delete a single idea permanently
      */
     async deleteIdea(ideaId: string): Promise<void> {
-        const db = await this.getDb();
-        await db.prepare('DELETE FROM project_ideas WHERE id = ?').run(ideaId);
+        const repository = await this.getRepository();
+        await repository.deleteIdea(ideaId);
         this.logInfo(`Idea deleted: ${ideaId}`);
     }
 
@@ -2424,13 +2302,12 @@ Competitive Landscape: ${JSON.stringify(idea.ideaCompetitors)}
      * Delete an entire session and all its ideas
      */
     async deleteSession(sessionId: string): Promise<void> {
-        const db = await this.getDb();
-
-        // First delete all ideas in the session
-        await db.prepare('DELETE FROM project_ideas WHERE session_id = ?').run(sessionId);
-
-        // Then delete the session itself
-        await db.prepare('DELETE FROM idea_sessions WHERE id = ?').run(sessionId);
+        const repository = await this.getRepository();
+        const ideas = await repository.getIdeas(sessionId);
+        for (const idea of ideas) {
+            await repository.deleteIdea(idea.id);
+        }
+        await repository.deleteSession(sessionId);
 
         this.logInfo(`Session deleted with all ideas: ${sessionId}`);
     }
@@ -2440,10 +2317,8 @@ Competitive Landscape: ${JSON.stringify(idea.ideaCompetitors)}
      * Changes status to 'archived' instead of deleting
      */
     async archiveIdea(ideaId: string): Promise<void> {
-        const db = await this.getDb();
-        await db
-            .prepare('UPDATE project_ideas SET status = ?, updated_at = ? WHERE id = ?')
-            .run('archived', Date.now(), ideaId);
+        const repository = await this.getRepository();
+        await repository.archiveIdea(ideaId);
         this.logInfo(`Idea archived: ${ideaId}`);
     }
 
@@ -2451,10 +2326,8 @@ Competitive Landscape: ${JSON.stringify(idea.ideaCompetitors)}
      * Restore an archived idea back to pending status
      */
     async restoreIdea(ideaId: string): Promise<void> {
-        const db = await this.getDb();
-        await db
-            .prepare('UPDATE project_ideas SET status = ?, updated_at = ? WHERE id = ?')
-            .run('pending', Date.now(), ideaId);
+        const repository = await this.getRepository();
+        await repository.restoreIdea(ideaId);
         this.logInfo(`Idea restored: ${ideaId}`);
     }
 
@@ -2462,15 +2335,7 @@ Competitive Landscape: ${JSON.stringify(idea.ideaCompetitors)}
      * Get archived ideas, optionally filtered by session
      */
     async getArchivedIdeas(sessionId?: string): Promise<ProjectIdea[]> {
-        const db = await this.getDb();
-        const sql = sessionId
-            ? 'SELECT * FROM project_ideas WHERE session_id = ? AND status = ? ORDER BY updated_at DESC'
-            : 'SELECT * FROM project_ideas WHERE status = ? ORDER BY updated_at DESC';
-
-        const rows = sessionId
-            ? await db.prepare(sql).all<JsonObject>(sessionId, 'archived')
-            : await db.prepare(sql).all<JsonObject>('archived');
-
-        return rows.map(row => this.mapRowToIdea(row));
+        const repository = await this.getRepository();
+        return repository.getArchivedIdeas(sessionId);
     }
 }

@@ -1,0 +1,51 @@
+const sectionData = {
+    "title": "Asistente de proyecto",
+    "localProject": "Proyecto local",
+    "localProjectDesc": "Crea un nuevo proyecto en tu ordenador.",
+    "remoteSSH": "SSH remoto",
+    "remoteSSHDesc": "Conéctate a un servidor remoto y desarrolla.",
+    "import": "Importar",
+    "importDesc": "Añade un proyecto o carpeta existente al espacio de trabajo.",
+    "projectName": "NOMBRE DEL PROYECTO",
+    "namePlaceholder": "Ej: Dashboard CRM",
+    "placeholder": {
+        "example": "ejemplo.com"
+    },
+    "description": "DESCRIPCIÓN (OPCIONAL)",
+    "descPlaceholder": "¿Cuál es el objetivo de este proyecto?",
+    "host": "HOST",
+    "port": "PUERTO",
+    "username": "NOMBRE DE USUARIO",
+    "password": "Contraseña",
+    "privateKey": "Clave privada",
+    "keyPath": "RUTA DE LA CLAVE",
+    "creating": "Creando proyecto",
+    "sshSetup": "Estableciendo conexión SSH y preparando el entorno remoto...",
+    "configuring": "Configurando archivos del proyecto y memoria IA...",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "create": "Crear",
+    "connect": "Conectar",
+    "selectFolder": "Seleccionar carpeta",
+    "alreadyExists": "Ya existe",
+    "alreadyExistsDesc": "Vincula una carpeta de proyecto existente en tu ordenador.",
+    "sshTodo": "SSH (Próximamente)",
+    "sshTodoDesc": "Desarrolla en un servidor remoto. Actualmente desactivado.",
+    "newCreateTodo": "Crear nuevo (Próximamente)",
+    "newCreateTodoDesc": "Crea un directorio de proyecto nuevo desde cero. Actualmente desactivado.",
+    "emptyDir": "Este directorio está vacío.",
+    "listingDir": "Listando directorio...",
+    "selectRootDesc": "Selecciona el directorio raíz para los metadatos del proyecto.",
+    "connectionFailed": "Conexión fallida",
+    "connectionIdNotFound": "Conexión establecida pero ID no encontrado.",
+    "listFailed": "Error al listar el directorio",
+    "categories": {
+        "web": "Aplicación Web",
+        "backend": "Servicio Backend",
+        "cli": "CLI / Script",
+        "mobile": "Aplicación Móvil",
+        "other": "Proyecto Personalizado"
+    }
+};
+
+export default sectionData;

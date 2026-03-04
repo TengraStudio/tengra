@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { WorkspaceNotifications } from '@/features/projects/components/workspace/WorkspaceNotifications';
+import { WorkspaceNotifications } from '@/features/workspace/components/workspace/WorkspaceNotifications';
 
 describe('WorkspaceNotifications', () => {
     it('shows operation summary and grouped duplicate count', () => {

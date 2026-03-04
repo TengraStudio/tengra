@@ -98,6 +98,7 @@ export interface AdvancedSemanticFragment {
 
     // Scope
     projectId?: string;         // null = global
+    workspaceId?: string;
     contextTags?: string[];     // Additional context for retrieval
 
     // Timestamps
@@ -149,6 +150,7 @@ export interface PendingMemory {
 
     // Scope
     projectId?: string;
+    workspaceId?: string;
 }
 
 /** A candidate contradiction found during validation */

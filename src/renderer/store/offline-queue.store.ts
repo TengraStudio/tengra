@@ -23,6 +23,11 @@ type Listener = () => void;
 const listeners = new Set<Listener>();
 let state: OfflineQueueState = { items: [], isOnline: navigator.onLine };
 
+interface OfflineQueueWindow extends Window {
+    __tengraOfflineQueueOnlineHandler__?: () => void;
+    __tengraOfflineQueueOfflineHandler__?: () => void;
+}
+
 function emit(): void {
     for (const listener of listeners) {
         listener();
@@ -98,13 +103,27 @@ export function useOfflineQueueStore<T>(selector: (s: OfflineQueueState) => T): 
 }
 
 // Listen for browser online/offline events and auto-flush
-window.addEventListener('online', () => {
+const handleOnline = (): void => {
     state = { ...state, isOnline: true };
     emit();
     flush();
-});
+};
 
-window.addEventListener('offline', () => {
+const handleOffline = (): void => {
     state = { ...state, isOnline: false };
     emit();
-});
+};
+
+const offlineQueueWindow = window as OfflineQueueWindow;
+if (offlineQueueWindow.__tengraOfflineQueueOnlineHandler__) {
+    window.removeEventListener('online', offlineQueueWindow.__tengraOfflineQueueOnlineHandler__);
+}
+if (offlineQueueWindow.__tengraOfflineQueueOfflineHandler__) {
+    window.removeEventListener('offline', offlineQueueWindow.__tengraOfflineQueueOfflineHandler__);
+}
+
+offlineQueueWindow.__tengraOfflineQueueOnlineHandler__ = handleOnline;
+offlineQueueWindow.__tengraOfflineQueueOfflineHandler__ = handleOffline;
+
+window.addEventListener('online', handleOnline);
+window.addEventListener('offline', handleOffline);

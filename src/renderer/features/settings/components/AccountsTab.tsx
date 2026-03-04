@@ -44,6 +44,7 @@ interface AccountsTabProps {
     connectGitHubProfile: () => void
     connectCopilot: () => void
     connectBrowserProvider: (p: 'codex' | 'claude' | 'antigravity') => void
+    cancelAuthFlow: () => void
     startOllama: () => void
     checkOllama: () => void
     handleSave: (s?: AppSettings) => void
@@ -380,6 +381,7 @@ NvidiaSection.displayName = 'NvidiaSection';
 export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
     settings, linkedAccounts, authBusy, authMessage, isOllamaRunning,
     connectGitHubProfile, connectCopilot, connectBrowserProvider,
+    cancelAuthFlow,
     startOllama, checkOllama, handleSave, setSettings, deviceCodeModal, closeDeviceCodeModal,
     setManualSessionModal, t
 }) => {
@@ -430,8 +432,21 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
 
             {/* Auth Message */}
             {authMessage && (
-                <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground animate-in fade-in slide-in-from-top-2">
-                    {authMessage}
+                <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground animate-in fade-in slide-in-from-top-2 flex items-center justify-between gap-3">
+                    <span>{authMessage}</span>
+                    {authBusy && (
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                cancelAuthFlow();
+                            }}
+                            className="shrink-0 px-2.5 py-1 rounded-md border border-border bg-background/60 text-[11px] font-bold text-muted-foreground hover:text-foreground hover:bg-background transition-colors"
+                        >
+                            {t('common.cancel')}
+                        </button>
+                    )}
                 </div>
             )}
 

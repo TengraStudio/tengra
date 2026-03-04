@@ -1,0 +1,31 @@
+const sectionData = {
+    "title": "Klavye Kısayolları",
+    "general": "Genel",
+    "navigation": "Navigasyon",
+    "chat": "Sohbet",
+    "newChat": "Yeni Sohbet",
+    "openSettings": "Ayarları Aç",
+    "commandPalette": "Komut Paleti",
+    "toggleSidebar": "Kenar Çubuğunu Aç/Kapat",
+    "goToChat": "Sohbete Git",
+    "goToProjects": "Projelere Git",
+    "goToCouncil": "Konseye Git",
+    "goToSettings": "Ayarlara Git",
+    "sendMessage": "Mesaj Gönder",
+    "newLine": "Yeni Satır",
+    "clearChat": "Sohbeti Temizle",
+    "searchChat": "Sohbet Ara",
+    "showShortcuts": "Kısayolları Göster",
+    "ctrl": "Ctrl",
+    "close": "Kapat",
+    "footer": "Kapatmak için Esc tuşuna basın",
+    "pressKeys": "Tuşlara basın...",
+    "resetToDefault": "Varsayılana sıfırla",
+    "searchPlaceholder": "Kısayolları ara",
+    "export": "Dışa Aktar",
+    "import": "İçe Aktar",
+    "resetAll": "Tümünü sıfırla",
+    "closeModal": "Modalı kapat"
+};
+
+export default sectionData;

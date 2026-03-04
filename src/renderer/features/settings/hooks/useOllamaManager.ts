@@ -17,9 +17,10 @@ export function useOllamaManager() {
 
     const checkOllama = useCallback(async () => {
         try {
-            const running = await window.electron.isOllamaRunning();
-            setIsOllamaRunning(!!running);
-        } catch {
+            const status = await window.electron.forceOllamaHealthCheck();
+            setIsOllamaRunning(status.status === 'ok');
+        } catch (error) {
+            appLogger.error('OllamaManager', 'Failed to check Ollama status', error as Error);
             setIsOllamaRunning(false);
         }
     }, []);
@@ -30,6 +31,9 @@ export function useOllamaManager() {
 
     const startOllama = useCallback(async () => {
         try {
+            if (statusTimeoutRef.current !== null) {
+                clearTimeout(statusTimeoutRef.current);
+            }
             const result = await window.electron.startOllama();
             if (result.message) {
                 setStatusMessage(result.message);

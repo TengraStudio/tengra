@@ -7,7 +7,7 @@ import { Modal } from '@renderer/components/ui/modal';
 import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useChat } from '@/context/ChatContext';
-import { useProject } from '@/context/ProjectContext';
+import { useWorkspace } from '@/context/WorkspaceContext';
 import { PromptManagerModal } from '@/features/prompts/components/PromptManagerModal';
 import { SettingsCategory } from '@/features/settings/types';
 import { AppView } from '@/hooks/useAppState';
@@ -42,7 +42,7 @@ export const Sidebar = React.memo(({
     } = useChat();
 
     // const { language: authLanguage } = useAuth() // Removed unused
-    const { selectedProject } = useProject();
+    const { selectedProject } = useWorkspace();
     const { t, language } = useTranslation();
 
     const [searchQuery, setSearchQuery] = useState('');

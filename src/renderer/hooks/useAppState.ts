@@ -15,7 +15,7 @@ import { setAppShellState, useUiLayoutStore } from '@/store/ui-layout.store';
 import { Toast } from '@/types';
 // SettingsCategory type is used by dependent modules via AppState interface
 
-export type AppView = 'chat' | 'projects' | 'settings' | 'mcp' | 'memory' | 'ideas' | 'automation-workflow' | 'docker' | 'terminal' | 'models' | 'workflows'
+export type AppView = 'chat' | 'workspace' | 'settings' | 'mcp' | 'memory' | 'ideas' | 'automation-workflow' | 'docker' | 'terminal' | 'models' | 'workflows'
 
 export interface AppState {
     // View state
@@ -35,8 +35,6 @@ export interface AppState {
     setShowSSHManager: (show: boolean) => void
     showShortcuts: boolean
     setShowShortcuts: (show: boolean) => void
-    showExtensionDevTools: boolean
-    setShowExtensionDevTools: (show: boolean) => void
     showFileMenu: boolean
     setShowFileMenu: (show: boolean) => void
     showScrollButton: boolean
@@ -71,7 +69,6 @@ export function useAppState(): AppState {
     const [showCommandPalette, setShowCommandPalette] = useState(false);
     const [showSSHManager, setShowSSHManager] = useState(false);
     const [showShortcuts, setShowShortcuts] = useState(false);
-    const [showExtensionDevTools, setShowExtensionDevTools] = useState(false);
     const [showFileMenu, setShowFileMenu] = useState(false);
     const [showScrollButton, setShowScrollButton] = useState(false);
     const [isAudioOverlayOpen, setIsAudioOverlayOpen] = useState(false);
@@ -122,8 +119,6 @@ export function useAppState(): AppState {
         setShowSSHManager,
         showShortcuts,
         setShowShortcuts,
-        showExtensionDevTools,
-        setShowExtensionDevTools,
         showFileMenu,
         setShowFileMenu,
         showScrollButton,
@@ -155,8 +150,6 @@ export function useAppState(): AppState {
         setShowCommandPalette,
         setShowSSHManager,
         setShowShortcuts,
-        showExtensionDevTools,
-        setShowExtensionDevTools,
         setShowFileMenu,
         setShowScrollButton,
         setIsAudioOverlayOpen

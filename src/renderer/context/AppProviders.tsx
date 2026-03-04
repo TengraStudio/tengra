@@ -4,9 +4,9 @@ import { Component, ErrorInfo, ReactNode } from 'react';
 import { AuthProvider } from '@/context/AuthContext';
 import { ChatProvider } from '@/context/ChatContext';
 import { ModelProvider } from '@/context/ModelContext';
-import { ProjectProvider } from '@/context/ProjectContext';
 import { SettingsProvider } from '@/context/SettingsContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { WorkspaceProvider } from '@/context/WorkspaceContext';
 import { appLogger } from '@/utils/renderer-logger';
 
 interface ProviderBoundaryProps {
@@ -73,14 +73,14 @@ export function AppProviders({ children }: { children: ReactNode }) {
                                     <ThemeProvider>
                                         <ProviderBoundary providerName="ModelProvider">
                                             <ModelProvider>
-                                                <ProviderBoundary providerName="ProjectProvider">
-                                                    <ProjectProvider>
+                                                <ProviderBoundary providerName="WorkspaceProvider">
+                                                    <WorkspaceProvider>
                                                         <ProviderBoundary providerName="ChatProvider">
                                                             <ChatProvider>
                                                                 {children}
                                                             </ChatProvider>
                                                         </ProviderBoundary>
-                                                    </ProjectProvider>
+                                                    </WorkspaceProvider>
                                                 </ProviderBoundary>
                                             </ModelProvider>
                                         </ProviderBoundary>

@@ -226,7 +226,8 @@ export interface DbCodeSymbol {
 
 export interface DbStoreCodeSymbolRequest {
     id?: string
-    project_path: string
+    project_path?: string
+    workspace_path?: string
     file_path: string
     name: string
     line: number
@@ -240,6 +241,7 @@ export interface DbVectorSearchRequest {
     embedding: number[]
     limit?: number
     project_path?: string
+    workspace_path?: string
 }
 
 export interface DbSemanticFragment {
@@ -251,6 +253,7 @@ export interface DbSemanticFragment {
     tags: string[]
     importance: number
     project_path?: string
+    workspace_path?: string
     created_at: number
     updated_at: number
 }
@@ -264,6 +267,7 @@ export interface DbStoreSemanticFragmentRequest {
     tags?: string[]
     importance?: number
     project_path?: string
+    workspace_path?: string
 }
 
 // ============================================================================

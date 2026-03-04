@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { ProjectSettingsPanel } from '@/features/projects/components/ProjectSettingsPanel';
+import { ProjectSettingsPanel } from '@/features/workspace/components/ProjectSettingsPanel';
 
 vi.mock('@/i18n', () => ({
     useTranslation: () => ({
@@ -9,7 +9,7 @@ vi.mock('@/i18n', () => ({
     }),
 }));
 
-vi.mock('@/features/projects/hooks/useProjectSettingsForm', () => ({
+vi.mock('@/features/workspace/hooks/useProjectSettingsForm', () => ({
     useProjectSettingsForm: () => ({
         formData: {},
         setFormData: vi.fn(),
@@ -20,11 +20,11 @@ vi.mock('@/features/projects/hooks/useProjectSettingsForm', () => ({
     }),
 }));
 
-vi.mock('@/features/projects/components/settings/SettingsHeader', () => ({
+vi.mock('@/features/workspace/components/settings/SettingsHeader', () => ({
     SettingsHeader: () => <div data-testid="settings-header" />,
 }));
 
-vi.mock('@/features/projects/components/settings/SettingsSidebar', () => ({
+vi.mock('@/features/workspace/components/settings/SettingsSidebar', () => ({
     SettingsSidebar: ({
         setActiveSection,
     }: {
@@ -36,27 +36,27 @@ vi.mock('@/features/projects/components/settings/SettingsSidebar', () => ({
     ),
 }));
 
-vi.mock('@/features/projects/components/settings/GeneralSection', () => ({
+vi.mock('@/features/workspace/components/settings/GeneralSection', () => ({
     GeneralSection: () => <div>general-section</div>,
 }));
 
-vi.mock('@/features/projects/components/settings/AdvancedSection', () => ({
+vi.mock('@/features/workspace/components/settings/AdvancedSection', () => ({
     AdvancedSection: () => <div>advanced-section</div>,
 }));
 
-vi.mock('@/features/projects/components/settings/CouncilSection', () => ({
+vi.mock('@/features/workspace/components/settings/CouncilSection', () => ({
     CouncilSection: () => null,
 }));
 
-vi.mock('@/features/projects/components/settings/BuildSection', () => ({
+vi.mock('@/features/workspace/components/settings/BuildSection', () => ({
     BuildSection: () => null,
 }));
 
-vi.mock('@/features/projects/components/settings/DevServerSection', () => ({
+vi.mock('@/features/workspace/components/settings/DevServerSection', () => ({
     DevServerSection: () => null,
 }));
 
-vi.mock('@/features/projects/components/settings/WorkspaceSection', () => ({
+vi.mock('@/features/workspace/components/settings/WorkspaceSection', () => ({
     WorkspaceSection: () => null,
 }));
 

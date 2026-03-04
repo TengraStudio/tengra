@@ -90,7 +90,7 @@ export class ContextRetrievalService {
         const startedAt = Date.now();
         try {
             this.analytics.totalRequests++;
-            const parsed = ContextRetrievalInputSchema.safeParse({ query, projectId, limit });
+            const parsed = ContextRetrievalInputSchema.safeParse({ query, workspaceId: projectId, limit });
             if (!parsed.success) {
                 this.analytics.validationFailures++;
                 this.analytics.failedRequests++;
@@ -102,7 +102,7 @@ export class ContextRetrievalService {
 
             const normalizedQuery = parsed.data.query.trim();
             const effectiveLimit = parsed.data.limit ?? 5;
-            const effectiveProjectId = parsed.data.projectId;
+            const effectiveProjectId = parsed.data.workspaceId ?? projectId;
 
             let projectPath: string | undefined;
             if (effectiveProjectId) {

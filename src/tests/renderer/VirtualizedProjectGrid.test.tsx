@@ -2,7 +2,7 @@ import { render, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { VirtualizedProjectGrid } from '@/features/projects/components/VirtualizedProjectGrid';
+import { VirtualizedProjectGrid } from '@/features/workspace/components/VirtualizedProjectGrid';
 import { Project } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 

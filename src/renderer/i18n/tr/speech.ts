@@ -1,0 +1,30 @@
+const sectionData = {
+    "title": "Ses & Konuşma",
+    "subtitle": "Asistan yanıtları için ses ayarlarını yapın.",
+    "voiceSelection": "Ses Seçimi",
+    "systemDefault": "Sistem Varsayılanı",
+    "test": "Sesi Test Et",
+    "speed": "Konuşma Hızı",
+    "previewText": "Tengra ile geleceğe hoş geldiniz. Ben sizin yapay zeka asistanınızım.",
+    "microphone": "Mikrofon",
+    "speaker": "Hoparlör / Kulaklık",
+    "microphoneSelection": "Mikrofon Girişi",
+    "speakerSelection": "Ses Çıkışı",
+    "voiceCloning": "Ses Klonlama",
+    "voiceCloningDesc": "Kendi sesinizi Tengra ekosistemine entegre edin.",
+    "voiceCloningTitle": "Kendi Sesinizi Kullanın!",
+    "voiceCloningTeaser": "1 dakika boyunca konuşun ve yapay zeka sizin sesinizi taklit etsin Bu özellik artık aktif!",
+    "record": "Kaydı Başlat",
+    "stopRecord": "Kaydı Durdur",
+    "recording": "Kaydediliyor...",
+    "startTraining": "Klonlamayı Başlat",
+    "training": "Ses Modelleniyor...",
+    "trainingDesc": "Lütfen bekleyin, bu işlem bilgisayarınızın hızına bağlı olarak birkaç dakika sürebilir.",
+    "downloadModel": "Modeli İndir (2GB)",
+    "modelRequired": "XTTS v2 Modeli Gereklidir",
+    "modelRequiredDesc": "Ses klonlama özelliğini kullanmak için yaklaşık 2GB boyutundaki yapay zeka modelini indirmeniz gerekmektedir.",
+    "downloadingModel": "Model İndiriliyor...",
+    "downloadComplete": "İndirme Tamamlandı"
+};
+
+export default sectionData;

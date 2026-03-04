@@ -28,7 +28,13 @@ export function useSettingsAuth(
         }
     }, []);
 
-    const { deviceCodeModal, connectGitHubProfile, connectCopilot, closeDeviceCodeModal } = useDeviceAuth(
+    const {
+        deviceCodeModal,
+        connectGitHubProfile,
+        connectCopilot,
+        closeDeviceCodeModal,
+        cancelDeviceAuth
+    } = useDeviceAuth(
         settings,
         updateSettings,
         setAuthBusy,
@@ -48,6 +54,7 @@ export function useSettingsAuth(
         authStatus,
         refreshAuthStatus,
         connectBrowserProvider,
+        cancelBrowserAuth,
         handleSaveClaudeSession,
         disconnectProvider
     } = useBrowserAuth({
@@ -60,6 +67,14 @@ export function useSettingsAuth(
         onRefreshAccounts,
         onShowManualSession
     });
+
+    const cancelAuthFlow = useCallback(() => {
+        if (deviceCodeModal.isOpen) {
+            cancelDeviceAuth();
+            return;
+        }
+        cancelBrowserAuth();
+    }, [cancelBrowserAuth, cancelDeviceAuth, deviceCodeModal.isOpen]);
 
     return useMemo(() => ({
         statusMessage,
@@ -74,6 +89,7 @@ export function useSettingsAuth(
         connectGitHubProfile,
         connectCopilot,
         connectBrowserProvider,
+        cancelAuthFlow,
         disconnectProvider,
         handleSaveClaudeSession,
         deviceCodeModal,
@@ -83,7 +99,7 @@ export function useSettingsAuth(
     }), [
         statusMessage, setStatusMessage, authMessage, authBusy, isOllamaRunning, authStatus,
         startOllama, checkOllama, refreshAuthStatus, connectGitHubProfile, connectCopilot,
-        connectBrowserProvider, disconnectProvider, handleSaveClaudeSession,
+        connectBrowserProvider, cancelAuthFlow, disconnectProvider, handleSaveClaudeSession,
         deviceCodeModal, closeDeviceCodeModal, manualSessionModal, setManualSessionModal
     ]);
 }

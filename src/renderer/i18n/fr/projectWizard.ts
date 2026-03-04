@@ -1,0 +1,51 @@
+const sectionData = {
+    "title": "Assistant de projet",
+    "localProject": "Projet local",
+    "localProjectDesc": "Créer un nouveau projet sur votre ordinateur.",
+    "remoteSSH": "SSH distant",
+    "remoteSSHDesc": "Connectez-vous à un serveur distant via SSH.",
+    "selectFolder": "Sélectionner un dossier",
+    "alreadyExists": "Lier mon dossier existant",
+    "alreadyExistsDesc": "Lier un dossier de projet existant sur votre ordinateur.",
+    "sshTodo": "SSH (Bientôt disponible)",
+    "sshTodoDesc": "Développez sur un serveur distant. Actuellement désactivé.",
+    "newCreateTodo": "Créer nouveau (Bientôt disponible)",
+    "newCreateTodoDesc": "Créer un nouveau répertoire de projet à partir de zéro. Actuellement désactivé.",
+    "emptyDir": "Ce répertoire est vide.",
+    "listingDir": "Listage du répertoire...",
+    "categories": {
+        "web": "Application Web",
+        "backend": "Service Backend",
+        "cli": "CLI / Script",
+        "mobile": "Application Mobile",
+        "other": "Projet personnalisé"
+    },
+    "import": "Importer",
+    "importDesc": "Ajoutez un projet ou un dossier existant à l'espace de travail.",
+    "projectName": "NOM DU PROJET",
+    "namePlaceholder": "Ex: Tableau de bord CRM",
+    "placeholder": {
+        "example": "exemple.com"
+    },
+    "description": "DESCRIPTION (OPTIONNEL)",
+    "descPlaceholder": "Quel est le but de ce projet ?",
+    "host": "HÔTE",
+    "port": "PORT",
+    "username": "NOM D'UTILISATEUR",
+    "password": "Mot de passe",
+    "privateKey": "Clé privée",
+    "keyPath": "CHEMIN CLÉ",
+    "creating": "Création d'un projet",
+    "sshSetup": "Établissement de la connexion SSH et préparation de l'environnement distant...",
+    "configuring": "Configuration des fichiers de projet et de la mémoire AI...",
+    "back": "Dos",
+    "next": "Suivant",
+    "create": "Créer",
+    "connect": "Connecter",
+    "selectRootDesc": "Sélectionnez le répertoire racine des métadonnées du projet.",
+    "connectionFailed": "La connexion a échoué",
+    "connectionIdNotFound": "Connexion établie mais ID introuvable.",
+    "listFailed": "Échec de la liste du répertoire"
+};
+
+export default sectionData;

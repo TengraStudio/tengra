@@ -1,6 +1,6 @@
 import { Message } from '@shared/types/chat';
-import { IpcRenderer, IpcRendererEvent } from 'electron';
 import { ChatRequest, ChatStreamRequest } from '@shared/types/index';
+import { IpcRenderer, IpcRendererEvent } from 'electron';
 
 export interface ChatBridge {
     chat: (messages: Message[], model: string) => Promise<{ content: string; done: boolean }>;

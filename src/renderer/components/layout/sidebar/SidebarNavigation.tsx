@@ -22,11 +22,11 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
 }) => {
     const navItems = useMemo(() => ([
         { view: 'chat' as const, icon: MessageSquare, label: t('sidebar.chats'), badge: chatsCount > 0 ? chatsCount : undefined },
-        { view: 'projects' as const, icon: Rocket, label: t('sidebar.projects') },
+        { view: 'workspace' as const, icon: Rocket, label: t('sidebar.workspaces') },
         { view: 'models' as const, icon: Boxes, label: t('sidebar.models') },
         { view: 'memory' as const, icon: Brain, label: t('sidebar.memory') },
         { view: 'ideas' as const, icon: Lightbulb, label: t('sidebar.ideas') },
-        { view: 'automation-workflow' as const, icon: Bot, label: t('sidebar.agent') },
+        { view: 'automation-workflow' as const, icon: Bot, label: t('sidebar.automationWorkflow') },
         { view: 'workflows' as const, icon: Zap, label: t('sidebar.workflows') }
     ]), [chatsCount, t]);
     const [focusedIndex, setFocusedIndex] = useState(0);

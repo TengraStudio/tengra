@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { ProjectCard, ProjectCardSurfaceProvider } from '@/features/projects/components/ProjectCard';
+import { ProjectCard, ProjectCardSurfaceProvider } from '@/features/workspace/components/ProjectCard';
 import { Project } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 

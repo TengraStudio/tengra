@@ -2145,8 +2145,8 @@ export const webElectronMock: ElectronAPI = {
     },
 };
 
-if (typeof window !== 'undefined' && !(window as unknown as Record<string, unknown>).electron) {
-    (window as unknown as Record<string, unknown>).electron = webElectronMock;
+if (typeof window !== 'undefined' && !window.electron) {
+    window.electron = webElectronMock;
 }
 
 export default webElectronMock;

@@ -4,11 +4,12 @@ import { Skeleton, SkeletonCard, SkeletonText } from '@/components/ui/skeleton';
 
 export type ViewSkeletonId =
     | 'chat'
-    | 'projects'
+    | 'workspace'
     | 'settings'
     | 'mcp'
     | 'memory'
     | 'ideas'
+    | 'agent'
     | 'automation-workflow'
     | 'models'
     | 'docker'
@@ -38,7 +39,7 @@ export const ChatViewSkeleton: React.FC = () => (
     </div>
 );
 
-export const ProjectsViewSkeleton: React.FC = () => (
+export const WorkspaceViewSkeleton: React.FC = () => (
     <div className="h-full w-full p-4 md:p-6 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4">
         <div className="space-y-3">
             <Skeleton variant="rounded" height={44} />
@@ -87,8 +88,8 @@ export function renderViewSkeleton(view: ViewSkeletonId): React.ReactElement {
     switch (view) {
         case 'chat':
             return <ChatViewSkeleton />;
-        case 'projects':
-            return <ProjectsViewSkeleton />;
+        case 'workspace':
+            return <WorkspaceViewSkeleton />;
         case 'settings':
             return <SettingsViewSkeleton />;
         default:

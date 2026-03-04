@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
     validateWorkspaceMountForm,
     workspaceMountErrorCodes,
-} from '@/features/projects/utils/workspace-mount-validation';
+} from '@/features/workspace/utils/workspace-mount-validation';
 import { MountForm } from '@/types';
 
 const baseSshForm: MountForm = {

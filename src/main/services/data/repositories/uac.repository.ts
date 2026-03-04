@@ -157,7 +157,8 @@ export interface UacPlanPatternRecord {
 }
 
 export interface CreateUacTaskInput {
-    projectId: string;
+    projectId?: string;
+    workspaceId?: string;
     description: string;
     status?: string;
     nodeId?: string;

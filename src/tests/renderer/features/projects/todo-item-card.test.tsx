@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { TodoItemCard } from '@/features/projects/components/todo/TodoItemCard';
+import { TodoItemCard } from '@/features/workspace/components/todo/TodoItemCard';
 
 describe('TodoItemCard', () => {
     it('triggers undo/redo actions without toggling the todo item', () => {

@@ -78,8 +78,8 @@ ChartSkeleton.displayName = 'ChartSkeleton';
 
 // Import prop types for explicit casting
 import type { CodeEditorProps } from '@/components/ui/CodeEditor';
-import type { WorkspaceEditorProps } from '@/features/projects/components/workspace/WorkspaceEditor';
 import type { SettingsPageProps } from '@/features/settings/SettingsPage';
+import type { WorkspaceEditorProps } from '@/features/workspace/components/workspace/WorkspaceEditor';
 
 /**
  * Creates a lazily-loaded component with proper React.Suspense wrapping.
@@ -102,7 +102,7 @@ export const LazyCodeEditor: React.FC<CodeEditorProps> = props => {
 
 export const LazyWorkspaceEditor: React.FC<WorkspaceEditorProps> = props => {
     const Component = lazy(() =>
-        import('@/features/projects/components/workspace/WorkspaceEditor').then(m => ({
+        import('@/features/workspace/components/workspace/WorkspaceEditor').then(m => ({
             default: m.WorkspaceEditor,
         }))
     );

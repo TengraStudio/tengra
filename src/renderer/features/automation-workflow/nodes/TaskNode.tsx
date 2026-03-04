@@ -53,8 +53,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ModelSelector } from '@/components/shared/ModelSelector';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useModel } from '@/context/ModelContext';
+import { useWorkspace } from '@/context/WorkspaceContext';
 import { LogConsole } from '@/features/automation-workflow/components/LogConsole';
-import { useProjectManager } from '@/features/projects/hooks/useProjectManager';
 import { useLanguage } from '@/i18n';
 import { cn } from '@/lib/utils';
 import type { GroupedModels } from '@/types';
@@ -1501,7 +1501,7 @@ const getTaskNodeClasses = (isExpanded: boolean, selected: boolean, status: stri
 
 export const TaskNode = ({ id, data, selected }: NodeProps<Node<TaskNodeData>>) => {
     const { updateNodeData, deleteElements } = useReactFlow();
-    const { projects, selectedProject: globalSelectedProject } = useProjectManager();
+    const { projects, selectedProject: globalSelectedProject } = useWorkspace();
     const {
         groupedModels,
         selectedModel: globalModelId,

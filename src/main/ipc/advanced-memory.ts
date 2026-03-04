@@ -69,6 +69,12 @@ interface AdvancedMemoryResponseEnvelope {
     [key: string]: unknown;
 }
 
+interface AdvancedMemoryListEnvelope<T> extends AdvancedMemoryResponseEnvelope {
+    success: true;
+    data: T[];
+    uiState: 'ready' | 'empty';
+}
+
 // Removed unused TelemetryAwareHandler type in favor of inline arrow function types
 
 interface AdvancedMemoryTelemetryEvent {
@@ -433,12 +439,21 @@ export function registerAdvancedMemoryIpc(advancedMemoryService: AdvancedMemoryS
 }
 
 function registerPendingHandlers(advancedMemoryService: AdvancedMemoryService): void {
-    const handleListError = () => ({ success: true, data: [], uiState: 'empty' });
+    const pendingListResponseSchema = z.object({
+        success: z.literal(true),
+        data: z.array(PendingMemorySchema),
+        uiState: z.enum(['ready', 'empty'])
+    });
+    const handleListError = (): AdvancedMemoryListEnvelope<z.infer<typeof PendingMemorySchema>> => ({
+        success: true,
+        data: [],
+        uiState: 'empty'
+    });
     const handleBasicError = () => ({ success: false, uiState: 'failure' });
     const handleBulkError = () => ({ success: false, confirmed: 0, uiState: 'failure' });
     const handleBulkRejectError = () => ({ success: false, rejected: 0, uiState: 'failure' });
 
-    ipcMain.handle('advancedMemory:getPending', createTelemetryAwareHandler('advancedMemory:getPending', async () => {
+    ipcMain.handle('advancedMemory:getPending', createTelemetryAwareHandler<AdvancedMemoryListEnvelope<z.infer<typeof PendingMemorySchema>>>('advancedMemory:getPending', async () => {
         const pending = advancedMemoryService.getPendingMemories();
         return {
             success: true,
@@ -449,11 +464,7 @@ function registerPendingHandlers(advancedMemoryService: AdvancedMemoryService): 
         onError: handleListError,
         retries: 2,
         argsSchema: z.tuple([]),
-        responseSchema: z.object({
-            success: z.boolean(),
-            data: z.array(PendingMemorySchema),
-            uiState: z.string()
-        })
+        responseSchema: pendingListResponseSchema
     }));
 
     ipcMain.handle('advancedMemory:confirm', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string, unknown]>('advancedMemory:confirm', async (

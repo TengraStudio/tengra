@@ -20,9 +20,7 @@ This workflow ensures documentation stays in sync with code.
    - `docs/SERVICES.md` - Service patterns
    - `docs/API_REFERENCE.md` - API endpoints
    - `docs/DEVELOPMENT.md` - Dev setup
-   - `docs/changelog/data/changelog.entries.json` - Change history source
-   - `docs/changelog/generated/CHANGELOG.en.md` - Generated English changelog
-   - `docs/changelog/generated/CHANGELOG.tr.md` - Generated Turkish changelog
+   - Current markdown changelog or release-note docs if a user-facing workflow changed
 
 2. **Update relevant sections**
    - Keep existing structure

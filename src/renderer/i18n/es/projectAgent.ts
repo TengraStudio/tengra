@@ -1,0 +1,81 @@
+const sectionData = {
+    "changePreview": "Vista previa de cambios",
+    "reasoningTitle": "Razonamiento",
+    "consoleTitle": "Consola",
+    "consoleTab": "Consola",
+    "planTab": "Plan",
+    "eventCount": "{{count}} eventos",
+    "waitingLogs": "Esperando registros...",
+    "toolSummary": {
+        "editing": "Editando archivos",
+        "command": "Ejecutando comando",
+        "running": "Ejecutando herramienta",
+        "fileFallback": "Cambio de archivo"
+    },
+    "newTask": "Nueva tarea",
+    "generatingPlan": "Generando plan...",
+    "executingTask": "Ejecutando tarea...",
+    "waitingApproval": "Esperando aprobación",
+    "newStep": "Nuevo paso",
+    "addStep": "Añadir paso",
+    "noPlan": "Aún no hay plan",
+    "overallProgress": "Progreso general",
+    "selectAgentProfile": "Seleccionar perfil de agente",
+    "agentSelected": "Agente seleccionado",
+    "defaultAgent": "Agente predeterminado",
+    "defaultAgentDesc": "Agente de proyecto de propósito general",
+    "approveAndRun": "Aprobar y ejecutar",
+    "planning": "Planificando",
+    "running": "Ejecutando",
+    "stopLabel": "Detener",
+    "planAction": "Planificar",
+    "executeAction": "Ejecutar",
+    "thinkingOn": "Pensamiento activado",
+    "thinkingOff": "Pensamiento desactivado",
+    "selectAction": "Seleccionar acción",
+    "noDescription": "Sin descripción proporcionada",
+    "selectProject": "Seleccionar proyecto",
+    "unnamedGroup": "Grupo sin nombre",
+    "votingPanel": {
+        "title": "Sesiones de votación",
+        "sessionCount": "{{count}} sesiones",
+        "pending": "Pendiente",
+        "resolved": "Resuelto",
+        "deadlocked": "Estancado",
+        "noSessions": "Aún no hay sesiones de votación",
+        "votesCount": "{{count}} votos",
+        "disagreementDetails": "Detalles del desacuerdo",
+        "noDisagreement": "No se detectó ningún desacuerdo",
+        "manualOverride": "Anulación manual",
+        "overrideReasonPlaceholder": "Motivo de anulación (opcional)",
+        "applyOverride": "Aplicar anulación",
+        "applyingOverride": "Aplicando anulación...",
+        "configSummary": "Configuración: mínimo {{minVotes}} votos, umbral de punto muerto {{deadlock}}%",
+        "status": {
+            "pending": "Pendiente",
+            "voting": "Votación",
+            "resolved": "Resuelto",
+            "deadlocked": "Estancado"
+        }
+    },
+    "statePanel": {
+        "title": "Máquina de estados",
+        "currentState": "Estados actuales",
+        "allowedTransitions": "Transiciones permitidas",
+        "noTransitions": "No hay transiciones disponibles",
+        "recentTransitions": "Transiciones recientes",
+        "noHistory": "Aún no hay transiciones estatales",
+        "status": {
+            "idle": "Inactivo",
+            "planning": "Planificación",
+            "waiting_for_approval": "Esperando aprobación",
+            "running": "Correr",
+            "paused": "En pausa",
+            "completed": "Terminado",
+            "failed": "Fallido",
+            "error": "Error"
+        }
+    }
+};
+
+export default sectionData;

@@ -1,0 +1,196 @@
+const sectionData = {
+    "tabs": {
+        "general": "Genel",
+        "appearance": "Görünüm",
+        "models": "Modeller",
+        "accounts": "Bağlı Hesaplar",
+        "personas": "Personalar",
+        "speech": "Konuşma",
+        "statistics": "İstatistikler",
+        "advanced": "Gelişmiş",
+        "developer": "Geliştirici",
+        "about": "Hakkında",
+        "images": "Görseller",
+        "mcpServers": "MCP Sunucuları",
+        "accessibility": "Erişilebilirlik",
+        "mcpMarketplace": "MCP Pazaryeri"
+    },
+    "searchPlaceholder": "Ayarlarda ara...",
+    "searchResults": "{count} ayar bulundu",
+    "noResults": "Ayar bulunamadı",
+    "title": "Ayarlar",
+    "subtitle": "Uygulama tercihlerini yapılandırın.",
+    "general": "Genel",
+    "accounts": "Hesaplar",
+    "models": "Modeller",
+    "usage-limits": "Kullanım Limiti",
+    "appearance": "Görünüm",
+    "speech": "Ses",
+    "advanced": "Gelişmiş",
+    "developer": "Geliştirici",
+    "statistics": "İstatistikler",
+    "gallery": "Galeri",
+    "about": "Hakkında",
+    "personas": "Kişilikler",
+    "accessibility": {
+        "title": "Erişilebilirlik",
+        "description": "Daha iyi bir erişilebilirlik için deneyiminizi özelleştirin",
+        "highContrast": "Yüksek Kontrast Modu",
+        "highContrastDesc": "Daha iyi görünürlük için kontrastı artırın",
+        "reducedMotion": "Azaltılmış Hareket",
+        "reducedMotionDesc": "Animasyonları ve geçişleri en aza indirin",
+        "enhancedFocus": "Gelişmiş Odak Göstergeleri",
+        "enhancedFocusDesc": "Odak durumlarını daha görünür hale getirin",
+        "screenReader": "Ekran Okuyucu Duyuruları",
+        "screenReaderDesc": "Ekran okuyucular için duyuruları etkinleştirin",
+        "systemPrefs": "Sistem Tercihleri",
+        "systemPrefsDesc": "Bazı ayarlar sistem tercihlerinizi otomatik olarak algılar. Otomatik algılama için işletim sisteminizde \"Azaltılmış Hareket\" veya \"Yüksek Kontrast\"ı etkinleştirin.",
+        "shortcuts": "Klavye Kısayolları",
+        "tabNav": "Öğeler arasında gezinin",
+        "tabNavBack": "Geriye doğru gezinin",
+        "activate": "Odaklanmış öğeyi etkinleştirin",
+        "escape": "Modalı kapatın veya iptal edin",
+        "arrowNav": "Listeler içinde gezinin",
+        "skipToMainContent": "Ana içeriğe geç"
+    },
+    "factoryResetConfirm": "Tüm verileri silmek istediğinize emin misiniz?",
+    "language": "Dil",
+    "theme": "Tema",
+    "mcpServers": "MCP Sunucuları",
+    "factoryReset": "Fabrika Ayarlarına Sıfırla",
+    "usageLimits": {
+        "title": "Model Kullanım Limitleri",
+        "enable": "Etkinleştir",
+        "maxPercentQuota": "Kalan Kota Maksimum Yüzde (%)",
+        "maxPercentPlaceholder": "50",
+        "maxRequests": "Azami İstek",
+        "maxPercentage": "Azami Yüzde (%)",
+        "maxRequestsPlaceholder": "5",
+        "maxPercentagePlaceholder": "50",
+        "typeLabel": "Tür:",
+        "limitLabel": "{{period}} Limiti",
+        "percentHint": "{{remaining}} kalanın {{percentage}}%’i olarak {{count}} istekle sınırlandırır",
+        "types": {
+            "requests": "İstekler",
+            "percentage": "Yüzde"
+        },
+        "periods": {
+            "hourly": "Saatlik",
+            "daily": "Günlük",
+            "weekly": "Haftalık"
+        },
+        "copilot": {
+            "title": "Copilot",
+            "current": "Mevcut: {{remaining}} / {{limit}} kaldı"
+        },
+        "antigravity": {
+            "title": "Antigravity Modelleri",
+            "description": "Her modelin kalan kotasına göre yüzde limit belirleyin"
+        },
+        "codex": {
+            "title": "Codex",
+            "description": "Günlük/haftalık kalan kotaya göre yüzde limitleri belirleyin"
+        }
+    },
+    "browserClosure": {
+        "title": "Tarayıcıyı Kapatmak Gerekli",
+        "description": "{{provider}} ile kimlik doğrulamak için Tengra korumalı çerezleri okumalı.",
+        "warningPrefix": "Dosya kilidini kaldırmak için",
+        "warningEmphasis": "tarayıcınızı otomatik olarak kapatmamız",
+        "warningSuffix": "gerekiyor.",
+        "saveWork": "Lütfen devam etmeden önce tarayıcıdaki çalışmanızı kaydedin. Oturum anahtarını almak için tarayıcıyı görünmez şekilde yeniden açacağız.",
+        "confirm": "Tarayıcıyı Kapat ve Bağlan"
+    },
+    "hyperparameters": {
+        "title": "Hiperparametreler",
+        "temperature": {
+            "label": "Sıcaklık",
+            "description": "Yaratıcılık seviyesi (0: deterministik, 2: çok yaratıcı)"
+        },
+        "topP": {
+            "label": "Top-P",
+            "description": "Nucleus sampling olasılık eşiği"
+        },
+        "topK": {
+            "label": "Top-K",
+            "description": "Dikkate alınacak en olası token sayısı"
+        },
+        "repeatPenalty": {
+            "label": "Tekrar Cezası",
+            "description": "Tekrar cezası (1: yok, 2: yüksek)"
+        }
+    },
+    "mcp": {
+        "title": "Model Bağlam Protokolü",
+        "subtitle": "MCP sunucularını yönetin ve yeni araçlar yükleyin",
+        "tabs": {
+            "servers": "Sunucular",
+            "marketplace": "Pazar"
+        },
+        "servers": {
+            "title": "Yapılandırılmış Sunucular",
+            "subtitle": "Model Bağlam Protokolü sunucu bağlantılarını yönetin",
+            "connect": "Sunucu Bağla",
+            "empty": "Bağlı sunucu yok",
+            "emptyHint": "Pazar sekmesinden sunucu yükleyin",
+            "enabled": "etkin",
+            "note": "Not",
+            "noteText": "Yalnızca etkin sunuculara AI asistanları erişebilir. Her sunucuyu etkinleştirmek/devre dışı bırakmak için güç düğmesini kullanın.",
+            "internalAlwaysEnabled": "Dahili araçlar her zaman etkindir"
+        },
+        "status": {
+            "connected": "Bağlı",
+            "disconnected": "Bağlı değil",
+            "error": "Hata",
+            "enabled": "Etkin",
+            "disabled": "Devre Dışı",
+            "active": "Aktif",
+            "inactive": "İnaktif"
+        }
+    },
+    "images": {
+        "reinstallConfirm": "Bu görüntüyü yeniden yüklemek istediğinizden emin misiniz?",
+        "title": "Görüntü Ayarları",
+        "description": "Görüntü oluşturma ayarlarını yönetin",
+        "provider": "sağlayıcı",
+        "localRuntime": "Yerel Runtime",
+        "remoteCloud": "Uzak Bulut",
+        "runtimeManagement": "Runtime Yönetim",
+        "reinstall": "Yeniden yükle",
+        "reinstallHelp": "Bozulmuşsa runtime dosyasını yeniden yükleyin",
+        "operationsTitle": "Görüntü İşlemleri",
+        "refreshData": "Resim Verilerini Yenile",
+        "historyTitle": "Nesil Geçmişi",
+        "noHistory": "Henüz görüntü oluşturma geçmişi yok.",
+        "regenerate": "Yenile",
+        "compareSelectionHint": "Karşılaştırmak için en az iki geçmiş girişi seçin.",
+        "compareRun": "Karşılaştırmayı Çalıştır",
+        "compareClear": "Seçimi Temizle",
+        "compareTitle": "Karşılaştırma Özeti",
+        "presetsTitle": "Nesil Ön Ayarları",
+        "noPresets": "Henüz kayıtlı ön ayar yok.",
+        "presetName": "Ön Ayar Adı",
+        "promptPrefix": "İstem Öneki",
+        "savePreset": "Ön Ayarı Kaydet",
+        "schedulesTitle": "Planlanmış Nesiller",
+        "noSchedules": "Planlanmış nesil yok.",
+        "schedulePrompt": "Program İstemi",
+        "scheduleAt": "Çalıştır",
+        "scheduleCreate": "Program Oluştur",
+        "scheduleCancel": "Programı İptal Et",
+        "queueTitle": "Oluşturma Sırası",
+        "queueStatus": "Kuyruk Durumu",
+        "queueRunning": "Koşma",
+        "queueIdle": "Boşta",
+        "batchTitle": "Toplu Üretim",
+        "batchPrompts": "Toplu İstemler",
+        "batchRun": "Toplu Çalıştır",
+        "editTitle": "Görüntü Düzenleme",
+        "editSource": "Kaynak Resim Yolu veya URL'si",
+        "editPrompt": "İstemi Düzenle",
+        "editMode": "Düzenleme Modu",
+        "editRun": "Düzenlemeyi Çalıştır"
+    }
+};
+
+export default sectionData;

@@ -21,10 +21,10 @@ export class KnowledgeRepository extends BaseRepository {
     }
 
     // --- Code Symbols ---
-    async findCodeSymbolsByName(projectPath: string, name: string): Promise<CodeSymbolSearchResult[]> {
+    async findCodeSymbolsByName(workspacePath: string, name: string): Promise<CodeSymbolSearchResult[]> {
         // Sanitize LIKE pattern to prevent wildcard injection
         const sanitizedName = name.replace(/[%_]/g, '\\$&');
-        const rows = await this.adapter.prepare("SELECT * FROM code_symbols WHERE project_path = ? AND name LIKE ? ESCAPE '\\' COLLATE NOCASE LIMIT 50").all<JsonObject>(projectPath, `%${sanitizedName}%`);
+        const rows = await this.adapter.prepare("SELECT * FROM code_symbols WHERE workspace_path = ? AND name LIKE ? ESCAPE '\\' COLLATE NOCASE LIMIT 50").all<JsonObject>(workspacePath, `%${sanitizedName}%`);
         return rows.map(r => ({
             id: String(r.id),
             name: String(r.name),
@@ -37,12 +37,12 @@ export class KnowledgeRepository extends BaseRepository {
         }));
     }
 
-    async getCodeSymbolsByProjectPath(projectPath: string): Promise<CodeSymbolSearchResult[]> {
+    async getCodeSymbolsByWorkspacePath(workspacePath: string): Promise<CodeSymbolSearchResult[]> {
         const rows = await this.adapter
             .prepare(
-                'SELECT id, name, file_path, line, kind, signature, docstring FROM code_symbols WHERE project_path = ?'
+                'SELECT id, name, file_path, line, kind, signature, docstring FROM code_symbols WHERE workspace_path = ?'
             )
-            .all<JsonObject>(projectPath);
+            .all<JsonObject>(workspacePath);
         return rows.map(r => ({
             id: String(r.id),
             name: String(r.name),
@@ -80,23 +80,23 @@ export class KnowledgeRepository extends BaseRepository {
     async storeCodeSymbol(symbol: CodeSymbolRecord): Promise<void> {
         const vec = symbol.vector ? `[${symbol.vector.join(',')}]` : null;
         await this.adapter.prepare(`
-            INSERT INTO code_symbols(id, name, project_path, file_path, line, kind, signature, docstring, embedding)
+            INSERT INTO code_symbols(id, name, workspace_path, file_path, line, kind, signature, docstring, embedding)
             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(symbol.id, symbol.name, symbol.project_path, symbol.file_path, symbol.line, symbol.kind, symbol.signature, symbol.docstring, vec);
+        `).run(symbol.id, symbol.name, symbol.workspace_path, symbol.file_path, symbol.line, symbol.kind, symbol.signature, symbol.docstring, vec);
     }
 
-    async clearCodeSymbols(projectPath: string) {
-        await this.adapter.prepare('DELETE FROM code_symbols WHERE project_path = ?').run(projectPath);
+    async clearCodeSymbols(workspacePath: string) {
+        await this.adapter.prepare('DELETE FROM code_symbols WHERE workspace_path = ?').run(workspacePath);
     }
 
-    async deleteCodeSymbolsForFile(projectPath: string, filePath: string) {
-        await this.adapter.prepare('DELETE FROM code_symbols WHERE project_path = ? AND file_path = ?').run(projectPath, filePath);
+    async deleteCodeSymbolsForFile(workspacePath: string, filePath: string) {
+        await this.adapter.prepare('DELETE FROM code_symbols WHERE workspace_path = ? AND file_path = ?').run(workspacePath, filePath);
     }
 
-    async searchCodeContentByText(projectPath: string, query: string): Promise<CodeSymbolSearchResult[]> {
+    async searchCodeContentByText(workspacePath: string, query: string): Promise<CodeSymbolSearchResult[]> {
         // Sanitize LIKE pattern to prevent wildcard injection
         const sanitizedQuery = query.replace(/[%_]/g, '\\$&');
-        const rows = await this.adapter.prepare("SELECT * FROM code_symbols WHERE project_path = ? AND (docstring LIKE ? ESCAPE '\\' COLLATE NOCASE OR name LIKE ? ESCAPE '\\' COLLATE NOCASE) LIMIT 100").all<JsonObject>(projectPath, `%${sanitizedQuery}%`, `%${sanitizedQuery}%`);
+        const rows = await this.adapter.prepare("SELECT * FROM code_symbols WHERE workspace_path = ? AND (docstring LIKE ? ESCAPE '\\' COLLATE NOCASE OR name LIKE ? ESCAPE '\\' COLLATE NOCASE) LIMIT 100").all<JsonObject>(workspacePath, `%${sanitizedQuery}%`, `%${sanitizedQuery}%`);
         return rows.map(r => ({
             id: String(r.id),
             name: String(r.name),
@@ -113,9 +113,9 @@ export class KnowledgeRepository extends BaseRepository {
     async storeSemanticFragment(fragment: SemanticFragment) {
         const vec = fragment.embedding.length > 0 ? `[${fragment.embedding.join(',')}]` : null;
         await this.adapter.prepare(`
-            INSERT INTO semantic_fragments(id, content, embedding, source, source_id, tags, importance, project_path, created_at, updated_at)
+            INSERT INTO semantic_fragments(id, content, embedding, source, source_id, tags, importance, workspace_path, created_at, updated_at)
             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(fragment.id, fragment.content, vec, fragment.source, fragment.sourceId, JSON.stringify(fragment.tags), fragment.importance, fragment.projectPath, fragment.createdAt, fragment.updatedAt);
+        `).run(fragment.id, fragment.content, vec, fragment.source, fragment.sourceId, JSON.stringify(fragment.tags), fragment.importance, fragment.workspacePath, fragment.createdAt, fragment.updatedAt);
     }
 
     async searchSemanticFragments(vector: number[], limit: number): Promise<SemanticFragment[]> {
@@ -130,10 +130,10 @@ export class KnowledgeRepository extends BaseRepository {
         return rows.map(r => this.mapRowToFragment(r, 1 - (r.distance ?? 0)));
     }
 
-    async searchSemanticFragmentsByText(projectPath: string, query: string): Promise<SemanticFragment[]> {
+    async searchSemanticFragmentsByText(workspacePath: string, query: string): Promise<SemanticFragment[]> {
         // Sanitize LIKE pattern to prevent wildcard injection
         const sanitizedQuery = query.replace(/[%_]/g, '\\$&');
-        const rows = await this.adapter.prepare("SELECT * FROM semantic_fragments WHERE project_path = ? AND content LIKE ? ESCAPE '\\' COLLATE NOCASE LIMIT 100").all<JsonObject>(projectPath, `%${sanitizedQuery}%`);
+        const rows = await this.adapter.prepare("SELECT * FROM semantic_fragments WHERE workspace_path = ? AND content LIKE ? ESCAPE '\\' COLLATE NOCASE LIMIT 100").all<JsonObject>(workspacePath, `%${sanitizedQuery}%`);
         return rows.map(r => this.mapRowToFragment(r));
     }
 
@@ -149,12 +149,12 @@ export class KnowledgeRepository extends BaseRepository {
         return rows.map(r => this.mapRowToFragment(r));
     }
 
-    async clearSemanticFragments(projectPath: string) {
-        await this.adapter.prepare('DELETE FROM semantic_fragments WHERE project_path = ?').run(projectPath);
+    async clearSemanticFragments(workspacePath: string) {
+        await this.adapter.prepare('DELETE FROM semantic_fragments WHERE workspace_path = ?').run(workspacePath);
     }
 
-    async deleteSemanticFragmentsForFile(projectPath: string, filePath: string) {
-        await this.adapter.prepare('DELETE FROM semantic_fragments WHERE project_path = ? AND source = ?').run(projectPath, filePath);
+    async deleteSemanticFragmentsForFile(workspacePath: string, filePath: string) {
+        await this.adapter.prepare('DELETE FROM semantic_fragments WHERE workspace_path = ? AND source = ?').run(workspacePath, filePath);
     }
 
     async deleteSemanticFragment(id: string) {
@@ -170,7 +170,7 @@ export class KnowledgeRepository extends BaseRepository {
             sourceId: String(r.source_id),
             tags: this.parseJsonField(r.tags as string | null, []),
             importance: Number(r.importance ?? 0),
-            projectPath: r.project_path as string | undefined,
+            workspacePath: r.workspace_path as string | undefined,
             createdAt: Number(r.created_at ?? r.createdAt),
             updatedAt: Number(r.updated_at ?? r.updatedAt),
             ...(score !== undefined ? { score } : {})
@@ -277,11 +277,11 @@ export class KnowledgeRepository extends BaseRepository {
         return this.adapter.prepare('SELECT * FROM file_diffs WHERE id = ?').get<JsonObject>(id);
     }
 
-    async storeFileDiff(diff: { id: string; projectId: string; filePath: string; diffContent: string; createdAt: number; sessionId?: string; systemId?: string }): Promise<void> {
+    async storeFileDiff(diff: { id: string; workspaceId: string; filePath: string; diffContent: string; createdAt: number; sessionId?: string; systemId?: string }): Promise<void> {
         await this.adapter.prepare(`
-            INSERT INTO file_diffs(id, project_path, file_path, diff, created_at)
+            INSERT INTO file_diffs(id, workspace_path, file_path, diff, created_at)
             VALUES(?, ?, ?, ?, ?)
-        `).run(diff.id, diff.projectId, diff.filePath, JSON.stringify(diff), Date.now());
+        `).run(diff.id, diff.workspaceId, diff.filePath, JSON.stringify(diff), Date.now());
     }
 
     async getFileDiffHistory(filePath: string): Promise<JsonObject[]> {
@@ -308,7 +308,7 @@ export class KnowledgeRepository extends BaseRepository {
         await this.adapter.exec(`
             CREATE TABLE IF NOT EXISTS file_diffs (
                 id TEXT PRIMARY KEY,
-                project_path TEXT,
+                workspace_path TEXT,
                 file_path TEXT NOT NULL,
                 diff TEXT NOT NULL,
                 created_at BIGINT NOT NULL,
@@ -334,7 +334,7 @@ export class KnowledgeRepository extends BaseRepository {
                     category, tags, confidence, importance, initial_importance,
                     status, validated_at, validated_by, access_count, last_accessed_at,
                     related_memory_ids, contradicts_ids, merged_into_id,
-                    project_id, context_tags, created_at, updated_at, expires_at, metadata
+                    workspace_id, context_tags, created_at, updated_at, expires_at, metadata
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `).run(
                 memory.id,
@@ -356,7 +356,7 @@ export class KnowledgeRepository extends BaseRepository {
                 JSON.stringify(memory.relatedMemoryIds),
                 JSON.stringify(memory.contradictsIds),
                 memory.mergedIntoId ?? null,
-                memory.projectId ?? null,
+                memory.workspaceId ?? null,
                 JSON.stringify(memory.contextTags ?? []),
                 memory.createdAt,
                 memory.updatedAt,
@@ -377,7 +377,7 @@ export class KnowledgeRepository extends BaseRepository {
                 category = ?, tags = ?, confidence = ?, importance = ?, initial_importance = ?,
                 status = ?, validated_at = ?, validated_by = ?, access_count = ?, last_accessed_at = ?,
                 related_memory_ids = ?, contradicts_ids = ?, merged_into_id = ?,
-                project_id = ?, context_tags = ?, updated_at = ?, expires_at = ?, metadata = ?
+                workspace_id = ?, context_tags = ?, updated_at = ?, expires_at = ?, metadata = ?
             WHERE id = ?
         `).run(
             memory.content,
@@ -398,7 +398,7 @@ export class KnowledgeRepository extends BaseRepository {
             JSON.stringify(memory.relatedMemoryIds),
             JSON.stringify(memory.contradictsIds),
             memory.mergedIntoId ?? null,
-            memory.projectId ?? null,
+            memory.workspaceId ?? null,
             JSON.stringify(memory.contextTags ?? []),
             memory.updatedAt,
             memory.expiresAt ?? null,
@@ -455,7 +455,7 @@ export class KnowledgeRepository extends BaseRepository {
             relatedMemoryIds: this.parseJsonField(r.related_memory_ids as string | null, []),
             contradictsIds: this.parseJsonField(r.contradicts_ids as string | null, []),
             mergedIntoId: r.merged_into_id as string | undefined,
-            projectId: r.project_id as string | undefined,
+            workspaceId: r.workspace_id as string | undefined,
             contextTags: this.parseJsonField(r.context_tags as string | null, []),
             createdAt: Number(r.created_at),
             updatedAt: Number(r.updated_at),
@@ -474,7 +474,7 @@ export class KnowledgeRepository extends BaseRepository {
                 id, content, embedding, source, source_id, source_context, extracted_at,
                 suggested_category, suggested_tags, extraction_confidence, relevance_score,
                 novelty_score, requires_user_validation, auto_confirm_reason,
-                potential_contradictions, similar_memories, project_id
+                potential_contradictions, similar_memories, workspace_id
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 content = excluded.content,
@@ -503,7 +503,7 @@ export class KnowledgeRepository extends BaseRepository {
             pending.autoConfirmReason ?? null,
             JSON.stringify(pending.potentialContradictions),
             JSON.stringify(pending.similarMemories),
-            pending.projectId ?? null
+            pending.workspaceId ?? null
         );
     }
 
@@ -534,7 +534,7 @@ export class KnowledgeRepository extends BaseRepository {
             autoConfirmReason: r.auto_confirm_reason as string | undefined,
             potentialContradictions: this.parseJsonField<ContradictionCandidate[]>(r.potential_contradictions as string | null, []),
             similarMemories: this.parseJsonField<SimilarMemoryCandidate[]>(r.similar_memories as string | null, []),
-            projectId: r.project_id as string | undefined
+            workspaceId: r.workspace_id as string | undefined
         };
     }
 
@@ -546,44 +546,44 @@ export class KnowledgeRepository extends BaseRepository {
      * CLEAN-001-4: Clean up all knowledge data associated with a deleted project
      * Should be called when a project is deleted to prevent orphaned data
      */
-    async cleanupProjectData(projectPath: string): Promise<{ deletedCounts: Record<string, number> }> {
+    async cleanupWorkspaceData(workspacePath: string): Promise<{ deletedCounts: Record<string, number> }> {
         const deletedCounts: Record<string, number> = {};
 
         try {
             // Clean up code symbols
             const codeSymbolsResult = await this.adapter.prepare(
-                'DELETE FROM code_symbols WHERE project_path = ?'
-            ).run(projectPath);
+                'DELETE FROM code_symbols WHERE workspace_path = ?'
+            ).run(workspacePath);
             deletedCounts.codeSymbols = codeSymbolsResult.rowsAffected ?? 0;
 
             // Clean up semantic fragments
             const fragmentsResult = await this.adapter.prepare(
-                'DELETE FROM semantic_fragments WHERE project_path = ?'
-            ).run(projectPath);
+                'DELETE FROM semantic_fragments WHERE workspace_path = ?'
+            ).run(workspacePath);
             deletedCounts.semanticFragments = fragmentsResult.rowsAffected ?? 0;
 
             // Clean up file diffs
             const diffsResult = await this.adapter.prepare(
-                'DELETE FROM file_diffs WHERE project_path = ?'
-            ).run(projectPath);
+                'DELETE FROM file_diffs WHERE workspace_path = ?'
+            ).run(workspacePath);
             deletedCounts.fileDiffs = diffsResult.rowsAffected ?? 0;
 
             // Clean up advanced memories
             const memoriesResult = await this.adapter.prepare(
-                'DELETE FROM advanced_memories WHERE project_id = ?'
-            ).run(projectPath);
+                'DELETE FROM advanced_memories WHERE workspace_id = ?'
+            ).run(workspacePath);
             deletedCounts.advancedMemories = memoriesResult.rowsAffected ?? 0;
 
             // Clean up pending memories
             const pendingResult = await this.adapter.prepare(
-                'DELETE FROM pending_memories WHERE project_id = ?'
-            ).run(projectPath);
+                'DELETE FROM pending_memories WHERE workspace_id = ?'
+            ).run(workspacePath);
             deletedCounts.pendingMemories = pendingResult.rowsAffected ?? 0;
 
-            appLogger.info('KnowledgeRepository', `Cleaned up orphaned data for project ${projectPath}`, deletedCounts as unknown as JsonObject);
+            appLogger.info('KnowledgeRepository', `Cleaned up orphaned data for project ${workspacePath}`, deletedCounts as unknown as JsonObject);
             return { deletedCounts };
         } catch (error) {
-            appLogger.error('KnowledgeRepository', `Failed to cleanup project data for ${projectPath}`, error as Error);
+            appLogger.error('KnowledgeRepository', `Failed to cleanup project data for ${workspacePath}`, error as Error);
             throw error;
         }
     }
@@ -611,50 +611,50 @@ export class KnowledgeRepository extends BaseRepository {
     /**
      * CLEAN-001-4: Find and clean up orphaned data (data referencing non-existent projects/chats)
      * This is a maintenance operation that should be run periodically
-     * @param existingProjectPaths - List of currently existing project paths
+     * @param existingWorkspacePaths - List of currently existing project paths
      * @param existingChatIds - List of currently existing chat IDs
      */
     async cleanupOrphanedData(
-        existingProjectPaths: string[],
+        existingWorkspacePaths: string[],
         existingChatIds: string[]
     ): Promise<{ orphanedCounts: Record<string, number> }> {
         const orphanedCounts: Record<string, number> = {};
 
         try {
             // If we have no existing projects, don't delete everything - that's probably an error
-            if (existingProjectPaths.length === 0) {
+            if (existingWorkspacePaths.length === 0) {
                 appLogger.warn('KnowledgeRepository', 'No existing projects provided, skipping project orphan cleanup');
             } else {
-                const projectPlaceholders = existingProjectPaths.map(() => '?').join(',');
+                const projectPlaceholders = existingWorkspacePaths.map(() => '?').join(',');
 
                 // Clean orphaned code symbols
                 const codeResult = await this.adapter.prepare(
-                    `DELETE FROM code_symbols WHERE project_path IS NOT NULL AND project_path NOT IN (${projectPlaceholders})`
-                ).run(...existingProjectPaths);
+                    `DELETE FROM code_symbols WHERE workspace_path IS NOT NULL AND workspace_path NOT IN (${projectPlaceholders})`
+                ).run(...existingWorkspacePaths);
                 orphanedCounts.codeSymbols = codeResult.rowsAffected ?? 0;
 
                 // Clean orphaned semantic fragments
                 const fragResult = await this.adapter.prepare(
-                    `DELETE FROM semantic_fragments WHERE project_path IS NOT NULL AND project_path NOT IN (${projectPlaceholders})`
-                ).run(...existingProjectPaths);
+                    `DELETE FROM semantic_fragments WHERE workspace_path IS NOT NULL AND workspace_path NOT IN (${projectPlaceholders})`
+                ).run(...existingWorkspacePaths);
                 orphanedCounts.semanticFragments = fragResult.rowsAffected ?? 0;
 
                 // Clean orphaned file diffs
                 const diffResult = await this.adapter.prepare(
-                    `DELETE FROM file_diffs WHERE project_path IS NOT NULL AND project_path NOT IN (${projectPlaceholders})`
-                ).run(...existingProjectPaths);
+                    `DELETE FROM file_diffs WHERE workspace_path IS NOT NULL AND workspace_path NOT IN (${projectPlaceholders})`
+                ).run(...existingWorkspacePaths);
                 orphanedCounts.fileDiffs = diffResult.rowsAffected ?? 0;
 
                 // Clean orphaned advanced memories
                 const memResult = await this.adapter.prepare(
-                    `DELETE FROM advanced_memories WHERE project_id IS NOT NULL AND project_id NOT IN (${projectPlaceholders})`
-                ).run(...existingProjectPaths);
+                    `DELETE FROM advanced_memories WHERE workspace_id IS NOT NULL AND workspace_id NOT IN (${projectPlaceholders})`
+                ).run(...existingWorkspacePaths);
                 orphanedCounts.advancedMemories = memResult.rowsAffected ?? 0;
 
                 // Clean orphaned pending memories
                 const pendResult = await this.adapter.prepare(
-                    `DELETE FROM pending_memories WHERE project_id IS NOT NULL AND project_id NOT IN (${projectPlaceholders})`
-                ).run(...existingProjectPaths);
+                    `DELETE FROM pending_memories WHERE workspace_id IS NOT NULL AND workspace_id NOT IN (${projectPlaceholders})`
+                ).run(...existingWorkspacePaths);
                 orphanedCounts.pendingMemories = pendResult.rowsAffected ?? 0;
             }
 

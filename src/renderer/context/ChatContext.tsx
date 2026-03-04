@@ -1,6 +1,6 @@
 import { useAuth } from '@renderer/context/AuthContext';
 import { useModel } from '@renderer/context/ModelContext';
-import { useProject } from '@renderer/context/ProjectContext';
+import { useWorkspace } from '@renderer/context/WorkspaceContext';
 import { useChatHistory } from '@renderer/features/chat/hooks/useChatHistory';
 import { useChatManager } from '@renderer/features/chat/hooks/useChatManager';
 import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech';
@@ -137,7 +137,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     const { appSettings, language } = useAuth();
     const { selectedModel, selectedProvider, selectedModels } = useModel();
     const { t } = useTranslation();
-    const { projects, selectedProject, setSelectedProject, loadProjects } = useProject();
+    const { projects, selectedProject, setSelectedProject, loadProjects } = useWorkspace();
     const { speak: handleSpeak, stop: handleStopSpeak, isSpeaking, speakingMessageId } = useTextToSpeech();
     const historyManager = useChatHistory();
     const isRestoringRef = useRef(false);

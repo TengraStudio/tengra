@@ -1,0 +1,30 @@
+const sectionData = {
+    "title": "الصوت والكلام",
+    "subtitle": "تكوين إعدادات الصوت لاستجابات المساعد.",
+    "voiceSelection": "اختيار الصوت",
+    "systemDefault": "النظام الافتراضي",
+    "test": "اختبار الصوت",
+    "speed": "معدل الكلام",
+    "previewText": "مرحباً بك في المستقبل مع Tengra. أنا مساعدك بالذكاء الاصطناعي.",
+    "microphone": "الميكروفون",
+    "speaker": "السماعة / سماعات الرأس",
+    "microphoneSelection": "مدخل الميكروفون",
+    "speakerSelection": "مخرج الصوت",
+    "voiceCloning": "استنساخ الصوت",
+    "voiceCloningDesc": "دمج صوتك الخاص في نظام Tengra البيئي.",
+    "voiceCloningTitle": "استخدم صوتك الخاص!",
+    "voiceCloningTeaser": "تحدث لمدة دقيقة واحدة ودع الذكاء الاصطناعي يقلد صوتك. هذه الميزة نشطة الآن!",
+    "record": "بدء التسجيل",
+    "stopRecord": "إيقاف التسجيل",
+    "recording": "جارٍ التسجيل...",
+    "startTraining": "بدء الاستنساخ",
+    "training": "جارٍ نمذجة الصوت...",
+    "trainingDesc": "يرجى الانتظار، قد يستغرق هذا بضع دقائق حسب سرعة جهاز الكمبيوتر الخاص بك.",
+    "downloadModel": "تنزيل النموذج (2 جيجابايت)",
+    "modelRequired": "نموذج XTTS v2 مطلوب",
+    "modelRequiredDesc": "لاستخدام ميزة استنساخ الصوت، تحتاج إلى تنزيل نموذج الذكاء الاصطناعي (حوالي 2 جيجابايت).",
+    "downloadingModel": "جارٍ تنزيل النموذج...",
+    "downloadComplete": "اكتمل التنزيل"
+};
+
+export default sectionData;
