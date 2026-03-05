@@ -139,6 +139,7 @@ export interface ModelDefinition {
     name: string;
     provider: string;
     providerCategory?: string;
+    sourceProvider?: string;
     quotaInfo?: {
         remainingQuota?: number;
         totalQuota?: number;

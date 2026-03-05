@@ -35,7 +35,6 @@ export function useModelCategories({
         populateCategories({
             cats,
             groupedModels,
-            settings,
             searchLower,
             favorites,
             hidden,
@@ -54,6 +53,7 @@ function createBaseCategories(t: (k: string) => string): ModelCategory[] {
         { id: 'openai', name: t('providerLabels.openai'), icon: Sparkles, color: 'text-success', bg: 'bg-success/10', providerId: 'openai', models: [] },
         { id: 'claude', name: t('providerLabels.anthropic'), icon: BrainCircuit, color: 'text-purple', bg: 'bg-pink/10', providerId: 'anthropic', models: [] },
         { id: 'antigravity', name: t('providerLabels.antigravity'), icon: LayoutGrid, color: 'text-pink', bg: 'bg-pink/10', providerId: 'antigravity', models: [] },
+        { id: 'codex', name: 'Codex', icon: Code2, color: 'text-blue', bg: 'bg-blue/10', providerId: 'codex', models: [] },
         { id: 'opencode', name: t('modelSelector.openCode'), icon: Code2, color: 'text-cyan', bg: 'bg-cyan/10', providerId: 'opencode', models: [] },
         { id: 'ollama', name: t('providerLabels.ollama'), icon: Server, color: 'text-orange', bg: 'bg-warning/10', providerId: 'ollama', models: [] },
         { id: 'nvidia', name: 'NVIDIA', icon: Zap, color: 'text-green', bg: 'bg-green/10', providerId: 'nvidia', models: [] },
@@ -64,7 +64,6 @@ function createBaseCategories(t: (k: string) => string): ModelCategory[] {
 interface PopulateProps {
     cats: ModelCategory[],
     groupedModels: GroupedModels,
-    settings?: AppSettings,
     searchLower: string,
     favorites: Set<string>,
     hidden: Set<string>,
@@ -73,13 +72,13 @@ interface PopulateProps {
 }
 
 function populateCategories(props: PopulateProps) {
-    const { cats, groupedModels, settings, searchLower, favorites, hidden, selectedModel, isModelDisabled } = props;
+    const { cats, groupedModels, searchLower, favorites, hidden, selectedModel, isModelDisabled } = props;
     const brandsMapping: Record<string, string> = {
         ollama: 'ollama',
         copilot: 'copilot',
         github: 'copilot',
         openai: 'openai',
-        codex: 'openai',
+        codex: 'codex',
         anthropic: 'claude',
         antigravity: 'antigravity',
         opencode: 'opencode',
@@ -92,7 +91,6 @@ function populateCategories(props: PopulateProps) {
     for (const [key, catId] of Object.entries(brandsMapping)) {
         if (!(key in groupedModels)) { continue; }
         const group = groupedModels[key];
-        if (!isProviderAllowed(key, settings)) { continue; }
         const cat = cats.find(c => c.id === catId);
         if (!cat) { continue; }
 
@@ -106,35 +104,6 @@ function populateCategories(props: PopulateProps) {
             }
         }
     }
-}
-
-function hasCredential(value: string | undefined): boolean {
-    return typeof value === 'string' && value.trim() !== '' && value !== 'connected';
-}
-
-function isProviderAllowed(providerKey: string, settings?: AppSettings): boolean {
-    const provider = providerKey.toLowerCase();
-
-    if (provider === 'nvidia') {
-        return hasCredential(settings?.nvidia?.apiKey);
-    }
-    if (provider === 'codex') {
-        return settings?.codex?.connected === true || hasCredential(settings?.openai?.apiKey);
-    }
-    if (provider === 'openai') {
-        return hasCredential(settings?.openai?.apiKey);
-    }
-    if (provider === 'copilot' || provider === 'github') {
-        return settings?.copilot?.connected === true;
-    }
-    if (provider === 'anthropic' || provider === 'claude') {
-        return hasCredential(settings?.anthropic?.apiKey) || hasCredential(settings?.claude?.apiKey);
-    }
-    if (provider === 'antigravity') {
-        return settings?.antigravity?.connected === true;
-    }
-
-    return true;
 }
 
 function matchesSearch(m: ModelInfo, searchLower: string): boolean {
@@ -176,9 +145,10 @@ function mapModelToItem(
     const disabled = ctx.isModelDisabled(id, provider);
     const isLocalProvider = provider === 'ollama' || provider === 'local' || provider === 'lm_studio';
     const pricing = extractPricing(m.pricing);
-    const isFree = (typeof m.label === 'string' && m.label.toLowerCase().includes('free')) ||
+    const hasPricing = !!(pricing?.input || pricing?.output);
+    const isFree = !hasPricing && ((typeof m.label === 'string' && m.label.toLowerCase().includes('free')) ||
         (typeof m.name === 'string' && m.name.toLowerCase().includes('free')) ||
-        (!pricing?.input && !pricing?.output);
+        (!pricing?.input && !pricing?.output));
     const lifecycleMeta = getModelLifecycleMeta(m);
 
     return {

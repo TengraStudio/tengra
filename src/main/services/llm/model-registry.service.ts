@@ -35,6 +35,7 @@ export interface ModelProviderInfo {
     name: string;
     provider: string;
     providerCategory?: string;
+    sourceProvider?: string;
     description?: string;
     tags?: string[];
     downloads?: number;
@@ -66,6 +67,21 @@ export interface ModelRegistryDependencies {
  * Also keeps token context-window limits in sync with TokenEstimationService.
  */
 export class ModelRegistryService extends BaseService {
+    private static readonly KNOWN_PROVIDER_IDS: ReadonlySet<string> = new Set([
+        'ollama',
+        'opencode',
+        'antigravity',
+        'codex',
+        'claude',
+        'copilot',
+        'nvidia',
+        'openai',
+        'huggingface',
+        'anthropic',
+        'sd-cpp',
+        'github',
+    ]);
+
     private static readonly ERROR_CODES = {
         FETCH_FAILED: 'MODEL_REGISTRY_FETCH_FAILED',
         MALFORMED_RESPONSE: 'MODEL_REGISTRY_MALFORMED_RESPONSE',
@@ -256,7 +272,7 @@ export class ModelRegistryService extends BaseService {
                 );
 
                 return validModels.map(m => {
-                    const mappedProvider = provider === 'anthropic' ? 'claude' : provider;
+                    const mappedProvider = this.resolveCanonicalProvider(m.provider, provider);
                     let id = m.id;
                     if (mappedProvider === 'nvidia' && !id.startsWith('nvidia/')) {
                         id = `nvidia/${id}`;
@@ -265,6 +281,7 @@ export class ModelRegistryService extends BaseService {
                         ...m,
                         id,
                         provider: mappedProvider,
+                        sourceProvider: m.provider,
                     };
                     return this.enrichModelMetadata(normalizedModel);
                 });
@@ -416,6 +433,24 @@ export class ModelRegistryService extends BaseService {
             return 'nvidia';
         }
         return 'custom';
+    }
+
+    private resolveCanonicalProvider(rawProvider: string, requestedProvider: ModelProviderId): string {
+        const raw = rawProvider.trim().toLowerCase();
+        const requested = requestedProvider === 'anthropic' ? 'claude' : requestedProvider;
+        if (raw === 'anthropic') {
+            return 'claude';
+        }
+        if (raw === 'github') {
+            return 'copilot';
+        }
+        if (raw === 'nvidia_key' || raw === 'nim' || raw === 'nim_openai') {
+            return 'nvidia';
+        }
+        if (raw === '' || !ModelRegistryService.KNOWN_PROVIDER_IDS.has(raw)) {
+            return requested;
+        }
+        return raw;
     }
 
     private enrichModelMetadata(model: ModelProviderInfo): ModelProviderInfo {
