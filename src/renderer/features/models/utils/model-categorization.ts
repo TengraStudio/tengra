@@ -18,13 +18,17 @@ export interface ModelDefinition {
 export function categorizeModel(modelId: string, providerHint?: string): ModelDefinition {
     const lower = modelId.toLowerCase();
 
-    const hint = providerHint?.toLowerCase();
+    const hint = normalizeProviderHint(providerHint);
 
     const type = detectModelType(lower);
 
     // Strong ID signal overrides generic OpenAI-compatible hints.
     // Some providers expose OpenAI-compatible APIs but model IDs still encode the true source.
     if (lower.includes('nvidia/') || lower.startsWith('nv-')) {
+        return createDefinition(modelId, 'nvidia', type);
+    }
+
+    if (isLikelyNvidiaCatalogModel(lower)) {
         return createDefinition(modelId, 'nvidia', type);
     }
 
@@ -57,6 +61,9 @@ function detectProvider(lowerId: string): ModelProvider {
     if (lowerId.includes('nvidia/') || lowerId.startsWith('nv-')) {
         return 'nvidia';
     }
+    if (isLikelyNvidiaCatalogModel(lowerId)) {
+        return 'nvidia';
+    }
     if (lowerId.includes('codex') || lowerId.startsWith('gpt-5') || lowerId.startsWith('o1') || lowerId.startsWith('o3')) {
         return 'codex';
     }
@@ -73,6 +80,35 @@ function detectProvider(lowerId: string): ModelProvider {
         return 'opencode';
     }
     return 'custom';
+}
+
+function normalizeProviderHint(providerHint?: string): string | undefined {
+    const hint = providerHint?.trim().toLowerCase();
+    if (!hint) {
+        return undefined;
+    }
+
+    if (hint === 'nvidia_key' || hint === 'nim' || hint === 'nim_openai') {
+        return 'nvidia';
+    }
+
+    if (hint.includes('nvidia')) {
+        return 'nvidia';
+    }
+
+    return hint;
+}
+
+function isLikelyNvidiaCatalogModel(lowerId: string): boolean {
+    return lowerId.startsWith('nvidia/') ||
+        lowerId.startsWith('meta/') ||
+        lowerId.startsWith('mistralai/') ||
+        lowerId.startsWith('microsoft/') ||
+        lowerId.startsWith('qwen/') ||
+        lowerId.startsWith('deepseek-ai/') ||
+        lowerId.startsWith('z-ai/') ||
+        lowerId.includes('nemotron') ||
+        lowerId.includes('chatqa');
 }
 
 function createDefinition(id: string, provider: ModelProvider, type: 'chat' | 'image' | 'video'): ModelDefinition {
