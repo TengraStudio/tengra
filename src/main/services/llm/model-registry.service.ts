@@ -199,6 +199,20 @@ export class ModelRegistryService extends BaseService {
             return activeToken;
         }
 
+        // Try provider aliases used by linked-account flows.
+        if (provider === 'antigravity') {
+            const aliasToken = await this.deps.authService.getActiveToken('google');
+            if (aliasToken) {
+                return aliasToken;
+            }
+        }
+        if (provider === 'codex') {
+            const aliasToken = await this.deps.authService.getActiveToken('openai');
+            if (aliasToken) {
+                return aliasToken;
+            }
+        }
+
         const settings = this.deps.settingsService.getSettings();
         const readKey = (value: JsonValue | undefined): string | undefined => {
             if (!value || typeof value !== 'object' || Array.isArray(value)) {

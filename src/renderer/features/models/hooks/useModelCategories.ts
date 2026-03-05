@@ -80,17 +80,22 @@ function populateCategories(props: PopulateProps) {
         openai: 'openai',
         codex: 'codex',
         anthropic: 'claude',
+        claude: 'claude',
         antigravity: 'antigravity',
         opencode: 'opencode',
         nvidia: 'nvidia',
+        local: 'ollama',
+        'local-ai': 'ollama',
+        'lm_studio': 'ollama',
+        huggingface: 'custom',
+        'sd-cpp': 'custom',
         custom: 'custom'
     };
 
     const favCat = cats.find(c => c.id === 'favorites');
 
-    for (const [key, catId] of Object.entries(brandsMapping)) {
-        if (!(key in groupedModels)) { continue; }
-        const group = groupedModels[key];
+    for (const [key, group] of Object.entries(groupedModels)) {
+        const catId = brandsMapping[key] ?? 'custom';
         const cat = cats.find(c => c.id === catId);
         if (!cat) { continue; }
 

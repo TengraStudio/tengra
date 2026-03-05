@@ -1,6 +1,5 @@
-import { fetchModels, groupModels } from '@renderer/features/models/utils/model-fetcher';
-import { getModelLifecycleMeta } from '@renderer/features/models/utils/model-selector-metadata';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { fetchModels, groupModels } from '@renderer/features/models/utils/model-fetcher'; 
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { pushNotification } from '@/store/notification-center.store';
 import type { GroupedModels, ModelInfo } from '@/types';
@@ -60,7 +59,7 @@ export function useModelManager(
     const [groupedModels, setGroupedModels] = useState<GroupedModels | null>(null);
     const [proxyModels, setProxyModels] = useState<ModelInfo[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const lifecycleNoticeRef = useRef<Set<string>>(new Set());
+    // const lifecycleNoticeRef = useRef<Set<string>>(new Set());
 
     const selection = useModelSelection(appSettings, setAppSettings);
     const {
@@ -95,8 +94,11 @@ export function useModelManager(
         const hasOpenAI = !!appSettings?.openai?.apiKey;
         const hasAnthropic = !!appSettings?.anthropic?.apiKey;
         const hasGroq = !!appSettings?.groq?.apiKey;
+        const hasAntigravity = appSettings?.antigravity?.connected === true;
+        const hasCodex = appSettings?.codex?.connected === true;
+        const hasCopilot = appSettings?.copilot?.connected === true;
 
-        if (hasNvidia || hasOpenAI || hasAnthropic || hasGroq) {
+        if (hasNvidia || hasOpenAI || hasAnthropic || hasGroq || hasAntigravity || hasCodex || hasCopilot) {
             void refreshModels(true);
         }
     }, [
@@ -104,7 +106,10 @@ export function useModelManager(
         appSettings?.nvidia?.apiKey,
         appSettings?.openai?.apiKey,
         appSettings?.anthropic?.apiKey,
-        appSettings?.groq?.apiKey
+        appSettings?.groq?.apiKey,
+        appSettings?.antigravity?.connected,
+        appSettings?.codex?.connected,
+        appSettings?.copilot?.connected
     ]);
 
     useEffect(() => {
@@ -131,8 +136,8 @@ export function useModelManager(
         const persistedPairExists = availableModels.some(m =>
             m.id === defaultModel && m.provider === persistedProvider
         );
-        const selectedMeta = availableModels.find(m => m.id === defaultModel && m.provider === persistedProvider);
-        const lifecycleMeta = selectedMeta ? getModelLifecycleMeta(selectedMeta) : { lifecycle: 'active' as const };
+        // const selectedMeta = availableModels.find(m => m.id === defaultModel && m.provider === persistedProvider);
+        // const lifecycleMeta = selectedMeta ? getModelLifecycleMeta(selectedMeta) : { lifecycle: 'active' as const };
 
         if (defaultModel && persistedProvider && !persistedPairExists) {
             const fallback = resolveFallback();
@@ -161,59 +166,29 @@ export function useModelManager(
             return;
         }
 
-        if (defaultModel && persistedProvider && persistedPairExists && lifecycleMeta.lifecycle === 'retired') {
-            const replacementId = lifecycleMeta.replacementModelId;
-            const replacement = replacementId
-                ? availableModels.find(m => m.id?.toLowerCase() === replacementId.toLowerCase())
-                : null;
-            const fallback = replacement?.id && replacement.provider
-                ? { provider: replacement.provider, model: replacement.id }
-                : resolveFallback();
-            if (!fallback) {
+        if (defaultModel && persistedProvider && persistedPairExists) {
+            // Priority 1: Use persisted state if present
+            if (selectedModel && selectedModel === defaultModel && selectedProvider === persistedProvider) {
+                // Already in sync
+                if (selectedModels.length === 0) {
+                    setSelectedModels([{ provider: persistedProvider, model: defaultModel }]);
+                }
                 return;
             }
-            setSelectedModel(fallback.model);
-            setSelectedProvider(fallback.provider);
-            setSelectedModels([fallback]);
-            if (appSettings) {
-                setAppSettings({
-                    ...appSettings,
-                    general: {
-                        ...appSettings.general,
-                        defaultModel: fallback.model,
-                        lastProvider: fallback.provider
-                    }
-                });
-            }
-            pushNotification({
-                type: 'warning',
-                title: 'Retired model migrated',
-                message: `Default model ${defaultModel} is retired. Switched to ${fallback.model}.`,
-                source: 'models',
-            });
+
+            // Priority 2: Sync state with appSettings
+            setSelectedModel(defaultModel);
+            setSelectedProvider(persistedProvider);
+            setSelectedModels([{ provider: persistedProvider, model: defaultModel }]);
             return;
         }
 
-        if (defaultModel && persistedProvider && persistedPairExists && lifecycleMeta.lifecycle === 'deprecated') {
-            const key = `${persistedProvider}:${defaultModel}:deprecated`;
-            if (lifecycleNoticeRef.current.has(key)) {
+        if (!defaultModel && availableModels.length > 0) {
+            // Only resolve fallback if NO model is selected whatsoever
+            if (selectedModel !== '' || selectedModels.length > 0) {
                 return;
             }
-            lifecycleNoticeRef.current.add(key);
-            pushNotification({
-                type: 'info',
-                title: 'Deprecated default model',
-                message: lifecycleMeta.replacementModelId
-                    ? `${defaultModel} is deprecated. Recommended replacement: ${lifecycleMeta.replacementModelId}.`
-                    : `${defaultModel} is deprecated. Consider selecting a newer model.`,
-                source: 'models',
-            });
-        }
 
-        if (!defaultModel) {
-            if (selectedModels.length > 0 || selectedModel !== '' || availableModels.length === 0) {
-                return;
-            }
             const preferred = pickLocalePreferredModel(availableModels, locale);
             if (!preferred) {
                 return;
@@ -222,22 +197,6 @@ export function useModelManager(
             setSelectedProvider(preferred.provider);
             setSelectedModels([preferred]);
             return;
-        }
-
-        const lastProvider = persistedProvider;
-        if (selectedModel !== defaultModel) {
-            setSelectedModel(defaultModel);
-        }
-        if (selectedProvider !== lastProvider) {
-            setSelectedProvider(lastProvider);
-        }
-        if (selectedModels.length === 0) {
-            setSelectedModels([
-                {
-                    provider: lastProvider,
-                    model: defaultModel
-                }
-            ]);
         }
     }, [
         appSettings,

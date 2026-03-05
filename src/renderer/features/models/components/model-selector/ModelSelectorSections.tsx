@@ -1,5 +1,5 @@
-import { Bot, Brain, Clock, Search, Sparkles, Star, X, Zap } from 'lucide-react';
 import React from 'react';
+import { Bot, Brain, Clock, Search, Sparkles, Star, X, Zap } from 'lucide-react';
 import { Virtuoso } from 'react-virtuoso';
 
 import { cn } from '@/lib/utils';
@@ -214,37 +214,50 @@ interface ModelSelectorCategoryListProps {
 
 const CategoryRow: React.FC<{
     category: ModelCategory;
+    collapsed: boolean;
+    onToggleCollapse: (categoryId: string) => void;
     selectedModels: Array<{ provider: string; model: string }>;
     selectedModel: string;
     selectedProvider: string;
     onSelect: (provider: string, id: string, isMultiSelect: boolean) => void;
     toggleFavorite?: (modelId: string) => void;
     t: (key: string) => string;
-}> = ({ category, selectedModels, selectedModel, selectedProvider, onSelect, toggleFavorite, t }) => (
+}> = ({ category, collapsed, onToggleCollapse, selectedModels, selectedModel, selectedProvider, onSelect, toggleFavorite, t }) => (
     <div className="border-b border-border/30 last:border-b-0">
-        <div className="sticky top-0 z-10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 bg-popover/95 backdrop-blur-md">
+        <button
+            type="button"
+            onClick={() => onToggleCollapse(category.id)}
+            className="sticky top-0 z-10 w-full px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 bg-popover/95 backdrop-blur-md hover:text-foreground transition-colors"
+            aria-expanded={!collapsed}
+            aria-label={`${category.name} category`}
+        >
             <category.icon className={cn('w-3.5 h-3.5', category.color)} />
             <span>{category.name}</span>
             <span className="text-muted-foreground/50 font-normal">({category.models.length})</span>
-        </div>
-        <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {category.models.map(model => (
-                <ModelSelectorItem
-                    key={`${category.id}-${model.provider}-${model.id}`}
-                    model={model}
-                    isSelected={selectedModels.some(
-                        m => m.provider === model.provider && m.model === model.id
-                    )}
-                    isPrimary={selectedModel === model.id && selectedProvider === model.provider}
-                    onSelect={onSelect}
-                    toggleFavorite={toggleFavorite}
-                    t={t}
-                    modelIndex={selectedModels.findIndex(
-                        m => m.provider === model.provider && m.model === model.id
-                    )}
-                />
-            ))}
-        </div>
+            <span className="ml-auto">
+                {collapsed ? '+' : '-'}
+            </span>
+        </button>
+        {!collapsed && (
+            <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {category.models.map(model => (
+                    <ModelSelectorItem
+                        key={`${category.id}-${model.provider}-${model.id}`}
+                        model={model}
+                        isSelected={selectedModels.some(
+                            m => m.provider === model.provider && m.model === model.id
+                        )}
+                        isPrimary={selectedModel === model.id && selectedProvider === model.provider}
+                        onSelect={onSelect}
+                        toggleFavorite={toggleFavorite}
+                        t={t}
+                        modelIndex={selectedModels.findIndex(
+                            m => m.provider === model.provider && m.model === model.id
+                        )}
+                    />
+                ))}
+            </div>
+        )}
     </div>
 );
 
@@ -262,6 +275,21 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
     t,
     compactRows: _compactRows,
 }) => {
+    const [collapsedCategoryIds, setCollapsedCategoryIds] = React.useState<Set<string>>(
+        () => new Set<string>()
+    );
+    const toggleCategoryCollapse = React.useCallback((categoryId: string) => {
+        setCollapsedCategoryIds(prev => {
+            const next = new Set(prev);
+            if (next.has(categoryId)) {
+                next.delete(categoryId);
+            } else {
+                next.add(categoryId);
+            }
+            return next;
+        });
+    }, []);
+
     const shouldVirtualize = filteredCategories.length > 5;
 
     const modeFilteredCategories = filteredCategories
@@ -374,11 +402,13 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
                         style={{ height: '100%' }}
                         data={modeFilteredCategories}
                         itemContent={(_, category) => (
-                            <CategoryRow
-                                category={category}
-                                selectedModels={selectedModels}
-                                selectedModel={selectedModel}
-                                selectedProvider={selectedProvider}
+                        <CategoryRow
+                            category={category}
+                            collapsed={collapsedCategoryIds.has(category.id)}
+                            onToggleCollapse={toggleCategoryCollapse}
+                            selectedModels={selectedModels}
+                            selectedModel={selectedModel}
+                            selectedProvider={selectedProvider}
                                 onSelect={onSelect}
                                 toggleFavorite={toggleFavorite}
                                 t={t}
@@ -391,6 +421,8 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
                     <CategoryRow
                         key={category.id}
                         category={category}
+                        collapsed={collapsedCategoryIds.has(category.id)}
+                        onToggleCollapse={toggleCategoryCollapse}
                         selectedModels={selectedModels}
                         selectedModel={selectedModel}
                         selectedProvider={selectedProvider}
