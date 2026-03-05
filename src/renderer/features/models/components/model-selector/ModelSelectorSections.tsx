@@ -369,21 +369,23 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
                     <p>{t('modelSelector.noModelsFound')}</p>
                 </div>
             ) : shouldVirtualize ? (
-                <Virtuoso
-                    style={{ height: '100%' }}
-                    data={modeFilteredCategories}
-                    itemContent={(_, category) => (
-                        <CategoryRow
-                            category={category}
-                            selectedModels={selectedModels}
-                            selectedModel={selectedModel}
-                            selectedProvider={selectedProvider}
-                            onSelect={onSelect}
-                            toggleFavorite={toggleFavorite}
-                            t={t}
-                        />
-                    )}
-                />
+                <div className="h-[360px] sm:h-[420px]">
+                    <Virtuoso
+                        style={{ height: '100%' }}
+                        data={modeFilteredCategories}
+                        itemContent={(_, category) => (
+                            <CategoryRow
+                                category={category}
+                                selectedModels={selectedModels}
+                                selectedModel={selectedModel}
+                                selectedProvider={selectedProvider}
+                                onSelect={onSelect}
+                                toggleFavorite={toggleFavorite}
+                                t={t}
+                            />
+                        )}
+                    />
+                </div>
             ) : (
                 modeFilteredCategories.map(category => (
                     <CategoryRow
