@@ -63,6 +63,7 @@ export interface ModelDefinition {
     id: string;
     name: string;
     provider: string;
+    providerCategory?: string;
     quotaInfo?: {
         remainingQuota?: number;
         totalQuota?: number;
@@ -414,7 +415,7 @@ export interface ElectronAPI {
         sources?: string[];
     }>;
     chatStream: (request: ChatStreamRequest) => Promise<{ success: boolean; queued?: boolean }>;
-    abortChat: () => void;
+    abortChat: (chatId?: string) => void;
     onStreamChunk: (
         callback: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string }) => void
     ) => () => void;

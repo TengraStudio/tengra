@@ -24,6 +24,23 @@ function normalizeProviderId(
     return raw;
 }
 
+function normalizeProviderCategoryId(
+    providerCategory: string | undefined,
+    provider: string
+): string {
+    const raw = (providerCategory ?? '').trim().toLowerCase();
+    if (raw !== '') {
+        return raw;
+    }
+    if (provider === 'github' || provider === 'copilot') {
+        return 'copilot';
+    }
+    if (provider === 'anthropic' || provider === 'claude') {
+        return 'claude';
+    }
+    return provider;
+}
+
 function resolveDisplayName(model: ModelInfo): string {
     const id = typeof model.id === 'string' ? model.id : '';
     const label = typeof model.label === 'string' ? model.label : '';
@@ -44,9 +61,11 @@ export async function fetchModels(bypassCache = false): Promise<ModelInfo[]> {
         const processedModels = models.map(m => {
             const ownedBy = (m as { owned_by?: string }).owned_by;
             const provider = normalizeProviderId(m.provider, ownedBy);
+            const providerCategory = normalizeProviderCategoryId(m.providerCategory, provider);
             return {
                 ...m,
                 provider,
+                providerCategory,
                 name: resolveDisplayName(m)
             };
         });
@@ -68,14 +87,14 @@ export function groupModels(models: ModelInfo[]): GroupedModels {
     const groups: GroupedModels = {};
 
     models.forEach(m => {
-        const provider = m.provider ?? 'other';
-        if (!(provider in groups)) {
-            groups[provider] = {
-                label: m.label ?? provider,
+        const providerCategory = m.providerCategory ?? m.provider ?? 'custom';
+        if (!(providerCategory in groups)) {
+            groups[providerCategory] = {
+                label: m.label ?? providerCategory,
                 models: []
             };
         }
-        groups[provider].models.push(m);
+        groups[providerCategory].models.push(m);
     });
 
     return groups;

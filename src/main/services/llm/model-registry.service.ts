@@ -34,6 +34,7 @@ export interface ModelProviderInfo {
     id: string;
     name: string;
     provider: string;
+    providerCategory?: string;
     description?: string;
     tags?: string[];
     downloads?: number;
@@ -213,19 +214,21 @@ export class ModelRegistryService extends BaseService {
         provider: ModelProviderId,
         proxyPort?: number,
         proxyKey?: string,
-        token?: string
+        token?: string,
+        plan?: string
     ): Promise<ModelProviderInfo[]> {
-        return this.fetchFromRustService(provider, token, proxyPort, proxyKey);
+        return this.fetchFromRustService(provider, token, proxyPort, proxyKey, plan);
     }
 
     private async fetchFromRustService(
         provider: ModelProviderId,
         token?: string,
         proxyPort?: number,
-        proxyKey?: string
+        proxyKey?: string,
+        plan?: string
     ): Promise<ModelProviderInfo[]> {
         try {
-            const response = await this.fetchRustModelsWithRetry(provider, token, proxyPort, proxyKey);
+            const response = await this.fetchRustModelsWithRetry(provider, token, proxyPort, proxyKey, plan);
 
             appLogger.debug(
                 'ModelRegistry',
@@ -319,7 +322,8 @@ export class ModelRegistryService extends BaseService {
         provider: ModelProviderId,
         token?: string,
         proxyPort?: number,
-        proxyKey?: string
+        proxyKey?: string,
+        plan?: string
     ): Promise<{
         success: boolean;
         models: ModelProviderInfo[];
@@ -338,6 +342,7 @@ export class ModelRegistryService extends BaseService {
                     token,
                     proxy_port: proxyPort,
                     proxy_key: proxyKey,
+                    plan,
                 });
             } catch (error) {
                 lastError = error instanceof Error ? error : new Error(String(error));
@@ -376,8 +381,46 @@ export class ModelRegistryService extends BaseService {
         };
     }
 
+    private ensureProviderMetadata(model: ModelProviderInfo): ModelProviderInfo {
+        const normalizedProvider = model.provider.trim().toLowerCase();
+        return {
+            ...model,
+            provider: normalizedProvider,
+            providerCategory: this.resolveProviderCategory(normalizedProvider),
+        };
+    }
+
+    private resolveProviderCategory(provider: string): string {
+        if (provider === 'copilot' || provider === 'github') {
+            return 'copilot';
+        }
+        if (provider === 'openai') {
+            return 'openai';
+        }
+        if (provider === 'codex') {
+            return 'codex';
+        }
+        if (provider === 'anthropic' || provider === 'claude') {
+            return 'claude';
+        }
+        if (provider === 'antigravity') {
+            return 'antigravity';
+        }
+        if (provider === 'opencode') {
+            return 'opencode';
+        }
+        if (provider === 'ollama') {
+            return 'ollama';
+        }
+        if (provider === 'nvidia') {
+            return 'nvidia';
+        }
+        return 'custom';
+    }
+
     private enrichModelMetadata(model: ModelProviderInfo): ModelProviderInfo {
-        const withCapabilities = this.ensureModelCapabilities(model);
+        const withProviderMetadata = this.ensureProviderMetadata(model);
+        const withCapabilities = this.ensureModelCapabilities(withProviderMetadata);
         const resolvedContextWindow = resolveContextWindowForModel(withCapabilities);
         if (!resolvedContextWindow) {
             return withCapabilities;
@@ -494,7 +537,12 @@ export class ModelRegistryService extends BaseService {
 
             const token = await this.resolveProviderToken(p);
             if (token) {
-                promises.push(this.fetchModelProvider(p, proxyPort, proxyKey, token));
+                let plan: string | undefined;
+                if (p === 'copilot') {
+                    const account = await this.deps.authService.getActiveAccountFull('copilot');
+                    plan = account?.metadata?.plan as string | undefined;
+                }
+                promises.push(this.fetchModelProvider(p, proxyPort, proxyKey, token, plan));
             }
         }
 

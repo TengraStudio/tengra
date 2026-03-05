@@ -4,6 +4,7 @@ export interface ModelInfo {
     id?: string;
     name?: string;
     provider?: string;
+    providerCategory?: string;
     quotaInfo?: { remainingQuota?: number; totalQuota?: number; resetTime?: string; remainingFraction?: number };
     percentage?: number;
     reset?: string;
