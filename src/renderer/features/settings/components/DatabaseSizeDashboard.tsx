@@ -3,6 +3,12 @@ import React, { useCallback, useEffect, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 
+interface TimeTrackingStats {
+    totalOnlineTime: number;
+    totalCodingTime: number;
+    projectCodingTime: Record<string, number>;
+}
+
 /** Statistics shape returned by the db:size-stats IPC handler. */
 interface DatabaseSizeStats {
     dbSize: number
@@ -11,6 +17,7 @@ interface DatabaseSizeStats {
     projectCount: number
     folderCount: number
     promptCount: number
+    timeStats: TimeTrackingStats
 }
 
 /** Formats bytes into a human-readable string. */

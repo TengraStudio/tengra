@@ -16,7 +16,7 @@ import { WizardStepRenderer } from './WizardStepRenderer';
 interface ProjectWizardModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onProjectCreated: (path: string, name: string, description: string, mounts?: WorkspaceMount[]) => void;
+    onProjectCreated: (path: string, name: string, description: string, mounts?: WorkspaceMount[]) => Promise<boolean>;
     language: Language;
 }
 
@@ -58,6 +58,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
     } = useProjectWizardState(isOpen);
 
     const isSSHFlow = !!sshConnectionId || step === 'ssh-connection' || step === 'ssh-browser';
+    const isImportedLocalFlow = step === 'details' && !sshConnectionId && sshPath.trim() !== '' && sshPath !== '/';
 
     const progressSteps = useMemo(() => {
         const allSteps = [
@@ -127,15 +128,17 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
         onClose
     });
 
-    const handleImportFinal = useCallback(() => {
+    const handleImportFinal = useCallback(async () => {
         const mounts: WorkspaceMount[] = [{
             id: `local-${Date.now()}`,
             name: formData.name,
             type: 'local',
             rootPath: sshPath
         }];
-        onProjectCreated(sshPath, formData.name, formData.description, mounts);
-        onClose();
+        const success = await onProjectCreated(sshPath, formData.name, formData.description, mounts);
+        if (success) {
+            onClose();
+        }
     }, [formData, sshPath, onProjectCreated, onClose]);
 
     const handleCreateNewSelection = useCallback(() => {
@@ -153,21 +156,21 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
         onClose
     });
 
-    const handleNext = useCallback(() => {
+    const handleNext = useCallback(async () => {
         if (step === 'details') {
             if (!formData.name) {
                 return;
             }
 
             if (sshConnectionId) {
-                handleSSHBrowserNext();
+                await handleSSHBrowserNext();
             } else if (sshPath && !sshConnectionId) {
-                handleImportFinal();
+                await handleImportFinal();
             } else {
-                void handleCreateFinal();
+                await handleCreateFinal();
             }
         } else if (step === 'ssh-connection') {
-            void handleSSHConnect();
+            await handleSSHConnect();
         } else if (step === 'ssh-browser') {
             setStep('details');
         }
@@ -207,6 +210,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                 onImportLocal={() => void handleImportLocalSelection()}
                 onSSHConnect={() => setStep('ssh-connection')}
                 onCreateNew={handleCreateNewSelection}
+                showCustomPathInput={!isImportedLocalFlow}
             />
         );
     };
@@ -215,7 +219,6 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
         <Modal isOpen={isOpen} onClose={onClose} size="3xl" className="!p-0 overflow-hidden">
             <div className="relative min-h-[620px] flex flex-col p-8 pt-5 bg-gradient-to-b from-background to-muted/10">
                 <div className="mb-7 space-y-3">
-                    <h2 className="text-3xl font-black tracking-tight text-foreground">{t('projectWizard.title')}</h2>
                     <WizardProgress
                         steps={progressSteps}
                         currentStepIndex={progressSteps.findIndex(s => s.id === step)}
@@ -240,7 +243,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                     sshHost={sshForm.host}
                     sshUsername={sshForm.username}
                     onBack={handleBack}
-                    onNext={handleNext}
+                    onNext={() => { void handleNext(); }}
                     backLabel={t('projectWizard.back')}
                     nextLabel={t('projectWizard.next')}
                     selectFolderLabel={t('projectWizard.selectFolder')}

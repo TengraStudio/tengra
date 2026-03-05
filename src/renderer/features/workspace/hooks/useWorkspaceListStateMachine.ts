@@ -7,6 +7,7 @@
 import { useCallback, useReducer } from 'react';
 
 import { Project, WorkspaceMount } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 export type ProjectListViewMode = 'grid' | 'list';
 export type ProjectListSortBy = 'title' | 'updatedAt' | 'createdAt';
@@ -315,8 +316,8 @@ const useProjectListOperations = (
         }
     }, [state.status, state.selectedProjectIds, dispatch, onError]);
 
-    const executeCreate = useCallback(async (path: string, name: string, description: string, userMounts?: WorkspaceMount[]) => {
-        dispatch({ type: 'OPERATION_START', message: 'Creating project...' });
+    const executeCreate = useCallback(async (path: string, name: string, description: string, userMounts?: WorkspaceMount[]): Promise<boolean> => {
+        dispatch({ type: 'OPERATION_START', message: 'Creating workspace...' });
         try {
             const mounts = userMounts && userMounts.length > 0 ? userMounts : [{
                 id: `local-${Date.now()}`,
@@ -342,7 +343,7 @@ const useProjectListOperations = (
 
             for (const mount of mounts) {
                 if (existingMounts.has(buildMountKey(mount))) {
-                    throw new Error('Invalid input');
+                    throw new Error(`A workspace already exists for ${mount.type === 'ssh' ? 'this remote path' : 'this local directory'}.`);
                 }
             }
 
@@ -350,9 +351,10 @@ const useProjectListOperations = (
             dispatch({ type: 'OPERATION_SUCCESS' });
             return true;
         } catch (error) {
-            const msg = error instanceof Error ? error.message : 'Failed to create project';
+            const msg = error instanceof Error ? error.message : 'Failed to create workspace';
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
+            appLogger.error('useWorkspaceListStateMachine', 'executeCreate failed', error as Error);
             return false;
         }
     }, [buildMountKey, dispatch, onError]);

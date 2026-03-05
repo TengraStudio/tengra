@@ -3,7 +3,7 @@ import type {
     InlineSuggestionResponse,
     InlineSuggestionTelemetry,
 } from '@shared/schemas/inline-suggestions.schema';
-import { IpcRendererEvent } from 'electron';
+import type { IpcRendererEvent } from 'electron';
 
 import {
     AdvancedSemanticFragment,

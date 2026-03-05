@@ -1,4 +1,3 @@
-import type { PromptAnalysis, PromptSuggestion, PromptSuggestionType } from '@main/services/llm/prompt-optimizer.service';
 import {
     AlertTriangle,
     CheckCircle,
@@ -13,6 +12,8 @@ import {
 import React, { useState } from 'react';
 
 import { useTranslation } from '@/i18n';
+
+import type { PromptAnalysis, PromptSuggestion, PromptSuggestionType } from '../utils/prompt-optimizer';
 
 interface PromptSuggestionsProps {
     analysis: PromptAnalysis | null;

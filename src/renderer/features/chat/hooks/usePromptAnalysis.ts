@@ -1,6 +1,7 @@
-import type { PromptAnalysis, PromptSuggestion } from '@main/services/llm/prompt-optimizer.service';
-import { PromptOptimizerService } from '@main/services/llm/prompt-optimizer.service';
 import { useCallback, useEffect, useRef, useState } from 'react';
+
+import type { PromptAnalysis, PromptSuggestion } from '../utils/prompt-optimizer';
+import { PromptOptimizerService } from '../utils/prompt-optimizer';
 
 const DEBOUNCE_MS = 500;
 const MAX_CACHE_SIZE = 20;
