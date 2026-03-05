@@ -1,5 +1,5 @@
-import { groupModels } from '@renderer/features/models/utils/model-fetcher';
-import { describe, expect, it } from 'vitest';
+import { fetchModels, groupModels } from '@renderer/features/models/utils/model-fetcher';
+import { describe, expect, it, vi } from 'vitest';
 
 describe('groupModels', () => {
     it('groups by providerCategory when present', () => {
@@ -27,5 +27,38 @@ describe('groupModels', () => {
 
         expect(grouped.openai).toBeDefined();
         expect(grouped.openai?.models[0]?.id).toBe('gpt-4.1-mini');
+    });
+
+    it('does not infer provider/category from owned_by when provider is missing', async () => {
+        const mockGetAllModels = vi.fn().mockResolvedValue([
+            {
+                id: 'meta/llama-3.1-70b-instruct',
+                name: 'Llama 3.1 70B',
+                owned_by: 'nvidia'
+            }
+        ]);
+
+        const previousDescriptor = Object.getOwnPropertyDescriptor(window, 'electron');
+        Object.defineProperty(window, 'electron', {
+            configurable: true,
+            value: {
+                modelRegistry: {
+                    getAllModels: mockGetAllModels
+                },
+                log: {
+                    error: vi.fn()
+                }
+            }
+        });
+
+        try {
+            const models = await fetchModels(true);
+            expect(models[0]?.provider).toBe('custom');
+            expect(models[0]?.providerCategory).toBe('custom');
+        } finally {
+            if (previousDescriptor) {
+                Object.defineProperty(window, 'electron', previousDescriptor);
+            }
+        }
     });
 });

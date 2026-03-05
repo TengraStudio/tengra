@@ -7,11 +7,8 @@ import type { GroupedModels, ModelInfo } from '@/types/model.types';
 let modelCache: { data: ModelInfo[]; timestamp: number } | null = null;
 const CACHE_DURATION_MS = 60000; // 1 minute cache
 
-function normalizeProviderId(
-    provider: string | undefined,
-    ownedBy: string | undefined
-): string {
-    const raw = (provider ?? ownedBy ?? '').trim().toLowerCase();
+function normalizeProviderId(provider: string | undefined): string {
+    const raw = (provider ?? '').trim().toLowerCase();
     if (raw === '') {
         return 'custom';
     }
@@ -59,8 +56,7 @@ export async function fetchModels(bypassCache = false): Promise<ModelInfo[]> {
         const models = await window.electron.modelRegistry.getAllModels().catch(() => []);
 
         const processedModels = models.map(m => {
-            const ownedBy = (m as { owned_by?: string }).owned_by;
-            const provider = normalizeProviderId(m.provider, ownedBy);
+            const provider = normalizeProviderId(m.provider);
             const providerCategory = normalizeProviderCategoryId(m.providerCategory, provider);
             return {
                 ...m,
