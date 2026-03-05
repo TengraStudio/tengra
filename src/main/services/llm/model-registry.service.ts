@@ -193,24 +193,56 @@ export class ModelRegistryService extends BaseService {
         return this.getRemoteModels();
     }
 
-    private async resolveProviderToken(provider: ModelProviderId): Promise<string | undefined> {
-        const activeToken = await this.deps.authService.getActiveToken(provider);
-        if (activeToken) {
-            return activeToken;
+    private getTokenProviderAliases(provider: ModelProviderId): readonly string[] {
+        switch (provider) {
+            case 'antigravity':
+                return ['antigravity', 'google', 'gemini'];
+            case 'codex':
+                return ['codex', 'openai'];
+            case 'openai':
+                return ['openai', 'codex'];
+            case 'claude':
+            case 'anthropic':
+                return ['claude', 'anthropic'];
+            case 'copilot':
+                return ['copilot', 'github'];
+            case 'nvidia':
+                return ['nvidia'];
+            default:
+                return [provider];
+        }
+    }
+
+    private async resolveTokenFromAliases(aliases: readonly string[]): Promise<string | undefined> {
+        for (const alias of aliases) {
+            const activeToken = await this.deps.authService.getActiveToken(alias);
+            if (activeToken) {
+                return activeToken;
+            }
         }
 
-        // Try provider aliases used by linked-account flows.
-        if (provider === 'antigravity') {
-            const aliasToken = await this.deps.authService.getActiveToken('google');
-            if (aliasToken) {
-                return aliasToken;
+        for (const alias of aliases) {
+            const accounts = await this.deps.authService.getAccountsByProviderFull(alias);
+            const activeAccount = accounts.find(account => account.isActive);
+            const activeToken = activeAccount?.accessToken ?? activeAccount?.sessionToken ?? activeAccount?.refreshToken;
+            if (activeToken) {
+                return activeToken;
+            }
+            const fallbackToken = accounts
+                .map(account => account.accessToken ?? account.sessionToken ?? account.refreshToken)
+                .find(token => typeof token === 'string' && token.trim().length > 0);
+            if (fallbackToken) {
+                return fallbackToken;
             }
         }
-        if (provider === 'codex') {
-            const aliasToken = await this.deps.authService.getActiveToken('openai');
-            if (aliasToken) {
-                return aliasToken;
-            }
+
+        return undefined;
+    }
+
+    private async resolveProviderToken(provider: ModelProviderId): Promise<string | undefined> {
+        const tokenFromAccounts = await this.resolveTokenFromAliases(this.getTokenProviderAliases(provider));
+        if (tokenFromAccounts) {
+            return tokenFromAccounts;
         }
 
         const settings = this.deps.settingsService.getSettings();
@@ -295,7 +327,8 @@ export class ModelRegistryService extends BaseService {
                         ...m,
                         id,
                         provider: mappedProvider,
-                        sourceProvider: m.provider,
+                        sourceProvider: provider,
+                        upstreamProvider: m.provider,
                     };
                     return this.enrichModelMetadata(normalizedModel);
                 });
@@ -414,10 +447,13 @@ export class ModelRegistryService extends BaseService {
 
     private ensureProviderMetadata(model: ModelProviderInfo): ModelProviderInfo {
         const normalizedProvider = model.provider.trim().toLowerCase();
+        const normalizedSourceProvider = (model.sourceProvider ?? '').trim().toLowerCase();
+        const categoryProvider = normalizedSourceProvider === '' ? normalizedProvider : normalizedSourceProvider;
         return {
             ...model,
             provider: normalizedProvider,
-            providerCategory: this.resolveProviderCategory(normalizedProvider),
+            sourceProvider: categoryProvider,
+            providerCategory: this.resolveProviderCategory(categoryProvider),
         };
     }
 

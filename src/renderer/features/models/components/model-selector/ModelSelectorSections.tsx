@@ -1,6 +1,6 @@
+import { Bot, Brain, Clock, Search, Sparkles, Star, X, Zap } from 'lucide-react';
 import React from 'react';
 import { Virtuoso } from 'react-virtuoso';
-import { Bot, Brain, Clock, Search, Sparkles, Star, X, Zap } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 

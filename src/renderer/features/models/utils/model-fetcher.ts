@@ -23,11 +23,22 @@ function normalizeProviderId(provider: string | undefined): string {
 
 function normalizeProviderCategoryId(
     providerCategory: string | undefined,
-    provider: string
+    provider: string,
+    sourceProvider?: string
 ): string {
     const raw = (providerCategory ?? '').trim().toLowerCase();
     if (raw !== '') {
         return raw;
+    }
+    const source = (sourceProvider ?? '').trim().toLowerCase();
+    if (source !== '') {
+        if (source === 'github' || source === 'copilot') {
+            return 'copilot';
+        }
+        if (source === 'anthropic' || source === 'claude') {
+            return 'claude';
+        }
+        return source;
     }
     if (provider === 'github' || provider === 'copilot') {
         return 'copilot';
@@ -57,7 +68,7 @@ export async function fetchModels(bypassCache = false): Promise<ModelInfo[]> {
 
         const processedModels = models.map(m => {
             const provider = normalizeProviderId(m.provider);
-            const providerCategory = normalizeProviderCategoryId(m.providerCategory, provider);
+            const providerCategory = normalizeProviderCategoryId(m.providerCategory, provider, m.sourceProvider);
             return {
                 ...m,
                 provider,
