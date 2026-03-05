@@ -1,5 +1,3 @@
-import { categorizeModel } from '@renderer/features/models/utils/model-categorization';
-
 // Re-export shared types for backward compatibility
 export type { GroupedModels, ModelInfo } from '@/types/model.types';
 
@@ -8,6 +6,30 @@ import type { GroupedModels, ModelInfo } from '@/types/model.types';
 // Simple in-memory cache for model fetches
 let modelCache: { data: ModelInfo[]; timestamp: number } | null = null;
 const CACHE_DURATION_MS = 60000; // 1 minute cache
+
+function normalizeProviderId(
+    provider: string | undefined,
+    ownedBy: string | undefined
+): string {
+    const raw = (provider ?? ownedBy ?? '').trim().toLowerCase();
+    if (raw === '') {
+        return 'custom';
+    }
+    if (raw === 'github') {
+        return 'copilot';
+    }
+    if (raw === 'nvidia_key' || raw === 'nim' || raw === 'nim_openai') {
+        return 'nvidia';
+    }
+    return raw;
+}
+
+function resolveDisplayName(model: ModelInfo): string {
+    const id = typeof model.id === 'string' ? model.id : '';
+    const label = typeof model.label === 'string' ? model.label : '';
+    const name = typeof model.name === 'string' ? model.name : '';
+    return name || label || id;
+}
 
 export async function fetchModels(bypassCache = false): Promise<ModelInfo[]> {
     try {
@@ -20,14 +42,12 @@ export async function fetchModels(bypassCache = false): Promise<ModelInfo[]> {
         const models = await window.electron.modelRegistry.getAllModels().catch(() => []);
 
         const processedModels = models.map(m => {
-            // Fall back to owned_by if provider is not set (common in OpenAI-compat APIs)
-            const providerHint = m.provider || (m as { owned_by?: string }).owned_by;
-            const categorized = categorizeModel(m.id || m.name, providerHint);
+            const ownedBy = (m as { owned_by?: string }).owned_by;
+            const provider = normalizeProviderId(m.provider, ownedBy);
             return {
                 ...m,
-                provider: categorized.provider,
-                label: categorized.label,
-                name: m.name || categorized.label  // Set name for ModelSelector display
+                provider,
+                name: resolveDisplayName(m)
             };
         });
 
