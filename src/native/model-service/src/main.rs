@@ -21,6 +21,8 @@ struct ModelRequest {
     token: Option<String>,
     proxy_port: Option<u16>,
     proxy_key: Option<String>,
+    #[serde(default)]
+    plan: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -134,7 +136,7 @@ async fn fetch_models(
 ) -> Json<Response> {
     let response = match payload.provider.as_str() {
         "ollama" => fetch_ollama(&state.client).await,
-        "copilot" => fetch_copilot(&state.client, payload.token).await,
+        "copilot" => fetch_copilot(&state.client, payload.token, payload.plan).await,
         "antigravity" => {
             fetch_antigravity(
                 &state.client,
@@ -221,7 +223,7 @@ async fn fetch_ollama(client: &Client) -> Response {
     }
 }
 
-async fn fetch_copilot(client: &Client, token: Option<String>) -> Response {
+async fn fetch_copilot(client: &Client, token: Option<String>, plan: Option<String>) -> Response {
     let Some(token) = token else {
         return Response {
             success: false,
@@ -230,6 +232,7 @@ async fn fetch_copilot(client: &Client, token: Option<String>) -> Response {
         };
     };
 
+    let is_free = plan.as_deref() == Some("free");
     let url = "https://api.githubcopilot.com/models";
 
     match client
@@ -263,26 +266,29 @@ async fn fetch_copilot(client: &Client, token: Option<String>) -> Response {
 
             match res.json::<CopilotResponse>().await {
                 Ok(data) => {
-                    let models = data
+                    let mut models: Vec<ModelInfo> = data
                         .data
                         .into_iter()
-                        .map(|m| {
-                            let (thinking_levels, pricing, description) =
-                                get_copilot_model_metadata(&m.id);
-                            ModelInfo {
-                                id: m.id.clone(),
-                                name: m.name.unwrap_or_else(|| m.id.clone()),
-                                provider: "copilot".into(),
-                                description: description.or(Some("GitHub Copilot Model".into())),
-                                downloads: None,
-                                pricing,
-                                thinking_levels,
-                                percentage: None,
-                                reset: None,
-                                quota_info: None,
-                            }
+                        .filter_map(|m| {
+                            get_copilot_model_metadata(&m.id, is_free).map(|(thinking_levels, pricing, description)| {
+                                ModelInfo {
+                                    id: m.id.clone(),
+                                    name: m.name.unwrap_or_else(|| m.id.clone()),
+                                    provider: "copilot".into(),
+                                    description: description.or(Some("GitHub Copilot Model".into())),
+                                    downloads: None,
+                                    pricing,
+                                    thinking_levels,
+                                    percentage: None,
+                                    reset: None,
+                                    quota_info: None,
+                                }
+                            })
                         })
                         .collect();
+
+                    // Sort for consistency
+                    models.sort_by(|a, b| a.id.cmp(&b.id));
                     Response {
                         success: true,
                         models,
@@ -305,374 +311,59 @@ async fn fetch_copilot(client: &Client, token: Option<String>) -> Response {
 }
 
 /// Returns (thinking_levels, pricing, description) for GitHub Copilot models
-fn get_copilot_model_metadata(id: &str) -> (Option<Vec<String>>, Option<Pricing>, Option<String>) {
+fn get_copilot_model_metadata(
+    id: &str,
+    is_free: bool,
+) -> Option<(Option<Vec<String>>, Option<Pricing>, Option<String>)> {
     let id_lower = id.to_lowercase();
 
-    match id_lower.as_str() {
-        // OpenAI o-series reasoning models
-        "o1" => (
-            Some(vec!["low".into(), "medium".into(), "high".into()]),
-            Some(Pricing {
-                input: 15.00,
-                cached_input: Some(7.50),
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 60.00,
-            }),
-            Some("OpenAI o1 reasoning model for complex tasks".into()),
-        ),
-        "o1-mini" => (
-            Some(vec!["low".into(), "medium".into(), "high".into()]),
-            Some(Pricing {
-                input: 1.10,
-                cached_input: Some(0.55),
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 4.40,
-            }),
-            Some("OpenAI o1-mini - faster reasoning model".into()),
-        ),
-        "o1-pro" => (
-            Some(vec![
-                "low".into(),
-                "medium".into(),
-                "high".into(),
-                "xhigh".into(),
-            ]),
-            Some(Pricing {
-                input: 150.00,
-                cached_input: None,
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 600.00,
-            }),
-            Some("OpenAI o1-pro - professional reasoning model".into()),
-        ),
-        "o3" => (
-            Some(vec!["low".into(), "medium".into(), "high".into()]),
-            Some(Pricing {
-                input: 2.00,
-                cached_input: Some(0.50),
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 8.00,
-            }),
-            Some("OpenAI o3 - most capable reasoning model".into()),
-        ),
-        "o3-mini" => (
-            Some(vec!["low".into(), "medium".into(), "high".into()]),
-            Some(Pricing {
-                input: 1.10,
-                cached_input: Some(0.55),
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 4.40,
-            }),
-            Some("OpenAI o3-mini - efficient reasoning model".into()),
-        ),
-        "o3-pro" => (
-            Some(vec![
-                "low".into(),
-                "medium".into(),
-                "high".into(),
-                "xhigh".into(),
-            ]),
-            Some(Pricing {
-                input: 20.00,
-                cached_input: None,
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 80.00,
-            }),
-            Some("OpenAI o3-pro - professional level reasoning".into()),
-        ),
-        "o4-mini" => (
-            Some(vec!["low".into(), "medium".into(), "high".into()]),
-            Some(Pricing {
-                input: 1.10,
-                cached_input: Some(0.55),
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 4.40,
-            }),
-            Some("OpenAI o4-mini - efficient model with multimodal support".into()),
-        ),
+    // Map common GitHub IDs to the required pricing/multipliers
+    let thinking_levels = Some(vec!["low".into(), "medium".into(), "high".into()]);
 
-        // GPT-4 series (no reasoning)
-        "gpt-4o" => (
-            None,
-            Some(Pricing {
-                input: 2.50,
-                cached_input: Some(1.25),
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 10.00,
-            }),
-            Some("OpenAI GPT-4o - high-intelligence flagship model".into()),
-        ),
-        "gpt-4o-mini" => (
-            None,
-            Some(Pricing {
-                input: 0.15,
-                cached_input: Some(0.075),
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 0.60,
-            }),
-            Some("OpenAI GPT-4o Mini - small, fast, and intelligent".into()),
-        ),
-        "gpt-4.1" => (
-            None,
-            Some(Pricing {
-                input: 2.00,
-                cached_input: Some(0.50),
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 8.00,
-            }),
-            Some("OpenAI GPT-4.1 - iterative improvement over GPT-4".into()),
-        ),
-        "gpt-4.1-mini" => (
-            None,
-            Some(Pricing {
-                input: 0.40,
-                cached_input: Some(0.10),
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 1.60,
-            }),
-            Some("OpenAI GPT-4.1 Mini - fast and efficient".into()),
-        ),
+    let (name, paid_mul, free_mul) = match id_lower.as_str() {
+        "claude-3.5-haiku" | "claude-haiku-4.5" => ("Claude Haiku 4.5", Some(0.33), Some(1.0)),
+        "claude-3-opus" | "claude-opus-4.5" => ("Claude Opus 4.5", Some(3.0), None),
+        "claude-opus-4.6" => ("Claude Opus 4.6", Some(3.0), None),
+        "claude-opus-4.6-fast" => ("Claude Opus 4.6 (fast mode) (preview)", Some(30.0), None),
+        "claude-3-sonnet" | "claude-sonnet-4" => ("Claude Sonnet 4", Some(1.0), None),
+        "claude-sonnet-4.5" => ("Claude Sonnet 4.5", Some(1.0), None),
+        "claude-sonnet-4.6" => ("Claude Sonnet 4.6", Some(1.0), None),
+        "gemini-2.5-pro" => ("Gemini 2.5 Pro", Some(1.0), None),
+        "gemini-3-flash" => ("Gemini 3 Flash", Some(0.33), None),
+        "gemini-3-pro" => ("Gemini 3 Pro", Some(1.0), None),
+        "gemini-3.1-pro" => ("Gemini 3.1 Pro", Some(1.0), None),
+        "gpt-4.1" => ("GPT-4.1", Some(0.0), Some(1.0)),
+        "gpt-4o" => ("GPT-4o", Some(0.0), Some(1.0)),
+        "gpt-5-mini" => ("GPT-5 mini", Some(0.0), Some(1.0)),
+        "gpt-5.1" => ("GPT-5.1", Some(1.0), None),
+        "gpt-5.1-codex" => ("GPT-5.1 Codex", Some(1.0), None),
+        "gpt-5.1-codex-mini" => ("GPT-5.1-Codex-Mini", Some(0.33), None),
+        "gpt-5.1-codex-max" => ("GPT-5.1-Codex-Max", Some(1.0), None),
+        "gpt-5.2" => ("GPT-5.2", Some(1.0), None),
+        "gpt-5.2-codex" => ("GPT-5.2 Codex", Some(1.0), None),
+        "gpt-5.3-codex" => ("GPT-5.3 Codex", Some(1.0), None),
+        "grok-code-fast-1" => ("Grok Code Fast 1", Some(0.25), None),
+        "raptor-mini" => ("Raptor mini", Some(0.0), Some(1.0)),
+        "goldeneye" => ("Goldeneye", None, Some(1.0)),
+        _ => return None, // Filter out any other models
+    };
 
-        // GPT-5 series with reasoning
-        "gpt-5" => (
-            Some(vec![
-                "minimal".into(),
-                "low".into(),
-                "medium".into(),
-                "high".into(),
-            ]),
-            Some(Pricing {
-                input: 1.25,
-                cached_input: Some(0.125),
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 10.00,
-            }),
-            Some("OpenAI GPT-5 - flagship model for coding and agentic tasks".into()),
-        ),
-        "gpt-5-mini" | "gpt-5 mini" => (
-            None,
-            Some(Pricing {
-                input: 0.15,
-                cached_input: Some(0.015),
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 0.60,
-            }),
-            Some("OpenAI GPT-5 Mini - efficient and cost-effective".into()),
-        ),
-        "gpt-5-codex" => (
-            Some(vec!["low".into(), "medium".into(), "high".into()]),
-            Some(Pricing {
-                input: 1.25,
-                cached_input: Some(0.125),
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 10.00,
-            }),
-            Some("OpenAI GPT-5 Codex - optimized for coding".into()),
-        ),
-        "gpt-5.1" => (
-            Some(vec![
-                "none".into(),
-                "low".into(),
-                "medium".into(),
-                "high".into(),
-            ]),
-            Some(Pricing {
-                input: 1.25,
-                cached_input: Some(0.125),
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 10.00,
-            }),
-            Some("OpenAI GPT-5.1 - enhanced reasoning capabilities".into()),
-        ),
-        "gpt-5.1-codex" => (
-            Some(vec!["low".into(), "medium".into(), "high".into()]),
-            Some(Pricing {
-                input: 1.25,
-                cached_input: Some(0.125),
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 10.00,
-            }),
-            Some("OpenAI GPT-5.1 Codex - best for coding and agentic tasks".into()),
-        ),
-        "gpt-5.1-codex-mini" => (
-            Some(vec!["low".into(), "medium".into(), "high".into()]),
-            Some(Pricing {
-                input: 0.25,
-                cached_input: Some(0.025),
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 2.00,
-            }),
-            Some("OpenAI GPT-5.1 Codex Mini - faster, cheaper Codex".into()),
-        ),
-        "gpt-5.1-codex-max" => (
-            Some(vec![
-                "low".into(),
-                "medium".into(),
-                "high".into(),
-                "xhigh".into(),
-            ]),
-            Some(Pricing {
-                input: 1.25,
-                cached_input: Some(0.125),
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 10.00,
-            }),
-            Some("OpenAI GPT-5.1 Codex Max - maximum reasoning capability".into()),
-        ),
-        "gpt-5.2" => (
-            Some(vec![
-                "low".into(),
-                "medium".into(),
-                "high".into(),
-                "xhigh".into(),
-            ]),
-            Some(Pricing {
-                input: 1.75,
-                cached_input: Some(0.175),
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 14.00,
-            }),
-            Some("OpenAI GPT-5.2 - newest flagship for enterprise and agentic workloads".into()),
-        ),
-        "gpt-5.2-codex" => (
-            Some(vec![
-                "low".into(),
-                "medium".into(),
-                "high".into(),
-                "xhigh".into(),
-            ]),
-            Some(Pricing {
-                input: 1.75,
-                cached_input: Some(0.175),
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 14.00,
-            }),
-            Some("OpenAI GPT-5.2 Codex - best for coding and agentic tasks".into()),
-        ),
-        "gpt-5.2-pro" => (
-            Some(vec![
-                "low".into(),
-                "medium".into(),
-                "high".into(),
-                "xhigh".into(),
-            ]),
-            Some(Pricing {
-                input: 21.00,
-                cached_input: None,
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 168.00,
-            }),
-            Some("OpenAI GPT-5.2 Pro - professional reasoning model".into()),
-        ),
+    let multiplier = if is_free { free_mul } else { paid_mul };
 
-        // Anthropic Claude models
-        "claude-sonnet-4" | "claude-4-sonnet" => (
-            Some(vec!["low".into(), "medium".into(), "high".into()]),
-            Some(Pricing {
-                input: 3.00,
-                cached_input: Some(0.30),
-                cache_write_5m: Some(3.75),
-                cache_write_1h: Some(6.00),
-                output: 15.00,
-            }),
-            Some("Claude 4 Sonnet - deep reasoning and debugging".into()),
-        ),
-        "claude-opus-4.1" | "claude-4.1-opus" => (
-            Some(vec!["low".into(), "medium".into(), "high".into()]),
-            Some(Pricing {
-                input: 15.00,
-                cached_input: Some(1.50),
-                cache_write_5m: Some(18.75),
-                cache_write_1h: Some(30.00),
-                output: 75.00,
-            }),
-            Some("Claude 4.1 Opus - deep reasoning and debugging".into()),
-        ),
-
-        // Google Gemini models
-        "gemini-2.5-pro" => (
-            Some(vec!["low".into(), "medium".into(), "high".into()]),
-            Some(Pricing {
-                input: 1.25,
-                cached_input: Some(0.31),
+    match multiplier {
+        Some(m) => {
+            let pricing = Some(Pricing {
+                input: m,
+                cached_input: Some(m * 0.5), // Standard cashback assumption if not specified
                 cache_write_5m: None,
                 cache_write_1h: None,
-                output: 5.00,
-            }),
-            Some("Gemini 2.5 Pro - deep reasoning and debugging".into()),
-        ),
-        "gemini-3-flash" | "gemini-3.0-flash" => (
-            Some(vec![
-                "minimal".into(),
-                "low".into(),
-                "medium".into(),
-                "high".into(),
-            ]),
-            Some(Pricing {
-                input: 0.10,
-                cached_input: Some(0.025),
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 0.40,
-            }),
-            Some("Gemini 3 Flash - fast with thinking support".into()),
-        ),
-        "gemini-3-pro" | "gemini-3.0-pro" => (
-            Some(vec!["low".into(), "medium".into(), "high".into()]),
-            Some(Pricing {
-                input: 1.25,
-                cached_input: Some(0.31),
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: 5.00,
-            }),
-            Some("Gemini 3 Pro - deep reasoning and debugging".into()),
-        ),
-
-        // xAI Grok models
-        "grok-code-fast-1" | "grok code fast 1" => (
-            Some(vec!["low".into(), "high".into()]),
-            None, // Free/complimentary access
-            Some("Grok Code Fast 1 - speedy reasoning model for agentic coding".into()),
-        ),
-
-        // Other models
-        "qwen2.5" | "qwen-2.5" => (
-            None,
-            None,
-            Some("Qwen 2.5 - general-purpose coding and writing".into()),
-        ),
-        "raptor-mini" => (
-            None,
-            None,
-            Some("Raptor Mini - fine-tuned GPT-5 Mini for general tasks".into()),
-        ),
-
-        // Default case
-        _ => (None, None, None),
+                output: m,
+            });
+            Some((thinking_levels, pricing, Some(name.into())))
+        }
+        None => None, // Not applicable for this plan
     }
-}
+} 
 
 async fn fetch_antigravity(
     client: &Client,
@@ -926,75 +617,38 @@ fn get_antigravity_metadata(id: &str) -> (Option<Vec<String>>, Option<Pricing>) 
 
 async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>) -> Response {
     let models = vec![
-        // GPT-5 Series
         ModelInfo {
-            id: "gpt-5".into(),
-            name: "GPT 5".into(),
+            id: "gpt-5.3-codex".into(),
+            name: "GPT 5.3 Codex".into(),
             provider: "codex".into(),
-            description: Some("Stable version of GPT 5, The best model for coding and agentic tasks across domains.".into()),
+            description: Some("Stable version of GPT 5.3 Codex".into()),
             downloads: None,
-            thinking_levels: Some(vec!["minimal".into(), "low".into(), "medium".into(), "high".into()]),
-            pricing: Some(Pricing { input: 1.25, cached_input: Some(0.125), cache_write_5m: None, cache_write_1h: None, output: 10.00 }),
+            thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into(), "xhigh".into()]),
+            pricing: Some(Pricing { input: 2.25, cached_input: Some(0.225), cache_write_5m: None, cache_write_1h: None, output: 18.00 }),
             percentage: None,
             reset: None,
             quota_info: None,
         },
         ModelInfo {
-            id: "gpt-5-codex".into(),
-            name: "GPT 5 Codex".into(),
+            id: "gpt-5.4".into(),
+            name: "GPT 5.4".into(),
             provider: "codex".into(),
-            description: Some("Stable version of GPT 5 Codex, The best model for coding and agentic tasks across domains.".into()),
+            description: Some("Stable version of GPT 5.4".into()),
             downloads: None,
-            thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
-            pricing: Some(Pricing { input: 1.25, cached_input: Some(0.125), cache_write_5m: None, cache_write_1h: None, output: 10.00 }),
+            thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into(), "xhigh".into()]),
+            pricing: Some(Pricing { input: 2.75, cached_input: Some(0.275), cache_write_5m: None, cache_write_1h: None, output: 22.00 }),
             percentage: None,
             reset: None,
             quota_info: None,
         },
         ModelInfo {
-            id: "gpt-5-codex-mini".into(),
-            name: "GPT 5 Codex Mini".into(),
+            id: "gpt-5.2-codex".into(),
+            name: "GPT 5.2 Codex".into(),
             provider: "codex".into(),
-            description: Some("Stable version of GPT 5 Codex Mini: cheaper, faster, but less capable version of GPT 5 Codex.".into()),
+            description: Some("Stable version of GPT 5.2 Codex, The best model for coding and agentic tasks across domains.".into()),
             downloads: None,
-            thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
-            pricing: Some(Pricing { input: 0.25, cached_input: Some(0.025), cache_write_5m: None, cache_write_1h: None, output: 2.00 }),
-            percentage: None,
-            reset: None,
-            quota_info: None,
-        },
-        ModelInfo {
-            id: "gpt-5.1".into(),
-            name: "GPT 5.1".into(),
-            provider: "codex".into(),
-            description: Some("Stable version of GPT 5, The best model for coding and agentic tasks across domains.".into()),
-            downloads: None,
-            thinking_levels: Some(vec!["none".into(), "low".into(), "medium".into(), "high".into()]),
-            pricing: Some(Pricing { input: 1.25, cached_input: Some(0.125), cache_write_5m: None, cache_write_1h: None, output: 10.00 }),
-            percentage: None,
-            reset: None,
-            quota_info: None,
-        },
-        ModelInfo {
-            id: "gpt-5.1-codex".into(),
-            name: "GPT 5.1 Codex".into(),
-            provider: "codex".into(),
-            description: Some("Stable version of GPT 5.1 Codex, The best model for coding and agentic tasks across domains.".into()),
-            downloads: None,
-            thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
-            pricing: Some(Pricing { input: 1.25, cached_input: Some(0.125), cache_write_5m: None, cache_write_1h: None, output: 10.00 }),
-            percentage: None,
-            reset: None,
-            quota_info: None,
-        },
-        ModelInfo {
-            id: "gpt-5.1-codex-mini".into(),
-            name: "GPT 5.1 Codex Mini".into(),
-            provider: "codex".into(),
-            description: Some("Stable version of GPT 5.1 Codex Mini: cheaper, faster, but less capable version of GPT 5.1 Codex.".into()),
-            downloads: None,
-            thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
-            pricing: Some(Pricing { input: 0.25, cached_input: Some(0.025), cache_write_5m: None, cache_write_1h: None, output: 2.00 }),
+            thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into(), "xhigh".into()]),
+            pricing: Some(Pricing { input: 1.75, cached_input: Some(0.175), cache_write_5m: None, cache_write_1h: None, output: 14.00 }),
             percentage: None,
             reset: None,
             quota_info: None,
@@ -1017,169 +671,20 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             provider: "codex".into(),
             description: Some("Stable version of GPT 5.2".into()),
             downloads: None,
-            thinking_levels: Some(vec!["none".into(), "low".into(), "medium".into(), "high".into(), "xhigh".into()]),
-            pricing: Some(Pricing { input: 1.75, cached_input: Some(0.175), cache_write_5m: None, cache_write_1h: None, output: 14.00 }),
-            percentage: None,
-            reset: None,
-            quota_info: None,
-        },
-        ModelInfo {
-            id: "gpt-5.2-codex".into(),
-            name: "GPT 5.2 Codex".into(),
-            provider: "codex".into(),
-            description: Some("Stable version of GPT 5.2 Codex, The best model for coding and agentic tasks across domains.".into()),
-            downloads: None,
             thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into(), "xhigh".into()]),
             pricing: Some(Pricing { input: 1.75, cached_input: Some(0.175), cache_write_5m: None, cache_write_1h: None, output: 14.00 }),
             percentage: None,
             reset: None,
             quota_info: None,
         },
-
-        // Standard Models
         ModelInfo {
-            id: "gpt-4o".into(),
-            name: "GPT-4o".into(),
+            id: "gpt-5.1-codex-mini".into(),
+            name: "GPT 5.1 Codex Mini".into(),
             provider: "codex".into(),
-            description: Some("OpenAI's high-intelligence flagship model".into()),
+            description: Some("Stable version of GPT 5.1 Codex Mini: cheaper, faster, but less capable version of GPT 5.1 Codex.".into()),
             downloads: None,
-            thinking_levels: None,
-            pricing: Some(Pricing { input: 2.50, cached_input: Some(1.25), cache_write_5m: None, cache_write_1h: None, output: 10.00 }),
-            percentage: None,
-            reset: None,
-            quota_info: None,
-        },
-        ModelInfo {
-            id: "gpt-4o-mini".into(),
-            name: "GPT-4o Mini".into(),
-            provider: "codex".into(),
-            description: Some("Small, fast, and intelligent model".into()),
-            downloads: None,
-            thinking_levels: None,
-            pricing: Some(Pricing { input: 0.15, cached_input: Some(0.075), cache_write_5m: None, cache_write_1h: None, output: 0.60 }),
-            percentage: None,
-            reset: None,
-            quota_info: None,
-        },
-        // Pro and Reasoning Models
-        ModelInfo {
-            id: "gpt-5.2-pro".into(),
-            name: "GPT 5.2 Pro".into(),
-            provider: "codex".into(),
-            description: Some("High-performance GPT 5.2 Pro".into()),
-            downloads: None,
-            thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into(), "xhigh".into()]),
-            pricing: Some(Pricing { input: 21.00, cached_input: None, cache_write_5m: None, cache_write_1h: None, output: 168.00 }),
-            percentage: None,
-            reset: None,
-            quota_info: None,
-        },
-        ModelInfo {
-            id: "gpt-5-pro".into(),
-            name: "GPT 5 Pro".into(),
-            provider: "codex".into(),
-            description: Some("Flagship GPT 5 Pro".into()),
-            downloads: None,
-            thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
-            pricing: Some(Pricing { input: 15.00, cached_input: None, cache_write_5m: None, cache_write_1h: None, output: 120.00 }),
-            percentage: None,
-            reset: None,
-            quota_info: None,
-        },
-        ModelInfo {
-            id: "gpt-4.1".into(),
-            name: "GPT 4.1".into(),
-            provider: "codex".into(),
-            description: Some("Iterative improvement over GPT 4".into()),
-            downloads: None,
-            thinking_levels: None,
-            pricing: Some(Pricing { input: 2.00, cached_input: Some(0.50), cache_write_5m: None, cache_write_1h: None, output: 8.00 }),
-            percentage: None,
-            reset: None,
-            quota_info: None,
-        },
-        ModelInfo {
-            id: "gpt-4.1-mini".into(),
-            name: "GPT 4.1 Mini".into(),
-            provider: "codex".into(),
-            description: Some("Fast GPT 4.1 Mini".into()),
-            downloads: None,
-            thinking_levels: None,
-            pricing: Some(Pricing { input: 0.40, cached_input: Some(0.10), cache_write_5m: None, cache_write_1h: None, output: 1.60 }),
-            percentage: None,
-            reset: None,
-            quota_info: None,
-        },
-
-        // OpenAI o-series Reasoning
-        ModelInfo {
-            id: "o1".into(),
-            name: "OpenAI o1".into(),
-            provider: "codex".into(),
-            description: Some("Reasoning model for complex tasks".into()),
-            downloads: None,
-            thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
-            pricing: Some(Pricing { input: 15.00, cached_input: Some(7.50), cache_write_5m: None, cache_write_1h: None, output: 60.00 }),
-            percentage: None,
-            reset: None,
-            quota_info: None,
-        },
-        ModelInfo {
-            id: "o1-pro".into(),
-            name: "OpenAI o1-pro".into(),
-            provider: "codex".into(),
-            description: Some("Professional reasoning model".into()),
-            downloads: None,
-            thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into(), "xhigh".into()]),
-            pricing: Some(Pricing { input: 150.00, cached_input: None, cache_write_5m: None, cache_write_1h: None, output: 600.00 }),
-            percentage: None,
-            reset: None,
-            quota_info: None,
-        },
-        ModelInfo {
-            id: "o1-mini".into(),
-            name: "OpenAI o1-mini".into(),
-            provider: "codex".into(),
-            description: Some("DEPRECATED/RETIRED: Faster reasoning model. Replacement: o3-mini.".into()),
-            downloads: None,
-            thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
-            pricing: Some(Pricing { input: 1.10, cached_input: Some(0.55), cache_write_5m: None, cache_write_1h: None, output: 4.40 }),
-            percentage: None,
-            reset: None,
-            quota_info: None,
-        },
-        ModelInfo {
-            id: "o3".into(),
-            name: "OpenAI o3".into(),
-            provider: "codex".into(),
-            description: Some("Advanced next-gen reasoning model".into()),
-            downloads: None,
-            thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
-            pricing: Some(Pricing { input: 2.00, cached_input: Some(0.50), cache_write_5m: None, cache_write_1h: None, output: 8.00 }),
-            percentage: None,
-            reset: None,
-            quota_info: None,
-        },
-        ModelInfo {
-            id: "o3-pro".into(),
-            name: "OpenAI o3-pro".into(),
-            provider: "codex".into(),
-            description: Some("Professional level o3 reasoning".into()),
-            downloads: None,
-            thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into(), "xhigh".into()]),
-            pricing: Some(Pricing { input: 20.00, cached_input: None, cache_write_5m: None, cache_write_1h: None, output: 80.00 }),
-            percentage: None,
-            reset: None,
-            quota_info: None,
-        },
-        ModelInfo {
-            id: "o3-mini".into(),
-            name: "OpenAI o3-mini".into(),
-            provider: "codex".into(),
-            description: Some("Advanced reasoning with improved efficiency.".into()),
-            downloads: None,
-            thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
-            pricing: Some(Pricing { input: 1.10, cached_input: Some(0.55), cache_write_5m: None, cache_write_1h: None, output: 4.40 }),
+            thinking_levels: Some(vec!["medium".into(), "high".into()]),
+            pricing: Some(Pricing { input: 0.25, cached_input: Some(0.025), cache_write_5m: None, cache_write_1h: None, output: 2.00 }),
             percentage: None,
             reset: None,
             quota_info: None,
