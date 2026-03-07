@@ -20,8 +20,8 @@ export const WizardSelectionStep: React.FC<WizardSelectionStepProps> = ({
     const options: WizardOption[] = [
         {
             id: 'import',
-            title: t('projectWizard.alreadyExists'),
-            description: t('projectWizard.alreadyExistsDesc'),
+            title: t('workspaceWizard.alreadyExists'),
+            description: t('workspaceWizard.alreadyExistsDesc'),
             icon: FolderOpen,
             accentColor: 'text-primary',
             accentBg: 'bg-primary/10',
@@ -29,8 +29,8 @@ export const WizardSelectionStep: React.FC<WizardSelectionStepProps> = ({
         },
         {
             id: 'ssh',
-            title: t('projectWizard.remoteSSH'),
-            description: t('projectWizard.remoteSSHDesc'),
+            title: t('workspaceWizard.remoteSSH'),
+            description: t('workspaceWizard.remoteSSHDesc'),
             icon: Server,
             accentColor: 'text-purple-500',
             accentBg: 'bg-purple-500/10',
@@ -38,8 +38,8 @@ export const WizardSelectionStep: React.FC<WizardSelectionStepProps> = ({
         },
         {
             id: 'create',
-            title: t('projectWizard.localProject'),
-            description: t('projectWizard.localProjectDesc'),
+            title: t('workspaceWizard.localWorkspace'),
+            description: t('workspaceWizard.localWorkspaceDesc'),
             icon: Plus,
             accentColor: 'text-info',
             accentBg: 'bg-info/10',
@@ -64,7 +64,7 @@ export const WizardSelectionStep: React.FC<WizardSelectionStepProps> = ({
     return (
         <div className="flex flex-col justify-center flex-1 h-full">
             <div className="mb-6 px-2">
-                <h3 className="text-lg font-bold text-foreground">{t('projectWizard.title')}</h3>
+                <h3 className="text-lg font-bold text-foreground">{t('workspaceWizard.title')}</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full">
                 {options.map((option) => (

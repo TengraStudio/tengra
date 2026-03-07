@@ -34,12 +34,12 @@ export const ProjectsPageHealthIndicator: React.FC<ProjectsPageHealthIndicatorPr
             <div className="absolute top-full right-0 mt-2 p-3 bg-popover border border-border rounded-xl shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-all z-50 min-w-[200px] border-t-primary/30">
                 <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border/40">
                     <Activity className="w-4 h-4 text-primary" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">{t('projects.systemHealth')}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">{t('workspaces.systemHealth')}</span>
                 </div>
 
                 <div className="space-y-2">
                     <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-muted-foreground">{t('projects.healthStatus')}:</span>
+                        <span className="text-muted-foreground">{t('workspaces.healthStatus')}:</span>
                         <span className={health.status === 'healthy' ? 'text-success font-bold' : 'text-warning font-bold'}>
                             {health.status === 'healthy' ? t('common.healthy') : t('common.degraded')}
                         </span>
@@ -47,7 +47,7 @@ export const ProjectsPageHealthIndicator: React.FC<ProjectsPageHealthIndicatorPr
 
                     {failures > 0 && (
                         <div className="flex justify-between items-center text-[10px]">
-                            <span className="text-muted-foreground">{t('projects.totalFailures')}:</span>
+                            <span className="text-muted-foreground">{t('workspaces.totalFailures')}:</span>
                             <span className="text-destructive font-mono font-bold">{failures}</span>
                         </div>
                     )}

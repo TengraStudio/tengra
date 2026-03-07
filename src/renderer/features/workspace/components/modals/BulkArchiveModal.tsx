@@ -20,17 +20,17 @@ export const BulkArchiveModal: React.FC<BulkArchiveModalProps> = ({
 }) => (
     <AnimatePresence>
         {isOpen && (
-            <Modal isOpen={isOpen} onClose={onClose} title={t('projects.bulkArchive')}>
+            <Modal isOpen={isOpen} onClose={onClose} title={t('workspaces.bulkArchive')}>
                 <div className="space-y-4 pt-2">
                     <div className="p-3 rounded-lg bg-success/10 border border-success/20">
                         <p className="text-sm text-success/90 leading-relaxed font-light">
-                            {t('projects.archiveConfirmation')}{' '}
+                            {t('workspaces.archiveConfirmation')}{' '}
                             <span className="font-semibold text-foreground">
                                 {count} {t('sidebar.projects').toLowerCase()}
                             </span>
                             ?
                             <span className="block mt-1 text-xs text-success font-normal italic opacity-80">
-                                {t('projects.archiveWarning')}
+                                {t('workspaces.archiveWarning')}
                             </span>
                         </p>
                     </div>
@@ -47,7 +47,7 @@ export const BulkArchiveModal: React.FC<BulkArchiveModalProps> = ({
                             }}
                             className="px-6 py-2 rounded-lg text-sm font-medium bg-success text-foreground hover:bg-success active:scale-95 transition-all shadow-lg shadow-emerald-900/20"
                         >
-                            {t('projects.bulkArchive')}
+                            {t('workspaces.bulkArchive')}
                         </button>
                     </div>
                 </div>

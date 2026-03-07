@@ -41,7 +41,7 @@ export function TerminalWorkspaceIssuesTab({
         setIsLoading(true);
         setErrorMessage(null);
         try {
-            const analysis = await window.electron.project.analyze(workspacePath, workspaceId ?? workspacePath);
+            const analysis = await window.electron.workspace.analyze(workspacePath, workspaceId ?? workspacePath);
             setIssues(analysis.issues ?? []);
         } catch (error) {
             appLogger.error(
@@ -50,7 +50,7 @@ export function TerminalWorkspaceIssuesTab({
                 error as Error
             );
             setIssues([]);
-            setErrorMessage(t('terminal.projectIssuesLoadFailed'));
+            setErrorMessage(t('terminal.workspaceIssuesLoadFailed'));
         } finally {
             setIsLoading(false);
         }
@@ -88,10 +88,10 @@ export function TerminalWorkspaceIssuesTab({
             <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border/60">
                 <div className="min-w-0">
                     <h3 className="text-sm font-semibold text-foreground">
-                        {t('terminal.projectIssuesTitle')}
+                        {t('terminal.workspaceIssuesTitle')}
                     </h3>
                     <p className="text-xs text-muted-foreground">
-                        {t('terminal.projectIssuesDescription')}
+                        {t('terminal.workspaceIssuesDescription')}
                     </p>
                 </div>
                 <button
@@ -108,11 +108,11 @@ export function TerminalWorkspaceIssuesTab({
 
             {!workspacePath ? (
                 <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground px-4 text-center">
-                    {t('terminal.projectIssuesNoProject')}
+                    {t('terminal.workspaceIssuesNoWorkspace')}
                 </div>
             ) : isLoading ? (
                 <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
-                    {t('terminal.projectIssuesLoading')}
+                    {t('terminal.workspaceIssuesLoading')}
                 </div>
             ) : errorMessage ? (
                 <div className="flex-1 flex items-center justify-center text-sm text-destructive px-4 text-center">
@@ -121,7 +121,7 @@ export function TerminalWorkspaceIssuesTab({
             ) : sortedIssues.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center gap-2 px-4 text-center">
                     <CheckCircle2 className="w-8 h-8 text-emerald-500" />
-                    <p className="text-sm text-foreground">{t('terminal.projectIssuesNoIssues')}</p>
+                    <p className="text-sm text-foreground">{t('terminal.workspaceIssuesNoIssues')}</p>
                 </div>
             ) : (
                 <div className="flex-1 overflow-auto p-3 space-y-2">

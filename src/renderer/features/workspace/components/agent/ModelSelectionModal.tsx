@@ -6,7 +6,7 @@ import { Modal } from '@/components/ui/modal';
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-const getWorkspaceAgentBridge = () => window.electron.projectAgent;
+const getWorkspaceAgentBridge = () => window.electron.workspaceAgent;
 
 interface ModelSelectionModalProps {
     isOpen: boolean;

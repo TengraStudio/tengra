@@ -1,4 +1,4 @@
-﻿import {
+import {
     ArrowLeft,
     PanelLeftClose,
     PanelLeftOpen,
@@ -164,7 +164,7 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
                                 ? 'border-success/30 bg-success/10 text-success'
                                 : 'border-warning/30 bg-warning/10 text-warning'
                         )}
-                        title={t('projects.systemHealth')}
+                        title={t('workspaces.systemHealth')}
                     >
                         <span>{mountHealth.isHealthy ? t('common.healthy') : t('common.degraded')}</span>
                         <span className="opacity-80">

@@ -30,12 +30,12 @@ export function useEditorMacro({ updateTabContent, setSnippetStatus }: UseEditor
             return;
         }
         updateTabContent(lastStep);
-        setSnippetStatus(t('projectDashboard.editor.macroReplayed'));
+        setSnippetStatus(t('workspaceDashboard.editor.macroReplayed'));
     }, [macroSteps, t, updateTabContent, setSnippetStatus]);
 
     const exportMacro = React.useCallback(async () => {
         await window.electron.clipboard.writeText(JSON.stringify(macroSteps));
-        setSnippetStatus(t('projectDashboard.editor.macroExported'));
+        setSnippetStatus(t('workspaceDashboard.editor.macroExported'));
     }, [macroSteps, t, setSnippetStatus]);
 
     const importMacro = React.useCallback(async () => {
@@ -47,10 +47,10 @@ export function useEditorMacro({ updateTabContent, setSnippetStatus }: UseEditor
             const parsed = JSON.parse(clip.text) as string[];
             if (Array.isArray(parsed)) {
                 setMacroSteps(parsed.filter(step => typeof step === 'string').slice(-20));
-                setSnippetStatus(t('projectDashboard.editor.macroImported'));
+                setSnippetStatus(t('workspaceDashboard.editor.macroImported'));
             }
         } catch {
-            setSnippetStatus(t('projectDashboard.editor.macroImportFailed'));
+            setSnippetStatus(t('workspaceDashboard.editor.macroImportFailed'));
         }
     }, [t, setSnippetStatus]);
 

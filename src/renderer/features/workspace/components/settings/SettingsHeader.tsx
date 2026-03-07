@@ -23,7 +23,7 @@ export const SettingsHeader: React.FC<SettingsHeaderProps> = ({
             </div>
             <div>
                 <h2 className="text-lg font-semibold text-foreground">
-                    {t('projects.projectSettings')}
+                    {t('workspaces.workspaceSettings')}
                 </h2>
                 <p className="text-xs text-muted-foreground">{projectTitle}</p>
             </div>

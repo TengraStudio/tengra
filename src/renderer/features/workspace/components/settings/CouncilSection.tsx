@@ -23,12 +23,12 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
             <div>
                 <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-1 flex items-center gap-2">
                     <Bot className="w-4 h-4 text-primary" />
-                    {t('projects.councilAI') || 'Council AI Configuration'}
+                    {t('workspaces.councilAI') || 'Council AI Configuration'}
                 </h3>
-                <p className="text-xs text-muted-foreground">{t('projects.councilAIDesc') || 'Configure how agents collaborate on this project.'}</p>
+                <p className="text-xs text-muted-foreground">{t('workspaces.councilAIDesc') || 'Configure how agents collaborate on this project.'}</p>
             </div>
             <div className="flex items-center gap-3 bg-white/5 p-1 rounded-full border border-white/10 px-3 py-1">
-                <span className="text-xs font-medium text-muted-foreground">{t('projects.councilEnabledLabel')}</span>
+                <span className="text-xs font-medium text-muted-foreground">{t('workspaces.councilEnabledLabel')}</span>
                 <button
                     onClick={() => setFormData(prev => ({ ...prev, councilEnabled: !prev.councilEnabled }))}
                     className={cn(
@@ -48,7 +48,7 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
             <div className="space-y-3">
                 <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <Shield className="w-4 h-4" />
-                    {t('projects.consensusThreshold') || 'Consensus Threshold'} ({Math.round(formData.consensusThreshold * 100)}%)
+                    {t('workspaces.consensusThreshold') || 'Consensus Threshold'} ({Math.round(formData.consensusThreshold * 100)}%)
                 </label>
                 <input
                     type="range"
@@ -60,12 +60,12 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
                     className="w-full accent-primary bg-muted/30 rounded-lg h-1.5 appearance-none cursor-pointer"
                 />
                 <p className="text-xxs text-muted-foreground italic">
-                    {t('projects.councilThresholdHint')}
+                    {t('workspaces.councilThresholdHint')}
                 </p>
             </div>
 
             <div className="space-y-3">
-                <label className="text-sm font-medium text-muted-foreground">{t('projects.selectedAgents') || 'Selected Agents'}</label>
+                <label className="text-sm font-medium text-muted-foreground">{t('workspaces.selectedAgents') || 'Selected Agents'}</label>
                 <div className="grid gap-2">
                     {availableAgents.map(agent => (
                         <button
@@ -87,7 +87,7 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
                                 </div>
                                 <div className="text-left">
                                     <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{agent.name}</div>
-                                    <div className="text-xxs opacity-60">{agent.description ?? t('projects.generalAI')}</div>
+                                    <div className="text-xxs opacity-60">{agent.description ?? t('workspaces.generalAI')}</div>
                                 </div>
                             </div>
                             <div className={cn(

@@ -44,7 +44,7 @@ export const SSHConnectionForm: React.FC<SSHConnectionFormProps> = ({
                         value={sshForm.host}
                         onChange={e => setSshForm(p => ({ ...p, host: e.target.value }))}
                         className={inputClass}
-                        placeholder={t('projectWizard.placeholder.example')}
+                        placeholder={t('workspaceWizard.placeholder.example')}
                     />
                 </div>
                 <div>

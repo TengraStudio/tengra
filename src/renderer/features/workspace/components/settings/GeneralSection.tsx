@@ -10,14 +10,14 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({ formData, setFo
         <div>
             <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-1 flex items-center gap-2">
                 <Info className="w-4 h-4 text-primary" />
-                {t('projects.basicInfo') || 'Basic Information'}
+                {t('workspaces.basicInfo') || 'Basic Information'}
             </h3>
-            <p className="text-xs text-muted-foreground">{t('projects.basicInfoDesc') || 'Update your project identity and status.'}</p>
+            <p className="text-xs text-muted-foreground">{t('workspaces.basicInfoDesc') || 'Update your project identity and status.'}</p>
         </div>
 
         <div className="space-y-4">
             <div className="grid gap-2">
-                <label className="text-sm font-medium text-muted-foreground">{t('projects.projectTitle') || 'Project Title'}</label>
+                <label className="text-sm font-medium text-muted-foreground">{t('workspaces.workspaceTitle') || 'Project Title'}</label>
                 <input
                     type="text"
                     value={formData.title}
@@ -26,7 +26,7 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({ formData, setFo
                 />
             </div>
             <div className="grid gap-2">
-                <label className="text-sm font-medium text-muted-foreground">{t('projects.description') || 'Description'}</label>
+                <label className="text-sm font-medium text-muted-foreground">{t('workspaces.description') || 'Description'}</label>
                 <textarea
                     value={formData.description}
                     onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
@@ -35,15 +35,15 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({ formData, setFo
                 />
             </div>
             <div className="grid gap-2">
-                <label className="text-sm font-medium text-muted-foreground">{t('projects.status') || 'Status'}</label>
+                <label className="text-sm font-medium text-muted-foreground">{t('workspaces.status') || 'Status'}</label>
                 <select
                     value={formData.status}
                     onChange={e => setFormData(prev => ({ ...prev, status: e.target.value as Project['status'] }))}
                     className="w-full bg-muted/20 border border-border/50 rounded-lg px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-sans"
                 >
-                    <option value="active">{t('projects.statusActive')}</option>
-                    <option value="archived">{t('projects.statusArchived')}</option>
-                    <option value="draft">{t('projects.statusDraft')}</option>
+                    <option value="active">{t('workspaces.statusActive')}</option>
+                    <option value="archived">{t('workspaces.statusArchived')}</option>
+                    <option value="draft">{t('workspaces.statusDraft')}</option>
                 </select>
             </div>
         </div>

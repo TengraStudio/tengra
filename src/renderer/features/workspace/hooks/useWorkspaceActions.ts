@@ -25,7 +25,7 @@ export function useProjectActions({
             }
         } catch (error) {
             appLogger.error('ProjectActions', 'Update failed', error as Error);
-            notify('error', t('projectDashboard.updateFailed'));
+            notify('error', t('workspaceDashboard.updateFailed'));
         }
     };
 

@@ -130,7 +130,7 @@ const useTaskNodeActions = ({
         try {
             updateNodeData(id, { status: 'planning', isExpanded: true });
             const options: AgentStartOptions = {
-                task: data.title ?? data.description ?? t('projectAgent.newTask'),
+                task: data.title ?? data.description ?? t('workspaceAgent.newTask'),
                 nodeId: id,
                 model: { provider: currentProviderId, model: currentModelId },
                 workspaceId: selectedProjectId,
@@ -139,7 +139,7 @@ const useTaskNodeActions = ({
                 agentProfileId: data.agentProfileId,
                 locale: language,
             };
-            await window.electron.projectAgent.generatePlan(options);
+            await window.electron.workspaceAgent.generatePlan(options);
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             if (message.includes('Cannot start planning from current state: planning')) {
@@ -177,7 +177,7 @@ const useTaskNodeActions = ({
         }
         try {
             updateNodeData(id, { status: 'running' });
-            await window.electron.projectAgent.approvePlan(data.plan, data.taskId);
+            await window.electron.workspaceAgent.approvePlan(data.plan, data.taskId);
         } catch (error) {
             appLogger.error('TaskNode', 'Failed to approve plan', error as Error);
             updateNodeData(id, { status: 'failed' });
@@ -199,7 +199,7 @@ const useTaskNodeActions = ({
         try {
             if (data.taskType === 'create-pr') {
                 updateNodeData(id, { status: 'running', activeTab: 'logs' });
-                const result = await window.electron.projectAgent.createPullRequest(data.taskId);
+                const result = await window.electron.workspaceAgent.createPullRequest(data.taskId);
                 if (!result.success || !result.url) {
                     throw new Error(result.error ?? 'Failed to generate PR URL');
                 }
@@ -213,7 +213,7 @@ const useTaskNodeActions = ({
             }
             updateNodeData(id, { status: 'running', activeTab: 'logs' });
             const options: AgentStartOptions = {
-                task: data.title ?? data.description ?? t('projectAgent.newTask'),
+                task: data.title ?? data.description ?? t('workspaceAgent.newTask'),
                 nodeId: id,
                 model: { provider: currentProviderId, model: currentModelId },
                 workspaceId: selectedProjectId,
@@ -222,7 +222,7 @@ const useTaskNodeActions = ({
                 agentProfileId: data.agentProfileId,
                 locale: language,
             };
-            await window.electron.projectAgent.start(options);
+            await window.electron.workspaceAgent.start(options);
         } catch (error) {
             updateNodeData(id, { status: 'failed' });
         } finally {
@@ -249,7 +249,7 @@ const useTaskNodeActions = ({
     const handleStop = useCallback(async () => {
         try {
             updateNodeData(id, { status: 'waiting' });
-            await window.electron.projectAgent.stop(data.taskId);
+            await window.electron.workspaceAgent.stop(data.taskId);
         } catch (error) {
             appLogger.error('TaskNode', 'Failed to stop task', error as Error);
         }
@@ -259,7 +259,7 @@ const useTaskNodeActions = ({
         async (index: number) => {
             try {
                 updateNodeData(id, { status: 'running', activeTab: 'logs' });
-                await window.electron.projectAgent.retryStep(index, data.taskId);
+                await window.electron.workspaceAgent.retryStep(index, data.taskId);
             } catch (error) {
                 appLogger.error('TaskNode', 'Failed to retry step', error as Error);
                 updateNodeData(id, { status: 'failed' });
@@ -501,7 +501,7 @@ const TaskTabs = ({
             )}
         >
             <ListTodo className="w-3.5 h-3.5" />
-            <span>{t('projectAgent.planTab')}</span>
+            <span>{t('workspaceAgent.planTab')}</span>
             {planCount ? (
                 <span className="text-xxs bg-muted/20 px-1 rounded-full">{planCount}</span>
             ) : null}
@@ -516,15 +516,15 @@ const TaskTabs = ({
             )}
         >
             <Terminal className="w-3.5 h-3.5" />
-            <span>{t('projectAgent.consoleTab')}</span>
+            <span>{t('workspaceAgent.consoleTab')}</span>
         </button>
         <span className="ml-auto text-xxs text-muted-foreground">
             {status === 'planning'
-                ? t('projectAgent.generatingPlan')
+                ? t('workspaceAgent.generatingPlan')
                 : status === 'running'
-                    ? t('projectAgent.executingTask')
+                    ? t('workspaceAgent.executingTask')
                     : status === 'waiting_for_approval'
-                        ? t('projectAgent.waitingApproval')
+                        ? t('workspaceAgent.waitingApproval')
                         : ''}
         </span>
     </div>
@@ -678,7 +678,7 @@ const GroupHeader = ({
             <ChevronDown className="w-3.5 h-3.5 -rotate-90" />
         )}
         <FolderGit2 className="w-3.5 h-3.5" />
-        <span>{name || t('projectAgent.unnamedGroup')}</span>
+        <span>{name || t('workspaceAgent.unnamedGroup')}</span>
     </button>
 );
 
@@ -817,19 +817,19 @@ const PlanStage = ({
                         const newPlan = [...plan];
                         newPlan.push({
                             id: Math.random().toString(36).substr(2, 9),
-                            text: t('projectAgent.newStep'),
+                            text: t('workspaceAgent.newStep'),
                             status: 'pending',
                         });
                         onUpdatePlan(newPlan);
                     }}
                     className="w-full py-1 text-xxs text-muted-foreground hover:text-primary border border-dashed border-border/20 hover:border-primary/30 rounded-md transition-colors mt-2"
                 >
-                    {t('projectAgent.addStep')}
+                    {t('workspaceAgent.addStep')}
                 </button>
             )}
             {!plan.length && status !== 'planning' && (
                 <div className="text-center py-8 text-muted-foreground/40 text-xs italic">
-                    {t('projectAgent.noPlan')}
+                    {t('workspaceAgent.noPlan')}
                 </div>
             )}
         </div>
@@ -901,7 +901,7 @@ const ProgressBar = ({
         <div className="px-4 py-2 bg-card/10 border-t border-border/20">
             <div className="flex justify-between items-center mb-1">
                 <span className="text-xxs font-medium text-muted-foreground uppercase tracking-wider">
-                    {t('projectAgent.overallProgress')}
+                    {t('workspaceAgent.overallProgress')}
                 </span>
                 <div className="flex items-center gap-3">
                     <TokenCounter
@@ -945,8 +945,8 @@ const AgentProfileSelector = ({
                     )}
                     title={
                         selectedProfile
-                            ? t('projectAgent.agentSelected', { name: selectedProfile.name })
-                            : t('projectAgent.selectAgentProfile')
+                            ? t('workspaceAgent.agentSelected', { name: selectedProfile.name })
+                            : t('workspaceAgent.selectAgentProfile')
                     }
                 >
                     <User className="w-3.5 h-3.5" />
@@ -955,7 +955,7 @@ const AgentProfileSelector = ({
             <PopoverContent align="start" className="w-56 p-1 bg-popover/95 backdrop-blur-xl">
                 <div className="max-h-64 overflow-y-auto custom-scrollbar space-y-0.5">
                     <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                        {t('projectAgent.selectAgentProfile')}
+                        {t('workspaceAgent.selectAgentProfile')}
                     </div>
                     <button
                         onClick={() => onProfileSelect?.('')}
@@ -970,9 +970,9 @@ const AgentProfileSelector = ({
                             <Sparkles className="w-3 h-3" />
                         </div>
                         <div className="flex flex-col">
-                            <span className="font-medium">{t('projectAgent.defaultAgent')}</span>
+                            <span className="font-medium">{t('workspaceAgent.defaultAgent')}</span>
                             <span className="text-xxs text-muted-foreground opacity-70">
-                                {t('projectAgent.defaultAgentDesc')}
+                                {t('workspaceAgent.defaultAgentDesc')}
                             </span>
                         </div>
                     </button>
@@ -1071,7 +1071,7 @@ const TaskHeader = ({
                             <button className="flex items-center gap-1.5 text-xs font-medium hover:bg-muted/20 px-2 py-1 rounded-md transition-colors truncate max-w-[120px]">
                                 <FolderGit2 className="w-3.5 h-3.5 text-muted-foreground" />
                                 <span className="truncate">
-                                    {selectedProject?.title ?? t('projectAgent.selectProject')}
+                                    {selectedProject?.title ?? t('workspaceAgent.selectWorkspace')}
                                 </span>
                                 <ChevronDown className="w-3 h-3 text-muted-foreground opacity-50" />
                             </button>
@@ -1149,7 +1149,7 @@ const TaskFooterButtons = ({
                 className="flex items-center gap-2 px-3 py-1.5 bg-success/10 text-success hover:bg-success/20 border border-success/20 hover:border-success/30 rounded-lg font-medium transition-all ml-auto"
             >
                 <Play className="w-3 h-3 fill-current" />
-                <span>{t('projectAgent.approveAndRun')}</span>
+                <span>{t('workspaceAgent.approveAndRun')}</span>
             </button>
         );
     }
@@ -1164,8 +1164,8 @@ const TaskFooterButtons = ({
                     <Square className="w-3 h-3 fill-current opacity-0 group-hover/stop:opacity-100 transition-opacity" />
                 </div>
                 <span>
-                    {status === 'planning' ? t('projectAgent.planning') : t('projectAgent.running')}{' '}
-                    {t('projectAgent.stopLabel')}
+                    {status === 'planning' ? t('workspaceAgent.planning') : t('workspaceAgent.running')}{' '}
+                    {t('workspaceAgent.stopLabel')}
                 </span>
             </button>
         );
@@ -1179,7 +1179,7 @@ const TaskFooterButtons = ({
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 hover:border-primary/30 rounded-lg font-medium transition-all"
                 >
                     <Sparkles className="w-3 h-3" />
-                    <span>{t('projectAgent.planAction')}</span>
+                    <span>{t('workspaceAgent.planAction')}</span>
                 </button>
             )}
             <button
@@ -1188,7 +1188,7 @@ const TaskFooterButtons = ({
                 className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 hover:border-primary/30 rounded-lg font-medium transition-all"
             >
                 <Play className="w-3 h-3 fill-current" />
-                {isPlanner ? '' : <span>{t('projectAgent.executeAction')}</span>}
+                {isPlanner ? '' : <span>{t('workspaceAgent.executeAction')}</span>}
             </button>
         </div>
     );
@@ -1276,8 +1276,8 @@ const TaskFooterControls = ({
                         )}
                         title={
                             systemMode === 'thinking'
-                                ? t('projectAgent.thinkingOn')
-                                : t('projectAgent.thinkingOff')
+                                ? t('workspaceAgent.thinkingOn')
+                                : t('workspaceAgent.thinkingOff')
                         }
                     >
                         <Brain className="w-3.5 h-3.5" />
@@ -1456,11 +1456,11 @@ const TaskBody = ({
                 <div className="bg-card/20 border border-border/20 rounded-md p-2 text-xs text-muted-foreground">
                     {data.taskType === 'create-pr'
                         ? 'Create a GitHub pull request from the active agent branch'
-                        : t('projectAgent.selectAction')}
+                        : t('workspaceAgent.selectAction')}
                 </div>
             ) : (
                 <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-                    {data.description ?? t('projectAgent.noDescription')}
+                    {data.description ?? t('workspaceAgent.noDescription')}
                 </p>
             )}
             {isPlanner && data.plan && data.plan.length > 0 && (
@@ -1512,14 +1512,14 @@ export const TaskNode = ({ id, data, selected }: NodeProps<Node<TaskNodeData>>) 
         const fetchProfiles = async () => {
             try {
                 const getProfilesFn = (
-                    window.electron.projectAgent as
+                    window.electron.workspaceAgent as
                     | { getProfiles?: () => Promise<AgentProfile[]> }
                     | undefined
                 )?.getProfiles;
                 if (typeof getProfilesFn !== 'function') {
                     appLogger.warn(
                         'TaskNode',
-                        'projectAgent.getProfiles is unavailable in current preload bridge'
+                        'workspaceAgent.getProfiles is unavailable in current preload bridge'
                     );
                     setProfiles([]);
                     return;

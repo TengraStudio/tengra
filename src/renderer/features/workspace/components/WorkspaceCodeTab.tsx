@@ -1,4 +1,4 @@
-﻿import type { FileSearchResult } from '@shared/types/common';
+import type { FileSearchResult } from '@shared/types/common';
 import { Check, FileCode2, Search } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 
@@ -101,7 +101,7 @@ export const ProjectCodeTab: React.FC<ProjectCodeTabProps> = ({ projectRoot, onO
         <div className="h-full overflow-y-auto p-4 space-y-4">
             <div className="rounded-xl border border-border bg-card p-4 space-y-3">
                 <div className="text-sm font-semibold flex items-center gap-2">
-                    <Search className="w-4 h-4" /> {t('projectDashboard.search') || 'Code Navigation'}
+                    <Search className="w-4 h-4" /> {t('workspaceDashboard.search') || 'Code Navigation'}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_auto_auto] gap-2">
                     <input

@@ -140,10 +140,10 @@ export const IdeaCard = memo<IdeaCardProps>(({ idea, onClick }) => {
                         <button
                             onClick={onClick}
                             type="button"
-                            aria-label={t('ideas.idea.openFullProject')}
+                            aria-label={t('ideas.idea.openFullWorkspace')}
                             className="w-full py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-md text-xs font-medium transition-colors"
                         >
-                            {t('ideas.idea.openFullProject')}
+                            {t('ideas.idea.openFullWorkspace')}
                         </button>
                     </div>
                 </div>

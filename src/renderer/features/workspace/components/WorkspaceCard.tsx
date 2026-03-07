@@ -129,7 +129,7 @@ const ProjectCardMenu: React.FC<{ project: Project }> = ({ project }) => {
                         <Archive className="w-3.5 h-3.5 text-success" />
                         {project.status === 'archived'
                             ? t('common.unarchive') || 'Restore'
-                            : t('projects.archiveProject')}
+                            : t('workspaces.archiveWorkspace')}
                     </button>
                     <button
                         type="button"

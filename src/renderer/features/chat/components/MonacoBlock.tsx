@@ -173,7 +173,7 @@ const FloatingActions: React.FC<{
             )}
             <ActionButton
                 icon={<Save className="w-3 h-3" />}
-                label={t('chat.codeBlock.addToProject')}
+                label={t('chat.codeBlock.addToWorkspace')}
                 delay={0.05}
                 primary
             />

@@ -40,30 +40,30 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
                         <Sparkles className="w-12 h-12 mx-auto animate-bounce text-primary" />
                         <div className="space-y-1">
                             <p className="text-xs font-bold text-foreground uppercase tracking-widest">
-                                {translateKey('projects.generating')}
+                                {translateKey('workspaces.generating')}
                             </p>
                             <p className="text-xxs text-muted-foreground italic">
-                                {translateKey('projects.logoGeneratingSubtitle')}
+                                {translateKey('workspaces.logoGeneratingSubtitle')}
                             </p>
                         </div>
                     </div>
                 ) : generatedLogo ? (
                     <img
                         src={`safe-file://${generatedLogo}`}
-                        alt={translateKey('projects.generatedAlt')}
+                        alt={translateKey('workspaces.generatedAlt')}
                         className="w-full h-full object-cover animate-in zoom-in-95 duration-500"
                     />
                 ) : (
                     <div className="text-center p-8 opacity-40">
                         <ImageIcon className="w-16 h-16 mx-auto mb-4 text-primary/40" />
                         <p className="text-xs uppercase font-bold tracking-widest mb-4">
-                            {translateKey('projects.preview')}
+                            {translateKey('workspaces.preview')}
                         </p>
                         <button
                             onClick={handleManualUploadClick}
                             className="px-4 py-2 bg-muted/20 hover:bg-muted/30 border border-border/50 rounded-lg text-xxs font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
                         >
-                            {translateKey('projects.uploadOriginal')}
+                            {translateKey('workspaces.uploadOriginal')}
                         </button>
                     </div>
                 )}
@@ -76,7 +76,7 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
                     className="flex-1 py-4 bg-primary text-primary-foreground rounded-xl font-black text-sm hover:bg-primary/90 transition-all disabled:opacity-50 active:scale-[0.98] flex items-center justify-center gap-2 shadow-xl shadow-primary/20 uppercase tracking-widest"
                 >
                     <Sparkles className="w-4 h-4" />
-                    {translateKey('projects.generate')}
+                    {translateKey('workspaces.generate')}
                 </button>
 
                 {generatedLogo ? (

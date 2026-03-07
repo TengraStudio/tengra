@@ -19,14 +19,14 @@ export const ArchiveProjectModal: React.FC<ArchiveProjectModalProps> = ({
 }) => (
     <AnimatePresence>
         {project && (
-            <Modal isOpen={!!project} onClose={onClose} title={t('projects.archiveProject')}>
+            <Modal isOpen={!!project} onClose={onClose} title={t('workspaces.archiveWorkspace')}>
                 <div className="space-y-4 pt-2">
                     <div className="p-3 rounded-lg bg-success/10 border border-success/20">
                         <p className="text-sm text-success/90 leading-relaxed font-light">
-                            {t('projects.archiveConfirmation')}{' '}
+                            {t('workspaces.archiveConfirmation')}{' '}
                             <span className="font-semibold text-foreground">{project.title}</span>?
                             <span className="block mt-1 text-xs text-success font-normal italic opacity-80">
-                                {t('projects.archiveWarning')}
+                                {t('workspaces.archiveWarning')}
                             </span>
                         </p>
                     </div>
@@ -45,7 +45,7 @@ export const ArchiveProjectModal: React.FC<ArchiveProjectModalProps> = ({
                         >
                             {project.status === 'archived'
                                 ? t('common.unarchive') || 'Unarchive'
-                                : t('projects.archiveProject')}
+                                : t('workspaces.archiveWorkspace')}
                         </button>
                     </div>
                 </div>

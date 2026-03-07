@@ -5,7 +5,7 @@ import { Project } from '@/types';
 import { ModelOption } from '../components/agent/TaskInputForm';
 import { TaskHistoryItem } from '../components/agent/TaskSidebar';
 
-const getWorkspaceAgentBridge = () => window.electron.projectAgent;
+const getWorkspaceAgentBridge = () => window.electron.workspaceAgent;
 
 export interface CheckpointItem {
     id: string;

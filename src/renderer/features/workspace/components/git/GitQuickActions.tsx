@@ -26,7 +26,7 @@ export const GitQuickActions: React.FC<QuickActionsProps> = ({ isPulling, isPush
             )}
         >
             {isPulling ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-            {t('projectDashboard.pull')}
+            {t('workspaceDashboard.pull')}
         </button>
         <button
             onClick={() => { void handlePush(); }}
@@ -38,7 +38,7 @@ export const GitQuickActions: React.FC<QuickActionsProps> = ({ isPulling, isPush
             )}
         >
             {isPushing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-            {t('projectDashboard.push')}
+            {t('workspaceDashboard.push')}
         </button>
     </div>
 );

@@ -31,16 +31,16 @@ export function useProjectWorkspaceController({
                 if (progress.status === 'Complete') {
                     ps.notify(
                         'success',
-                        t('projectDashboard.indexingComplete') || 'Indexing complete!'
+                        t('workspaceDashboard.indexingComplete') || 'Indexing complete!'
                     );
                 } else if (progress.status === 'Failed') {
-                    ps.notify('error', t('projectDashboard.indexingFailed') || 'Indexing failed.');
+                    ps.notify('error', t('workspaceDashboard.indexingFailed') || 'Indexing failed.');
                 } else {
                     // Only notify at start and end
                     if (progress.current === 1) {
                         ps.notify(
                             'info',
-                            t('projectDashboard.indexingStarted') || 'Starting project indexing...'
+                            t('workspaceDashboard.indexingStarted') || 'Starting project indexing...'
                         );
                     }
                 }

@@ -9,7 +9,7 @@ interface TrackingStatusProps {
 
 export const GitTrackingStatus: React.FC<TrackingStatusProps> = ({ trackingInfo, t }) => {
     if (!trackingInfo?.tracking) {
-        return <span className="text-muted-foreground">{t('projectDashboard.noRemote')}</span>;
+        return <span className="text-muted-foreground">{t('workspaceDashboard.noRemote')}</span>;
     }
     return (
         <div className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -24,7 +24,7 @@ export const GitTrackingStatus: React.FC<TrackingStatusProps> = ({ trackingInfo,
                 </span>
             )}
             {trackingInfo.ahead === 0 && trackingInfo.behind === 0 && (
-                <span className="text-success">{t('projectDashboard.upToDate')}</span>
+                <span className="text-success">{t('workspaceDashboard.upToDate')}</span>
             )}
         </div>
     );

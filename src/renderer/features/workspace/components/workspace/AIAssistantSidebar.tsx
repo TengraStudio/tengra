@@ -1,4 +1,4 @@
-﻿import { MessageBubble } from '@renderer/features/chat/components/MessageBubble';
+import { MessageBubble } from '@renderer/features/chat/components/MessageBubble';
 import { ChatErrorBanner } from '@renderer/features/workspace/components/workspace/ChatErrorBanner';
 import { AgentTaskHistoryItem } from '@shared/types/project-agent';
 import { ArrowLeft, Check, ClipboardList, Play, Users } from 'lucide-react';
@@ -10,7 +10,7 @@ import { motion } from '@/lib/framer-motion-compat';
 import type { GroupedModels } from '@/types';
 import { AppSettings, ChatError, CodexUsage, Message, QuotaResponse } from '@/types';
 
-const getWorkspaceAgentBridge = () => window.electron.projectAgent;
+const getWorkspaceAgentBridge = () => window.electron.workspaceAgent;
 
 interface AIAssistantSidebarProps {
     projectId: string;

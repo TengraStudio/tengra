@@ -18,14 +18,14 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
     t
 }) => {
     const tabs = [
-        { id: 'overview', icon: Layout, title: t('projectDashboard.overview') },
-        { id: 'tasks', icon: ListTodo, title: t('projectDashboard.todoList') },
-        { id: 'search', icon: Search, title: t('projectDashboard.search') },
+        { id: 'overview', icon: Layout, title: t('workspaceDashboard.overview') },
+        { id: 'tasks', icon: ListTodo, title: t('workspaceDashboard.todoList') },
+        { id: 'search', icon: Search, title: t('workspaceDashboard.search') },
         { id: 'code', icon: Braces, title: 'Code' },
-        { id: 'git', icon: GitBranch, title: t('projectDashboard.git') },
-        { id: 'env', icon: Settings, title: t('projectDashboard.environment') },
-        { id: 'logs', icon: FileText, title: t('projectDashboard.logs') },
-        { id: 'settings', icon: Settings, title: t('projectDashboard.settings') || 'Settings' },
+        { id: 'git', icon: GitBranch, title: t('workspaceDashboard.git') },
+        { id: 'env', icon: Settings, title: t('workspaceDashboard.environment') },
+        { id: 'logs', icon: FileText, title: t('workspaceDashboard.logs') },
+        { id: 'settings', icon: Settings, title: t('workspaceDashboard.settings') || 'Settings' },
     ] as const;
 
     return (

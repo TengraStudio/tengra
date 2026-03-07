@@ -1,4 +1,4 @@
-﻿import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -327,7 +327,7 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
     if (loading) {
         return (
             <div className="p-4 text-xs text-muted-foreground">
-                {t('projectDashboard.loadingFiles')}
+                {t('workspaceDashboard.loadingFiles')}
             </div>
         );
     }
@@ -344,7 +344,7 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
             ))}
             {rootNodes.length === 0 && (
                 <div className="p-4 text-xs text-muted-foreground text-center">
-                    {t('projectDashboard.emptyDir')}
+                    {t('workspaceDashboard.emptyDir')}
                 </div>
             )}
         </div>

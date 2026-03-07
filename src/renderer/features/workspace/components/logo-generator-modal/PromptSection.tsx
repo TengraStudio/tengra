@@ -30,7 +30,7 @@ export const PromptSection: React.FC<PromptSectionProps> = ({
         <div className="space-y-2">
             <div className="flex items-center justify-between">
                 <label className="text-xxs font-bold uppercase text-muted-foreground tracking-widest">
-                    {translateKey('projects.prompt')}
+                    {translateKey('workspaces.prompt')}
                 </label>
                 <div className="flex items-center gap-3">
                     <button
@@ -40,7 +40,7 @@ export const PromptSection: React.FC<PromptSectionProps> = ({
                         title={translateKey('workspace.improvePromptWithAI')}
                     >
                         <Sparkles className="w-3 h-3" />
-                        {translateKey('projects.improvePrompt')}
+                        {translateKey('workspaces.improvePrompt')}
                     </button>
                     <button
                         onClick={handleAnalyzeClick}
@@ -52,7 +52,7 @@ export const PromptSection: React.FC<PromptSectionProps> = ({
                         ) : (
                             <Wand2 className="w-3 h-3" />
                         )}
-                        {translateKey('projects.analyzeContext')}
+                        {translateKey('workspaces.analyzeContext')}
                     </button>
                 </div>
             </div>
@@ -60,7 +60,7 @@ export const PromptSection: React.FC<PromptSectionProps> = ({
                 value={prompt}
                 onChange={e => setPrompt(e.target.value)}
                 className="w-full bg-muted/30 border border-border/50 rounded-xl p-3 text-sm min-h-[100px] resize-none focus:border-primary/50 transition-colors outline-none text-foreground"
-                placeholder={translateKey('projects.logoPromptPlaceholder')}
+                placeholder={translateKey('workspaces.logoPromptPlaceholder')}
             />
         </div>
     );

@@ -4,7 +4,7 @@ import { Project } from '@/types';
 
 import { AttachedFile, ModelOption } from '../../components/agent/TaskInputForm';
 
-const getWorkspaceAgentBridge = () => window.electron.projectAgent;
+const getWorkspaceAgentBridge = () => window.electron.workspaceAgent;
 
 interface StartTaskResult {
     success: boolean;

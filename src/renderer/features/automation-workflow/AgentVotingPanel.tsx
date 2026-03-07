@@ -41,10 +41,10 @@ export const AgentVotingPanel: React.FC<AgentVotingPanelProps> = ({ taskId }) =>
     const refreshVotingData = useCallback(async () => {
         try {
             const [sessionList, analyticsResult, configResult, templateResult] = await Promise.all([
-                window.electron.projectAgent.listVotingSessions(taskId),
-                window.electron.projectAgent.getVotingAnalytics(taskId),
-                window.electron.projectAgent.getVotingConfiguration(),
-                window.electron.projectAgent.listVotingTemplates()
+                window.electron.workspaceAgent.listVotingSessions(taskId),
+                window.electron.workspaceAgent.getVotingAnalytics(taskId),
+                window.electron.workspaceAgent.getVotingConfiguration(),
+                window.electron.workspaceAgent.listVotingTemplates()
             ]);
             setSessions(sessionList);
             setAnalytics(analyticsResult);
@@ -83,7 +83,7 @@ export const AgentVotingPanel: React.FC<AgentVotingPanelProps> = ({ taskId }) =>
         }
         setIsOverriding(true);
         try {
-            await window.electron.projectAgent.overrideVotingDecision({
+            await window.electron.workspaceAgent.overrideVotingDecision({
                 sessionId: selectedSession.id,
                 finalDecision: overrideDecision,
                 reason: overrideReason.trim() || undefined
@@ -100,29 +100,29 @@ export const AgentVotingPanel: React.FC<AgentVotingPanelProps> = ({ taskId }) =>
     return (
         <div className="rounded-xl border border-border/60 bg-card/95 p-3 shadow-lg backdrop-blur">
             <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-sm font-semibold">{t('projectAgent.votingPanel.title')}</h3>
+                <h3 className="text-sm font-semibold">{t('workspaceAgent.votingPanel.title')}</h3>
                 <span className="text-xs text-muted-foreground">
-                    {t('projectAgent.votingPanel.sessionCount', { count: analytics?.totalSessions ?? 0 })}
+                    {t('workspaceAgent.votingPanel.sessionCount', { count: analytics?.totalSessions ?? 0 })}
                 </span>
             </div>
 
             <div className="mb-3 grid grid-cols-3 gap-2 text-xs">
                 <div className="rounded-md bg-muted p-2 text-center">
                     <div className="font-semibold">{analytics?.pendingSessions ?? 0}</div>
-                    <div className="text-muted-foreground">{t('projectAgent.votingPanel.pending')}</div>
+                    <div className="text-muted-foreground">{t('workspaceAgent.votingPanel.pending')}</div>
                 </div>
                 <div className="rounded-md bg-muted p-2 text-center">
                     <div className="font-semibold">{analytics?.resolvedSessions ?? 0}</div>
-                    <div className="text-muted-foreground">{t('projectAgent.votingPanel.resolved')}</div>
+                    <div className="text-muted-foreground">{t('workspaceAgent.votingPanel.resolved')}</div>
                 </div>
                 <div className="rounded-md bg-muted p-2 text-center">
                     <div className="font-semibold">{analytics?.deadlockedSessions ?? 0}</div>
-                    <div className="text-muted-foreground">{t('projectAgent.votingPanel.deadlocked')}</div>
+                    <div className="text-muted-foreground">{t('workspaceAgent.votingPanel.deadlocked')}</div>
                 </div>
             </div>
             {votingConfiguration && (
                 <p className="mb-2 text-[11px] text-muted-foreground">
-                    {t('projectAgent.votingPanel.configSummary', {
+                    {t('workspaceAgent.votingPanel.configSummary', {
                         minVotes: votingConfiguration.minimumVotes,
                         deadlock: Math.round(votingConfiguration.deadlockThreshold * 100)
                     })}
@@ -143,7 +143,7 @@ export const AgentVotingPanel: React.FC<AgentVotingPanelProps> = ({ taskId }) =>
             )}
 
             {sessions.length === 0 ? (
-                <p className="text-xs text-muted-foreground">{t('projectAgent.votingPanel.noSessions')}</p>
+                <p className="text-xs text-muted-foreground">{t('workspaceAgent.votingPanel.noSessions')}</p>
             ) : (
                 <>
                     <select
@@ -153,7 +153,7 @@ export const AgentVotingPanel: React.FC<AgentVotingPanelProps> = ({ taskId }) =>
                     >
                         {sessions.map(session => (
                             <option key={session.id} value={session.id}>
-                                {`${session.question} (${t(`projectAgent.votingPanel.status.${session.status}`)})`}
+                                {`${session.question} (${t(`workspaceAgent.votingPanel.status.${session.status}`)})`}
                             </option>
                         ))}
                     </select>
@@ -163,7 +163,7 @@ export const AgentVotingPanel: React.FC<AgentVotingPanelProps> = ({ taskId }) =>
                             <div className="mb-2 space-y-1 text-xs">
                                 <p className="font-medium">{selectedSession.question}</p>
                                 <p className="text-muted-foreground">
-                                    {t('projectAgent.votingPanel.votesCount', { count: selectedSession.votes.length })}
+                                    {t('workspaceAgent.votingPanel.votesCount', { count: selectedSession.votes.length })}
                                 </p>
                             </div>
 
@@ -180,9 +180,9 @@ export const AgentVotingPanel: React.FC<AgentVotingPanelProps> = ({ taskId }) =>
                             </ul>
 
                             <div className="mb-2 rounded-md border border-border p-2 text-xs">
-                                <p className="mb-1 font-medium">{t('projectAgent.votingPanel.disagreementDetails')}</p>
+                                <p className="mb-1 font-medium">{t('workspaceAgent.votingPanel.disagreementDetails')}</p>
                                 {disagreementDetails.length === 0 ? (
-                                    <p className="text-muted-foreground">{t('projectAgent.votingPanel.noDisagreement')}</p>
+                                    <p className="text-muted-foreground">{t('workspaceAgent.votingPanel.noDisagreement')}</p>
                                 ) : (
                                     <ul className="space-y-1">
                                         {disagreementDetails.map(([decision, count]) => (
@@ -196,7 +196,7 @@ export const AgentVotingPanel: React.FC<AgentVotingPanelProps> = ({ taskId }) =>
                             </div>
 
                             <div className="space-y-1 text-xs">
-                                <p className="font-medium">{t('projectAgent.votingPanel.manualOverride')}</p>
+                                <p className="font-medium">{t('workspaceAgent.votingPanel.manualOverride')}</p>
                                 <select
                                     value={overrideDecision}
                                     onChange={event => setOverrideDecision(event.target.value)}
@@ -209,7 +209,7 @@ export const AgentVotingPanel: React.FC<AgentVotingPanelProps> = ({ taskId }) =>
                                 <input
                                     value={overrideReason}
                                     onChange={event => setOverrideReason(event.target.value)}
-                                    placeholder={t('projectAgent.votingPanel.overrideReasonPlaceholder')}
+                                    placeholder={t('workspaceAgent.votingPanel.overrideReasonPlaceholder')}
                                     className="w-full rounded-md border border-border bg-background px-2 py-1"
                                 />
                                 <button
@@ -220,8 +220,8 @@ export const AgentVotingPanel: React.FC<AgentVotingPanelProps> = ({ taskId }) =>
                                     disabled={isOverriding || !overrideDecision}
                                 >
                                     {isOverriding
-                                        ? t('projectAgent.votingPanel.applyingOverride')
-                                        : t('projectAgent.votingPanel.applyOverride')}
+                                        ? t('workspaceAgent.votingPanel.applyingOverride')
+                                        : t('workspaceAgent.votingPanel.applyOverride')}
                                 </button>
                             </div>
                         </>

@@ -17,7 +17,7 @@ import { TaskExecutionView } from './agent/TaskExecutionView';
 import { TaskInputForm } from './agent/TaskInputForm';
 import { TaskSidebar } from './agent/TaskSidebar';
 
-const getWorkspaceAgentBridge = () => window.electron.projectAgent;
+const getWorkspaceAgentBridge = () => window.electron.workspaceAgent;
 
 interface ProjectAgentTabProps {
     project: Project;

@@ -172,10 +172,10 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                     </div>
                     <div>
                         <div className="text-base font-black text-foreground uppercase tracking-tight">
-                            {t('general.projectBasics')}
+                            {t('general.workspaceBasics')}
                         </div>
                         <div className="text-xs font-medium text-muted-foreground/70">
-                            {t('general.projectBasicsDesc')}
+                            {t('general.workspaceBasicsDesc')}
                         </div>
                     </div>
                 </div>
@@ -212,7 +212,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                     </div>
                     <div className="space-y-2 md:col-span-2">
                         <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
-                            {t('projectWizard.selectFolder')}
+                            {t('workspaceWizard.selectFolder')}
                         </label>
                         <input
                             type="text"
@@ -221,12 +221,12 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                                 void updateGeneral({ workspacesBasePath: event.target.value });
                             }}
                             className="w-full bg-muted/5 border border-border/40 rounded-xl px-4 py-3 text-sm font-mono text-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            placeholder={t('projectWizard.selectRootDesc')}
+                            placeholder={t('workspaceWizard.selectRootDesc')}
                         />
                     </div>
                     <div className="space-y-2 md:col-span-2">
                         <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
-                            {t('projectDashboard.terminal')} Backend
+                            {t('workspaceDashboard.terminal')} Backend
                         </label>
                         <SelectDropdown
                             value={settings?.general.defaultTerminalBackend ?? 'node-pty'}

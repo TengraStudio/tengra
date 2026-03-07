@@ -40,13 +40,13 @@ const StatsSection = ({ fileCount, totalSize }: { fileCount: number; totalSize: 
         <div className="grid grid-cols-2 gap-3">
             <div className="p-3 rounded-lg bg-accent/20 border border-border/50">
                 <div className="text-xxs uppercase text-muted-foreground mb-1">
-                    {t('projectDashboard.folderInspector.files')}
+                    {t('workspaceDashboard.folderInspector.files')}
                 </div>
                 <div className="text-xl font-bold">{fileCount}</div>
             </div>
             <div className="p-3 rounded-lg bg-accent/20 border border-border/50">
                 <div className="text-xxs uppercase text-muted-foreground mb-1">
-                    {t('projectDashboard.folderInspector.size')}
+                    {t('workspaceDashboard.folderInspector.size')}
                 </div>
                 <div className="text-xl font-bold">{(totalSize / 1024).toFixed(1)} KB</div>
             </div>
@@ -66,7 +66,7 @@ const ScriptsSection = ({ scripts }: { scripts: ScriptsRecord }) => {
     return (
         <div className="pt-2 border-t border-border/50 mt-2">
             <div className="text-xxs uppercase text-muted-foreground mb-2">
-                {t('projectDashboard.folderInspector.scripts')}
+                {t('workspaceDashboard.folderInspector.scripts')}
             </div>
             <div className="grid grid-cols-1 gap-1">
                 {scriptKeys.slice(0, 5).map(name => (
@@ -85,7 +85,7 @@ const ScriptsSection = ({ scripts }: { scripts: ScriptsRecord }) => {
                 ))}
                 {scriptKeys.length > 5 && (
                     <div className="text-xxs text-muted-foreground italic px-1 pt-1">
-                        {t('projectDashboard.folderInspector.moreScripts', {
+                        {t('workspaceDashboard.folderInspector.moreScripts', {
                             count: scriptKeys.length - 5,
                         })}
                     </div>
@@ -107,7 +107,7 @@ const DependenciesSection = ({ dependencies }: { dependencies: DependenciesRecor
     return (
         <div className="pt-2 border-t border-border/50 mt-2">
             <div className="text-xxs uppercase text-muted-foreground mb-2">
-                {t('projectDashboard.folderInspector.dependencies')}
+                {t('workspaceDashboard.folderInspector.dependencies')}
             </div>
             <div className="flex flex-wrap gap-1">
                 {depKeys.slice(0, 8).map(dep => (
@@ -129,18 +129,18 @@ const PackageInfoSection = ({ pkg }: { pkg: Record<string, IpcValue> }) => {
         <div className="space-y-3">
             <h3 className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-2">
                 <Package className="w-3.5 h-3.5" />{' '}
-                {t('projectDashboard.folderInspector.packageTitle')}
+                {t('workspaceDashboard.folderInspector.packageTitle')}
             </h3>
             <div className="bg-muted/30 rounded-lg p-3 border border-border/50 space-y-2">
                 <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">
-                        {t('projectDashboard.folderInspector.packageName')}
+                        {t('workspaceDashboard.folderInspector.packageName')}
                     </span>
                     <span className="font-mono text-success">{String(pkg.name)}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">
-                        {t('projectDashboard.folderInspector.packageVersion')}
+                        {t('workspaceDashboard.folderInspector.packageVersion')}
                     </span>
                     <span className="font-mono">{String(pkg.version)}</span>
                 </div>
@@ -164,7 +164,7 @@ const ReadmeSection = ({ readme }: { readme: string }) => {
     return (
         <div className="space-y-3">
             <h3 className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-2">
-                <FileText className="w-3.5 h-3.5" /> {t('projectDashboard.folderInspector.readme')}
+                <FileText className="w-3.5 h-3.5" /> {t('workspaceDashboard.folderInspector.readme')}
             </h3>
             <div className="bg-muted/30 rounded-lg p-3 border border-border/50 max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-muted text-xs text-muted-foreground leading-relaxed">
                 <pre className="whitespace-pre-wrap font-sans">{displayText}</pre>
@@ -185,7 +185,7 @@ const FolderContentView = ({
     const { t } = useTranslation();
     const relativePath = folderPath.replace(rootPath, '') || '/';
     const displayPath =
-        relativePath === '/' ? t('projectDashboard.folderInspector.root') : relativePath;
+        relativePath === '/' ? t('workspaceDashboard.folderInspector.root') : relativePath;
 
     return (
         <div className="h-full flex flex-col bg-card rounded-xl border border-border/50 overflow-hidden">
@@ -223,7 +223,7 @@ export const FolderInspector = ({ folderPath, rootPath }: FolderInspectorProps) 
             }
             setLoading(true);
             try {
-                const res = await window.electron.project.analyzeDirectory(folderPath);
+                const res = await window.electron.workspace.analyzeDirectory(folderPath);
                 setData(res);
             } catch (error) {
                 appLogger.error('FolderInspector', 'Failed to analyze folder', error as Error);

@@ -74,7 +74,7 @@ export const ProjectFilesTab = ({
                         <div className="w-16 h-16 mb-4 opacity-10 flex items-center justify-center border-2 border-current rounded-full">
                             <FileCode size={32} />
                         </div>
-                        <p>{t('projectDashboard.selectFile')}</p>
+                        <p>{t('workspaceDashboard.selectFile')}</p>
                     </div>
                 )}
             </div>

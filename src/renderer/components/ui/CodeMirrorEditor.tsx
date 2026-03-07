@@ -166,7 +166,7 @@ export const CodeMirrorEditor = ({ content, language = 'javascript', onChange, r
                 appLogger.error('CodeMirrorEditor', 'Failed to initialize CodeMirror', err as Error);
                 recordCodeEditorFailure('CODE_EDITOR_INIT_FAILED', performance.now() - startedAt);
                 setCodeEditorUiState('failure');
-                setError(err instanceof Error ? err.message : t('projectDashboard.editor.failed'));
+                setError(err instanceof Error ? err.message : t('workspaceDashboard.editor.failed'));
                 setIsLoading(false);
             }
         };
@@ -185,7 +185,7 @@ export const CodeMirrorEditor = ({ content, language = 'javascript', onChange, r
     if (error) {
         return (
             <div className="h-full w-full flex items-center justify-center text-destructive text-sm">
-                <span>{t('projectDashboard.editor.error', { error })}</span>
+                <span>{t('workspaceDashboard.editor.error', { error })}</span>
             </div>
         );
     }
@@ -193,7 +193,7 @@ export const CodeMirrorEditor = ({ content, language = 'javascript', onChange, r
     if (!isLoading && content.trim().length === 0) {
         return (
             <div className="h-full w-full flex items-center justify-center text-muted-foreground text-sm">
-                <span>{t('projectDashboard.editor.empty')}</span>
+                <span>{t('workspaceDashboard.editor.empty')}</span>
             </div>
         );
     }
@@ -204,7 +204,7 @@ export const CodeMirrorEditor = ({ content, language = 'javascript', onChange, r
                 <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
                     <div className="flex items-center gap-2 text-muted-foreground text-sm">
                         <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                        <span>{t('projectDashboard.editor.loading')}</span>
+                        <span>{t('workspaceDashboard.editor.loading')}</span>
                     </div>
                 </div>
             )}

@@ -29,11 +29,11 @@ interface CategoryConfig {
 }
 
 const CATEGORIES: CategoryConfig[] = [
-    { id: 'web', nameKey: 'projectWizard.categories.web', icon: Globe, color: 'text-primary', bg: 'bg-primary/10' },
-    { id: 'backend', nameKey: 'projectWizard.categories.backend', icon: Database, color: 'text-success', bg: 'bg-success/10' },
-    { id: 'cli', nameKey: 'projectWizard.categories.cli', icon: Terminal, color: 'text-warning', bg: 'bg-warning/10' },
-    { id: 'mobile', nameKey: 'projectWizard.categories.mobile', icon: Smartphone, color: 'text-purple', bg: 'bg-purple/10' },
-    { id: 'other', nameKey: 'projectWizard.categories.other', icon: Code, color: 'text-muted-foreground', bg: 'bg-muted/10' },
+    { id: 'web', nameKey: 'workspaceWizard.categories.web', icon: Globe, color: 'text-primary', bg: 'bg-primary/10' },
+    { id: 'backend', nameKey: 'workspaceWizard.categories.backend', icon: Database, color: 'text-success', bg: 'bg-success/10' },
+    { id: 'cli', nameKey: 'workspaceWizard.categories.cli', icon: Terminal, color: 'text-warning', bg: 'bg-warning/10' },
+    { id: 'mobile', nameKey: 'workspaceWizard.categories.mobile', icon: Smartphone, color: 'text-purple', bg: 'bg-purple/10' },
+    { id: 'other', nameKey: 'workspaceWizard.categories.other', icon: Code, color: 'text-muted-foreground', bg: 'bg-muted/10' },
 ];
 
 export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, onClose, onProjectCreated, language }) => {
@@ -62,11 +62,11 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
 
     const progressSteps = useMemo(() => {
         const allSteps = [
-            { id: 'selection', label: t('projectWizard.title') },
-            { id: 'ssh-connection', label: t('projectWizard.connect') },
-            { id: 'ssh-browser', label: t('projectWizard.selectFolder') },
-            { id: 'details', label: t('projectWizard.projectName') },
-            { id: 'creating', label: t('projectWizard.creating') },
+            { id: 'selection', label: t('workspaceWizard.title') },
+            { id: 'ssh-connection', label: t('workspaceWizard.connect') },
+            { id: 'ssh-browser', label: t('workspaceWizard.selectFolder') },
+            { id: 'details', label: t('workspaceWizard.workspaceName') },
+            { id: 'creating', label: t('workspaceWizard.creating') },
         ];
         if (!isSSHFlow) {
             return allSteps.filter(s => s.id !== 'ssh-connection' && s.id !== 'ssh-browser');
@@ -228,7 +228,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                 <WizardLoadingOverlay
                     isLoading={isLoading}
                     step={step}
-                    creatingLabel={t('projectWizard.creating')}
+                    creatingLabel={t('workspaceWizard.creating')}
                     loadingLabel={t('common.loading')}
                 />
 
@@ -244,9 +244,9 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
                     sshUsername={sshForm.username}
                     onBack={handleBack}
                     onNext={() => { void handleNext(); }}
-                    backLabel={t('projectWizard.back')}
-                    nextLabel={t('projectWizard.next')}
-                    selectFolderLabel={t('projectWizard.selectFolder')}
+                    backLabel={t('workspaceWizard.back')}
+                    nextLabel={t('workspaceWizard.next')}
+                    selectFolderLabel={t('workspaceWizard.selectFolder')}
                     connectLabel={t('common.connect')}
                 />
             </div>

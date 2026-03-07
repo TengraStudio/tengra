@@ -7,7 +7,7 @@ import { ProjectState } from '@shared/types/project-agent';
 
 import { EventResponse, MessageResponse, StatusResponse, TelemetryResponse } from './taskDetailsProcessor';
 
-const getWorkspaceAgentBridge = () => window.electron.projectAgent;
+const getWorkspaceAgentBridge = () => window.electron.workspaceAgent;
 
 export interface IpcInvokeResult {
     success: boolean;

@@ -20,12 +20,12 @@ export const DeleteProjectModal: React.FC<DeleteProjectModalProps> = ({ project,
     return (
         <AnimatePresence>
             {project && (
-                <Modal isOpen={!!project} onClose={onClose} title={t('projects.deleteProject')}>
+                <Modal isOpen={!!project} onClose={onClose} title={t('workspaces.deleteWorkspace')}>
                     <div className="space-y-4 pt-2">
                         <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
                             <p className="text-sm text-destructive">
-                                {t('projects.deleteConfirmation')} <span className="font-bold text-foreground">{project.title}</span>?
-                                <span className="block mt-1 text-xs text-destructive/70 font-medium italic">{t('projects.deleteWarning')}</span>
+                                {t('workspaces.deleteConfirmation')} <span className="font-bold text-foreground">{project.title}</span>?
+                                <span className="block mt-1 text-xs text-destructive/70 font-medium italic">{t('workspaces.deleteWarning')}</span>
                             </p>
                         </div>
                         <DeleteFilesCheckbox checked={deleteFiles} onChange={setDeleteFiles} t={t} />

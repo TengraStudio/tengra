@@ -84,7 +84,7 @@ export const ProjectOverviewTab = ({
                 <div className="bg-card/40 rounded-2xl border border-border p-5 space-y-4">
                     <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                        {t('projectDashboard.techStack')}
+                        {t('workspaceDashboard.techStack')}
                     </h3>
                     <div className="flex flex-wrap gap-2">
                         {analysis.frameworks.map((fw: string) => (
@@ -92,14 +92,14 @@ export const ProjectOverviewTab = ({
                                 {fw}
                             </span>
                         ))}
-                        {analysis.frameworks.length === 0 && <span className="text-xs text-muted-foreground italic">{t('projectDashboard.noFrameworks')}</span>}
+                        {analysis.frameworks.length === 0 && <span className="text-xs text-muted-foreground italic">{t('workspaceDashboard.noFrameworks')}</span>}
                     </div>
                 </div>
 
                 <div className="bg-card/40 rounded-2xl border border-border p-5 space-y-4">
                     <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-success" />
-                        {t('projectDashboard.langDist')}
+                        {t('workspaceDashboard.langDist')}
                     </h3>
                     <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20">
                         {Object.entries(analysis.languages)
@@ -127,7 +127,7 @@ export const ProjectOverviewTab = ({
                 <div className="bg-card/40 rounded-2xl border border-border/50 p-5 space-y-4">
                     <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-yellow" />
-                        {t('projectDashboard.todoList')}
+                        {t('workspaceDashboard.todoList')}
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {analysis.todos.map((todo: string, i: number) => (
@@ -143,12 +143,12 @@ export const ProjectOverviewTab = ({
             <div className="mt-12 pt-8 border-t border-destructive/20">
                 <h3 className="text-lg font-bold text-destructive mb-4 flex items-center gap-2">
                     <Trash2 className="w-5 h-5" />
-                    {t('projects.dangerZone') || 'Danger Zone'}
+                    {t('workspaces.dangerZone') || 'Danger Zone'}
                 </h3>
                 <div className="bg-destructive/5 border border-destructive/10 rounded-xl p-6 flex items-center justify-between">
                     <div>
-                        <h4 className="text-foreground font-medium mb-1">{t('projects.deleteProject') || 'Delete Project'}</h4>
-                        <p className="text-sm text-muted-foreground">{t('projects.deleteWarning') || 'This action cannot be undone.'}</p>
+                        <h4 className="text-foreground font-medium mb-1">{t('workspaces.deleteWorkspace') || 'Delete Project'}</h4>
+                        <p className="text-sm text-muted-foreground">{t('workspaces.deleteWarning') || 'This action cannot be undone.'}</p>
                     </div>
                     <button
                         onClick={() => { void onDelete?.(); }}

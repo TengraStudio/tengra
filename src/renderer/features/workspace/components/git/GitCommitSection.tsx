@@ -23,7 +23,7 @@ export const GitCommitSection: React.FC<CommitSectionProps> = ({ commitMessage, 
                         void handleCommit();
                     }
                 }}
-                placeholder={t('projectDashboard.commitMessage')}
+                placeholder={t('workspaceDashboard.commitMessage')}
                 className="flex-1 bg-muted/30 border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
             />
             <button
@@ -36,7 +36,7 @@ export const GitCommitSection: React.FC<CommitSectionProps> = ({ commitMessage, 
                 )}
             >
                 {isCommitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <GitCommit className="w-4 h-4" />}
-                {t('projectDashboard.commit')}
+                {t('workspaceDashboard.commit')}
             </button>
         </div>
     </div>

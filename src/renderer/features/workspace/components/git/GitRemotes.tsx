@@ -13,7 +13,7 @@ export const GitRemotes: React.FC<RemotesProps> = ({ remotes, t }) => {
         <div className="bg-card/80 backdrop-blur-md rounded-2xl border border-border/50 p-6">
             <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
                 <Globe className="w-4 h-4" />
-                {t('projectDashboard.remotes')}
+                {t('workspaceDashboard.remotes')}
             </h3>
             <div className="space-y-2">
                 {remotes.map((remote: Remote) => (
@@ -23,8 +23,8 @@ export const GitRemotes: React.FC<RemotesProps> = ({ remotes, t }) => {
                             <div className="text-xs text-muted-foreground">{remote.url}</div>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            {remote.fetch && <span>{t('projectDashboard.fetch')}</span>}
-                            {remote.push && <span>{t('projectDashboard.push')}</span>}
+                            {remote.fetch && <span>{t('workspaceDashboard.fetch')}</span>}
+                            {remote.push && <span>{t('workspaceDashboard.push')}</span>}
                         </div>
                     </div>
                 ))}

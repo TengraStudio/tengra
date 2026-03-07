@@ -1,4 +1,4 @@
-﻿import { chatStream } from '@renderer/lib/chat-stream';
+import { chatStream } from '@renderer/lib/chat-stream';
 import { Check, Copy, GitCommit, RefreshCw, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 
@@ -189,7 +189,7 @@ export function GitCommitGenerator({ projectPath, onClose }: GitCommitGeneratorP
                 )}
                 {!projectPath && (
                     <div className="text-center py-8 text-muted-foreground text-sm">
-                        {t('git.selectProject')}
+                        {t('git.selectWorkspace')}
                     </div>
                 )}
                 {suggestion && (

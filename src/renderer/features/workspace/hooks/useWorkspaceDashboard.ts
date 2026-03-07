@@ -84,7 +84,7 @@ export const useProjectDashboard = ({
     const analyzeProject = useCallback(async () => {
         setLoading(true);
         try {
-            const result = await window.electron.project.analyze(project.path, project.id);
+            const result = await window.electron.workspace.analyze(project.path, project.id);
             setAnalysis(result as ProjectAnalysis);
             if (result.stats) { setStats(result.stats); }
         } catch (error) {

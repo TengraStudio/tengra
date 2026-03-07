@@ -69,12 +69,12 @@ export function useEditorMacros({
             return;
         }
         updateTabContent(lastStep);
-        setStatusMessage(t('projectDashboard.editor.macroReplayed'));
+        setStatusMessage(t('workspaceDashboard.editor.macroReplayed'));
     }, [state.steps, setStatusMessage, t, updateTabContent]);
 
     const exportMacro = React.useCallback(async () => {
         await window.electron.clipboard.writeText(JSON.stringify(state.steps));
-        setStatusMessage(t('projectDashboard.editor.macroExported'));
+        setStatusMessage(t('workspaceDashboard.editor.macroExported'));
     }, [state.steps, setStatusMessage, t]);
 
     const importMacro = React.useCallback(async () => {
@@ -87,10 +87,10 @@ export function useEditorMacros({
             if (Array.isArray(parsed)) {
                 const filtered = parsed.filter(step => typeof step === 'string').slice(-MACRO_STEP_LIMIT);
                 dispatch({ type: 'SET_STEPS', steps: filtered });
-                setStatusMessage(t('projectDashboard.editor.macroImported'));
+                setStatusMessage(t('workspaceDashboard.editor.macroImported'));
             }
         } catch {
-            setStatusMessage(t('projectDashboard.editor.macroImportFailed'));
+            setStatusMessage(t('workspaceDashboard.editor.macroImportFailed'));
         }
     }, [setStatusMessage, t]);
 

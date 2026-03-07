@@ -42,38 +42,38 @@ export const SettingsSidebar: React.FC<{
             active={activeSection === 'general'}
             onClick={() => setActiveSection('general')}
             icon={Info}
-            label={t('projects.general')}
+            label={t('workspaces.general')}
         />
         <NavButton
             active={activeSection === 'council'}
             onClick={() => setActiveSection('council')}
             icon={Bot}
-            label={t('projects.councilAI')}
+            label={t('workspaces.councilAI')}
         />
         <NavButton
             active={activeSection === 'workspace'}
             onClick={() => setActiveSection('workspace')}
             icon={FolderTree}
-            label={t('projects.workspace') || 'Workspace'}
+            label={t('workspaces.workspace') || 'Workspace'}
         />
         <div className="h-px bg-white/10 my-2" />
         <NavButton
             active={activeSection === 'build'}
             onClick={() => setActiveSection('build')}
             icon={Code}
-            label={t('projects.build') || 'Build & Test'}
+            label={t('workspaces.build') || 'Build & Test'}
         />
         <NavButton
             active={activeSection === 'dev'}
             onClick={() => setActiveSection('dev')}
             icon={Play}
-            label={t('projects.devServer') || 'Dev Server'}
+            label={t('workspaces.devServer') || 'Dev Server'}
         />
         <NavButton
             active={activeSection === 'advanced'}
             onClick={() => setActiveSection('advanced')}
             icon={Cpu}
-            label={t('projects.advanced') || 'Advanced'}
+            label={t('workspaces.advanced') || 'Advanced'}
         />
     </div>
 );

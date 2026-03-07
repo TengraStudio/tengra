@@ -114,7 +114,7 @@ const ToolCallDetails = ({
                 <div className="space-y-1">
                     <div className="flex items-center gap-1.5 text-xxxs text-muted-foreground uppercase font-bold tracking-wider">
                         <Info className="w-2.5 h-2.5" />
-                        <span>{t('projectAgent.changePreview')}</span>
+                        <span>{t('workspaceAgent.changePreview')}</span>
                     </div>
                     <SimpleDiff oldText={targetContent} newText={replacementContent} />
                 </div>
@@ -132,17 +132,17 @@ const getToolSummary = (
         const targetFile = args.TargetFile as string | undefined;
         const fileName = targetFile
             ? targetFile.split(/[\\/]/).pop()
-            : t('projectAgent.toolSummary.fileFallback');
-        return t('projectAgent.toolSummary.editing', { file: fileName ?? '' });
+            : t('workspaceAgent.toolSummary.fileFallback');
+        return t('workspaceAgent.toolSummary.editing', { file: fileName ?? '' });
     }
     if (name.includes('run_command')) {
         const cmd = (args.CommandLine as string | undefined) ?? '';
-        return t('projectAgent.toolSummary.command', {
+        return t('workspaceAgent.toolSummary.command', {
             command: cmd.slice(0, 50),
             suffix: cmd.length > 50 ? '...' : '',
         });
     }
-    return t('projectAgent.toolSummary.running', { tool: name });
+    return t('workspaceAgent.toolSummary.running', { tool: name });
 };
 
 const getToolStatusClass = (isFileEdit: boolean, isCommand: boolean) => {
@@ -262,7 +262,7 @@ const ReasoningBlock = ({ content }: { content: string }) => {
             >
                 <div className="flex items-center gap-2">
                     <Brain className={cn('w-3 h-3', isExpanded ? 'animate-pulse' : '')} />
-                    <span>{t('projectAgent.reasoningTitle')}</span>
+                    <span>{t('workspaceAgent.reasoningTitle')}</span>
                 </div>
                 {isExpanded ? (
                     <ChevronUp className="w-3 h-3" />
@@ -360,7 +360,7 @@ const LogEntry = React.memo(({ log, expandedTools, toggleTool }: LogEntryProps) 
                                     : 'text-warning'
                         )}
                     >
-                        {t(`projectAgent.roles.${log.role}`)}
+                        {t(`workspaceAgent.roles.${log.role}`)}
                     </span>
                     <LogTimestamp timestamp={log.timestamp} />
                 </div>
@@ -430,17 +430,17 @@ export const LogConsole = ({ logs, className }: LogConsoleProps) => {
             <div className="flex items-center gap-2 px-3 py-2 border-b border-border/20 bg-muted/10 shrink-0 z-10">
                 <Terminal className="w-3.5 h-3.5 text-muted-foreground" />
                 <span className="text-muted-foreground font-medium uppercase tracking-tight text-xxxs">
-                    {t('projectAgent.consoleTitle')}
+                    {t('workspaceAgent.consoleTitle')}
                 </span>
                 <span className="ml-auto text-xxxs text-muted-foreground/30">
-                    {t('projectAgent.eventCount', { count: visibleLogs.length })}
+                    {t('workspaceAgent.eventCount', { count: visibleLogs.length })}
                 </span>
             </div>
 
             <div className="flex-1 relative">
                 {visibleLogs.length === 0 ? (
                     <div className="text-center py-10 text-muted-foreground/40 italic">
-                        {t('projectAgent.waitingLogs')}
+                        {t('workspaceAgent.waitingLogs')}
                     </div>
                 ) : (
                     <Virtuoso

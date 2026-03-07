@@ -18,7 +18,7 @@ export const PaletteSection: React.FC<PaletteProps> = ({
     return (
         <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
             <label className="text-xxs font-bold uppercase text-muted-foreground tracking-widest">
-                {translateKey('projects.suggestedPalette')}
+                {translateKey('workspaces.suggestedPalette')}
             </label>
             <div className="flex items-center gap-2 pt-1">
                 {palette.map((c, i) => (

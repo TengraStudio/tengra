@@ -146,7 +146,7 @@ function useRefactorActions(deps: WorkspaceActionDeps) {
             return;
         }
         dispatch({ type: 'SET_SEMANTIC_PREVIEW', value: activeTab.content.replace(/\bvar\b/g, 'const').slice(0, 1200) });
-        setStatusMessage(t('projectDashboard.editor.semanticPreviewReady'));
+        setStatusMessage(t('workspaceDashboard.editor.semanticPreviewReady'));
     }, [activeTab, dispatch, setStatusMessage, t]);
 
     const applySemanticRefactor = React.useCallback(() => {
@@ -154,7 +154,7 @@ function useRefactorActions(deps: WorkspaceActionDeps) {
             return;
         }
         updateTabContent(activeTab.content.replace(/\bvar\b/g, 'const'));
-        setStatusMessage(t('projectDashboard.editor.semanticApplied'));
+        setStatusMessage(t('workspaceDashboard.editor.semanticApplied'));
     }, [activeTab, setStatusMessage, t, updateTabContent]);
 
     const previewRename = React.useCallback(async () => {
@@ -164,10 +164,10 @@ function useRefactorActions(deps: WorkspaceActionDeps) {
         const preview = await window.electron.code.previewRenameSymbol(projectPath, tools.renameFrom, tools.renameTo, 200);
         const excluded = preview.updatedFiles.filter(file => new RegExp(tools.excludePattern, 'i').test(file));
         if (excluded.length > 0) {
-            dispatch({ type: 'SET_RENAME_IMPACT', value: t('projectDashboard.editor.renameBlocked', { count: excluded.length }) });
+            dispatch({ type: 'SET_RENAME_IMPACT', value: t('workspaceDashboard.editor.renameBlocked', { count: excluded.length }) });
             return;
         }
-        dispatch({ type: 'SET_RENAME_IMPACT', value: t('projectDashboard.editor.renameImpact', { files: preview.totalFiles, occurrences: preview.totalOccurrences }) });
+        dispatch({ type: 'SET_RENAME_IMPACT', value: t('workspaceDashboard.editor.renameImpact', { files: preview.totalFiles, occurrences: preview.totalOccurrences }) });
     }, [dispatch, projectPath, tools.excludePattern, tools.renameFrom, tools.renameTo, t]);
 
     return { previewSemanticRefactor, applySemanticRefactor, previewRename };
@@ -211,7 +211,7 @@ function useTestAndScratchActions({ activeTab, projectPath, dispatch, tools, set
             return;
         }
         await window.electron.files.writeFile(`${projectPath}\\docs\\${tools.scratchName}.md`, tools.scratchNote);
-        setStatusMessage(t('projectDashboard.editor.scratchSavedDoc'));
+        setStatusMessage(t('workspaceDashboard.editor.scratchSavedDoc'));
     }, [projectPath, tools.scratchName, tools.scratchNote, setStatusMessage, t]);
 
     const saveScratchAsTask = React.useCallback(async () => {
@@ -219,7 +219,7 @@ function useTestAndScratchActions({ activeTab, projectPath, dispatch, tools, set
             return;
         }
         await window.electron.files.writeFile(`${projectPath}\\tasks\\${tools.scratchName}.txt`, tools.scratchNote);
-        setStatusMessage(t('projectDashboard.editor.scratchSavedTask'));
+        setStatusMessage(t('workspaceDashboard.editor.scratchSavedTask'));
     }, [projectPath, tools.scratchName, tools.scratchNote, setStatusMessage, t]);
 
     return { runTestCommand, runScratchCommand, saveScratchAsDoc, saveScratchAsTask };
@@ -286,28 +286,28 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
                     onChange={event => snippetHook.setSelectedSnippetId(event.target.value)}
                     className="rounded border border-border/50 bg-background px-1 py-1"
                 >
-                    <option value="">{t('projectDashboard.editor.selectSnippet')}</option>
+                    <option value="">{t('workspaceDashboard.editor.selectSnippet')}</option>
                     {snippetHook.snippets.map(snippet => (
                         <option key={snippet.id} value={snippet.id}>{snippet.name}</option>
                     ))}
                 </select>
                 <button className="secondary-btn text-xs px-2 py-1" onClick={snippetHook.insertSelectedSnippet}>
-                    {t('projectDashboard.editor.insertSnippet')}
+                    {t('workspaceDashboard.editor.insertSnippet')}
                 </button>
                 <button className="secondary-btn text-xs px-2 py-1" onClick={snippetHook.saveCurrentAsSnippet}>
-                    {t('projectDashboard.editor.saveSnippet')}
+                    {t('workspaceDashboard.editor.saveSnippet')}
                 </button>
                 <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void snippetHook.exportSnippets(); }}>
-                    {t('projectDashboard.editor.exportSnippets')}
+                    {t('workspaceDashboard.editor.exportSnippets')}
                 </button>
                 <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void snippetHook.importSnippets(); }}>
-                    {t('projectDashboard.editor.importSnippets')}
+                    {t('workspaceDashboard.editor.importSnippets')}
                 </button>
                 <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void snippetHook.shareSelectedSnippet(); }}>
-                    {t('projectDashboard.editor.shareSnippet')}
+                    {t('workspaceDashboard.editor.shareSnippet')}
                 </button>
                 <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void snippetHook.importShareCode(); }}>
-                    {t('projectDashboard.editor.importShareCode')}
+                    {t('workspaceDashboard.editor.importShareCode')}
                 </button>
                 <label className="flex items-center gap-1">
                     <input
@@ -343,44 +343,44 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
                     AI Perf
                 </button>
                 <button className="secondary-btn text-xs px-2 py-1" onClick={refactorActions.previewSemanticRefactor}>
-                    {t('projectDashboard.editor.semanticPreview')}
+                    {t('workspaceDashboard.editor.semanticPreview')}
                 </button>
                 <button className="secondary-btn text-xs px-2 py-1" onClick={refactorActions.applySemanticRefactor}>
-                    {t('projectDashboard.editor.semanticApply')}
+                    {t('workspaceDashboard.editor.semanticApply')}
                 </button>
                 <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void testScratchActions.runTestCommand('nearest'); }}>
-                    {t('projectDashboard.editor.runNearestTest')}
+                    {t('workspaceDashboard.editor.runNearestTest')}
                 </button>
                 <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void testScratchActions.runTestCommand('file'); }}>
-                    {t('projectDashboard.editor.runFileTest')}
+                    {t('workspaceDashboard.editor.runFileTest')}
                 </button>
                 <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void testScratchActions.runTestCommand('suite'); }}>
-                    {t('projectDashboard.editor.runSuiteTest')}
+                    {t('workspaceDashboard.editor.runSuiteTest')}
                 </button>
                 <label className="flex items-center gap-1">
                     <input type="checkbox" checked={tools.enableInlayHints} onChange={e => dispatch({ type: 'SET_INLAY_HINTS', value: e.target.checked })} />
-                    {t('projectDashboard.editor.inlayHints')}
+                    {t('workspaceDashboard.editor.inlayHints')}
                 </label>
                 <label className="flex items-center gap-1">
                     <input type="checkbox" checked={tools.enableCodeLens} onChange={e => dispatch({ type: 'SET_CODE_LENS', value: e.target.checked })} />
-                    {t('projectDashboard.editor.codeLens')}
+                    {t('workspaceDashboard.editor.codeLens')}
                 </label>
                 <label className="flex items-center gap-1">
                     <input type="checkbox" checked={macros.recording} onChange={e => macros.setRecording(e.target.checked)} />
-                    {t('projectDashboard.editor.recordMacro')}
+                    {t('workspaceDashboard.editor.recordMacro')}
                 </label>
                 <button className="secondary-btn text-xs px-2 py-1" onClick={macros.replayMacro}>
-                    {t('projectDashboard.editor.replayMacro')}
+                    {t('workspaceDashboard.editor.replayMacro')}
                 </button>
                 <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void macros.exportMacro(); }}>
-                    {t('projectDashboard.editor.exportMacro')}
+                    {t('workspaceDashboard.editor.exportMacro')}
                 </button>
                 <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void macros.importMacro(); }}>
-                    {t('projectDashboard.editor.importMacro')}
+                    {t('workspaceDashboard.editor.importMacro')}
                 </button>
                 {performanceMode && (
                     <button className="secondary-btn text-xs px-2 py-1" onClick={() => dispatch({ type: 'SET_PERF_OVERRIDE', value: true })}>
-                        {t('projectDashboard.editor.performanceModeAuto')}
+                        {t('workspaceDashboard.editor.performanceModeAuto')}
                     </button>
                 )}
                 <span className="rounded border border-border/40 px-2 py-1 text-[10px] text-muted-foreground">
@@ -398,13 +398,13 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
                 </pre>
             )}
             <div className="absolute bottom-2 left-2 z-20 w-[520px] max-w-[90%] rounded border border-border/50 bg-background/90 p-2 space-y-2 text-xs">
-                <div className="font-medium">{t('projectDashboard.editor.renameGuard')}</div>
+                <div className="font-medium">{t('workspaceDashboard.editor.renameGuard')}</div>
                 <div className="flex gap-1">
-                    <input value={tools.renameFrom} onChange={e => dispatch({ type: 'SET_RENAME_FROM', value: e.target.value })} placeholder={t('projectDashboard.editor.renameFrom')} className="px-1 py-1 border border-border/40 rounded bg-background" />
-                    <input value={tools.renameTo} onChange={e => dispatch({ type: 'SET_RENAME_TO', value: e.target.value })} placeholder={t('projectDashboard.editor.renameTo')} className="px-1 py-1 border border-border/40 rounded bg-background" />
-                    <input value={tools.excludePattern} onChange={e => dispatch({ type: 'SET_EXCLUDE_PATTERN', value: e.target.value })} placeholder={t('projectDashboard.editor.excludePattern')} className="px-1 py-1 border border-border/40 rounded bg-background" />
+                    <input value={tools.renameFrom} onChange={e => dispatch({ type: 'SET_RENAME_FROM', value: e.target.value })} placeholder={t('workspaceDashboard.editor.renameFrom')} className="px-1 py-1 border border-border/40 rounded bg-background" />
+                    <input value={tools.renameTo} onChange={e => dispatch({ type: 'SET_RENAME_TO', value: e.target.value })} placeholder={t('workspaceDashboard.editor.renameTo')} className="px-1 py-1 border border-border/40 rounded bg-background" />
+                    <input value={tools.excludePattern} onChange={e => dispatch({ type: 'SET_EXCLUDE_PATTERN', value: e.target.value })} placeholder={t('workspaceDashboard.editor.excludePattern')} className="px-1 py-1 border border-border/40 rounded bg-background" />
                     <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void refactorActions.previewRename(); }}>
-                        {t('projectDashboard.editor.previewRename')}
+                        {t('workspaceDashboard.editor.previewRename')}
                     </button>
                 </div>
                 {tools.renameImpact && <div className="text-muted-foreground">{tools.renameImpact}</div>}
@@ -413,21 +413,21 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
                         {tools.diagnosticLines.map((line, index) => <div key={`${line}-${index}`}>{line}</div>)}
                     </div>
                 )}
-                <div className="font-medium">{t('projectDashboard.editor.scratchpad')}</div>
+                <div className="font-medium">{t('workspaceDashboard.editor.scratchpad')}</div>
                 <div className="flex gap-1">
                     <input value={tools.scratchName} onChange={e => dispatch({ type: 'SET_SCRATCH_NAME', value: e.target.value })} className="px-1 py-1 border border-border/40 rounded bg-background" />
                     <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void testScratchActions.runScratchCommand(); }}>
-                        {t('projectDashboard.editor.runScratch')}
+                        {t('workspaceDashboard.editor.runScratch')}
                     </button>
                     <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void testScratchActions.saveScratchAsDoc(); }}>
-                        {t('projectDashboard.editor.saveScratchDoc')}
+                        {t('workspaceDashboard.editor.saveScratchDoc')}
                     </button>
                     <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void testScratchActions.saveScratchAsTask(); }}>
-                        {t('projectDashboard.editor.saveScratchTask')}
+                        {t('workspaceDashboard.editor.saveScratchTask')}
                     </button>
                 </div>
                 <textarea value={tools.scratchNote} onChange={e => dispatch({ type: 'SET_SCRATCH_NOTE', value: e.target.value })} className="w-full min-h-[70px] px-1 py-1 border border-border/40 rounded bg-background" />
-                <div className="text-muted-foreground">{t('projectDashboard.editor.keyboardOnlyHint')}</div>
+                <div className="text-muted-foreground">{t('workspaceDashboard.editor.keyboardOnlyHint')}</div>
             </div>
             {activeTab?.type === 'image' ? (
                 <div className="absolute inset-0 flex items-center justify-center p-8 bg-background overflow-auto z-10">

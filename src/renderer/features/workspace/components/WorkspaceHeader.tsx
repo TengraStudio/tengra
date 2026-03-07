@@ -56,14 +56,14 @@ export const ProjectsHeader: React.FC<ProjectsHeaderProps> = ({
                             className="flex items-center gap-2 px-4 py-2 bg-muted/50 hover:bg-muted text-foreground rounded-lg transition-all text-sm font-medium border border-border/40"
                         >
                             <Archive className="w-4 h-4" />
-                            {t('projects.bulkArchive')}
+                            {t('workspaces.bulkArchive')}
                         </button>
                         <button
                             onClick={onBulkDelete}
                             className="flex items-center gap-2 px-4 py-2 bg-destructive/10 hover:bg-destructive text-destructive rounded-lg transition-all text-sm font-medium border border-destructive/20"
                         >
                             <Trash2 className="w-4 h-4" />
-                            {t('projects.bulkDelete')}
+                            {t('workspaces.bulkDelete')}
                         </button>
                     </div>
                 )}

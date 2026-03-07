@@ -206,7 +206,7 @@ export function useTerminal(cwd?: string, projectId?: string, t?: (key: string) 
                 }], { responseSchema: terminalCreateResponseSchema });
 
                 if (!sessionId) {
-                    const errorMessage = t ? t('projectDashboard.terminalFailedSession') : 'Failed to start session';
+                    const errorMessage = t ? t('workspaceDashboard.terminalFailedSession') : 'Failed to start session';
                     term.write(`\r\n\x1b[31m[ERROR] ${errorMessage}\x1b[0m\r\n`);
                     initializingTerminals.delete(finalTerminalId);
                     return;

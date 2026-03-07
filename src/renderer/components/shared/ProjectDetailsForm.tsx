@@ -49,7 +49,7 @@ export const WorkspaceDetailsFormLegacy: React.FC<WorkspaceDetailsFormProps> = (
                 transition={{ duration: 0.3 }}
             >
                 <label className="text-xs font-bold uppercase text-muted-foreground mb-2 block tracking-wider ml-1">
-                    {t('projectWizard.projectName')}
+                    {t('workspaceWizard.workspaceName')}
                 </label>
                 <div className="relative group">
                     <input
@@ -57,7 +57,7 @@ export const WorkspaceDetailsFormLegacy: React.FC<WorkspaceDetailsFormProps> = (
                         value={formData.name}
                         onChange={e => onFormChange(p => ({ ...p, name: e.target.value }))}
                         className="w-full bg-background border border-border/60 rounded-xl px-5 py-4 focus:outline-none focus:border-primary/60 focus:bg-background transition-all text-lg font-semibold placeholder:text-muted-foreground/40"
-                        placeholder={t('projectWizard.namePlaceholder')}
+                        placeholder={t('workspaceWizard.namePlaceholder')}
                     />
                     <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/8 to-transparent opacity-0 group-focus-within:opacity-100 pointer-events-none transition-opacity duration-300" />
                 </div>
@@ -69,7 +69,7 @@ export const WorkspaceDetailsFormLegacy: React.FC<WorkspaceDetailsFormProps> = (
                 transition={{ duration: 0.3, delay: 0.1 }}
             >
                 <label className="text-xs font-bold uppercase text-muted-foreground mb-3 block tracking-wider ml-1">
-                    {t('projects.categoryLabel')}
+                    {t('workspaces.categoryLabel')}
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                     {categories.map((cat, idx) => (
@@ -129,13 +129,13 @@ export const WorkspaceDetailsFormLegacy: React.FC<WorkspaceDetailsFormProps> = (
                 transition={{ duration: 0.3, delay: 0.2 }}
             >
                 <label className="text-xs font-bold uppercase text-muted-foreground mb-2 block tracking-wider ml-1">
-                    {t('projectWizard.selectFolder')}
+                    {t('workspaceWizard.selectFolder')}
                 </label>
                 <input
                     value={formData.customPath}
                     onChange={e => onFormChange(p => ({ ...p, customPath: e.target.value }))}
                     className="w-full bg-background border border-border/60 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/60 transition-all text-foreground placeholder:text-muted-foreground/40"
-                    placeholder={t('projectWizard.selectRootDesc')}
+                    placeholder={t('workspaceWizard.selectRootDesc')}
                 />
             </motion.div>
 
@@ -145,13 +145,13 @@ export const WorkspaceDetailsFormLegacy: React.FC<WorkspaceDetailsFormProps> = (
                 transition={{ duration: 0.3, delay: 0.25 }}
             >
                 <label className="text-xs font-bold uppercase text-muted-foreground mb-2 block tracking-wider ml-1">
-                    {t('projectWizard.description')}
+                    {t('workspaceWizard.description')}
                 </label>
                 <textarea
                     value={formData.description}
                     onChange={e => onFormChange(p => ({ ...p, description: e.target.value }))}
                     className="w-full h-28 bg-background border border-border/60 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/60 transition-all resize-none text-foreground placeholder:text-muted-foreground/40"
-                    placeholder={t('projectWizard.descPlaceholder')}
+                    placeholder={t('workspaceWizard.descPlaceholder')}
                 />
             </motion.div>
 

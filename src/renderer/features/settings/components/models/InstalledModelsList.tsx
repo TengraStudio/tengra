@@ -26,14 +26,14 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                     type="text"
                     value={modelSearch}
                     onChange={e => setModelSearch(e.target.value)}
-                    placeholder={t('projects.searchModels')}
+                    placeholder={t('workspaces.searchModels')}
                     className="h-10 w-64 max-w-full bg-muted/20 border border-border/50 rounded-xl px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                 />
                 <button
                     onClick={() => setShowHiddenModels(prev => !prev)}
                     className="px-3 py-2 rounded-lg text-xs font-bold bg-accent/20 text-muted-foreground border border-border/50"
                 >
-                    {showHiddenModels ? t('projects.hideHidden') : t('projects.showHidden')}
+                    {showHiddenModels ? t('workspaces.hideHidden') : t('workspaces.showHidden')}
                 </button>
             </div>
             <div className="grid grid-cols-1 gap-3">
@@ -49,20 +49,20 @@ export const InstalledModelsList: React.FC<InstalledModelsListProps> = ({
                         </div>
                         <div className="flex items-center gap-2">
                             {defaultModel === model.id ? (
-                                <span className="text-xs font-bold uppercase text-success">{t('projects.default')}</span>
+                                <span className="text-xs font-bold uppercase text-success">{t('workspaces.default')}</span>
                             ) : (
                                 <button
                                     onClick={() => setDefault(model.id)}
                                     className="px-2.5 py-1 rounded-md text-xs font-bold bg-primary/20 text-primary border border-border/50"
                                 >
-                                    {t('projects.makeDefault')}
+                                    {t('workspaces.makeDefault')}
                                 </button>
                             )}
                             <button
                                 onClick={() => updateHidden(model.id, !hiddenModels.includes(model.id))}
                                 className="px-2.5 py-1 rounded-md text-xs font-bold bg-accent/20 text-muted-foreground border border-border/50"
                             >
-                                {hiddenModels.includes(model.id) ? t('projects.show') : t('projects.hide')}
+                                {hiddenModels.includes(model.id) ? t('workspaces.show') : t('workspaces.hide')}
                             </button>
                         </div>
                     </div>

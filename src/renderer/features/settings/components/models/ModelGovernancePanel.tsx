@@ -82,18 +82,18 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
     return (
         <div className="bg-card rounded-xl border border-border p-5 space-y-5">
             <div>
-                <h3 className="text-sm font-bold text-foreground">{t('projects.modelGovernance')}</h3>
-                <p className="text-xs text-muted-foreground mt-1">{t('projects.modelGovernanceDesc')}</p>
+                <h3 className="text-sm font-bold text-foreground">{t('workspaces.modelGovernance')}</h3>
+                <p className="text-xs text-muted-foreground mt-1">{t('workspaces.modelGovernanceDesc')}</p>
             </div>
 
             {/* Mode toggle */}
             <div className="flex items-center justify-between gap-4 bg-muted/20 rounded-lg p-3 border border-border/50">
                 <div>
-                    <div className="text-xs font-bold text-foreground">{t('projects.governanceMode')}</div>
+                    <div className="text-xs font-bold text-foreground">{t('workspaces.governanceMode')}</div>
                     <div className="text-xs text-muted-foreground mt-0.5">
                         {isAllowlistMode
-                            ? t('projects.blockAllExceptAllowed')
-                            : t('projects.allowAllExceptBlocked')}
+                            ? t('workspaces.blockAllExceptAllowed')
+                            : t('workspaces.allowAllExceptBlocked')}
                     </div>
                 </div>
                 <Switch checked={isAllowlistMode} onCheckedChange={toggleMode} />
@@ -106,7 +106,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                     onChange={e => setSelectedModel(e.target.value)}
                     className="h-9 flex-1 bg-muted/20 border border-border/50 rounded-lg px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                 >
-                    <option value="">{t('projects.selectModelPlaceholder')}</option>
+                    <option value="">{t('workspaces.selectModelPlaceholder')}</option>
                     {availableForSelect.map(id => (
                         <option key={id} value={id}>{id}</option>
                     ))}
@@ -116,14 +116,14 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                     disabled={!selectedModel}
                     className="px-3 py-2 rounded-lg text-xs font-bold bg-green-500/20 text-green-400 border border-green-500/30 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-green-500/30 transition-colors"
                 >
-                    {t('projects.addToAllowlist')}
+                    {t('workspaces.addToAllowlist')}
                 </button>
                 <button
                     onClick={addToBlocklist}
                     disabled={!selectedModel}
                     className="px-3 py-2 rounded-lg text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-red-500/30 transition-colors"
                 >
-                    {t('projects.addToBlocklist')}
+                    {t('workspaces.addToBlocklist')}
                 </button>
             </div>
 
@@ -132,10 +132,10 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                 {/* Allowed models */}
                 <div className="space-y-2">
                     <div className="text-xs font-bold text-green-400 uppercase tracking-wider">
-                        {t('projects.allowedModels')}
+                        {t('workspaces.allowedModels')}
                     </div>
                     {governance.allowedModels.length === 0 ? (
-                        <p className="text-xs text-muted-foreground italic">{t('projects.noAllowedModels')}</p>
+                        <p className="text-xs text-muted-foreground italic">{t('workspaces.noAllowedModels')}</p>
                     ) : (
                         <div className="space-y-1.5">
                             {governance.allowedModels.map(modelId => (
@@ -148,7 +148,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                                         onClick={() => removeFromAllowlist(modelId)}
                                         className="text-xs text-red-400 hover:text-red-300 font-bold shrink-0"
                                     >
-                                        {t('projects.removeFromList')}
+                                        {t('workspaces.removeFromList')}
                                     </button>
                                 </div>
                             ))}
@@ -159,10 +159,10 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                 {/* Blocked models */}
                 <div className="space-y-2">
                     <div className="text-xs font-bold text-red-400 uppercase tracking-wider">
-                        {t('projects.blockedModels')}
+                        {t('workspaces.blockedModels')}
                     </div>
                     {governance.blockedModels.length === 0 ? (
-                        <p className="text-xs text-muted-foreground italic">{t('projects.noBlockedModels')}</p>
+                        <p className="text-xs text-muted-foreground italic">{t('workspaces.noBlockedModels')}</p>
                     ) : (
                         <div className="space-y-1.5">
                             {governance.blockedModels.map(modelId => (
@@ -175,7 +175,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                                         onClick={() => removeFromBlocklist(modelId)}
                                         className="text-xs text-red-400 hover:text-red-300 font-bold shrink-0"
                                     >
-                                        {t('projects.removeFromList')}
+                                        {t('workspaces.removeFromList')}
                                     </button>
                                 </div>
                             ))}

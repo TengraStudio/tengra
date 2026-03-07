@@ -81,7 +81,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     if (results.length === 0) {
         return (
             <div className="text-center text-muted-foreground mt-10">
-                {t('projectDashboard.noResults')}
+                {t('workspaceDashboard.noResults')}
             </div>
         );
     }

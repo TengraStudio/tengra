@@ -4,7 +4,7 @@ import { AttachedFile, ModelOption } from '../components/agent/TaskInputForm';
 
 import { useFilePreviewUrl } from './useFilePreviewUrl';
 
-const getWorkspaceAgentBridge = () => window.electron.projectAgent;
+const getWorkspaceAgentBridge = () => window.electron.workspaceAgent;
 
 interface UseAgentHandlersProps {
     selectedTaskId: string | null;

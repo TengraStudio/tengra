@@ -30,7 +30,7 @@ export const DeleteFilesCheckbox: React.FC<DeleteFilesCheckboxProps> = ({ checke
         </div>
         <div className="flex flex-col">
             <span className="text-sm font-medium text-foreground group-hover:text-destructive transition-colors">
-                {t('projects.deleteProjectFiles')}
+                {t('workspaces.deleteWorkspaceFiles')}
             </span>
             {checked && (
                 <span className="text-xxs text-destructive font-bold uppercase animate-pulse">

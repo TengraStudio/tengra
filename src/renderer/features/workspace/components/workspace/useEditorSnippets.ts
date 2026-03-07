@@ -68,19 +68,19 @@ function useSnippetTransfer(
 
     const exportSnippets = React.useCallback(async () => {
         await window.electron.clipboard.writeText(JSON.stringify(snippets, null, 2));
-        setStatusMessage(t('projectDashboard.editor.snippetExported'));
+        setStatusMessage(t('workspaceDashboard.editor.snippetExported'));
     }, [snippets, setStatusMessage, t]);
 
     const importSnippets = React.useCallback(async () => {
         const clipboard = await window.electron.clipboard.readText();
         if (!clipboard.success || !clipboard.text) {
-            setStatusMessage(t('projectDashboard.editor.snippetImportFailed'));
+            setStatusMessage(t('workspaceDashboard.editor.snippetImportFailed'));
             return;
         }
         try {
             const imported = JSON.parse(clipboard.text) as WorkspaceSnippet[];
             if (!Array.isArray(imported)) {
-                setStatusMessage(t('projectDashboard.editor.snippetImportFailed'));
+                setStatusMessage(t('workspaceDashboard.editor.snippetImportFailed'));
                 return;
             }
             const normalized = imported
@@ -94,9 +94,9 @@ function useSnippetTransfer(
                     createdAt: Date.now(),
                 }));
             persistSnippets([...normalized, ...allSnippets]);
-            setStatusMessage(t('projectDashboard.editor.snippetImported'));
+            setStatusMessage(t('workspaceDashboard.editor.snippetImported'));
         } catch {
-            setStatusMessage(t('projectDashboard.editor.snippetImportFailed'));
+            setStatusMessage(t('workspaceDashboard.editor.snippetImportFailed'));
         }
     }, [allSnippets, persistSnippets, setStatusMessage, t]);
 
@@ -106,22 +106,22 @@ function useSnippetTransfer(
             return;
         }
         await window.electron.clipboard.writeText(createWorkspaceShareCode(snippet));
-        setStatusMessage(t('projectDashboard.editor.snippetShareCodeCopied'));
+        setStatusMessage(t('workspaceDashboard.editor.snippetShareCodeCopied'));
     }, [selectedSnippetId, snippets, setStatusMessage, t]);
 
     const importShareCode = React.useCallback(async () => {
         const clipboard = await window.electron.clipboard.readText();
         if (!clipboard.success || !clipboard.text) {
-            setStatusMessage(t('projectDashboard.editor.snippetImportFailed'));
+            setStatusMessage(t('workspaceDashboard.editor.snippetImportFailed'));
             return;
         }
         const parsed = parseWorkspaceShareCode(clipboard.text);
         if (!parsed) {
-            setStatusMessage(t('projectDashboard.editor.snippetImportFailed'));
+            setStatusMessage(t('workspaceDashboard.editor.snippetImportFailed'));
             return;
         }
         persistSnippets([parsed, ...allSnippets]);
-        setStatusMessage(t('projectDashboard.editor.snippetImported'));
+        setStatusMessage(t('workspaceDashboard.editor.snippetImported'));
     }, [allSnippets, persistSnippets, setStatusMessage, t]);
 
     return { exportSnippets, importSnippets, shareSelectedSnippet, importShareCode };
@@ -155,7 +155,7 @@ export function useEditorSnippets({
             createdAt: Date.now(),
         };
         persistSnippets([snippet, ...allSnippets]);
-        setStatusMessage(t('projectDashboard.editor.snippetSaved'));
+        setStatusMessage(t('workspaceDashboard.editor.snippetSaved'));
     }, [activeLanguage, activeTab, allSnippets, persistSnippets, projectKey, setStatusMessage, t]);
 
     const insertSelectedSnippet = React.useCallback(() => {
@@ -167,7 +167,7 @@ export function useEditorSnippets({
             return;
         }
         updateTabContent(`${activeTab.content}\n${snippet.content}`);
-        setStatusMessage(t('projectDashboard.editor.snippetInserted'));
+        setStatusMessage(t('workspaceDashboard.editor.snippetInserted'));
     }, [activeTab, selectedSnippetId, snippets, setStatusMessage, t, updateTabContent]);
 
     return {

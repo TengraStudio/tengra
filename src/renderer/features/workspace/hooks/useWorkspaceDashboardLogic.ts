@@ -71,7 +71,7 @@ export function useProjectDashboardLogic({ project, activeTab: externalTab, onTa
         try {
             if (project.path) {
                 setProjectRoot(project.path);
-                const data = await window.electron.project.analyze(project.path, project.id);
+                const data = await window.electron.workspace.analyze(project.path, project.id);
                 setAnalysis(data);
                 setStats(data.stats);
             }

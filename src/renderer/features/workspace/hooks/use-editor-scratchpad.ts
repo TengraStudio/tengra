@@ -58,7 +58,7 @@ export function useEditorScratchpad({ projectPath, activeTabName, setSnippetStat
         }
         const path = `${projectPath}\\docs\\${scratchName}.md`;
         await window.electron.files.writeFile(path, scratchNote);
-        setSnippetStatus(t('projectDashboard.editor.scratchSavedDoc'));
+        setSnippetStatus(t('workspaceDashboard.editor.scratchSavedDoc'));
     }, [projectPath, scratchName, scratchNote, t, setSnippetStatus]);
 
     const saveScratchAsTask = React.useCallback(async () => {
@@ -67,7 +67,7 @@ export function useEditorScratchpad({ projectPath, activeTabName, setSnippetStat
         }
         const path = `${projectPath}\\tasks\\${scratchName}.txt`;
         await window.electron.files.writeFile(path, scratchNote);
-        setSnippetStatus(t('projectDashboard.editor.scratchSavedTask'));
+        setSnippetStatus(t('workspaceDashboard.editor.scratchSavedTask'));
     }, [projectPath, scratchName, scratchNote, t, setSnippetStatus]);
 
     return {

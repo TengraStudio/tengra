@@ -60,7 +60,7 @@ export const ProjectDashboardHeader: React.FC<ProjectDashboardHeaderProps> = ({
                         className="absolute inset-0 bg-primary/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2 text-primary-foreground"
                     >
                         <Camera className="w-6 h-6" />
-                        <span className="text-xxs font-bold uppercase tracking-tighter">{t('projects.changeLogo') || 'Change Logo'}</span>
+                        <span className="text-xxs font-bold uppercase tracking-tighter">{t('workspaces.changeLogo') || 'Change Logo'}</span>
                     </button>
                 </div>
             </div>
@@ -105,7 +105,7 @@ export const ProjectDashboardHeader: React.FC<ProjectDashboardHeaderProps> = ({
                                 onChange={e => setEditDesc(e.target.value)}
                                 onBlur={() => { void handleSaveDesc(); }}
                                 className="w-full bg-muted/40 border border-primary/30 rounded-xl p-3 text-sm text-foreground outline-none min-h-[80px] resize-none"
-                                placeholder={(t('projects.description') || 'Description') + '...'}
+                                placeholder={(t('workspaces.description') || 'Description') + '...'}
                             />
                         </div>
                     ) : (
@@ -113,7 +113,7 @@ export const ProjectDashboardHeader: React.FC<ProjectDashboardHeaderProps> = ({
                             onClick={() => { setIsEditingDesc(true); }}
                             className="text-sm text-muted-foreground leading-relaxed cursor-pointer hover:text-foreground transition-colors max-w-2xl flex items-start gap-2"
                         >
-                            {project.description || t('projects.noDescription')}
+                            {project.description || t('workspaces.noDescription')}
                             <Pencil className="w-3 h-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </p>
                     )}

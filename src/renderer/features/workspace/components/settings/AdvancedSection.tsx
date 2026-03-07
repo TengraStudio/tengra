@@ -5,16 +5,16 @@ import { SettingsSectionProps } from './types';
 export const AdvancedSection: React.FC<SettingsSectionProps> = ({ formData, setFormData, t }) => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div>
-            <h3 className="text-lg font-semibold text-foreground mb-1">{t('projects.advanced') || 'Advanced Settings'}</h3>
-            <p className="text-sm text-muted-foreground">{t('projects.advancedDesc') || 'Fine-tune your project configuration.'}</p>
+            <h3 className="text-lg font-semibold text-foreground mb-1">{t('workspaces.advanced') || 'Advanced Settings'}</h3>
+            <p className="text-sm text-muted-foreground">{t('workspaces.advancedDesc') || 'Fine-tune your project configuration.'}</p>
         </div>
 
         <div className="space-y-4">
             <div className="p-4 bg-muted/20 border border-border/50 rounded-xl space-y-3">
                 <div className="flex items-center justify-between">
                     <div>
-                        <div className="text-sm font-medium text-foreground">{t('projects.fileWatching') || 'File Watching'}</div>
-                        <div className="text-xs text-muted-foreground">{t('projects.fileWatchingDesc') || 'Watch for file changes and update UI automatically.'}</div>
+                        <div className="text-sm font-medium text-foreground">{t('workspaces.fileWatching') || 'File Watching'}</div>
+                        <div className="text-xs text-muted-foreground">{t('workspaces.fileWatchingDesc') || 'Watch for file changes and update UI automatically.'}</div>
                     </div>
                     <input
                         type="checkbox"
@@ -28,8 +28,8 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({ formData, setF
             <div className="p-4 bg-muted/20 border border-border/50 rounded-xl space-y-3">
                 <div className="flex items-center justify-between">
                     <div>
-                        <div className="text-sm font-medium text-foreground">{t('projects.indexing') || 'Code Indexing'}</div>
-                        <div className="text-xs text-muted-foreground">{t('projects.indexingDesc') || 'Maintain a vector index of your codebase for AI features.'}</div>
+                        <div className="text-sm font-medium text-foreground">{t('workspaces.indexing') || 'Code Indexing'}</div>
+                        <div className="text-xs text-muted-foreground">{t('workspaces.indexingDesc') || 'Maintain a vector index of your codebase for AI features.'}</div>
                     </div>
                     <input
                         type="checkbox"
@@ -43,8 +43,8 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({ formData, setF
             <div className="p-4 bg-muted/20 border border-border/50 rounded-xl space-y-3">
                 <div className="flex items-center justify-between">
                     <div>
-                        <div className="text-sm font-medium text-foreground">{t('projects.autoSave') || 'Auto-Save'}</div>
-                        <div className="text-xs text-muted-foreground">{t('projects.autoSaveDesc') || 'Automatically save changes to files.'}</div>
+                        <div className="text-sm font-medium text-foreground">{t('workspaces.autoSave') || 'Auto-Save'}</div>
+                        <div className="text-xs text-muted-foreground">{t('workspaces.autoSaveDesc') || 'Automatically save changes to files.'}</div>
                     </div>
                     <input
                         type="checkbox"

@@ -31,7 +31,7 @@ export const GitCommitHistory: React.FC<CommitHistoryProps> = ({
     <>
         <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-foreground">
-                {t('projectDashboard.recentCommits')}
+                {t('workspaceDashboard.recentCommits')}
             </h3>
             <div className="flex items-center gap-2">
                 {selectedCommit && (
@@ -41,7 +41,7 @@ export const GitCommitHistory: React.FC<CommitHistoryProps> = ({
                         }}
                         className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted/50 transition-colors"
                     >
-                        {t('projectDashboard.clearSelection')}
+                        {t('workspaceDashboard.clearSelection')}
                     </button>
                 )}
                 <button
@@ -64,7 +64,7 @@ export const GitCommitHistory: React.FC<CommitHistoryProps> = ({
 
         {gitData.recentCommits.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground text-sm">
-                {t('projectDashboard.noCommits')}
+                {t('workspaceDashboard.noCommits')}
             </div>
         ) : (
             <div

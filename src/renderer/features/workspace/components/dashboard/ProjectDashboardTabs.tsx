@@ -104,7 +104,7 @@ export const ProjectDashboardTabsContent: React.FC<ProjectDashboardTabsProps> = 
                 <div className="flex gap-2 p-1 bg-muted/10 rounded-xl border border-border/50">
                     <input
                         type="text"
-                        placeholder={t('projectDashboard.searchInProject')}
+                        placeholder={t('workspaceDashboard.searchInWorkspace')}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') { void handleSearch(); } }}

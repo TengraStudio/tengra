@@ -28,31 +28,31 @@ export const ProjectStatsCards: React.FC<ProjectStatsCardsProps> = ({ stats, typ
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-premium hover:shadow-md">
                 <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">
-                    {t('projectDashboard.fileCount')}
+                    {t('workspaceDashboard.fileCount')}
                 </div>
                 <div className="text-2xl font-black text-foreground">{stats?.fileCount ?? 0}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-premium hover:shadow-md">
                 <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">
-                    {t('projectDashboard.loc')}
+                    {t('workspaceDashboard.loc')}
                 </div>
                 <div className="text-2xl font-black text-foreground">~{stats?.loc ?? 0}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-premium hover:shadow-md">
                 <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">
-                    {t('projectDashboard.totalSize')}
+                    {t('workspaceDashboard.totalSize')}
                 </div>
                 <div className="text-2xl font-black text-foreground">{formattedSize}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-premium hover:shadow-md">
                 <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">
-                    {t('projectDashboard.modules')}
+                    {t('workspaceDashboard.modules')}
                 </div>
                 <div className="text-2xl font-black text-foreground">{moduleCount}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-premium hover:shadow-md">
                 <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">
-                    {t('projectDashboard.type')}
+                    {t('workspaceDashboard.type')}
                 </div>
                 <div className="text-2xl font-black text-primary capitalize">{type}</div>
             </div>

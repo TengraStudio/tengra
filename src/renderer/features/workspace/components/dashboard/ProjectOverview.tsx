@@ -58,7 +58,7 @@ export function ProjectOverviewHeader({
                         className="absolute inset-0 bg-primary/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2 text-primary-foreground"
                     >
                         <Camera className="w-6 h-6" />
-                        <span className="text-xxs font-bold uppercase tracking-tighter">{t('projects.changeLogo') || 'Change Logo'}</span>
+                        <span className="text-xxs font-bold uppercase tracking-tighter">{t('workspaces.changeLogo') || 'Change Logo'}</span>
                     </button>
                 </div>
             </div>
@@ -103,7 +103,7 @@ export function ProjectOverviewHeader({
                                 onChange={e => onSetDesc(e.target.value)}
                                 onBlur={() => onSaveDesc()}
                                 className="w-full bg-muted/40 border border-primary/30 rounded-xl p-3 text-sm text-foreground outline-none min-h-[80px] resize-none"
-                                placeholder={(t('projects.description') || 'Description') + '...'}
+                                placeholder={(t('workspaces.description') || 'Description') + '...'}
                             />
                         </div>
                     ) : (
@@ -151,23 +151,23 @@ export function ProjectStatsCards({ stats, analysis, t, formatBytes }: ProjectSt
     return (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.fileCount')}</div>
+                <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('workspaceDashboard.fileCount')}</div>
                 <div className="text-2xl font-black text-foreground">{stats?.fileCount ?? 0}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.loc')}</div>
+                <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('workspaceDashboard.loc')}</div>
                 <div className="text-2xl font-black text-foreground">~{stats?.loc ?? 0}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.totalSize')}</div>
+                <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('workspaceDashboard.totalSize')}</div>
                 <div className="text-2xl font-black text-foreground">{stats ? formatBytes(stats.totalSize) : '0 B'}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-[10px) font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.modules')}</div>
+                <div className="text-[10px) font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('workspaceDashboard.modules')}</div>
                 <div className="text-2xl font-black text-foreground">{analysis.monorepo?.packages.length ?? Object.keys(analysis.dependencies).length}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.type')}</div>
+                <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('workspaceDashboard.type')}</div>
                 <div className="text-2xl font-black text-primary capitalize">{analysis.type}</div>
             </div>
         </div>

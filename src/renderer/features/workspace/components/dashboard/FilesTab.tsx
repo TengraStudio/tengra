@@ -91,16 +91,16 @@ export const FilesTab: React.FC<FilesTabProps> = ({
                                 <FileCode className="w-8 h-8 text-primary/40" />
                             </div>
                             <h3 className="text-lg font-semibold text-foreground mb-2">
-                                {t('projectDashboard.filesTab.noFileSelected')}
+                                {t('workspaceDashboard.filesTab.noFileSelected')}
                             </h3>
                             <p className="text-sm text-muted-foreground text-center max-w-sm mb-8 leading-relaxed">
-                                {t('projectDashboard.filesTab.noFileDesc')}
+                                {t('workspaceDashboard.filesTab.noFileDesc')}
                             </p>
 
                             <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
                                 <div className="p-3 rounded-lg bg-background/50 border border-border/50 flex flex-col items-center gap-2">
                                     <span className="text-xxs uppercase tracking-wider font-bold text-muted-foreground/50">
-                                        {t('projectDashboard.filesTab.shortcuts')}
+                                        {t('workspaceDashboard.filesTab.shortcuts')}
                                     </span>
                                     <div className="flex items-center gap-2">
                                         <kbd className="px-1.5 py-0.5 rounded bg-muted text-xxs border border-border">
@@ -112,12 +112,12 @@ export const FilesTab: React.FC<FilesTabProps> = ({
                                         </kbd>
                                     </div>
                                     <span className="text-xxs text-muted-foreground">
-                                        {t('projectDashboard.filesTab.quickSearch')}
+                                        {t('workspaceDashboard.filesTab.quickSearch')}
                                     </span>
                                 </div>
                                 <div className="p-3 rounded-lg bg-background/50 border border-border/50 flex flex-col items-center gap-2">
                                     <span className="text-xxs uppercase tracking-wider font-bold text-muted-foreground/50">
-                                        {t('projectDashboard.filesTab.navigation')}
+                                        {t('workspaceDashboard.filesTab.navigation')}
                                     </span>
                                     <div className="flex items-center gap-2">
                                         <kbd className="px-1.5 py-0.5 rounded bg-muted text-xxs border border-border">
@@ -129,7 +129,7 @@ export const FilesTab: React.FC<FilesTabProps> = ({
                                         </kbd>
                                     </div>
                                     <span className="text-xxs text-muted-foreground">
-                                        {t('projectDashboard.filesTab.toggleExplorer')}
+                                        {t('workspaceDashboard.filesTab.toggleExplorer')}
                                     </span>
                                 </div>
                             </div>

@@ -69,10 +69,10 @@ import onboardingSection from '@renderer/i18n/ar/onboarding';
 import panelLayoutSection from '@renderer/i18n/ar/panelLayout';
 import personasSection from '@renderer/i18n/ar/personas';
 import placeholderSection from '@renderer/i18n/ar/placeholder';
-import projectAgentSection from '@renderer/i18n/ar/projectAgent';
-import projectDashboardSection from '@renderer/i18n/ar/projectDashboard';
-import projectsSection from '@renderer/i18n/ar/projects';
-import projectWizardSection from '@renderer/i18n/ar/projectWizard';
+import workspaceAgentSection from '@renderer/i18n/ar/workspaceAgent';
+import workspaceDashboardSection from '@renderer/i18n/ar/workspaceDashboard';
+import workspacesSection from '@renderer/i18n/ar/workspaces';
+import workspaceWizardSection from '@renderer/i18n/ar/workspaceWizard';
 import promptOptimizerSection from '@renderer/i18n/ar/promptOptimizer';
 import providerLabelsSection from '@renderer/i18n/ar/providerLabels';
 import quickActionSection from '@renderer/i18n/ar/quickAction';
@@ -174,10 +174,10 @@ export const ar = {
     "panelLayout": panelLayoutSection,
     "personas": personasSection,
     "placeholder": placeholderSection,
-    "projectAgent": projectAgentSection,
-    "projectDashboard": projectDashboardSection,
-    "projectWizard": projectWizardSection,
-    "projects": projectsSection,
+    "workspaceAgent": workspaceAgentSection,
+    "workspaceDashboard": workspaceDashboardSection,
+    "workspaceWizard": workspaceWizardSection,
+    "workspaces": workspacesSection,
     "promptOptimizer": promptOptimizerSection,
     "providerLabels": providerLabelsSection,
     "quickAction": quickActionSection,

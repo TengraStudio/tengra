@@ -317,7 +317,7 @@ const useProjectAgentState = (
         // Fetch initial state after canvas is loaded
         const fetchInitialState = async () => {
             try {
-                const projectState = await window.electron.projectAgent.getStatus();
+                const projectState = await window.electron.workspaceAgent.getStatus();
                 appLogger.info(
                     'ProjectAgentView',
                     `Fetched initial state - status: ${projectState.status}, plan: ${projectState.plan?.length ?? 0}, nodeId: ${projectState.nodeId ?? 'none'}`
@@ -451,7 +451,7 @@ const useProjectAgentState = (
 
         appLogger.info('ProjectAgentView', 'Setting up project:update event listener');
 
-        const unsubscribe = window.electron.projectAgent.onUpdate((projectState: ProjectState) => {
+        const unsubscribe = window.electron.workspaceAgent.onUpdate((projectState: ProjectState) => {
             appLogger.info(
                 'ProjectAgentView',
                 `Received project:update - status: ${projectState.status}, plan steps: ${projectState.plan?.length ?? 0}, nodeId: ${projectState.nodeId ?? 'none'}`
@@ -667,9 +667,9 @@ const InternalAutomationWorkflowView: React.FC = () => {
         const loadCanvas = async () => {
             try {
                 const [savedNodes, savedEdges, projectState] = await Promise.all([
-                    window.electron.projectAgent.getCanvasNodes(),
-                    window.electron.projectAgent.getCanvasEdges(),
-                    window.electron.projectAgent.getStatus(),
+                    window.electron.workspaceAgent.getCanvasNodes(),
+                    window.electron.workspaceAgent.getCanvasEdges(),
+                    window.electron.workspaceAgent.getStatus(),
                 ]);
                 setLatestProjectState(projectState);
                 pushStateHistory(projectState.status);
@@ -722,7 +722,7 @@ const InternalAutomationWorkflowView: React.FC = () => {
                         nodesToSet.push(newNode);
 
                         // Save this new node to the database
-                        void window.electron.projectAgent.saveCanvasNodes([
+                        void window.electron.workspaceAgent.saveCanvasNodes([
                             {
                                 id: newNode.id,
                                 type: 'task',
@@ -784,7 +784,7 @@ const InternalAutomationWorkflowView: React.FC = () => {
                         position: n.position,
                         data: n.data as Record<string, unknown>,
                     }));
-                    await window.electron.projectAgent.saveCanvasNodes(nodesToSave);
+                    await window.electron.workspaceAgent.saveCanvasNodes(nodesToSave);
 
                     // Save edges
                     const edgesToSave = edges.map(e => ({
@@ -794,7 +794,7 @@ const InternalAutomationWorkflowView: React.FC = () => {
                         sourceHandle: e.sourceHandle ?? undefined,
                         targetHandle: e.targetHandle ?? undefined,
                     }));
-                    await window.electron.projectAgent.saveCanvasEdges(edgesToSave);
+                    await window.electron.workspaceAgent.saveCanvasEdges(edgesToSave);
 
                     appLogger.debug(
                         'ProjectAgentView',
@@ -822,7 +822,7 @@ const InternalAutomationWorkflowView: React.FC = () => {
     useProjectAgentState(setNodes, isLoaded, updateNodeData, getNodes, syncPlanNodesForTask);
 
     useEffect(() => {
-        const unsubscribe = window.electron.projectAgent.onUpdate((projectState: ProjectState) => {
+        const unsubscribe = window.electron.workspaceAgent.onUpdate((projectState: ProjectState) => {
             setLatestProjectState(projectState);
             pushStateHistory(projectState.status);
         });

@@ -37,7 +37,7 @@ export const WizardSSHConnectStep: React.FC<WizardSSHConnectStepProps> = ({
                             value={sshForm.host}
                             onChange={e => setSshForm(p => ({ ...p, host: e.target.value }))}
                             className="w-full bg-muted/10 border border-border/50 rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors text-foreground"
-                            placeholder={t('projectWizard.placeholder.example')}
+                            placeholder={t('workspaceWizard.placeholder.example')}
                         />
                     </div>
                     <div>

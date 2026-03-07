@@ -61,11 +61,11 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
     };
 
     const sectionDescriptors: Array<{ key: keyof typeof sectionStates; label: string }> = [
-        { key: 'status', label: t('projectDashboard.gitSectionStatus') },
-        { key: 'actions', label: t('projectDashboard.gitSectionActions') },
-        { key: 'remotes', label: t('projectDashboard.gitSectionRemotes') },
-        { key: 'commits', label: t('projectDashboard.gitSectionCommits') },
-        { key: 'changes', label: t('projectDashboard.gitSectionChanges') },
+        { key: 'status', label: t('workspaceDashboard.gitSectionStatus') },
+        { key: 'actions', label: t('workspaceDashboard.gitSectionActions') },
+        { key: 'remotes', label: t('workspaceDashboard.gitSectionRemotes') },
+        { key: 'commits', label: t('workspaceDashboard.gitSectionCommits') },
+        { key: 'changes', label: t('workspaceDashboard.gitSectionChanges') },
     ];
 
     return (
@@ -73,7 +73,7 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
             {!gitData.isRepository ? (
                 <div className="flex-1 flex items-center justify-center">
                     <div className="text-center space-y-2">
-                        <div className="text-muted-foreground text-sm">{t('projectDashboard.notAGitRepo')}</div>
+                        <div className="text-muted-foreground text-sm">{t('workspaceDashboard.notAGitRepo')}</div>
                     </div>
                 </div>
             ) : (
@@ -86,7 +86,7 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
                     {gitData.loading && (
                         <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 border border-border/50 rounded-xl px-3 py-2">
                             <RefreshCw className="w-3.5 h-3.5 animate-spin text-primary" />
-                            {t('projectDashboard.loadingGit')}
+                            {t('workspaceDashboard.loadingGit')}
                         </div>
                     )}
 
@@ -100,17 +100,17 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
                                         {state.loading ? (
                                             <>
                                                 <RefreshCw className="w-3 h-3 animate-spin text-warning" />
-                                                <span className="text-warning">{t('projectDashboard.gitSectionLoading')}</span>
+                                                <span className="text-warning">{t('workspaceDashboard.gitSectionLoading')}</span>
                                             </>
                                         ) : state.error ? (
                                             <>
                                                 <AlertTriangle className="w-3 h-3 text-destructive" />
-                                                <span className="text-destructive">{t('projectDashboard.gitSectionError')}</span>
+                                                <span className="text-destructive">{t('workspaceDashboard.gitSectionError')}</span>
                                             </>
                                         ) : (
                                             <>
                                                 <CheckCircle2 className="w-3 h-3 text-success" />
-                                                <span className="text-success">{t('projectDashboard.gitSectionReady')}</span>
+                                                <span className="text-success">{t('workspaceDashboard.gitSectionReady')}</span>
                                             </>
                                         )}
                                     </div>

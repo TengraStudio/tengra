@@ -56,7 +56,7 @@ export const ProjectDashboard = ({
         return (
             <div className="flex items-center justify-center p-12 text-muted-foreground">
                 <RefreshCw className="w-6 h-6 animate-spin mr-2" />
-                {t('projectDashboard.analyzing')}
+                {t('workspaceDashboard.analyzing')}
             </div>
         );
     }
@@ -64,7 +64,7 @@ export const ProjectDashboard = ({
     if (!analysis) {
         return (
             <div className="p-8 text-center text-muted-foreground">
-                {t('projectDashboard.noProject')}
+                {t('workspaceDashboard.noWorkspace')}
             </div>
         );
     }

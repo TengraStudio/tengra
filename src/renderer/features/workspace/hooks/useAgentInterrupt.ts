@@ -9,7 +9,7 @@ interface UseAgentInterruptProps {
     selectedTaskId: string | null;
 }
 
-const getWorkspaceAgentBridge = () => window.electron.projectAgent;
+const getWorkspaceAgentBridge = () => window.electron.workspaceAgent;
 
 /**
  * Hook for managing agent interrupt modal state and model selection during interrupts

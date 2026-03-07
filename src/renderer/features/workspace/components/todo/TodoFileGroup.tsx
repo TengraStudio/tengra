@@ -42,7 +42,7 @@ export const TodoFileGroup = ({
                 <span className="truncate">{file.relativePath}</span>
                 <div className="h-px bg-muted/20 flex-1 group-hover:bg-muted/40 transition-colors" />
                 <span className={cn("px-1.5 py-0.5 rounded text-xxs", pendingCount > 0 ? "bg-primary/20 text-primary" : "bg-muted/30 text-muted-foreground")}>
-                    {pendingCount} {t('projectDashboard.pending')}
+                    {pendingCount} {t('workspaceDashboard.pending')}
                 </span>
             </button>
 

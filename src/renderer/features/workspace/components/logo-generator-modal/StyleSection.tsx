@@ -18,7 +18,7 @@ export const StyleSection: React.FC<StyleSectionProps> = ({
     return (
         <div className="space-y-2">
             <label className="text-xxs font-bold uppercase text-muted-foreground tracking-widest">
-                {translateKey('projects.style')}
+                {translateKey('workspaces.style')}
             </label>
             <div className="grid grid-cols-3 gap-2">
                 {STYLE_OPTIONS.map(s => (

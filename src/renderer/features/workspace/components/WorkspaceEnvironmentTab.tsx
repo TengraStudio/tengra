@@ -1,4 +1,4 @@
-﻿import { Eye, EyeOff, Plus, Save, Settings, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, Plus, Save, Settings, Trash2 } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 import { z } from 'zod';
 
@@ -163,10 +163,10 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
                 <div className="flex flex-col gap-2">
                     <h2 className="text-2xl font-black tracking-tight text-foreground flex items-center gap-3">
                         <Settings className="w-8 h-8 text-primary" />
-                        {t('projectDashboard.environment')}
+                        {t('workspaceDashboard.environment')}
                     </h2>
                     <p className="text-muted-foreground text-sm max-w-xl">
-                        {t('projectDashboard.envDescription')}
+                        {t('workspaceDashboard.envDescription')}
                     </p>
                 </div>
                 <div className="flex gap-2">
@@ -175,7 +175,7 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
                         className="flex items-center gap-2 px-4 py-2 bg-muted/20 hover:bg-muted/30 border border-border/50 rounded-lg text-sm font-medium transition-colors"
                     >
                         <Plus className="w-4 h-4" />
-                        {t('projectDashboard.envAddVar')}
+                        {t('workspaceDashboard.envAddVar')}
                     </button>
                     <button
                         onClick={() => void handleSave()}
@@ -186,7 +186,7 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
                         )}
                     >
                         <Save className="w-4 h-4" />
-                        {saving ? t('common.loading') : t('projectDashboard.envSave')}
+                        {saving ? t('common.loading') : t('workspaceDashboard.envSave')}
                     </button>
                 </div>
             </div>
@@ -195,9 +195,9 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
             <div className="flex-1 min-h-0 bg-card/40 backdrop-blur-sm rounded-3xl border border-border/50 overflow-hidden flex flex-col">
                 <div className="p-6 border-b border-border/50 bg-muted/20">
                     <div className="grid grid-cols-12 gap-4 text-xxs font-bold uppercase tracking-widest text-muted-foreground/60">
-                        <div className="col-span-4">{t('projectDashboard.envKey')}</div>
-                        <div className="col-span-6">{t('projectDashboard.envValue')}</div>
-                        <div className="col-span-2 text-right">{t('projectDashboard.envActions')}</div>
+                        <div className="col-span-4">{t('workspaceDashboard.envKey')}</div>
+                        <div className="col-span-6">{t('workspaceDashboard.envValue')}</div>
+                        <div className="col-span-2 text-right">{t('workspaceDashboard.envActions')}</div>
                     </div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-2 space-y-2 scrollbar-thin scrollbar-thumb-muted-foreground/20">
@@ -213,7 +213,7 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
                                         value={envVar.key}
                                         onChange={(e) => updateVar(idx, 'key', e.target.value)}
                                         className="w-full bg-transparent border-b border-border/50 focus:border-primary/50 outline-none text-sm font-mono text-foreground py-1"
-                                        placeholder={t('projectDashboard.envNamePlaceholder')}
+                                        placeholder={t('workspaceDashboard.envNamePlaceholder')}
                                     />
                                 </div>
                                 <div className="col-span-6 flex items-center gap-2">
@@ -227,7 +227,7 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
                                     <button
                                         onClick={() => toggleVisibility(idx)}
                                         className="p-1.5 hover:bg-muted/30 rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                                        title={envVar.visible ? t('projectDashboard.envHideValue') : t('projectDashboard.envShowValue')}
+                                        title={envVar.visible ? t('workspaceDashboard.envHideValue') : t('workspaceDashboard.envShowValue')}
                                     >
                                         {envVar.visible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                     </button>
@@ -248,7 +248,7 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
                                 <Settings className="w-8 h-8 text-primary" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-foreground">{t('projectDashboard.envNoVars')}</h3>
+                                <h3 className="text-lg font-bold text-foreground">{t('workspaceDashboard.envNoVars')}</h3>
                             </div>
                         </div>
                     )}

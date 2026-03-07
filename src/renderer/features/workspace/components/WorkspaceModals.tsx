@@ -85,11 +85,11 @@ const EditProjectModal: React.FC<{
     return (
         <AnimatePresence>
             {project && (
-                <Modal isOpen={!!project} onClose={onClose} title={t('projects.editProject')}>
+                <Modal isOpen={!!project} onClose={onClose} title={t('workspaces.editWorkspace')}>
                     <div className="space-y-4 pt-2">
                         <div className="space-y-2">
                             <label className="text-xs font-medium text-muted-foreground uppercase">
-                                {t('projects.nameLabel')}
+                                {t('workspaces.nameLabel')}
                             </label>
                             <input
                                 value={form.title}
@@ -101,7 +101,7 @@ const EditProjectModal: React.FC<{
                                         ? 'border-border/50 focus:border-primary/50'
                                         : 'border-destructive/50 focus:border-destructive'
                                 )}
-                                placeholder={t('projects.namePlaceholder')}
+                                placeholder={t('workspaces.namePlaceholder')}
                             />
                             {!hasValidTitle && (
                                 <p className="text-xxs text-destructive">{t('common.invalidInput')}</p>
@@ -109,7 +109,7 @@ const EditProjectModal: React.FC<{
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-medium text-muted-foreground uppercase">
-                                {t('projects.description')}
+                                {t('workspaces.description')}
                             </label>
                             <textarea
                                 value={form.description}
@@ -123,7 +123,7 @@ const EditProjectModal: React.FC<{
                                         ? 'border-border/50 focus:border-primary/50'
                                         : 'border-destructive/50 focus:border-destructive'
                                 )}
-                                placeholder={t('projects.projectDescPlaceholder')}
+                                placeholder={t('workspaces.workspaceDescPlaceholder')}
                             />
                             {!hasValidDescription && (
                                 <p className="text-xxs text-destructive">{t('common.invalidInput')}</p>
@@ -169,14 +169,14 @@ const DeleteProjectModal: React.FC<{
     return (
         <AnimatePresence>
             {project && (
-                <Modal isOpen={!!project} onClose={onClose} title={t('projects.deleteProject')}>
+                <Modal isOpen={!!project} onClose={onClose} title={t('workspaces.deleteWorkspace')}>
                     <div className="space-y-4 pt-2">
                         <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
                             <p className="text-sm text-destructive">
-                                {t('projects.deleteConfirmation')}{' '}
+                                {t('workspaces.deleteConfirmation')}{' '}
                                 <span className="font-bold text-foreground">{project.title}</span>?
                                 <span className="block mt-1 text-xs text-destructive/70 font-medium italic">
-                                    {t('projects.deleteWarning')}
+                                    {t('workspaces.deleteWarning')}
                                 </span>
                             </p>
                         </div>
@@ -216,19 +216,19 @@ const ArchiveProjectModal: React.FC<{
 }> = ({ project, onClose, onSubmit, t }) => (
     <AnimatePresence>
         {project && (
-            <Modal isOpen={!!project} onClose={onClose} title={t('projects.archiveProject')}>
+            <Modal isOpen={!!project} onClose={onClose} title={t('workspaces.archiveWorkspace')}>
                 <div className="space-y-4 pt-2">
                     <div className="p-3 rounded-lg bg-success/10 border border-success/20">
                         <p className="text-sm text-success/90 leading-relaxed font-light">
                             {project.status === 'archived'
-                                ? t('projects.restoreConfirmation') || 'Restore'
-                                : t('projects.archiveConfirmation')}{' '}
+                                ? t('workspaces.restoreConfirmation') || 'Restore'
+                                : t('workspaces.archiveConfirmation')}{' '}
                             <span className="font-semibold text-foreground">{project.title}</span>?
                             <span className="block mt-1 text-xs text-success font-normal italic opacity-80">
                                 {project.status === 'archived'
-                                    ? t('projects.restoreWarning') ||
+                                    ? t('workspaces.restoreWarning') ||
                                     'This will move the project back to active.'
-                                    : t('projects.archiveWarning')}
+                                    : t('workspaces.archiveWarning')}
                             </span>
                         </p>
                     </div>
@@ -247,7 +247,7 @@ const ArchiveProjectModal: React.FC<{
                         >
                             {project.status === 'archived'
                                 ? t('common.unarchive') || 'Unarchive'
-                                : t('projects.archiveProject')}
+                                : t('workspaces.archiveWorkspace')}
                         </button>
                     </div>
                 </div>
@@ -266,22 +266,22 @@ const BulkArchiveModal: React.FC<{
 }> = ({ isOpen, count, mode, onClose, onSubmit, t }) => (
     <AnimatePresence>
         {isOpen && (
-            <Modal isOpen={isOpen} onClose={onClose} title={t('projects.bulkArchive')}>
+            <Modal isOpen={isOpen} onClose={onClose} title={t('workspaces.bulkArchive')}>
                 <div className="space-y-4 pt-2">
                     <div className="p-3 rounded-lg bg-success/10 border border-success/20">
                         <p className="text-sm text-success/90 leading-relaxed font-light">
                             {mode === 'restore'
-                                ? t('projects.restoreConfirmation') || 'Restore'
-                                : t('projects.archiveConfirmation')}{' '}
+                                ? t('workspaces.restoreConfirmation') || 'Restore'
+                                : t('workspaces.archiveConfirmation')}{' '}
                             <span className="font-semibold text-foreground">
                                 {count} {t('sidebar.projects').toLowerCase()}
                             </span>
                             ?
                             <span className="block mt-1 text-xs text-success font-normal italic opacity-80">
                                 {mode === 'restore'
-                                    ? t('projects.restoreWarning') ||
+                                    ? t('workspaces.restoreWarning') ||
                                     'This will move selected projects back to active.'
-                                    : t('projects.archiveWarning')}
+                                    : t('workspaces.archiveWarning')}
                             </span>
                         </p>
                     </div>
@@ -299,8 +299,8 @@ const BulkArchiveModal: React.FC<{
                             className="px-6 py-2 rounded-lg text-sm font-medium bg-success text-foreground hover:bg-success active:scale-95 transition-all shadow-lg shadow-emerald-900/20"
                         >
                             {mode === 'restore'
-                                ? t('projects.bulkRestore') || 'Restore Selected'
-                                : t('projects.bulkArchive')}
+                                ? t('workspaces.bulkRestore') || 'Restore Selected'
+                                : t('workspaces.bulkArchive')}
                         </button>
                     </div>
                 </div>
@@ -326,17 +326,17 @@ const BulkDeleteModal: React.FC<{
     return (
         <AnimatePresence>
             {isOpen && (
-                <Modal isOpen={isOpen} onClose={onClose} title={t('projects.bulkDelete')}>
+                <Modal isOpen={isOpen} onClose={onClose} title={t('workspaces.bulkDelete')}>
                     <div className="space-y-4 pt-2">
                         <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
                             <p className="text-sm text-destructive/90 leading-relaxed font-light">
-                                {t('projects.deleteConfirmation')}{' '}
+                                {t('workspaces.deleteConfirmation')}{' '}
                                 <span className="font-semibold text-foreground">
                                     {count} {t('sidebar.projects').toLowerCase()}
                                 </span>
                                 ?
                                 <span className="block mt-1 text-xs text-destructive/70 font-normal italic opacity-80">
-                                    {t('projects.deleteWarning')}
+                                    {t('workspaces.deleteWarning')}
                                 </span>
                             </p>
                         </div>
@@ -358,7 +358,7 @@ const BulkDeleteModal: React.FC<{
                                 }}
                                 className="px-6 py-2 rounded-lg text-sm font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-95 transition-all shadow-lg shadow-destructive/20"
                             >
-                                {t('projects.bulkDelete')}
+                                {t('workspaces.bulkDelete')}
                             </button>
                         </div>
                     </div>
@@ -396,7 +396,7 @@ const DeleteFilesCheckbox: React.FC<{
         </div>
         <div className="flex flex-col">
             <span className="text-sm font-medium text-foreground group-hover:text-destructive transition-colors">
-                {t('projects.deleteProjectFiles')}
+                {t('workspaces.deleteWorkspaceFiles')}
             </span>
             {checked && (
                 <span className="text-xxs text-destructive font-bold uppercase animate-pulse">

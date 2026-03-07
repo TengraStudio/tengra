@@ -141,7 +141,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         const wsCmds: CommandItem[] = workspaces.slice(0, 5).map(p => ({
             id: `workspace-${p.id}`,
             label: p.title,
-            description: t('commandPalette.goToProject'),
+            description: t('commandPalette.goToWorkspace'),
             icon: <Folder className="w-4 h-4" />,
             action: () => {
                 onSelectWorkspace(p.id);
@@ -297,7 +297,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
     const categoryLabels: Record<string, string> = {
         chat: t('commandPalette.chats'),
-        workspaces: t('commandPalette.projects'),
+        workspaces: t('commandPalette.workspaces'),
         navigation: t('commandPalette.navigation'),
         actions: t('commandPalette.actions'),
         model: t('commandPalette.models'),

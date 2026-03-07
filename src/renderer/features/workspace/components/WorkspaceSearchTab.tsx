@@ -28,7 +28,7 @@ export const ProjectSearchTab = ({
             <div className="flex gap-2 bg-card p-4 rounded-xl border border-border">
                 <input
                     type="text"
-                    placeholder={t('projectDashboard.searchInProject')}
+                    placeholder={t('workspaceDashboard.searchInWorkspace')}
                     className="flex-1 bg-muted/20 border border-border/50 rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/50"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -44,7 +44,7 @@ export const ProjectSearchTab = ({
             </div>
             <div className="flex-1 bg-card rounded-xl border border-border overflow-hidden flex flex-col p-2">
                 <div className="px-2 py-1 text-xxs text-muted-foreground">
-                    {searchResults.length} {t('projectDashboard.results') || 'results'}
+                    {searchResults.length} {t('workspaceDashboard.results') || 'results'}
                 </div>
                 <SearchResults
                     results={searchResults}

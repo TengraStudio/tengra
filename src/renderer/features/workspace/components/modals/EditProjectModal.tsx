@@ -57,11 +57,11 @@ export const EditProjectModal: React.FC<EditProjectModalProps> = ({
     return (
         <AnimatePresence>
             {project && (
-                <Modal isOpen={!!project} onClose={onClose} title={t('projects.editProject')}>
+                <Modal isOpen={!!project} onClose={onClose} title={t('workspaces.editWorkspace')}>
                     <div className="space-y-4 pt-2">
                         <div className="space-y-2">
                             <label className="text-xs font-medium text-muted-foreground uppercase">
-                                {t('projects.nameLabel')}
+                                {t('workspaces.nameLabel')}
                             </label>
                             <input
                                 value={form.title}
@@ -73,7 +73,7 @@ export const EditProjectModal: React.FC<EditProjectModalProps> = ({
                                         ? 'border-border/50 focus:border-primary/50'
                                         : 'border-destructive/50 focus:border-destructive'
                                 )}
-                                placeholder={t('projects.namePlaceholder')}
+                                placeholder={t('workspaces.namePlaceholder')}
                             />
                             {!hasValidTitle && (
                                 <p className="text-xxs text-destructive">{t('common.invalidInput')}</p>
@@ -81,7 +81,7 @@ export const EditProjectModal: React.FC<EditProjectModalProps> = ({
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-medium text-muted-foreground uppercase">
-                                {t('projects.description')}
+                                {t('workspaces.description')}
                             </label>
                             <textarea
                                 value={form.description}
@@ -93,7 +93,7 @@ export const EditProjectModal: React.FC<EditProjectModalProps> = ({
                                         ? 'border-border/50 focus:border-primary/50'
                                         : 'border-destructive/50 focus:border-destructive'
                                 )}
-                                placeholder={t('projects.projectDescPlaceholder')}
+                                placeholder={t('workspaces.workspaceDescPlaceholder')}
                             />
                             {!hasValidDescription && (
                                 <p className="text-xxs text-destructive">{t('common.invalidInput')}</p>

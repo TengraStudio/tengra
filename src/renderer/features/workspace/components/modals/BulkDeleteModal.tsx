@@ -20,12 +20,12 @@ export const BulkDeleteModal: React.FC<BulkDeleteModalProps> = ({ isOpen, count,
     return (
         <AnimatePresence>
             {isOpen && (
-                <Modal isOpen={isOpen} onClose={onClose} title={t('projects.bulkDelete')}>
+                <Modal isOpen={isOpen} onClose={onClose} title={t('workspaces.bulkDelete')}>
                     <div className="space-y-4 pt-2">
                         <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
                             <p className="text-sm text-destructive/90 leading-relaxed font-light">
-                                {t('projects.deleteConfirmation')} <span className="font-semibold text-foreground">{count} {t('sidebar.projects').toLowerCase()}</span>?
-                                <span className="block mt-1 text-xs text-destructive/70 font-normal italic opacity-80">{t('projects.deleteWarning')}</span>
+                                {t('workspaces.deleteConfirmation')} <span className="font-semibold text-foreground">{count} {t('sidebar.projects').toLowerCase()}</span>?
+                                <span className="block mt-1 text-xs text-destructive/70 font-normal italic opacity-80">{t('workspaces.deleteWarning')}</span>
                             </p>
                         </div>
                         <DeleteFilesCheckbox checked={deleteFiles} onChange={setDeleteFiles} t={t} />
@@ -37,7 +37,7 @@ export const BulkDeleteModal: React.FC<BulkDeleteModalProps> = ({ isOpen, count,
                                 onClick={() => { void onSubmit(deleteFiles); }}
                                 className="px-6 py-2 rounded-lg text-sm font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-95 transition-all shadow-lg shadow-destructive/20"
                             >
-                                {t('projects.bulkDelete')}
+                                {t('workspaces.bulkDelete')}
                             </button>
                         </div>
                     </div>

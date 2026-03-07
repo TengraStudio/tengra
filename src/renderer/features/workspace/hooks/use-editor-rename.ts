@@ -23,10 +23,10 @@ export function useEditorRename({ projectPath }: UseEditorRenameParams) {
         const preview = await window.electron.code.previewRenameSymbol(projectPath, renameFrom, renameTo, 200);
         const excluded = preview.updatedFiles.filter(file => new RegExp(excludePattern, 'i').test(file));
         if (excluded.length > 0) {
-            setRenameImpact(t('projectDashboard.editor.renameBlocked', { count: excluded.length }));
+            setRenameImpact(t('workspaceDashboard.editor.renameBlocked', { count: excluded.length }));
             return;
         }
-        setRenameImpact(t('projectDashboard.editor.renameImpact', { files: preview.totalFiles, occurrences: preview.totalOccurrences }));
+        setRenameImpact(t('workspaceDashboard.editor.renameImpact', { files: preview.totalFiles, occurrences: preview.totalOccurrences }));
     }, [excludePattern, projectPath, renameFrom, renameTo, t]);
 
     return {

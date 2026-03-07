@@ -19,7 +19,7 @@ export function useLogoGenerator(
     const handleAnalyze = async () => {
         setIsAnalyzing(true);
         try {
-            const result = await window.electron.project.analyzeIdentity(project.path);
+            const result = await window.electron.workspace.analyzeIdentity(project.path);
             setSuggestions(result.suggestedPrompts);
             setPalette(result.colors);
             if (result.suggestedPrompts.length > 0 && !prompt) {
@@ -45,7 +45,7 @@ export function useLogoGenerator(
             const colorContext =
                 palette.length > 0 ? ` Primary colors: ${palette.slice(0, 3).join(', ')}.` : '';
             const finalPrompt = `${prompt}${colorContext}`;
-            const logoPaths = await window.electron.project.generateLogo(project.path, {
+            const logoPaths = await window.electron.workspace.generateLogo(project.path, {
                 prompt: finalPrompt,
                 style,
                 model,
@@ -65,7 +65,7 @@ export function useLogoGenerator(
         }
         setIsAnalyzing(true);
         try {
-            const improved = await window.electron.project.improveLogoPrompt(prompt);
+            const improved = await window.electron.workspace.improveLogoPrompt(prompt);
             setPrompt(improved);
         } catch (error) {
             appLogger.error('LogoGenerator', 'Improvement failed', error as Error);
@@ -77,7 +77,7 @@ export function useLogoGenerator(
     const handleApply = async (logoPath: string) => {
         setIsGenerating(true);
         try {
-            const finalPath = await window.electron.project.applyLogo(project.path, logoPath);
+            const finalPath = await window.electron.workspace.applyLogo(project.path, logoPath);
             onApply(finalPath);
             onClose();
         } catch (error) {
@@ -89,7 +89,7 @@ export function useLogoGenerator(
 
     const handleManualUpload = async () => {
         try {
-            const uploadedPath = await window.electron.project.uploadLogo(project.path);
+            const uploadedPath = await window.electron.workspace.uploadLogo(project.path);
             if (uploadedPath) {
                 onApply(uploadedPath);
                 onClose();

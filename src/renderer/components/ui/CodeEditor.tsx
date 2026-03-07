@@ -419,7 +419,7 @@ const useInlineCompletions = (
         }
         const monaco = monacoRef.current;
         const trackTelemetry = (event: InlineSuggestionTelemetry) => {
-            void window.electron.project.trackInlineSuggestionTelemetry(event).catch(() => {});
+            void window.electron.workspace.trackInlineSuggestionTelemetry(event).catch(() => {});
         };
         const commandDisposable = monaco.editor.registerCommand(
             INLINE_SUGGESTION_ACCEPT_COMMAND,
@@ -521,7 +521,7 @@ const useInlineCompletions = (
                 });
 
                 try {
-                    const response = await window.electron.project.getInlineSuggestion(request);
+                    const response = await window.electron.workspace.getInlineSuggestion(request);
                     cacheRef.current.set(cacheKey, {
                         response,
                         createdAt: Date.now(),

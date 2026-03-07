@@ -18,7 +18,7 @@ export const SuggestionsSection: React.FC<SuggestionsProps> = ({
     return (
         <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
             <label className="text-xxs font-bold uppercase text-muted-foreground tracking-widest">
-                {translateKey('projects.ideas')}
+                {translateKey('workspaces.ideas')}
             </label>
             <div className="flex flex-col gap-2">
                 {suggestions.map((s, i) => (

@@ -8,7 +8,7 @@ import { setWorkspaceShellState, useUiLayoutStore } from '@/store/ui-layout.stor
 import { WorkspaceEntry } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
-const getWorkspaceAgentBridge = () => window.electron.projectAgent;
+const getWorkspaceAgentBridge = () => window.electron.workspaceAgent;
 
 export function useProjectState() {
     const [selectedEntries, setSelectedEntries] = useState<WorkspaceEntry[]>([]);

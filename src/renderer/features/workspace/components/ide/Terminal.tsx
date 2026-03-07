@@ -277,7 +277,7 @@ const useTerminalInstance = (
                 });
 
                 if (!sessionId) {
-                    const errorMessage = t('projectDashboard.terminalFailedSession');
+                    const errorMessage = t('workspaceDashboard.terminalFailedSession');
                     term.write(`\r\n\x1b[31m[ERROR] ${errorMessage}\x1b[0m\r\n`);
                     initializingTerminals.delete(finalTerminalId);
                     throw new Error(errorMessage);
@@ -293,7 +293,7 @@ const useTerminalInstance = (
 
                 const cleanupExit = window.electron.terminal.onExit(({ id, code }) => {
                     if (pidRef.current && id === pidRef.current) {
-                        term.write(`\r\n\x1b[33m${t('projectDashboard.terminalExited')} ${code}\x1b[0m\r\n`);
+                        term.write(`\r\n\x1b[33m${t('workspaceDashboard.terminalExited')} ${code}\x1b[0m\r\n`);
                     }
                 });
 
@@ -308,7 +308,7 @@ const useTerminalInstance = (
                     }
                 });
             } catch (error) {
-                term.write(`\r\n\x1b[31m${t('projectDashboard.terminalFailedStart')}\x1b[0m\r\n`);
+                term.write(`\r\n\x1b[31m${t('workspaceDashboard.terminalFailedStart')}\x1b[0m\r\n`);
                 appLogger.error('TerminalComponent', 'Failed to start terminal', error as Error);
             }
         };

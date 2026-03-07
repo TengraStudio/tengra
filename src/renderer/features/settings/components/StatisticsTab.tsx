@@ -79,7 +79,7 @@ const CodingTimeCard: React.FC<CodingTimeCardProps> = memo(({ timeStats, loading
             .sort(([, a], [, b]) => b - a)
             .map(([workspaceId, time]) => ({
                 id: workspaceId,
-                title: workspaces.find(p => p.id === workspaceId)?.title ?? t('statistics.unknownProject'),
+                title: workspaces.find(p => p.id === workspaceId)?.title ?? t('statistics.unknownWorkspace'),
                 time
             }));
     }, [timeStats, workspaces, t]);
@@ -98,8 +98,8 @@ const CodingTimeCard: React.FC<CodingTimeCardProps> = memo(({ timeStats, loading
         <div className="premium-glass p-8 space-y-8">
             <div className="flex flex-row items-center justify-between">
                 <div>
-                    <div className="text-base font-black text-foreground uppercase tracking-tight">{t('statistics.codingTimeByProject')}</div>
-                    <div className="text-xs font-medium text-muted-foreground/70">{t('statistics.timeSpentCodingInEachProject')}</div>
+                    <div className="text-base font-black text-foreground uppercase tracking-tight">{t('statistics.codingTimeByWorkspace')}</div>
+                    <div className="text-xs font-medium text-muted-foreground/70">{t('statistics.timeSpentCodingInEachWorkspace')}</div>
                 </div>
                 <PeriodSelector period={statsPeriod} onChange={setStatsPeriod} t={t} />
             </div>

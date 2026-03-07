@@ -193,7 +193,7 @@ function toRisk(findings: string[]): 'low' | 'medium' | 'high' {
 
 async function deriveOpeningMode(projectPath: string): Promise<'fast' | 'full'> {
     try {
-        const analysis = await window.electron.project.analyzeDirectory(projectPath);
+        const analysis = await window.electron.workspace.analyzeDirectory(projectPath);
         return analysis.stats.fileCount > 3000 ? 'fast' : 'full';
     } catch {
         return 'fast';

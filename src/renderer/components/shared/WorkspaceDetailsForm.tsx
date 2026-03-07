@@ -68,7 +68,7 @@ export const WorkspaceDetailsForm: React.FC<WorkspaceDetailsFormProps> = ({
                 transition={{ duration: 0.3, delay: 0.1 }}
             >
                 <label className="text-xs font-bold uppercase text-muted-foreground mb-3 block tracking-wider ml-1">
-                    {t('projects.categoryLabel')}
+                    {t('workspaces.categoryLabel')}
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                     {categories.map((cat, idx) => (

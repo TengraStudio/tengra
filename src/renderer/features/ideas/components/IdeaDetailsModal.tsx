@@ -75,7 +75,7 @@ const SideNav: React.FC<SideNavProps> = ({ activeTab, setActiveTab, ideaStatus }
     const { t } = useTranslation();
     const statusText = ideaStatus === 'pending'
         ? t('ideas.details.readyForPilot')
-        : t('ideas.details.projectCreated');
+        : t('ideas.details.workspaceCreated');
 
     return (
         <div className="w-64 border-r border-border/50 p-4 flex flex-col gap-1 bg-muted/10">
@@ -134,7 +134,7 @@ const IdeaHeader: React.FC<IdeaHeaderProps> = ({ idea, selectedName, setSelected
                         value={selectedName}
                         onChange={(e) => setSelectedName(e.target.value)}
                         className="bg-transparent border-none p-0 text-2xl font-black text-foreground placeholder:text-muted-foreground/20 outline-none w-full max-w-md"
-                        placeholder={t('ideas.details.projectNamePlaceholder')}
+                        placeholder={t('ideas.details.workspaceNamePlaceholder')}
                     />
                     {selectedName !== idea.title && (
                         <button onClick={() => setSelectedName(idea.title)} className="text-xxs text-primary hover:text-primary/80 uppercase tracking-widest font-bold">

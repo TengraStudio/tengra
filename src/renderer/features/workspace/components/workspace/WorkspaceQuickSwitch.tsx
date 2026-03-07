@@ -97,7 +97,7 @@ export const WorkspaceQuickSwitch: React.FC<WorkspaceQuickSwitchProps> = ({
                     ))}
                     {items.length === 0 && (
                         <div className="px-3 py-6 text-center text-xs text-muted-foreground">
-                            {t('projectDashboard.noResults') || 'No results found'}
+                            {t('workspaceDashboard.noResults') || 'No results found'}
                         </div>
                     )}
                 </div>
