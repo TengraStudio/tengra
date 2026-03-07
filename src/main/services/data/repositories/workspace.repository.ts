@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import { appLogger } from '@main/logging/logger';
 import { JsonObject } from '@shared/types/common';
 import { DatabaseAdapter, SqlValue } from '@shared/types/database';
-import { Workspace } from '@shared/types/project';
+import { Workspace } from '@shared/types/workspace';
 import { v4 as uuidv4 } from 'uuid';
 
 import { BaseRepository } from './base.repository';
@@ -180,14 +180,14 @@ export class WorkspaceRepository extends BaseRepository {
 
     async deleteWorkspace(id: string, deleteFiles: boolean = false): Promise<void> {
         if (deleteFiles) {
-            const project = await this.getWorkspace(id);
-            if (project?.path && fs.existsSync(project.path)) {
+            const ws = await this.getWorkspace(id);
+            if (ws?.path && fs.existsSync(ws.path)) {
                 try {
-                    await fs.promises.rm(project.path, { recursive: true, force: true });
+                    await fs.promises.rm(ws.path, { recursive: true, force: true });
                 } catch (error) {
                     appLogger.error(
                         'WorkspaceRepository',
-                        `Failed to delete project files at ${project.path}`,
+                        `Failed to delete workspace files at ${ws.path}`,
                         error as Error
                     );
                 }

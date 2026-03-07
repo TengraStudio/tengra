@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 
 import { cn } from '@/lib/utils';
 
-import { TERMINAL_PROJECT_ISSUES_TAB_ID } from '../constants/terminal-panel-constants';
+import { TERMINAL_WORKSPACE_ISSUES_TAB_ID } from '../constants/terminal-panel-constants';
 import { DEFAULT_SPLIT_PRESETS } from '../utils/split-config';
 
 import type { TerminalPanelCoreResult } from './useTerminalPanelCore';
@@ -74,7 +74,7 @@ export function useTerminalPanelBehavior(core: TerminalPanelCoreResult) {
     // --- Tab select ---
     const handleTabSelect = useCallback(
         (tabId: string) => {
-            if (tabId === TERMINAL_PROJECT_ISSUES_TAB_ID) {
+            if (tabId === TERMINAL_WORKSPACE_ISSUES_TAB_ID) {
                 setActiveTabId(tabId);
                 setSplitView(null);
                 setIsGalleryView(false);

@@ -62,7 +62,7 @@ export type AppSettings = {
         responseFormat?: 'auto' | 'structured' | 'steps';
         customInstructions?: string;
         contextMessageLimit?: number;
-        projectsBasePath?: string;
+        workspacesBasePath?: string;
         agentMode?: 'adaptive' | 'speed' | 'accuracy';
         agentSoftDeadlineMs?: number;
         agentHardDeadlineMs?: number;
@@ -266,8 +266,8 @@ export type AppSettings = {
         copilotRefreshInterval?: number; // ms, default 15 minutes
         preferredMemoryModels?: string[];
         agentProviderRotation?: {
-            defaultProjectId?: string;
-            byProject?: Record<string, {
+            defaultWorkspaceId?: string;
+            byWorkspace?: Record<string, {
                 chain: {
                     cloud: string[];
                     local: string[];

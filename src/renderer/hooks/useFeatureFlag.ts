@@ -1,7 +1,7 @@
 /**
  * React hook for consuming feature flags in the renderer process.
  * Provides loading, empty, and failure-state handling (BACKLOG-0447).
- * Uses useSyncExternalStore to follow project store conventions.
+ * Uses useSyncExternalStore to follow workspace store conventions.
  *
  * @example
  * ```tsx

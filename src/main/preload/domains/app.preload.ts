@@ -16,8 +16,8 @@ export function createAppBridge(ipc: IpcRenderer): AppBridge {
 
         onQuotaInterrupt: callback => {
             const listener = (_event: IpcRendererEvent, payload: Record<string, unknown>) => callback(payload);
-            ipc.on('project:quota-interrupt', listener);
-            return () => ipc.removeListener('project:quota-interrupt', listener);
+            ipc.on('agent:quota-interrupt', listener);
+            return () => ipc.removeListener('agent:quota-interrupt', listener);
         },
     };
 }

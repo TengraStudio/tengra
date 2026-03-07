@@ -4,12 +4,12 @@
  * Stores ONLY user-related information:
  * - User preferences (language, style, formatting)
  * - User skills and expertise
- * - User goals and projects
+ * - User goals and workspaces
  * - User context (timezone, tools, workflow)
  * 
  * Design Philosophy:
  * - NO conversation history (that's episodic memory)
- * - NO project-specific details (that's project context)
+ * - NO workspace-specific details (that's workspace context)
  * - NO temporary facts (only persistent user traits)
  * - YES user identity, preferences, skills, goals
  */
@@ -216,7 +216,7 @@ export class BrainService {
 
 Message: "${sanitizedMessage}"
 
-Return ONLY facts about the USER (not about projects, not about conversations).
+Return ONLY facts about the USER (not about workspaces, not about conversations).
 Preserve the original language of the user's message when writing "content".
 Format as JSON array:
 [
@@ -318,10 +318,10 @@ If NO user facts found, return: []`;
             // Additional explicit patterns can be added per language as needed.
         ];
 
-        // Must NOT contain project/conversation/temporal indicators
+        // Must NOT contain workspace/conversation/temporal indicators
         const excludePatterns = [
-            // English - Project/feature/code references
-            /\bthe project\b/, /\bthis project\b/, /\bthe feature\b/, /\bthis feature\b/,
+            // English - Workspace/feature/code references
+            /\bthe workspace\b/, /\bthis workspace\b/, /\bthe feature\b/, /\bthis feature\b/,
             /\bwe discussed\b/, /\bconversation about\b/, /\bin the chat\b/, /\bthe file\b/,
             /\bthe code\b/, /\berror in\b/, /\bbug in\b/, /\bissue with\b/, /\bproblem with\b/,
             /\bthe function\b/, /\bthe class\b/, /\bthe method\b/, /\bthe variable\b/,

@@ -333,10 +333,10 @@ export const ADVANCED_MEMORY_CHANNELS = {
   RUN_DECAY: 'advancedMemory:runDecay',
   /** Search memories */
   SEARCH: 'advancedMemory:search',
-  /** Search across all projects */
-  SEARCH_ACROSS_PROJECTS: 'advancedMemory:searchAcrossProjects',
-  /** Share memory with a project */
-  SHARE_WITH_PROJECT: 'advancedMemory:shareWithProject',
+  /** Search across all workspaces */
+  SEARCH_ACROSS_WORKSPACES: 'advancedMemory:searchAcrossWorkspaces',
+  /** Share memory with a workspace */
+  SHARE_WITH_WORKSPACE: 'advancedMemory:shareWithWorkspace',
   /** Sync a shared namespace */
   SYNC_SHARED_NAMESPACE: 'advancedMemory:syncSharedNamespace',
 } as const;
@@ -375,16 +375,16 @@ export const DB_CHANNELS = {
   CREATE_CHAT: 'db:createChat',
   /** Create a chat folder */
   CREATE_FOLDER: 'db:createFolder',
-  /** Create a project */
-  CREATE_PROJECT: 'db:createProject',
+  /** Create a workspace */
+  CREATE_WORKSPACE: 'db:createWorkspace',
   /** Create a prompt */
   CREATE_PROMPT: 'db:createPrompt',
   /** Delete a folder */
   DELETE_FOLDER: 'db:deleteFolder',
   /** Delete messages */
   DELETE_MESSAGES: 'db:deleteMessages',
-  /** Delete a project */
-  DELETE_PROJECT: 'db:deleteProject',
+  /** Delete a workspace */
+  DELETE_WORKSPACE: 'db:deleteWorkspace',
   /** Delete a prompt */
   DELETE_PROMPT: 'db:deletePrompt',
   /** Favorite a chat */
@@ -393,10 +393,10 @@ export const DB_CHANNELS = {
   GET_DETAILED_STATS: 'db:getDetailedStats',
   /** Get all folders */
   GET_FOLDERS: 'db:getFolders',
-  /** Get a project by ID */
-  GET_PROJECT_BY_ID: 'db:getProjectById',
-  /** Get all projects */
-  GET_PROJECTS: 'db:getProjects',
+  /** Get a workspace by ID */
+  GET_WORKSPACE_BY_ID: 'db:getWorkspaceById',
+  /** Get all workspaces */
+  GET_WORKSPACES: 'db:getWorkspaces',
   /** Get all prompts */
   GET_PROMPTS: 'db:getPrompts',
   /** Get provider statistics */
@@ -419,8 +419,8 @@ export const DB_CHANNELS = {
   UPDATE_FOLDER: 'db:updateFolder',
   /** Update message vector embedding */
   UPDATE_MESSAGE_VECTOR: 'db:updateMessageVector',
-  /** Update a project */
-  UPDATE_PROJECT: 'db:updateProject',
+  /** Update a workspace */
+  UPDATE_WORKSPACE: 'db:updateWorkspace',
   /** Update a prompt */
   UPDATE_PROMPT: 'db:updatePrompt',
 } as const;
@@ -606,171 +606,171 @@ export const GIT_CHANNELS = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// Project & Workflow
+// Workspace & Workflow
 // ---------------------------------------------------------------------------
 
-/** Project management channels */
-export const PROJECT_CHANNELS = {
+/** Workspace agent orchestration channels */
+export const WORKSPACE_AGENT_CHANNELS = {
   /** Add a comment to a plan step */
-  ADD_STEP_COMMENT: 'project:add-step-comment',
+  ADD_STEP_COMMENT: 'agent:add-step-comment',
   /** Approve the current plan */
-  APPROVE_CURRENT_PLAN: 'project:approve-current-plan',
+  APPROVE_CURRENT_PLAN: 'agent:approve-current-plan',
   /** Approve a specific step */
-  APPROVE_STEP: 'project:approve-step',
+  APPROVE_STEP: 'agent:approve-step',
   /** Council: approve a proposal */
-  COUNCIL_APPROVE_PROPOSAL: 'project:council-approve-proposal',
+  COUNCIL_APPROVE_PROPOSAL: 'agent:council-approve-proposal',
   /** Council: clean up expired messages */
-  COUNCIL_CLEANUP_EXPIRED_MESSAGES: 'project:council-cleanup-expired-messages',
+  COUNCIL_CLEANUP_EXPIRED_MESSAGES: 'agent:council-cleanup-expired-messages',
   /** Council: generate helper handoff */
-  COUNCIL_GENERATE_HELPER_HANDOFF: 'project:council-generate-helper-handoff',
+  COUNCIL_GENERATE_HELPER_HANDOFF: 'agent:council-generate-helper-handoff',
   /** Council: generate a plan */
-  COUNCIL_GENERATE_PLAN: 'project:council-generate-plan',
+  COUNCIL_GENERATE_PLAN: 'agent:council-generate-plan',
   /** Council: get messages */
-  COUNCIL_GET_MESSAGES: 'project:council-get-messages',
+  COUNCIL_GET_MESSAGES: 'agent:council-get-messages',
   /** Council: get a proposal */
-  COUNCIL_GET_PROPOSAL: 'project:council-get-proposal',
+  COUNCIL_GET_PROPOSAL: 'agent:council-get-proposal',
   /** Council: get execution timeline */
-  COUNCIL_GET_TIMELINE: 'project:council-get-timeline',
+  COUNCIL_GET_TIMELINE: 'agent:council-get-timeline',
   /** Council: handle quota interrupt */
-  COUNCIL_HANDLE_QUOTA_INTERRUPT: 'project:council-handle-quota-interrupt',
+  COUNCIL_HANDLE_QUOTA_INTERRUPT: 'agent:council-handle-quota-interrupt',
   /** Council: list available workers */
-  COUNCIL_LIST_AVAILABLE_WORKERS: 'project:council-list-available-workers',
+  COUNCIL_LIST_AVAILABLE_WORKERS: 'agent:council-list-available-workers',
   /** Council: pause execution */
-  COUNCIL_PAUSE_EXECUTION: 'project:council-pause-execution',
+  COUNCIL_PAUSE_EXECUTION: 'agent:council-pause-execution',
   /** Council: register worker availability */
-  COUNCIL_REGISTER_WORKER_AVAILABILITY: 'project:council-register-worker-availability',
+  COUNCIL_REGISTER_WORKER_AVAILABILITY: 'agent:council-register-worker-availability',
   /** Council: reject a proposal */
-  COUNCIL_REJECT_PROPOSAL: 'project:council-reject-proposal',
+  COUNCIL_REJECT_PROPOSAL: 'agent:council-reject-proposal',
   /** Council: resume execution */
-  COUNCIL_RESUME_EXECUTION: 'project:council-resume-execution',
+  COUNCIL_RESUME_EXECUTION: 'agent:council-resume-execution',
   /** Council: review helper merge */
-  COUNCIL_REVIEW_HELPER_MERGE: 'project:council-review-helper-merge',
+  COUNCIL_REVIEW_HELPER_MERGE: 'agent:council-review-helper-merge',
   /** Council: score helper candidates */
-  COUNCIL_SCORE_HELPER_CANDIDATES: 'project:council-score-helper-candidates',
+  COUNCIL_SCORE_HELPER_CANDIDATES: 'agent:council-score-helper-candidates',
   /** Council: send a message */
-  COUNCIL_SEND_MESSAGE: 'project:council-send-message',
+  COUNCIL_SEND_MESSAGE: 'agent:council-send-message',
   /** Council: start execution */
-  COUNCIL_START_EXECUTION: 'project:council-start-execution',
+  COUNCIL_START_EXECUTION: 'agent:council-start-execution',
   /** Create a pull request */
-  CREATE_PR: 'project:create-pr',
+  CREATE_PR: 'agent:create-pr',
   /** Delete a canvas edge */
-  DELETE_CANVAS_EDGE: 'project:delete-canvas-edge',
+  DELETE_CANVAS_EDGE: 'agent:delete-canvas-edge',
   /** Delete a canvas node */
-  DELETE_CANVAS_NODE: 'project:delete-canvas-node',
-  /** Delete a project profile */
-  DELETE_PROFILE: 'project:delete-profile',
+  DELETE_CANVAS_NODE: 'agent:delete-canvas-node',
+  /** Delete an agent profile */
+  DELETE_PROFILE: 'agent:delete-profile',
   /** Delete a task */
-  DELETE_TASK: 'project:delete-task',
+  DELETE_TASK: 'agent:delete-task',
   /** Delete a task by canvas node */
-  DELETE_TASK_BY_NODE: 'project:delete-task-by-node',
+  DELETE_TASK_BY_NODE: 'agent:delete-task-by-node',
   /** Delete a template */
-  DELETE_TEMPLATE: 'project:delete-template',
+  DELETE_TEMPLATE: 'agent:delete-template',
   /** Edit a plan step */
-  EDIT_STEP: 'project:edit-step',
+  EDIT_STEP: 'agent:edit-step',
   /** Export a template */
-  EXPORT_TEMPLATE: 'project:export-template',
+  EXPORT_TEMPLATE: 'agent:export-template',
   /** Generate a debate summary */
-  GENERATE_DEBATE_SUMMARY: 'project:generate-debate-summary',
-  /** Get available models for project */
-  GET_AVAILABLE_MODELS: 'project:get-available-models',
+  GENERATE_DEBATE_SUMMARY: 'agent:generate-debate-summary',
+  /** Get available models for agent */
+  GET_AVAILABLE_MODELS: 'agent:get-available-models',
   /** Get canvas edges */
-  GET_CANVAS_EDGES: 'project:get-canvas-edges',
+  GET_CANVAS_EDGES: 'agent:get-canvas-edges',
   /** Get canvas nodes */
-  GET_CANVAS_NODES: 'project:get-canvas-nodes',
-  /** Get project checkpoints */
-  GET_CHECKPOINTS: 'project:get-checkpoints',
+  GET_CANVAS_NODES: 'agent:get-canvas-nodes',
+  /** Get agent checkpoints */
+  GET_CHECKPOINTS: 'agent:get-checkpoints',
   /** Get debate replay data */
-  GET_DEBATE_REPLAY: 'project:get-debate-replay',
+  GET_DEBATE_REPLAY: 'agent:get-debate-replay',
   /** Get a debate session */
-  GET_DEBATE_SESSION: 'project:get-debate-session',
-  /** Get project events */
-  GET_EVENTS: 'project:get-events',
-  /** Get project messages */
-  GET_MESSAGES: 'project:get-messages',
+  GET_DEBATE_SESSION: 'agent:get-debate-session',
+  /** Get agent events */
+  GET_EVENTS: 'agent:get-events',
+  /** Get agent messages */
+  GET_MESSAGES: 'agent:get-messages',
   /** Get performance metrics */
-  GET_PERFORMANCE_METRICS: 'project:get-performance-metrics',
+  GET_PERFORMANCE_METRICS: 'agent:get-performance-metrics',
   /** Get plan version history */
-  GET_PLAN_VERSIONS: 'project:get-plan-versions',
+  GET_PLAN_VERSIONS: 'agent:get-plan-versions',
   /** Get registered profiles */
-  GET_PROFILES: 'project:get-profiles',
+  GET_PROFILES: 'agent:get-profiles',
   /** Get routing rules */
-  GET_ROUTING_RULES: 'project:get-routing-rules',
-  /** Get project status */
-  GET_STATUS: 'project:get-status',
+  GET_ROUTING_RULES: 'agent:get-routing-rules',
+  /** Get agent status */
+  GET_STATUS: 'agent:get-status',
   /** Get task history */
-  GET_TASK_HISTORY: 'project:get-task-history',
+  GET_TASK_HISTORY: 'agent:get-task-history',
   /** Get teamwork analytics */
-  GET_TEAMWORK_ANALYTICS: 'project:get-teamwork-analytics',
+  GET_TEAMWORK_ANALYTICS: 'agent:get-teamwork-analytics',
   /** Get telemetry data */
-  GET_TELEMETRY: 'project:get-telemetry',
+  GET_TELEMETRY: 'agent:get-telemetry',
   /** Get a specific template */
-  GET_TEMPLATE: 'project:get-template',
+  GET_TEMPLATE: 'agent:get-template',
   /** Get all templates */
-  GET_TEMPLATES: 'project:get-templates',
+  GET_TEMPLATES: 'agent:get-templates',
   /** Get voting analytics */
-  GET_VOTING_ANALYTICS: 'project:get-voting-analytics',
+  GET_VOTING_ANALYTICS: 'agent:get-voting-analytics',
   /** Get voting configuration */
-  GET_VOTING_CONFIG: 'project:get-voting-config',
+  GET_VOTING_CONFIG: 'agent:get-voting-config',
   /** Get a voting session */
-  GET_VOTING_SESSION: 'project:get-voting-session',
-  /** Health check for project system */
-  HEALTH: 'project:health',
+  GET_VOTING_SESSION: 'agent:get-voting-session',
+  /** Health check for agent system */
+  HEALTH: 'agent:health',
   /** Import a template */
-  IMPORT_TEMPLATE: 'project:import-template',
+  IMPORT_TEMPLATE: 'agent:import-template',
   /** Insert a human intervention */
-  INSERT_INTERVENTION: 'project:insert-intervention',
+  INSERT_INTERVENTION: 'agent:insert-intervention',
   /** List debate history */
-  LIST_DEBATE_HISTORY: 'project:list-debate-history',
+  LIST_DEBATE_HISTORY: 'agent:list-debate-history',
   /** List voting sessions */
-  LIST_VOTING_SESSIONS: 'project:list-voting-sessions',
+  LIST_VOTING_SESSIONS: 'agent:list-voting-sessions',
   /** List voting templates */
-  LIST_VOTING_TEMPLATES: 'project:list-voting-templates',
+  LIST_VOTING_TEMPLATES: 'agent:list-voting-templates',
   /** Override a debate session */
-  OVERRIDE_DEBATE_SESSION: 'project:override-debate-session',
+  OVERRIDE_DEBATE_SESSION: 'agent:override-debate-session',
   /** Override voting outcome */
-  OVERRIDE_VOTING: 'project:override-voting',
+  OVERRIDE_VOTING: 'agent:override-voting',
   /** Pause a running task */
-  PAUSE_TASK: 'project:pause-task',
-  /** Generate a project plan */
-  PLAN: 'project:plan',
+  PAUSE_TASK: 'agent:pause-task',
+  /** Generate an agent plan */
+  PLAN: 'agent:plan',
   /** Register a new profile */
-  REGISTER_PROFILE: 'project:register-profile',
+  REGISTER_PROFILE: 'agent:register-profile',
   /** Reject the current plan */
-  REJECT_CURRENT_PLAN: 'project:reject-current-plan',
-  /** Reset project state */
-  RESET_STATE: 'project:reset-state',
+  REJECT_CURRENT_PLAN: 'agent:reject-current-plan',
+  /** Reset agent state */
+  RESET_STATE: 'agent:reset-state',
   /** Resolve a debate session */
-  RESOLVE_DEBATE_SESSION: 'project:resolve-debate-session',
+  RESOLVE_DEBATE_SESSION: 'agent:resolve-debate-session',
   /** Resolve voting */
-  RESOLVE_VOTING: 'project:resolve-voting',
+  RESOLVE_VOTING: 'agent:resolve-voting',
   /** Resume from a checkpoint */
-  RESUME_CHECKPOINT: 'project:resume-checkpoint',
+  RESUME_CHECKPOINT: 'agent:resume-checkpoint',
   /** Resume a paused task */
-  RESUME_TASK: 'project:resume-task',
+  RESUME_TASK: 'agent:resume-task',
   /** Retry a failed step */
-  RETRY_STEP: 'project:retry-step',
+  RETRY_STEP: 'agent:retry-step',
   /** Rollback to a checkpoint */
-  ROLLBACK_CHECKPOINT: 'project:rollback-checkpoint',
+  ROLLBACK_CHECKPOINT: 'agent:rollback-checkpoint',
   /** Save canvas edges */
-  SAVE_CANVAS_EDGES: 'project:save-canvas-edges',
+  SAVE_CANVAS_EDGES: 'agent:save-canvas-edges',
   /** Save canvas nodes */
-  SAVE_CANVAS_NODES: 'project:save-canvas-nodes',
-  /** Save a project snapshot */
-  SAVE_SNAPSHOT: 'project:save-snapshot',
+  SAVE_CANVAS_NODES: 'agent:save-canvas-nodes',
+  /** Save an agent snapshot */
+  SAVE_SNAPSHOT: 'agent:save-snapshot',
   /** Save a template */
-  SAVE_TEMPLATE: 'project:save-template',
-  /** Select a model for the project */
-  SELECT_MODEL: 'project:select-model',
+  SAVE_TEMPLATE: 'agent:save-template',
+  /** Select a model for the agent */
+  SELECT_MODEL: 'agent:select-model',
   /** Set routing rules */
-  SET_ROUTING_RULES: 'project:set-routing-rules',
+  SET_ROUTING_RULES: 'agent:set-routing-rules',
   /** Skip a plan step */
-  SKIP_STEP: 'project:skip-step',
-  /** Start project execution */
-  START: 'project:start',
-  /** Stop project execution */
-  STOP: 'project:stop',
+  SKIP_STEP: 'agent:skip-step',
+  /** Start agent execution */
+  START: 'agent:start',
+  /** Stop agent execution */
+  STOP: 'agent:stop',
   /** Update voting configuration */
-  UPDATE_VOTING_CONFIG: 'project:update-voting-config',
+  UPDATE_VOTING_CONFIG: 'agent:update-voting-config',
 } as const;
 
 /** Workflow automation channels */
@@ -1213,22 +1213,22 @@ export const CODE_CHANNELS = {
   FIND_IMPLEMENTATIONS: 'code:findImplementations',
   /** Find references to a symbol */
   FIND_REFERENCES: 'code:findReferences',
-  /** Find symbols in a file or project */
+  /** Find symbols in a file or workspace */
   FIND_SYMBOLS: 'code:findSymbols',
   /** Find usages of a symbol */
   FIND_USAGE: 'code:findUsage',
   /** Generate documentation for a file */
   GENERATE_FILE_DOCUMENTATION: 'code:generateFileDocumentation',
-  /** Generate project-wide documentation */
-  GENERATE_PROJECT_DOCUMENTATION: 'code:generateProjectDocumentation',
+  /** Generate workspace-wide documentation */
+  GENERATE_WORKSPACE_DOCUMENTATION: 'code:generateWorkspaceDocumentation',
   /** Get an outline of a file */
   GET_FILE_OUTLINE: 'code:getFileOutline',
   /** Get symbol analytics */
   GET_SYMBOL_ANALYTICS: 'code:getSymbolAnalytics',
   /** Get relationships between symbols */
   GET_SYMBOL_RELATIONSHIPS: 'code:getSymbolRelationships',
-  /** Index the project for code intelligence */
-  INDEX_PROJECT: 'code:indexProject',
+  /** Index the workspace for code intelligence */
+  INDEX_WORKSPACE: 'code:indexWorkspace',
   /** Preview a rename symbol refactoring */
   PREVIEW_RENAME_SYMBOL: 'code:previewRenameSymbol',
   /** Query indexed symbols */
@@ -1349,7 +1349,7 @@ export const IPC_CHANNELS = {
   MODEL_REGISTRY: MODEL_REGISTRY_CHANNELS,
   OLLAMA: OLLAMA_CHANNELS,
   PROCESS: PROCESS_CHANNELS,
-  PROJECT: PROJECT_CHANNELS,
+  WORKSPACE_AGENT: WORKSPACE_AGENT_CHANNELS,
   PROMPT_TEMPLATES: PROMPT_TEMPLATES_CHANNELS,
   PROXY: PROXY_CHANNELS,
   SD_CPP: SD_CPP_CHANNELS,

@@ -1,6 +1,6 @@
 /**
  * Time Tracking Service
- * Tracks app online time, coding time, and per-project coding time
+ * Tracks app online time, coding time, and per-workspace coding time
  */
 
 import { BaseService } from '@main/services/base.service';
@@ -10,7 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 export interface TimeTrackingRecord {
     id: string
     type: 'app_online' | 'coding' | 'project_coding'
-    projectId?: string
+    workspaceId?: string
     startTime: number
     endTime?: number
     durationMs: number
@@ -21,13 +21,13 @@ export interface TimeTrackingRecord {
 export interface TimeTrackingStats {
     totalOnlineTime: number // in milliseconds
     totalCodingTime: number // in milliseconds
-    projectCodingTime: Record<string, number> // projectId -> milliseconds
+    workspaceCodingTime: Record<string, number> // workspaceId -> milliseconds
 }
 
 export class TimeTrackingService extends BaseService {
     private appStartTime: number | null = null;
     private codingStartTime: number | null = null;
-    private projectStartTimes: Map<string, number> = new Map();
+    private workspaceStartTimes: Map<string, number> = new Map();
     private saveInterval: NodeJS.Timeout | null = null;
     private isTracking = false;
 
@@ -92,34 +92,34 @@ export class TimeTrackingService extends BaseService {
     }
 
     /**
-     * Start tracking coding time (when a project is active)
+     * Start tracking coding time (when a workspace is active)
      */
-    startCodingTracking(projectId?: string): void {
-        if (projectId) {
-            this.projectStartTimes.set(projectId, Date.now());
+    startCodingTracking(workspaceId?: string): void {
+        if (workspaceId) {
+            this.workspaceStartTimes.set(workspaceId, Date.now());
         } else {
             this.codingStartTime = Date.now();
         }
     }
 
     /**
-     * Stop tracking coding time for a project
+     * Stop tracking coding time for a workspace
      */
-    async stopCodingTracking(projectId?: string): Promise<void> {
+    async stopCodingTracking(workspaceId?: string): Promise<void> {
         const now = Date.now();
 
-        if (projectId) {
-            const startTime = this.projectStartTimes.get(projectId);
+        if (workspaceId) {
+            const startTime = this.workspaceStartTimes.get(workspaceId);
             if (startTime) {
                 const duration = now - startTime;
                 await this.recordTime({
                     type: 'project_coding',
-                    projectId,
+                    workspaceId,
                     startTime,
                     endTime: now,
                     durationMs: duration
                 });
-                this.projectStartTimes.delete(projectId);
+                this.workspaceStartTimes.delete(workspaceId);
             }
         } else {
             if (this.codingStartTime) {
@@ -151,7 +151,7 @@ export class TimeTrackingService extends BaseService {
                 params: [
                     id,
                     record.type,
-                    record.projectId ?? null,
+                    record.workspaceId ?? null,
                     record.startTime,
                     record.endTime ?? null,
                     record.durationMs,
@@ -190,7 +190,7 @@ export class TimeTrackingService extends BaseService {
         try {
             const appOnlineTotal = await this.getTotalTimeByType('app_online');
             const codingTotal = await this.getTotalTimeByType('coding');
-            const projectCodingTime = await this.getProjectCodingStats();
+            const workspaceCodingTime = await this.getWorkspaceCodingStats();
 
             // Add current active tracking time
             const now = Date.now();
@@ -201,22 +201,22 @@ export class TimeTrackingService extends BaseService {
                 ? now - this.codingStartTime
                 : 0;
 
-            // Add current project times from active sessions
-            for (const [projectId, startTime] of this.projectStartTimes.entries()) {
-                projectCodingTime[projectId] = (projectCodingTime[projectId] ?? 0) + (now - startTime);
+            // Add current workspace times from active sessions
+            for (const [workspaceId, startTime] of this.workspaceStartTimes.entries()) {
+                workspaceCodingTime[workspaceId] = (workspaceCodingTime[workspaceId] ?? 0) + (now - startTime);
             }
 
             return {
                 totalOnlineTime: appOnlineTotal + currentAppTime,
                 totalCodingTime: codingTotal + currentCodingTime,
-                projectCodingTime
+                workspaceCodingTime
             };
         } catch (error) {
             this.logError('Failed to get time stats', error as Error);
             return {
                 totalOnlineTime: 0,
                 totalCodingTime: 0,
-                projectCodingTime: {}
+                workspaceCodingTime: {}
             };
         }
     }
@@ -233,20 +233,20 @@ export class TimeTrackingService extends BaseService {
     }
 
     /**
-     * Helper to get per-project coding statistics
+     * Helper to get per-workspace coding statistics
      */
-    private async getProjectCodingStats(): Promise<Record<string, number>> {
+    private async getWorkspaceCodingStats(): Promise<Record<string, number>> {
         const response = await this.databaseClient.executeQuery({
             sql: `SELECT project_id, COALESCE(SUM(duration_ms), 0) as total FROM time_tracking WHERE type = 'project_coding' AND project_id IS NOT NULL GROUP BY project_id`
         });
 
-        const projectCodingTime: Record<string, number> = {};
+        const workspaceCodingTime: Record<string, number> = {};
         const rows = response.rows ?? [];
         for (const row of rows) {
             if (row.project_id) {
-                projectCodingTime[String(row.project_id)] = Number(row.total);
+                workspaceCodingTime[String(row.project_id)] = Number(row.total);
             }
         }
-        return projectCodingTime;
+        return workspaceCodingTime;
     }
 }

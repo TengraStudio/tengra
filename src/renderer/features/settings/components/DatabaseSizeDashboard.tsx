@@ -6,7 +6,7 @@ import { useTranslation } from '@/i18n';
 interface TimeTrackingStats {
     totalOnlineTime: number;
     totalCodingTime: number;
-    projectCodingTime: Record<string, number>;
+    workspaceCodingTime: Record<string, number>;
 }
 
 /** Statistics shape returned by the db:size-stats IPC handler. */
@@ -14,7 +14,7 @@ interface DatabaseSizeStats {
     dbSize: number
     chatCount: number
     messageCount: number
-    projectCount: number
+    workspaceCount: number
     folderCount: number
     promptCount: number
     timeStats: TimeTrackingStats
@@ -137,7 +137,7 @@ export const DatabaseSizeDashboard: React.FC = () => {
                 <StatCard
                     icon={<FolderOpen className="w-3.5 h-3.5 text-yellow-500" />}
                     label={t('databaseSizeDashboard.projects')}
-                    value={String(stats.projectCount)}
+                    value={String(stats.workspaceCount)}
                     color="yellow-500"
                 />
                 <StatCard

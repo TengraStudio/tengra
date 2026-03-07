@@ -64,7 +64,7 @@ export interface ToolExecutorOptions {
 
 export interface ToolExecutionContext {
     taskId?: string;
-    projectId?: string;
+    workspaceId?: string;
     timeoutMs?: number;
 }
 

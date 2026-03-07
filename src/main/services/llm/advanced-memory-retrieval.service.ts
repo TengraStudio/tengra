@@ -220,7 +220,7 @@ export class AdvancedMemoryRetrievalService {
         memory: AdvancedSemanticFragment,
         context: RecallContext
     ): boolean {
-        if (context.projectId && memory.projectId !== context.projectId) {
+        if (context.workspaceId && memory.workspaceId !== context.workspaceId) {
             return false;
         }
         if (context.categories && !context.categories.includes(memory.category)) {

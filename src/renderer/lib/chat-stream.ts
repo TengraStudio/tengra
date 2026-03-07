@@ -45,7 +45,7 @@ function normalizeChunk(chunk: ChatStreamChunk): ChatStreamChunk[] {
 export async function* chatStream(
     request: ChatStreamRequest
 ): AsyncGenerator<ChatStreamChunk> {
-    const { messages, model, tools = [], provider, options, chatId, projectId } = request;
+    const { messages, model, tools = [], provider, options, chatId, workspaceId } = request;
     let currentResolver: ((value: void | null) => void) | null = null;
     const queue: ChatStreamChunk[] = [];
     const state = {
@@ -80,7 +80,7 @@ export async function* chatStream(
 
     const unsubscribe = window.electron.onStreamChunk(listener);
 
-    void window.electron.chatStream({ messages, model, tools, provider, options, chatId, projectId })
+    void window.electron.chatStream({ messages, model, tools, provider, options, chatId, workspaceId })
         .catch(err => {
             state.streamError = err;
             state.isDone = true;

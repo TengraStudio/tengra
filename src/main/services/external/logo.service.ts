@@ -6,7 +6,7 @@ import { ImagePersistenceService } from '@main/services/data/image-persistence.s
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
 import { ModelProviderInfo, ModelRegistryService } from '@main/services/llm/model-registry.service';
-import { ProjectService } from '@main/services/project/project.service';
+import { WorkspaceService } from '@main/services/workspace/workspace.service';
 import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { JsonObject } from '@shared/types/common';
@@ -27,7 +27,7 @@ interface ResolvedGenerationModel {
 
 interface LogoServiceDependencies {
     llmService: LLMService;
-    projectService: ProjectService;
+    workspaceService: WorkspaceService;
     localImageService: LocalImageService;
     imagePersistenceService: ImagePersistenceService;
     authService: AuthService;
@@ -37,7 +37,7 @@ interface LogoServiceDependencies {
 
 export class LogoService {
     private readonly llmService: LLMService;
-    private readonly projectService: ProjectService;
+    private readonly workspaceService: WorkspaceService;
     private readonly localImageService: LocalImageService;
     private readonly imagePersistenceService: ImagePersistenceService;
     private readonly authService: AuthService;
@@ -46,7 +46,7 @@ export class LogoService {
 
     constructor(deps: LogoServiceDependencies) {
         this.llmService = deps.llmService;
-        this.projectService = deps.projectService;
+        this.workspaceService = deps.workspaceService;
         this.localImageService = deps.localImageService;
         this.imagePersistenceService = deps.imagePersistenceService;
         this.authService = deps.authService;
@@ -69,23 +69,23 @@ export class LogoService {
         return styles[style] || style;
     }
 
-    async analyzeProjectIdentity(
-        projectPath: string
+    async analyzeWorkspaceIdentity(
+        workspacePath: string
     ): Promise<{ suggestedPrompts: string[]; colors: string[] }> {
         let pkgData: JsonObject = {};
         try {
-            const pkgPath = join(projectPath, 'package.json');
+            const pkgPath = join(workspacePath, 'package.json');
             const content = await fs.readFile(pkgPath, 'utf-8');
             pkgData = safeJsonParse<JsonObject>(content, {});
         } catch {
-            appLogger.warn('logo.service', `[LogoService] No package.json found at ${projectPath}`);
+            appLogger.warn('logo.service', `[LogoService] No package.json found at ${workspacePath}`);
         }
 
         // Deep Analysis
-        const analysis = await this.projectService.analyzeProject(projectPath);
+        const analysis = await this.workspaceService.analyzeWorkspace(workspacePath);
 
         const context = `
- Project Name: ${pkgData.name ?? projectPath.split(/[\\/]/).pop() ?? 'Untitled'}
+ Project Name: ${pkgData.name ?? workspacePath.split(/[\\/]/).pop() ?? 'Untitled'}
  Description: ${pkgData.description ?? analysis.type + ' project'}
 Type: ${analysis.type}
 Frameworks: ${analysis.frameworks.join(', ')}
@@ -94,10 +94,10 @@ Stats: ${analysis.stats.fileCount} files, ~${analysis.stats.loc} lines of code
 Dependencies: ${Object.keys(analysis.dependencies).slice(0, 8).join(', ')}
 `;
 
-        const analysisPrompt = `Analyze this project metadata and suggest 3 creative, short concepts for an app icon/logo mascot. 
+        const analysisPrompt = `Analyze this workspace metadata and suggest 3 creative, short concepts for an app icon/logo mascot. 
 The concepts should be optimized for an AI image generator like DALL-E or Flux.
 Each concept should be a single sentence description.
-Also suggest an optional professional color palette (3-5 hex colors) that fits the project vibe.
+Also suggest an optional professional color palette (3-5 hex colors) that fits the workspace vibe.
 If color preference is uncertain, return an empty colors array instead of forcing colors.
 Consider standard tech branding (e.g., Python: Blue/Yellow, Node: Green/Lime, React: Cyan, Typescript: Blue).
 
@@ -723,7 +723,7 @@ ${context}`;
     }
 
     async generateLogo(
-        projectPath: string,
+        workspacePath: string,
         prompt: string,
         style: string,
         model: string,
@@ -731,11 +731,11 @@ ${context}`;
     ): Promise<string[]> {
         appLogger.info(
             'logo.service',
-            `[LogoService] Generating ${count} logos for ${projectPath} with prompt: "${prompt}", style: "${style}", model: "${model}"`
+            `[LogoService] Generating ${count} logos for ${workspacePath} with prompt: "${prompt}", style: "${style}", model: "${model}"`
         );
 
         const styleKeywords = this.getStylePrompt(style);
-        const enhancedPrompt = `Design a professional app icon for a project. 
+        const enhancedPrompt = `Design a professional app icon for a workspace. 
         Core Concept: ${prompt}
         Visual Style: ${styleKeywords}
         Constraints: Square aspect ratio, centered composition, high quality vector style, solid background, avoid text, avoid complex details, minimalist aesthetic, sharp edges.`;
@@ -745,7 +745,7 @@ ${context}`;
 
         for (let i = 0; i < count; i++) {
             try {
-                const savedPath = await this.generateSingleLogo(projectPath, enhancedPrompt, model);
+                const savedPath = await this.generateSingleLogo(workspacePath, enhancedPrompt, model);
                 results.push(savedPath);
             } catch (error) {
                 appLogger.error(
@@ -765,7 +765,7 @@ ${context}`;
     }
 
     private async generateSingleLogo(
-        projectPath: string,
+        workspacePath: string,
         enhancedPrompt: string,
         model: string
     ): Promise<string> {
@@ -785,7 +785,7 @@ ${context}`;
 
             if (tempPath) {
                 return await this.saveGeneratedImage(
-                    projectPath,
+                    workspacePath,
                     tempPath,
                     enhancedPrompt,
                     isSdCpp ? 'sd-cpp/stable-diffusion' : 'local-stable-diffusion'
@@ -804,7 +804,7 @@ ${context}`;
 
         if (response.images && response.images.length > 0) {
             return await this.saveGeneratedImage(
-                projectPath,
+                    workspacePath,
                 response.images[0],
                 enhancedPrompt,
                 `${resolved.provider}/${resolved.model}`
@@ -877,12 +877,12 @@ ${context}`;
     }
 
     private async saveGeneratedImage(
-        projectPath: string,
+        workspacePath: string,
         sourcePathOrUrl: string,
         prompt: string,
         model: string
     ): Promise<string> {
-        const targetDir = join(projectPath, '.tengra', 'temp');
+        const targetDir = join(workspacePath, '.tengra', 'temp');
         const timestamp = Date.now();
         const randomSuffix = Math.floor(Math.random() * 1000);
         const targetPath = join(targetDir, `logo-${timestamp}-${randomSuffix}.png`);
@@ -891,9 +891,9 @@ ${context}`;
 
         // If source is a URL (remote), fetch it. If it's a path (local), copy it.
         // ImagePersistenceService.saveImage handles data URIs and URLs.
-        // But here we want to save to the PROJECT temp folder first for the UI to display?
+        // But here we want to save to the WORKSPACE temp folder first for the UI to display?
         // Or does the UI use the gallery path?
-        // The original code copied to project/.tengra/temp AND saved to gallery.
+        // The original code copied to workspace/.tengra/temp AND saved to gallery.
         // Let's keep that behavior.
 
         const resolvedLocalSource = this.resolveLocalImagePath(sourcePathOrUrl);
@@ -942,9 +942,9 @@ ${context}`;
         return normalized;
     }
 
-    async applyLogo(projectPath: string, tempLogoPath: string): Promise<string> {
+    async applyLogo(workspacePath: string, tempLogoPath: string): Promise<string> {
         try {
-            const tengraDir = join(projectPath, '.tengra');
+            const tengraDir = join(workspacePath, '.tengra');
             await fs.mkdir(tengraDir, { recursive: true });
 
             const targetPath = join(tengraDir, 'logo.png');
@@ -954,7 +954,7 @@ ${context}`;
             }
 
             // Also try to save as icon.png in public if it exists (common for web apps)
-            const publicDir = join(projectPath, 'public');
+            const publicDir = join(workspacePath, 'public');
             try {
                 const publicStats = await fs.stat(publicDir);
                 if (publicStats.isDirectory()) {

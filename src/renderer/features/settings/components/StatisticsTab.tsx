@@ -14,7 +14,7 @@ import { ClaudeCard } from './statistics/ClaudeCard';
 import { CodexCard } from './statistics/CodexCard';
 import { CopilotCard } from './statistics/CopilotCard';
 import { OverviewCards } from './statistics/OverviewCards';
-import { ProjectBarChart } from './statistics/ProjectBarChart';
+import { WorkspaceBarChart } from './statistics/ProjectBarChart';
 import { TokenUsageChart } from './statistics/TokenUsageChart';
 
 type StatsPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
@@ -64,33 +64,33 @@ interface StatisticsTabProps {
 interface CodingTimeCardProps {
     timeStats: TimeStats | null;
     loadingTimeStats: boolean;
-    projects: Array<{ id: string; title: string }>;
+    workspaces: Array<{ id: string; title: string }>;
     statsPeriod: StatsPeriod;
     setStatsPeriod: (p: StatsPeriod) => void;
     t: (key: string) => string;
 }
 
 // PERF-002-3: Memoize CodingTimeCard to prevent unnecessary re-renders
-const CodingTimeCard: React.FC<CodingTimeCardProps> = memo(({ timeStats, loadingTimeStats, projects, statsPeriod, setStatsPeriod, t }) => {
-    // PERF-002-3: Memoize expensive computation of sorted projects with time
-    const projectsWithTime = useMemo(() => {
-        if (!timeStats?.projectCodingTime) { return []; }
-        return Object.entries(timeStats.projectCodingTime)
+const CodingTimeCard: React.FC<CodingTimeCardProps> = memo(({ timeStats, loadingTimeStats, workspaces, statsPeriod, setStatsPeriod, t }) => {
+    // PERF-002-3: Memoize expensive computation of sorted workspaces with time
+    const workspacesWithTime = useMemo(() => {
+        if (!timeStats?.workspaceCodingTime) { return []; }
+        return Object.entries(timeStats.workspaceCodingTime)
             .sort(([, a], [, b]) => b - a)
-            .map(([projectId, time]) => ({
-                id: projectId,
-                title: projects.find(p => p.id === projectId)?.title ?? t('statistics.unknownProject'),
+            .map(([workspaceId, time]) => ({
+                id: workspaceId,
+                title: workspaces.find(p => p.id === workspaceId)?.title ?? t('statistics.unknownProject'),
                 time
             }));
-    }, [timeStats, projects, t]);
+    }, [timeStats, workspaces, t]);
 
     // PERF-002-3: Memoize max time calculation
     const maxTime = useMemo(() => {
-        if (!timeStats?.projectCodingTime) { return 0; }
-        return Math.max(...Object.values(timeStats.projectCodingTime), 0);
+        if (!timeStats?.workspaceCodingTime) { return 0; }
+        return Math.max(...Object.values(timeStats.workspaceCodingTime), 0);
     }, [timeStats]);
 
-    if (!timeStats?.projectCodingTime || Object.keys(timeStats.projectCodingTime).length === 0) {
+    if (!timeStats?.workspaceCodingTime || Object.keys(timeStats.workspaceCodingTime).length === 0) {
         return null;
     }
 
@@ -110,8 +110,8 @@ const CodingTimeCard: React.FC<CodingTimeCardProps> = memo(({ timeStats, loading
                         <Loader2 className="w-5 h-5 animate-spin text-primary" />
                     </div>
                 ) : (
-                    <ProjectBarChart
-                        projects={projectsWithTime}
+                    <WorkspaceBarChart
+                        workspaces={workspacesWithTime}
                         maxTime={maxTime}
                     />
                 )}
@@ -158,7 +158,7 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(({
     const { t } = useTranslation(settings?.general.language ?? 'en');
     const [timeStats, setTimeStats] = useState<TimeStats | null>(null);
     const [loadingTimeStats, setLoadingTimeStats] = useState(false);
-    const [projects, setProjects] = useState<Array<{ id: string; title: string }>>([]);
+    const [workspaces, setWorkspaces] = useState<Array<{ id: string; title: string }>>([]);
 
     useEffect(() => {
         const loadTimeStats = async () => {
@@ -174,15 +174,15 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(({
         };
         void loadTimeStats();
 
-        const loadProjects = async () => {
+        const loadWorkspaces = async () => {
             try {
-                const projs = await window.electron.db.getProjects();
-                setProjects(projs);
+                const projs = await window.electron.db.getWorkspaces();
+                setWorkspaces(projs);
             } catch (error) {
-                appLogger.error('StatisticsTab', 'Failed to load projects', error as Error);
+                appLogger.error('StatisticsTab', 'Failed to load workspaces', error as Error);
             }
         };
-        void loadProjects();
+        void loadWorkspaces();
     }, []);
 
     // PERF-002-3: Memoize locale to prevent re-computation on every render
@@ -214,7 +214,7 @@ export const StatisticsTab: React.FC<StatisticsTabProps> = memo(({
             <CodingTimeCard
                 timeStats={timeStats}
                 loadingTimeStats={loadingTimeStats}
-                projects={projects}
+                workspaces={workspaces}
                 statsPeriod={statsPeriod}
                 setStatsPeriod={setStatsPeriod}
                 t={t}

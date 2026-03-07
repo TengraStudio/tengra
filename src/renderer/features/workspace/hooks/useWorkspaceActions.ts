@@ -21,7 +21,7 @@ export function useProjectActions({
             if (onUpdateProject) {
                 await onUpdateProject(updates);
             } else {
-                await window.electron.db.updateProject(project.id, updates);
+                await window.electron.db.updateWorkspace(project.id, updates);
             }
         } catch (error) {
             appLogger.error('ProjectActions', 'Update failed', error as Error);

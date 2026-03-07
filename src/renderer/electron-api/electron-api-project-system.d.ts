@@ -11,8 +11,8 @@ import type {
 import type {
     FileSearchResult,
     IpcValue,
-    Project,
-    ProjectAnalysis,
+    Workspace,
+    WorkspaceAnalysis,
     TodoFile,
 } from '@/shared/types';
 
@@ -79,7 +79,7 @@ export interface ElectronApiProjectSystemDomain {
             generatedAt: string;
             error?: string;
         }>;
-        generateProjectDocumentation: (
+        generateWorkspaceDocumentation: (
             rootPath: string,
             maxFiles?: number
         ) => Promise<{
@@ -110,10 +110,10 @@ export interface ElectronApiProjectSystemDomain {
         searchFiles: (
             rootPath: string,
             query: string,
-            projectId?: string,
+            workspaceId?: string,
             isRegex?: boolean
         ) => Promise<FileSearchResult[]>;
-        indexProject: (rootPath: string, projectId: string) => Promise<void>;
+        indexWorkspace: (rootPath: string, workspaceId: string) => Promise<void>;
         queryIndexedSymbols: (
             query: string
         ) => Promise<{ name: string; path: string; line: number }[]>;
@@ -129,24 +129,24 @@ export interface ElectronApiProjectSystemDomain {
         }>;
     };
 
-    // Project System
+    // Workspace System
     project: {
-        analyze: (rootPath: string, projectId: string) => Promise<ProjectAnalysis>;
+        analyze: (rootPath: string, workspaceId: string) => Promise<WorkspaceAnalysis>;
         generateLogo: (
-            projectPath: string,
+            workspacePath: string,
             options: { prompt: string; style: string; model: string; count: number }
         ) => Promise<string[]>;
         analyzeIdentity: (
-            projectPath: string
+            workspacePath: string
         ) => Promise<{ suggestedPrompts: string[]; colors: string[] }>;
-        applyLogo: (projectPath: string, tempLogoPath: string) => Promise<string>;
+        applyLogo: (workspacePath: string, tempLogoPath: string) => Promise<string>;
         getCompletion: (text: string) => Promise<string>;
         getInlineSuggestion: (request: InlineSuggestionRequest) => Promise<InlineSuggestionResponse>;
         trackInlineSuggestionTelemetry: (
             event: InlineSuggestionTelemetry
         ) => Promise<{ success: boolean }>;
         improveLogoPrompt: (prompt: string) => Promise<string>;
-        uploadLogo: (projectPath: string) => Promise<string | null>;
+        uploadLogo: (workspacePath: string) => Promise<string | null>;
         analyzeDirectory: (dirPath: string) => Promise<{
             hasPackageJson: boolean;
             pkg: Record<string, IpcValue>;

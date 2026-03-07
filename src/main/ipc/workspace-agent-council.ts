@@ -32,14 +32,14 @@ const createEventDedupeKey = (prefix: string, taskId: string, sequence: number):
     return `${STREAM_EVENT_VERSION}:${prefix}:${taskId}:${Date.now()}:${sequence}`;
 };
 
-export function registerProjectAgentCouncilHandlers(
+export function registerWorkspaceAgentCouncilHandlers(
     projectAgentService: ProjectAgentService,
     getMainWindow: () => BrowserWindow | null
 ): void {
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'council messaging');
 
     ipcMain.handle(
-        'project:council-send-message',
+        'agent:council-send-message',
         createValidatedIpcHandler<AgentCollaborationMessage | null, [{
             taskId: string;
             stageId: string;
@@ -50,7 +50,7 @@ export function registerProjectAgentCouncilHandlers(
             payload: Record<string, string | number | boolean | null>;
             expiresAt?: number;
         }]>(
-            'project:council-send-message',
+            'agent:council-send-message',
             async (event, payload): Promise<AgentCollaborationMessage | null> => {
                 validateSender(event);
                 return await projectAgentService.sendCollaborationMessage(payload);
@@ -72,14 +72,14 @@ export function registerProjectAgentCouncilHandlers(
     );
 
     ipcMain.handle(
-        'project:council-get-messages',
+        'agent:council-get-messages',
         createValidatedIpcHandler<AgentCollaborationMessage[], [{
             taskId: string;
             stageId?: string;
             agentId?: string;
             includeExpired?: boolean;
         }]>(
-            'project:council-get-messages',
+            'agent:council-get-messages',
             async (event, payload): Promise<AgentCollaborationMessage[]> => {
                 validateSender(event);
                 return await projectAgentService.getCollaborationMessages(payload);
@@ -97,9 +97,9 @@ export function registerProjectAgentCouncilHandlers(
     );
 
     ipcMain.handle(
-        'project:council-cleanup-expired-messages',
+        'agent:council-cleanup-expired-messages',
         createValidatedIpcHandler<{ success: true; removed: number }, [{ taskId?: string } | undefined]>(
-            'project:council-cleanup-expired-messages',
+            'agent:council-cleanup-expired-messages',
             async (event, payload?: { taskId?: string }): Promise<{ success: true; removed: number }> => {
                 validateSender(event);
                 const removed = await projectAgentService.cleanupExpiredCollaborationMessages(payload?.taskId);
@@ -113,9 +113,9 @@ export function registerProjectAgentCouncilHandlers(
     );
 
     ipcMain.handle(
-        'project:council-handle-quota-interrupt',
+        'agent:council-handle-quota-interrupt',
         createValidatedIpcHandler<QuotaInterruptResult | null, [QuotaInterruptInput]>(
-            'project:council-handle-quota-interrupt',
+            'agent:council-handle-quota-interrupt',
             async (event, payload): Promise<QuotaInterruptResult | null> => {
                 validateSender(event);
                 const result = await projectAgentService.handleQuotaExhaustedInterrupt(payload);
@@ -128,7 +128,7 @@ export function registerProjectAgentCouncilHandlers(
                 };
                 const windows = BrowserWindow.getAllWindows();
                 for (const windowInstance of windows) {
-                    windowInstance.webContents.send('project:quota-interrupt', eventPayload);
+                    windowInstance.webContents.send('agent:quota-interrupt', eventPayload);
                 }
                 return result;
             },
@@ -147,9 +147,9 @@ export function registerProjectAgentCouncilHandlers(
     );
 
     ipcMain.handle(
-        'project:council-register-worker-availability',
+        'agent:council-register-worker-availability',
         createValidatedIpcHandler<WorkerAvailabilityRecord | null, [WorkerAvailabilityInput]>(
-            'project:council-register-worker-availability',
+            'agent:council-register-worker-availability',
             async (event, payload): Promise<WorkerAvailabilityRecord | null> => {
                 validateSender(event);
                 return projectAgentService.registerWorkerAvailability(payload);
@@ -169,9 +169,9 @@ export function registerProjectAgentCouncilHandlers(
     );
 
     ipcMain.handle(
-        'project:council-list-available-workers',
+        'agent:council-list-available-workers',
         createValidatedIpcHandler<WorkerAvailabilityRecord[], [{ taskId: string }]>(
-            'project:council-list-available-workers',
+            'agent:council-list-available-workers',
             async (event, payload): Promise<WorkerAvailabilityRecord[]> => {
                 validateSender(event);
                 return projectAgentService.listAvailableWorkers(payload.taskId);
@@ -184,9 +184,9 @@ export function registerProjectAgentCouncilHandlers(
     );
 
     ipcMain.handle(
-        'project:council-score-helper-candidates',
+        'agent:council-score-helper-candidates',
         createValidatedIpcHandler<HelperCandidateScore[], [HelperCandidateInput]>(
-            'project:council-score-helper-candidates',
+            'agent:council-score-helper-candidates',
             async (event, payload): Promise<HelperCandidateScore[]> => {
                 validateSender(event);
                 return projectAgentService.scoreHelperCandidates(payload);
@@ -205,9 +205,9 @@ export function registerProjectAgentCouncilHandlers(
     );
 
     ipcMain.handle(
-        'project:council-generate-helper-handoff-package',
+        'agent:council-generate-helper-handoff-package',
         createValidatedIpcHandler<HelperHandoffPackage, [HelperHandoffInput]>(
-            'project:council-generate-helper-handoff-package',
+            'agent:council-generate-helper-handoff-package',
             async (event, payload): Promise<HelperHandoffPackage> => {
                 validateSender(event);
                 return projectAgentService.generateHelperHandoffPackage(payload);
@@ -229,9 +229,9 @@ export function registerProjectAgentCouncilHandlers(
     );
 
     ipcMain.handle(
-        'project:council-review-helper-merge-gate',
+        'agent:council-review-helper-merge-gate',
         createValidatedIpcHandler<HelperMergeGateDecision, [HelperMergeGateInput]>(
-            'project:council-review-helper-merge-gate',
+            'agent:council-review-helper-merge-gate',
             async (event, payload): Promise<HelperMergeGateDecision> => {
                 validateSender(event);
                 return projectAgentService.reviewHelperMergeGate(payload);

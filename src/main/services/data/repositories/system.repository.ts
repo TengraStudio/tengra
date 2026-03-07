@@ -319,7 +319,7 @@ export class SystemRepository extends BaseRepository {
         return {
             totalOnlineTime: 0,
             totalCodingTime: 0,
-            projectCodingTime: {}
+            workspaceCodingTime: {}
         };
     }
 
@@ -333,7 +333,7 @@ export class SystemRepository extends BaseRepository {
         await this.adapter.prepare(`
             INSERT INTO token_usage(id, chat_id, project_path, message_id, provider, model, tokens_sent, tokens_received, cost_estimate, timestamp)
             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(id, record.chatId, record.projectId ?? null, record.messageId ?? null, record.provider, record.model, record.tokensSent, record.tokensReceived, record.costEstimate ?? 0, timestamp);
+        `).run(id, record.chatId, record.workspaceId ?? null, record.messageId ?? null, record.provider, record.model, record.tokensSent, record.tokensReceived, record.costEstimate ?? 0, timestamp);
     }
 
     async getTokenUsageStats(period: 'daily' | 'weekly' | 'monthly'): Promise<DbTokenStats> {

@@ -334,7 +334,7 @@ export const ProjectCodeTab: React.FC<ProjectCodeTabProps> = ({ projectRoot, onO
                         disabled={busyKey !== ''}
                         onClick={() => {
                             void call('project-docs', async () => {
-                                const result = await window.electron.code.generateProjectDocumentation(projectRoot, safeMaxFiles);
+                                const result = await window.electron.code.generateWorkspaceDocumentation(projectRoot, safeMaxFiles);
                                 setDocsPreview(result);
                             });
                         }}

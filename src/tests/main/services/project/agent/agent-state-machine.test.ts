@@ -37,8 +37,8 @@ describe('Agent State Machine', () => {
             estimatedCost: 0
         },
         context: {
-            projectPath: '/test',
-            projectName: 'test',
+            workspacePath: '/test',
+            workspaceName: 'test',
             workspace: {
                 rootPath: '/test',
                 hasGit: true,

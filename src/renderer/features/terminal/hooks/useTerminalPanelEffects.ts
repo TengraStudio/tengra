@@ -18,7 +18,7 @@ export function useTerminalPanelEffects(core: TerminalPanelCoreResult): void {
         setIsSemanticPanelOpen, setIsMultiplexerOpen, setIsRecordingPanelOpen,
         isSearchOpen, terminalContextMenu, setTerminalContextMenu,
         tabsRef, activeTabIdRef, isCreatingRef, hasAutoCreatedRef,
-        displayTabs, projectIssuesTab,
+        displayTabs, workspaceIssuesTab,
         splitLayout, search, backends, shortcuts,
         recording, tabActions, searchActions, panelToggles,
         parseSemanticChunk,
@@ -104,13 +104,13 @@ export function useTerminalPanelEffects(core: TerminalPanelCoreResult): void {
                 setActiveTabId(tabs[tabs.length - 1]?.id ?? null);
                 return;
             }
-            if (projectIssuesTab) {
-                setActiveTabId(projectIssuesTab.id);
+            if (workspaceIssuesTab) {
+                setActiveTabId(workspaceIssuesTab.id);
                 return;
             }
             setActiveTabId(tabs[tabs.length - 1]?.id ?? null);
         }
-    }, [activeTabId, displayTabs, projectIssuesTab, setActiveTabId, tabs, setIsGalleryView, setIsSemanticPanelOpen]);
+    }, [activeTabId, displayTabs, workspaceIssuesTab, setActiveTabId, tabs, setIsGalleryView, setIsSemanticPanelOpen]);
 
     // --- splitView sync ---
     useEffect(() => {

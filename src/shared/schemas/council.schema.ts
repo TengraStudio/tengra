@@ -14,7 +14,7 @@ export const CouncilGetProposalSchema = z.object({
     taskId: z.string().min(1)
 });
 
-// Since ProjectStep is complex, return the basic shape or use generic object array
+// Since WorkspaceAgentStep is complex, return the basic shape or use generic object array
 export const CouncilGetProposalResponseSchema = z.object({
     success: z.boolean(),
     plan: z.array(z.record(z.string(), z.unknown())).optional(),

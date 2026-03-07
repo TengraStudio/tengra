@@ -667,7 +667,7 @@ function registerLazyServices() {
         const { LogoService } = await import('@main/services/external/logo.service');
         return new LogoService({
             llmService,
-            projectService,
+            workspaceService: projectService,
             localImageService,
             imagePersistenceService,
             authService,
@@ -969,7 +969,7 @@ function registerAnalysisServices() {
         (llmService, workspaceAgentService) =>
             new WorkflowService({
                 llmService: llmService as LLMService,
-                projectAgentService: workspaceAgentService as WorkspaceAgentService,
+                workspaceAgentService: workspaceAgentService as WorkspaceAgentService,
             }),
         ['llmService', 'workspaceAgentService']
     );

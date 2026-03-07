@@ -18,7 +18,7 @@ export interface TerminalPanelOverlaysConnectorProps {
     isGalleryView: boolean;
     hasActiveSession: boolean;
     isFloating: boolean;
-    projectPath?: string;
+    workspacePath?: string;
     splitView: { primaryId: string; secondaryId: string } | null;
     isSynchronizedInputEnabled: boolean;
     activeRecordingTabId: string | null;
@@ -189,7 +189,7 @@ export const TerminalPanelOverlaysConnector: React.FC<TerminalPanelOverlaysConne
                 semanticErrorCount: p.activeSemanticErrorCount,
                 semanticWarningCount: p.activeSemanticWarningCount,
                 isFloating: p.isFloating,
-                projectPath: p.projectPath,
+                workspacePath: p.workspacePath,
                 pasteHistory: p.pasteHistory,
                 onPasteHistory: entry => { void p.handlePasteFromHistory(entry); },
                 labels: {

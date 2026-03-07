@@ -608,7 +608,7 @@ export class AgentTaskExecutor {
         try {
             const config = this.state.config;
             if (!config) { throw new Error('Agent config not initialized'); }
-            const { task, projectId, attachments, agentProfileId, locale } = config;
+            const { task, workspaceId, attachments, agentProfileId, locale } = config;
             const profile = this.services.registry.getProfile(agentProfileId ?? 'default');
             let systemPrompt = profile.systemPrompt;
             if (locale && locale !== 'en') {
@@ -636,7 +636,7 @@ export class AgentTaskExecutor {
                     {
                         id: randomUUID(),
                         role: 'user',
-                        content: `Task: ${String(task)} \n\nProject Context: ${projectId ?? 'None'} \nAttachments: ${attachments?.map(a => a.name).join(', ') ?? 'None'} `,
+                        content: `Task: ${String(task)} \n\nProject Context: ${workspaceId ?? 'None'} \nAttachments: ${attachments?.map(a => a.name).join(', ') ?? 'None'} `,
                         timestamp: new Date(),
                     } as Message,
                 ];
@@ -663,7 +663,7 @@ export class AgentTaskExecutor {
         try {
             const config = this.state.config;
             if (!config) { throw new Error('Agent config not initialized'); }
-            const { task, projectId, agentProfileId, locale } = config;
+            const { task, workspaceId, agentProfileId, locale } = config;
             const profile = this.services.registry.getProfile(agentProfileId ?? 'default');
             let systemPrompt = profile.systemPrompt;
             if (locale && locale !== 'en') {
@@ -688,7 +688,7 @@ export class AgentTaskExecutor {
                 {
                     id: randomUUID(),
                     role: 'user',
-                    content: `Task: ${String(task)}\n\nProject Context: ${projectId ?? 'None'}\n\nINSTRUCTIONS:\n1. Analyze this task briefly\n2. Call the \`propose_plan\` tool with your implementation steps\n\nFALLBACK (if tool calling is not available):\nReturn a JSON object: { "steps": ["step 1", "step 2", ...] }`,
+                    content: `Task: ${String(task)}\n\nProject Context: ${workspaceId ?? 'None'}\n\nINSTRUCTIONS:\n1. Analyze this task briefly\n2. Call the \`propose_plan\` tool with your implementation steps\n\nFALLBACK (if tool calling is not available):\nReturn a JSON object: { "steps": ["step 1", "step 2", ...] }`,
                     timestamp: new Date(),
                 } as Message,
             ];
@@ -957,7 +957,7 @@ export class AgentTaskExecutor {
     }
 
     private async resolveProjectPath(): Promise<string | null> {
-        const projectId = this.state.config?.projectId;
+        const projectId = this.state.config?.workspaceId;
         if (!projectId) {
             return null;
         }
@@ -2065,7 +2065,7 @@ ${content}`;
             })),
             config: {
                 task: activeTask.description,
-                projectId: activeTask.project_path,
+                workspaceId: activeTask.project_path,
                 agentProfileId: profileId,
                 model: metadata['model'] as { provider: string; model: string } | undefined,
                 systemMode: metadata['systemMode'] as 'fast' | 'thinking' | 'architect' | undefined,
@@ -2233,7 +2233,7 @@ ${content}`;
     }
 
     private mapToAgentTaskState(): AgentTaskState {
-        const baseState = createInitialAgentState(this.taskId, this.state.config?.projectId ?? '');
+        const baseState = createInitialAgentState(this.taskId, this.state.config?.workspaceId ?? '');
 
         // Map Status
         switch (this.state.status) {

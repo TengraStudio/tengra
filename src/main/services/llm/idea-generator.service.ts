@@ -49,7 +49,7 @@ const DELAY_MULTIPLIER = Number.parseInt(process.env.IDEA_DELAY_MULTIPLIER ?? '0
 
 /**
  * Idea Generator Service
- * Orchestrates the AI-powered project idea generation pipeline
+ * Orchestrates the AI-powered workspace idea generation pipeline
  */
 export class IdeaGeneratorService extends BaseService {
     // private initialized = false; // Removed as unused
@@ -1378,11 +1378,11 @@ Respond in JSON format:
     // ==================== Approval Workflow ====================
 
     /**
-     * Approve an idea and create a project
+     * Approve an idea and create a workspace
      */
     async approveIdea(
         ideaId: string,
-        projectPath: string,
+        workspacePath: string,
         selectedName?: string
     ): Promise<Project> {
         const idea = await this.getIdea(ideaId);
@@ -1390,7 +1390,7 @@ Respond in JSON format:
             throw new Error(`Idea not found: ${ideaId}`);
         }
 
-        this.logInfo(`Approving idea: ${ideaId}, creating project at ${projectPath}`);
+        this.logInfo(`Approving idea: ${ideaId}, creating workspace at ${workspacePath}`);
 
         // Enrich the idea if not already enriched
         let enrichedIdea = idea;
@@ -1403,15 +1403,15 @@ Respond in JSON format:
             enrichedIdea.title = selectedName;
         }
 
-        const project = await this.exportOrchestration.exportIdeaToProject({
+        const workspace = await this.exportOrchestration.exportIdeaToWorkspace({
             ideaId,
             idea: enrichedIdea,
-            projectPath,
+            workspacePath,
         });
 
-        this.logInfo(`Project created: ${project.id} from idea ${ideaId}`);
+        this.logInfo(`Workspace created: ${workspace.id} from idea ${ideaId}`);
 
-        return project;
+        return workspace;
     }
 
     /**

@@ -24,7 +24,7 @@ interface UseTerminalTabActionsParams {
     tabs: TerminalTab[];
     tabsRef: MutableRefObject<TerminalTab[]>;
     activeTabIdRef: MutableRefObject<string | null>;
-    projectPath?: string;
+    workspacePath?: string;
     availableShells: AvailableShell[];
     availableBackends: AvailableBackend[];
     setTabs: (tabs: TerminalTab[] | ((prev: TerminalTab[]) => TerminalTab[])) => void;
@@ -37,14 +37,14 @@ interface UseTerminalTabActionsParams {
     completeRecording: () => void;
     recordingCaptureRef: MutableRefObject<{ tabId: string } | null>;
     onToggle: () => void;
-    projectIssuesTab: TerminalTab | null;
+    workspaceIssuesTab: TerminalTab | null;
 }
 
 export function useTerminalTabActions({
     tabs,
     tabsRef,
     activeTabIdRef,
-    projectPath,
+    workspacePath,
     availableShells,
     availableBackends,
     setTabs,
@@ -57,7 +57,7 @@ export function useTerminalTabActions({
     completeRecording,
     recordingCaptureRef,
     onToggle,
-    projectIssuesTab,
+    workspaceIssuesTab,
 }: UseTerminalTabActionsParams) {
     const shellNameById = useMemo(() => new Map(availableShells.map(s => [s.id, s.name])), [availableShells]);
     const backendNameById = useMemo(() => new Map(availableBackends.map(b => [b.id, b.name])), [availableBackends]);
@@ -94,7 +94,7 @@ export function useTerminalTabActions({
                     name,
                     type,
                     backendId: effectiveBackendId,
-                    cwd: projectPath ?? '',
+                    cwd: workspacePath ?? '',
                     isRunning: true,
                     status: 'idle',
                     history: [],
@@ -110,7 +110,7 @@ export function useTerminalTabActions({
         [
             availableBackends,
             backendNameById,
-            projectPath,
+            workspacePath,
             setTabs,
             setActiveTabId,
             shellNameById,
@@ -243,12 +243,12 @@ export function useTerminalTabActions({
             setActiveTabId(nextActiveTabId);
             activeTabIdRef.current = nextActiveTabId;
 
-            if (remainingTabs.length === 0 && !projectIssuesTab) {
+            if (remainingTabs.length === 0 && !workspaceIssuesTab) {
                 setIsNewTerminalMenuOpen(false);
                 onToggle();
             }
         },
-        [clearSemanticIssues, completeRecording, onToggle, projectIssuesTab, setTabs, setActiveTabId, tabsRef, activeTabIdRef, recordingCaptureRef, setIsNewTerminalMenuOpen]
+        [clearSemanticIssues, completeRecording, onToggle, workspaceIssuesTab, setTabs, setActiveTabId, tabsRef, activeTabIdRef, recordingCaptureRef, setIsNewTerminalMenuOpen]
     );
 
     const reorderTabs = useCallback(

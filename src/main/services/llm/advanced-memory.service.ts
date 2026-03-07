@@ -231,7 +231,7 @@ export class AdvancedMemoryService {
     async extractAndStageFromMessage(
         content: string,
         sourceId: string,
-        projectId?: string
+        workspaceId?: string
     ): Promise<PendingMemory[]> {
         const startedAt = Date.now();
         this.operationalAnalytics.totalRequests++;
@@ -272,7 +272,7 @@ export class AdvancedMemoryService {
                     category: fact.category,
                     extractionConfidence: fact.confidence,
                     tags: fact.tags,
-                    projectId
+                    workspaceId
                 });
 
                 if (pending) {
@@ -300,7 +300,7 @@ export class AdvancedMemoryService {
         sourceId: string,
         category: MemoryCategory = 'fact',
         tags: string[] = [],
-        projectId?: string
+        workspaceId?: string
     ): Promise<AdvancedSemanticFragment> {
         const startedAt = Date.now();
         this.operationalAnalytics.totalRequests++;
@@ -333,7 +333,7 @@ export class AdvancedMemoryService {
                 lastAccessedAt: now,
                 relatedMemoryIds: [],
                 contradictsIds: [],
-                projectId,
+                workspaceId,
                 createdAt: now,
                 updatedAt: now
             };
@@ -371,9 +371,9 @@ export class AdvancedMemoryService {
         category: MemoryCategory;
         extractionConfidence: number;
         tags: string[];
-        projectId?: string;
+        workspaceId?: string;
     }): Promise<PendingMemory | null> {
-        const { content, source, sourceId, sourceContext, category, extractionConfidence, tags, projectId } = params;
+        const { content, source, sourceId, sourceContext, category, extractionConfidence, tags, workspaceId } = params;
         // Check staging buffer limit
         if (this.stagingBuffer.size >= this.config.maxPendingMemories) {
             // Remove oldest pending memory
@@ -425,7 +425,7 @@ export class AdvancedMemoryService {
             ),
             potentialContradictions,
             similarMemories,
-            projectId
+            workspaceId
         };
 
         this.stagingBuffer.set(pending.id, pending);
@@ -535,7 +535,7 @@ export class AdvancedMemoryService {
             lastAccessedAt: now,
             relatedMemoryIds: [],
             contradictsIds: [],
-            projectId: pending.projectId,
+            workspaceId: pending.workspaceId,
             createdAt: now,
             updatedAt: now
         };
@@ -1280,24 +1280,24 @@ If no facts worth remembering, return [].`;
         );
     }
 
-    private isProjectAllowed(
+    private isWorkspaceAllowed(
         namespace: SharedMemoryNamespace,
-        sourceProjectId: string,
-        targetProjectId: string
+        sourceWorkspaceId: string,
+        targetWorkspaceId: string
     ): boolean {
-        const allowedTargets = namespace.accessControl[sourceProjectId];
+        const allowedTargets = namespace.accessControl[sourceWorkspaceId];
         if (!allowedTargets) {
             return false;
         }
-        return allowedTargets.includes(targetProjectId);
+        return allowedTargets.includes(targetWorkspaceId);
     }
 
-    private async findProjectMemoryBySource(
-        projectId: string,
+    private async findWorkspaceMemoryBySource(
+        workspaceId: string,
         sourceId: string
     ): Promise<AdvancedSemanticFragment | null> {
         const memories = await this.getAllAdvancedMemories();
-        return memories.find(memory => memory.projectId === projectId && memory.sourceId === sourceId) ?? null;
+        return memories.find(memory => memory.workspaceId === workspaceId && memory.sourceId === sourceId) ?? null;
     }
 
     /**
@@ -1472,7 +1472,7 @@ If no facts worth remembering, return [].`;
             category?: MemoryCategory;
             tags?: string[];
             importance?: number;
-            projectId?: string | null;
+            workspaceId?: string | null;
             editReason?: string;
         }
     ): Promise<AdvancedSemanticFragment | null> {
@@ -1518,8 +1518,8 @@ If no facts worth remembering, return [].`;
             memory.initialImportance = memory.importance;
         }
 
-        if (updates.projectId !== undefined) {
-            memory.projectId = updates.projectId ?? undefined;
+        if (updates.workspaceId !== undefined) {
+            memory.workspaceId = updates.workspaceId ?? undefined;
         }
 
         memory.updatedAt = Date.now();
@@ -1575,9 +1575,9 @@ If no facts worth remembering, return [].`;
     }
 
     /**
-     * Share a memory with another project
+     * Share a memory with another workspace
      */
-    async shareMemoryWithProject(memoryId: string, targetProjectId: string): Promise<AdvancedSemanticFragment | null> {
+    async shareMemoryWithWorkspace(memoryId: string, targetWorkspaceId: string): Promise<AdvancedSemanticFragment | null> {
         const memory = await this.getMemoryById(memoryId);
         if (!memory) { return null; }
         const normalizedTags = memory.tags ?? [];
@@ -1587,7 +1587,7 @@ If no facts worth remembering, return [].`;
         const sharedMemory: AdvancedSemanticFragment = {
             ...memory,
             id: this.generateId(),
-            projectId: targetProjectId,
+            workspaceId: targetWorkspaceId,
             createdAt: Date.now(),
             updatedAt: Date.now(),
             history: [
@@ -1599,7 +1599,7 @@ If no facts worth remembering, return [].`;
                     tags: [...normalizedTags],
                     importance: memory.importance,
                     timestamp: Date.now(),
-                    reason: `Shared from ${memory.projectId ?? 'global'} to ${targetProjectId}`
+                    reason: `Shared from ${memory.workspaceId ?? 'global'} to ${targetWorkspaceId}`
                 }
             ],
             tags: [...normalizedTags],
@@ -1607,26 +1607,26 @@ If no facts worth remembering, return [].`;
         };
 
         await this.storeAdvancedMemory(sharedMemory);
-        appLogger.info(SERVICE_NAME, `Memory ${memoryId} shared with project ${targetProjectId}`);
+        appLogger.info(SERVICE_NAME, `Memory ${memoryId} shared with workspace ${targetWorkspaceId}`);
         return sharedMemory;
     }
 
     createSharedNamespace(payload: {
         id: string;
         name: string;
-        projectIds: string[];
+        workspaceIds: string[];
         accessControl?: Record<string, string[]>;
     }): SharedMemoryNamespace {
         const now = Date.now();
-        const uniqueProjects = Array.from(new Set(payload.projectIds.filter(projectId => projectId.trim().length > 0)));
+        const uniqueWorkspaces = Array.from(new Set(payload.workspaceIds.filter(wsId => wsId.trim().length > 0)));
         const defaultAccess: Record<string, string[]> = {};
-        for (const projectId of uniqueProjects) {
-            defaultAccess[projectId] = uniqueProjects.filter(candidate => candidate !== projectId);
+        for (const wsId of uniqueWorkspaces) {
+            defaultAccess[wsId] = uniqueWorkspaces.filter(candidate => candidate !== wsId);
         }
         const namespace: SharedMemoryNamespace = {
             id: payload.id,
             name: payload.name,
-            projectIds: uniqueProjects,
+            workspaceIds: uniqueWorkspaces,
             accessControl: payload.accessControl ?? defaultAccess,
             createdAt: this.sharedNamespaces.get(payload.id)?.createdAt ?? now,
             updatedAt: now
@@ -1640,32 +1640,32 @@ If no facts worth remembering, return [].`;
         if (!namespace) {
             throw new Error(`Shared namespace not found: ${request.namespaceId}`);
         }
-        if (!namespace.projectIds.includes(request.sourceProjectId)) {
-            throw new Error(`Source project ${request.sourceProjectId} is not part of namespace ${request.namespaceId}`);
+        if (!namespace.workspaceIds.includes(request.sourceWorkspaceId)) {
+            throw new Error(`Source workspace ${request.sourceWorkspaceId} is not part of namespace ${request.namespaceId}`);
         }
 
         const sourceMemories = (await this.getAllAdvancedMemories()).filter(memory =>
-            memory.projectId === request.sourceProjectId &&
+            memory.workspaceId === request.sourceWorkspaceId &&
             (request.memoryIds === undefined || request.memoryIds.includes(memory.id))
         );
-        const targets = (request.targetProjectIds ?? namespace.projectIds)
-            .filter(projectId => projectId !== request.sourceProjectId);
+        const targets = (request.targetWorkspaceIds ?? namespace.workspaceIds)
+            .filter(wsId => wsId !== request.sourceWorkspaceId);
 
         let synced = 0;
         let skipped = 0;
         const conflicts: SharedMemoryMergeConflict[] = [];
-        for (const targetProjectId of targets) {
-            if (!this.isProjectAllowed(namespace, request.sourceProjectId, targetProjectId)) {
+        for (const targetWsId of targets) {
+            if (!this.isWorkspaceAllowed(namespace, request.sourceWorkspaceId, targetWsId)) {
                 skipped += sourceMemories.length;
                 continue;
             }
             for (const sourceMemory of sourceMemories) {
-                const existing = await this.findProjectMemoryBySource(targetProjectId, sourceMemory.sourceId);
+                const existing = await this.findWorkspaceMemoryBySource(targetWsId, sourceMemory.sourceId);
                 if (existing && existing.content !== sourceMemory.content) {
                     const conflict: SharedMemoryMergeConflict = {
                         namespaceId: namespace.id,
-                        sourceProjectId: request.sourceProjectId,
-                        targetProjectId,
+                        sourceWorkspaceId: request.sourceWorkspaceId,
+                        targetWorkspaceId: targetWsId,
                         sourceMemoryId: sourceMemory.id,
                         targetMemoryId: existing.id,
                         sourceContent: sourceMemory.content,
@@ -1677,7 +1677,7 @@ If no facts worth remembering, return [].`;
                     continue;
                 }
 
-                const shared = await this.shareMemoryWithProject(sourceMemory.id, targetProjectId);
+                const shared = await this.shareMemoryWithWorkspace(sourceMemory.id, targetWsId);
                 if (shared) {
                     synced++;
                 } else {
@@ -1707,43 +1707,43 @@ If no facts worth remembering, return [].`;
         }
 
         const allMemories = await this.getAllAdvancedMemories();
-        const memoriesByProject: Record<string, number> = {};
+        const memoriesByWorkspace: Record<string, number> = {};
         let totalMemories = 0;
-        for (const projectId of namespace.projectIds) {
-            const count = allMemories.filter(memory => memory.projectId === projectId).length;
-            memoriesByProject[projectId] = count;
+        for (const wsId of namespace.workspaceIds) {
+            const count = allMemories.filter(memory => memory.workspaceId === wsId).length;
+            memoriesByWorkspace[wsId] = count;
             totalMemories += count;
         }
 
         return {
             namespaceId,
             totalMemories,
-            totalProjects: namespace.projectIds.length,
+            totalWorkspaces: namespace.workspaceIds.length,
             conflicts: (this.sharedNamespaceConflicts.get(namespaceId) ?? []).length,
-            memoriesByProject,
+            memoriesByWorkspace,
             updatedAt: Date.now()
         };
     }
 
-    async searchAcrossProjects(payload: {
+    async searchAcrossWorkspaces(payload: {
         namespaceId: string;
         query: string;
-        projectId: string;
+        workspaceId: string;
         limit?: number;
     }): Promise<AdvancedSemanticFragment[]> {
         const namespace = this.sharedNamespaces.get(payload.namespaceId);
         if (!namespace) {
             throw new Error(`Shared namespace not found: ${payload.namespaceId}`);
         }
-        if (!namespace.projectIds.includes(payload.projectId)) {
-            throw new Error(`Project ${payload.projectId} is not part of namespace ${payload.namespaceId}`);
+        if (!namespace.workspaceIds.includes(payload.workspaceId)) {
+            throw new Error(`Workspace ${payload.workspaceId} is not part of namespace ${payload.namespaceId}`);
         }
 
         const searchResult = await this.searchMemoriesHybrid(payload.query, payload.limit ?? 20);
         return searchResult.filter(memory =>
-            memory.projectId !== undefined &&
-            namespace.projectIds.includes(memory.projectId) &&
-            this.isProjectAllowed(namespace, payload.projectId, memory.projectId)
+            memory.workspaceId !== undefined &&
+            namespace.workspaceIds.includes(memory.workspaceId) &&
+            this.isWorkspaceAllowed(namespace, payload.workspaceId, memory.workspaceId)
         );
     }
 

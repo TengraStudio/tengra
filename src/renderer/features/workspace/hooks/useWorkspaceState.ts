@@ -4,7 +4,7 @@ import {
     pushNotification,
     useNotificationCenterStore,
 } from '@/store/notification-center.store';
-import { setProjectShellState, useUiLayoutStore } from '@/store/ui-layout.store';
+import { setWorkspaceShellState, useUiLayoutStore } from '@/store/ui-layout.store';
 import { WorkspaceEntry } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -13,7 +13,7 @@ const getWorkspaceAgentBridge = () => window.electron.projectAgent;
 export function useProjectState() {
     const [selectedEntries, setSelectedEntries] = useState<WorkspaceEntry[]>([]);
     const [lastSelectedEntry, setLastSelectedEntry] = useState<WorkspaceEntry | null>(null);
-    const persistedProjectShell = useUiLayoutStore(snapshot => snapshot.projectShell);
+    const persistedProjectShell = useUiLayoutStore(snapshot => snapshot.workspaceShell);
     const [sidebarCollapsed, setSidebarCollapsedState] = useState(
         persistedProjectShell.sidebarCollapsed
     );
@@ -86,19 +86,19 @@ export function useProjectState() {
 
     const setSidebarCollapsed = useCallback((collapsed: boolean) => {
         setSidebarCollapsedState(collapsed);
-        setProjectShellState({ sidebarCollapsed: collapsed });
+        setWorkspaceShellState({ sidebarCollapsed: collapsed });
     }, []);
 
     const setAgentPanelWidth = useCallback((width: number) => {
         const nextWidth = Math.max(260, Math.min(640, Math.floor(width)));
         setAgentPanelWidthState(nextWidth);
-        setProjectShellState({ agentPanelWidth: nextWidth });
+        setWorkspaceShellState({ agentPanelWidth: nextWidth });
     }, []);
 
     const setTerminalHeight = useCallback((height: number) => {
         const nextHeight = Math.max(150, Math.min(900, Math.floor(height)));
         setTerminalHeightState(nextHeight);
-        setProjectShellState({ terminalHeight: nextHeight });
+        setWorkspaceShellState({ terminalHeight: nextHeight });
     }, []);
 
     const notify = useCallback((type: 'success' | 'error' | 'info', message: string) => {

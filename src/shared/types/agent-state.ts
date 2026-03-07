@@ -154,8 +154,8 @@ export interface PlanStep {
  * Agent execution context
  */
 export interface AgentContext {
-    projectPath: string;
-    projectName: string;
+    workspacePath: string;
+    workspaceName: string;
     workspace: {
         rootPath: string;
         gitRoot?: string;

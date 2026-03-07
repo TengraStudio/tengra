@@ -7,7 +7,7 @@ import { Message } from '../types/chat';
 import { AgentStartOptions, ProjectState, ProjectStep } from '../types/project-agent';
 
 /**
- * Valid status values for ProjectState
+ * Valid status values for agent state
  */
 const PROJECT_STATE_STATUSES = new Set([
     'idle', 'planning', 'waiting_for_approval', 'running',
@@ -15,7 +15,7 @@ const PROJECT_STATE_STATUSES = new Set([
 ]);
 
 /**
- * Valid status values for ProjectStep
+ * Valid status values for agent step
  */
 const PROJECT_STEP_STATUSES = new Set(['pending', 'running', 'completed', 'failed']);
 
@@ -67,7 +67,7 @@ function isValidSystemMode(mode: unknown): boolean {
 }
 
 /**
- * Type guard for ProjectStep
+ * Type guard for agent step (ProjectStep)
  */
 export function isProjectStep(value: unknown): value is ProjectStep {
     if (!isObject(value)) {
@@ -111,7 +111,7 @@ export function isAgentStartOptions(value: unknown): value is AgentStartOptions 
     }
 
     // Validate optional string fields
-    const optionalStringFields = ['nodeId', 'projectId', 'agentProfileId'];
+    const optionalStringFields = ['nodeId', 'workspaceId', 'agentProfileId'];
     const allStringsValid = optionalStringFields.every(field => isOptionalString(value[field]));
     if (!allStringsValid) {
         return false;
@@ -131,7 +131,7 @@ export function isAgentStartOptions(value: unknown): value is AgentStartOptions 
 }
 
 /**
- * Validates required fields of ProjectState
+ * Validates required fields of agent state
  */
 function hasValidRequiredFields(value: Record<string, unknown>): boolean {
     // status must be valid
@@ -144,7 +144,7 @@ function hasValidRequiredFields(value: Record<string, unknown>): boolean {
         return false;
     }
 
-    // plan must be an array of valid ProjectSteps
+    // plan must be an array of valid agent steps
     if (!Array.isArray(value.plan) || !arrayOf(value.plan, isProjectStep)) {
         return false;
     }
@@ -158,7 +158,7 @@ function hasValidRequiredFields(value: Record<string, unknown>): boolean {
 }
 
 /**
- * Validates optional fields of ProjectState
+ * Validates optional fields of agent state
  */
 function hasValidOptionalFields(value: Record<string, unknown>): boolean {
     // lastError must be string if present
@@ -180,7 +180,7 @@ function hasValidOptionalFields(value: Record<string, unknown>): boolean {
 }
 
 /**
- * Type guard for ProjectState
+ * Type guard for agent state (ProjectState)
  * Validates the structure of incoming IPC data before casting
  */
 export function isProjectState(value: unknown): value is ProjectState {
@@ -192,12 +192,12 @@ export function isProjectState(value: unknown): value is ProjectState {
 }
 
 /**
- * Asserts that a value is a valid ProjectState
+ * Asserts that a value is a valid agent state
  * Throws an error with details if validation fails
  *
  * @param value - The value to validate
  * @param context - Optional context string for error messages
- * @returns The validated ProjectState
+ * @returns The validated state
  * @throws Error if validation fails
  */
 export function assertProjectState(value: unknown, context?: string): ProjectState {
@@ -210,11 +210,11 @@ export function assertProjectState(value: unknown, context?: string): ProjectSta
 }
 
 /**
- * Safely converts an unknown value to ProjectState
- * Returns undefined if the value is not a valid ProjectState
+ * Safely converts an unknown value to agent state
+ * Returns undefined if the value is not a valid agent state
  *
  * @param value - The value to convert
- * @returns ProjectState or undefined
+ * @returns agent state or undefined
  */
 export function toProjectState(value: unknown): ProjectState | undefined {
     if (isProjectState(value)) {

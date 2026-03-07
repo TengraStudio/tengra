@@ -11,7 +11,7 @@ export interface AgentProfile {
     skills: string[];
 }
 
-/** Status of a project step */
+/** Status of a workspace agent step */
 export type AutomationWorkflowStepStatus =
     | 'pending'
     | 'running'
@@ -207,7 +207,6 @@ export interface AgentStartOptions {
     nodeId?: string;
     priority?: 'low' | 'normal' | 'high' | 'critical';
     model?: { provider: string; model: string };
-    projectId?: string;
     workspaceId?: string;
     agentProfileId?: string;
     attachments?: Array<{ name: string; path: string; size: number }>;

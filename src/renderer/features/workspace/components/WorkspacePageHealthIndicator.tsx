@@ -3,7 +3,7 @@ import React from 'react';
 
 import { SidebarStatusIndicator, StatusType } from '@/components/layout/sidebar-components/SidebarStatusIndicator';
 import { Language, useTranslation } from '@/i18n';
-import { useProjectsPageHealthStore } from '@/store/projects-page-health.store';
+import { useWorkspacesPageHealthStore } from '@/store/projects-page-health.store';
 
 interface ProjectsPageHealthIndicatorProps {
     language: Language;
@@ -15,7 +15,7 @@ interface ProjectsPageHealthIndicatorProps {
  */
 export const ProjectsPageHealthIndicator: React.FC<ProjectsPageHealthIndicatorProps> = ({ language }) => {
     const { t } = useTranslation(language);
-    const health = useProjectsPageHealthStore(state => state);
+    const health = useWorkspacesPageHealthStore(state => state);
 
     const status: StatusType = health.status === 'healthy' ? 'online' : 'warning';
 

@@ -25,7 +25,7 @@ interface TerminalSplitViewProps {
     closeTab: (tabId: string) => void;
     handleTabSelect: (tabId: string) => void;
     setIsGalleryView: (value: boolean) => void;
-    projectPath?: string;
+    workspacePath?: string;
     terminalAppearance: TerminalAppearancePreferences;
     resolvedTerminalAppearance: ResolvedTerminalAppearance;
     setTerminalInstance: (id: string, terminal: import('xterm').Terminal | null) => void;
@@ -60,7 +60,7 @@ export function TerminalSplitView({
     closeTab,
     handleTabSelect,
     setIsGalleryView,
-    projectPath,
+    workspacePath,
     terminalAppearance,
     resolvedTerminalAppearance,
     setTerminalInstance,
@@ -103,7 +103,7 @@ export function TerminalSplitView({
                             onClose={() => {
                                 closeTab(tab.id);
                             }}
-                            projectPath={projectPath}
+                            workspacePath={workspacePath}
                             appearance={terminalAppearance}
                             resolvedAppearance={resolvedTerminalAppearance}
                             onTerminalInstanceChange={setTerminalInstance}
@@ -158,7 +158,7 @@ export function TerminalSplitView({
                                             onClose={() => {
                                                 closeTab(tab.id);
                                             }}
-                                            projectPath={projectPath}
+                                            workspacePath={workspacePath}
                                             appearance={terminalAppearance}
                                             resolvedAppearance={resolvedTerminalAppearance}
                                             onTerminalInstanceChange={setTerminalInstance}

@@ -7,7 +7,7 @@ import type {
 import type { AdvancedSemanticFragment, PendingMemory } from '@shared/types/advanced-memory';
 import type { Chat, Folder, Message, ToolCall, ToolResult } from '@shared/types/chat';
 import type { IpcValue } from '@shared/types/common';
-import type { Project, ProjectAnalysis } from '@shared/types/project';
+import type { Workspace, WorkspaceAnalysis } from '@shared/types/project';
 import type { ClaudeQuota, CodexUsage } from '@shared/types/quota';
 import type { AppSettings } from '@shared/types/settings';
 import type { Workflow, WorkflowExecutionResult } from '@shared/types/workflow.types';
@@ -171,7 +171,7 @@ export const webElectronMock: ElectronAPI = {
             symbolCount: 0,
             generatedAt: new Date().toISOString(),
         }),
-        generateProjectDocumentation: async (
+        generateWorkspaceDocumentation: async (
             _rootPath: string,
             _maxFiles?: number
         ) => ({
@@ -201,10 +201,10 @@ export const webElectronMock: ElectronAPI = {
         searchFiles: async (
             _rootPath: string,
             _query: string,
-            _projectId?: string,
+            _workspaceId?: string,
             _isRegex?: boolean
         ) => [],
-        indexProject: async (_rootPath: string, _projectId: string) => { },
+        indexWorkspace: async (_rootPath: string, _workspaceId: string) => { },
         queryIndexedSymbols: async (_query: string) => [],
         getSymbolAnalytics: async (_rootPath: string) => ({
             totalSymbols: 0,
@@ -219,9 +219,9 @@ export const webElectronMock: ElectronAPI = {
     },
 
     project: {
-        analyze: async (_rootPath: string, _projectId: string) =>
+        analyze: async (_rootPath: string, _workspaceId: string) =>
             ({
-                name: 'Mock Project',
+                name: 'Mock Workspace',
                 path: _rootPath,
                 type: 'unknown',
                 files: [],
@@ -232,13 +232,13 @@ export const webElectronMock: ElectronAPI = {
                 languages: {},
                 stats: { fileCount: 0, totalSize: 0, loc: 0, lastModified: Date.now() },
                 todos: [],
-            }) as ProjectAnalysis,
+            }) as WorkspaceAnalysis,
         generateLogo: async (
-            _projectPath: string,
+            _workspacePath: string,
             _options: { prompt: string; style: string; model: string; count: number }
         ) => [],
-        analyzeIdentity: async (_projectPath: string) => ({ suggestedPrompts: [], colors: [] }),
-        applyLogo: async (_projectPath: string, _tempLogoPath: string) => '',
+        analyzeIdentity: async (_workspacePath: string) => ({ suggestedPrompts: [], colors: [] }),
+        applyLogo: async (_workspacePath: string, _tempLogoPath: string) => '',
         getCompletion: async (_text: string) => '',
         getInlineSuggestion: async (
             _request: InlineSuggestionRequest
@@ -250,7 +250,7 @@ export const webElectronMock: ElectronAPI = {
             _event: InlineSuggestionTelemetry
         ) => ({ success: true }),
         improveLogoPrompt: async (_prompt: string) => '',
-        uploadLogo: async (_projectPath: string) => null,
+        uploadLogo: async (_workspacePath: string) => null,
         analyzeDirectory: async (_dirPath: string) => ({
             hasPackageJson: false,
             pkg: {},
@@ -570,7 +570,7 @@ export const webElectronMock: ElectronAPI = {
         getTimeStats: async () => ({
             totalOnlineTime: 0,
             totalCodingTime: 0,
-            projectCodingTime: {},
+            workspaceCodingTime: {},
         }),
         getTokenStats: async (_period: 'daily' | 'weekly' | 'monthly') => ({
             totalSent: 0,
@@ -590,16 +590,16 @@ export const webElectronMock: ElectronAPI = {
             tokensReceived: number;
             costEstimate?: number;
         }) => ({ success: true }),
-        getProjects: async () => [],
+        getWorkspaces: async () => [],
         getFolders: async () => [],
-        createProject: async (
+        createWorkspace: async (
             _name: string,
             _path: string,
             _description: string,
             _mounts?: string
         ) =>
             ({
-                id: 'mock-project-id',
+                id: 'mock-workspace-id',
                 title: _name,
                 description: _description,
                 path: _path,
@@ -610,12 +610,12 @@ export const webElectronMock: ElectronAPI = {
                 metadata: {},
                 createdAt: Date.now(),
                 updatedAt: Date.now(),
-            }) as Project,
-        updateProject: async (_id: string, _updates: Partial<Project>) => { },
-        deleteProject: async (_id: string, _deleteFiles?: boolean) => { },
-        archiveProject: async (_id: string, _isArchived: boolean) => { },
-        bulkDeleteProjects: async (_ids: string[], _deleteFiles?: boolean) => { },
-        bulkArchiveProjects: async (_ids: string[], _isArchived: boolean) => { },
+            }) as Workspace,
+        updateWorkspace: async (_id: string, _updates: Partial<Workspace>) => { },
+        deleteWorkspace: async (_id: string, _deleteFiles?: boolean) => { },
+        archiveWorkspace: async (_id: string, _isArchived: boolean) => { },
+        bulkDeleteWorkspaces: async (_ids: string[], _deleteFiles?: boolean) => { },
+        bulkArchiveWorkspaces: async (_ids: string[], _isArchived: boolean) => { },
         createFolder: async (_name: string, _color?: string) =>
             ({
                 id: '1',
@@ -1412,7 +1412,7 @@ export const webElectronMock: ElectronAPI = {
         }),
         getStats: async () => ({ success: true, data: undefined }),
         runDecay: async () => ({ success: true }),
-        extractFromMessage: async (_content: string, _sourceId: string, _projectId?: string) => ({
+        extractFromMessage: async (_content: string, _sourceId: string, _workspaceId?: string) => ({
             success: true,
             data: [],
         }),
@@ -1423,11 +1423,11 @@ export const webElectronMock: ElectronAPI = {
         archiveMany: async (_ids: string[]) => ({ success: true, archived: 0, failed: [] }),
         restore: async (_id: string) => ({ success: true }),
         get: async (_id: string) => ({ success: true, data: undefined }),
-        shareWithProject: async (_id: string, _projectId: string) => ({ success: true }),
+        shareWithWorkspace: async (_id: string, _workspaceId: string) => ({ success: true }),
         createSharedNamespace: async (_payload: {
             id: string;
             name: string;
-            projectIds: string[];
+            workspaceIds: string[];
             accessControl?: Record<string, string[]>;
         }) => ({
             success: true,
@@ -1440,8 +1440,8 @@ export const webElectronMock: ElectronAPI = {
         }),
         syncSharedNamespace: async (_request: {
             namespaceId: string;
-            sourceProjectId: string;
-            targetProjectIds?: string[];
+            sourceWorkspaceId: string;
+            targetWorkspaceIds?: string[];
             memoryIds?: string[];
             resolution?: 'keep_source' | 'keep_target' | 'merge_copy' | 'manual_review';
         }) => ({
@@ -1459,16 +1459,16 @@ export const webElectronMock: ElectronAPI = {
             data: {
                 namespaceId: _namespaceId,
                 totalMemories: 0,
-                totalProjects: 0,
+                totalWorkspaces: 0,
                 conflicts: 0,
-                memoriesByProject: {},
+                memoriesByWorkspace: {},
                 updatedAt: Date.now()
             }
         }),
-        searchAcrossProjects: async (_payload: {
+        searchAcrossWorkspaces: async (_payload: {
             namespaceId: string;
             query: string;
-            projectId: string;
+            workspaceId: string;
             limit?: number;
         }) => ({ success: true, data: [] }),
         getHistory: async (_id: string) => ({ success: true, data: [] }),
@@ -1506,7 +1506,7 @@ export const webElectronMock: ElectronAPI = {
         getIdea: async (_id: string) => null,
         getIdeas: async (_sessionId?: string) => [],
         regenerateIdea: async (_ideaId: string) => ({ success: true, idea: undefined }),
-        approveIdea: async (_ideaId: string, _projectPath: string, _selectedName?: string) => ({
+        approveIdea: async (_ideaId: string, _workspacePath: string, _selectedName?: string) => ({
             success: true,
         }),
         rejectIdea: async (_ideaId: string) => ({ success: true }),
@@ -1603,7 +1603,7 @@ export const webElectronMock: ElectronAPI = {
         getTaskMessages: async (_taskId: string) => ({ success: true, messages: [] }),
         getTaskEvents: async (_taskId: string) => ({ success: true, events: [] }),
         getTaskTelemetry: async (_taskId: string) => ({ success: true, telemetry: [] }),
-        getTaskHistory: async (_projectId?: string) => [],
+        getTaskHistory: async (_workspaceId?: string) => [],
         deleteTask: async (_taskId: string) => ({ success: true }),
         getAvailableModels: async () => ({ success: true, models: [] }),
         retryStep: async (_index: number, _taskId?: string) => { },
@@ -1922,7 +1922,7 @@ export const webElectronMock: ElectronAPI = {
         }),
     },
     orchestrator: {
-        start: async (_task, _projectId) => { },
+        start: async (_task, _workspaceId) => { },
         approve: async (_plan) => { },
         getState: async () => ({
             status: 'idle',

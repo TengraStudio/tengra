@@ -9,7 +9,7 @@ import { buildDevServers } from './servers/dev.server';
 import { buildGitServer } from './servers/git.server';
 import { buildInternetServers } from './servers/internet.server';
 import { buildNetworkServers } from './servers/network.server';
-import { buildProjectServers } from './servers/project.server';
+import { buildWorkspaceServers } from './servers/workspace.server';
 import { buildSecurityServers } from './servers/security.server';
 import { buildUtilityServers } from './servers/utility.server';
 import { buildWebServer } from './servers/web.server';
@@ -20,7 +20,7 @@ export function buildMcpServices(deps: McpDeps): McpService[] {
         ...buildCoreServers(deps),
         ...buildNetworkServers(deps),
         ...buildUtilityServers(deps),
-        ...buildProjectServers(deps),
+        ...buildWorkspaceServers(deps),
         ...buildDataServers(deps),
         buildDatabaseAdminServer(deps),
         buildCloudStorageServer(deps),

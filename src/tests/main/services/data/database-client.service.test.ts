@@ -65,24 +65,24 @@ describe('DatabaseClientService input validation', () => {
         });
     });
 
-    describe('getProject', () => {
+    describe('getWorkspace', () => {
         it('rejects empty id', async () => {
-            await expect(svc.getProject('')).rejects.toThrow('projectId must be a non-empty string');
+            await expect(svc.getWorkspace('')).rejects.toThrow('workspaceId must be a non-empty string');
         });
         it('rejects id with slash', async () => {
-            await expect(svc.getProject('a/b')).rejects.toThrow('projectId contains invalid characters');
+            await expect(svc.getWorkspace('a/b')).rejects.toThrow('workspaceId contains invalid characters');
         });
     });
 
-    describe('updateProject', () => {
+    describe('updateWorkspace', () => {
         it('rejects empty id', async () => {
-            await expect(svc.updateProject('', {})).rejects.toThrow('projectId must be a non-empty string');
+            await expect(svc.updateWorkspace('', {})).rejects.toThrow('workspaceId must be a non-empty string');
         });
     });
 
-    describe('deleteProject', () => {
+    describe('deleteWorkspace', () => {
         it('rejects empty id', async () => {
-            await expect(svc.deleteProject('')).rejects.toThrow('projectId must be a non-empty string');
+            await expect(svc.deleteWorkspace('')).rejects.toThrow('workspaceId must be a non-empty string');
         });
     });
 
@@ -130,12 +130,12 @@ describe('DatabaseClientService input validation', () => {
         });
     });
 
-    describe('createProject', () => {
+    describe('createWorkspace', () => {
         it('rejects empty title', async () => {
-            await expect(svc.createProject({ title: '', path: '/p' })).rejects.toThrow('title must be a non-empty string');
+            await expect(svc.createWorkspace({ title: '', path: '/p' })).rejects.toThrow('title must be a non-empty string');
         });
         it('rejects empty path', async () => {
-            await expect(svc.createProject({ title: 'ok', path: '' })).rejects.toThrow('path must be a non-empty string');
+            await expect(svc.createWorkspace({ title: 'ok', path: '' })).rejects.toThrow('path must be a non-empty string');
         });
     });
 
@@ -262,8 +262,8 @@ describe('DatabaseClientService input validation', () => {
             await expect(svc.getChat('a\\b')).rejects.toThrow('contains invalid characters');
         });
 
-        it('rejects space in projectId', async () => {
-            await expect(svc.getProject('a b')).rejects.toThrow('contains invalid characters');
+        it('rejects space in workspaceId', async () => {
+            await expect(svc.getWorkspace('a b')).rejects.toThrow('contains invalid characters');
         });
     });
 });

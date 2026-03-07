@@ -72,7 +72,7 @@ interface RestoreChatData {
     isPinned?: boolean
     isFavorite?: boolean
     folderId?: string
-    projectId?: string
+    workspaceId?: string
     isGenerating?: boolean
     metadata?: JsonObject
     [key: string]: JsonValue | ChatMessage[] | Date | undefined
@@ -449,7 +449,7 @@ export class BackupService {
                 isPinned: Boolean(chatObj.isPinned),
                 isFavorite: Boolean(chatObj.isFavorite),
                 folderId: chatObj.folderId ? String(chatObj.folderId) : undefined,
-                projectId: chatObj.projectId ? String(chatObj.projectId) : undefined,
+                workspaceId: chatObj.workspaceId ? String(chatObj.workspaceId) : undefined,
                 isGenerating: Boolean(chatObj.isGenerating),
                 metadata: (chatObj.metadata as JsonObject | null | undefined) ?? {}
             }));
@@ -491,7 +491,7 @@ export class BackupService {
             isPinned: chat.isPinned,
             isFavorite: chat.isFavorite,
             folderId: chat.folderId,
-            projectId: chat.projectId,
+            workspaceId: chat.workspaceId,
             isGenerating: chat.isGenerating,
             metadata: chat.metadata
         };
@@ -508,7 +508,7 @@ export class BackupService {
             isPinned: chat.isPinned,
             isFavorite: chat.isFavorite,
             folderId: chat.folderId,
-            projectId: chat.projectId,
+            workspaceId: chat.workspaceId,
             isGenerating: chat.isGenerating,
             metadata: chat.metadata,
             createdAt: this.parseRestoreDate(chat.createdAt),

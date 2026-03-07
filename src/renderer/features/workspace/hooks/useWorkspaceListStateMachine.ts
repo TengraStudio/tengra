@@ -252,7 +252,7 @@ const useProjectListOperations = (
         if (state.status !== 'editing' || !state.targetProject) { return false; }
         dispatch({ type: 'OPERATION_START', message: 'Updating project...' });
         try {
-            await window.electron.db.updateProject(state.targetProject.id, state.editForm);
+            await window.electron.db.updateWorkspace(state.targetProject.id, state.editForm);
             dispatch({ type: 'OPERATION_SUCCESS' });
             return true;
         } catch (error) {
@@ -267,7 +267,7 @@ const useProjectListOperations = (
         if (state.status !== 'deleting' || !state.targetProject) { return; }
         dispatch({ type: 'OPERATION_START', message: 'Deleting project...' });
         try {
-            await window.electron.db.deleteProject(state.targetProject.id, deleteFiles);
+            await window.electron.db.deleteWorkspace(state.targetProject.id, deleteFiles);
             dispatch({ type: 'OPERATION_SUCCESS' });
         } catch (error) {
             const msg = error instanceof Error ? error.message : 'Failed to delete project';
@@ -281,7 +281,7 @@ const useProjectListOperations = (
         dispatch({ type: 'OPERATION_START', message: 'Archiving project...' });
         try {
             const newStatus = state.targetProject.status === 'archived' ? 'active' : 'archived';
-            await window.electron.db.archiveProject(state.targetProject.id, newStatus === 'archived');
+            await window.electron.db.archiveWorkspace(state.targetProject.id, newStatus === 'archived');
             dispatch({ type: 'OPERATION_SUCCESS' });
         } catch (error) {
             const msg = error instanceof Error ? error.message : 'Failed to archive project';
@@ -294,7 +294,7 @@ const useProjectListOperations = (
         if (state.status !== 'bulk_deleting' || state.selectedProjectIds.size === 0) { return; }
         dispatch({ type: 'OPERATION_START', message: `Deleting ${state.selectedProjectIds.size} projects...` });
         try {
-            await window.electron.db.bulkDeleteProjects(Array.from(state.selectedProjectIds), deleteFiles);
+            await window.electron.db.bulkDeleteWorkspaces(Array.from(state.selectedProjectIds), deleteFiles);
             dispatch({ type: 'OPERATION_SUCCESS' });
         } catch (error) {
             const msg = error instanceof Error ? error.message : 'Failed to bulk delete projects';
@@ -307,7 +307,7 @@ const useProjectListOperations = (
         if (state.status !== 'bulk_archiving' || state.selectedProjectIds.size === 0) { return; }
         dispatch({ type: 'OPERATION_START', message: `Archiving ${state.selectedProjectIds.size} projects...` });
         try {
-            await window.electron.db.bulkArchiveProjects(Array.from(state.selectedProjectIds), isArchived);
+            await window.electron.db.bulkArchiveWorkspaces(Array.from(state.selectedProjectIds), isArchived);
             dispatch({ type: 'OPERATION_SUCCESS' });
         } catch (error) {
             const msg = error instanceof Error ? error.message : 'Failed to bulk archive projects';
@@ -325,7 +325,7 @@ const useProjectListOperations = (
                 type: 'local' as const,
                 rootPath: path
             }];
-            const existingProjects = await window.electron.db.getProjects();
+            const existingProjects = await window.electron.db.getWorkspaces();
             const existingMounts = new Set<string>();
             for (const project of existingProjects) {
                 const projectMounts = Array.isArray(project.mounts) && project.mounts.length > 0
@@ -347,7 +347,7 @@ const useProjectListOperations = (
                 }
             }
 
-            await window.electron.db.createProject(name, path, description, JSON.stringify(mounts));
+            await window.electron.db.createWorkspace(name, path, description, JSON.stringify(mounts));
             dispatch({ type: 'OPERATION_SUCCESS' });
             return true;
         } catch (error) {

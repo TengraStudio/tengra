@@ -1,4 +1,4 @@
-import { Project } from '@/types';
+import { Workspace } from '@/types';
 
 export interface WorkspaceChecklistItem {
     id: string;
@@ -16,7 +16,7 @@ export interface TroubleshootEntry {
 export interface StandardsTemplate {
     id: string;
     name: string;
-    updates: Partial<Project>;
+    updates: Partial<Workspace>;
 }
 
 export const workspaceSshPlaybook = {

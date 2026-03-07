@@ -5,7 +5,7 @@ const STORAGE_KEY = 'tengra.sidebar.v1';
 interface SidebarState {
     collapsed: boolean;
     width: number;
-    activeSection: 'chat' | 'projects' | 'settings' | 'tools' | 'providers';
+    activeSection: 'chat' | 'workspaces' | 'settings' | 'tools' | 'providers';
 }
 
 type Listener = () => void;

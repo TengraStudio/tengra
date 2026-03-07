@@ -40,7 +40,7 @@ export interface SystemEvents {
     'ideas:idea-progress': IdeaProgress
     'idea:regenerated': { ideaId: string }
     'file-changed': { path: string; type: 'create' | 'update' | 'delete' }
-    // Project Agent
+    // Workspace Agent
     'project:update': ProjectState
     'project:step-update': { index: number; status: ProjectStepStatus; message?: string; taskId?: string }
     'project:plan-proposed': { steps: Array<string | ProjectStep>; taskId?: string }

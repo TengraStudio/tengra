@@ -2,12 +2,12 @@ import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { ProjectScaffoldService } from '@main/services/project/project-scaffold.service';
 import { ProjectIdea } from '@shared/types/ideas';
-import { Project } from '@shared/types/project';
+import { Workspace } from '@shared/types/workspace';
 
-interface ExportIdeaToProjectOptions {
+interface ExportIdeaToWorkspaceOptions {
     ideaId: string;
     idea: ProjectIdea;
-    projectPath: string;
+    workspacePath: string;
 }
 
 export class IdeaExportOrchestrationService extends BaseService {
@@ -18,20 +18,20 @@ export class IdeaExportOrchestrationService extends BaseService {
         super('IdeaExportOrchestrationService');
     }
 
-    async exportIdeaToProject(options: ExportIdeaToProjectOptions): Promise<Project> {
-        await this.projectScaffoldService.scaffoldProject(options.idea, options.projectPath);
+    async exportIdeaToWorkspace(options: ExportIdeaToWorkspaceOptions): Promise<Workspace> {
+        await this.projectScaffoldService.scaffoldProject(options.idea, options.workspacePath);
 
-        const project = await this.databaseService.createProject(
+        const workspace = await this.databaseService.createWorkspace(
             options.idea.title,
-            options.projectPath,
+            options.workspacePath,
             options.idea.description
         );
 
         const db = this.databaseService.getDatabase();
         await db
             .prepare('UPDATE project_ideas SET status = ?, project_id = ?, updated_at = ? WHERE id = ?')
-            .run('approved', project.id, Date.now(), options.ideaId);
+            .run('approved', workspace.id, Date.now(), options.ideaId);
 
-        return project;
+        return workspace;
     }
 }

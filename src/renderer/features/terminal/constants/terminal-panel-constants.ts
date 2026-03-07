@@ -20,7 +20,7 @@ export const TERMINAL_SYNC_INPUT_STORAGE_KEY = 'terminal.sync-input.v1';
 export const TERMINAL_SPLIT_PRESETS_STORAGE_KEY = 'terminal.split-presets.v1';
 export const TERMINAL_SPLIT_LAYOUT_STORAGE_KEY = 'terminal.split-layout.v1';
 export const TERMINAL_SPLIT_ANALYTICS_STORAGE_KEY = 'terminal.split-analytics.v1';
-export const TERMINAL_PROJECT_ISSUES_TAB_ID = '__project-issues-tab__';
+export const TERMINAL_WORKSPACE_ISSUES_TAB_ID = '__workspace-issues-tab__';
 export const TERMINAL_MANAGER_MODULE_VERSION = serializeTerminalModuleVersion();
 
 // ── Regex ───────────────────────────────────────────────────────────────────────

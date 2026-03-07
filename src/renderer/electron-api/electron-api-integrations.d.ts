@@ -73,7 +73,7 @@ export interface ElectronApiIntegrationsDomain {
         getTimeStats: () => Promise<{
             totalOnlineTime: number;
             totalCodingTime: number;
-            projectCodingTime: Record<string, number>;
+            workspaceCodingTime: Record<string, number>;
         }>;
         getTokenStats: (period: 'daily' | 'weekly' | 'monthly') => Promise<{
             totalSent: number;
@@ -86,26 +86,26 @@ export interface ElectronApiIntegrationsDomain {
         addTokenUsage: (record: {
             messageId?: string;
             chatId: string;
-            projectId?: string;
+            workspaceId?: string;
             provider: string;
             model: string;
             tokensSent: number;
             tokensReceived: number;
             costEstimate?: number;
         }) => Promise<{ success: boolean }>;
-        getProjects: () => Promise<Project[]>;
+        getWorkspaces: () => Promise<Project[]>;
         getFolders: () => Promise<Folder[]>;
-        createProject: (
+        createWorkspace: (
             name: string,
             path: string,
             description: string,
             mounts?: string
         ) => Promise<Project>;
-        updateProject: (id: string, updates: Partial<Project>) => Promise<void>;
-        deleteProject: (id: string, deleteFiles?: boolean) => Promise<void>;
-        archiveProject: (id: string, isArchived: boolean) => Promise<void>;
-        bulkDeleteProjects: (ids: string[], deleteFiles?: boolean) => Promise<void>;
-        bulkArchiveProjects: (ids: string[], isArchived: boolean) => Promise<void>;
+        updateWorkspace: (id: string, updates: Partial<Project>) => Promise<void>;
+        deleteWorkspace: (id: string, deleteFiles?: boolean) => Promise<void>;
+        archiveWorkspace: (id: string, isArchived: boolean) => Promise<void>;
+        bulkDeleteWorkspaces: (ids: string[], deleteFiles?: boolean) => Promise<void>;
+        bulkArchiveWorkspaces: (ids: string[], isArchived: boolean) => Promise<void>;
         createFolder: (name: string, color?: string) => Promise<Folder>;
         deleteFolder: (id: string) => Promise<void>;
         updateFolder: (id: string, updates: Partial<Folder>) => Promise<void>;
@@ -826,7 +826,7 @@ export interface ElectronApiIntegrationsDomain {
             taskId: string
         ) => Promise<{ success: boolean; telemetry?: import('@shared/types/agent-state').TaskMetrics[] }>;
         getTaskHistory: (
-            projectId?: string
+            workspaceId?: string
         ) => Promise<import('@shared/types/project-agent').AgentTaskHistoryItem[]>;
         deleteTask: (taskId: string) => Promise<{ success: boolean; error?: string }>;
         getAvailableModels: () => Promise<{
@@ -1129,7 +1129,7 @@ export interface ElectronApiIntegrationsDomain {
         }>;
     };
     orchestrator: {
-        start: (task: string, projectId?: string) => Promise<void>;
+        start: (task: string, workspaceId?: string) => Promise<void>;
         approve: (plan: ProjectStep[]) => Promise<void>;
         getState: () => Promise<OrchestratorStateView>;
         stop: () => Promise<void>;

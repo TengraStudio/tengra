@@ -116,7 +116,7 @@ function MainApp() {
     const { isListening, startListening, stopListening } = useVoiceInput(handleVoiceInput);
     const { stop: handleStopSpeak, isSpeaking } = useTextToSpeech();
     const { models, loadModels, selectedModel, setSelectedModel } = useModel();
-    const { projects, selectedProject, setSelectedProject } = useWorkspace();
+    const { projects: workspaces, selectedProject: selectedWorkspace, setSelectedProject: setSelectedWorkspace } = useWorkspace();
     const appState = useAppState();
     const {
         currentView,
@@ -147,10 +147,10 @@ function MainApp() {
 
     // Auto-collapse sidebar when entering the workspace view or selecting a workspace
     useEffect(() => {
-        if (!isSidebarCollapsed && (currentView === 'workspace' || selectedProject)) {
+        if (!isSidebarCollapsed && (currentView === 'workspace' || selectedWorkspace)) {
             setIsSidebarCollapsed(true);
         }
-    }, [currentView, selectedProject, isSidebarCollapsed, setIsSidebarCollapsed]);
+    }, [currentView, selectedWorkspace, isSidebarCollapsed, setIsSidebarCollapsed]);
 
     useEffect(() => {
         trackResponsiveBreakpoint({
@@ -274,10 +274,10 @@ function MainApp() {
     }, [selectedModel]);
 
     useEffect(() => {
-        if (selectedProject?.id) {
-            localStorage.setItem('app.lastWorkspaceId', selectedProject.id);
+        if (selectedWorkspace?.id) {
+            localStorage.setItem('app.lastWorkspaceId', selectedWorkspace.id);
         }
-    }, [selectedProject?.id]);
+    }, [selectedWorkspace?.id]);
 
     return (
         <ErrorBoundary
@@ -386,11 +386,11 @@ function MainApp() {
                         chats={chats}
                         onSelectChat={setCurrentChatId}
                         onNewChat={createNewChat}
-                        projects={projects}
-                        onSelectProject={(id: string) => {
-                            const p = projects.find(pro => pro.id === id);
+                        workspaces={workspaces}
+                        onSelectWorkspace={(id: string) => {
+                            const p = workspaces.find(pro => pro.id === id);
                             if (p) {
-                                setSelectedProject(p);
+                                setSelectedWorkspace(p);
                                 setCurrentView('workspace');
                             }
                         }}

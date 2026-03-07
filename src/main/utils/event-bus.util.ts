@@ -53,7 +53,7 @@ export interface AppEvents {
     'app:ready': Record<string, never>;
     'app:closing': Record<string, never>;
 
-    // Project events
+    // Agent events
     'project:update': ProjectState;
     'project:step-update': { taskId: string; index: number; status: ProjectStepStatus; message?: string };
     'project:plan-proposed': { taskId: string; steps: Array<string | Partial<ProjectStep>> };

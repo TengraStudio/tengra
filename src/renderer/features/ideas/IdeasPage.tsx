@@ -16,7 +16,7 @@ import { exportIdeas } from './utils/exportIdeas';
 import { IdeaDetailsModal, IdeasHeader, SessionHistory, WorkflowStages } from './components';
 import { useIdeaApproval, useIdeaGeneration, useIdeaSession, useLogoGeneration } from './hooks';
 
-interface IdeasPageProps { language: string; onNavigateToProject?: (projectId: string) => void; }
+interface IdeasPageProps { language: string; onNavigateToWorkspace?: (workspaceId: string) => void; }
 
 interface UseIdeasPageLogicOptions {
     currentSession: IdeaSession | null;
@@ -28,11 +28,11 @@ interface UseIdeasPageLogicOptions {
     approveIdea: (id: string, path: string, name?: string) => Promise<Project | null>;
     rejectIdea: (id: string) => Promise<boolean>;
     archiveIdea: (id: string) => Promise<boolean>;
-    onNavigateToProject?: (id: string) => void;
+    onNavigateToWorkspace?: (id: string) => void;
 }
 
 const useIdeasPageLogic = (options: UseIdeasPageLogicOptions) => {
-    const { currentSession, ideas, createSession, startResearch, startGeneration, loadIdeas, approveIdea, rejectIdea, archiveIdea, onNavigateToProject } = options;
+    const { currentSession, ideas, createSession, startResearch, startGeneration, loadIdeas, approveIdea, rejectIdea, archiveIdea, onNavigateToWorkspace } = options;
     const [workflowStage, setWorkflowStage] = useWorkflowSync(currentSession);
     const [selectedIdea, setSelectedIdea] = useState<ProjectIdea | null>(null);
     const [isRegenerating, setIsRegenerating] = useState(false);
@@ -57,8 +57,8 @@ const useIdeasPageLogic = (options: UseIdeasPageLogicOptions) => {
             const project = await approveIdea(selectedIdea.id, projectPath, selectedName);
             if (project) {
                 setSelectedIdea(null);
-                if (onNavigateToProject) {
-                    onNavigateToProject(project.id);
+                if (onNavigateToWorkspace) {
+                    onNavigateToWorkspace(project.id);
                 } else {
                     void loadIdeas(currentSession.id);
                 }
@@ -66,7 +66,7 @@ const useIdeasPageLogic = (options: UseIdeasPageLogicOptions) => {
         } catch {
             void loadIdeas(currentSession.id);
         }
-    }, [selectedIdea, approveIdea, currentSession, loadIdeas, onNavigateToProject]);
+    }, [selectedIdea, approveIdea, currentSession, loadIdeas, onNavigateToWorkspace]);
 
     const handleReject = useCallback(async () => {
         if (!selectedIdea || !currentSession?.id) {
@@ -128,14 +128,14 @@ const useIdeasPageLogic = (options: UseIdeasPageLogicOptions) => {
     return { workflowStage, setWorkflowStage, selectedIdea, setSelectedIdea, isRegenerating, handleCreateSession, handleApprove, handleReject, handleArchive, handleRegenerateIdea, handleExport };
 };
 
-export const IdeasPage: React.FC<IdeasPageProps> = ({ language: _language, onNavigateToProject }) => {
+export const IdeasPage: React.FC<IdeasPageProps> = ({ language: _language, onNavigateToWorkspace }) => {
     const { t } = useTranslation();
     const { sessions, currentSession, isLoading: isSessionLoading, error: sessionError, createSession, loadSessions, selectSession } = useIdeaSession();
     const { researchStage, researchProgress, researchMessage, isResearching, ideas, isGenerating, startResearch, startGeneration, loadIdeas, error: generationError } = useIdeaGeneration();
     const { isApproving, isRejecting, isArchiving, approveIdea, rejectIdea, archiveIdea, error: approvalError } = useIdeaApproval();
     const { canGenerateLogo } = useLogoGeneration();
 
-    const logic = useIdeasPageLogic({ currentSession, ideas, createSession, startResearch, startGeneration, loadIdeas, approveIdea, rejectIdea, archiveIdea, onNavigateToProject });
+    const logic = useIdeasPageLogic({ currentSession, ideas, createSession, startResearch, startGeneration, loadIdeas, approveIdea, rejectIdea, archiveIdea, onNavigateToWorkspace });
     const { deleteConfirm, handleDeleteRequest, handleBulkDeleteRequest, closeDeleteConfirm, confirmDelete } = useDeleteConfirmation(loadIdeas, currentSession?.id, logic.selectedIdea, logic.setSelectedIdea);
 
     const cachedIdeas = useMemo(() => {

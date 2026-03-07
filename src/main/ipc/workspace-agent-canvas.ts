@@ -26,7 +26,7 @@ interface CanvasEdge {
     targetHandle?: string;
 }
 
-export function registerProjectAgentCanvasHandlers(
+export function registerWorkspaceAgentCanvasHandlers(
     getMainWindow: () => BrowserWindow | null,
     databaseService?: DatabaseService,
     projectAgentService?: ProjectAgentService
@@ -34,9 +34,9 @@ export function registerProjectAgentCanvasHandlers(
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'canvas persistence');
 
     ipcMain.handle(
-        'project:save-canvas-nodes',
+        'agent:save-canvas-nodes',
         createValidatedIpcHandler<void, [CanvasNode[]]>(
-            'project:save-canvas-nodes',
+            'agent:save-canvas-nodes',
             async (event, nodes: CanvasNode[]): Promise<void> => {
                 validateSender(event);
                 if (!databaseService) {
@@ -52,9 +52,9 @@ export function registerProjectAgentCanvasHandlers(
     );
 
     ipcMain.handle(
-        'project:get-canvas-nodes',
+        'agent:get-canvas-nodes',
         createValidatedIpcHandler<CanvasNode[], []>(
-            'project:get-canvas-nodes',
+            'agent:get-canvas-nodes',
             async (event): Promise<CanvasNode[]> => {
                 validateSender(event);
                 if (!databaseService) {
@@ -75,9 +75,9 @@ export function registerProjectAgentCanvasHandlers(
     );
 
     ipcMain.handle(
-        'project:delete-canvas-node',
+        'agent:delete-canvas-node',
         createValidatedIpcHandler<void, [string]>(
-            'project:delete-canvas-node',
+            'agent:delete-canvas-node',
             async (event, id: string): Promise<void> => {
                 validateSender(event);
                 if (!databaseService) {
@@ -93,9 +93,9 @@ export function registerProjectAgentCanvasHandlers(
     );
 
     ipcMain.handle(
-        'project:save-canvas-edges',
+        'agent:save-canvas-edges',
         createValidatedIpcHandler<void, [CanvasEdge[]]>(
-            'project:save-canvas-edges',
+            'agent:save-canvas-edges',
             async (event, edges: CanvasEdge[]): Promise<void> => {
                 validateSender(event);
                 if (!databaseService) {
@@ -111,9 +111,9 @@ export function registerProjectAgentCanvasHandlers(
     );
 
     ipcMain.handle(
-        'project:get-canvas-edges',
+        'agent:get-canvas-edges',
         createValidatedIpcHandler<CanvasEdge[], []>(
-            'project:get-canvas-edges',
+            'agent:get-canvas-edges',
             async (event): Promise<CanvasEdge[]> => {
                 validateSender(event);
                 if (!databaseService) {
@@ -135,9 +135,9 @@ export function registerProjectAgentCanvasHandlers(
     );
 
     ipcMain.handle(
-        'project:delete-canvas-edge',
+        'agent:delete-canvas-edge',
         createValidatedIpcHandler<void, [string]>(
-            'project:delete-canvas-edge',
+            'agent:delete-canvas-edge',
             async (event, id: string): Promise<void> => {
                 validateSender(event);
                 if (!databaseService) {
@@ -153,9 +153,9 @@ export function registerProjectAgentCanvasHandlers(
     );
 
     ipcMain.handle(
-        'project:get-templates',
+        'agent:get-templates',
         createValidatedIpcHandler<AgentTemplate[], [AgentTemplateCategory | undefined]>(
-            'project:get-templates',
+            'agent:get-templates',
             async (event, category?: AgentTemplateCategory): Promise<AgentTemplate[]> => {
                 validateSender(event);
                 if (!projectAgentService) {
@@ -174,9 +174,9 @@ export function registerProjectAgentCanvasHandlers(
     );
 
     ipcMain.handle(
-        'project:save-template',
+        'agent:save-template',
         createValidatedIpcHandler<{ success: boolean; error?: string }, [AgentTemplate]>(
-            'project:save-template',
+            'agent:save-template',
             async (event, template: AgentTemplate): Promise<{ success: boolean; error?: string }> => {
                 validateSender(event);
                 if (!projectAgentService) {
@@ -192,9 +192,9 @@ export function registerProjectAgentCanvasHandlers(
     );
 
     ipcMain.handle(
-        'project:delete-template',
+        'agent:delete-template',
         createValidatedIpcHandler<{ success: boolean }, [string]>(
-            'project:delete-template',
+            'agent:delete-template',
             async (event, id: string): Promise<{ success: boolean }> => {
                 validateSender(event);
                 if (!projectAgentService) {
@@ -211,9 +211,9 @@ export function registerProjectAgentCanvasHandlers(
     );
 
     ipcMain.handle(
-        'project:export-template',
+        'agent:export-template',
         createValidatedIpcHandler<AgentTemplateExport | null, [string]>(
-            'project:export-template',
+            'agent:export-template',
             async (event, id: string): Promise<AgentTemplateExport | null> => {
                 validateSender(event);
                 if (!projectAgentService) {
@@ -229,9 +229,9 @@ export function registerProjectAgentCanvasHandlers(
     );
 
     ipcMain.handle(
-        'project:import-template',
+        'agent:import-template',
         createValidatedIpcHandler<{ success: boolean; template?: AgentTemplate; error?: string }, [AgentTemplateExport]>(
-            'project:import-template',
+            'agent:import-template',
             async (event, exported: AgentTemplateExport): Promise<{ success: boolean; template?: AgentTemplate; error?: string }> => {
                 validateSender(event);
                 if (!projectAgentService) {
@@ -253,13 +253,13 @@ export function registerProjectAgentCanvasHandlers(
     );
 
     ipcMain.handle(
-        'project:apply-template',
+        'agent:apply-template',
         createValidatedIpcHandler<{ success: boolean; error?: string; template?: AgentTemplate; task?: string; steps?: string[] }, [{ templateId: string; values: Record<string, string | number | boolean> }]>(
-            'project:apply-template',
+            'agent:apply-template',
             async (event, payload): Promise<{ success: boolean; error?: string; template?: AgentTemplate; task?: string; steps?: string[] }> => {
                 validateSender(event);
                 if (!projectAgentService) {
-                    return { success: false, error: 'Project agent service not available' };
+                    return { success: false, error: 'Workspace agent service not available' };
                 }
                 try {
                     const result = projectAgentService.applyTemplate(payload.templateId, payload.values);
@@ -280,9 +280,9 @@ export function registerProjectAgentCanvasHandlers(
     );
 
     ipcMain.handle(
-        'project:get-template',
+        'agent:get-template',
         createValidatedIpcHandler<AgentTemplate | null, [string]>(
-            'project:get-template',
+            'agent:get-template',
             async (event, id: string): Promise<AgentTemplate | null> => {
                 validateSender(event);
                 if (!projectAgentService) {
@@ -297,3 +297,6 @@ export function registerProjectAgentCanvasHandlers(
         )
     );
 }
+
+/** @deprecated Use registerWorkspaceAgentCanvasHandlers instead */
+export const registerProjectAgentCanvasHandlers = registerWorkspaceAgentCanvasHandlers;

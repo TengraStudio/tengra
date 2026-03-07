@@ -177,7 +177,7 @@ export async function fetchFullGitData(projectPath: string): Promise<FullGitData
     const repoCheck = await window.electron.git.isRepository(projectPath);
     if (!repoCheck.isRepository) { return null; }
 
-    const batchedGitData = await CommonBatches.loadProjectData(projectPath);
+    const batchedGitData = await CommonBatches.loadWorkspaceData(projectPath);
 
     const [recentCommitsResult, detailedStatus, remotesResult, trackingResult, diffStatsResult, commitStatsResult] = await Promise.all([
         window.electron.git.getRecentCommits(projectPath, 10),

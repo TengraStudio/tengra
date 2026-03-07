@@ -24,8 +24,8 @@ const createMockTaskState = (): AgentTaskState => ({
         dependencies: []
     },
     context: {
-        projectPath: 'C:/tmp/project',
-        projectName: 'project',
+        workspacePath: 'C:/tmp/project',
+        workspaceName: 'project',
         workspace: {
             rootPath: 'C:/tmp/project',
             hasGit: true,

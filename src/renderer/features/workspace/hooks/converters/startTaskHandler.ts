@@ -68,7 +68,7 @@ export const invokeStartTask = async (
 
         const options: AgentStartOptions = {
             task: userPrompt,
-            projectId: project.id,
+            workspaceId: project.id,
             model: {
                 provider: selectedModel.provider,
                 model: selectedModel.model

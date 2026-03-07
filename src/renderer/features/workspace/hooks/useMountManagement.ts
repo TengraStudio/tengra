@@ -1,7 +1,7 @@
 import { SSHProfileTestResult } from '@shared/types/ssh';
 import { useCallback, useState } from 'react';
 
-import { recordProjectsPageHealthEvent } from '@/store/projects-page-health.store';
+import { recordWorkspacesPageHealthEvent } from '@/store/projects-page-health.store';
 import { MountForm, WorkspaceMount } from '@/types';
 
 import {
@@ -49,8 +49,8 @@ function usePersistMounts(
             const startedAt = Date.now();
             setMounts(nextMounts);
             try {
-                await window.electron.db.updateProject(projectId, { mounts: nextMounts });
-                recordProjectsPageHealthEvent({
+                await window.electron.db.updateWorkspace(projectId, { mounts: nextMounts });
+                recordWorkspacesPageHealthEvent({
                     channel: 'workspace.persistMounts',
                     status: 'success',
                     durationMs: Date.now() - startedAt,
@@ -59,7 +59,7 @@ function usePersistMounts(
             } catch (error) {
                 window.electron.log.error('Failed to save mounts', error);
                 notify('error', t('errors.unexpected'));
-                recordProjectsPageHealthEvent({
+                recordWorkspacesPageHealthEvent({
                     channel: 'workspace.persistMounts',
                     status: 'failure',
                     durationMs: Date.now() - startedAt,
@@ -100,7 +100,7 @@ async function saveSSHProfileIfNeeded(
     } catch (error) {
         window.electron.log.error('Failed to save SSH profile', error);
         notify('error', t('errors.unexpected'));
-        recordProjectsPageHealthEvent({
+        recordWorkspacesPageHealthEvent({
             channel: 'workspace.addMount',
             status: 'failure',
             errorCode: workspaceMountErrorCodes.profileSaveFailed,
@@ -128,7 +128,7 @@ export function useMountManagement({
         const validation = validateWorkspaceMountForm(mountForm);
         if (!validation.success) {
             notify('error', t(validation.messageKey ?? 'errors.unexpected'));
-            recordProjectsPageHealthEvent({
+            recordWorkspacesPageHealthEvent({
                 channel: 'workspace.addMount',
                 status: 'validation-failure',
                 errorCode: validation.errorCode,
@@ -160,7 +160,7 @@ export function useMountManagement({
         const nextMounts = [...mounts, newMount];
         const persisted = await persistMounts(nextMounts);
         if (!persisted) {
-            recordProjectsPageHealthEvent({
+            recordWorkspacesPageHealthEvent({
                 channel: 'workspace.addMount',
                 status: 'failure',
                 errorCode: workspaceMountErrorCodes.persistFailed,
@@ -170,7 +170,7 @@ export function useMountManagement({
         }
 
         setMountForm({ ...DEFAULT_MOUNT_FORM });
-        recordProjectsPageHealthEvent({
+        recordWorkspacesPageHealthEvent({
             channel: 'workspace.addMount',
             status: 'success',
             durationMs: Date.now() - startedAt,
@@ -180,7 +180,7 @@ export function useMountManagement({
     const testConnection = useCallback(async (form: MountForm): Promise<SSHProfileTestResult> => {
         const validation = validateWorkspaceMountForm({ ...form, type: 'ssh' });
         if (!validation.success) {
-            recordProjectsPageHealthEvent({
+            recordWorkspacesPageHealthEvent({
                 channel: 'workspace.testConnection',
                 status: 'validation-failure',
                 errorCode: validation.errorCode,
@@ -210,7 +210,7 @@ export function useMountManagement({
                 });
 
                 if (result.success) {
-                    recordProjectsPageHealthEvent({
+                    recordWorkspacesPageHealthEvent({
                         channel: 'workspace.testConnection',
                         status: 'success',
                         durationMs: Date.now() - startedAt,
@@ -218,7 +218,7 @@ export function useMountManagement({
                     return { ...result, uiState: 'ready' };
                 }
                 if (attempt === maxAttempts) {
-                    recordProjectsPageHealthEvent({
+                    recordWorkspacesPageHealthEvent({
                         channel: 'workspace.testConnection',
                         status: 'failure',
                         durationMs: Date.now() - startedAt,
@@ -233,7 +233,7 @@ export function useMountManagement({
             } catch (error) {
                 if (attempt === maxAttempts) {
                     const message = error instanceof Error ? error.message : String(error);
-                    recordProjectsPageHealthEvent({
+                    recordWorkspacesPageHealthEvent({
                         channel: 'workspace.testConnection',
                         status: 'failure',
                         durationMs: Date.now() - startedAt,

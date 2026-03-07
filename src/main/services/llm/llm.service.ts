@@ -39,7 +39,7 @@ export interface LLMChatOptions {
     temperature?: number;
     systemMode?: SystemMode;
     reasoningEffort?: string;
-    projectRoot?: string;
+    workspaceRoot?: string;
     signal?: AbortSignal;
 }
 
@@ -440,7 +440,7 @@ export class LLMService {
     // --- Unified chat routing ---
 
     /** Unified streaming chat across all providers. */
-    async *chatStream(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[], provider?: string, options?: { systemMode?: SystemMode; reasoningEffort?: string; temperature?: number; signal?: AbortSignal; projectRoot?: string }) {
+    async *chatStream(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[], provider?: string, options?: { systemMode?: SystemMode; reasoningEffort?: string; temperature?: number; signal?: AbortSignal; workspaceRoot?: string }) {
         const effectiveProvider = this.resolveProvider(model, provider);
         const p = effectiveProvider.toLowerCase();
         const config = await this.getRouteConfig(p, model, tools, options);
@@ -457,13 +457,13 @@ export class LLMService {
                 systemMode: options?.systemMode,
                 reasoningEffort: options?.reasoningEffort,
                 signal: options?.signal,
-                projectRoot: options?.projectRoot
+                workspaceRoot: options?.workspaceRoot
             });
         }
     }
 
     /** Unified non-streaming chat across all providers. */
-    async chat(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[], provider?: string, options?: { temperature?: number; projectRoot?: string }): Promise<OpenAIResponse> {
+    async chat(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[], provider?: string, options?: { temperature?: number; workspaceRoot?: string }): Promise<OpenAIResponse> {
         this.validateMessagesInput(messages);
         const effectiveProvider = this.resolveProvider(model, provider);
 
@@ -477,7 +477,7 @@ export class LLMService {
             const result = await this.deps.fallbackService.executeWithFallback(
                 messages as Message[],
                 async (p, m, ms, t, opts) => {
-                    const res = await this.executeChatRoute(p, m, ms, t, opts as { temperature?: number; projectRoot?: string });
+                    const res = await this.executeChatRoute(p, m, ms, t, opts as { temperature?: number; workspaceRoot?: string });
                     return { content: res.content, role: 'assistant', reasoning: res.reasoning_content } as Message;
                 },
                 tools,
@@ -506,7 +506,7 @@ export class LLMService {
         return response;
     }
 
-    private async executeChatRoute(provider: string, model: string, messages: Array<Message | ChatMessage>, tools?: ToolDefinition[], options?: { temperature?: number; projectRoot?: string }): Promise<OpenAIResponse> {
+    private async executeChatRoute(provider: string, model: string, messages: Array<Message | ChatMessage>, tools?: ToolDefinition[], options?: { temperature?: number; workspaceRoot?: string }): Promise<OpenAIResponse> {
         const p = provider.toLowerCase();
 
         if (p.includes('anthropic') || p.includes('claude')) {
@@ -711,10 +711,10 @@ export class LLMService {
         return compaction.messages;
     }
 
-    private async getRouteConfig(provider: string, model: string, tools?: ToolDefinition[], options?: { temperature?: number; projectRoot?: string }) {
+    private async getRouteConfig(provider: string, model: string, tools?: ToolDefinition[], options?: { temperature?: number; workspaceRoot?: string }) {
         const p = provider.toLowerCase();
         const temp = options?.temperature;
-        const projectRoot = options?.projectRoot;
+        const workspaceRoot = options?.workspaceRoot;
 
         const buildProxyBaseUrl = (ampProvider: string) => {
             const proxyStatus = this.deps.proxyService.getEmbeddedProxyStatus();
@@ -723,28 +723,28 @@ export class LLMService {
         };
 
         if (p.includes('nvidia')) {
-            return { model, tools, baseUrl: 'https://integrate.api.nvidia.com/v1', apiKey: this.altProviders.getNvidiaKey(), provider: 'nvidia', temperature: temp, projectRoot };
+            return { model, tools, baseUrl: 'https://integrate.api.nvidia.com/v1', apiKey: this.altProviders.getNvidiaKey(), provider: 'nvidia', temperature: temp, workspaceRoot };
         }
 
         if (p.includes('antigravity')) {
             const proxyUrl = buildProxyBaseUrl('antigravity');
             const proxyKey = await this.deps.proxyService.getProxyKey();
-            return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider, temperature: temp, projectRoot };
+            return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider, temperature: temp, workspaceRoot };
         }
 
         if (p.includes('ollama')) {
             const settings = this.deps.settingsService.getSettings();
             const ollamaUrl = (settings['ollama'] as JsonObject | undefined)?.url ?? 'http://localhost:11434';
             const ollamaBaseUrl = `${(ollamaUrl as string).replace(/\/$/, '')}/v1`;
-            return { model, tools, baseUrl: ollamaBaseUrl, apiKey: 'ollama', provider, temperature: temp, projectRoot };
+            return { model, tools, baseUrl: ollamaBaseUrl, apiKey: 'ollama', provider, temperature: temp, workspaceRoot };
         }
 
         if (p.includes('codex') || p.includes('openai')) {
             const proxyUrl = buildProxyBaseUrl(this.toAmpProvider(provider));
             const proxyKey = await this.deps.proxyService.getProxyKey();
-            return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider, temperature: temp, projectRoot };
+            return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider, temperature: temp, workspaceRoot };
         }
 
-        return { model, tools, provider, temperature: temp, projectRoot, baseUrl: undefined, apiKey: undefined };
+        return { model, tools, provider, temperature: temp, workspaceRoot, baseUrl: undefined, apiKey: undefined };
     }
 }

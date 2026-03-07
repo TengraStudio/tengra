@@ -147,7 +147,7 @@ function toSafeFileUrl(path: string): string {
 function useTerminalSession(
     tab: TerminalTab,
     containerRef: React.RefObject<HTMLDivElement>,
-    projectPath: string | undefined,
+    workspacePath: string | undefined,
     initialTheme: ITheme
 ) {
     const xtermRef = useRef<XTerm | null>(null);
@@ -296,7 +296,7 @@ function useTerminalSession(
                 id: tab.id,
                 shell: tab.type,
                 ...(tab.backendId ? { backendId: tab.backendId } : {}),
-                ...(projectPath ? { cwd: projectPath } : {}),
+                ...(workspacePath ? { cwd: workspacePath } : {}),
                 ...(tab.metadata ? { metadata: tab.metadata } : {}),
                 cols,
                 rows,
@@ -399,7 +399,7 @@ function useTerminalSession(
     }, [
         containerRef,
         initialTheme,
-        projectPath,
+        workspacePath,
         tab.backendId,
         tab.bootstrapCommand,
         tab.id,
@@ -416,7 +416,7 @@ type TerminalInstanceProps = {
     className?: string;
     onActivate?: () => void;
     onClose: () => void;
-    projectPath?: string;
+    workspacePath?: string;
     onTerminalInstanceChange?: (id: string, terminal: XTerm | null) => void;
     appearance: TerminalAppearancePreferences;
     resolvedAppearance: ResolvedTerminalAppearance;
@@ -428,7 +428,7 @@ export const TerminalInstance = memo(({
     className,
     onActivate,
     onClose,
-    projectPath,
+    workspacePath,
     onTerminalInstanceChange,
     appearance,
     resolvedAppearance,
@@ -438,7 +438,7 @@ export const TerminalInstance = memo(({
     const { xtermRef, fitAddonRef, isReady, hasError } = useTerminalSession(
         tab,
         containerRef,
-        projectPath,
+        workspacePath,
         resolvedAppearance.theme
     );
 
@@ -446,7 +446,7 @@ export const TerminalInstance = memo(({
         xtermRef,
         tabId: tab.id,
         shell: tab.type,
-        cwd: projectPath,
+        cwd: workspacePath,
         enabled: isReady && isVisible,
     });
 

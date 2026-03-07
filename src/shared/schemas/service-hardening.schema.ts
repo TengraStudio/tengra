@@ -234,7 +234,7 @@ export const WorkspaceStatsSchema = z.object({
 });
 
 /**
- * Unique project identifier
+ * Unique workspace identifier
  */
 export const WorkspaceIdSchema = z.string().max(128).optional();
 

@@ -86,7 +86,7 @@ export interface UACEdge {
 
 export interface UACTask {
     id: string;
-    projectId?: string; // Optional if global/system domain
+    workspaceId?: string; // Optional if global/system domain
     domain: UACDomain;
     description: string;
     status: UACStatus;

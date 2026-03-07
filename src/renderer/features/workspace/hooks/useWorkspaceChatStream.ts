@@ -109,7 +109,7 @@ export function useWorkspaceChatStream(
                         provider,
                         tools: [],
                         chatId,
-                        projectId,
+                        workspaceId: projectId,
                         options: {},
                     });
 

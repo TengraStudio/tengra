@@ -108,7 +108,7 @@ export const useCreateProjectHandler = (options: CreateProjectOptions) => {
         try {
             const userData = await window.electron.getUserDataPath();
             const settings = await window.electron.getSettings();
-            const configuredBasePath = settings.general.projectsBasePath?.trim() ?? '';
+            const configuredBasePath = settings.general.workspacesBasePath?.trim() ?? '';
             const projectsDir = formData.customPath.trim() || configuredBasePath || `${userData}\\projects`;
             const safeProjectName = formData.name.replace(/[^a-zA-Z0-9-_]/g, '-');
             const projectPath = `${projectsDir}\\${safeProjectName}`;

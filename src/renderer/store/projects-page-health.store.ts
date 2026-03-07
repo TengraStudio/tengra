@@ -1,20 +1,20 @@
 import { useSyncExternalStore } from 'react';
 
-type ProjectsPageHealthStatus = 'success' | 'failure' | 'validation-failure';
-type ProjectsPageHealthChannel =
+type WorkspacesPageHealthStatus = 'success' | 'failure' | 'validation-failure';
+type WorkspacesPageHealthChannel =
     | 'workspace.persistMounts'
     | 'workspace.addMount'
     | 'workspace.testConnection';
 
-interface ProjectsPageHealthEvent {
-    channel: ProjectsPageHealthChannel;
-    status: ProjectsPageHealthStatus;
+interface WorkspacesPageHealthEvent {
+    channel: WorkspacesPageHealthChannel;
+    status: WorkspacesPageHealthStatus;
     timestamp: number;
     durationMs?: number;
     errorCode?: string;
 }
 
-interface ProjectsPageChannelMetrics {
+interface WorkspacesPageChannelMetrics {
     calls: number;
     failures: number;
     validationFailures: number;
@@ -22,7 +22,7 @@ interface ProjectsPageChannelMetrics {
     lastDurationMs: number;
 }
 
-export interface ProjectsPageHealthSnapshot {
+export interface WorkspacesPageHealthSnapshot {
     status: 'healthy' | 'degraded';
     uiState: 'ready' | 'failure';
     budgets: {
@@ -37,15 +37,15 @@ export interface ProjectsPageHealthSnapshot {
         budgetExceeded: number;
         errorRate: number;
         lastErrorCode: string | null;
-        channels: Record<ProjectsPageHealthChannel, ProjectsPageChannelMetrics>;
+        channels: Record<WorkspacesPageHealthChannel, WorkspacesPageChannelMetrics>;
     };
-    events: ProjectsPageHealthEvent[];
+    events: WorkspacesPageHealthEvent[];
 }
 
 type Listener = () => void;
 
 const MAX_EVENTS = 200;
-const projectsPageHealthBudgets = {
+const workspacesPageHealthBudgets = {
     persistMountsMs: 300,
     addMountMs: 350,
     testConnectionMs: 1200,
@@ -53,7 +53,7 @@ const projectsPageHealthBudgets = {
 
 const listeners = new Set<Listener>();
 
-const createChannelMetrics = (): ProjectsPageChannelMetrics => ({
+const createChannelMetrics = (): WorkspacesPageChannelMetrics => ({
     calls: 0,
     failures: 0,
     validationFailures: 0,
@@ -61,13 +61,13 @@ const createChannelMetrics = (): ProjectsPageChannelMetrics => ({
     lastDurationMs: 0,
 });
 
-const initialSnapshot: ProjectsPageHealthSnapshot = {
+const initialSnapshot: WorkspacesPageHealthSnapshot = {
     status: 'healthy',
     uiState: 'ready',
     budgets: {
-        persistMountsMs: projectsPageHealthBudgets.persistMountsMs,
-        addMountMs: projectsPageHealthBudgets.addMountMs,
-        testConnectionMs: projectsPageHealthBudgets.testConnectionMs,
+        persistMountsMs: workspacesPageHealthBudgets.persistMountsMs,
+        addMountMs: workspacesPageHealthBudgets.addMountMs,
+        testConnectionMs: workspacesPageHealthBudgets.testConnectionMs,
     },
     metrics: {
         totalCalls: 0,
@@ -85,7 +85,7 @@ const initialSnapshot: ProjectsPageHealthSnapshot = {
     events: [],
 };
 
-let snapshot: ProjectsPageHealthSnapshot = initialSnapshot;
+let snapshot: WorkspacesPageHealthSnapshot = initialSnapshot;
 
 function emit(): void {
     for (const listener of listeners) {
@@ -93,14 +93,14 @@ function emit(): void {
     }
 }
 
-function channelBudget(channel: ProjectsPageHealthChannel): number {
+function channelBudget(channel: WorkspacesPageHealthChannel): number {
     if (channel === 'workspace.persistMounts') {
-        return projectsPageHealthBudgets.persistMountsMs;
+        return workspacesPageHealthBudgets.persistMountsMs;
     }
     if (channel === 'workspace.addMount') {
-        return projectsPageHealthBudgets.addMountMs;
+        return workspacesPageHealthBudgets.addMountMs;
     }
-    return projectsPageHealthBudgets.testConnectionMs;
+    return workspacesPageHealthBudgets.testConnectionMs;
 }
 
 function computeStatus(errorRate: number, budgetExceeded: number): 'healthy' | 'degraded' {
@@ -110,14 +110,14 @@ function computeStatus(errorRate: number, budgetExceeded: number): 'healthy' | '
     return 'healthy';
 }
 
-export function recordProjectsPageHealthEvent(event: {
-    channel: ProjectsPageHealthChannel;
-    status: ProjectsPageHealthStatus;
+export function recordWorkspacesPageHealthEvent(event: {
+    channel: WorkspacesPageHealthChannel;
+    status: WorkspacesPageHealthStatus;
     durationMs?: number;
     errorCode?: string;
 }): void {
     const currentChannel = snapshot.metrics.channels[event.channel];
-    const nextChannel: ProjectsPageChannelMetrics = {
+    const nextChannel: WorkspacesPageChannelMetrics = {
         ...currentChannel,
         calls: currentChannel.calls + 1,
         lastDurationMs: event.durationMs ?? currentChannel.lastDurationMs,
@@ -180,26 +180,26 @@ export function recordProjectsPageHealthEvent(event: {
     emit();
 }
 
-export function getProjectsPageHealthSnapshot(): ProjectsPageHealthSnapshot {
+export function getWorkspacesPageHealthSnapshot(): WorkspacesPageHealthSnapshot {
     return snapshot;
 }
 
-export function subscribeProjectsPageHealth(listener: Listener): () => void {
+export function subscribeWorkspacesPageHealth(listener: Listener): () => void {
     listeners.add(listener);
     return () => listeners.delete(listener);
 }
 
-export function useProjectsPageHealthStore<T>(
-    selector: (state: ProjectsPageHealthSnapshot) => T
+export function useWorkspacesPageHealthStore<T>(
+    selector: (state: WorkspacesPageHealthSnapshot) => T
 ): T {
     return useSyncExternalStore(
-        subscribeProjectsPageHealth,
-        () => selector(getProjectsPageHealthSnapshot()),
-        () => selector(getProjectsPageHealthSnapshot())
+        subscribeWorkspacesPageHealth,
+        () => selector(getWorkspacesPageHealthSnapshot()),
+        () => selector(getWorkspacesPageHealthSnapshot())
     );
 }
 
-export function __resetProjectsPageHealthForTests(): void {
+export function __resetWorkspacesPageHealthForTests(): void {
     snapshot = {
         ...initialSnapshot,
         metrics: {

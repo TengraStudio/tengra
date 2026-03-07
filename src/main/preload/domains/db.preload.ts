@@ -45,7 +45,7 @@ export interface DbBridge {
     getTimeStats: () => Promise<{
         totalOnlineTime: number;
         totalCodingTime: number;
-        projectCodingTime: Record<string, number>;
+        workspaceCodingTime: Record<string, number>;
     }>;
     getTokenStats: (period: 'daily' | 'weekly' | 'monthly') => Promise<{
         totalSent: number;
@@ -58,24 +58,26 @@ export interface DbBridge {
     addTokenUsage: (record: {
         messageId?: string;
         chatId: string;
-        projectId?: string;
+        workspaceId?: string;
         provider: string;
         model: string;
         tokensSent: number;
         tokensReceived: number;
         costEstimate?: number;
     }) => Promise<{ success: boolean }>;
-    getProjects: () => Promise<Project[]>;
-    createProject: (
+    getWorkspaces: () => Promise<Project[]>;
+    createWorkspace: (
         name: string,
         path: string,
         description: string,
         mounts?: string
     ) => Promise<Project>;
-    updateProject: (id: string, updates: Partial<Project>) => Promise<void>;
-    deleteProject: (id: string, deleteFiles?: boolean) => Promise<void>;
-    archiveProject: (id: string, isArchived: boolean) => Promise<void>;
-    createFolder: (name: string, color?: string) => Promise<Folder>;
+    updateWorkspace: (id: string, updates: Partial<Project>) => Promise<void>;
+    deleteWorkspace: (id: string, deleteFiles?: boolean) => Promise<void>;
+    archiveWorkspace: (id: string, isArchived: boolean) => Promise<void>;
+    bulkDeleteWorkspaces: (ids: string[], deleteFiles?: boolean) => Promise<void>;
+    bulkArchiveWorkspaces: (ids: string[], isArchived: boolean) => Promise<void>;
+    createFolder:(name: string, color?: string) => Promise<Folder>;
     deleteFolder: (id: string) => Promise<void>;
     updateFolder: (id: string, updates: Partial<Folder>) => Promise<void>;
     getFolders: () => Promise<Folder[]>;
@@ -109,13 +111,15 @@ export function createDbBridge(ipc: IpcRenderer): DbBridge {
         getTimeStats: () => ipc.invoke('db:getTimeStats'),
         getTokenStats: period => ipc.invoke('db:getTokenStats', period),
         addTokenUsage: record => ipc.invoke('db:addTokenUsage', record),
-        getProjects: () => ipc.invoke('db:getProjects'),
-        createProject: (name, path, description, mounts) =>
-            ipc.invoke('db:createProject', { name, path, description, mounts }),
-        updateProject: (id, updates) => ipc.invoke('db:updateProject', { id, updates }),
-        deleteProject: (id, deleteFiles) => ipc.invoke('db:deleteProject', { id, deleteFiles }),
-        archiveProject: (id, isArchived) => ipc.invoke('db:archiveProject', { id, isArchived }),
-        createFolder: (name, color) => ipc.invoke('db:createFolder', { name, color }),
+        getWorkspaces: () => ipc.invoke('db:getWorkspaces'),
+        createWorkspace: (name, path, description, mounts) =>
+            ipc.invoke('db:createWorkspace', { name, path, description, mounts }),
+        updateWorkspace: (id, updates) => ipc.invoke('db:updateWorkspace', { id, updates }),
+        deleteWorkspace: (id, deleteFiles) => ipc.invoke('db:deleteWorkspace', { id, deleteFiles }),
+        archiveWorkspace: (id, isArchived) => ipc.invoke('db:archiveWorkspace', { id, isArchived }),
+        bulkDeleteWorkspaces: (ids, deleteFiles) => ipc.invoke('db:bulkDeleteWorkspaces', { ids, deleteFiles }),
+        bulkArchiveWorkspaces: (ids, isArchived) => ipc.invoke('db:bulkArchiveWorkspaces', { ids, isArchived }),
+        createFolder:(name, color) => ipc.invoke('db:createFolder', { name, color }),
         deleteFolder: id => ipc.invoke('db:deleteFolder', id),
         updateFolder: (id, updates) => ipc.invoke('db:updateFolder', { id, updates }),
         getFolders: () => ipc.invoke('db:getFolders'),

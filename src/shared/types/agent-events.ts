@@ -20,14 +20,14 @@ export interface AgentSystemEvents {
     // Task lifecycle events
     'agent:task_started': {
         taskId: string;
-        projectId: string;
+        workspaceId: string;
         description: string;
         currentProvider?: ProviderConfig;
     };
 
     'agent:task_validated': {
         taskId: string;
-        projectPath: string;
+        workspacePath: string;
     };
 
     'agent:task_completed': {

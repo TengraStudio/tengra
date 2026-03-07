@@ -90,7 +90,7 @@ export class AdvancedMemoryNormalizationAdapter {
             relatedMemoryIds: this.normalizeIds(input.relatedMemoryIds),
             contradictsIds: this.normalizeIds(input.contradictsIds),
             mergedIntoId: typeof input.mergedIntoId === 'string' ? input.mergedIntoId : undefined,
-            projectId: typeof input.projectId === 'string' && input.projectId.trim() ? input.projectId.trim() : undefined,
+            workspaceId: typeof input.workspaceId === 'string' && input.workspaceId.trim() ? input.workspaceId.trim() : undefined,
             contextTags: this.normalizeTags(input.contextTags),
             createdAt: typeof input.createdAt === 'number' ? input.createdAt : now,
             updatedAt: typeof input.updatedAt === 'number' ? input.updatedAt : now,
@@ -132,7 +132,7 @@ export class AdvancedMemoryNormalizationAdapter {
             autoConfirmReason: typeof input.autoConfirmReason === 'string' ? input.autoConfirmReason : undefined,
             potentialContradictions: Array.isArray(input.potentialContradictions) ? input.potentialContradictions : [],
             similarMemories: Array.isArray(input.similarMemories) ? input.similarMemories : [],
-            projectId: typeof input.projectId === 'string' && input.projectId.trim() ? input.projectId.trim() : undefined,
+            workspaceId: typeof input.workspaceId === 'string' && input.workspaceId.trim() ? input.workspaceId.trim() : undefined,
         };
     }
 

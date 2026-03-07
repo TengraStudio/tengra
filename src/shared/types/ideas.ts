@@ -2,7 +2,7 @@ import { JsonObject } from '@/types/common';
 
 /**
  * Idea Generator Types
- * Types for the AI-powered project idea generation system
+ * Types for the AI-powered workspace idea generation system
  */
 
 // Category types for idea generation
@@ -39,7 +39,7 @@ export type IdeaGenerationStage =
     | 'idle'
     | 'seed-generation'        // Stage 2: Generate initial idea seed
     | 'idea-research'          // Stage 3: Targeted idea-specific research
-    | 'naming'                 // Stage 4: Generate 10 project names
+    | 'naming'                 // Stage 4: Generate 10 workspace names
     | 'long-description'       // Stage 5: Long-form description
     | 'roadmap'                // Stage 6: Workspace roadmap
     | 'tech-stack'             // Stage 7: Technology stack
@@ -273,7 +273,7 @@ export interface IdeaCompetitor {
 }
 
 /**
- * Generated project idea
+ * Generated workspace idea
  */
 export interface WorkspaceIdea {
     id: string
@@ -285,7 +285,7 @@ export interface WorkspaceIdea {
     explanation?: string
     valueProposition?: string
     longDescription?: string           // Stage 5: Detailed professional description
-    nameSuggestions?: string[]         // Stage 4: 10 project names
+    nameSuggestions?: string[]         // Stage 4: 10 workspace names
     competitiveAdvantages?: string[]
     roadmap?: WorkspaceRoadmap           // Stage 6: MVP and development phases
     techStack?: TechStack              // Stage 7: Technology recommendations
@@ -312,7 +312,7 @@ export interface WorkspaceIdea {
 }
 
 /**
- * Enriched project idea with all fields populated
+ * Enriched workspace idea with all fields populated
  */
 export interface EnrichedIdea extends WorkspaceIdea {
     explanation: string

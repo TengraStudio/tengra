@@ -30,7 +30,7 @@ export const useProjectListActions = ({ filteredProjects }: ProjectListActionsOp
     const handleUpdateProject = async () => {
         if (!editingProject) { return; }
         try {
-            await window.electron.db.updateProject(editingProject.id, editForm);
+            await window.electron.db.updateWorkspace(editingProject.id, editForm);
             setEditingProject(null);
         } catch (error) {
             appLogger.error('ProjectListActions', 'Failed to update project', error as Error);
@@ -40,7 +40,7 @@ export const useProjectListActions = ({ filteredProjects }: ProjectListActionsOp
     const handleDeleteProject = async (deleteFiles: boolean = false) => {
         if (!deletingProject) { return; }
         try {
-            await window.electron.db.deleteProject(deletingProject.id, deleteFiles);
+            await window.electron.db.deleteWorkspace(deletingProject.id, deleteFiles);
             setDeletingProject(null);
         } catch (error) {
             appLogger.error('ProjectListActions', 'Failed to delete project', error as Error);
@@ -51,7 +51,7 @@ export const useProjectListActions = ({ filteredProjects }: ProjectListActionsOp
         if (!isArchiving) { return; }
         try {
             const newStatus = isArchiving.status === 'archived' ? 'active' : 'archived';
-            await window.electron.db.archiveProject(isArchiving.id, newStatus === 'archived');
+            await window.electron.db.archiveWorkspace(isArchiving.id, newStatus === 'archived');
             setIsArchiving(null);
         } catch (error) {
             appLogger.error('ProjectListActions', 'Failed to archive project', error as Error);
@@ -61,7 +61,7 @@ export const useProjectListActions = ({ filteredProjects }: ProjectListActionsOp
     const handleBulkDelete = async (deleteFiles: boolean = false) => {
         if (selectedProjectIds.size === 0) { return; }
         try {
-            await window.electron.db.bulkDeleteProjects(Array.from(selectedProjectIds), deleteFiles);
+            await window.electron.db.bulkDeleteWorkspaces(Array.from(selectedProjectIds), deleteFiles);
             setSelectedProjectIds(new Set());
             setIsBulkDeleting(false);
         } catch (error) {
@@ -72,7 +72,7 @@ export const useProjectListActions = ({ filteredProjects }: ProjectListActionsOp
     const handleBulkArchive = async (isArchived: boolean = true) => {
         if (selectedProjectIds.size === 0) { return; }
         try {
-            await window.electron.db.bulkArchiveProjects(Array.from(selectedProjectIds), isArchived);
+            await window.electron.db.bulkArchiveWorkspaces(Array.from(selectedProjectIds), isArchived);
             setSelectedProjectIds(new Set());
             setIsBulkArchiving(false);
         } catch (error) {
@@ -106,7 +106,7 @@ export const useProjectListActions = ({ filteredProjects }: ProjectListActionsOp
                 type: 'local' as const,
                 rootPath: path
             }];
-            await window.electron.db.createProject(name, path, description, JSON.stringify(mounts));
+            await window.electron.db.createWorkspace(name, path, description, JSON.stringify(mounts));
             return true;
         } catch (error) {
             appLogger.error('ProjectListActions', 'Failed to register project', error as Error);

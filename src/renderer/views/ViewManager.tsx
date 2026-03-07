@@ -45,7 +45,7 @@ interface ViewManagerProps {
     showFileMenu: boolean
     setShowFileMenu: (show: boolean) => void
     templates: ChatTemplate[]
-    onNavigateToProject?: (projectId: string) => void | Promise<void>
+    onNavigateToWorkspace?: (workspaceId: string) => void | Promise<void>
     settingsSearchQuery?: string
 }
 
@@ -61,7 +61,7 @@ const ChatSection: React.FC<Omit<ViewManagerProps, 'currentView' | 'onNavigateTo
  */
 const WorkspaceSection: React.FC<{ language: Language }> = ({ language }) => {
     const {
-        projects, selectedProject, setSelectedProject,
+        projects: workspaces, selectedProject: selectedWorkspace, setSelectedProject: setSelectedWorkspace,
         terminalTabs, activeTerminalId, setTerminalTabs, setActiveTerminalId
     } = useWorkspace();
     const {
@@ -73,9 +73,9 @@ const WorkspaceSection: React.FC<{ language: Language }> = ({ language }) => {
 
     return (
         <WorkspaceView
-            workspaces={projects}
-            selectedWorkspace={selectedProject}
-            onSelectWorkspace={setSelectedProject}
+            workspaces={workspaces}
+            selectedWorkspace={selectedWorkspace}
+            onSelectWorkspace={setSelectedWorkspace}
             language={language}
             tabs={terminalTabs}
             activeTabId={activeTerminalId}
@@ -127,7 +127,7 @@ const SettingsSection: React.FC = () => {
 };
 
 export const ViewManager: React.FC<ViewManagerProps> = (props) => {
-    const { currentView, onNavigateToProject } = props;
+    const { currentView, onNavigateToWorkspace } = props;
     const { language } = useAuth();
     const { t } = useTranslation(language);
     const { stopListening, isListening } = useChat();
@@ -168,7 +168,7 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
                 </div>
             );
             case 'memory': return <Suspense fallback={<LoadingState size="md" />}><MemoryInspector /></Suspense>;
-            case 'ideas': return <Suspense fallback={<LoadingState size="md" />}><IdeasPage language={language} onNavigateToProject={(id) => void onNavigateToProject?.(id)} /></Suspense>;
+            case 'ideas': return <Suspense fallback={<LoadingState size="md" />}><IdeasPage language={language} onNavigateToWorkspace={(id: string) => void onNavigateToWorkspace?.(id)} /></Suspense>;
             case 'automation-workflow': return <Suspense fallback={<LoadingState size="md" />}><AutomationWorkflowView /></Suspense>;
             case 'models': return <Suspense fallback={<LoadingState size="md" />}><ModelsPage language={language} /></Suspense>;
             case 'docker': return (

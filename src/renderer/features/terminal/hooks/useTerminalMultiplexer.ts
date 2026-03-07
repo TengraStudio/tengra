@@ -10,7 +10,7 @@ import { parseScreenSessions, parseTmuxSessions, quoteCommandValue } from '../ut
  */
 interface UseTerminalMultiplexerProps {
     /** Project path for command execution */
-    projectPath?: string;
+    workspacePath?: string;
     /** Currently active tab ID ref */
     activeTabIdRef: React.MutableRefObject<string | null>;
     /** Function to write command to active terminal */
@@ -24,7 +24,7 @@ interface UseTerminalMultiplexerProps {
  * @returns Multiplexer state and control functions
  */
 export function useTerminalMultiplexer({
-    projectPath,
+    workspacePath,
     activeTabIdRef: _activeTabIdRef,
     writeCommandToActiveTerminal,
 }: UseTerminalMultiplexerProps) {
@@ -50,7 +50,7 @@ export function useTerminalMultiplexer({
                     const result = await window.electron.runCommand(
                         'tmux',
                         ['list-sessions', '-F', '#S|#{session_windows}|#{session_attached}'],
-                        projectPath
+                        workspacePath
                     );
                     if (result.code !== 0) {
                         const stderr = (result.stderr || '').toLowerCase();
@@ -68,7 +68,7 @@ export function useTerminalMultiplexer({
                     return;
                 }
 
-                const result = await window.electron.runCommand('screen', ['-ls'], projectPath);
+                const result = await window.electron.runCommand('screen', ['-ls'], workspacePath);
                 if (result.code !== 0) {
                     const stderr = (result.stderr || '').toLowerCase();
                     if (stderr.includes('no sockets found')) {
@@ -92,7 +92,7 @@ export function useTerminalMultiplexer({
                 setIsMultiplexerLoading(false);
             }
         },
-        [multiplexerMode, projectPath]
+        [multiplexerMode, workspacePath]
     );
 
     /**

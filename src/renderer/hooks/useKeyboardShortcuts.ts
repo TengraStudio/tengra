@@ -86,13 +86,13 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
             toggleSidebar: onToggleSidebar,
             showShortcuts: onShowShortcuts,
             goToChat: () => onSwitchView('chat'),
-            goToProjects: () => onSwitchView('workspace'),
+            goToWorkspaces: () => onSwitchView('workspace'),
             goToSettings: () => onSwitchView('settings'),
         };
 
         const orderedActions: ShortcutActionId[] = [
             'goToChat',
-            'goToProjects',
+            'goToWorkspaces',
             'goToSettings',
             'commandPalette',
             'newChat',

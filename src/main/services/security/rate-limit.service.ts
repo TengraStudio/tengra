@@ -194,7 +194,7 @@ export class RateLimitService extends BaseService {
         this.setLimit('mcp:llm', { requestsPerMinute: 30, maxBurst: 5 }); // LLM operations
         this.setLimit('mcp:analysis', { requestsPerMinute: 60, maxBurst: 10 }); // Code analysis
         this.setLimit('mcp:ui', { requestsPerMinute: 100, maxBurst: 15 }); // UI operations
-        this.setLimit('mcp:project', { requestsPerMinute: 100, maxBurst: 15 }); // Project operations
+        this.setLimit('mcp:workspace', { requestsPerMinute: 100, maxBurst: 15 }); // Workspace operations
         this.setLimit('mcp:data', { requestsPerMinute: 120, maxBurst: 20 }); // Data operations
 
         // Start cleanup interval to remove old buckets

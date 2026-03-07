@@ -23,14 +23,14 @@ import {
     DbCreateChatRequest,
     DbCreateFolderRequest,
     DbCreateMessageRequest,
-    DbCreateProjectRequest,
+    DbCreateWorkspaceRequest,
     DbCreatePromptRequest,
     DbFolder,
     DbGetMarketplaceModelsRequest,
     DbHealthResponse,
     DbMarketplaceModel,
     DbMessage,
-    DbProject,
+    DbWorkspace,
     DbPrompt,
     DbQueryRequest,
     DbQueryResponse,
@@ -42,7 +42,7 @@ import {
     DbUpdateChatRequest,
     DbUpdateFolderRequest,
     DbUpdateMessageRequest,
-    DbUpdateProjectRequest,
+    DbUpdateWorkspaceRequest,
     DbUpdatePromptRequest,
     DbUpsertMarketplaceModelsRequest,
     DbVectorSearchRequest,
@@ -513,41 +513,41 @@ export class DatabaseClientService extends BaseService {
     }
 
     // ========================================================================
-    // Project Operations
+    // Workspace Operations
     // ========================================================================
 
-    async getProjects(): Promise<DbProject[]> {
-        const response = await this.apiCall<DbProject[]>('GET', '/api/v1/projects');
+    async getWorkspaces(): Promise<DbWorkspace[]> {
+        const response = await this.apiCall<DbWorkspace[]>('GET', '/api/v1/projects');
         return response.data ?? [];
     }
 
-    async getProject(id: string): Promise<DbProject | null> {
-        this.validatePathId(id, 'projectId');
-        const response = await this.apiCall<DbProject | null>('GET', `/api/v1/projects/${id}`);
+    async getWorkspace(id: string): Promise<DbWorkspace | null> {
+        this.validatePathId(id, 'workspaceId');
+        const response = await this.apiCall<DbWorkspace | null>('GET', `/api/v1/projects/${id}`);
         return response.data ?? null;
     }
 
-    async createProject(
-        req: DbCreateProjectRequest
-    ): Promise<{ success: boolean; project?: DbProject; error?: string }> {
+    async createWorkspace(
+        req: DbCreateWorkspaceRequest
+    ): Promise<{ success: boolean; workspace?: DbWorkspace; error?: string }> {
         this.validateRequiredString(req.title, 'title');
         this.validateRequiredString(req.path, 'path');
-        const response = await this.apiCall<DbProject>('POST', '/api/v1/projects', req);
+        const response = await this.apiCall<DbWorkspace>('POST', '/api/v1/projects', req);
         return {
             success: response.success,
-            project: response.data,
+            workspace: response.data,
             error: response.error,
         };
     }
 
-    async updateProject(id: string, updates: DbUpdateProjectRequest): Promise<boolean> {
-        this.validatePathId(id, 'projectId');
+    async updateWorkspace(id: string, updates: DbUpdateWorkspaceRequest): Promise<boolean> {
+        this.validatePathId(id, 'workspaceId');
         const response = await this.apiCall<boolean>('PUT', `/api/v1/projects/${id}`, updates);
         return response.data ?? false;
     }
 
-    async deleteProject(id: string): Promise<boolean> {
-        this.validatePathId(id, 'projectId');
+    async deleteWorkspace(id: string): Promise<boolean> {
+        this.validatePathId(id, 'workspaceId');
         const response = await this.apiCall<boolean>('DELETE', `/api/v1/projects/${id}`);
         return response.data ?? false;
     }

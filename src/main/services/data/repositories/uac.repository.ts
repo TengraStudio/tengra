@@ -157,7 +157,6 @@ export interface UacPlanPatternRecord {
 }
 
 export interface CreateUacTaskInput {
-    projectId?: string;
     workspaceId?: string;
     description: string;
     status?: string;
@@ -444,7 +443,7 @@ export class UacRepository {
     }
 
     async createTask({
-        projectId,
+        workspaceId,
         description,
         status = 'idle',
         nodeId,
@@ -460,7 +459,7 @@ export class UacRepository {
             )
             .run(
                 id,
-                projectId,
+                workspaceId,
                 description,
                 status,
                 now,
@@ -500,25 +499,25 @@ export class UacRepository {
             .get<UacTaskRecord>(nodeId);
     }
 
-    async getActiveTask(projectPath: string): Promise<UacTaskRecord | undefined> {
+    async getActiveTask(workspacePath: string): Promise<UacTaskRecord | undefined> {
         return this.db
             .prepare(
                 `SELECT * FROM uac_tasks WHERE project_path = ? AND status IN ('running', 'planning', 'paused', 'waiting_for_approval') ORDER BY updated_at DESC LIMIT 1`
             )
-            .get<UacTaskRecord>(projectPath);
+            .get<UacTaskRecord>(workspacePath);
     }
 
-    async getTasks(projectPath: string, limit: number = 50): Promise<UacTaskRecord[]> {
+    async getTasks(workspacePath: string, limit: number = 50): Promise<UacTaskRecord[]> {
         return this.db
             .prepare(
                 `SELECT * FROM uac_tasks WHERE project_path = ? ORDER BY created_at DESC LIMIT ?`
             )
-            .all<UacTaskRecord>(projectPath, limit);
+            .all<UacTaskRecord>(workspacePath, limit);
     }
 
     /**
-     * Get any active task across all projects for app restart resumption
-     * Returns the most recently updated active task from any project
+     * Get any active task across all workspaces for app restart resumption
+     * Returns the most recently updated active task from any workspace
      */
     async getAnyActiveTask(): Promise<UacTaskRecord | undefined> {
         return this.db

@@ -391,7 +391,7 @@ function registerIdeaHandlers(ideaGeneratorService: IdeaGeneratorService): void 
  * Register approval workflow handlers
  */
 function registerApprovalHandlers(ideaGeneratorService: IdeaGeneratorService): void {
-    // Approve an idea and create a project
+    // Approve an idea and create a workspace
     ipcMain.handle(
         'ideas:approveIdea',
         createIpcHandler(
@@ -399,21 +399,21 @@ function registerApprovalHandlers(ideaGeneratorService: IdeaGeneratorService): v
             async (
                 _event: IpcMainInvokeEvent,
                 ideaIdRaw: unknown,
-                projectPathRaw: unknown,
+                workspacePathRaw: unknown,
                 selectedNameRaw?: unknown
             ) => {
                 const ideaId = validateId(ideaIdRaw);
-                const projectPath = validatePath(projectPathRaw);
-                if (!ideaId || !projectPath) {
-                    throw new Error('Invalid idea ID or project path');
+                const workspacePath = validatePath(workspacePathRaw);
+                if (!ideaId || !workspacePath) {
+                    throw new Error('Invalid idea ID or workspace path');
                 }
                 const selectedName = validateName(selectedNameRaw);
-                const project = await ideaGeneratorService.approveIdea(
+                const workspace = await ideaGeneratorService.approveIdea(
                     ideaId,
-                    projectPath,
+                    workspacePath,
                     selectedName
                 );
-                return { success: true, project };
+                return { success: true, workspace };
             }
         )
     );

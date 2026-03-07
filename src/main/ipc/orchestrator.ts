@@ -27,14 +27,14 @@ export function registerOrchestratorIpc(
         'orchestrator:start',
         createIpcHandler<void, [string, string | undefined]>(
             'orchestrator:start',
-            async (_event: IpcMainInvokeEvent, task: string, projectId?: string) => {
+            async (_event: IpcMainInvokeEvent, task: string, workspaceId?: string) => {
                 if (typeof task !== 'string' || task.trim().length === 0) {
                     throw new Error('Task must be a non-empty string');
                 }
-                if (projectId !== undefined && typeof projectId !== 'string') {
+                if (workspaceId !== undefined && typeof workspaceId !== 'string') {
                     throw new Error('Project ID must be a string');
                 }
-                await orchestrator.orchestrate(task, projectId);
+                await orchestrator.orchestrate(task, workspaceId);
             }
         )
     );

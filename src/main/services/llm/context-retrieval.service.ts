@@ -86,11 +86,11 @@ export class ContextRetrievalService {
         private embedding: EmbeddingService
     ) { }
 
-    async retrieveContext(query: string, projectId?: string, limit: number = 5): Promise<RetrievalResult> {
+    async retrieveContext(query: string, workspaceId?: string, limit: number = 5): Promise<RetrievalResult> {
         const startedAt = Date.now();
         try {
             this.analytics.totalRequests++;
-            const parsed = ContextRetrievalInputSchema.safeParse({ query, workspaceId: projectId, limit });
+            const parsed = ContextRetrievalInputSchema.safeParse({ query, workspaceId: workspaceId, limit });
             if (!parsed.success) {
                 this.analytics.validationFailures++;
                 this.analytics.failedRequests++;
@@ -102,22 +102,22 @@ export class ContextRetrievalService {
 
             const normalizedQuery = parsed.data.query.trim();
             const effectiveLimit = parsed.data.limit ?? 5;
-            const effectiveProjectId = parsed.data.workspaceId ?? projectId;
+            const effectiveWorkspaceId = parsed.data.workspaceId ?? workspaceId;
 
-            let projectPath: string | undefined;
-            if (effectiveProjectId) {
-                // Try to find project by ID to get its path
-                const projects = await this.db.getProjects();
-                const project = projects.find(p => p.id === effectiveProjectId || p.path === effectiveProjectId);
-                projectPath = project?.path ?? effectiveProjectId; // Fallback to projectId if it's already a path
+            let workspacePath: string | undefined;
+            if (effectiveWorkspaceId) {
+                // Try to find workspace by ID to get its path
+                const workspaces = await this.db.getWorkspaces();
+                const workspace = workspaces.find(p => p.id === effectiveWorkspaceId || p.path === effectiveWorkspaceId);
+                workspacePath = workspace?.path ?? effectiveWorkspaceId; // Fallback to workspaceId if it's already a path
             }
 
             const vector = await this.generateEmbeddingWithRetry(normalizedQuery);
 
             // Parallel search with partial-failure tolerance
             const [symbolsResult, fragmentsResult] = await Promise.allSettled([
-                this.db.searchCodeSymbols(vector, projectPath),
-                this.db.searchSemanticFragments(vector, effectiveLimit, projectPath)
+                this.db.searchCodeSymbols(vector, workspacePath),
+                this.db.searchSemanticFragments(vector, effectiveLimit, workspacePath)
             ]);
             const symbols =
                 symbolsResult.status === 'fulfilled' ? symbolsResult.value : [];
@@ -225,18 +225,18 @@ export class ContextRetrievalService {
         };
     }
 
-    async exportContext(query: string, projectId?: string, limit: number = 5): Promise<{
+    async exportContext(query: string, workspaceId?: string, limit: number = 5): Promise<{
         exportedAt: string;
         query: string;
-        projectId?: string;
+        workspaceId?: string;
         contextString: string;
         sources: string[];
     }> {
-        const result = await this.retrieveContext(query, projectId, limit);
+        const result = await this.retrieveContext(query, workspaceId, limit);
         return {
             exportedAt: new Date().toISOString(),
             query,
-            projectId,
+            workspaceId,
             contextString: result.contextString,
             sources: result.sources
         };

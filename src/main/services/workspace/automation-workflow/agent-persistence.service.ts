@@ -1031,8 +1031,8 @@ export class AgentPersistenceService extends BaseService {
 
         const plan = parseJson<ExecutionPlan | null>(row.execution_plan, null);
         const context = parseJson(row.context, {
-            projectPath: '',
-            projectName: '',
+            workspacePath: '',
+            workspaceName: '',
             workspace: { rootPath: '', hasGit: false, hasDependencies: false },
             constraints: { maxIterations: 100, maxDuration: 1800000, maxToolCalls: 500, allowedTools: [] }
         });

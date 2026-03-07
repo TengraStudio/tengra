@@ -52,7 +52,7 @@ export const WORKFLOW_PERFORMANCE_BUDGETS = {
 
 export interface WorkflowServiceDependencies {
     llmService?: LLMService;
-    projectAgentService?: ProjectAgentService;
+    workspaceAgentService?: ProjectAgentService;
 }
 
 export class WorkflowService extends BaseService {
@@ -101,8 +101,8 @@ export class WorkflowService extends BaseService {
             this.logInfo('Registered LLMPromptAction handler');
         }
 
-        if (this.dependencies?.projectAgentService) {
-            this.workflowRunner.registerActionHandler(new AgentWorkflowAction(this.dependencies.projectAgentService));
+        if (this.dependencies?.workspaceAgentService) {
+            this.workflowRunner.registerActionHandler(new AgentWorkflowAction(this.dependencies.workspaceAgentService));
             this.logInfo('Registered AgentWorkflowAction handler');
         }
 

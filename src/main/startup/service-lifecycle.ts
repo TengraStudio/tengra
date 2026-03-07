@@ -100,7 +100,7 @@ const DEFERRED_SERVICE_NAMES: string[] = [
     'agentPerformanceService',
     'projectAgentService',
     'multiAgentOrchestratorService',
-    // Project & external
+    // Workspace & external
     'marketResearchService',
     'ideaGeneratorService',
     'projectScaffoldService',

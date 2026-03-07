@@ -1,50 +1,50 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
-    __resetProjectsPageHealthForTests,
-    getProjectsPageHealthSnapshot,
-    recordProjectsPageHealthEvent,
+    __resetWorkspacesPageHealthForTests,
+    getWorkspacesPageHealthSnapshot,
+    recordWorkspacesPageHealthEvent,
 } from '@/store/projects-page-health.store';
 
 describe('projects-page-health.store', () => {
     beforeEach(() => {
-        __resetProjectsPageHealthForTests();
+        __resetWorkspacesPageHealthForTests();
     });
 
     it('records successful mount persistence', () => {
-        recordProjectsPageHealthEvent({
+        recordWorkspacesPageHealthEvent({
             channel: 'workspace.persistMounts',
             status: 'success',
             durationMs: 120,
         });
 
-        const snapshot = getProjectsPageHealthSnapshot();
+        const snapshot = getWorkspacesPageHealthSnapshot();
         expect(snapshot.metrics.totalCalls).toBe(1);
         expect(snapshot.metrics.totalFailures).toBe(0);
         expect(snapshot.status).toBe('healthy');
     });
 
     it('tracks validation failures as degraded health', () => {
-        recordProjectsPageHealthEvent({
+        recordWorkspacesPageHealthEvent({
             channel: 'workspace.addMount',
             status: 'validation-failure',
             errorCode: 'WORKSPACE_MOUNT_VALIDATION_ERROR',
         });
 
-        const snapshot = getProjectsPageHealthSnapshot();
+        const snapshot = getWorkspacesPageHealthSnapshot();
         expect(snapshot.metrics.validationFailures).toBe(1);
         expect(snapshot.metrics.lastErrorCode).toBe('WORKSPACE_MOUNT_VALIDATION_ERROR');
         expect(snapshot.status).toBe('degraded');
     });
 
     it('marks budget overrun for slow test connection path', () => {
-        recordProjectsPageHealthEvent({
+        recordWorkspacesPageHealthEvent({
             channel: 'workspace.testConnection',
             status: 'success',
             durationMs: 3000,
         });
 
-        const snapshot = getProjectsPageHealthSnapshot();
+        const snapshot = getWorkspacesPageHealthSnapshot();
         expect(snapshot.metrics.budgetExceeded).toBe(1);
         expect(snapshot.metrics.channels['workspace.testConnection'].budgetExceeded).toBe(1);
         expect(snapshot.status).toBe('degraded');

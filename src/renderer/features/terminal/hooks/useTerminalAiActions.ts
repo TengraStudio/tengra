@@ -18,7 +18,7 @@ import type { AiPanelMode, AiResult } from './useTerminalAI';
 interface UseTerminalAiActionsParams {
     activeTabId: string | null;
     tabById: Map<string, TerminalTab>;
-    projectPath?: string;
+    workspacePath?: string;
     writeCommandToActiveTerminal: (command: string) => Promise<void>;
     setAiPanelMode: (mode: AiPanelMode) => void;
     setAiSelectedIssue: (issue: TerminalSemanticIssue | null) => void;
@@ -30,7 +30,7 @@ interface UseTerminalAiActionsParams {
 export function useTerminalAiActions({
     activeTabId,
     tabById,
-    projectPath,
+    workspacePath,
     writeCommandToActiveTerminal,
     setAiPanelMode,
     setAiSelectedIssue,
@@ -60,7 +60,7 @@ export function useTerminalAiActions({
                     [{
                         errorOutput: issue.message,
                         shell: getActiveShellType(),
-                        cwd: projectPath ?? undefined,
+                        cwd: workspacePath ?? undefined,
                     }],
                     { responseSchema: explainErrorResultSchema }
                 );
@@ -79,7 +79,7 @@ export function useTerminalAiActions({
                 setAiIsLoading(false);
             }
         },
-        [getActiveShellType, projectPath, setAiIsLoading, setAiPanelMode, setAiResult, setAiSelectedIssue, setIsAiPanelOpen]
+        [getActiveShellType, workspacePath, setAiIsLoading, setAiPanelMode, setAiResult, setAiSelectedIssue, setIsAiPanelOpen]
     );
 
     const handleAiFixError = useCallback(
@@ -111,7 +111,7 @@ export function useTerminalAiActions({
                         errorOutput: issue.message,
                         command: lastCommand,
                         shell: getActiveShellType(),
-                        cwd: projectPath ?? undefined,
+                        cwd: workspacePath ?? undefined,
                     }],
                     { responseSchema: fixErrorResultSchema }
                 );
@@ -130,7 +130,7 @@ export function useTerminalAiActions({
                 setAiIsLoading(false);
             }
         },
-        [getActiveShellType, projectPath, setAiIsLoading, setAiPanelMode, setAiResult, setAiSelectedIssue, setIsAiPanelOpen]
+        [getActiveShellType, workspacePath, setAiIsLoading, setAiPanelMode, setAiResult, setAiSelectedIssue, setIsAiPanelOpen]
     );
 
     const handleAiApplyFix = useCallback(

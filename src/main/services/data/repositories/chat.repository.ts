@@ -40,7 +40,7 @@ export class ChatRepository extends BaseRepository {
             chat.backend ?? null,
             chat.model ?? null,
             chat.folderId ?? null,
-            chat.projectId ?? null,
+            chat.workspaceId ?? null,
             chat.isPinned ? 1 : 0,
             chat.isFavorite ? 1 : 0,
             JSON.stringify(chat.metadata ?? {}),
@@ -60,13 +60,13 @@ export class ChatRepository extends BaseRepository {
         return this.mapRowToChat(row);
     }
 
-    async getChats(projectId?: string): Promise<Chat[]> {
+    async getChats(workspaceId?: string): Promise<Chat[]> {
         let sql = 'SELECT * FROM chats';
         const params: SqlValue[] = [];
 
-        if (projectId) {
+        if (workspaceId) {
             sql += ' WHERE project_id = ?';
-            params.push(projectId);
+            params.push(workspaceId);
         }
 
         sql += ' ORDER BY updated_at DESC';
@@ -97,7 +97,7 @@ export class ChatRepository extends BaseRepository {
         this.addFieldUpdating(fields, values, 'backend', updates.backend);
         this.addFieldUpdating(fields, values, 'model', updates.model);
         this.addFieldUpdating(fields, values, 'folder_id', updates.folderId);
-        this.addFieldUpdating(fields, values, 'project_id', updates.projectId);
+        this.addFieldUpdating(fields, values, 'project_id', updates.workspaceId);
 
         if (updates.isGenerating !== undefined) {
             fields.push('is_Generating = ?');
@@ -257,7 +257,7 @@ export class ChatRepository extends BaseRepository {
             isPinned: Boolean(row.is_pinned),
             isFavorite: Boolean(row.is_favorite),
             folderId: row.folder_id as string | undefined,
-            projectId: row.project_id as string | undefined,
+            workspaceId: row.project_id as string | undefined,
             isGenerating: Boolean(row.is_Generating),
             metadata: this.parseJsonField(row.metadata as string, {})
         };

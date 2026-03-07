@@ -12,20 +12,20 @@ export function buildIntelligenceServers(deps: McpDeps): McpService[] {
                 {
                     name: 'stageFragment',
                     description: 'Extract and stage facts from content',
-                    handler: ({ content, sourceId, projectId }) =>
-                        deps.advancedMemory.extractAndStageFromMessage(String(content), String(sourceId), projectId ? String(projectId) : undefined)
+                    handler: ({ content, sourceId, workspaceId }) =>
+                        deps.advancedMemory.extractAndStageFromMessage(String(content), String(sourceId), workspaceId ? String(workspaceId) : undefined)
                 },
                 {
                     name: 'recall',
                     description: 'Recall relevant memories based on context (limit 1-100, default 5)',
-                    handler: ({ query, projectId, limit }) => {
+                    handler: ({ query, workspaceId, limit }) => {
                         const validLimit = limit !== undefined
                             ? validateNumber(limit, 1, 100)
                             : 5;
 
                         return deps.advancedMemory.recall({
                             query: String(query),
-                            projectId: projectId ? String(projectId) : undefined,
+                            workspaceId: workspaceId ? String(workspaceId) : undefined,
                             limit: validLimit
                         });
                     }
@@ -39,7 +39,7 @@ export function buildIntelligenceServers(deps: McpDeps): McpService[] {
         },
         {
             name: 'ideas',
-            description: 'AI-powered project idea generation',
+            description: 'AI-powered workspace idea generation',
             actions: buildActions([
                 {
                     name: 'createSession',

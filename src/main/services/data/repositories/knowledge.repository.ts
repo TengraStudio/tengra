@@ -543,8 +543,8 @@ export class KnowledgeRepository extends BaseRepository {
     // =========================================================================
 
     /**
-     * CLEAN-001-4: Clean up all knowledge data associated with a deleted project
-     * Should be called when a project is deleted to prevent orphaned data
+     * CLEAN-001-4: Clean up all knowledge data associated with a deleted workspace
+     * Should be called when a workspace is deleted to prevent orphaned data
      */
     async cleanupWorkspaceData(workspacePath: string): Promise<{ deletedCounts: Record<string, number> }> {
         const deletedCounts: Record<string, number> = {};
@@ -580,10 +580,10 @@ export class KnowledgeRepository extends BaseRepository {
             ).run(workspacePath);
             deletedCounts.pendingMemories = pendingResult.rowsAffected ?? 0;
 
-            appLogger.info('KnowledgeRepository', `Cleaned up orphaned data for project ${workspacePath}`, deletedCounts as unknown as JsonObject);
+            appLogger.info('KnowledgeRepository', `Cleaned up orphaned data for workspace ${workspacePath}`, deletedCounts as unknown as JsonObject);
             return { deletedCounts };
         } catch (error) {
-            appLogger.error('KnowledgeRepository', `Failed to cleanup project data for ${workspacePath}`, error as Error);
+            appLogger.error('KnowledgeRepository', `Failed to cleanup workspace data for ${workspacePath}`, error as Error);
             throw error;
         }
     }
@@ -609,9 +609,9 @@ export class KnowledgeRepository extends BaseRepository {
     }
 
     /**
-     * CLEAN-001-4: Find and clean up orphaned data (data referencing non-existent projects/chats)
+     * CLEAN-001-4: Find and clean up orphaned data (data referencing non-existent workspaces/chats)
      * This is a maintenance operation that should be run periodically
-     * @param existingWorkspacePaths - List of currently existing project paths
+     * @param existingWorkspacePaths - List of currently existing workspace paths
      * @param existingChatIds - List of currently existing chat IDs
      */
     async cleanupOrphanedData(
@@ -621,39 +621,39 @@ export class KnowledgeRepository extends BaseRepository {
         const orphanedCounts: Record<string, number> = {};
 
         try {
-            // If we have no existing projects, don't delete everything - that's probably an error
+            // If we have no existing workspaces, don't delete everything - that's probably an error
             if (existingWorkspacePaths.length === 0) {
-                appLogger.warn('KnowledgeRepository', 'No existing projects provided, skipping project orphan cleanup');
+                appLogger.warn('KnowledgeRepository', 'No existing workspaces provided, skipping workspace orphan cleanup');
             } else {
-                const projectPlaceholders = existingWorkspacePaths.map(() => '?').join(',');
+                const workspacePlaceholders = existingWorkspacePaths.map(() => '?').join(',');
 
                 // Clean orphaned code symbols
                 const codeResult = await this.adapter.prepare(
-                    `DELETE FROM code_symbols WHERE workspace_path IS NOT NULL AND workspace_path NOT IN (${projectPlaceholders})`
+                    `DELETE FROM code_symbols WHERE workspace_path IS NOT NULL AND workspace_path NOT IN (${workspacePlaceholders})`
                 ).run(...existingWorkspacePaths);
                 orphanedCounts.codeSymbols = codeResult.rowsAffected ?? 0;
 
                 // Clean orphaned semantic fragments
                 const fragResult = await this.adapter.prepare(
-                    `DELETE FROM semantic_fragments WHERE workspace_path IS NOT NULL AND workspace_path NOT IN (${projectPlaceholders})`
+                    `DELETE FROM semantic_fragments WHERE workspace_path IS NOT NULL AND workspace_path NOT IN (${workspacePlaceholders})`
                 ).run(...existingWorkspacePaths);
                 orphanedCounts.semanticFragments = fragResult.rowsAffected ?? 0;
 
                 // Clean orphaned file diffs
                 const diffResult = await this.adapter.prepare(
-                    `DELETE FROM file_diffs WHERE workspace_path IS NOT NULL AND workspace_path NOT IN (${projectPlaceholders})`
+                    `DELETE FROM file_diffs WHERE workspace_path IS NOT NULL AND workspace_path NOT IN (${workspacePlaceholders})`
                 ).run(...existingWorkspacePaths);
                 orphanedCounts.fileDiffs = diffResult.rowsAffected ?? 0;
 
                 // Clean orphaned advanced memories
                 const memResult = await this.adapter.prepare(
-                    `DELETE FROM advanced_memories WHERE workspace_id IS NOT NULL AND workspace_id NOT IN (${projectPlaceholders})`
+                    `DELETE FROM advanced_memories WHERE workspace_id IS NOT NULL AND workspace_id NOT IN (${workspacePlaceholders})`
                 ).run(...existingWorkspacePaths);
                 orphanedCounts.advancedMemories = memResult.rowsAffected ?? 0;
 
                 // Clean orphaned pending memories
                 const pendResult = await this.adapter.prepare(
-                    `DELETE FROM pending_memories WHERE workspace_id IS NOT NULL AND workspace_id NOT IN (${projectPlaceholders})`
+                    `DELETE FROM pending_memories WHERE workspace_id IS NOT NULL AND workspace_id NOT IN (${workspacePlaceholders})`
                 ).run(...existingWorkspacePaths);
                 orphanedCounts.pendingMemories = pendResult.rowsAffected ?? 0;
             }

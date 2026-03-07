@@ -13,7 +13,7 @@ export interface RouteConfig {
     apiKey?: string;
     provider: string;
     temperature?: number;
-    projectRoot?: string;
+    workspaceRoot?: string;
 }
 
 /**
@@ -116,7 +116,7 @@ export async function getRouteConfig(
     provider: string,
     model: string,
     tools: ToolDefinition[] | undefined,
-    options: { temperature?: number; projectRoot?: string } | undefined,
+    options: { temperature?: number; workspaceRoot?: string } | undefined,
     deps: {
         proxyService: ProxyService;
         settingsService: SettingsService;
@@ -125,32 +125,32 @@ export async function getRouteConfig(
 ): Promise<RouteConfig> {
     const p = provider.toLowerCase();
     const temp = options?.temperature;
-    const projectRoot = options?.projectRoot;
+    const workspaceRoot = options?.workspaceRoot;
 
     if (p.includes('nvidia')) {
-        return { model, tools, baseUrl: 'https://integrate.api.nvidia.com/v1', apiKey: deps.getNvidiaKey(), provider: 'nvidia', temperature: temp, projectRoot };
+        return { model, tools, baseUrl: 'https://integrate.api.nvidia.com/v1', apiKey: deps.getNvidiaKey(), provider: 'nvidia', temperature: temp, workspaceRoot };
     }
 
     if (p.includes('antigravity')) {
         const proxyUrl = buildProxyBaseUrl('antigravity', deps.proxyService);
         const proxyKey = await deps.proxyService.getProxyKey();
-        return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider, temperature: temp, projectRoot };
+        return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider, temperature: temp, workspaceRoot };
     }
 
     if (p.includes('ollama')) {
         const settings = deps.settingsService.getSettings();
         const ollamaUrl = (settings['ollama'] as JsonObject | undefined)?.url ?? 'http://localhost:11434';
         const ollamaBaseUrl = `${(ollamaUrl as string).replace(/\/$/, '')}/v1`;
-        return { model, tools, baseUrl: ollamaBaseUrl, apiKey: 'ollama', provider, temperature: temp, projectRoot };
+        return { model, tools, baseUrl: ollamaBaseUrl, apiKey: 'ollama', provider, temperature: temp, workspaceRoot };
     }
 
     if (p.includes('codex') || p.includes('openai')) {
         const proxyUrl = buildProxyBaseUrl(toAmpProvider(provider), deps.proxyService);
         const proxyKey = await deps.proxyService.getProxyKey();
-        return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider, temperature: temp, projectRoot };
+        return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider, temperature: temp, workspaceRoot };
     }
 
-    return { model, tools, provider, temperature: temp, projectRoot, baseUrl: undefined, apiKey: undefined };
+    return { model, tools, provider, temperature: temp, workspaceRoot, baseUrl: undefined, apiKey: undefined };
 }
 
 /** Builds the embedded proxy base URL for a given provider. */

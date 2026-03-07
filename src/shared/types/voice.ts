@@ -194,12 +194,12 @@ export const DEFAULT_VOICE_COMMANDS: VoiceCommand[] = [
         enabled: true,
     },
     {
-        id: 'nav-projects',
-        phrase: 'show projects',
-        aliases: ['open projects', 'go to projects', 'my projects'],
-        action: { type: 'navigate', target: 'projects' },
+        id: 'nav-workspaces',
+        phrase: 'show workspaces',
+        aliases: ['open workspaces', 'go to workspaces', 'my workspaces'],
+        action: { type: 'navigate', target: 'workspaces' },
         category: 'navigation',
-        description: 'Open projects panel',
+        description: 'Open workspaces panel',
         enabled: true,
     },
     {

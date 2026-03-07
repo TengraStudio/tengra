@@ -2,7 +2,7 @@ import { IpcValue, Message, OrchestratorState, ProjectStep } from '@shared/types
 import { IpcRenderer, IpcRendererEvent } from 'electron';
 
 export interface OrchestratorBridge {
-    start: (task: string, projectId?: string) => Promise<void>;
+    start: (task: string, workspaceId?: string) => Promise<void>;
     approve: (plan: ProjectStep[]) => Promise<void>;
     getState: () => Promise<OrchestratorState>;
     stop: () => Promise<void>;
@@ -34,7 +34,7 @@ function normalizeOrchestratorHistory(history: unknown[]): Message[] {
 
 export function createOrchestratorBridge(ipc: IpcRenderer): OrchestratorBridge {
     return {
-        start: (task, projectId) => ipc.invoke('orchestrator:start', task, projectId),
+        start: (task, workspaceId) => ipc.invoke('orchestrator:start', task, workspaceId),
         approve: plan => ipc.invoke('orchestrator:approve', plan),
         getState: () => ipc.invoke('orchestrator:get-state'),
         stop: () => ipc.invoke('orchestrator:stop'),

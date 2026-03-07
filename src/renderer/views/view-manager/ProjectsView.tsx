@@ -5,14 +5,14 @@ import React, { lazy, Suspense } from 'react';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { Language } from '@/i18n';
 import type { GroupedModels } from '@/types';
-import { Message, Project, TerminalTab } from '@/types';
+import { Message, Workspace, TerminalTab } from '@/types';
 
-const ProjectsPage = lazy(() => import('@/features/workspace/WorkspacePage').then(m => ({ default: m.WorkspacesPage })));
+const WorkspacesPage = lazy(() => import('@/features/workspace/WorkspacePage').then(m => ({ default: m.WorkspacesPage })));
 
-interface ProjectsViewProps {
-    projects: Project[]
-    selectedProject: Project | null
-    setSelectedProject: (p: Project | null) => void
+interface WorkspaceViewProps {
+    workspaces: Workspace[]
+    selectedWorkspace: Workspace | null
+    onSelectWorkspace: (p: Workspace | null) => void
     language: Language
     terminalTabs: TerminalTab[]
     activeTerminalId: string | null
@@ -31,10 +31,10 @@ interface ProjectsViewProps {
     chatError?: ChatError
 }
 
-export const ProjectsView: React.FC<ProjectsViewProps> = ({
-    projects,
-    selectedProject,
-    setSelectedProject,
+export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
+    workspaces,
+    selectedWorkspace,
+    onSelectWorkspace,
     language,
     terminalTabs,
     activeTerminalId,
@@ -54,10 +54,10 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
 }) => {
     return (
         <Suspense fallback={<LoadingState size="md" />}>
-            <ProjectsPage
-                workspaces={projects}
-                selectedWorkspace={selectedProject}
-                onSelectWorkspace={setSelectedProject}
+            <WorkspacesPage
+                workspaces={workspaces}
+                selectedWorkspace={selectedWorkspace}
+                onSelectWorkspace={onSelectWorkspace}
                 language={language}
                 tabs={terminalTabs}
                 activeTabId={activeTerminalId}
@@ -79,4 +79,4 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
     );
 };
 
-ProjectsView.displayName = 'ProjectsView';
+WorkspaceView.displayName = 'WorkspaceView';

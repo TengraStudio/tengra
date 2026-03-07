@@ -3,7 +3,7 @@ import * as os from 'os';
 import { buildActions, McpDeps, validatePath, validateString } from '@main/mcp/server-utils';
 import { McpService } from '@main/mcp/types';
 
-export function buildProjectServers(deps: McpDeps): McpService[] {
+export function buildWorkspaceServers(deps: McpDeps): McpService[] {
     // Path validation helper
     const validateScanPath = (inputPath: string): string => {
         const validatedInput = validateString(inputPath, 2000);
@@ -30,7 +30,7 @@ export function buildProjectServers(deps: McpDeps): McpService[] {
     return [
         {
             name: 'scanner',
-            description: 'Project scanning (path traversal protected)',
+            description: 'Workspace scanning (path traversal protected)',
             actions: buildActions([
                 {
                     name: 'scanDirectory',
@@ -50,3 +50,6 @@ export function buildProjectServers(deps: McpDeps): McpService[] {
         }
     ];
 }
+
+/** @deprecated Use buildWorkspaceServers instead */
+export const buildProjectServers = buildWorkspaceServers;

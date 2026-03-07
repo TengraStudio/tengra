@@ -24,9 +24,9 @@ export function buildSearchServers(deps: McpDeps): McpService[] {
                 {
                     name: 'searchMemory',
                     description: 'Search through stored memories',
-                    handler: ({ query, projectId, limit }) => deps.advancedMemory.recall({
+                    handler: ({ query, workspaceId, limit }) => deps.advancedMemory.recall({
                         query: query as string,
-                        projectId: projectId as string | undefined,
+                        workspaceId: workspaceId as string | undefined,
                         limit: limit as number | undefined
                     })
                 }

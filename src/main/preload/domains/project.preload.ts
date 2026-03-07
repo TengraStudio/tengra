@@ -3,16 +3,16 @@ import type {
     InlineSuggestionResponse,
     InlineSuggestionTelemetry,
 } from '@shared/schemas/inline-suggestions.schema';
-import { IpcValue, ProjectAnalysis } from '@shared/types';
+import { IpcValue, WorkspaceAnalysis } from '@shared/types';
 import { IpcRenderer, IpcRendererEvent } from 'electron';
 
-export interface ProjectBridge {
-    analyze: (rootPath: string, projectId: string) => Promise<ProjectAnalysis>;
+export interface WorkspaceBridge {
+    analyze: (rootPath: string, workspaceId: string) => Promise<WorkspaceAnalysis>;
     analyzeIdentity: (
         rootPath: string
     ) => Promise<{ suggestedPrompts: string[]; colors: string[] }>;
     generateLogo: (
-        projectPath: string,
+        workspacePath: string,
         options: { prompt: string; style: string; model: string; count: number }
     ) => Promise<string[]>;
     analyzeDirectory: (dirPath: string) => Promise<{
@@ -21,14 +21,14 @@ export interface ProjectBridge {
         readme: string | null;
         stats: { fileCount: number; totalSize: number };
     }>;
-    applyLogo: (projectPath: string, tempLogoPath: string) => Promise<string>;
+    applyLogo: (workspacePath: string, tempLogoPath: string) => Promise<string>;
     getCompletion: (text: string) => Promise<string>;
     getInlineSuggestion: (request: InlineSuggestionRequest) => Promise<InlineSuggestionResponse>;
     trackInlineSuggestionTelemetry: (
         event: InlineSuggestionTelemetry
     ) => Promise<{ success: boolean }>;
     improveLogoPrompt: (prompt: string) => Promise<string>;
-    uploadLogo: (projectPath: string) => Promise<string | null>;
+    uploadLogo: (workspacePath: string) => Promise<string | null>;
     watch: (rootPath: string) => Promise<boolean>;
     unwatch: (rootPath: string) => Promise<boolean>;
     getEnv: (rootPath: string) => Promise<Record<string, string>>;
@@ -38,7 +38,7 @@ export interface ProjectBridge {
     ) => () => void;
 }
 
-interface WrappedProjectResponse<T> {
+interface WrappedWorkspaceResponse<T> {
     success: boolean;
     data?: T;
     error?: {
@@ -46,12 +46,12 @@ interface WrappedProjectResponse<T> {
     };
 }
 
-function isWrappedProjectResponse<T>(value: T | WrappedProjectResponse<T>): value is WrappedProjectResponse<T> {
+function isWrappedWorkspaceResponse<T>(value: T | WrappedWorkspaceResponse<T>): value is WrappedWorkspaceResponse<T> {
     return typeof value === 'object' && value !== null && 'success' in value;
 }
 
-function unwrapProjectResponse<T>(value: T | WrappedProjectResponse<T>): T {
-    if (!isWrappedProjectResponse(value)) {
+function unwrapWorkspaceResponse<T>(value: T | WrappedWorkspaceResponse<T>): T {
+    if (!isWrappedWorkspaceResponse(value)) {
         return value;
     }
 
@@ -60,41 +60,46 @@ function unwrapProjectResponse<T>(value: T | WrappedProjectResponse<T>): T {
     }
 
     if (value.success) {
-        throw new Error('Project IPC request completed without data');
+        throw new Error('Workspace IPC request completed without data');
     }
 
-    throw new Error(value.error?.message ?? 'Project IPC request failed');
+    throw new Error(value.error?.message ?? 'Workspace IPC request failed');
 }
 
-export function createProjectBridge(ipc: IpcRenderer): ProjectBridge {
+export function createWorkspaceBridge(ipc: IpcRenderer): WorkspaceBridge {
     return {
-        analyze: (rootPath, projectId) =>
-            ipc.invoke('project:analyze', rootPath, projectId).then(unwrapProjectResponse),
+        analyze: (rootPath, workspaceId) =>
+            ipc.invoke('workspace:analyze', rootPath, workspaceId).then(unwrapWorkspaceResponse),
         analyzeIdentity: rootPath =>
-            ipc.invoke('project:analyzeIdentity', rootPath).then(unwrapProjectResponse),
-        generateLogo: (projectPath, options) =>
-            ipc.invoke('project:generateLogo', projectPath, options).then(unwrapProjectResponse),
+            ipc.invoke('workspace:analyzeIdentity', rootPath).then(unwrapWorkspaceResponse),
+        generateLogo: (workspacePath, options) =>
+            ipc.invoke('workspace:generateLogo', workspacePath, options).then(unwrapWorkspaceResponse),
         analyzeDirectory: dirPath =>
-            ipc.invoke('project:analyzeDirectory', dirPath).then(unwrapProjectResponse),
-        applyLogo: (projectPath, tempLogoPath) =>
-            ipc.invoke('project:applyLogo', projectPath, tempLogoPath).then(unwrapProjectResponse),
-        getCompletion: text => ipc.invoke('project:getCompletion', text).then(unwrapProjectResponse),
+            ipc.invoke('workspace:analyzeDirectory', dirPath).then(unwrapWorkspaceResponse),
+        applyLogo: (workspacePath, tempLogoPath) =>
+            ipc.invoke('workspace:applyLogo', workspacePath, tempLogoPath).then(unwrapWorkspaceResponse),
+        getCompletion: text => ipc.invoke('workspace:getCompletion', text).then(unwrapWorkspaceResponse),
         getInlineSuggestion: request =>
-            ipc.invoke('project:getInlineSuggestion', request).then(unwrapProjectResponse),
+            ipc.invoke('workspace:getInlineSuggestion', request).then(unwrapWorkspaceResponse),
         trackInlineSuggestionTelemetry: event =>
-            ipc.invoke('project:trackInlineSuggestionTelemetry', event).then(unwrapProjectResponse),
+            ipc.invoke('workspace:trackInlineSuggestionTelemetry', event).then(unwrapWorkspaceResponse),
         improveLogoPrompt: prompt =>
-            ipc.invoke('project:improveLogoPrompt', prompt).then(unwrapProjectResponse),
-        uploadLogo: projectPath => ipc.invoke('project:uploadLogo', projectPath).then(unwrapProjectResponse),
-        watch: rootPath => ipc.invoke('project:watch', rootPath).then(unwrapProjectResponse),
-        unwatch: rootPath => ipc.invoke('project:unwatch', rootPath).then(unwrapProjectResponse),
-        getEnv: rootPath => ipc.invoke('project:getEnv', rootPath).then(unwrapProjectResponse),
-        saveEnv: (rootPath, vars) => ipc.invoke('project:saveEnv', rootPath, vars).then(unwrapProjectResponse),
+            ipc.invoke('workspace:improveLogoPrompt', prompt).then(unwrapWorkspaceResponse),
+        uploadLogo: workspacePath => ipc.invoke('workspace:uploadLogo', workspacePath).then(unwrapWorkspaceResponse),
+        watch: rootPath => ipc.invoke('workspace:watch', rootPath).then(unwrapWorkspaceResponse),
+        unwatch: rootPath => ipc.invoke('workspace:unwatch', rootPath).then(unwrapWorkspaceResponse),
+        getEnv: rootPath => ipc.invoke('workspace:getEnv', rootPath).then(unwrapWorkspaceResponse),
+        saveEnv: (rootPath, vars) => ipc.invoke('workspace:saveEnv', rootPath, vars).then(unwrapWorkspaceResponse),
         onFileChange: callback => {
             const listener = (_event: IpcRendererEvent, event: string, path: string, rootPath: string) =>
                 callback(event, path, rootPath);
-            ipc.on('project:file-change', listener);
-            return () => ipc.removeListener('project:file-change', listener);
+            ipc.on('workspace:file-change', listener);
+            return () => ipc.removeListener('workspace:file-change', listener);
         },
     };
 }
+
+/** @deprecated Use WorkspaceBridge instead */
+export type ProjectBridge = WorkspaceBridge;
+/** @deprecated Use createWorkspaceBridge instead */
+export const createProjectBridge = createWorkspaceBridge;

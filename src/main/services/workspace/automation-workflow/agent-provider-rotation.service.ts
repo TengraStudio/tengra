@@ -693,12 +693,12 @@ export class AgentProviderRotationService extends BaseService {
         }
 
         const persisted = this.settingsService.getSettings().ai?.agentProviderRotation;
-        if (!persisted?.byProject) {
+        if (!persisted?.byWorkspace) {
             return;
         }
 
         this.projectRotationPreferences.clear();
-        for (const [projectId, preference] of Object.entries(persisted.byProject)) {
+        for (const [projectId, preference] of Object.entries(persisted.byWorkspace)) {
             if (!Array.isArray(preference.chain?.cloud) || !Array.isArray(preference.chain?.local)) {
                 continue;
             }
@@ -712,7 +712,7 @@ export class AgentProviderRotationService extends BaseService {
             });
         }
 
-        const defaultProjectId = persisted.defaultProjectId ?? DEFAULT_PROJECT_ID;
+        const defaultProjectId = persisted.defaultWorkspaceId ?? DEFAULT_PROJECT_ID;
         const defaultPreference = this.projectRotationPreferences.get(defaultProjectId);
         if (defaultPreference) {
             this.fallbackChain = {

@@ -243,7 +243,7 @@ export interface ElectronAPI {
             qualityScore: number;
             generatedAt: string;
         }>;
-        generateProjectDocumentation: (
+        generateWorkspaceDocumentation: (
             rootPath: string,
             maxFiles?: number
         ) => Promise<{
@@ -274,10 +274,10 @@ export interface ElectronAPI {
         searchFiles: (
             rootPath: string,
             query: string,
-            projectId?: string,
+            workspaceId?: string,
             isRegex?: boolean
         ) => Promise<FileSearchResult[]>;
-        indexProject: (rootPath: string, projectId: string) => Promise<void>;
+        indexWorkspace: (rootPath: string, workspaceId: string) => Promise<void>;
         queryIndexedSymbols: (
             query: string
         ) => Promise<{ name: string; path: string; line: number }[]>;
@@ -683,7 +683,7 @@ export interface ElectronAPI {
     };
 
     collaboration: {
-        createSession: (projectId: string) => Promise<string>;
+        createSession: (workspaceId: string) => Promise<string>;
         joinSession: (sessionId: string) => Promise<boolean>;
         leaveSession: () => Promise<void>;
         sendMessage: (content: string) => Promise<void>;
@@ -899,10 +899,10 @@ export interface ElectronAPI {
     };
 
     project: {
-        analyze: (rootPath: string, projectId: string) => Promise<ProjectAnalysis>;
+        analyze: (rootPath: string, workspaceId: string) => Promise<ProjectAnalysis>;
         analyzeIdentity: (rootPath: string) => Promise<{ suggestedPrompts: string[]; colors: string[] }>;
         generateLogo: (
-            projectPath: string,
+            workspacePath: string,
             options: { prompt: string; style: string; model: string; count: number }
         ) => Promise<string[]>;
         analyzeDirectory: (dirPath: string) => Promise<{
@@ -911,14 +911,14 @@ export interface ElectronAPI {
             readme: string | null;
             stats: { fileCount: number; totalSize: number };
         }>;
-        applyLogo: (projectPath: string, tempLogoPath: string) => Promise<string>;
+        applyLogo: (workspacePath: string, tempLogoPath: string) => Promise<string>;
         getCompletion: (text: string) => Promise<string>;
         getInlineSuggestion: (request: InlineSuggestionRequest) => Promise<InlineSuggestionResponse>;
         trackInlineSuggestionTelemetry: (
             event: InlineSuggestionTelemetry
         ) => Promise<{ success: boolean }>;
         improveLogoPrompt: (prompt: string) => Promise<string>;
-        uploadLogo: (projectPath: string) => Promise<string | null>;
+        uploadLogo: (workspacePath: string) => Promise<string | null>;
         watch: (rootPath: string) => Promise<boolean>;
         unwatch: (rootPath: string) => Promise<boolean>;
         onFileChange: (callback: (event: string, path: string, rootPath: string) => void) => () => void;
@@ -1083,7 +1083,7 @@ export interface ElectronAPI {
         getIdea: (id: string) => Promise<unknown>;
         getIdeas: (sessionId: string) => Promise<unknown[]>;
         regenerateIdea: (ideaId: string) => Promise<unknown>;
-        approveIdea: (ideaId: string, projectPath: string, selectedName: string) => Promise<unknown>;
+        approveIdea: (ideaId: string, workspacePath: string, selectedName: string) => Promise<unknown>;
         rejectIdea: (ideaId: string) => Promise<void>;
         canGenerateLogo: () => Promise<boolean>;
         generateLogo: (ideaId: string, options: unknown) => Promise<string[]>;
@@ -1121,7 +1121,7 @@ export interface ElectronAPI {
         getTaskMessages: (taskId: string) => Promise<unknown[]>;
         getTaskEvents: (taskId: string) => Promise<unknown[]>;
         getTaskTelemetry: (taskId: string) => Promise<unknown>;
-        getTaskHistory: (projectId: string) => Promise<unknown[]>;
+        getTaskHistory: (workspaceId: string) => Promise<unknown[]>;
         deleteTask: (taskId: string) => Promise<void>;
         getAvailableModels: () => Promise<unknown[]>;
         retryStep: (index: number, taskId: string) => Promise<void>;
@@ -1197,7 +1197,7 @@ export interface ElectronAPI {
     };
 
     orchestrator: {
-        start: (task: string, projectId?: string) => Promise<string>;
+        start: (task: string, workspaceId?: string) => Promise<string>;
         approve: (plan: ProjectStep[]) => Promise<void>;
         getState: () => Promise<OrchestratorState>;
         stop: () => Promise<void>;

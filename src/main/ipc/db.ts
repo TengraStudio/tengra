@@ -9,7 +9,7 @@ import { withRateLimit } from '@main/utils/rate-limiter.util';
 import { Chat, Folder, Message, Prompt } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
 import { DbTokenStats } from '@shared/types/db-api';
-import { Project } from '@shared/types/project';
+import { Workspace } from '@shared/types/workspace';
 import { BrowserWindow, ipcMain, IpcMainEvent, IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
 
@@ -78,7 +78,7 @@ const SearchChatsOptionsSchema = z.object({
 const TokenUsageRecordSchema = z.object({
     messageId: z.string().optional(),
     chatId: z.string().min(1),
-    projectId: z.string().optional(),
+    workspaceId: z.string().optional(),
     provider: z.string().min(1),
     model: z.string().min(1),
     tokensSent: z.number().int().nonnegative(),
@@ -86,7 +86,7 @@ const TokenUsageRecordSchema = z.object({
     costEstimate: z.number().optional(),
 });
 
-const ProjectSchema = z.object({
+const WorkspaceSchema = z.object({
     title: z.string().min(1),
     path: z.string().min(1),
     description: z.string().optional(),
@@ -117,7 +117,7 @@ export function registerDbIpc(
 
     registerBatchHandlers(databaseService, validateSender);
     registerChatHandlers(databaseService, validateSender, auditLogService);
-    registerProjectHandlers(databaseService, validateSender);
+    registerWorkspaceHandlers(databaseService, validateSender);
     registerFolderHandlers(databaseService, validateSender);
     registerUsageHandlers(databaseService, validateSender);
     registerPromptHandlers(databaseService, validateSender);
@@ -256,14 +256,14 @@ function registerChatHandlers(databaseService: DatabaseService, validateSender: 
 }
 
 /**
- * Registers IPC handlers for project-related operations.
+ * Registers IPC handlers for workspace-related operations.
  */
-function registerProjectHandlers(databaseService: DatabaseService, validateSender: (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => void) {
+function registerWorkspaceHandlers(databaseService: DatabaseService, validateSender: (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => void) {
     const normalizePathKey = (value: string): string => value.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
 
-    const extractMountKeys = (project: Project): string[] => {
-        if (Array.isArray(project.mounts) && project.mounts.length > 0) {
-            return project.mounts
+    const extractMountKeys = (workspace: Workspace): string[] => {
+        if (Array.isArray(workspace.mounts) && workspace.mounts.length > 0) {
+            return workspace.mounts
                 .map(mount => {
                     if (mount.type === 'ssh') {
                         const host = mount.ssh?.host?.toLowerCase() ?? '';
@@ -274,45 +274,45 @@ function registerProjectHandlers(databaseService: DatabaseService, validateSende
                     return `local:${normalizePathKey(mount.rootPath)}`;
                 });
         }
-        return [`local:${normalizePathKey(project.path)}`];
+        return [`local:${normalizePathKey(workspace.path)}`];
     };
 
-    ipcMain.handle('db:createProject', createValidatedIpcHandler('db:createProject', async (event, project: Project) => {
+    ipcMain.handle('db:createWorkspace', createValidatedIpcHandler('db:createWorkspace', async (event, workspace: Workspace) => {
         validateSender(event);
-        const existingProjects = await databaseService.projects.getProjects();
+        const existingWorkspaces = await databaseService.projects.getProjects();
         const existingMountKeys = new Set<string>();
-        for (const existingProject of existingProjects) {
-            for (const key of extractMountKeys(existingProject)) {
+        for (const existingWorkspace of existingWorkspaces) {
+            for (const key of extractMountKeys(existingWorkspace)) {
                 existingMountKeys.add(key);
             }
         }
 
-        for (const key of extractMountKeys(project)) {
+        for (const key of extractMountKeys(workspace)) {
             if (existingMountKeys.has(key)) {
                 throw new Error('Invalid input');
             }
         }
 
-        const createdProject = await withRateLimit('db', () => databaseService.projects.createProject(
-            project.title,
-            project.path,
-            project.description,
-            project.mounts ? JSON.stringify(project.mounts) : undefined,
-            project.councilConfig ? JSON.stringify(project.councilConfig) : undefined
+        const createdWorkspace = await withRateLimit('db', () => databaseService.projects.createProject(
+            workspace.title,
+            workspace.path,
+            workspace.description,
+            workspace.mounts ? JSON.stringify(workspace.mounts) : undefined,
+            workspace.councilConfig ? JSON.stringify(workspace.councilConfig) : undefined
         ));
-        event.sender.send('project:updated', { id: createdProject.id });
-        return createdProject;
+        event.sender.send('workspace:updated', { id: createdWorkspace.id });
+        return createdWorkspace;
     }, {
         defaultValue: null,
-        argsSchema: z.tuple([ProjectSchema])
+        argsSchema: z.tuple([WorkspaceSchema])
     }));
 
-    ipcMain.handle('db:getProjects', createValidatedIpcHandler('db:getProjects', async (event) => {
+    ipcMain.handle('db:getWorkspaces', createValidatedIpcHandler('db:getWorkspaces', async (event) => {
         validateSender(event);
         return await databaseService.projects.getProjects();
     }, { defaultValue: [] }));
 
-    ipcMain.handle('db:getProjectById', createValidatedIpcHandler('db:getProjectById', async (event, id: string) => {
+    ipcMain.handle('db:getWorkspaceById', createValidatedIpcHandler('db:getWorkspaceById', async (event, id: string) => {
         validateSender(event);
         return await databaseService.projects.getProject(id);
     }, {
@@ -320,7 +320,7 @@ function registerProjectHandlers(databaseService: DatabaseService, validateSende
         argsSchema: z.tuple([IdSchema])
     }));
 
-    ipcMain.handle('db:updateProject', createValidatedIpcHandler('db:updateProject', async (event, id: string, updates: Partial<Project>) => {
+    ipcMain.handle('db:updateWorkspace', createValidatedIpcHandler('db:updateWorkspace', async (event, id: string, updates: Partial<Workspace>) => {
         validateSender(event);
         return await withRateLimit('db', () => databaseService.projects.updateProject(id, updates as JsonObject));
     }, {
@@ -328,7 +328,7 @@ function registerProjectHandlers(databaseService: DatabaseService, validateSende
         argsSchema: z.tuple([IdSchema, z.record(z.string(), z.unknown())])
     }));
 
-    ipcMain.handle('db:deleteProject', createValidatedIpcHandler('db:deleteProject', async (event, id: string) => {
+    ipcMain.handle('db:deleteWorkspace', createValidatedIpcHandler('db:deleteWorkspace', async (event, id: string) => {
         validateSender(event);
         await withRateLimit('db', () => databaseService.projects.deleteProject(id));
         return { success: true };

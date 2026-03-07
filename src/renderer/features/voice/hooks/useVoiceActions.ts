@@ -39,7 +39,7 @@ export function useVoiceActions({
                 createNewChat();
                 setCurrentView('chat');
                 break;
-            case 'projects':
+            case 'workspaces':
             case 'workspace':
                 setCurrentView('workspace');
                 break;

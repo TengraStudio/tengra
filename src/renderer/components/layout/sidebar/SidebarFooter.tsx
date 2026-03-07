@@ -3,14 +3,14 @@ import React from 'react';
 
 import { SettingsCategory } from '@/features/settings/types';
 import { Language } from '@/i18n';
-import { Project } from '@/types';
+import { Workspace } from '@/types';
 
 import { SidebarItem } from './SidebarItem';
 import { SidebarSettingsMenu } from './SidebarSettingsMenu';
 
 interface SidebarFooterProps {
     isCollapsed: boolean;
-    selectedProject: Project | null;
+    selectedWorkspace: Workspace | null;
     currentView: string;
     showSettingsMenu: boolean;
     toggleSettingsMenu: () => void;
@@ -22,7 +22,7 @@ interface SidebarFooterProps {
 
 export const SidebarFooter: React.FC<SidebarFooterProps> = ({
     isCollapsed,
-    selectedProject,
+    selectedWorkspace,
     currentView,
     showSettingsMenu,
     toggleSettingsMenu,
@@ -35,12 +35,12 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
 
     return (
         <div className="p-2 border-t border-border/30 space-y-1">
-            {selectedProject && !isCollapsed && (
+            {selectedWorkspace && !isCollapsed && (
                 <div className="px-2 py-1.5 bg-muted/30 rounded-md mb-1">
                     <p className="text-xxs text-muted-foreground/50 uppercase">
                         {t('sidebar.project')}
                     </p>
-                    <p className="text-xs font-medium truncate">{selectedProject.title}</p>
+                    <p className="text-xs font-medium truncate">{selectedWorkspace.title}</p>
                 </div>
             )}
             {/* Settings Dropdown */}

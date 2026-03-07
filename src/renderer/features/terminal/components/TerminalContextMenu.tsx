@@ -29,7 +29,7 @@ type TerminalContextMenuProps = {
     splitActive: boolean;
     isSynchronizedInputEnabled?: boolean;
     isRecordingActive: boolean;
-    projectPath?: string;
+    workspacePath?: string;
     semanticIssueCount: number;
     semanticErrorCount: number;
     semanticWarningCount: number;
@@ -99,7 +99,7 @@ export function TerminalContextMenu({
     splitActive,
     isSynchronizedInputEnabled,
     isRecordingActive,
-    projectPath,
+    workspacePath,
     semanticIssueCount,
     semanticErrorCount,
     semanticWarningCount,
@@ -244,7 +244,7 @@ export function TerminalContextMenu({
             </button>
             <button
                 onClick={onTaskRunnerToggle}
-                disabled={!hasActiveSession || !projectPath}
+                disabled={!hasActiveSession || !workspacePath}
                 className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground"
             >
                 {labels.runTask}

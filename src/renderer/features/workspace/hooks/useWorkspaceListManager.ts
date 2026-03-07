@@ -50,7 +50,7 @@ export function useWorkspaceListManager() {
 
     const loadProjects = useCallback(async () => {
         try {
-            const data = await window.electron.db.getProjects();
+            const data = await window.electron.db.getWorkspaces();
             // Database now returns properly typed Project data
             // Only need to convert timestamp to Date for frontend use
             const loadedProjects = (Array.isArray(data) ? data : []).map((project) => ({

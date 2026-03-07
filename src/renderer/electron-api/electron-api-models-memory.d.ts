@@ -397,9 +397,9 @@ export interface ElectronApiModelsMemoryDomain {
         regenerateIdea: (ideaId: string) => Promise<{ success: boolean; idea?: ProjectIdea }>;
         approveIdea: (
             ideaId: string,
-            projectPath: string,
+            workspacePath: string,
             selectedName?: string
-        ) => Promise<{ success: boolean; project?: Project }>;
+        ) => Promise<{ success: boolean; workspace?: Project }>;
         rejectIdea: (ideaId: string) => Promise<{ success: boolean }>;
         canGenerateLogo: () => Promise<boolean>;
         generateLogo: (
@@ -492,7 +492,7 @@ export interface ElectronApiModelsMemoryDomain {
         // Explicit memory
         remember: (
             content: string,
-            options?: { category?: MemoryCategory; tags?: string[]; projectId?: string }
+            options?: { category?: MemoryCategory; tags?: string[]; workspaceId?: string }
         ) => Promise<{ success: boolean; data?: AdvancedSemanticFragment; error?: string }>;
 
         // Recall
@@ -541,7 +541,7 @@ export interface ElectronApiModelsMemoryDomain {
         extractFromMessage: (
             content: string,
             sourceId: string,
-            projectId?: string
+            workspaceId?: string
         ) => Promise<{ success: boolean; data: PendingMemory[]; error?: string }>;
 
         // Delete & Edit
@@ -556,7 +556,7 @@ export interface ElectronApiModelsMemoryDomain {
                 category?: MemoryCategory;
                 tags?: string[];
                 importance?: number;
-                projectId?: string | null;
+                workspaceId?: string | null;
                 expiresAt?: number;
             }
         ) => Promise<{ success: boolean; data?: AdvancedSemanticFragment; error?: string }>;
@@ -568,14 +568,14 @@ export interface ElectronApiModelsMemoryDomain {
         get: (
             id: string
         ) => Promise<{ success: boolean; data?: AdvancedSemanticFragment; error?: string }>;
-        shareWithProject: (
+        shareWithWorkspace: (
             memoryId: string,
-            targetProjectId: string
+            targetWorkspaceId: string
         ) => Promise<{ success: boolean; data?: AdvancedSemanticFragment; error?: string }>;
         createSharedNamespace: (payload: {
             id: string;
             name: string;
-            projectIds: string[];
+            workspaceIds: string[];
             accessControl?: Record<string, string[]>;
         }) => Promise<{
             success: boolean;
@@ -594,10 +594,10 @@ export interface ElectronApiModelsMemoryDomain {
             data?: import('@shared/types/advanced-memory').SharedMemoryAnalytics;
             error?: string;
         }>;
-        searchAcrossProjects: (payload: {
+        searchAcrossWorkspaces: (payload: {
             namespaceId: string;
             query: string;
-            projectId: string;
+            workspaceId: string;
             limit?: number;
         }) => Promise<{ success: boolean; data: AdvancedSemanticFragment[]; error?: string }>;
         getHistory: (

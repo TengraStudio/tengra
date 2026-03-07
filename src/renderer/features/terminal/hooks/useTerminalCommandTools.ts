@@ -22,12 +22,12 @@ export type TaskRunnerEntry = {
 interface UseTerminalCommandToolsOptions {
     hasActiveSession: boolean;
     activeTabIdRef: RefObject<string | null>;
-    projectPath?: string;
+    workspacePath?: string;
     writeCommandToActiveTerminal: (command: string) => Promise<void>;
     onBeforeOpen: () => void;
 }
 
-function joinProjectPath(basePath: string, child: string): string {
+function joinWorkspacePath(basePath: string, child: string): string {
     const normalizedBase = basePath.replace(/[\\/]+$/, '');
     if (!normalizedBase) {
         return child;
@@ -60,7 +60,7 @@ function extractMakeTargets(content: string): string[] {
 export function useTerminalCommandTools({
     hasActiveSession,
     activeTabIdRef,
-    projectPath,
+    workspacePath,
     writeCommandToActiveTerminal,
     onBeforeOpen,
 }: UseTerminalCommandToolsOptions) {
@@ -180,7 +180,7 @@ export function useTerminalCommandTools({
         let cancelled = false;
         const timer = window.setTimeout(() => {
             void (async () => {
-                if (!projectPath) {
+                if (!workspacePath) {
                     setTaskRunnerItems([]);
                     return;
                 }
@@ -189,7 +189,7 @@ export function useTerminalCommandTools({
                     setIsTaskRunnerLoading(true);
                     const items: TaskRunnerEntry[] = [];
 
-                    const packageJsonPath = joinProjectPath(projectPath, 'package.json');
+                    const packageJsonPath = joinWorkspacePath(workspacePath, 'package.json');
                     if (await window.electron.files.exists(packageJsonPath)) {
                         const packageRaw = await window.electron.files.readFile(packageJsonPath);
                         const parsed = JSON.parse(packageRaw) as { scripts?: Record<string, string> };
@@ -206,7 +206,7 @@ export function useTerminalCommandTools({
                         });
                     }
 
-                    const makefilePath = joinProjectPath(projectPath, 'Makefile');
+                    const makefilePath = joinWorkspacePath(workspacePath, 'Makefile');
                     if (await window.electron.files.exists(makefilePath)) {
                         const makefileRaw = await window.electron.files.readFile(makefilePath);
                         extractMakeTargets(makefileRaw).forEach(target => {
@@ -219,7 +219,7 @@ export function useTerminalCommandTools({
                         });
                     }
 
-                    const cargoTomlPath = joinProjectPath(projectPath, 'Cargo.toml');
+                    const cargoTomlPath = joinWorkspacePath(workspacePath, 'Cargo.toml');
                     if (await window.electron.files.exists(cargoTomlPath)) {
                         const cargoDefaults = ['build', 'run', 'test', 'check', 'clippy'];
                         cargoDefaults.forEach(command => {
@@ -262,7 +262,7 @@ export function useTerminalCommandTools({
             cancelled = true;
             window.clearTimeout(timer);
         };
-    }, [isTaskRunnerOpen, projectPath, taskRunnerQuery]);
+    }, [isTaskRunnerOpen, workspacePath, taskRunnerQuery]);
 
     return {
         isCommandHistoryOpen,

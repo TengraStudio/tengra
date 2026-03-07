@@ -652,8 +652,8 @@ export function createInitialAgentState(
         totalSteps: 0,
         plan: null,
         context: {
-            projectPath: '',
-            projectName: '',
+            workspacePath: '',
+            workspaceName: '',
             workspace: {
                 rootPath: '',
                 hasGit: false,

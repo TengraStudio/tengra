@@ -36,11 +36,11 @@ export function useOrchestrator() {
         };
     }, []);
 
-    const start = useCallback(async (task: string, projectId?: string) => {
+    const start = useCallback(async (task: string, workspaceId?: string) => {
         setLoading(true);
         setError(null);
         try {
-            await window.electron.orchestrator.start(task, projectId);
+            await window.electron.orchestrator.start(task, workspaceId);
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
             setError(message);

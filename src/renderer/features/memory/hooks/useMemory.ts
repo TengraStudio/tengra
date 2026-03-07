@@ -449,7 +449,7 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
     }, [importFailedMessage, loadData, recordOperationFailure, setHookError, unexpectedMessage]);
 
     const handleShare = useCallback(async (memoryId: string, targetProjectId: string) => {
-        const res = await window.electron.advancedMemory.shareWithProject(memoryId, targetProjectId);
+        const res = await window.electron.advancedMemory.shareWithWorkspace(memoryId, targetProjectId);
         if (res.success) { void loadData(); }
     }, [loadData]);
 
@@ -524,7 +524,7 @@ export function useEditModal(): UseEditModalReturn {
             category: editCategory,
             tags: editTags.split(',').map(t => t.trim()).filter(Boolean),
             importance: editImportance,
-            projectId: editingMemory.projectId,
+            workspaceId: editingMemory.workspaceId,
             expiresAt: editExpiresAt ? new Date(editExpiresAt).getTime() : undefined
         });
         if (res.success) {

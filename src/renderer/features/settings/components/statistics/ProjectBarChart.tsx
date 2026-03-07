@@ -1,9 +1,9 @@
 import { formatTime } from '@/lib/formatters';
 
-export const ProjectBarChart = ({ projects, maxTime }: { projects: Array<{ id: string; title: string; time: number }>; maxTime: number }) => {
+export const WorkspaceBarChart = ({ workspaces, maxTime }: { workspaces: Array<{ id: string; title: string; time: number }>; maxTime: number }) => {
     return (
         <div className="space-y-4">
-            {projects.map(({ id, title, time }) => {
+            {workspaces.map(({ id, title, time }) => {
                 const percentage = maxTime > 0 ? (time / maxTime) * 100 : 0;
                 return (
                     <div key={id} className="space-y-2">

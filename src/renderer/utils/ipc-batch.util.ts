@@ -6,7 +6,7 @@
 import { LinkedAccountInfo } from '@renderer/electron.d';
 import { Folder } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
-import { Project } from '@shared/types/project';
+import { Workspace } from '@shared/types/project';
 import { ClaudeQuota, CodexUsage, CopilotQuota, QuotaResponse } from '@shared/types/quota';
 import { AppSettings } from '@shared/types/settings';
 import { sanitizeObject } from '@shared/utils/sanitize.util';
@@ -160,7 +160,7 @@ export const CommonBatches = {
 
         return {
             chats: (results.get('db:getAllChats') as Chat[] | undefined) ?? [],
-            projects: (results.get('db:getProjects') as Project[] | undefined) ?? [],
+            workspaces: (results.get('db:getProjects') as Workspace[] | undefined) ?? [],
             folders: (results.get('db:getFolders') as Folder[] | undefined) ?? [],
             stats: (results.get('db:getStats') as { chatCount: number; messageCount: number; dbSize: number } | undefined) ?? { chatCount: 0, messageCount: 0, dbSize: 0 }
         };
@@ -203,14 +203,14 @@ export const CommonBatches = {
     },
 
     /**
-     * Load project data with git info in one batch
+     * Load workspace data with git info in one batch
      */
-    async loadProjectData(projectPath: string) {
+    async loadWorkspaceData(workspacePath: string) {
         const results = await createBatch()
-            .add('git:getBranch', projectPath)
-            .add('git:getStatus', projectPath)
-            .add('git:getLastCommit', projectPath)
-            .add('git:getBranches', projectPath)
+            .add('git:getBranch', workspacePath)
+            .add('git:getStatus', workspacePath)
+            .add('git:getLastCommit', workspacePath)
+            .add('git:getBranches', workspacePath)
             .execute();
 
         return {

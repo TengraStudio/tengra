@@ -26,9 +26,9 @@ import type {
 import { BrowserWindow, ipcMain } from 'electron';
 import { z } from 'zod';
 
-import { registerProjectAgentCanvasHandlers } from './project-agent-canvas';
-import { registerProjectAgentCouncilHandlers } from './project-agent-council';
-import { registerProjectAgentDecisionHandlers } from './project-agent-decision';
+import { registerWorkspaceAgentCanvasHandlers } from './project-agent-canvas';
+import { registerWorkspaceAgentCouncilHandlers } from './project-agent-council';
+import { registerWorkspaceAgentDecisionHandlers } from './project-agent-decision';
 
 interface AvailableModelInfo {
     id: string;
@@ -38,21 +38,21 @@ interface AvailableModelInfo {
 
 type TaskMessagesResult = Awaited<ReturnType<ProjectAgentService['getTaskMessages']>>;
 
-const PROJECT_UPDATE_THROTTLE_MS = 50;
+const AGENT_UPDATE_THROTTLE_MS = 50;
 const STREAM_EVENT_VERSION = 'v1' as const;
 
 const createEventDedupeKey = (prefix: string, taskId: string, sequence: number): string => {
     return `${STREAM_EVENT_VERSION}:${prefix}:${taskId}:${Date.now()}:${sequence}`;
 };
 
-function registerProjectAgentAdvancedHandlers(
+function registerWorkspaceAgentAdvancedHandlers(
     projectAgentService: ProjectAgentService,
     validateSender: ReturnType<typeof createMainWindowSenderValidator>
 ): void {
     ipcMain.handle(
-        'project:get-available-models',
+        'agent:get-available-models',
         createValidatedIpcHandler<{ success: boolean; models: AvailableModelInfo[] }, []>(
-            'project:get-available-models',
+            'agent:get-available-models',
             async (event): Promise<{ success: boolean; models: AvailableModelInfo[] }> => {
                 validateSender(event);
                 const models = await projectAgentService.getAvailableModels();
@@ -68,9 +68,9 @@ function registerProjectAgentAdvancedHandlers(
     );
 
     ipcMain.handle(
-        'project:retry-step',
+        'agent:retry-step',
         createValidatedIpcHandler<void, [number | { index: number; taskId?: string }]>(
-            'project:retry-step',
+            'agent:retry-step',
             async (event, payload: number | { index: number; taskId?: string }): Promise<void> => {
                 validateSender(event);
                 if (typeof payload === 'number') {
@@ -87,9 +87,9 @@ function registerProjectAgentAdvancedHandlers(
     );
 
     ipcMain.handle(
-        'project:select-model',
+        'agent:select-model',
         createValidatedIpcHandler<{ success: boolean; error?: string }, [{ taskId: string; provider: string; model: string }]>(
-            'project:select-model',
+            'agent:select-model',
             async (event, payload: { taskId: string; provider: string; model: string }): Promise<{ success: boolean; error?: string }> => {
                 validateSender(event);
                 const success = await projectAgentService.selectModel(
@@ -112,9 +112,9 @@ function registerProjectAgentAdvancedHandlers(
     // --- AGT-HIL: Human-in-the-Loop IPC handlers ---
 
     ipcMain.handle(
-        'project:approve-step',
+        'agent:approve-step',
         createValidatedIpcHandler<void, [{ taskId: string; stepId: string }]>(
-            'project:approve-step',
+            'agent:approve-step',
             async (event, payload: { taskId: string; stepId: string }): Promise<void> => {
                 validateSender(event);
                 await projectAgentService.approveStep(payload.taskId, payload.stepId);
@@ -127,9 +127,9 @@ function registerProjectAgentAdvancedHandlers(
     );
 
     ipcMain.handle(
-        'project:skip-step',
+        'agent:skip-step',
         createValidatedIpcHandler<void, [{ taskId: string; stepId: string }]>(
-            'project:skip-step',
+            'agent:skip-step',
             async (event, payload: { taskId: string; stepId: string }): Promise<void> => {
                 validateSender(event);
                 await projectAgentService.skipStep(payload.taskId, payload.stepId);
@@ -142,9 +142,9 @@ function registerProjectAgentAdvancedHandlers(
     );
 
     ipcMain.handle(
-        'project:edit-step',
+        'agent:edit-step',
         createValidatedIpcHandler<void, [{ taskId: string; stepId: string; text: string }]>(
-            'project:edit-step',
+            'agent:edit-step',
             async (event, payload: { taskId: string; stepId: string; text: string }): Promise<void> => {
                 validateSender(event);
                 await projectAgentService.editStep(payload.taskId, payload.stepId, payload.text);
@@ -157,9 +157,9 @@ function registerProjectAgentAdvancedHandlers(
     );
 
     ipcMain.handle(
-        'project:add-step-comment',
+        'agent:add-step-comment',
         createValidatedIpcHandler<void, [{ taskId: string; stepId: string; comment: string }]>(
-            'project:add-step-comment',
+            'agent:add-step-comment',
             async (event, payload: { taskId: string; stepId: string; comment: string }): Promise<void> => {
                 validateSender(event);
                 await projectAgentService.addStepComment(payload.taskId, payload.stepId, payload.comment);
@@ -172,9 +172,9 @@ function registerProjectAgentAdvancedHandlers(
     );
 
     ipcMain.handle(
-        'project:insert-intervention',
+        'agent:insert-intervention',
         createValidatedIpcHandler<void, [{ taskId: string; afterStepId: string }]>(
-            'project:insert-intervention',
+            'agent:insert-intervention',
             async (event, payload: { taskId: string; afterStepId: string }): Promise<void> => {
                 validateSender(event);
                 await projectAgentService.insertInterventionPoint(payload.taskId, payload.afterStepId);
@@ -187,9 +187,9 @@ function registerProjectAgentAdvancedHandlers(
     );
 
     ipcMain.handle(
-        'project:resume-checkpoint',
+        'agent:resume-checkpoint',
         createValidatedIpcHandler<void, [string]>(
-            'project:resume-checkpoint',
+            'agent:resume-checkpoint',
             async (event, checkpointId: string): Promise<void> => {
                 validateSender(event);
                 await projectAgentService.resumeFromCheckpoint(checkpointId);
@@ -202,9 +202,9 @@ function registerProjectAgentAdvancedHandlers(
     );
 
     ipcMain.handle(
-        'project:get-checkpoints',
+        'agent:get-checkpoints',
         createValidatedIpcHandler<AgentCheckpointItem[], [string]>(
-            'project:get-checkpoints',
+            'agent:get-checkpoints',
             async (event, taskId: string): Promise<AgentCheckpointItem[]> => {
                 validateSender(event);
                 return await projectAgentService.getCheckpoints(taskId);
@@ -217,9 +217,9 @@ function registerProjectAgentAdvancedHandlers(
     );
 
     ipcMain.handle(
-        'project:rollback-checkpoint',
+        'agent:rollback-checkpoint',
         createValidatedIpcHandler<RollbackCheckpointResult | null, [string]>(
-            'project:rollback-checkpoint',
+            'agent:rollback-checkpoint',
             async (event, checkpointId: string): Promise<RollbackCheckpointResult | null> => {
                 validateSender(event);
                 return await projectAgentService.rollbackCheckpoint(checkpointId);
@@ -232,9 +232,9 @@ function registerProjectAgentAdvancedHandlers(
     );
 
     ipcMain.handle(
-        'project:get-plan-versions',
+        'agent:get-plan-versions',
         createValidatedIpcHandler<PlanVersionItem[], [string]>(
-            'project:get-plan-versions',
+            'agent:get-plan-versions',
             async (event, taskId: string): Promise<PlanVersionItem[]> => {
                 validateSender(event);
                 return await projectAgentService.getPlanVersions(taskId);
@@ -247,9 +247,9 @@ function registerProjectAgentAdvancedHandlers(
     );
 
     ipcMain.handle(
-        'project:delete-task-by-node',
+        'agent:delete-task-by-node',
         createValidatedIpcHandler<boolean, [string]>(
-            'project:delete-task-by-node',
+            'agent:delete-task-by-node',
             async (event, nodeId: string): Promise<boolean> => {
                 validateSender(event);
                 return await projectAgentService.deleteTaskByNodeId(nodeId);
@@ -262,9 +262,9 @@ function registerProjectAgentAdvancedHandlers(
     );
 
     ipcMain.handle(
-        'project:create-pr',
+        'agent:create-pr',
         createValidatedIpcHandler<{ success: boolean; url?: string; error?: string } | null, [{ taskId?: string } | undefined]>(
-            'project:create-pr',
+            'agent:create-pr',
             async (event, payload?: { taskId?: string }): Promise<{ success: boolean; url?: string; error?: string } | null> => {
                 validateSender(event);
                 return await projectAgentService.createPullRequest(payload?.taskId);
@@ -277,9 +277,9 @@ function registerProjectAgentAdvancedHandlers(
     );
 
     ipcMain.handle(
-        'project:get-profiles',
+        'agent:get-profiles',
         createValidatedIpcHandler<AgentProfile[], []>(
-            'project:get-profiles',
+            'agent:get-profiles',
             async (event): Promise<AgentProfile[]> => {
                 validateSender(event);
                 return await projectAgentService.getProfiles();
@@ -292,9 +292,9 @@ function registerProjectAgentAdvancedHandlers(
     );
 
     ipcMain.handle(
-        'project:register-profile',
+        'agent:register-profile',
         createValidatedIpcHandler<AgentProfile | null, [AgentProfile]>(
-            'project:register-profile',
+            'agent:register-profile',
             async (event, profile: AgentProfile): Promise<AgentProfile | null> => {
                 validateSender(event);
                 return await projectAgentService.registerProfile(profile);
@@ -307,9 +307,9 @@ function registerProjectAgentAdvancedHandlers(
     );
 
     ipcMain.handle(
-        'project:delete-profile',
+        'agent:delete-profile',
         createValidatedIpcHandler<boolean, [string]>(
-            'project:delete-profile',
+            'agent:delete-profile',
             async (event, id: string): Promise<boolean> => {
                 validateSender(event);
                 return await projectAgentService.deleteProfile(id);
@@ -322,9 +322,9 @@ function registerProjectAgentAdvancedHandlers(
     );
 
     ipcMain.handle(
-        'project:get-routing-rules',
+        'agent:get-routing-rules',
         createValidatedIpcHandler<ModelRoutingRule[], []>(
-            'project:get-routing-rules',
+            'agent:get-routing-rules',
             async (event): Promise<ModelRoutingRule[]> => {
                 validateSender(event);
                 return projectAgentService.getRoutingRules();
@@ -337,9 +337,9 @@ function registerProjectAgentAdvancedHandlers(
     );
 
     ipcMain.handle(
-        'project:set-routing-rules',
+        'agent:set-routing-rules',
         createValidatedIpcHandler<{ success: true }, [ModelRoutingRule[]]>(
-            'project:set-routing-rules',
+            'agent:set-routing-rules',
             async (event, rules: ModelRoutingRule[]): Promise<{ success: true }> => {
                 validateSender(event);
                 projectAgentService.setRoutingRules(rules);
@@ -354,19 +354,19 @@ function registerProjectAgentAdvancedHandlers(
 }
 
 /**
- * Registers all project agent IPC handlers including core operations,
+ * Registers all workspace agent IPC handlers including core operations,
  * human-in-the-loop workflows, voting sessions, legacy compatibility,
  * and canvas persistence.
- * @param projectAgentService - The project agent service instance
+ * @param projectAgentService - The workspace agent service instance
  * @param getMainWindow - Factory function to retrieve the main BrowserWindow
  * @param databaseService - Optional database service for canvas persistence
  */
-export function registerProjectAgentIpc(
+export function registerWorkspaceAgentIpc(
     projectAgentService: ProjectAgentService,
     getMainWindow: () => BrowserWindow | null,
     databaseService?: DatabaseService
 ) {
-    // Forward project updates to renderer
+    // Forward workspace updates to renderer
     const eventBus = projectAgentService.eventBus;
     let lastStatus: ProjectState['status'] = 'idle';
     let updateSequence = 0;
@@ -389,7 +389,7 @@ export function registerProjectAgentIpc(
         });
     };
 
-    const flushProjectUpdate = (): void => {
+    const flushAgentUpdate = (): void => {
         updateTimer = null;
         const state = queuedState;
         queuedState = null;
@@ -402,7 +402,7 @@ export function registerProjectAgentIpc(
             return;
         }
 
-        win.webContents.send('project:update', state);
+        win.webContents.send('agent:update', state);
         const currentTaskId = projectAgentService.getCurrentTaskId() ?? '';
         if (currentTaskId && state.status === 'running' && lastStatus !== 'running') {
             emitAgentEvent(win, 'agent:task_started', {
@@ -418,23 +418,23 @@ export function registerProjectAgentIpc(
         lastStatus = state.status;
     };
 
-    const scheduleProjectUpdateFlush = (): void => {
+    const scheduleAgentUpdateFlush = (): void => {
         if (updateTimer) {
             return;
         }
-        updateTimer = setTimeout(flushProjectUpdate, PROJECT_UPDATE_THROTTLE_MS);
+        updateTimer = setTimeout(flushAgentUpdate, AGENT_UPDATE_THROTTLE_MS);
     };
 
     eventBus.on('project:update', (state: ProjectState) => {
         queuedState = state;
-        scheduleProjectUpdateFlush();
+        scheduleAgentUpdateFlush();
     });
-    const validateSender = createMainWindowSenderValidator(getMainWindow, 'project agent operation');
+    const validateSender = createMainWindowSenderValidator(getMainWindow, 'workspace agent operation');
 
     ipcMain.handle(
-        'project:start',
+        'agent:start',
         createValidatedIpcHandler<{ taskId: string }, [AgentStartOptions]>(
-            'project:start',
+            'agent:start',
             async (event, options: AgentStartOptions): Promise<{ taskId: string }> => {
                 validateSender(event);
                 const taskId = await projectAgentService.start(options);
@@ -448,9 +448,9 @@ export function registerProjectAgentIpc(
     );
 
     ipcMain.handle(
-        'project:stop',
+        'agent:stop',
         createValidatedIpcHandler<void, [{ taskId?: string } | undefined]>(
-            'project:stop',
+            'agent:stop',
             async (event, payload?: { taskId?: string }): Promise<void> => {
                 validateSender(event);
                 await projectAgentService.stop(payload?.taskId);
@@ -463,9 +463,9 @@ export function registerProjectAgentIpc(
     );
 
     ipcMain.handle(
-        'project:pause-task',
+        'agent:pause-task',
         createValidatedIpcHandler<{ success: true }, [{ taskId: string }]>(
-            'project:pause-task',
+            'agent:pause-task',
             async (event, payload: { taskId: string }): Promise<{ success: true }> => {
                 validateSender(event);
                 await projectAgentService.pauseTask(payload.taskId);
@@ -479,9 +479,9 @@ export function registerProjectAgentIpc(
     );
 
     ipcMain.handle(
-        'project:resume-task',
+        'agent:resume-task',
         createValidatedIpcHandler<{ success: boolean; error?: string }, [{ taskId: string }]>(
-            'project:resume-task',
+            'agent:resume-task',
             async (event, payload: { taskId: string }): Promise<{ success: boolean; error?: string }> => {
                 validateSender(event);
                 const success = await projectAgentService.resumeTask(payload.taskId);
@@ -498,9 +498,9 @@ export function registerProjectAgentIpc(
     );
 
     ipcMain.handle(
-        'project:save-snapshot',
+        'agent:save-snapshot',
         createValidatedIpcHandler<{ success: boolean; checkpointId: string }, [{ taskId: string }]>(
-            'project:save-snapshot',
+            'agent:save-snapshot',
             async (event, payload: { taskId: string }): Promise<{ success: boolean; checkpointId: string }> => {
                 validateSender(event);
                 const checkpointId = await projectAgentService.saveSnapshot(payload.taskId);
@@ -517,9 +517,9 @@ export function registerProjectAgentIpc(
     );
 
     ipcMain.handle(
-        'project:reset-state',
+        'agent:reset-state',
         createValidatedIpcHandler<void, []>(
-            'project:reset-state',
+            'agent:reset-state',
             async (event): Promise<void> => {
                 validateSender(event);
                 await projectAgentService.resetState();
@@ -531,9 +531,9 @@ export function registerProjectAgentIpc(
     );
 
     ipcMain.handle(
-        'project:plan',
+        'agent:plan',
         createValidatedIpcHandler<void, [AgentStartOptions]>(
-            'project:plan',
+            'agent:plan',
             async (event, options: AgentStartOptions): Promise<void> => {
                 validateSender(event);
                 await projectAgentService.generatePlan(options);
@@ -546,9 +546,9 @@ export function registerProjectAgentIpc(
     );
 
     ipcMain.handle(
-        'project:approve',
+        'agent:approve',
         createValidatedIpcHandler<void, [ProjectStep[] | { plan: ProjectStep[]; taskId?: string }]>(
-            'project:approve',
+            'agent:approve',
             async (
                 event,
                 payload: ProjectStep[] | { plan: ProjectStep[]; taskId?: string }
@@ -568,9 +568,9 @@ export function registerProjectAgentIpc(
     );
 
     ipcMain.handle(
-        'project:approve-current-plan',
+        'agent:approve-current-plan',
         createValidatedIpcHandler<{ success: boolean; error?: string }, [{ taskId: string }]>(
-            'project:approve-current-plan',
+            'agent:approve-current-plan',
             async (event, payload: { taskId: string }): Promise<{ success: boolean; error?: string }> => {
                 validateSender(event);
                 const success = await projectAgentService.approveCurrentPlan(payload.taskId);
@@ -587,9 +587,9 @@ export function registerProjectAgentIpc(
     );
 
     ipcMain.handle(
-        'project:reject-current-plan',
+        'agent:reject-current-plan',
         createValidatedIpcHandler<{ success: boolean; error?: string }, [{ taskId: string; reason?: string }]>(
-            'project:reject-current-plan',
+            'agent:reject-current-plan',
             async (event, payload: { taskId: string; reason?: string }): Promise<{ success: boolean; error?: string }> => {
                 validateSender(event);
                 const success = await projectAgentService.rejectCurrentPlan(payload.taskId, payload.reason);
@@ -606,9 +606,9 @@ export function registerProjectAgentIpc(
     );
 
     ipcMain.handle(
-        'project:get-status',
+        'agent:get-status',
         createValidatedIpcHandler<ProjectState | null, [{ taskId?: string } | undefined]>(
-            'project:get-status',
+            'agent:get-status',
             async (event, payload?: { taskId?: string }): Promise<ProjectState | null> => {
                 validateSender(event);
                 return await projectAgentService.getStatus(payload?.taskId);
@@ -622,9 +622,9 @@ export function registerProjectAgentIpc(
     );
 
     ipcMain.handle(
-        'project:get-messages',
+        'agent:get-messages',
         createValidatedIpcHandler<TaskMessagesResult, [{ taskId: string }]>(
-            'project:get-messages',
+            'agent:get-messages',
             async (event, payload: { taskId: string }): Promise<TaskMessagesResult> => {
                 validateSender(event);
                 return await projectAgentService.getTaskMessages(payload.taskId);
@@ -637,9 +637,9 @@ export function registerProjectAgentIpc(
     );
 
     ipcMain.handle(
-        'project:get-events',
+        'agent:get-events',
         createValidatedIpcHandler<{ success: boolean; events: AgentEventRecord[] }, [{ taskId: string }]>(
-            'project:get-events',
+            'agent:get-events',
             async (event, payload: { taskId: string }): Promise<{ success: boolean; events: AgentEventRecord[] }> => {
                 validateSender(event);
                 return await projectAgentService.getTaskEvents(payload.taskId);
@@ -653,14 +653,14 @@ export function registerProjectAgentIpc(
 
     // ===== MARCH1-IPC-001: Council Protocol =====
     ipcMain.handle(
-        'project:council-generate-plan',
+        'agent:council-generate-plan',
         createValidatedIpcHandler<{ success: true }, [{ taskId: string; task: string }]>(
-            'project:council-generate-plan',
+            'agent:council-generate-plan',
             async (event, payload: { taskId: string; task: string }): Promise<{ success: true }> => {
                 validateSender(event);
                 await projectAgentService.generatePlan({
                     task: payload.task,
-                    projectId: payload.taskId,
+                    workspaceId: payload.taskId,
                     agentProfileId: 'council-president'
                 });
                 return { success: true };
@@ -673,9 +673,9 @@ export function registerProjectAgentIpc(
     );
 
     ipcMain.handle(
-        'project:council-get-proposal',
+        'agent:council-get-proposal',
         createValidatedIpcHandler<{ success: boolean; plan: ProjectStep[] }, [{ taskId: string }]>(
-            'project:council-get-proposal',
+            'agent:council-get-proposal',
             async (event, payload: { taskId: string }): Promise<{ success: boolean; plan: ProjectStep[] }> => {
                 validateSender(event);
                 const status = await projectAgentService.getStatus(payload.taskId);
@@ -692,9 +692,9 @@ export function registerProjectAgentIpc(
     );
 
     ipcMain.handle(
-        'project:council-approve-proposal',
+        'agent:council-approve-proposal',
         createValidatedIpcHandler<{ success: boolean; error?: string }, [{ taskId: string }]>(
-            'project:council-approve-proposal',
+            'agent:council-approve-proposal',
             async (event, payload: { taskId: string }): Promise<{ success: boolean; error?: string }> => {
                 validateSender(event);
                 const success = await projectAgentService.approveCurrentPlan(payload.taskId);
@@ -708,9 +708,9 @@ export function registerProjectAgentIpc(
     );
 
     ipcMain.handle(
-        'project:council-reject-proposal',
+        'agent:council-reject-proposal',
         createValidatedIpcHandler<{ success: boolean; error?: string }, [{ taskId: string; reason?: string }]>(
-            'project:council-reject-proposal',
+            'agent:council-reject-proposal',
             async (event, payload: { taskId: string; reason?: string }): Promise<{ success: boolean; error?: string }> => {
                 validateSender(event);
                 const success = await projectAgentService.rejectCurrentPlan(payload.taskId, payload.reason);
@@ -724,9 +724,9 @@ export function registerProjectAgentIpc(
     );
 
     ipcMain.handle(
-        'project:council-start-execution',
+        'agent:council-start-execution',
         createValidatedIpcHandler<{ success: boolean; error?: string }, [{ taskId: string }]>(
-            'project:council-start-execution',
+            'agent:council-start-execution',
             async (event, payload: { taskId: string }): Promise<{ success: boolean; error?: string }> => {
                 validateSender(event);
                 const success = await projectAgentService.resumeTask(payload.taskId);
@@ -740,9 +740,9 @@ export function registerProjectAgentIpc(
     );
 
     ipcMain.handle(
-        'project:council-pause-execution',
+        'agent:council-pause-execution',
         createValidatedIpcHandler<{ success: true }, [{ taskId: string }]>(
-            'project:council-pause-execution',
+            'agent:council-pause-execution',
             async (event, payload: { taskId: string }): Promise<{ success: true }> => {
                 validateSender(event);
                 await projectAgentService.pauseTask(payload.taskId);
@@ -756,9 +756,9 @@ export function registerProjectAgentIpc(
     );
 
     ipcMain.handle(
-        'project:council-resume-execution',
+        'agent:council-resume-execution',
         createValidatedIpcHandler<{ success: boolean; error?: string }, [{ taskId: string }]>(
-            'project:council-resume-execution',
+            'agent:council-resume-execution',
             async (event, payload: { taskId: string }): Promise<{ success: boolean; error?: string }> => {
                 validateSender(event);
                 const success = await projectAgentService.resumeTask(payload.taskId);
@@ -772,9 +772,9 @@ export function registerProjectAgentIpc(
     );
 
     ipcMain.handle(
-        'project:council-get-timeline',
+        'agent:council-get-timeline',
         createValidatedIpcHandler<{ success: boolean; events: AgentEventRecord[] }, [{ taskId: string }]>(
-            'project:council-get-timeline',
+            'agent:council-get-timeline',
             async (event, payload: { taskId: string }): Promise<{ success: boolean; events: AgentEventRecord[] }> => {
                 validateSender(event);
                 const events = await projectAgentService.getTaskEvents(payload.taskId);
@@ -789,9 +789,9 @@ export function registerProjectAgentIpc(
     // ============================================
 
     ipcMain.handle(
-        'project:get-telemetry',
+        'agent:get-telemetry',
         createValidatedIpcHandler<{ success: boolean; telemetry: TaskMetrics[] }, [{ taskId: string }]>(
-            'project:get-telemetry',
+            'agent:get-telemetry',
             async (event, payload: { taskId: string }): Promise<{ success: boolean; telemetry: TaskMetrics[] }> => {
                 validateSender(event);
                 return await projectAgentService.getTaskTelemetry(payload.taskId);
@@ -804,24 +804,24 @@ export function registerProjectAgentIpc(
     );
 
     ipcMain.handle(
-        'project:get-task-history',
-        createValidatedIpcHandler<AgentTaskHistoryItem[], [{ projectId?: string } | undefined]>(
-            'project:get-task-history',
-            async (event, payload?: { projectId?: string }): Promise<AgentTaskHistoryItem[]> => {
+        'agent:get-task-history',
+        createValidatedIpcHandler<AgentTaskHistoryItem[], [{ workspaceId?: string } | undefined]>(
+            'agent:get-task-history',
+            async (event, payload?: { workspaceId?: string }): Promise<AgentTaskHistoryItem[]> => {
                 validateSender(event);
-                return await projectAgentService.getTaskHistory(payload?.projectId ?? '');
+                return await projectAgentService.getTaskHistory(payload?.workspaceId ?? '');
             },
             {
-                argsSchema: z.tuple([z.object({ projectId: z.string().optional() }).optional()]),
+                argsSchema: z.tuple([z.object({ workspaceId: z.string().optional() }).optional()]),
                 wrapResponse: true
             }
         )
     );
 
     ipcMain.handle(
-        'project:delete-task',
+        'agent:delete-task',
         createValidatedIpcHandler<{ success: boolean; error?: string }, [{ taskId: string }]>(
-            'project:delete-task',
+            'agent:delete-task',
             async (event, payload: { taskId: string }): Promise<{ success: boolean; error?: string }> => {
                 validateSender(event);
                 const success = await projectAgentService.deleteTask(payload.taskId);
@@ -837,16 +837,16 @@ export function registerProjectAgentIpc(
         )
     );
 
-    registerProjectAgentAdvancedHandlers(projectAgentService, validateSender);
+    registerWorkspaceAgentAdvancedHandlers(projectAgentService, validateSender);
 
-    registerProjectAgentDecisionHandlers(projectAgentService, getMainWindow);
+    registerWorkspaceAgentDecisionHandlers(projectAgentService, getMainWindow);
 
-    registerProjectAgentCouncilHandlers(projectAgentService, getMainWindow);
+    registerWorkspaceAgentCouncilHandlers(projectAgentService, getMainWindow);
 
     ipcMain.handle(
-        'project:health',
+        'agent:health',
         createValidatedIpcHandler<{ success: true; data: { status: string } }, []>(
-            'project:health',
+            'agent:health',
             async (event): Promise<{ success: true; data: { status: string } }> => {
                 validateSender(event);
                 return {
@@ -862,6 +862,8 @@ export function registerProjectAgentIpc(
         )
     );
 
-    registerProjectAgentCanvasHandlers(getMainWindow, databaseService, projectAgentService);
+    registerWorkspaceAgentCanvasHandlers(getMainWindow, databaseService, projectAgentService);
 }
 
+/** @deprecated Use registerWorkspaceAgentIpc instead */
+export const registerProjectAgentIpc = registerWorkspaceAgentIpc;

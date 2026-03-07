@@ -15,11 +15,11 @@ export class RuleService {
     constructor() { }
 
     /**
-     * Reads .tengra/RULES.md from the given project root.
+     * Reads .tengra/RULES.md from the given workspace root.
      * Returns null if file doesn't exist.
      */
-    async getRules(projectRoot: string): Promise<string | null> {
-        const rulesPath = path.join(projectRoot, '.tengra', 'RULES.md');
+    async getRules(workspaceRoot: string): Promise<string | null> {
+        const rulesPath = path.join(workspaceRoot, '.tengra', 'RULES.md');
 
         try {
             const stats = await fs.stat(rulesPath);
@@ -52,10 +52,10 @@ export class RuleService {
     }
 
     /**
-     * Clears cache for a specific project
+     * Clears cache for a specific workspace
      */
-    clearCache(projectRoot: string) {
-        const rulesPath = path.join(projectRoot, '.tengra', 'RULES.md');
+    clearCache(workspaceRoot: string) {
+        const rulesPath = path.join(workspaceRoot, '.tengra', 'RULES.md');
         this.cache.delete(rulesPath);
     }
 }

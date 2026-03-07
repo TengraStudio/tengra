@@ -297,16 +297,16 @@ describe('AdvancedMemoryService import/export', () => {
         const originalMemory = createMemory({
             id: 'm1',
             content: 'Shared knowledge',
-            projectId: 'p1',
+            workspaceId: 'p1',
             embedding: [0.1],
             relatedMemoryIds: []
         });
         mocks.getAdvancedMemoryById.mockResolvedValue({ ...originalMemory });
 
-        const shared = await service.shareMemoryWithProject('m1', 'p2');
+        const shared = await service.shareMemoryWithWorkspace('m1', 'p2');
 
         expect(shared).toBeDefined();
-        expect(shared?.projectId).toBe('p2');
+        expect(shared?.workspaceId).toBe('p2');
         expect(shared?.relatedMemoryIds).toContain('m1');
         expect(mocks.storeAdvancedMemory).toHaveBeenCalled();
     });

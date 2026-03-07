@@ -57,8 +57,8 @@ export const DISPLAY_LIMITS = {
     PROMPTS_DROPDOWN: 5,
     /** Tool output preview lines */
     TOOL_OUTPUT_LINES: 6,
-    /** Files to show in project dashboard */
-    PROJECT_FILES: 15,
+    /** Files to show in workspace dashboard */
+    WORKSPACE_FILES: 15,
     /** Model explorer results */
     MODEL_EXPLORER_RESULTS: 12,
     /** Tags to display per item */
@@ -107,8 +107,8 @@ export const CONTENT_LIMITS = {
     CODE_SNIPPET_LINES: 10,
     /** Code files slice limit */
     CODE_FILES_SLICE: 100,
-    /** Project file list limit for IPC */
-    PROJECT_FILE_LIST: 1000,
+    /** Workspace file list limit for IPC */
+    WORKSPACE_FILE_LIST: 1000,
     /** Context retrieval symbols limit */
     CONTEXT_SYMBOLS: 3,
     /** Model cache fetch limit */

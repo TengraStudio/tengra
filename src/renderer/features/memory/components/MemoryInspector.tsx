@@ -164,8 +164,8 @@ function useMemoryInspectorLogic(
     const [historyData, setHistoryData] = useState<MemoryVersion[]>([]);
     const [pendingShare, setPendingShare] = useState<{
         memoryId: string;
-        projectId: string;
-        projectTitle: string;
+        workspaceId: string;
+        workspaceTitle: string;
     } | null>(null);
 
     useEffect(() => {
@@ -198,20 +198,20 @@ function useMemoryInspectorLogic(
 
     const handleShare = useCallback(async (id: string) => {
         try {
-            const allProjects = await window.electron.db.getProjects();
-            const activeProjects = allProjects.filter(p => p.status === 'active');
+            const allWorkspaces = await window.electron.db.getWorkspaces();
+            const activeWorkspaces = allWorkspaces.filter(p => p.status === 'active');
 
-            if (activeProjects.length <= 1) {
-                appLogger.info('MemoryInspector', 'No other projects to share with.');
+            if (activeWorkspaces.length <= 1) {
+                appLogger.info('MemoryInspector', 'No other workspaces to share with.');
                 return;
             }
 
-            const targetProject = activeProjects.find(p => p.id !== 'current'); // Mock logic
-            if (targetProject) {
+            const targetWorkspace = activeWorkspaces.find(p => p.id !== 'current'); // Mock logic
+            if (targetWorkspace) {
                 setPendingShare({
                     memoryId: id,
-                    projectId: targetProject.id,
-                    projectTitle: targetProject.title,
+                    workspaceId: targetWorkspace.id,
+                    workspaceTitle: targetWorkspace.title,
                 });
             }
         } catch (error) {
@@ -225,7 +225,7 @@ function useMemoryInspectorLogic(
         }
 
         try {
-            await memoryData.handleShare(pendingShare.memoryId, pendingShare.projectId);
+            await memoryData.handleShare(pendingShare.memoryId, pendingShare.workspaceId);
             appLogger.info('MemoryInspector', 'Memory shared successfully');
         } catch (error) {
             appLogger.error('MemoryInspector', 'Failed to share', error as Error);
@@ -462,7 +462,7 @@ export const MemoryInspector: React.FC = () => {
                 onClose={cancelShare}
                 onConfirm={() => { void confirmShare(); }}
                 title={t('common.confirm')}
-                message={pendingShare?.projectTitle ?? ''}
+                message={pendingShare?.workspaceTitle ?? ''}
                 confirmLabel={t('common.confirm')}
                 cancelText={t('common.cancel')}
                 variant="info"

@@ -40,7 +40,7 @@ interface UseTerminalSplitActionsParams {
     completeRecording: () => void;
     recordingCaptureRef: MutableRefObject<{ tabId: string } | null>;
     onToggle: () => void;
-    projectIssuesTab: TerminalTab | null;
+    workspaceIssuesTab: TerminalTab | null;
     setTabs: (fn: (prev: TerminalTab[]) => TerminalTab[]) => void;
     setActiveTabId: (id: string | null) => void;
 }
@@ -63,7 +63,7 @@ export function useTerminalSplitActions({
     completeRecording,
     recordingCaptureRef,
     onToggle,
-    projectIssuesTab,
+    workspaceIssuesTab,
     setTabs,
     setActiveTabId,
 }: UseTerminalSplitActionsParams) {
@@ -222,7 +222,7 @@ export function useTerminalSplitActions({
             setActiveTabId(nextActiveTabId);
             activeTabIdRef.current = nextActiveTabId;
 
-            if (remainingTabs.length === 0 && !projectIssuesTab) {
+            if (remainingTabs.length === 0 && !workspaceIssuesTab) {
                 onToggle();
             }
         } catch (error) {
@@ -230,7 +230,7 @@ export function useTerminalSplitActions({
         } finally {
             setTerminalContextMenu(null);
         }
-    }, [completeRecording, onToggle, projectIssuesTab, setActiveTabId, setTabs, tabsRef, activeTabIdRef, recordingCaptureRef, setTerminalContextMenu]);
+    }, [completeRecording, onToggle, workspaceIssuesTab, setActiveTabId, setTabs, tabsRef, activeTabIdRef, recordingCaptureRef, setTerminalContextMenu]);
 
     const closeSplitView = useCallback(() => {
         setSplitView(null);

@@ -59,7 +59,7 @@ export const AdvancedSemanticFragmentSchema = z.object({
     relatedMemoryIds: z.array(z.string()),
     contradictsIds: z.array(z.string()),
     mergedIntoId: z.string().optional(),
-    projectId: z.string().optional(),
+    workspaceId: z.string().optional(),
     contextTags: z.array(z.string()).optional(),
     createdAt: z.number(),
     updatedAt: z.number(),
@@ -101,12 +101,12 @@ export const PendingMemorySchema = z.object({
     autoConfirmReason: z.string().optional(),
     potentialContradictions: z.array(ContradictionCandidateSchema),
     similarMemories: z.array(SimilarMemoryCandidateSchema),
-    projectId: z.string().optional(),
+    workspaceId: z.string().optional(),
 });
 
 export const RecallContextSchema = z.object({
     query: z.string(),
-    projectId: z.string().optional(),
+    workspaceId: z.string().optional(),
     categories: z.array(MemoryCategorySchema).optional(),
     tags: z.array(z.string()).optional(),
     createdAfter: z.number().optional(),
@@ -121,8 +121,8 @@ export const RecallContextSchema = z.object({
 
 export const SharedMemorySyncRequestSchema = z.object({
     namespaceId: z.string(),
-    sourceProjectId: z.string(),
-    targetProjectIds: z.array(z.string()).optional(),
+    sourceWorkspaceId: z.string(),
+    targetWorkspaceIds: z.array(z.string()).optional(),
     memoryIds: z.array(z.string()).optional(),
     resolution: z.enum(['keep_source', 'keep_target', 'merge_copy', 'manual_review'] as [SharedMemoryConflictResolution, ...SharedMemoryConflictResolution[]]).optional(),
 });

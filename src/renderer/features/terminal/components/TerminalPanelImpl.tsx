@@ -2,7 +2,7 @@ import { motion } from '@/lib/framer-motion-compat';
 
 import {
     TERMINAL_MANAGER_MODULE_VERSION,
-    TERMINAL_PROJECT_ISSUES_TAB_ID,
+    TERMINAL_WORKSPACE_ISSUES_TAB_ID,
 } from '../constants/terminal-panel-constants';
 import { useTerminalPanelBehavior } from '../hooks/useTerminalPanelBehavior';
 import { useTerminalPanelCore } from '../hooks/useTerminalPanelCore';
@@ -11,7 +11,7 @@ import { useTerminalPanelEffects } from '../hooks/useTerminalPanelEffects';
 import type { TerminalPanelProps } from './TerminalPanel';
 import { TerminalPanelOverlaysConnector } from './TerminalPanelOverlaysConnector';
 import { TerminalPanelToolbarConnector } from './TerminalPanelToolbarConnector';
-import { TerminalProjectIssuesTab } from './TerminalProjectIssuesTab';
+import { TerminalWorkspaceIssuesTab } from './TerminalWorkspaceIssuesTab';
 import { TerminalSplitView } from './TerminalSplitView';
 
 /**
@@ -119,7 +119,7 @@ export function TerminalPanelContentImpl(props: TerminalPanelProps) {
                 closeTab={core.tabActions.closeTab}
                 handleTabSelect={behavior.handleTabSelect}
                 setIsGalleryView={core.setIsGalleryView}
-                projectPath={core.projectPath}
+                workspacePath={core.workspacePath}
                 terminalAppearance={core.terminalAppearance}
                 resolvedTerminalAppearance={core.preferences.resolvedTerminalAppearance}
                 setTerminalInstance={core.setTerminalInstance}
@@ -127,10 +127,10 @@ export function TerminalPanelContentImpl(props: TerminalPanelProps) {
                 emptyActionLabel={core.t('terminal.startNewSession')}
                 createDefaultTerminal={core.tabActions.createDefaultTerminal}
                 renderTabContent={tab =>
-                    tab.id === TERMINAL_PROJECT_ISSUES_TAB_ID ? (
-                        <TerminalProjectIssuesTab
-                            projectId={core.projectId}
-                            projectPath={core.projectPath}
+                    tab.id === TERMINAL_WORKSPACE_ISSUES_TAB_ID ? (
+                        <TerminalWorkspaceIssuesTab
+                            workspaceId={core.workspaceId}
+                            workspacePath={core.workspacePath}
                             onOpenFile={core.onOpenFile}
                         />
                     ) : null
@@ -143,7 +143,7 @@ export function TerminalPanelContentImpl(props: TerminalPanelProps) {
                 isGalleryView={core.isGalleryView}
                 hasActiveSession={core.hasActiveSession}
                 isFloating={core.isFloating}
-                projectPath={core.projectPath}
+                workspacePath={core.workspacePath}
                 splitView={core.splitLayout.splitView}
                 isSynchronizedInputEnabled={core.splitLayout.isSynchronizedInputEnabled}
                 activeRecordingTabId={core.recording.activeRecordingTabId}

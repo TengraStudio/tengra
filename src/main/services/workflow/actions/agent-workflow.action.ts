@@ -12,7 +12,7 @@ import { IWorkflowActionHandler } from './action.interface';
 export class AgentWorkflowAction implements IWorkflowActionHandler {
     type: string = 'agent_task';
 
-    constructor(private projectAgentService: ProjectAgentService) { }
+    constructor(private workspaceAgentService: ProjectAgentService) { }
 
     async execute(action: WorkflowAction, context?: WorkflowContext): Promise<JsonValue> {
         const agentId = action.config['agentId'] as string | undefined;
@@ -26,14 +26,14 @@ export class AgentWorkflowAction implements IWorkflowActionHandler {
 
         try {
             // Start the agent task
-            await this.projectAgentService.start({
+            await this.workspaceAgentService.start({
                 task,
                 agentProfileId: agentId,
                 priority: priority || 'normal',
             });
 
             // Get the current task ID
-            const taskId = this.projectAgentService.getCurrentTaskId();
+            const taskId = this.workspaceAgentService.getCurrentTaskId();
             if (!taskId) {
                 throw new Error('Failed to start agent task');
             }
@@ -46,7 +46,7 @@ export class AgentWorkflowAction implements IWorkflowActionHandler {
                 const startTime = Date.now();
 
                 while (Date.now() - startTime < maxWaitTime) {
-                    const status = await this.projectAgentService.getStatus(taskId);
+                    const status = await this.workspaceAgentService.getStatus(taskId);
 
                     if (status.status === 'completed') {
                         return { taskId, status: 'completed' };

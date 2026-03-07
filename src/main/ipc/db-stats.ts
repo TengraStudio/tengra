@@ -13,7 +13,7 @@ export interface DatabaseSizeStats {
     dbSize: number;
     chatCount: number;
     messageCount: number;
-    projectCount: number;
+    workspaceCount: number;
     folderCount: number;
     promptCount: number;
 }
@@ -34,7 +34,7 @@ export function registerDbStatsIpc(
         async (event: IpcMainInvokeEvent): Promise<DatabaseSizeStats> => {
             validateSender(event);
             const stats = await databaseService.getStats();
-            const projects = await databaseService.projects.getProjects();
+            const workspaces = await databaseService.projects.getProjects();
             const folders = await databaseService.system.getFolders();
             const prompts = await databaseService.system.getPrompts();
 
@@ -42,7 +42,7 @@ export function registerDbStatsIpc(
                 dbSize: stats.dbSize,
                 chatCount: stats.chatCount,
                 messageCount: stats.messageCount,
-                projectCount: projects.length,
+                workspaceCount: workspaces.length,
                 folderCount: folders.length,
                 promptCount: prompts.length,
             };

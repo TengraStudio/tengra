@@ -158,6 +158,13 @@ export interface DbUpdateProjectRequest {
     metadata?: JsonObject
 }
 
+/** @alias DbProject */
+export type DbWorkspace = DbProject
+/** @alias DbCreateProjectRequest */
+export type DbCreateWorkspaceRequest = DbCreateProjectRequest
+/** @alias DbUpdateProjectRequest */
+export type DbUpdateWorkspaceRequest = DbUpdateProjectRequest
+
 // ============================================================================
 // Folder Types
 // ============================================================================

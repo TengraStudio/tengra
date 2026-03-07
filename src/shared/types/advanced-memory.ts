@@ -52,7 +52,7 @@ export type MemorySource =
 export type MemoryCategory =
     | 'preference'       // User preferences (dark mode, language, etc.)
     | 'personal'         // Personal info (name, location, etc.)
-    | 'project'          // Project-specific knowledge
+    | 'project'          // Workspace-specific knowledge
     | 'technical'        // Technical preferences/knowledge
     | 'workflow'         // How user likes to work
     | 'relationship'     // Relationships between entities
@@ -97,9 +97,8 @@ export interface AdvancedSemanticFragment {
     mergedIntoId?: string;      // If merged, which memory it became
 
     // Scope
-    projectId?: string;         // null = global
     workspaceId?: string;
-    contextTags?: string[];     // Additional context for retrieval
+    contextTags?: string[];// Additional context for retrieval
 
     // Timestamps
     createdAt: number;
@@ -149,7 +148,6 @@ export interface PendingMemory {
     similarMemories: SimilarMemoryCandidate[];
 
     // Scope
-    projectId?: string;
     workspaceId?: string;
 }
 
@@ -226,7 +224,7 @@ export interface RecallContext {
     query: string;
 
     // Scope filters
-    projectId?: string;
+    workspaceId?: string;
     categories?: MemoryCategory[];
     tags?: string[];
 
@@ -260,7 +258,7 @@ export type RelationshipType =
     | 'is_a'            // Category/type relationship
     | 'has'             // Ownership/attribute
     | 'prefers'         // Preference
-    | 'works_on'        // Project involvement
+    | 'works_on'        // Workspace involvement
     | 'related_to'      // General relation
     | 'contradicts'     // Conflicting info
     | 'supersedes'      // Newer version of
@@ -357,7 +355,7 @@ export type SharedMemoryConflictResolution =
 export interface SharedMemoryNamespace {
     id: string;
     name: string;
-    projectIds: string[];
+    workspaceIds: string[];
     accessControl: Record<string, string[]>;
     createdAt: number;
     updatedAt: number;
@@ -365,16 +363,16 @@ export interface SharedMemoryNamespace {
 
 export interface SharedMemorySyncRequest {
     namespaceId: string;
-    sourceProjectId: string;
-    targetProjectIds?: string[];
+    sourceWorkspaceId: string;
+    targetWorkspaceIds?: string[];
     memoryIds?: string[];
     resolution?: SharedMemoryConflictResolution;
 }
 
 export interface SharedMemoryMergeConflict {
     namespaceId: string;
-    sourceProjectId: string;
-    targetProjectId: string;
+    sourceWorkspaceId: string;
+    targetWorkspaceId: string;
     sourceMemoryId: string;
     targetMemoryId: string;
     sourceContent: string;
@@ -394,9 +392,9 @@ export interface SharedMemorySyncResult {
 export interface SharedMemoryAnalytics {
     namespaceId: string;
     totalMemories: number;
-    totalProjects: number;
+    totalWorkspaces: number;
     conflicts: number;
-    memoriesByProject: Record<string, number>;
+    memoriesByWorkspace: Record<string, number>;
     updatedAt: number;
 }
 

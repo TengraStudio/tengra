@@ -31,14 +31,14 @@ const projectFixture: Project = {
 };
 
 const mountElectronMock = () => {
-    const updateProject = vi.fn().mockResolvedValue({ success: true });
+    const updateWorkspace = vi.fn().mockResolvedValue({ success: true });
     const base = window.electron ?? webElectronMock;
 
     window.electron = {
         ...base,
         db: {
             ...base.db,
-            updateProject,
+            updateWorkspace,
         },
         ssh: {
             ...base.ssh,
@@ -56,7 +56,7 @@ const mountElectronMock = () => {
             warn: vi.fn() as typeof base.log.warn,
         },
     };
-    return { updateProject };
+    return { updateWorkspace };
 };
 
 const WorkspaceHarness: React.FC<{ project: Project }> = ({ project }) => {
@@ -83,12 +83,12 @@ const WorkspaceHarness: React.FC<{ project: Project }> = ({ project }) => {
 };
 
 describe('Workspace mount/tab persistence smoke tests', () => {
-    let updateProjectMock: ReturnType<typeof vi.fn>;
+    let updateWorkspaceMock: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
         localStorage.clear();
         const mockBundle = mountElectronMock();
-        updateProjectMock = mockBundle.updateProject;
+        updateWorkspaceMock = mockBundle.updateWorkspace;
     });
 
     it('restores tab state after remount', () => {
@@ -127,7 +127,7 @@ describe('Workspace mount/tab persistence smoke tests', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'remove-mounts' }));
 
-        expect(updateProjectMock).toHaveBeenCalledWith(
+        expect(updateWorkspaceMock).toHaveBeenCalledWith(
             'project-1',
             { mounts: [] }
         );

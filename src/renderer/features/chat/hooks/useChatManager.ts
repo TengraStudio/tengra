@@ -30,7 +30,7 @@ interface UseChatManagerOptions {
     formatChatError: (err: CatchError) => string
     t: (key: string) => string
     activeWorkspacePath?: string | undefined
-    projectId?: string | undefined
+    workspaceId?: string | undefined
 }
 
 /**
@@ -151,7 +151,7 @@ export function useChatManager(options: UseChatManagerOptions) {
     const { prompts, createPrompt, deletePrompt, updatePrompt } = usePromptManager();
     const { streamingStates, lastChatError, clearChatError, generateResponse, stopGeneration } = useChatGenerator({
         chats, setChats, appSettings, selectedModel, selectedProvider, selectedModels: options.selectedModels,
-        language, selectedPersona, activeWorkspacePath: options.activeWorkspacePath, projectId: options.projectId,
+        language, selectedPersona, activeWorkspacePath: options.activeWorkspacePath, workspaceId: options.workspaceId,
         t, handleSpeak, autoReadEnabled, formatChatError, systemMode
     });
     const { folders, loadFolders, createFolder, updateFolder, deleteFolder: baseDeleteFolder } = useFolderManager();

@@ -6,16 +6,16 @@ import { Button } from '@/components/ui/button';
 import { AppView } from '@/hooks/useAppState';
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { Project } from '@/types';
+import { Workspace } from '@/types';
 
 interface WorkspaceSectionProps {
     isCollapsed: boolean;
     currentView: AppView;
     onChangeView: (view: AppView) => void;
     chatsCount: number;
-    projectsCount: number;
+    workspacesCount: number;
     promptsCount?: number;
-    selectedProject: Project | null;
+    selectedWorkspace: Workspace | null;
     language: string;
     setShowPrompts: (show: boolean) => void;
 }
@@ -64,7 +64,7 @@ const ExpandedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) => 
     onChangeView,
     chatsCount,
     promptsCount,
-    selectedProject,
+    selectedWorkspace,
     setShowPrompts,
     t,
 }) => (
@@ -73,7 +73,7 @@ const ExpandedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) => 
         title={t('sidebar.workspace')}
         icon={<FolderIcon className="w-3.5 h-3.5" />}
         defaultExpanded={true}
-        badge={chatsCount + (selectedProject ? 1 : 0)}
+        badge={chatsCount + (selectedWorkspace ? 1 : 0)}
     >
         <SidebarMenuItem
             id="chats"
@@ -89,8 +89,8 @@ const ExpandedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) => 
             label={t('sidebar.workspace')}
             onClick={() => onChangeView('workspace')}
             isActive={currentView === 'workspace'}
-            status={selectedProject ? 'online' : undefined}
-            statusLabel={selectedProject ? t('sidebar.active') : undefined}
+            status={selectedWorkspace ? 'online' : undefined}
+            statusLabel={selectedWorkspace ? t('sidebar.active') : undefined}
         />
         <SidebarMenuItem
             id="prompts"

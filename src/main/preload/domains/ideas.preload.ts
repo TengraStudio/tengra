@@ -22,9 +22,9 @@ export interface IdeasBridge {
     regenerateIdea: (ideaId: string) => Promise<{ success: boolean; idea?: IpcValue }>;
     approveIdea: (
         ideaId: string,
-        projectPath: string,
+        workspacePath: string,
         selectedName?: string
-    ) => Promise<{ success: boolean; project?: IpcValue }>;
+    ) => Promise<{ success: boolean; workspace?: IpcValue }>;
     rejectIdea: (ideaId: string) => Promise<{ success: boolean }>;
     canGenerateLogo: () => Promise<boolean>;
     generateLogo: (
@@ -80,8 +80,8 @@ export function createIdeasBridge(ipc: IpcRenderer): IdeasBridge {
         getIdea: id => ipc.invoke('ideas:getIdea', id),
         getIdeas: sessionId => ipc.invoke('ideas:getIdeas', sessionId),
         regenerateIdea: ideaId => ipc.invoke('ideas:regenerateIdea', ideaId),
-        approveIdea: (ideaId, projectPath, selectedName) =>
-            ipc.invoke('ideas:approveIdea', ideaId, projectPath, selectedName),
+        approveIdea: (ideaId, workspacePath, selectedName) =>
+            ipc.invoke('ideas:approveIdea', ideaId, workspacePath, selectedName),
         rejectIdea: ideaId => ipc.invoke('ideas:rejectIdea', ideaId),
         canGenerateLogo: () => ipc.invoke('ideas:canGenerateLogo'),
         generateLogo: (ideaId, prompt) =>

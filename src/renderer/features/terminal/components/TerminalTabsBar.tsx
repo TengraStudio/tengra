@@ -50,7 +50,7 @@ export function TerminalTabsBar({
             {tabs.map(tab => {
                 const metadata = resolveTerminalTabMetadata(tab);
                 const isClosable = metadata.closable !== false;
-                const isProjectIssuesTab = metadata.panelType === 'project-issues';
+                const isWorkspaceIssuesTab = metadata.panelType === 'workspace-issues';
                 return (
                     <button
                         key={tab.id}
@@ -82,7 +82,7 @@ export function TerminalTabsBar({
                                 'border-primary/70'
                         )}
                     >
-                        {isProjectIssuesTab ? (
+                        {isWorkspaceIssuesTab ? (
                             <AlertTriangle
                                 className={cn(
                                     'w-3.5 h-3.5 flex-shrink-0',

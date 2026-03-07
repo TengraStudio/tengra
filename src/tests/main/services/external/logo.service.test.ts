@@ -46,7 +46,7 @@ const createService = (): LogoTestContext => {
 
     const deps: ConstructorParameters<typeof LogoService>[0] = {
         llmService: { chat: chatMock } as unknown as LLMService,
-        projectService: {
+        workspaceService: {
             analyzeProject: vi.fn<ProjectService['analyzeProject']>().mockResolvedValue(PROJECT_ANALYSIS),
         } as unknown as ProjectService,
         localImageService: {

@@ -7,7 +7,7 @@ interface StorageStats {
     dbSize: number
     chatCount: number
     messageCount: number
-    projectCount: number
+    workspaceCount: number
 }
 
 /** Formats bytes into a human-readable string (KB, MB, GB) */
@@ -54,15 +54,15 @@ export const StorageDashboard: React.FC = () => {
     const loadStats = useCallback(async () => {
         setLoading(true);
         try {
-            const [dbStats, projects] = await Promise.all([
+            const [dbStats, workspacesList] = await Promise.all([
                 window.electron.db.getStats(),
-                window.electron.db.getProjects(),
+                window.electron.db.getWorkspaces(),
             ]);
             setStats({
                 dbSize: dbStats.dbSize,
                 chatCount: dbStats.chatCount,
                 messageCount: dbStats.messageCount,
-                projectCount: projects.length,
+                workspaceCount: workspacesList.length,
             });
         } catch {
             setStats(null);
@@ -122,7 +122,7 @@ export const StorageDashboard: React.FC = () => {
                 <StatItem
                     icon={<FolderOpen className="w-3.5 h-3.5 text-primary" />}
                     label={t('storageDashboard.totalProjects')}
-                    value={String(stats.projectCount)}
+                    value={String(stats.workspaceCount)}
                 />
             </div>
         </div>

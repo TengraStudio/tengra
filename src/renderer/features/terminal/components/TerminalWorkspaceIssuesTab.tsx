@@ -2,37 +2,37 @@ import { AlertTriangle, CheckCircle2, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
-import { ProjectIssue } from '@/types';
+import { WorkspaceIssue } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
-interface TerminalProjectIssuesTabProps {
-    projectPath?: string;
-    projectId?: string;
+interface TerminalWorkspaceIssuesTabProps {
+    workspacePath?: string;
+    workspaceId?: string;
     onOpenFile?: (path: string, line?: number) => void;
 }
 
-const PROJECT_ISSUES_REFRESH_INTERVAL_MS = 90_000;
+const WORKSPACE_ISSUES_REFRESH_INTERVAL_MS = 90_000;
 
-function resolveIssuePath(projectPath: string, issue: ProjectIssue): string {
+function resolveIssuePath(workspacePath: string, issue: WorkspaceIssue): string {
     if (/^[A-Za-z]:[\\/]/.test(issue.file) || issue.file.startsWith('\\\\')) {
         return issue.file;
     }
-    const separator = projectPath.includes('\\') ? '\\' : '/';
-    return `${projectPath}${projectPath.endsWith(separator) ? '' : separator}${issue.file}`;
+    const separator = workspacePath.includes('\\') ? '\\' : '/';
+    return `${workspacePath}${workspacePath.endsWith(separator) ? '' : separator}${issue.file}`;
 }
 
-export function TerminalProjectIssuesTab({
-    projectPath,
-    projectId,
+export function TerminalWorkspaceIssuesTab({
+    workspacePath,
+    workspaceId,
     onOpenFile,
-}: TerminalProjectIssuesTabProps) {
+}: TerminalWorkspaceIssuesTabProps) {
     const { t } = useTranslation();
-    const [issues, setIssues] = useState<ProjectIssue[]>([]);
+    const [issues, setIssues] = useState<WorkspaceIssue[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const loadIssues = useCallback(async () => {
-        if (!projectPath) {
+        if (!workspacePath) {
             setIssues([]);
             setErrorMessage(null);
             return;
@@ -41,12 +41,12 @@ export function TerminalProjectIssuesTab({
         setIsLoading(true);
         setErrorMessage(null);
         try {
-            const analysis = await window.electron.project.analyze(projectPath, projectId ?? projectPath);
+            const analysis = await window.electron.project.analyze(workspacePath, workspaceId ?? workspacePath);
             setIssues(analysis.issues ?? []);
         } catch (error) {
             appLogger.error(
-                'TerminalProjectIssuesTab',
-                `Failed to analyze project issues for ${projectPath}`,
+                'TerminalWorkspaceIssuesTab',
+                `Failed to analyze workspace issues for ${workspacePath}`,
                 error as Error
             );
             setIssues([]);
@@ -54,23 +54,23 @@ export function TerminalProjectIssuesTab({
         } finally {
             setIsLoading(false);
         }
-    }, [projectId, projectPath, t]);
+    }, [workspaceId, workspacePath, t]);
 
     useEffect(() => {
         void loadIssues();
     }, [loadIssues]);
 
     useEffect(() => {
-        if (!projectPath) {
+        if (!workspacePath) {
             return;
         }
         const timer = window.setInterval(() => {
             void loadIssues();
-        }, PROJECT_ISSUES_REFRESH_INTERVAL_MS);
+        }, WORKSPACE_ISSUES_REFRESH_INTERVAL_MS);
         return () => {
             window.clearInterval(timer);
         };
-    }, [loadIssues, projectPath]);
+    }, [loadIssues, workspacePath]);
 
     const sortedIssues = useMemo(
         () =>
@@ -106,7 +106,7 @@ export function TerminalProjectIssuesTab({
                 </button>
             </div>
 
-            {!projectPath ? (
+            {!workspacePath ? (
                 <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground px-4 text-center">
                     {t('terminal.projectIssuesNoProject')}
                 </div>
@@ -126,7 +126,7 @@ export function TerminalProjectIssuesTab({
             ) : (
                 <div className="flex-1 overflow-auto p-3 space-y-2">
                     {sortedIssues.map(issue => {
-                        const issuePath = resolveIssuePath(projectPath, issue);
+                        const issuePath = resolveIssuePath(workspacePath, issue);
                         return (
                             <button
                                 key={`${issue.file}:${issue.line}:${issue.message}`}

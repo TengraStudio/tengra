@@ -33,7 +33,7 @@ import {
 import { isProjectState } from '@shared/utils/type-guards.util';
 import { IpcRenderer, IpcRendererEvent } from 'electron';
 
-export interface ProjectAgentBridge {
+export interface WorkspaceAgentBridge {
     start: (options: AgentStartOptions) => Promise<{ taskId: string }>;
     generatePlan: (options: AgentStartOptions) => Promise<void>;
     approvePlan: (plan: string[] | ProjectStep[], taskId?: string) => Promise<void>;
@@ -65,7 +65,7 @@ export interface ProjectAgentBridge {
         taskId: string
     ) => Promise<{ success: boolean; telemetry?: TaskMetrics[] }>;
     getTaskHistory: (
-        projectId?: string
+        workspaceId?: string
     ) => Promise<AgentTaskHistoryItem[]>;
     deleteTask: (
         taskId: string
@@ -271,123 +271,128 @@ export interface ProjectAgentBridge {
     };
 }
 
-export function createProjectAgentBridge(ipc: IpcRenderer): ProjectAgentBridge {
+export function createWorkspaceAgentBridge(ipc: IpcRenderer): WorkspaceAgentBridge {
     return {
-        start: options => ipc.invoke('project:start', options),
-        generatePlan: options => ipc.invoke('project:plan', options),
-        approvePlan: (plan, taskId) => ipc.invoke('project:approve', { plan, taskId }),
-        stop: taskId => ipc.invoke('project:stop', { taskId }),
-        pauseTask: taskId => ipc.invoke('project:pause-task', { taskId }),
-        resumeTask: taskId => ipc.invoke('project:resume-task', { taskId }),
-        saveSnapshot: taskId => ipc.invoke('project:save-snapshot', { taskId }),
-        approveCurrentPlan: taskId => ipc.invoke('project:approve-current-plan', { taskId }),
+        start: options => ipc.invoke('agent:start', options),
+        generatePlan: options => ipc.invoke('agent:plan', options),
+        approvePlan: (plan, taskId) => ipc.invoke('agent:approve', { plan, taskId }),
+        stop: taskId => ipc.invoke('agent:stop', { taskId }),
+        pauseTask: taskId => ipc.invoke('agent:pause-task', { taskId }),
+        resumeTask: taskId => ipc.invoke('agent:resume-task', { taskId }),
+        saveSnapshot: taskId => ipc.invoke('agent:save-snapshot', { taskId }),
+        approveCurrentPlan: taskId => ipc.invoke('agent:approve-current-plan', { taskId }),
         rejectCurrentPlan: (taskId, reason) =>
-            ipc.invoke('project:reject-current-plan', { taskId, reason }),
-        createPullRequest: taskId => ipc.invoke('project:create-pr', { taskId }),
-        resetState: () => ipc.invoke('project:reset-state'),
-        getStatus: taskId => ipc.invoke('project:get-status', { taskId }),
-        getTaskMessages: taskId => ipc.invoke('project:get-messages', { taskId }),
-        getTaskEvents: taskId => ipc.invoke('project:get-events', { taskId }),
-        getTaskTelemetry: taskId => ipc.invoke('project:get-telemetry', { taskId }),
-        getTaskHistory: projectId => ipc.invoke('project:get-task-history', { projectId }),
-        deleteTask: taskId => ipc.invoke('project:delete-task', { taskId }),
-        getAvailableModels: () => ipc.invoke('project:get-available-models'),
-        retryStep: (index, taskId) => ipc.invoke('project:retry-step', { index, taskId }),
-        selectModel: payload => ipc.invoke('project:select-model', payload),
+            ipc.invoke('agent:reject-current-plan', { taskId, reason }),
+        createPullRequest: taskId => ipc.invoke('agent:create-pr', { taskId }),
+        resetState: () => ipc.invoke('agent:reset-state'),
+        getStatus: taskId => ipc.invoke('agent:get-status', { taskId }),
+        getTaskMessages: taskId => ipc.invoke('agent:get-messages', { taskId }),
+        getTaskEvents: taskId => ipc.invoke('agent:get-events', { taskId }),
+        getTaskTelemetry: taskId => ipc.invoke('agent:get-telemetry', { taskId }),
+        getTaskHistory: workspaceId => ipc.invoke('agent:get-task-history', { workspaceId }),
+        deleteTask: taskId => ipc.invoke('agent:delete-task', { taskId }),
+        getAvailableModels: () => ipc.invoke('agent:get-available-models'),
+        retryStep: (index, taskId) => ipc.invoke('agent:retry-step', { index, taskId }),
+        selectModel: payload => ipc.invoke('agent:select-model', payload),
         approveStep: (taskId, stepId) =>
-            ipc.invoke('project:approve-step', { taskId, stepId }),
+            ipc.invoke('agent:approve-step', { taskId, stepId }),
         skipStep: (taskId, stepId) =>
-            ipc.invoke('project:skip-step', { taskId, stepId }),
+            ipc.invoke('agent:skip-step', { taskId, stepId }),
         editStep: (taskId, stepId, text) =>
-            ipc.invoke('project:edit-step', { taskId, stepId, text }),
+            ipc.invoke('agent:edit-step', { taskId, stepId, text }),
         addStepComment: (taskId, stepId, comment) =>
-            ipc.invoke('project:add-step-comment', { taskId, stepId, comment }),
+            ipc.invoke('agent:add-step-comment', { taskId, stepId, comment }),
         insertInterventionPoint: (taskId, afterStepId) =>
-            ipc.invoke('project:insert-intervention', { taskId, afterStepId }),
-        getCheckpoints: taskId => ipc.invoke('project:get-checkpoints', taskId),
+            ipc.invoke('agent:insert-intervention', { taskId, afterStepId }),
+        getCheckpoints: taskId => ipc.invoke('agent:get-checkpoints', taskId),
         rollbackCheckpoint: checkpointId =>
-            ipc.invoke('project:rollback-checkpoint', checkpointId),
+            ipc.invoke('agent:rollback-checkpoint', checkpointId),
         getPlanVersions: taskId =>
-            ipc.invoke('project:get-plan-versions', taskId),
+            ipc.invoke('agent:get-plan-versions', taskId),
         deleteTaskByNodeId: nodeId =>
-            ipc.invoke('project:delete-task-by-node', nodeId),
-        getProfiles: () => ipc.invoke('project:get-profiles'),
-        getRoutingRules: () => ipc.invoke('project:get-routing-rules'),
-        setRoutingRules: rules => ipc.invoke('project:set-routing-rules', rules),
-        createVotingSession: payload => ipc.invoke('project:create-voting-session', payload),
-        submitVote: payload => ipc.invoke('project:submit-vote', payload),
-        requestVotes: payload => ipc.invoke('project:request-votes', payload),
-        resolveVoting: sessionId => ipc.invoke('project:resolve-voting', sessionId),
-        getVotingSession: sessionId => ipc.invoke('project:get-voting-session', sessionId),
-        listVotingSessions: taskId => ipc.invoke('project:list-voting-sessions', taskId),
-        overrideVotingDecision: payload => ipc.invoke('project:override-voting', payload),
-        getVotingAnalytics: taskId => ipc.invoke('project:get-voting-analytics', taskId),
-        getVotingConfiguration: () => ipc.invoke('project:get-voting-config'),
-        updateVotingConfiguration: patch => ipc.invoke('project:update-voting-config', patch),
-        listVotingTemplates: () => ipc.invoke('project:list-voting-templates'),
-        buildConsensus: outputs => ipc.invoke('project:build-consensus', outputs),
-        createDebateSession: payload => ipc.invoke('project:create-debate-session', payload),
-        submitDebateArgument: payload => ipc.invoke('project:submit-debate-argument', payload),
-        resolveDebateSession: sessionId => ipc.invoke('project:resolve-debate-session', sessionId),
-        overrideDebateSession: payload => ipc.invoke('project:override-debate-session', payload),
-        getDebateSession: sessionId => ipc.invoke('project:get-debate-session', sessionId),
-        listDebateHistory: taskId => ipc.invoke('project:list-debate-history', taskId),
-        getDebateReplay: sessionId => ipc.invoke('project:get-debate-replay', sessionId),
-        generateDebateSummary: sessionId => ipc.invoke('project:generate-debate-summary', sessionId),
-        getTeamworkAnalytics: () => ipc.invoke('project:get-teamwork-analytics'),
-        councilSendMessage: payload => ipc.invoke('project:council-send-message', payload),
-        councilGetMessages: payload => ipc.invoke('project:council-get-messages', payload),
+            ipc.invoke('agent:delete-task-by-node', nodeId),
+        getProfiles: () => ipc.invoke('agent:get-profiles'),
+        getRoutingRules: () => ipc.invoke('agent:get-routing-rules'),
+        setRoutingRules: rules => ipc.invoke('agent:set-routing-rules', rules),
+        createVotingSession: payload => ipc.invoke('agent:create-voting-session', payload),
+        submitVote: payload => ipc.invoke('agent:submit-vote', payload),
+        requestVotes: payload => ipc.invoke('agent:request-votes', payload),
+        resolveVoting: sessionId => ipc.invoke('agent:resolve-voting', sessionId),
+        getVotingSession: sessionId => ipc.invoke('agent:get-voting-session', sessionId),
+        listVotingSessions: taskId => ipc.invoke('agent:list-voting-sessions', taskId),
+        overrideVotingDecision: payload => ipc.invoke('agent:override-voting', payload),
+        getVotingAnalytics: taskId => ipc.invoke('agent:get-voting-analytics', taskId),
+        getVotingConfiguration: () => ipc.invoke('agent:get-voting-config'),
+        updateVotingConfiguration: patch => ipc.invoke('agent:update-voting-config', patch),
+        listVotingTemplates: () => ipc.invoke('agent:list-voting-templates'),
+        buildConsensus: outputs => ipc.invoke('agent:build-consensus', outputs),
+        createDebateSession: payload => ipc.invoke('agent:create-debate-session', payload),
+        submitDebateArgument: payload => ipc.invoke('agent:submit-debate-argument', payload),
+        resolveDebateSession: sessionId => ipc.invoke('agent:resolve-debate-session', sessionId),
+        overrideDebateSession: payload => ipc.invoke('agent:override-debate-session', payload),
+        getDebateSession: sessionId => ipc.invoke('agent:get-debate-session', sessionId),
+        listDebateHistory: taskId => ipc.invoke('agent:list-debate-history', taskId),
+        getDebateReplay: sessionId => ipc.invoke('agent:get-debate-replay', sessionId),
+        generateDebateSummary: sessionId => ipc.invoke('agent:generate-debate-summary', sessionId),
+        getTeamworkAnalytics: () => ipc.invoke('agent:get-teamwork-analytics'),
+        councilSendMessage: payload => ipc.invoke('agent:council-send-message', payload),
+        councilGetMessages: payload => ipc.invoke('agent:council-get-messages', payload),
         councilCleanupExpiredMessages: taskId =>
-            ipc.invoke('project:council-cleanup-expired-messages', { taskId }),
+            ipc.invoke('agent:council-cleanup-expired-messages', { taskId }),
         councilHandleQuotaInterrupt: payload =>
-            ipc.invoke('project:council-handle-quota-interrupt', payload),
+            ipc.invoke('agent:council-handle-quota-interrupt', payload),
         councilRegisterWorkerAvailability: payload =>
-            ipc.invoke('project:council-register-worker-availability', payload),
+            ipc.invoke('agent:council-register-worker-availability', payload),
         councilListAvailableWorkers: payload =>
-            ipc.invoke('project:council-list-available-workers', payload),
+            ipc.invoke('agent:council-list-available-workers', payload),
         councilScoreHelperCandidates: payload =>
-            ipc.invoke('project:council-score-helper-candidates', payload),
+            ipc.invoke('agent:council-score-helper-candidates', payload),
         councilGenerateHelperHandoff: payload =>
-            ipc.invoke('project:council-generate-helper-handoff', payload),
+            ipc.invoke('agent:council-generate-helper-handoff', payload),
         councilReviewHelperMerge: payload =>
-            ipc.invoke('project:council-review-helper-merge', payload),
+            ipc.invoke('agent:council-review-helper-merge', payload),
         council: {
-            generatePlan: (taskId, task) => ipc.invoke('project:council-generate-plan', { taskId, task }),
-            getProposal: taskId => ipc.invoke('project:council-get-proposal', { taskId }),
-            approveProposal: taskId => ipc.invoke('project:council-approve-proposal', { taskId }),
-            rejectProposal: (taskId, reason) => ipc.invoke('project:council-reject-proposal', { taskId, reason }),
-            startExecution: taskId => ipc.invoke('project:council-start-execution', { taskId }),
-            pauseExecution: taskId => ipc.invoke('project:council-pause-execution', { taskId }),
-            resumeExecution: taskId => ipc.invoke('project:council-resume-execution', { taskId }),
-            getTimeline: taskId => ipc.invoke('project:council-get-timeline', { taskId }),
+            generatePlan: (taskId, task) => ipc.invoke('agent:council-generate-plan', { taskId, task }),
+            getProposal: taskId => ipc.invoke('agent:council-get-proposal', { taskId }),
+            approveProposal: taskId => ipc.invoke('agent:council-approve-proposal', { taskId }),
+            rejectProposal: (taskId, reason) => ipc.invoke('agent:council-reject-proposal', { taskId, reason }),
+            startExecution: taskId => ipc.invoke('agent:council-start-execution', { taskId }),
+            pauseExecution: taskId => ipc.invoke('agent:council-pause-execution', { taskId }),
+            resumeExecution: taskId => ipc.invoke('agent:council-resume-execution', { taskId }),
+            getTimeline: taskId => ipc.invoke('agent:council-get-timeline', { taskId }),
         },
-        getTemplates: category => ipc.invoke('project:get-templates', category),
-        getTemplate: id => ipc.invoke('project:get-template', id),
-        saveTemplate: template => ipc.invoke('project:save-template', template),
-        deleteTemplate: id => ipc.invoke('project:delete-template', id),
-        exportTemplate: id => ipc.invoke('project:export-template', id),
-        importTemplate: exported => ipc.invoke('project:import-template', exported),
-        applyTemplate: payload => ipc.invoke('project:apply-template', payload),
+        getTemplates: category => ipc.invoke('agent:get-templates', category),
+        getTemplate: id => ipc.invoke('agent:get-template', id),
+        saveTemplate: template => ipc.invoke('agent:save-template', template),
+        deleteTemplate: id => ipc.invoke('agent:delete-template', id),
+        exportTemplate: id => ipc.invoke('agent:export-template', id),
+        importTemplate: exported => ipc.invoke('agent:import-template', exported),
+        applyTemplate: payload => ipc.invoke('agent:apply-template', payload),
         onUpdate: callback => {
             const listener = (_event: IpcRendererEvent, state: IpcValue) => {
                 if (isProjectState(state)) {
                     callback(state);
                 }
             };
-            ipc.on('project:update', listener);
-            return () => ipc.removeListener('project:update', listener);
+            ipc.on('agent:update', listener);
+            return () => ipc.removeListener('agent:update', listener);
         },
         onQuotaInterrupt: callback => {
             const listener = (_event: IpcRendererEvent, payload: Record<string, unknown>) => callback(payload);
-            ipc.on('project:quota-interrupt', listener);
-            return () => ipc.removeListener('project:quota-interrupt', listener);
+            ipc.on('agent:quota-interrupt', listener);
+            return () => ipc.removeListener('agent:quota-interrupt', listener);
         },
-        saveCanvasNodes: nodes => ipc.invoke('project:save-canvas-nodes', nodes),
-        getCanvasNodes: () => ipc.invoke('project:get-canvas-nodes'),
-        deleteCanvasNode: id => ipc.invoke('project:delete-canvas-node', id),
-        saveCanvasEdges: edges => ipc.invoke('project:save-canvas-edges', edges),
-        getCanvasEdges: () => ipc.invoke('project:get-canvas-edges'),
-        deleteCanvasEdge: id => ipc.invoke('project:delete-canvas-edge', id),
-        health: () => ipc.invoke('project:health'),
+        saveCanvasNodes: nodes => ipc.invoke('agent:save-canvas-nodes', nodes),
+        getCanvasNodes: () => ipc.invoke('agent:get-canvas-nodes'),
+        deleteCanvasNode: id => ipc.invoke('agent:delete-canvas-node', id),
+        saveCanvasEdges: edges => ipc.invoke('agent:save-canvas-edges', edges),
+        getCanvasEdges: () => ipc.invoke('agent:get-canvas-edges'),
+        deleteCanvasEdge: id => ipc.invoke('agent:delete-canvas-edge', id),
+        health: () => ipc.invoke('agent:health'),
     };
 }
+
+/** @deprecated Use WorkspaceAgentBridge instead */
+export type ProjectAgentBridge = WorkspaceAgentBridge;
+/** @deprecated Use createWorkspaceAgentBridge instead */
+export const createProjectAgentBridge = createWorkspaceAgentBridge;

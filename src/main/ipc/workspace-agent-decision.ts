@@ -25,16 +25,16 @@ import type { BrowserWindow } from 'electron';
 import { ipcMain } from 'electron';
 import { z } from 'zod';
 
-export function registerProjectAgentDecisionHandlers(
+export function registerWorkspaceAgentDecisionHandlers(
     projectAgentService: ProjectAgentService,
     getMainWindow: () => BrowserWindow | null
 ): void {
-    const validateSender = createMainWindowSenderValidator(getMainWindow, 'project decision workflows');
+    const validateSender = createMainWindowSenderValidator(getMainWindow, 'workspace agent decision workflows');
 
     ipcMain.handle(
-        'project:create-voting-session',
+        'agent:create-voting-session',
         createValidatedIpcHandler<VotingSession | null, [{ taskId: string; stepIndex: number; question: string; options: string[] }]>(
-            'project:create-voting-session',
+            'agent:create-voting-session',
             async (
                 event,
                 payload: { taskId: string; stepIndex: number; question: string; options: string[] }
@@ -61,7 +61,7 @@ export function registerProjectAgentDecisionHandlers(
     );
 
     ipcMain.handle(
-        'project:submit-vote',
+        'agent:submit-vote',
         createValidatedIpcHandler<VotingSession | null, [{
             sessionId: string;
             modelId: string;
@@ -70,7 +70,7 @@ export function registerProjectAgentDecisionHandlers(
             confidence: number;
             reasoning?: string;
         }]>(
-            'project:submit-vote',
+            'agent:submit-vote',
             async (
                 event,
                 payload: {
@@ -108,9 +108,9 @@ export function registerProjectAgentDecisionHandlers(
     );
 
     ipcMain.handle(
-        'project:request-votes',
+        'agent:request-votes',
         createValidatedIpcHandler<VotingSession | null, [{ sessionId: string; models: Array<{ provider: string; model: string }> }]>(
-            'project:request-votes',
+            'agent:request-votes',
             async (event, payload: { sessionId: string; models: Array<{ provider: string; model: string }> }): Promise<VotingSession | null> => {
                 validateSender(event);
                 return await projectAgentService.requestVotes(payload.sessionId, payload.models);
@@ -127,9 +127,9 @@ export function registerProjectAgentDecisionHandlers(
     );
 
     ipcMain.handle(
-        'project:resolve-voting',
+        'agent:resolve-voting',
         createValidatedIpcHandler<VotingSession | null, [string]>(
-            'project:resolve-voting',
+            'agent:resolve-voting',
             async (event, sessionId: string): Promise<VotingSession | null> => {
                 validateSender(event);
                 return projectAgentService.resolveVoting(sessionId);
@@ -143,9 +143,9 @@ export function registerProjectAgentDecisionHandlers(
     );
 
     ipcMain.handle(
-        'project:get-voting-session',
+        'agent:get-voting-session',
         createValidatedIpcHandler<VotingSession | null, [string]>(
-            'project:get-voting-session',
+            'agent:get-voting-session',
             async (event, sessionId: string): Promise<VotingSession | null> => {
                 validateSender(event);
                 return projectAgentService.getVotingSession(sessionId);
@@ -159,9 +159,9 @@ export function registerProjectAgentDecisionHandlers(
     );
 
     ipcMain.handle(
-        'project:list-voting-sessions',
+        'agent:list-voting-sessions',
         createValidatedIpcHandler<VotingSession[], [{ taskId?: string } | undefined]>(
-            'project:list-voting-sessions',
+            'agent:list-voting-sessions',
             async (event, payload?: { taskId?: string }): Promise<VotingSession[]> => {
                 validateSender(event);
                 return projectAgentService.getVotingSessions(payload?.taskId);
@@ -175,9 +175,9 @@ export function registerProjectAgentDecisionHandlers(
     );
 
     ipcMain.handle(
-        'project:override-voting',
+        'agent:override-voting',
         createValidatedIpcHandler<VotingSession | null, [{ sessionId: string; finalDecision: string; reason?: string }]>(
-            'project:override-voting',
+            'agent:override-voting',
             async (
                 event,
                 payload: { sessionId: string; finalDecision: string; reason?: string }
@@ -202,9 +202,9 @@ export function registerProjectAgentDecisionHandlers(
     );
 
     ipcMain.handle(
-        'project:get-voting-analytics',
+        'agent:get-voting-analytics',
         createValidatedIpcHandler<VotingAnalytics, [{ taskId?: string } | undefined]>(
-            'project:get-voting-analytics',
+            'agent:get-voting-analytics',
             async (event, payload?: { taskId?: string }): Promise<VotingAnalytics> => {
                 validateSender(event);
                 return projectAgentService.getVotingAnalytics(payload?.taskId);
@@ -217,9 +217,9 @@ export function registerProjectAgentDecisionHandlers(
     );
 
     ipcMain.handle(
-        'project:get-voting-config',
+        'agent:get-voting-config',
         createValidatedIpcHandler<VotingConfiguration, []>(
-            'project:get-voting-config',
+            'agent:get-voting-config',
             async (event): Promise<VotingConfiguration> => {
                 validateSender(event);
                 return projectAgentService.getVotingConfiguration();
@@ -232,9 +232,9 @@ export function registerProjectAgentDecisionHandlers(
     );
 
     ipcMain.handle(
-        'project:update-voting-config',
+        'agent:update-voting-config',
         createValidatedIpcHandler<VotingConfiguration, [Partial<VotingConfiguration>]>(
-            'project:update-voting-config',
+            'agent:update-voting-config',
             async (event, patch: Partial<VotingConfiguration>): Promise<VotingConfiguration> => {
                 validateSender(event);
                 return projectAgentService.updateVotingConfiguration(patch);
@@ -248,9 +248,9 @@ export function registerProjectAgentDecisionHandlers(
     );
 
     ipcMain.handle(
-        'project:list-voting-templates',
+        'agent:list-voting-templates',
         createValidatedIpcHandler<VotingTemplate[], []>(
-            'project:list-voting-templates',
+            'agent:list-voting-templates',
             async (event): Promise<VotingTemplate[]> => {
                 validateSender(event);
                 return projectAgentService.getVotingTemplates();
@@ -262,9 +262,9 @@ export function registerProjectAgentDecisionHandlers(
     );
 
     ipcMain.handle(
-        'project:build-consensus',
+        'agent:build-consensus',
         createValidatedIpcHandler<ConsensusResult | null, [Array<{ modelId: string; provider: string; output: string }>]>(
-            'project:build-consensus',
+            'agent:build-consensus',
             async (event, outputs: Array<{ modelId: string; provider: string; output: string }>): Promise<ConsensusResult | null> => {
                 validateSender(event);
                 return await projectAgentService.buildConsensus(outputs);
@@ -277,9 +277,9 @@ export function registerProjectAgentDecisionHandlers(
     );
 
     ipcMain.handle(
-        'project:create-debate-session',
+        'agent:create-debate-session',
         createValidatedIpcHandler<DebateSession | null, [{ taskId: string; stepIndex: number; topic: string }]>(
-            'project:create-debate-session',
+            'agent:create-debate-session',
             async (
                 event,
                 payload: { taskId: string; stepIndex: number; topic: string }
@@ -300,7 +300,7 @@ export function registerProjectAgentDecisionHandlers(
     );
 
     ipcMain.handle(
-        'project:submit-debate-argument',
+        'agent:submit-debate-argument',
         createValidatedIpcHandler<DebateSession | null, [{
             sessionId: string;
             agentId: string;
@@ -310,7 +310,7 @@ export function registerProjectAgentDecisionHandlers(
             confidence: number;
             citations?: DebateCitation[];
         }]>(
-            'project:submit-debate-argument',
+            'agent:submit-debate-argument',
             async (
                 event,
                 payload: {
@@ -343,9 +343,9 @@ export function registerProjectAgentDecisionHandlers(
     );
 
     ipcMain.handle(
-        'project:resolve-debate-session',
+        'agent:resolve-debate-session',
         createValidatedIpcHandler<DebateSession | null, [string]>(
-            'project:resolve-debate-session',
+            'agent:resolve-debate-session',
             async (event, sessionId: string): Promise<DebateSession | null> => {
                 validateSender(event);
                 return projectAgentService.resolveDebateSession(sessionId);
@@ -359,9 +359,9 @@ export function registerProjectAgentDecisionHandlers(
     );
 
     ipcMain.handle(
-        'project:override-debate-session',
+        'agent:override-debate-session',
         createValidatedIpcHandler<DebateSession | null, [{ sessionId: string; moderatorId: string; decision: DebateSide | 'balanced'; reason?: string }]>(
-            'project:override-debate-session',
+            'agent:override-debate-session',
             async (
                 event,
                 payload: { sessionId: string; moderatorId: string; decision: DebateSide | 'balanced'; reason?: string }
@@ -388,9 +388,9 @@ export function registerProjectAgentDecisionHandlers(
     );
 
     ipcMain.handle(
-        'project:get-debate-session',
+        'agent:get-debate-session',
         createSafeIpcHandler(
-            'project:get-debate-session',
+            'agent:get-debate-session',
             async (event, sessionId: string): Promise<DebateSession | null> => {
                 createMainWindowSenderValidator(getMainWindow, 'debate-session')(event);
                 z.string().parse(sessionId);
@@ -401,9 +401,9 @@ export function registerProjectAgentDecisionHandlers(
     );
 
     ipcMain.handle(
-        'project:list-debate-history',
+        'agent:list-debate-history',
         createValidatedIpcHandler<DebateSession[], [{ taskId?: string } | undefined]>(
-            'project:list-debate-history',
+            'agent:list-debate-history',
             async (event, payload?: { taskId?: string }): Promise<DebateSession[]> => {
                 validateSender(event);
                 return projectAgentService.getDebateHistory(payload?.taskId);
@@ -417,9 +417,9 @@ export function registerProjectAgentDecisionHandlers(
     );
 
     ipcMain.handle(
-        'project:get-debate-replay',
+        'agent:get-debate-replay',
         createValidatedIpcHandler<DebateReplay | null, [string]>(
-            'project:get-debate-replay',
+            'agent:get-debate-replay',
             async (event, sessionId: string): Promise<DebateReplay | null> => {
                 validateSender(event);
                 return projectAgentService.getDebateReplay(sessionId);
@@ -432,9 +432,9 @@ export function registerProjectAgentDecisionHandlers(
     );
 
     ipcMain.handle(
-        'project:generate-debate-summary',
+        'agent:generate-debate-summary',
         createValidatedIpcHandler<string | null, [string]>(
-            'project:generate-debate-summary',
+            'agent:generate-debate-summary',
             async (event, sessionId: string): Promise<string | null> => {
                 validateSender(event);
                 return projectAgentService.generateDebateSummary(sessionId);
@@ -448,9 +448,9 @@ export function registerProjectAgentDecisionHandlers(
     );
 
     ipcMain.handle(
-        'project:get-teamwork-analytics',
+        'agent:get-teamwork-analytics',
         createValidatedIpcHandler<AgentTeamworkAnalytics | null, [{ taskId?: string } | undefined]>(
-            'project:get-teamwork-analytics',
+            'agent:get-teamwork-analytics',
             async (event): Promise<AgentTeamworkAnalytics | null> => {
                 validateSender(event);
                 return projectAgentService.getTeamworkAnalytics();
@@ -463,9 +463,9 @@ export function registerProjectAgentDecisionHandlers(
     );
 
     ipcMain.handle(
-        'project:get-performance-metrics',
+        'agent:get-performance-metrics',
         createValidatedIpcHandler<AgentPerformanceMetrics | null, [string]>(
-            'project:get-performance-metrics',
+            'agent:get-performance-metrics',
             async (event, taskId: string): Promise<AgentPerformanceMetrics | null> => {
                 validateSender(event);
                 return projectAgentService.getPerformanceMetrics(taskId) ?? null;

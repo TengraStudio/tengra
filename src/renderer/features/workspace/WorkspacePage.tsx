@@ -537,12 +537,10 @@ export const WorkspacesPage: React.FC<WorkspacesPageProps> = ({
                 <WorkspaceWizardModal
                     isOpen={showWizard}
                     onClose={() => setShowWizard(false)}
-                    onProjectCreated={(...args) => {
-                        void sm.executeCreate(...args).then((success: boolean) => {
-                            if (success) { setShowWizard(false); }
-                        }).catch(error => {
-                            appLogger.error('WorkspacesPage', 'Workspace creation failed', error as Error);
-                        });
+                    onProjectCreated={async (...args) => {
+                        const success = await sm.executeCreate(...args);
+                        if (success) { setShowWizard(false); }
+                        return success;
                     }}
                     language={language}
                 />

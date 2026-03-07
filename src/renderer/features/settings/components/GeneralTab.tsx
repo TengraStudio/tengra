@@ -164,7 +164,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
 
     return (
         <div className="space-y-6">
-            {/* Project Basics Card */}
+            {/* Workspace Basics Card */}
             <div className="premium-glass p-8 space-y-8">
                 <div className="flex items-center gap-4">
                     <div className="p-3 rounded-2xl bg-primary/10 text-primary border border-primary/20 shadow-lg shadow-primary/10">
@@ -216,9 +216,9 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                         </label>
                         <input
                             type="text"
-                            value={settings?.general.projectsBasePath ?? ''}
+                            value={settings?.general.workspacesBasePath ?? ''}
                             onChange={event => {
-                                void updateGeneral({ projectsBasePath: event.target.value });
+                                void updateGeneral({ workspacesBasePath: event.target.value });
                             }}
                             className="w-full bg-muted/5 border border-border/40 rounded-xl px-4 py-3 text-sm font-mono text-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                             placeholder={t('projectWizard.selectRootDesc')}

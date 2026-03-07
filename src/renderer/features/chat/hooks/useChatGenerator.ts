@@ -26,7 +26,7 @@ interface UseChatGeneratorProps {
     selectedModels?: SelectedModelInfo[];
     language: string;
     activeWorkspacePath?: string | undefined;
-    projectId?: string | undefined;
+    workspaceId?: string | undefined;
     t: (key: string) => string;
     handleSpeak: (id: string, content: string) => void;
     autoReadEnabled: boolean;
@@ -126,7 +126,7 @@ export const useChatGenerator = (
         language,
         selectedPersona,
         activeWorkspacePath,
-        projectId,
+        workspaceId,
         t,
         handleSpeak,
         autoReadEnabled,
@@ -184,7 +184,7 @@ export const useChatGenerator = (
             if (isMultiModel) {
                 await generateMultiModelResponse({
                     chatId, assistantId, userMessage, models: modelsToUse, allTools, chats, setChats,
-                    appSettings, language, selectedPersona, activeWorkspacePath, projectId, setStreamingStates,
+                    appSettings, language, selectedPersona, activeWorkspacePath, workspaceId, setStreamingStates,
                     autoReadEnabled, handleSpeak, t, formatChatError, systemMode
                 });
             } else {
@@ -206,7 +206,7 @@ export const useChatGenerator = (
                     agentToolsEnabled: systemMode === 'agent', reasoningEffort
                 };
                 await executeToolTurnLoop({
-                    chatId, assistantId, activeModel, selectedProvider, tools, fullOptions, projectId,
+                    chatId, assistantId, activeModel, selectedProvider, tools, fullOptions, workspaceId,
                     autoReadEnabled, handleSpeak, t, setStreamingStates, setChats, activeWorkspacePath, systemMode, chats
                 });
             }
@@ -259,14 +259,14 @@ export const useChatGenerator = (
 
 const executeToolTurnLoop = async (params: {
     chatId: string; assistantId: string; activeModel: string; selectedProvider: string; tools: ToolDefinition[];
-    fullOptions: Record<string, unknown>; projectId: string | undefined; autoReadEnabled: boolean;
+    fullOptions: Record<string, unknown>; workspaceId: string | undefined; autoReadEnabled: boolean;
     handleSpeak: (id: string, content: string) => void; t: (key: string) => string;
     setStreamingStates: React.Dispatch<React.SetStateAction<Record<string, StreamStreamingState>>>;
     setChats: React.Dispatch<React.SetStateAction<Chat[]>>; activeWorkspacePath: string | undefined;
     systemMode: 'thinking' | 'agent' | 'fast'; chats: Chat[];
 }) => {
     const {
-        chatId, assistantId, activeModel, selectedProvider, tools, fullOptions, projectId,
+        chatId, assistantId, activeModel, selectedProvider, tools, fullOptions, workspaceId,
         autoReadEnabled, handleSpeak, t, setStreamingStates, setChats, activeWorkspacePath, systemMode, chats
     } = params;
 
@@ -281,7 +281,7 @@ const executeToolTurnLoop = async (params: {
         const stream = chatStream({
             messages: currentMessages, model: activeModel, tools, provider: selectedProvider,
             options: { ...fullOptions, projectRoot: activeWorkspacePath, systemMode },
-            chatId, projectId, systemMode
+            chatId, workspaceId, systemMode
         });
         const streamStartTime = performance.now();
 
@@ -343,20 +343,20 @@ const generateMultiModelResponse = async (params: {
     chatId: string; assistantId: string; userMessage: Message; models: SelectedModelInfo[]; allTools: ToolDefinition[];
     chats: Chat[]; setChats: React.Dispatch<React.SetStateAction<Chat[]>>; appSettings: AppSettings | undefined;
     language: string; selectedPersona: { id: string; name: string; description: string; prompt: string } | null | undefined;
-    activeWorkspacePath: string | undefined; projectId: string | undefined;
+    activeWorkspacePath: string | undefined; workspaceId: string | undefined;
     setStreamingStates: React.Dispatch<React.SetStateAction<Record<string, StreamStreamingState>>>;
     autoReadEnabled: boolean; handleSpeak: (id: string, content: string) => void; t: (key: string) => string;
     formatChatError: (err: CatchError) => string; systemMode: 'thinking' | 'agent' | 'fast';
 }) => {
     const {
         chatId, assistantId, userMessage, models, allTools, chats, setChats, appSettings, language,
-        selectedPersona, activeWorkspacePath, projectId, setStreamingStates, autoReadEnabled, handleSpeak,
+        selectedPersona, activeWorkspacePath, workspaceId, setStreamingStates, autoReadEnabled, handleSpeak,
         t, formatChatError, systemMode
     } = params;
     const streamStartTime = performance.now();
     await orchestrationMultiModelStreams({
         chatId, assistantId, userMessage, models, allTools, chats, setChats, appSettings, language,
-        selectedPersona, activeWorkspacePath, projectId, setStreamingStates, streamStartTime,
+        selectedPersona, activeWorkspacePath, workspaceId, setStreamingStates, streamStartTime,
         autoReadEnabled, handleSpeak, t, formatChatError, systemMode
     });
 };
@@ -365,7 +365,7 @@ interface OrchestrationParams {
     chatId: string; assistantId: string; userMessage: Message; models: SelectedModelInfo[]; allTools: ToolDefinition[];
     chats: Chat[]; setChats: React.Dispatch<React.SetStateAction<Chat[]>>; appSettings: AppSettings | undefined;
     language: string; selectedPersona: { id: string; name: string; description: string; prompt: string } | null | undefined;
-    activeWorkspacePath: string | undefined; projectId: string | undefined;
+    activeWorkspacePath: string | undefined; workspaceId: string | undefined;
     setStreamingStates: React.Dispatch<React.SetStateAction<Record<string, StreamStreamingState>>>;
     streamStartTime: number; autoReadEnabled: boolean; handleSpeak: (id: string, content: string) => void;
     t: (key: string) => string; formatChatError: (err: CatchError) => string; systemMode: 'thinking' | 'agent' | 'fast';
@@ -374,7 +374,7 @@ interface OrchestrationParams {
 async function orchestrationMultiModelStreams(params: OrchestrationParams) {
     const {
         chatId, assistantId, userMessage, models, allTools, chats, setChats, appSettings, language,
-        selectedPersona, activeWorkspacePath, projectId, setStreamingStates, streamStartTime,
+        selectedPersona, activeWorkspacePath, workspaceId, setStreamingStates, streamStartTime,
         autoReadEnabled, handleSpeak, t, formatChatError, systemMode
     } = params;
 
@@ -395,7 +395,7 @@ async function orchestrationMultiModelStreams(params: OrchestrationParams) {
             const stream = chatStream({
                 messages: allMessages, model: modelInfo.model, tools, provider: modelInfo.provider,
                 options: { ...presetOptions, projectRoot: activeWorkspacePath, systemMode, thinking: systemMode === 'thinking', agentToolsEnabled: systemMode === 'agent', reasoningEffort },
-                chatId: streamId, projectId, systemMode
+                chatId: streamId, workspaceId, systemMode
             });
 
             return await handleModelStreamIteration({

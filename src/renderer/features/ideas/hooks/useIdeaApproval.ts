@@ -31,9 +31,9 @@ export function useIdeaApproval(): UseIdeaApprovalReturn {
 
         try {
             const result = await window.electron.ideas.approveIdea(ideaId, projectPath, selectedName);
-            if (result.success && result.project) {
-                setApprovedProject(result.project);
-                return result.project;
+            if (result.success && result.workspace) {
+                setApprovedProject(result.workspace);
+                return result.workspace;
             }
             throw new Error('Failed to create project');
         } catch (err) {

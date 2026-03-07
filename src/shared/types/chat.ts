@@ -101,7 +101,7 @@ export interface Chat {
     isArchived?: boolean | undefined
     isFavorite?: boolean | undefined
     folderId?: string | undefined
-    projectId?: string | undefined
+    workspaceId?: string | undefined
     metadata?: JsonObject | undefined
     isGenerating?: boolean | undefined // Transient state for UI
 }
@@ -136,7 +136,7 @@ export interface ChatRequest {
     tools?: ToolDefinition[]
     provider?: string
     options?: JsonObject
-    projectId?: string
+    workspaceId?: string
     systemMode?: SystemMode
 }
 

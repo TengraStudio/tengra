@@ -573,14 +573,14 @@ function registerExplicitHandlers(advancedMemoryService: AdvancedMemoryService):
         const memoryOptions = options as {
             category?: MemoryCategory;
             tags?: string[];
-            projectId?: string;
+            workspaceId?: string;
         } | undefined;
         const memory = await advancedMemoryService.rememberExplicit(
             content,
             'user-explicit',
             memoryOptions?.category ?? 'fact',
             memoryOptions?.tags ?? [],
-            memoryOptions?.projectId
+            memoryOptions?.workspaceId
         );
         return { success: true, data: memory };
     }, {
@@ -591,7 +591,7 @@ function registerExplicitHandlers(advancedMemoryService: AdvancedMemoryService):
             z.object({
                 category: AdvancedMemoryCategorySchema.optional(),
                 tags: z.array(z.string()).optional(),
-                projectId: z.string().optional()
+                workspaceId: z.string().optional()
             }).optional()
         ]),
         responseSchema: z.object({
@@ -786,12 +786,12 @@ function registerExtractionHandlers(advancedMemoryService: AdvancedMemoryService
         _event,
         content,
         sourceId,
-        projectId
+        workspaceId
     ) => {
         const pending = await advancedMemoryService.extractAndStageFromMessage(
             content,
             sourceId,
-            projectId
+            workspaceId
         );
         return {
             success: true,
@@ -855,7 +855,7 @@ function registerManagementHandlers(advancedMemoryService: AdvancedMemoryService
         })
     }));
 
-    ipcMain.handle('advancedMemory:edit', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string, { content?: string; category?: MemoryCategory; tags?: string[]; importance?: number; projectId?: string | null; }]>('advancedMemory:edit', async (
+    ipcMain.handle('advancedMemory:edit', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string, { content?: string; category?: MemoryCategory; tags?: string[]; importance?: number; workspaceId?: string | null; }]>('advancedMemory:edit', async (
         _event,
         id,
         updates
@@ -872,7 +872,7 @@ function registerManagementHandlers(advancedMemoryService: AdvancedMemoryService
                 category: AdvancedMemoryCategorySchema.optional(),
                 tags: z.array(z.string()).optional(),
                 importance: z.number().min(0).max(1).optional(),
-                projectId: z.string().nullable().optional()
+                workspaceId: z.string().nullable().optional()
             })
         ]),
         responseSchema: z.object({
@@ -948,8 +948,8 @@ function registerManagementHandlers(advancedMemoryService: AdvancedMemoryService
         })
     }));
 
-    ipcMain.handle('advancedMemory:shareWithProject', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string, string]>('advancedMemory:shareWithProject', async (_event, memoryId, targetProjectId) => {
-        const shared = await advancedMemoryService.shareMemoryWithProject(memoryId, targetProjectId);
+    ipcMain.handle('advancedMemory:shareWithProject', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string, string]>('advancedMemory:shareWithProject', async (_event, memoryId, targetWorkspaceId) => {
+        const shared = await advancedMemoryService.shareMemoryWithWorkspace(memoryId, targetWorkspaceId);
         return { success: !!shared, data: shared };
     }, {
         onError: handleBasicError,
@@ -966,7 +966,7 @@ function registerManagementHandlers(advancedMemoryService: AdvancedMemoryService
         payload
     ) => {
         // SAFETY: payload is validated by argsSchema below
-        const namespace = advancedMemoryService.createSharedNamespace(payload as { id: string; name: string; projectIds: string[]; accessControl?: Record<string, string[]> });
+        const namespace = advancedMemoryService.createSharedNamespace(payload as { id: string; name: string; workspaceIds: string[]; accessControl?: Record<string, string[]> });
         return { success: true, data: namespace };
     }, {
         onError: handleBasicError,
@@ -974,7 +974,7 @@ function registerManagementHandlers(advancedMemoryService: AdvancedMemoryService
         argsSchema: z.tuple([z.object({
             id: z.string().uuid(),
             name: z.string().min(1),
-            projectIds: z.array(z.string()),
+            workspaceIds: z.array(z.string()),
             accessControl: z.record(z.string(), z.array(z.string())).optional()
         })]),
         responseSchema: z.object({
@@ -994,8 +994,8 @@ function registerManagementHandlers(advancedMemoryService: AdvancedMemoryService
         retries: 2,
         argsSchema: z.tuple([z.object({
             namespaceId: z.string().uuid(),
-            sourceProjectId: z.string().min(1),
-            targetProjectIds: z.array(z.string()).optional(),
+            sourceWorkspaceId: z.string().min(1),
+            targetWorkspaceIds: z.array(z.string()).optional(),
             memoryIds: z.array(z.string().uuid()).optional(),
             resolution: z.enum(['keep_source', 'keep_target', 'merge_copy', 'manual_review']).optional()
         })]),
@@ -1026,7 +1026,7 @@ function registerManagementHandlers(advancedMemoryService: AdvancedMemoryService
         payload
     ) => {
         // SAFETY: payload is validated by argsSchema below
-        const result = await advancedMemoryService.searchAcrossProjects(payload as { namespaceId: string; query: string; projectId: string; limit?: number });
+        const result = await advancedMemoryService.searchAcrossWorkspaces(payload as { namespaceId: string; query: string; workspaceId: string; limit?: number });
         return {
             success: true,
             data: result,
@@ -1038,7 +1038,7 @@ function registerManagementHandlers(advancedMemoryService: AdvancedMemoryService
         argsSchema: z.tuple([z.object({
             namespaceId: z.string().uuid(),
             query: z.string().min(1),
-            projectId: z.string().min(1),
+            workspaceId: z.string().min(1),
             limit: z.number().int().optional()
         })]),
         responseSchema: z.object({

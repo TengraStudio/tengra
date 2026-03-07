@@ -51,6 +51,7 @@ interface WizardStepRendererProps {
     onImportLocal: () => void;
     onSSHConnect: () => void;
     onCreateNew: () => void;
+    showCustomPathInput?: boolean;
 }
 
 export const WizardStepRenderer: React.FC<WizardStepRendererProps> = ({

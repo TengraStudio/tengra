@@ -32,7 +32,7 @@ const projectFixture: Project = {
 };
 
 function mountElectronMock() {
-    const updateProject = vi.fn().mockResolvedValue({ success: true });
+    const updateWorkspace = vi.fn().mockResolvedValue({ success: true });
     const saveProfile = vi.fn().mockResolvedValue(true);
     const testProfile = vi.fn().mockResolvedValue({
         success: true,
@@ -46,7 +46,7 @@ function mountElectronMock() {
         ...base,
         db: {
             ...base.db,
-            updateProject,
+            updateWorkspace,
         },
         ssh: {
             ...base.ssh,
@@ -61,7 +61,7 @@ function mountElectronMock() {
         },
     };
 
-    return { updateProject, saveProfile, testProfile };
+    return { updateWorkspace, saveProfile, testProfile };
 }
 
 interface WorkspaceMountHarnessProps {

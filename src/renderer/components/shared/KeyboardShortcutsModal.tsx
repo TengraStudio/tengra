@@ -95,7 +95,7 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     { id: 'toggleSidebar', category: 'general', labelKey: 'shortcuts.toggleSidebar' },
     { id: 'showShortcuts', category: 'general', labelKey: 'shortcuts.showShortcuts' },
     { id: 'goToChat', category: 'navigation', labelKey: 'shortcuts.goToChat' },
-    { id: 'goToProjects', category: 'navigation', labelKey: 'shortcuts.goToProjects' },
+    { id: 'goToWorkspaces', category: 'navigation', labelKey: 'shortcuts.goToProjects' },
     { id: 'goToSettings', category: 'navigation', labelKey: 'shortcuts.goToSettings' },
     { id: 'clearChat', category: 'chat', labelKey: 'shortcuts.clearChat' },
 ];

@@ -12,7 +12,7 @@ type NavigationTarget =
     | 'home'
     | 'chat'
     | 'settings'
-    | 'projects'
+    | 'workspaces'
     | 'models'
     | 'memory'
     | 'ideas'

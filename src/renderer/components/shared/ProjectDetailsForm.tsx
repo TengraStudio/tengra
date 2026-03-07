@@ -5,7 +5,7 @@ import { useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 
-/** Category configuration for project type selection */
+/** Category configuration for workspace type selection */
 export interface CategoryConfig {
     id: string;
     nameKey: string;
@@ -14,25 +14,25 @@ export interface CategoryConfig {
     bg: string;
 }
 
-/** Project details form data shape */
-export interface ProjectFormData {
+/** Workspace details form data shape */
+export interface WorkspaceFormData {
     name: string;
     description: string;
     category: string;
     customPath: string;
 }
 
-interface ProjectDetailsFormProps {
-    formData: ProjectFormData;
-    onFormChange: (updater: (prev: ProjectFormData) => ProjectFormData) => void;
+interface WorkspaceDetailsFormProps {
+    formData: WorkspaceFormData;
+    onFormChange: (updater: (prev: WorkspaceFormData) => WorkspaceFormData) => void;
     categories: CategoryConfig[];
     error?: string | null;
     /** Additional CSS class for the root container */
     className?: string;
 }
 
-/** Reusable project details form with name, category, path, and description fields */
-export const ProjectDetailsForm: React.FC<ProjectDetailsFormProps> = ({
+/** Reusable workspace details form with name, category, path, and description fields */
+export const WorkspaceDetailsFormLegacy: React.FC<WorkspaceDetailsFormProps> = ({
     formData,
     onFormChange,
     categories,

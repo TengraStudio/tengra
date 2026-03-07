@@ -69,7 +69,7 @@ export interface CodeBridge {
         qualityScore: number;
         generatedAt: string;
     }>;
-    generateProjectDocumentation: (
+    generateWorkspaceDocumentation: (
         rootPath: string,
         maxFiles?: number
     ) => Promise<{
@@ -100,10 +100,10 @@ export interface CodeBridge {
     searchFiles: (
         rootPath: string,
         query: string,
-        projectId?: string,
+        workspaceId?: string,
         isRegex?: boolean
     ) => Promise<FileSearchResult[]>;
-    indexProject: (rootPath: string, projectId: string) => Promise<void>;
+    indexWorkspace: (rootPath: string, workspaceId: string) => Promise<void>;
     queryIndexedSymbols: (
         query: string
     ) => Promise<{ name: string; path: string; line: number }[]>;
@@ -136,12 +136,12 @@ export function createCodeBridge(ipc: IpcRenderer): CodeBridge {
             ipc.invoke('code:applyRenameSymbol', rootPath, symbol, newSymbol, maxFiles),
         generateFileDocumentation: (filePath, format) =>
             ipc.invoke('code:generateFileDocumentation', filePath, format),
-        generateProjectDocumentation: (rootPath, maxFiles) =>
-            ipc.invoke('code:generateProjectDocumentation', rootPath, maxFiles),
+        generateWorkspaceDocumentation: (rootPath, maxFiles) =>
+            ipc.invoke('code:generateWorkspaceDocumentation', rootPath, maxFiles),
         analyzeQuality: (rootPath, maxFiles) => ipc.invoke('code:analyzeQuality', rootPath, maxFiles),
-        searchFiles: (rootPath, query, projectId, isRegex) =>
-            ipc.invoke('code:searchFiles', rootPath, query, projectId, isRegex),
-        indexProject: (rootPath, projectId) => ipc.invoke('code:indexProject', rootPath, projectId),
+        searchFiles: (rootPath, query, workspaceId, isRegex) =>
+            ipc.invoke('code:searchFiles', rootPath, query, workspaceId, isRegex),
+        indexWorkspace: (rootPath, workspaceId) => ipc.invoke('code:indexWorkspace', rootPath, workspaceId),
         queryIndexedSymbols: query => ipc.invoke('code:queryIndexedSymbols', query),
         getSymbolAnalytics: rootPath => ipc.invoke('code:getSymbolAnalytics', rootPath),
     };

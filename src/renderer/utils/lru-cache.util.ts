@@ -213,7 +213,7 @@ export class LRUCache<K = string, V = CacheEntry> {
 // Global cache instances for common use cases
 export const dbQueryCache = new LRUCache<string, CacheEntry>(50);
 export const chatCache = new LRUCache<string, CacheEntry>(20);
-export const projectCache = new LRUCache<string, CacheEntry>(10);
+export const workspaceCache = new LRUCache<string, CacheEntry>(10);
 export const settingsCache = new LRUCache<string, CacheEntry>(10);
 
 /**
@@ -274,7 +274,7 @@ export function startCacheCleanupInterval(): void {
         const maxAge = 5 * 60 * 1000; // 5 minutes
         dbQueryCache.evictExpired(maxAge);
         chatCache.evictExpired(maxAge);
-        projectCache.evictExpired(maxAge);
+        workspaceCache.evictExpired(maxAge);
         settingsCache.evictExpired(maxAge);
     }, 5 * 60 * 1000);
 }

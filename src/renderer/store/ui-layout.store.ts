@@ -13,7 +13,7 @@ export interface UiLayoutState {
     appShell: {
         sidebarCollapsed: boolean;
     };
-    projectShell: {
+    workspaceShell: {
         sidebarCollapsed: boolean;
         agentPanelWidth: number;
         terminalHeight: number;
@@ -33,7 +33,7 @@ const defaultState: UiLayoutState = {
     appShell: {
         sidebarCollapsed: false,
     },
-    projectShell: {
+    workspaceShell: {
         sidebarCollapsed: false,
         agentPanelWidth: 380,
         terminalHeight: 250,
@@ -96,24 +96,24 @@ function sanitizeAppShell(value: unknown): UiLayoutState['appShell'] {
     };
 }
 
-function sanitizeProjectShell(value: unknown): UiLayoutState['projectShell'] {
+function sanitizeworkspaceShell(value: unknown): UiLayoutState['workspaceShell'] {
     if (!isObject(value)) {
-        return defaultState.projectShell;
+        return defaultState.workspaceShell;
     }
     return {
         sidebarCollapsed: toBoolean(
             value.sidebarCollapsed,
-            defaultState.projectShell.sidebarCollapsed
+            defaultState.workspaceShell.sidebarCollapsed
         ),
         agentPanelWidth: toBoundedNumber(
             value.agentPanelWidth,
-            defaultState.projectShell.agentPanelWidth,
+            defaultState.workspaceShell.agentPanelWidth,
             260,
             640
         ),
         terminalHeight: toBoundedNumber(
             value.terminalHeight,
-            defaultState.projectShell.terminalHeight,
+            defaultState.workspaceShell.terminalHeight,
             150,
             900
         ),
@@ -149,7 +149,7 @@ export function sanitizeUiLayoutState(raw: unknown): UiLayoutState {
         version: UI_LAYOUT_SCHEMA_VERSION,
         activityBar: sanitizeActivityBar(raw.activityBar),
         appShell: sanitizeAppShell(raw.appShell),
-        projectShell: sanitizeProjectShell(raw.projectShell),
+        workspaceShell: sanitizeworkspaceShell(raw.workspaceShell),
     };
 }
 
@@ -219,21 +219,21 @@ export function setAppShellState(update: Partial<UiLayoutState['appShell']>): vo
     emit();
 }
 
-export function setProjectShellState(update: Partial<UiLayoutState['projectShell']>): void {
+export function setWorkspaceShellState(update: Partial<UiLayoutState['workspaceShell']>): void {
     const next = {
-        ...state.projectShell,
+        ...state.workspaceShell,
         ...update,
     };
     if (
-        next.sidebarCollapsed === state.projectShell.sidebarCollapsed &&
-        next.agentPanelWidth === state.projectShell.agentPanelWidth &&
-        next.terminalHeight === state.projectShell.terminalHeight
+        next.sidebarCollapsed === state.workspaceShell.sidebarCollapsed &&
+        next.agentPanelWidth === state.workspaceShell.agentPanelWidth &&
+        next.terminalHeight === state.workspaceShell.terminalHeight
     ) {
         return;
     }
     state = {
         ...state,
-        projectShell: next,
+        workspaceShell: next,
     };
     persist();
     emit();

@@ -128,7 +128,7 @@ class ChatUtils {
 }
 
 class RAGUtils {
-    static async handleRAGContext(messages: Message[], projectId: string, contextService: ContextRetrievalService): Promise<string[]> {
+    static async handleRAGContext(messages: Message[], workspaceId: string, contextService: ContextRetrievalService): Promise<string[]> {
         const lastMessage = messages[messages.length - 1];
         if (lastMessage.role !== 'user') { return []; }
 
@@ -136,7 +136,7 @@ class RAGUtils {
             const query = this.extractQuery(lastMessage);
             if (!query) { return []; }
 
-            const { contextString, sources } = await contextService.retrieveContext(query, projectId);
+            const { contextString, sources } = await contextService.retrieveContext(query, workspaceId);
             if (!contextString) { return []; }
 
             this.injectContext(messages, contextString);
@@ -193,13 +193,13 @@ interface ChatIpcOptions {
 class ChatIpcManager {
     constructor(private options: ChatIpcOptions) { }
 
-    async handleOpenAIChat(_event: IpcMainInvokeEvent, params: { messages: Message[], model: string, tools?: ToolDefinition[], provider: string, projectId?: string, systemMode?: SystemMode }) {
-        const { messages, model, provider, tools, projectId, systemMode } = params;
-        const sanitized = this.sanitizeRequestParams({ messages, model, provider, tools, projectId, systemMode });
+    async handleOpenAIChat(_event: IpcMainInvokeEvent, params: { messages: Message[], model: string, tools?: ToolDefinition[], provider: string, workspaceId?: string, systemMode?: SystemMode }) {
+        const { messages, model, provider, tools, workspaceId, systemMode } = params;
+        const sanitized = this.sanitizeRequestParams({ messages, model, provider, tools, workspaceId, systemMode });
         let sources: string[] = [];
 
-        if (sanitized.projectId && sanitized.messages.length > 0) {
-            sources = await RAGUtils.handleRAGContext(sanitized.messages, sanitized.projectId, this.options.contextRetrievalService);
+        if (sanitized.workspaceId && sanitized.messages.length > 0) {
+            sources = await RAGUtils.handleRAGContext(sanitized.messages, sanitized.workspaceId, this.options.contextRetrievalService);
         }
 
         const finalMessages = ChatUtils.injectSystemPrompt(sanitized.messages, sanitized.provider, sanitized.model, this.options.settingsService);
@@ -212,7 +212,7 @@ class ChatIpcManager {
         return this.executeGeneralChat(sanitized, finalMessages, sources);
     }
 
-    private async executeGeneralChat(sanitized: { model: string, tools?: ToolDefinition[], provider: string, projectId?: string, chatId?: string }, finalMessages: Message[], sources: string[]) {
+    private async executeGeneralChat(sanitized: { model: string, tools?: ToolDefinition[], provider: string, workspaceId?: string, chatId?: string }, finalMessages: Message[], sources: string[]) {
         if (sanitized.provider === 'opencode') {
             const res = await this.options.llmService.chatOpenCode(finalMessages, sanitized.model, sanitized.tools);
             await this.recordTokens(sanitized, res, finalMessages);
@@ -220,7 +220,7 @@ class ChatIpcManager {
         }
 
         const res = await this.options.llmService.chat(finalMessages, sanitized.model, sanitized.tools, sanitized.provider, {
-            projectRoot: sanitized.projectId ? undefined : path.join(app.getPath('userData'), 'runtime', 'sessions', sanitized.chatId ?? 'default')
+            workspaceRoot: sanitized.workspaceId ? undefined : path.join(app.getPath('userData'), 'runtime', 'sessions', sanitized.chatId ?? 'default')
         });
 
         await this.recordTokens(sanitized, res, finalMessages);
@@ -230,7 +230,7 @@ class ChatIpcManager {
         };
     }
 
-    private async recordTokens(sanitized: { model: string, provider: string, projectId?: string, chatId?: string }, res: { promptTokens?: number; completionTokens?: number }, messages: Message[]) {
+    private async recordTokens(sanitized: { model: string, provider: string, workspaceId?: string, chatId?: string }, res: { promptTokens?: number; completionTokens?: number }, messages: Message[]) {
         try {
             const lastUserMessage = messages.filter((m: Message) => m.role === 'user').pop();
             const promptTokens = res.promptTokens ?? 0;
@@ -238,7 +238,7 @@ class ChatIpcManager {
 
             await this.options.databaseService.system.addTokenUsage({
                 chatId: sanitized.chatId ?? 'system',
-                projectId: sanitized.projectId,
+                workspaceId: sanitized.workspaceId,
                 provider: sanitized.provider,
                 model: sanitized.model,
                 tokensSent: promptTokens,
@@ -250,7 +250,7 @@ class ChatIpcManager {
         }
     }
 
-    async handleChatStream(event: IpcMainInvokeEvent, params: { messages: Message[], model: string, tools?: ToolDefinition[], provider: string, optionsJson: JsonObject | undefined, chatId: string, projectId?: string, systemMode?: SystemMode }) {
+    async handleChatStream(event: IpcMainInvokeEvent, params: { messages: Message[], model: string, tools?: ToolDefinition[], provider: string, optionsJson: JsonObject | undefined, chatId: string, workspaceId?: string, systemMode?: SystemMode }) {
         if (this.options.rateLimitService) {
             try {
                 await this.options.rateLimitService.waitForToken('chat:stream');
@@ -270,7 +270,7 @@ class ChatIpcManager {
         const orchestrationPolicy = (ollamaSettings?.['orchestrationPolicy'] as OrchestrationPolicy | undefined) ?? 'auto';
         chatQueueManager.setPolicy(orchestrationPolicy);
 
-        let finalMessages = await this.injectRAGContextForStream(sanitized.messages, sanitized.projectId, sanitized.chatId, event);
+        let finalMessages = await this.injectRAGContextForStream(sanitized.messages, sanitized.workspaceId, sanitized.chatId, event);
         finalMessages = ChatUtils.injectSystemPrompt(finalMessages, sanitized.provider, sanitized.model, this.options.settingsService);
 
         const controller = new AbortController();
@@ -291,7 +291,7 @@ class ChatIpcManager {
             } else if (sanitized.provider === 'opencode') {
                 await this.handleOpencodeStream({ messages: finalMessages, model: sanitized.model, tools: sanitized.tools, chatId: sanitized.chatId, event, signal });
             } else {
-                await this.handleProxyStream({ messages: finalMessages, model: sanitized.model, tools: sanitized.tools, provider: sanitized.provider, chatId: sanitized.chatId, event, systemMode: sanitized.systemMode, projectId: sanitized.projectId, signal, reasoningEffort });
+                await this.handleProxyStream({ messages: finalMessages, model: sanitized.model, tools: sanitized.tools, provider: sanitized.provider, chatId: sanitized.chatId, event, systemMode: sanitized.systemMode, workspaceId: sanitized.workspaceId, signal, reasoningEffort });
             }
         } catch (error) {
             if ((error as Error).name === 'AbortError') {
@@ -307,8 +307,8 @@ class ChatIpcManager {
         }
     }
 
-    private sanitizeRequestParams(params: { messages: Message[], model: string, provider: string, tools?: ToolDefinition[], projectId?: string, systemMode?: SystemMode }) {
-        const { messages, model, provider, tools, projectId, systemMode } = params;
+    private sanitizeRequestParams(params: { messages: Message[], model: string, provider: string, tools?: ToolDefinition[], workspaceId?: string, systemMode?: SystemMode }) {
+        const { messages, model, provider, tools, workspaceId, systemMode } = params;
         if (!Array.isArray(messages) || messages.length === 0) { throw new Error('Messages must be a non-empty array'); }
         if (!model) { throw new Error('Model must be a non-empty string'); }
         if (!provider) { throw new Error('Provider must be a non-empty string'); }
@@ -317,7 +317,7 @@ class ChatIpcManager {
             messages: messages.map(m => this.sanitizeChatMessage(m)),
             model: sanitizeString(model, { maxLength: 200, allowNewlines: false }),
             provider: sanitizeString(provider, { maxLength: 50, allowNewlines: false }),
-            projectId: projectId ? sanitizeString(projectId, { maxLength: 100, allowNewlines: false }) : undefined,
+            workspaceId: workspaceId ? sanitizeString(workspaceId, { maxLength: 100, allowNewlines: false }) : undefined,
             tools: ChatUtils.sanitizeTools(tools),
             systemMode
         };
@@ -339,19 +339,19 @@ class ChatIpcManager {
         };
     }
 
-    private sanitizeStreamInputs(params: { messages: Message[], model: string, provider: string, chatId: string, tools?: ToolDefinition[], projectId?: string, systemMode?: SystemMode }) {
-        const { messages, model, provider, chatId, tools, projectId, systemMode } = params;
+    private sanitizeStreamInputs(params: { messages: Message[], model: string, provider: string, chatId: string, tools?: ToolDefinition[], workspaceId?: string, systemMode?: SystemMode }) {
+        const { messages, model, provider, chatId, tools, workspaceId, systemMode } = params;
         if (!chatId) { throw new Error('Chat ID must be a non-empty string'); }
 
-        const sanitized = this.sanitizeRequestParams({ messages, model, provider, tools, projectId, systemMode });
+        const sanitized = this.sanitizeRequestParams({ messages, model, provider, tools, workspaceId, systemMode });
         return {
             ...sanitized,
             chatId: sanitizeString(chatId, { maxLength: 100, allowNewlines: false })
         };
     }
 
-    private async injectRAGContextForStream(messages: Message[], projectId: string | undefined, chatId: string, event: IpcMainInvokeEvent): Promise<Message[]> {
-        if (!projectId || messages.length === 0) { return messages; }
+    private async injectRAGContextForStream(messages: Message[], workspaceId: string | undefined, chatId: string, event: IpcMainInvokeEvent): Promise<Message[]> {
+        if (!workspaceId || messages.length === 0) { return messages; }
 
         const lastMessage = messages[messages.length - 1];
         if (lastMessage.role !== 'user') { return messages; }
@@ -360,7 +360,7 @@ class ChatIpcManager {
             const query = RAGUtils.extractQuery(lastMessage);
             if (!query) { return messages; }
 
-            const { contextString, sources } = await this.options.contextRetrievalService.retrieveContext(query, projectId);
+            const { contextString, sources } = await this.options.contextRetrievalService.retrieveContext(query, workspaceId);
             if (!contextString) { return messages; }
 
             safeSend(event.sender, 'ollama:streamChunk', {
@@ -496,12 +496,12 @@ class ChatIpcManager {
         }
     }
 
-    private async handleProxyStream(params: { messages: Message[], model: string, tools?: ToolDefinition[], provider: string, chatId: string, event: IpcMainInvokeEvent, systemMode?: SystemMode, projectId?: string, signal?: AbortSignal, reasoningEffort?: string }) {
-        const { messages, model, tools: providedTools, provider, chatId, event, systemMode, projectId, signal, reasoningEffort } = params;
+    private async handleProxyStream(params: { messages: Message[], model: string, tools?: ToolDefinition[], provider: string, chatId: string, event: IpcMainInvokeEvent, systemMode?: SystemMode, workspaceId?: string, signal?: AbortSignal, reasoningEffort?: string }) {
+        const { messages, model, tools: providedTools, provider, chatId, event, systemMode, workspaceId, signal, reasoningEffort } = params;
 
-        let runtimeProjectRoot: string | undefined;
-        if (!projectId) {
-            runtimeProjectRoot = path.join(app.getPath('userData'), 'runtime', 'sessions', chatId);
+        let runtimeWorkspaceRoot: string | undefined;
+        if (!workspaceId) {
+            runtimeWorkspaceRoot = path.join(app.getPath('userData'), 'runtime', 'sessions', chatId);
         }
 
         let totalPrompt = 0;
@@ -512,7 +512,7 @@ class ChatIpcManager {
         try {
             for await (const chunk of this.options.llmService.chatStream(messages, model, providedTools, provider, {
                 systemMode,
-                projectRoot: runtimeProjectRoot,
+                workspaceRoot: runtimeWorkspaceRoot,
                 signal,
                 reasoningEffort
             })) {
@@ -638,7 +638,7 @@ const OpenAIChatSchema = z.object({
     model: z.string(),
     tools: z.array(ToolDefinitionSchema).optional(),
     provider: z.string(),
-    projectId: z.string().optional(),
+    workspaceId: z.string().optional(),
     systemMode: z.enum(['thinking', 'agent', 'fast', 'architect']).optional()
 });
 

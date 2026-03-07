@@ -29,7 +29,7 @@ import { z } from 'zod';
 export interface WorkspaceIpcDeps {
     /** Service for workspace analysis, watching, and environment management. */
     workspaceService?: WorkspaceService;
-    /** Legacy alias accepted during project-to-workspace migration. */
+    /** Legacy alias accepted during workspace-to-workspace migration. */
     projectService?: WorkspaceService;
     /** Service for logo generation and workspace identity analysis. */
     logoService: LogoService;
@@ -108,7 +108,7 @@ export const registerWorkspaceIpc = (
             async (event, rootPath: string, workspaceId: string | undefined): Promise<z.infer<typeof WorkspaceAnalysisSchema>> => {
                 validateSender(event);
                 appLogger.info(
-                    'ProjectIPC',
+                    'WorkspaceIPC',
                     `Analyze requested for ${rootPath} (ID: ${workspaceId})`
                 );
                 const results = await resolvedWorkspaceService.analyzeWorkspace(rootPath);
@@ -116,7 +116,7 @@ export const registerWorkspaceIpc = (
                 // Trigger background indexing
                 if (workspaceId) {
                     codeIntelligenceService.indexProject(rootPath, workspaceId).catch((err: unknown) => {
-                        appLogger.error('ProjectIPC', `Failed to auto-index workspace: ${err}`);
+                        appLogger.error('WorkspaceIPC', `Failed to auto-index workspace: ${err}`);
                     });
                 }
                 return results;
@@ -139,7 +139,7 @@ export const registerWorkspaceIpc = (
             async (event, rootPath: string) => {
                 validateSender(event);
                 const win = getWindow();
-                await resolvedWorkspaceService.watchProject(rootPath, (watchEvent: string, filePath: string) => {
+                await resolvedWorkspaceService.watchWorkspace(rootPath, (watchEvent: string, filePath: string) => {
                     void (async () => {
                         if (win && !win.isDestroyed()) {
                             win.webContents.send('workspace:file-change', {
@@ -155,20 +155,20 @@ export const registerWorkspaceIpc = (
                                 `index:${filePath}`,
                                 async () => {
                                     try {
-                                        const workspaces = await databaseService.getProjects();
-                                        const exactProject = workspaces.find(
+                                        const workspaces = await databaseService.getWorkspaces();
+                                        const exactWorkspace = workspaces.find(
                                             p => p.path === rootPath
                                         );
-                                        if (exactProject) {
+                                        if (exactWorkspace) {
                                             await codeIntelligenceService.updateFileIndex(
-                                                exactProject.id,
-                                                exactProject.path,
+                                                exactWorkspace.id,
+                                                exactWorkspace.path,
                                                 filePath
                                             );
                                         }
                                     } catch (e) {
                                         appLogger.error(
-                                            'ProjectIPC',
+                                            'WorkspaceIPC',
                                             `Auto-index failed: ${e instanceof Error ? e.message : String(e)}`
                                         );
                                     }
@@ -246,7 +246,7 @@ export const registerWorkspaceIpc = (
             'workspace:analyzeIdentity',
             async (event, workspacePath: string) => {
                 validateSender(event);
-                return await logoService.analyzeProjectIdentity(workspacePath);
+                return await logoService.analyzeWorkspaceIdentity(workspacePath);
             },
             {
                 argsSchema: z.tuple([WorkspaceRootPathSchema]),

@@ -11,8 +11,8 @@ export interface TerminalPanelProps {
     onMaximizeChange?: (isMaximized: boolean) => void;
     isFloating?: boolean;
     onFloatingChange?: (isFloating: boolean) => void;
-    projectId?: string;
-    projectPath?: string;
+    workspaceId?: string;
+    workspacePath?: string;
     tabs: TerminalTab[];
     activeTabId: string | null;
     setTabs: (tabs: TerminalTab[] | ((prev: TerminalTab[]) => TerminalTab[])) => void;

@@ -12,7 +12,7 @@ import {
     TERMINAL_PASTE_HISTORY_LIMIT,
     TERMINAL_PASTE_HISTORY_STORAGE_KEY,
     TERMINAL_PREFERRED_BACKEND_STORAGE_KEY,
-    TERMINAL_PROJECT_ISSUES_TAB_ID,
+    TERMINAL_WORKSPACE_ISSUES_TAB_ID,
     TERMINAL_SEARCH_HISTORY_LIMIT,
     TERMINAL_SEARCH_HISTORY_STORAGE_KEY,
     TERMINAL_SHORTCUTS_STORAGE_KEY,
@@ -56,7 +56,7 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
         isMaximized: isMaximizedProp = false,
         onMaximizeChange: onMaximizeChangeProp,
         isFloating = false, onFloatingChange,
-        projectId, projectPath,
+        workspaceId, workspacePath,
         tabs, activeTabId,
         setTabs, setActiveTabId,
         onOpenFile,
@@ -125,24 +125,24 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
     const isCreatingRef = useRef(false);
     const hasAutoCreatedRef = useRef(false);
 
-    const projectIssuesTab = useMemo<TerminalTab | null>(() => {
-        if (!projectPath) {
+    const workspaceIssuesTab = useMemo<TerminalTab | null>(() => {
+        if (!workspacePath) {
             return null;
         }
         return {
-            id: TERMINAL_PROJECT_ISSUES_TAB_ID,
-            name: t('terminal.projectIssuesTabTitle'),
+            id: TERMINAL_WORKSPACE_ISSUES_TAB_ID,
+            name: t('terminal.workspaceIssuesTabTitle'),
             type: 'panel',
             status: 'idle',
             history: [],
             command: '',
-            metadata: { panelType: 'project-issues', closable: false },
+            metadata: { panelType: 'workspace-issues', closable: false },
         };
-    }, [projectPath, t]);
+    }, [workspacePath, t]);
 
     const displayTabs = useMemo(
-        () => (projectIssuesTab ? [projectIssuesTab, ...tabs] : tabs),
-        [projectIssuesTab, tabs]
+        () => (workspaceIssuesTab ? [workspaceIssuesTab, ...tabs] : tabs),
+        [workspaceIssuesTab, tabs]
     );
     const hasActiveSession = Boolean(activeTabId && tabs.some(tab => tab.id === activeTabId));
 
@@ -160,7 +160,7 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
     });
 
     const tabActions = useTerminalTabActions({
-        tabs, tabsRef, activeTabIdRef, projectPath,
+        tabs, tabsRef, activeTabIdRef, workspacePath,
         availableShells: backends.availableShells,
         availableBackends: backends.availableBackends,
         setTabs, setActiveTabId, setIsNewTerminalMenuOpen,
@@ -170,7 +170,7 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
         clearSemanticIssues,
         completeRecording: recording.completeRecording,
         recordingCaptureRef: recording.recordingCaptureRef,
-        onToggle, projectIssuesTab,
+        onToggle, workspaceIssuesTab,
     });
 
     const inputBroadcast = useTerminalInputBroadcast({
@@ -186,7 +186,7 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
     });
 
     const aiActions = useTerminalAiActions({
-        activeTabId, tabById, projectPath,
+        activeTabId, tabById, workspacePath,
         writeCommandToActiveTerminal: inputBroadcast.writeCommandToActiveTerminal,
         setAiPanelMode: ai.setAiPanelMode,
         setAiSelectedIssue: ai.setAiSelectedIssue,
@@ -220,16 +220,16 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
         resolveDefaultBackendId: backends.resolveDefaultBackendId,
         completeRecording: recording.completeRecording,
         recordingCaptureRef: recording.recordingCaptureRef,
-        onToggle, projectIssuesTab, setTabs, setActiveTabId,
+        onToggle, workspaceIssuesTab, setTabs, setActiveTabId,
     });
 
     const multiplexer = useTerminalMultiplexer({
-        projectPath, activeTabIdRef,
+        workspacePath, activeTabIdRef,
         writeCommandToActiveTerminal: inputBroadcast.writeCommandToActiveTerminal,
     });
 
     const commandTools = useTerminalCommandTools({
-        hasActiveSession, activeTabIdRef, projectPath,
+        hasActiveSession, activeTabIdRef, workspacePath,
         writeCommandToActiveTerminal: inputBroadcast.writeCommandToActiveTerminal,
         onBeforeOpen: () => {
             setTerminalContextMenu(null);
@@ -326,7 +326,7 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
     return {
         // Props passthrough
         isOpen, onToggle, isFloating, onFloatingChange,
-        projectId, projectPath, tabs, activeTabId,
+        workspaceId, workspacePath, tabs, activeTabId,
         setTabs, setActiveTabId, onOpenFile,
         // Core
         t, theme,
@@ -364,7 +364,7 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
         appearanceImportInputRef, shortcutImportInputRef,
         isCreatingRef, hasAutoCreatedRef,
         // Computed
-        projectIssuesTab, displayTabs, hasActiveSession, tabById,
+        workspaceIssuesTab, displayTabs, hasActiveSession, tabById,
         // Sub-hook results
         recording, tabActions, inputBroadcast, clipboard,
         aiActions, preferences, splitActions, multiplexer,

@@ -40,7 +40,7 @@ interface TerminalSessionProps {
     tab: TerminalTab;
     isActive: boolean;
     onClose: () => void;
-    projectPath?: string;
+    workspacePath?: string;
 }
 
 const TerminalErrorOverlay: React.FC<{ t: (k: string) => string }> = ({ t }) => (
@@ -90,7 +90,7 @@ function useTerminalMultiplexer(
 }
 
 export const TerminalSession = memo(
-    ({ tab, isActive, onClose, projectPath }: TerminalSessionProps) => {
+    ({ tab, isActive, onClose, workspacePath }: TerminalSessionProps) => {
         const { t } = useTranslation();
         const containerRef = useRef<HTMLDivElement>(null);
         const xtermRef = useRef<XTerm | null>(null);
@@ -112,7 +112,7 @@ export const TerminalSession = memo(
             xtermRef,
             tabId: tab.id,
             shell: tab.type,
-            cwd: projectPath,
+            cwd: workspacePath,
             enabled: isReady,
         });
 
@@ -139,7 +139,7 @@ export const TerminalSession = memo(
                 const sessionId = await invokeTypedIpc<TerminalIpcContract, 'terminal:create'>('terminal:create', [{
                     id: tab.id,
                     shell: tab.type,
-                    ...(projectPath ? { cwd: projectPath } : {}),
+                    ...(workspacePath ? { cwd: workspacePath } : {}),
                     cols: term.cols,
                     rows: term.rows,
                 }], { responseSchema: terminalCreateResponseSchema });
@@ -151,7 +151,7 @@ export const TerminalSession = memo(
                 }
                 return sessionId;
             },
-            [tab.id, tab.type, projectPath]
+            [tab.id, tab.type, workspacePath]
         );
 
         const setupSession = useCallback(

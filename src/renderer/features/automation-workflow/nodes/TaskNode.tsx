@@ -133,7 +133,7 @@ const useTaskNodeActions = ({
                 task: data.title ?? data.description ?? t('projectAgent.newTask'),
                 nodeId: id,
                 model: { provider: currentProviderId, model: currentModelId },
-                projectId: selectedProjectId,
+                workspaceId: selectedProjectId,
                 attachments: data.attachments,
                 systemMode: data.systemMode,
                 agentProfileId: data.agentProfileId,
@@ -216,7 +216,7 @@ const useTaskNodeActions = ({
                 task: data.title ?? data.description ?? t('projectAgent.newTask'),
                 nodeId: id,
                 model: { provider: currentProviderId, model: currentModelId },
-                projectId: selectedProjectId,
+                workspaceId: selectedProjectId,
                 attachments: data.attachments,
                 systemMode: data.systemMode,
                 agentProfileId: data.agentProfileId,
@@ -224,7 +224,6 @@ const useTaskNodeActions = ({
             };
             await window.electron.projectAgent.start(options);
         } catch (error) {
-            appLogger.error('TaskNode', 'Failed to start task', error as Error);
             updateNodeData(id, { status: 'failed' });
         } finally {
             executeInFlightRef.current = false;

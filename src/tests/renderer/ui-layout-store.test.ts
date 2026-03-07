@@ -5,7 +5,7 @@ import {
     importUiLayoutState,
     sanitizeUiLayoutState,
     setAppShellState,
-    setProjectShellState,
+    setWorkspaceShellState,
 } from '@renderer/store/ui-layout.store';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -25,13 +25,13 @@ describe('ui layout store', () => {
         expect(migrated.activityBar.activeItem).toBe('projects');
         expect(migrated.activityBar.collapsed).toBe(true);
         expect(migrated.appShell.sidebarCollapsed).toBe(false);
-        expect(migrated.projectShell.terminalHeight).toBe(250);
+        expect(migrated.workspaceShell.terminalHeight).toBe(250);
     });
 
     it('validates imported shell dimensions with bounds', () => {
         importUiLayoutState({
             appShell: { sidebarCollapsed: true },
-            projectShell: {
+            workspaceShell: {
                 sidebarCollapsed: true,
                 agentPanelWidth: 9999,
                 terminalHeight: 10,
@@ -40,18 +40,18 @@ describe('ui layout store', () => {
 
         const snapshot = getUiLayoutSnapshot();
         expect(snapshot.appShell.sidebarCollapsed).toBe(true);
-        expect(snapshot.projectShell.sidebarCollapsed).toBe(true);
-        expect(snapshot.projectShell.agentPanelWidth).toBe(640);
-        expect(snapshot.projectShell.terminalHeight).toBe(150);
+        expect(snapshot.workspaceShell.sidebarCollapsed).toBe(true);
+        expect(snapshot.workspaceShell.agentPanelWidth).toBe(640);
+        expect(snapshot.workspaceShell.terminalHeight).toBe(150);
     });
 
     it('exports current state snapshots', () => {
         setAppShellState({ sidebarCollapsed: true });
-        setProjectShellState({ terminalHeight: 420 });
+        setWorkspaceShellState({ terminalHeight: 420 });
 
         const exported = exportUiLayoutState();
         expect(exported.state.appShell.sidebarCollapsed).toBe(true);
-        expect(exported.state.projectShell.terminalHeight).toBe(420);
+        expect(exported.state.workspaceShell.terminalHeight).toBe(420);
         expect(exported.state.version).toBe(2);
     });
 });

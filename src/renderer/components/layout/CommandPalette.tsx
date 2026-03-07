@@ -18,7 +18,7 @@ import { SettingsCategory } from '@/features/settings/types';
 import { useDebounce } from '@/hooks/useDebounce';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import type { ModelInfo } from '@/types';
-import { Chat, Project } from '@/types';
+import { Chat, Workspace } from '@/types';
 
 export interface CommandItem {
     id: string;
@@ -27,7 +27,7 @@ export interface CommandItem {
     icon: React.ReactNode;
     shortcut?: string;
     action: () => void;
-    category: 'chat' | 'navigation' | 'model' | 'system' | 'projects' | 'actions';
+    category: 'chat' | 'navigation' | 'model' | 'system' | 'workspaces' | 'actions';
     preview?: {
         title: string;
         content: string;
@@ -41,8 +41,8 @@ interface CommandPaletteProps {
     chats: Chat[];
     onSelectChat: (id: string) => void;
     onNewChat: () => void;
-    projects: Project[];
-    onSelectProject: (id: string) => void;
+    workspaces: Workspace[];
+    onSelectWorkspace: (id: string) => void;
     onOpenSettings: (category?: SettingsCategory) => void;
     onOpenSSHManager: () => void;
     onRefreshModels: (bypassCache?: boolean) => void;
@@ -59,8 +59,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     chats,
     onSelectChat,
     onNewChat,
-    projects,
-    onSelectProject,
+    workspaces,
+    onSelectWorkspace,
     onOpenSettings,
     onOpenSSHManager,
     onRefreshModels,
@@ -138,16 +138,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             category: 'chat' as const,
         }));
 
-        const projCmds: CommandItem[] = projects.slice(0, 5).map(p => ({
-            id: `project-${p.id}`,
+        const wsCmds: CommandItem[] = workspaces.slice(0, 5).map(p => ({
+            id: `workspace-${p.id}`,
             label: p.title,
             description: t('commandPalette.goToProject'),
             icon: <Folder className="w-4 h-4" />,
             action: () => {
-                onSelectProject(p.id);
+                onSelectWorkspace(p.id);
                 onClose();
             },
-            category: 'projects' as const,
+            category: 'workspaces' as const,
             preview: {
                 title: p.title,
                 content: p.path,
@@ -194,10 +194,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             }),
         ];
 
-        return [...base, ...chatCmds, ...projCmds, ...modelCmds];
+        return [...base, ...chatCmds, ...wsCmds, ...modelCmds];
     }, [
         chats,
-        projects,
+        workspaces,
         models,
         selectedModel,
         onNewChat,
@@ -206,7 +206,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         onRefreshModels,
         onSelectModel,
         onSelectChat,
-        onSelectProject,
+        onSelectWorkspace,
         onClearChat,
         onClose,
         t,
@@ -297,7 +297,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
     const categoryLabels: Record<string, string> = {
         chat: t('commandPalette.chats'),
-        projects: t('commandPalette.projects'),
+        workspaces: t('commandPalette.projects'),
         navigation: t('commandPalette.navigation'),
         actions: t('commandPalette.actions'),
         model: t('commandPalette.models'),

@@ -15,7 +15,7 @@ import { IpcValue, JsonObject, JsonValue } from '@shared/types/common';
 import { DatabaseAdapter, SqlParams, SqlValue } from '@shared/types/database';
 import { DbDetailedStats, DbStats, DbTokenStats } from '@shared/types/db-api';
 import { FileDiff } from '@shared/types/file-diff';
-import { Workspace } from '@shared/types/project';
+import { Workspace } from '@shared/types/workspace';
 import { AgentProfile } from '@shared/types/workspace-agent';
 import { AppErrorCode, TengraError, ValidationError } from '@shared/utils/error.util';
 import { v4 as uuidv4 } from 'uuid';
@@ -55,7 +55,6 @@ export interface TokenUsageRecord {
     messageId?: string;
     chatId: string;
     workspaceId?: string;
-    projectId?: string;
     provider: string;
     model: string;
     tokensSent: number;
@@ -85,7 +84,7 @@ export interface EpisodicMemory {
 export interface EntityKnowledge { id: string; entityType: string; entityName: string; key: string; value: string; confidence: number; source: string; updatedAt: number }
 
 
-export interface Chat { id: string; title: string; model?: string | undefined; messages: JsonObject[]; createdAt: Date; updatedAt: Date; isPinned?: boolean | undefined; isFavorite?: boolean | undefined; folderId?: string | undefined; workspaceId?: string | undefined; projectId?: string | undefined; isGenerating?: boolean | undefined; backend?: string | undefined; metadata?: JsonObject | undefined; }
+export interface Chat { id: string; title: string; model?: string | undefined; messages: JsonObject[]; createdAt: Date; updatedAt: Date; isPinned?: boolean | undefined; isFavorite?: boolean | undefined; folderId?: string | undefined; workspaceId?: string | undefined; isGenerating?: boolean | undefined; backend?: string | undefined; metadata?: JsonObject | undefined; }
 
 export interface CodeSymbolSearchResult { id: string; name: string; path: string; line: number; kind: string; signature: string; docstring: string; score?: number; }
 export interface CodeSymbolRecord { id: string; workspace_path?: string; project_path?: string; workspaceId?: string; file_path?: string; name: string; path?: string; line: number; kind: string; signature?: string; docstring?: string; embedding?: number[]; vector?: number[]; }
@@ -1084,7 +1083,7 @@ export class DatabaseService extends BaseService {
     async getAllChats() { return this._chats.getAllChats(); }
     /** Retrieves a chat by ID. */
     async getChat(id: string) { return this._chats.getChat(id); }
-    /** Retrieves chats, optionally filtered by project ID. */
+    /** Retrieves chats, optionally filtered by workspace ID. */
     async getChats(workspaceId?: string) { return this._chats.getChats(workspaceId); }
     /** Updates a chat by ID with the provided partial updates. */
     async updateChat(id: string, updates: Partial<Chat>) { return this._chats.updateChat(id, updates); }
@@ -1329,14 +1328,14 @@ export class DatabaseService extends BaseService {
     async getTimeStats(): Promise<TimeTrackingStats> { return this.timeTracking.getTimeStats(); }
     /** Returns current migration version and last migration timestamp. */
     async getMigrationStatus(): Promise<{ version: number; lastMigration: number }> { return this._system.getMigrationStatus(); }
-    /** Records token usage, resolving project UUID to path if needed. */
+    /** Records token usage, resolving workspace UUID to path if needed. */
     async addTokenUsage(record: TokenUsageRecord) {
         let workspacePath = record.workspaceId;
         if (workspacePath && !workspacePath.includes('/') && !workspacePath.includes('\\')) {
             // It looks like a UUID, try to resolve to path
-            const projects = await this.getWorkspaces();
-            const project = projects.find(p => p.id === workspacePath);
-            if (project) { workspacePath = project.path; }
+            const workspaces = await this.getWorkspaces();
+            const ws = workspaces.find(p => p.id === workspacePath);
+            if (ws) { workspacePath = ws.path; }
         }
         return this._system.addTokenUsage({ ...record, workspaceId: workspacePath });
     }
@@ -1389,13 +1388,13 @@ export class DatabaseService extends BaseService {
         return { updated };
     }
 
-    /** Returns counts of archived vs active chats and projects. */
+    /** Returns counts of archived vs active chats and workspaces. */
     async getArchiveStats(): Promise<{ archivedChats: number; activeChats: number; archivedWorkspaces: number; activeWorkspaces: number }> {
-        const [chats, projects] = await Promise.all([this.getAllChats(), this.getWorkspaces()]);
+        const [chats, workspaces] = await Promise.all([this.getAllChats(), this.getWorkspaces()]);
         const archivedChats = chats.filter(chat => Boolean(chat.metadata?.isArchived)).length;
         const activeChats = chats.length - archivedChats;
-        const archivedWorkspaces = projects.filter(project => project.status === 'archived').length;
-        const activeWorkspaces = projects.length - archivedWorkspaces;
+        const archivedWorkspaces = workspaces.filter(ws => ws.status === 'archived').length;
+        const activeWorkspaces = workspaces.length - archivedWorkspaces;
         return { archivedChats, activeChats, archivedWorkspaces, activeWorkspaces };
     }
 
@@ -1507,15 +1506,15 @@ export class DatabaseService extends BaseService {
     // File Diffs
     async getFileDiff(id: string) { return this._knowledge.getFileDiff(id); }
     async storeFileDiff(diff: FileDiff) {
-        // Resolve project by path to get its root path for the workspace_path column
-        const projects = await this.getWorkspaces();
-        // Sort projects by path length descending to find the closest match (most specific root)
-        const sortedWorkspaces = [...projects].sort((a, b) => b.path.length - a.path.length);
-        const project = sortedWorkspaces.find(p => diff.filePath.startsWith(p.path));
+        // Resolve workspace by path to get its root path for the workspace_path column
+        const workspaces = await this.getWorkspaces();
+        // Sort workspaces by path length descending to find the closest match (most specific root)
+        const sortedWorkspaces = [...workspaces].sort((a, b) => b.path.length - a.path.length);
+        const matchedWorkspace = sortedWorkspaces.find(p => diff.filePath.startsWith(p.path));
 
         return this._knowledge.storeFileDiff({
             id: diff.id,
-            workspaceId: project?.path ?? '', // Use path for workspace_path column
+            workspaceId: matchedWorkspace?.path ?? '', // Use path for workspace_path column
             filePath: diff.filePath,
             diffContent: diff.diffContent,
             createdAt: diff.timestamp,

@@ -42,8 +42,8 @@ export function createMockTaskState(overrides: Partial<AgentTaskState> = {}): Ag
             estimatedCost: 0
         },
         context: {
-            projectPath: '/test/project',
-            projectName: 'test-project',
+            workspacePath: '/test/project',
+            workspaceName: 'test-project',
             workspace: { rootPath: '/test/project', hasGit: true, hasDependencies: true },
             constraints: { maxIterations: 50, maxDuration: 300000, maxToolCalls: 100, allowedTools: [] }
         },

@@ -3,9 +3,9 @@
  * Provides intelligent caching layer for frequently accessed database queries
  */
 
-import { Chat, Folder, Message, Project } from '@/types';
+import { Chat, Folder, Message, Workspace } from '@/types';
 
-import { chatCache, dbQueryCache, invalidateCache, projectCache, withCache } from './lru-cache.util';
+import { chatCache, dbQueryCache, invalidateCache, workspaceCache, withCache } from './lru-cache.util';
 
 export class CachedDatabase {
     /**
@@ -45,13 +45,13 @@ export class CachedDatabase {
     }
 
     /**
-     * Get projects with caching
+     * Get workspaces with caching
      */
-    static async getProjects(): Promise<Project[]> {
+    static async getWorkspaces(): Promise<Workspace[]> {
         return withCache(
-            'projects:all',
-            () => window.electron.db.getProjects(),
-            projectCache,
+            'workspaces:all',
+            () => window.electron.db.getWorkspaces(),
+            workspaceCache,
             120000 // Cache for 2 minutes
         );
     }
@@ -162,38 +162,38 @@ export class CachedDatabase {
     }
 
     /**
-     * Create project and invalidate cache
+     * Create workspace and invalidate cache
      */
-    static async createProject(name: string, path: string, description: string, mounts?: string): Promise<Project> {
-        const result = await window.electron.db.createProject(name, path, description, mounts);
+    static async createWorkspace(name: string, path: string, description: string, mounts?: string): Promise<Workspace> {
+        const result = await window.electron.db.createWorkspace(name, path, description, mounts);
 
-        // Invalidate project cache
-        invalidateCache('projects:', projectCache);
+        // Invalidate workspace cache
+        invalidateCache('workspaces:', workspaceCache);
         invalidateCache('db:stats', dbQueryCache);
 
         return result;
     }
 
     /**
-     * Update project and invalidate cache
+     * Update workspace and invalidate cache
      */
-    static async updateProject(id: string, updates: Partial<Project>): Promise<void> {
-        const result = await window.electron.db.updateProject(id, updates);
+    static async updateWorkspace(id: string, updates: Partial<Workspace>): Promise<void> {
+        const result = await window.electron.db.updateWorkspace(id, updates);
 
-        // Invalidate project cache
-        invalidateCache('projects:', projectCache);
+        // Invalidate workspace cache
+        invalidateCache('workspaces:', workspaceCache);
 
         return result;
     }
 
     /**
-     * Delete project and invalidate cache
+     * Delete workspace and invalidate cache
      */
-    static async deleteProject(id: string, deleteFiles?: boolean): Promise<void> {
-        const result = await window.electron.db.deleteProject(id, deleteFiles);
+    static async deleteWorkspace(id: string, deleteFiles?: boolean): Promise<void> {
+        const result = await window.electron.db.deleteWorkspace(id, deleteFiles);
 
-        // Invalidate project cache
-        invalidateCache('projects:', projectCache);
+        // Invalidate workspace cache
+        invalidateCache('workspaces:', workspaceCache);
         invalidateCache('db:stats', dbQueryCache);
 
         return result;
@@ -241,7 +241,7 @@ export class CachedDatabase {
      */
     static clearAllCaches(): void {
         chatCache.clear();
-        projectCache.clear();
+        workspaceCache.clear();
         dbQueryCache.clear();
     }
 
@@ -251,7 +251,7 @@ export class CachedDatabase {
     static getCacheStats() {
         return {
             chat: chatCache.getStats(),
-            project: projectCache.getStats(),
+            workspace: workspaceCache.getStats(),
             db: dbQueryCache.getStats()
         };
     }

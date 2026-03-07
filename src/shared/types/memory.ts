@@ -8,7 +8,7 @@ export interface SemanticFragment {
     sourceId: string;
     tags: string[];
     importance: number;
-    projectId?: string;
+    workspaceId?: string;
     createdAt: number;
     updatedAt: number;
     [key: string]: JsonValue | undefined;

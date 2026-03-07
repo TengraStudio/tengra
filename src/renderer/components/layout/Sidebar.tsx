@@ -42,7 +42,7 @@ export const Sidebar = React.memo(({
     } = useChat();
 
     // const { language: authLanguage } = useAuth() // Removed unused
-    const { selectedProject } = useWorkspace();
+    const { selectedProject: selectedWorkspace } = useWorkspace();
     const { t, language } = useTranslation();
 
     const [searchQuery, setSearchQuery] = useState('');
@@ -197,7 +197,7 @@ export const Sidebar = React.memo(({
 
                 <SidebarFooter
                     isCollapsed={isCollapsed}
-                    selectedProject={selectedProject}
+                    selectedWorkspace={selectedWorkspace}
                     currentView={currentView}
                     showSettingsMenu={showSettingsMenu}
                     toggleSettingsMenu={() => setShowSettingsMenu(!showSettingsMenu)}

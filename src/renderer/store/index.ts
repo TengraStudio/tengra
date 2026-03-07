@@ -64,7 +64,7 @@ export {
     importUiLayoutState,
     setActivityBarState,
     setAppShellState,
-    setProjectShellState,
+    setWorkspaceShellState,
     subscribeUiLayout,
     useUiLayoutStore
 } from './ui-layout.store';

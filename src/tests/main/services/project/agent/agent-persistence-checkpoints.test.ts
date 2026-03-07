@@ -56,8 +56,8 @@ describe('AgentPersistenceService Checkpoints', () => {
             estimatedCost: 0
         },
         context: {
-            projectPath: '/test',
-            projectName: 'test',
+            workspacePath: '/test',
+            workspaceName: 'test',
             workspace: { rootPath: '/test', hasGit: true, hasDependencies: true },
             constraints: { maxIterations: 10, maxDuration: 60000, maxToolCalls: 50, allowedTools: [] }
         },

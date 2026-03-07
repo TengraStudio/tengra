@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 /**
  * Zod schema for joining a collaborative session.
- * Used for both group chats and multi-user project editing.
+ * Used for both group chats and multi-user workspace editing.
  */
 export const JoinCollaborationRoomSchema = z.object({
     type: z.enum(['chat', 'project']),

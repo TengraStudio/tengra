@@ -134,7 +134,7 @@ describe('ProjectAgentService', () => {
 
     describe('start', () => {
         it('should create task and return taskId', async () => {
-            const taskId = await service.start({ task: 'Build feature', projectId: 'proj-1' });
+            const taskId = await service.start({ task: 'Build feature', workspaceId: 'proj-1' });
             expect(taskId).toBe('task-123');
             expect(deps.databaseService.uac.createTask).toHaveBeenCalled();
             expect(deps.agentPerformanceService.initializeMetrics).toHaveBeenCalledWith('task-123');

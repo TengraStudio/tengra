@@ -56,7 +56,7 @@ export const TaskMetricsSchema = z.object({
 
 export const AgentTaskStateSchema = z.object({
     taskId: z.string().min(1),
-    projectId: z.string().min(1),
+    workspaceId: z.string().min(1),
     description: z.string().min(1),
     state: z.string(), // Extensible enum from agent-state.ts
     currentStep: z.number().int().min(0),

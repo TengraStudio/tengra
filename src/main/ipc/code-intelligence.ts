@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 const RootPathSchema = z.string().min(1).trim();
 const QuerySchema = z.string().min(1).trim();
-const ProjectIdSchema = z.string().min(1).trim();
+const WorkspaceIdSchema = z.string().min(1).trim();
 
 /**
  * Registers IPC handlers for code intelligence operations.
@@ -22,32 +22,32 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
     }));
 
     /**
-     * Search files in project
+     * Search files in workspace
      */
-    ipcMain.handle('code:searchFiles', createValidatedIpcHandler('code:searchFiles', async (_, rootPath: string, query: string, projectId: string, isRegexArg?: boolean) => {
+    ipcMain.handle('code:searchFiles', createValidatedIpcHandler('code:searchFiles', async (_, rootPath: string, query: string, workspaceId: string, isRegexArg?: boolean) => {
         const isRegex = typeof isRegexArg === 'boolean' ? isRegexArg : false;
-        return await codeIntelligenceService.searchFiles(rootPath, query, projectId, isRegex);
+        return await codeIntelligenceService.searchFiles(rootPath, query, workspaceId, isRegex);
     }, {
         defaultValue: [],
         argsSchema: z.tuple([
             RootPathSchema,
             QuerySchema,
-            ProjectIdSchema.optional(),
+            WorkspaceIdSchema.optional(),
             z.boolean().optional().default(false)
         ])
     }));
 
     /**
-     * Index a project
+     * Index a workspace
      */
-    ipcMain.handle('code:indexProject', createValidatedIpcHandler('code:indexProject', async (_, rootPath: string, projectId: string, forceArg?: boolean) => {
+    ipcMain.handle('code:indexWorkspace', createValidatedIpcHandler('code:indexWorkspace', async (_, rootPath: string, workspaceId: string, forceArg?: boolean) => {
         const force = typeof forceArg === 'boolean' ? forceArg : false;
-        return await codeIntelligenceService.indexProject(rootPath, projectId, force);
+        return await codeIntelligenceService.indexProject(rootPath, workspaceId, force);
     }, {
         defaultValue: undefined,
         argsSchema: z.tuple([
             RootPathSchema,
-            ProjectIdSchema,
+            WorkspaceIdSchema,
             z.boolean().optional().default(false)
         ])
     }));
@@ -133,7 +133,7 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
     }));
 
     /**
-     * Get symbol analytics for a project
+     * Get symbol analytics for a workspace
      */
     ipcMain.handle('code:getSymbolAnalytics', createValidatedIpcHandler('code:getSymbolAnalytics', async (_, rootPath: string) => {
         return await codeIntelligenceService.getSymbolAnalytics(rootPath);
@@ -143,7 +143,7 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
     }));
 
     /**
-     * Scan for TODOs in a project
+     * Scan for TODOs in a workspace
      */
     ipcMain.handle('code:scanTodos', createValidatedIpcHandler('code:scanTodos', async (_, rootPath: string) => {
         return await codeIntelligenceService.scanTodos(rootPath);
@@ -193,9 +193,9 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
     }));
 
     /**
-     * Generate project documentation
+     * Generate workspace documentation
      */
-    ipcMain.handle('code:generateProjectDocumentation', createValidatedIpcHandler('code:generateProjectDocumentation', async (_, rootPath: string, maxFiles?: number) => {
+    ipcMain.handle('code:generateWorkspaceDocumentation', createValidatedIpcHandler('code:generateWorkspaceDocumentation', async (_, rootPath: string, maxFiles?: number) => {
         return await codeIntelligenceService.generateProjectDocumentation(rootPath, maxFiles);
     }, {
         defaultValue: null,

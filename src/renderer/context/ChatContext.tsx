@@ -9,7 +9,7 @@ import { CatchError } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 
-import { Chat, Project } from '@/types';
+import { Chat, Workspace } from '@/types';
 
 // We extend the return type to include TTS functions since they are closely related
 type ChatContextType = ReturnType<typeof useChatManager> & {
@@ -17,11 +17,11 @@ type ChatContextType = ReturnType<typeof useChatManager> & {
     handleStopSpeak: () => void
     isSpeaking: boolean
     speakingMessageId: string | null
-    // Project context is also needed for chat
-    projects: Project[]
-    selectedProject: Project | null
-    setSelectedProject: (p: Project | null) => void
-    loadProjects: () => Promise<void>
+    // Workspace context is also needed for chat
+    workspaces: Workspace[]
+    selectedWorkspace: Workspace | null
+    setSelectedWorkspace: (p: Workspace | null) => void
+    loadWorkspaces: () => Promise<void>
     // Undo/Redo
     canUndo: boolean
     canRedo: boolean
@@ -137,7 +137,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     const { appSettings, language } = useAuth();
     const { selectedModel, selectedProvider, selectedModels } = useModel();
     const { t } = useTranslation();
-    const { projects, selectedProject, setSelectedProject, loadProjects } = useWorkspace();
+    const { projects: workspaces, selectedProject: selectedWorkspace, setSelectedProject: setSelectedWorkspace, loadProjects: loadWorkspaces } = useWorkspace();
     const { speak: handleSpeak, stop: handleStopSpeak, isSpeaking, speakingMessageId } = useTextToSpeech();
     const historyManager = useChatHistory();
     const isRestoringRef = useRef(false);
@@ -154,8 +154,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         handleSpeak: handleSpeakAdapter,
         formatChatError: (e: CatchError) => handleChatError(e, t),
         t,
-        projectId: selectedProject?.id,
-        activeWorkspacePath: selectedProject?.path
+        workspaceId: selectedWorkspace?.id,
+        activeWorkspacePath: selectedWorkspace?.path
     });
 
     const handlers = useMemo(() => ({
@@ -190,10 +190,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         handleStopSpeak,
         isSpeaking,
         speakingMessageId,
-        projects,
-        selectedProject,
-        setSelectedProject,
-        loadProjects,
+        workspaces,
+        selectedWorkspace,
+        setSelectedWorkspace,
+        loadWorkspaces,
         canUndo: historyManager.canUndo,
         canRedo: historyManager.canRedo,
         undo,
@@ -203,7 +203,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         bulkDeleteChats: chatManager.bulkDeleteChats
     }), [
         chatManager, handleSpeak, handleStopSpeak, isSpeaking, speakingMessageId,
-        projects, selectedProject, setSelectedProject, loadProjects,
+        workspaces, selectedWorkspace, setSelectedWorkspace, loadWorkspaces,
         historyManager.canUndo, historyManager.canRedo, undo, redo
     ]);
 

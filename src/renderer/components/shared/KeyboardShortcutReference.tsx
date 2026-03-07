@@ -28,7 +28,7 @@ const CATEGORIES: readonly ShortcutCategory[] = [
         titleKey: 'shortcuts.navigation',
         items: [
             { id: 'goToChat', labelKey: 'shortcuts.goToChat' },
-            { id: 'goToProjects', labelKey: 'shortcuts.goToProjects' },
+            { id: 'goToWorkspaces', labelKey: 'shortcuts.goToProjects' },
             { id: 'goToSettings', labelKey: 'shortcuts.goToSettings' },
         ],
     },

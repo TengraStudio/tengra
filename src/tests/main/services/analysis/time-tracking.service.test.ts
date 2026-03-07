@@ -287,7 +287,7 @@ describe('TimeTrackingService', () => {
             // Assert
             expect(stats.totalOnlineTime).toBe(0);
             expect(stats.totalCodingTime).toBe(0);
-            expect(stats.projectCodingTime).toEqual({});
+            expect(stats.workspaceCodingTime).toEqual({});
         });
 
         it('should include persisted times from database', async () => {
@@ -313,7 +313,7 @@ describe('TimeTrackingService', () => {
             // Assert
             expect(stats.totalOnlineTime).toBe(50000);
             expect(stats.totalCodingTime).toBe(30000);
-            expect(stats.projectCodingTime).toEqual({ p1: 20000 });
+            expect(stats.workspaceCodingTime).toEqual({ p1: 20000 });
         });
 
         it('should include active tracking time in stats', async () => {
@@ -333,7 +333,7 @@ describe('TimeTrackingService', () => {
             // Assert
             expect(stats.totalOnlineTime).toBe(4000);
             expect(stats.totalCodingTime).toBe(4000);
-            expect(stats.projectCodingTime).toEqual({ 'proj-x': 4000 });
+            expect(stats.workspaceCodingTime).toEqual({ 'proj-x': 4000 });
         });
 
         it('should combine persisted and active project times', async () => {
@@ -355,7 +355,7 @@ describe('TimeTrackingService', () => {
             const stats = await service.getTimeStats();
 
             // Assert - 10000 persisted + 5000 active
-            expect(stats.projectCodingTime['proj-x']).toBe(15000);
+            expect(stats.workspaceCodingTime['proj-x']).toBe(15000);
         });
 
         it('should return fallback stats on database error', async () => {
@@ -369,7 +369,7 @@ describe('TimeTrackingService', () => {
             expect(stats).toEqual({
                 totalOnlineTime: 0,
                 totalCodingTime: 0,
-                projectCodingTime: {},
+                workspaceCodingTime: {},
             });
         });
     });
@@ -535,7 +535,7 @@ describe('TimeTrackingService', () => {
             // Assert
             expect(stats.totalOnlineTime).toBe(0);
             expect(stats.totalCodingTime).toBe(0);
-            expect(stats.projectCodingTime).toEqual({});
+            expect(stats.workspaceCodingTime).toEqual({});
         });
 
         it('should handle concurrent app and coding tracking', async () => {
@@ -555,7 +555,7 @@ describe('TimeTrackingService', () => {
             // Assert - all three should be active
             expect(stats.totalOnlineTime).toBe(10000);
             expect(stats.totalCodingTime).toBe(10000);
-            expect(stats.projectCodingTime['proj-a']).toBe(10000);
+            expect(stats.workspaceCodingTime['proj-a']).toBe(10000);
         });
     });
 });
