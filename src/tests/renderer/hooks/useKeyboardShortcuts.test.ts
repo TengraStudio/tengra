@@ -12,7 +12,7 @@ vi.mock('@/hooks/shortcutBindings', () => {
         toggleSidebar: { key: 'b', mod: true },
         showShortcuts: { key: '?', shift: true },
         goToChat: { key: '1', mod: true },
-        goToProjects: { key: '2', mod: true },
+        goToWorkspaces: { key: '2', mod: true },
         goToSettings: { key: '4', mod: true },
     };
 

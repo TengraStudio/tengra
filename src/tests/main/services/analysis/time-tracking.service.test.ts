@@ -170,7 +170,7 @@ describe('TimeTrackingService', () => {
     });
 
     describe('startCodingTracking', () => {
-        it('should start generic coding tracking without projectId', async () => {
+        it('should start generic coding tracking without workspaceId', async () => {
             // Arrange
             service.startCodingTracking();
             vi.advanceTimersByTime(3000);
@@ -186,21 +186,21 @@ describe('TimeTrackingService', () => {
             expect(params[5]).toBe(3000);
         });
 
-        it('should start project-specific coding tracking with projectId', async () => {
+        it('should start project-specific coding tracking with workspaceId', async () => {
             // Arrange
-            const projectId = 'project-abc';
-            service.startCodingTracking(projectId);
+            const workspaceId = 'project-abc';
+            service.startCodingTracking(workspaceId);
             vi.advanceTimersByTime(7000);
 
             // Act
-            await service.stopCodingTracking(projectId);
+            await service.stopCodingTracking(workspaceId);
 
             // Assert
             const executeQuery = vi.mocked(mockDbClient.executeQuery);
             expect(executeQuery).toHaveBeenCalledTimes(1);
             const params = executeQuery.mock.calls[0][0].params as (string | number | null)[];
             expect(params[1]).toBe('project_coding');
-            expect(params[2]).toBe(projectId);
+            expect(params[2]).toBe(workspaceId);
             expect(params[5]).toBe(7000);
         });
 
@@ -300,7 +300,7 @@ describe('TimeTrackingService', () => {
                 if (req.params?.[0] === 'coding') {
                     return { rows: [{ total: 30000 }], affected_rows: 0 };
                 }
-                // project_coding query
+                // workspace_coding query
                 return {
                     rows: [{ project_id: 'p1', total: 20000 }],
                     affected_rows: 0,
@@ -434,7 +434,7 @@ describe('TimeTrackingService', () => {
             const params = call.params as (string | number | null)[];
             expect(params[0]).toBe('test-uuid-1234'); // id
             expect(params[1]).toBe('app_online'); // type
-            expect(params[2]).toBeNull(); // projectId
+            expect(params[2]).toBeNull(); // workspaceId
             expect(typeof params[3]).toBe('number'); // startTime
             expect(typeof params[4]).toBe('number'); // endTime
             expect(params[5]).toBe(8000); // durationMs
@@ -442,7 +442,7 @@ describe('TimeTrackingService', () => {
             expect(typeof params[7]).toBe('number'); // updatedAt
         });
 
-        it('should insert correct fields for project_coding', async () => {
+        it('should insert correct fields for workspace_coding', async () => {
             // Arrange
             service.startCodingTracking('my-project');
             vi.advanceTimersByTime(6000);

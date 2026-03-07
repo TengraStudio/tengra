@@ -78,7 +78,7 @@ describe('Database IPC Handlers', () => {
                 createProject: vi.fn().mockResolvedValue({ success: true, id: 'proj-1' }),
                 getProject: vi.fn().mockResolvedValue({ id: 'proj-1', title: 'Test Project' }),
                 updateProject: vi.fn().mockResolvedValue({ success: true }),
-                deleteProject: vi.fn().mockResolvedValue({ success: true }),
+                deleteWorkspace: vi.fn().mockResolvedValue({ success: true }),
             },
             system: {
                 getFolders: vi.fn().mockResolvedValue([]),
@@ -163,7 +163,7 @@ describe('Database IPC Handlers', () => {
 
 
 
-            expect((mockDatabaseService as unknown as Record<string, Record<string, Mock>>).projects.createProject).toHaveBeenCalledWith('My Project', '/path', 'desc', undefined, undefined);
+            expect((mockDatabaseService as unknown as Record<string, Record<string, Mock>>).workspaces.createProject).toHaveBeenCalledWith('My Project', '/path', 'desc', undefined, undefined);
 
             expect(result.success).toBe(true);
         });

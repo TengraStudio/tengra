@@ -23,7 +23,7 @@ describe('DashboardTabs state transitions', () => {
         const onDashboardTabChange = vi.fn();
         renderDashboardTabs('overview', onDashboardTabChange);
 
-        fireEvent.click(screen.getByTitle('projectDashboard.search'));
+        fireEvent.click(screen.getByTitle('workspaceDashboard.search'));
 
         expect(onDashboardTabChange).toHaveBeenCalledWith('search');
     });
@@ -39,7 +39,7 @@ describe('DashboardTabs state transitions', () => {
             />
         );
 
-        fireEvent.click(screen.getByTitle('projectDashboard.git'));
+        fireEvent.click(screen.getByTitle('workspaceDashboard.git'));
         rerender(
             <DashboardTabs
                 dashboardTab="git"
@@ -49,7 +49,7 @@ describe('DashboardTabs state transitions', () => {
             />
         );
 
-        const gitButton = screen.getByTitle('projectDashboard.git');
+        const gitButton = screen.getByTitle('workspaceDashboard.git');
         expect(gitButton.className).toContain('bg-primary');
     });
 });

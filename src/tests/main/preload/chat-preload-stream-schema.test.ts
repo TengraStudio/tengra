@@ -57,7 +57,7 @@ interface ChatStreamParams {
     provider?: string;
     options?: JsonObject;
     chatId?: string;
-    projectId?: string;
+    workspaceId?: string;
     systemMode?: 'thinking' | 'agent' | 'fast' | 'architect';
 }
 
@@ -108,7 +108,7 @@ describe('ChatBridge stream payload schema regression', () => {
             const params = buildStreamParams({
                 tools: [{ type: 'function', function: { name: 'search', description: 'Search web' } }],
                 options: { temperature: 0.7 },
-                projectId: 'proj-42',
+                workspaceId: 'proj-42',
                 systemMode: 'thinking',
             });
 
@@ -117,7 +117,7 @@ describe('ChatBridge stream payload schema regression', () => {
             const invokedPayload = mockInvoke.mock.calls[0][1] as ChatStreamParams;
             expect(invokedPayload.tools).toHaveLength(1);
             expect(invokedPayload.options).toEqual({ temperature: 0.7 });
-            expect(invokedPayload.projectId).toBe('proj-42');
+            expect(invokedPayload.workspaceId).toBe('proj-42');
             expect(invokedPayload.systemMode).toBe('thinking');
         });
 

@@ -24,8 +24,8 @@ vi.mock('fs', () => ({
 
 describe('RuleService', () => {
     let service: RuleService;
-    const projectRoot = '/test/project';
-    const rulesPath = path.join(projectRoot, '.tengra', 'RULES.md');
+    const workspaceRoot = '/test/project';
+    const rulesPath = path.join(workspaceRoot, '.tengra', 'RULES.md');
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -41,7 +41,7 @@ describe('RuleService', () => {
             mockStat.mockResolvedValue({ mtimeMs: 1000 });
             mockReadFile.mockResolvedValue('# My Rules\n- Rule 1');
 
-            const result = await service.getRules(projectRoot);
+            const result = await service.getRules(workspaceRoot);
 
             expect(result).toBe('# My Rules\n- Rule 1');
             expect(mockReadFile).toHaveBeenCalledWith(rulesPath, 'utf-8');
@@ -52,7 +52,7 @@ describe('RuleService', () => {
             error.code = 'ENOENT';
             mockStat.mockRejectedValue(error);
 
-            const result = await service.getRules(projectRoot);
+            const result = await service.getRules(workspaceRoot);
 
             expect(result).toBeNull();
         });
@@ -63,7 +63,7 @@ describe('RuleService', () => {
             error.code = 'EACCES';
             mockStat.mockRejectedValue(error);
 
-            const result = await service.getRules(projectRoot);
+            const result = await service.getRules(workspaceRoot);
 
             expect(result).toBeNull();
             expect(appLogger.warn).toHaveBeenCalled();
@@ -73,11 +73,11 @@ describe('RuleService', () => {
             mockStat.mockResolvedValue({ mtimeMs: 1000 });
             mockReadFile.mockResolvedValue('cached content');
 
-            await service.getRules(projectRoot);
+            await service.getRules(workspaceRoot);
             mockReadFile.mockClear();
 
             mockStat.mockResolvedValue({ mtimeMs: 1000 });
-            const result = await service.getRules(projectRoot);
+            const result = await service.getRules(workspaceRoot);
 
             expect(result).toBe('cached content');
             expect(mockReadFile).not.toHaveBeenCalled();
@@ -86,11 +86,11 @@ describe('RuleService', () => {
         it('should re-read file when mtime changes', async () => {
             mockStat.mockResolvedValue({ mtimeMs: 1000 });
             mockReadFile.mockResolvedValue('old content');
-            await service.getRules(projectRoot);
+            await service.getRules(workspaceRoot);
 
             mockStat.mockResolvedValue({ mtimeMs: 2000 });
             mockReadFile.mockResolvedValue('new content');
-            const result = await service.getRules(projectRoot);
+            const result = await service.getRules(workspaceRoot);
 
             expect(result).toBe('new content');
             expect(mockReadFile).toHaveBeenCalledTimes(2);
@@ -100,7 +100,7 @@ describe('RuleService', () => {
             mockStat.mockResolvedValue({ mtimeMs: 1000 });
             mockReadFile.mockResolvedValue('');
 
-            const result = await service.getRules(projectRoot);
+            const result = await service.getRules(workspaceRoot);
             expect(result).toBe('');
         });
 
@@ -118,7 +118,7 @@ describe('RuleService', () => {
         it('should handle error without code property gracefully', async () => {
             mockStat.mockRejectedValue(new Error('unknown error'));
 
-            const result = await service.getRules(projectRoot);
+            const result = await service.getRules(workspaceRoot);
             expect(result).toBeNull();
         });
     });
@@ -128,13 +128,13 @@ describe('RuleService', () => {
             mockStat.mockResolvedValue({ mtimeMs: 1000 });
             mockReadFile.mockResolvedValue('content');
 
-            await service.getRules(projectRoot);
-            service.clearCache(projectRoot);
+            await service.getRules(workspaceRoot);
+            service.clearCache(workspaceRoot);
             mockReadFile.mockClear();
 
             mockStat.mockResolvedValue({ mtimeMs: 1000 });
             mockReadFile.mockResolvedValue('content');
-            await service.getRules(projectRoot);
+            await service.getRules(workspaceRoot);
 
             expect(mockReadFile).toHaveBeenCalledTimes(1);
         });

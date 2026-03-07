@@ -159,7 +159,7 @@ describe('DatabaseClientService input validation', () => {
     describe('storeCodeSymbol', () => {
         it('rejects empty name', async () => {
             await expect(svc.storeCodeSymbol({
-                project_path: '/p', file_path: '/f', name: '', line: 1, kind: 'function'
+                workspace_path: '/p', file_path: '/f', name: '', line: 1, kind: 'function'
             })).rejects.toThrow('name must be a non-empty string');
         });
     });

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { ProjectSettingsPanel } from '@/features/workspace/components/ProjectSettingsPanel';
+import { ProjectSettingsPanel as WorkspaceSettingsPanel } from '@/features/workspace/components/WorkspaceSettingsPanel';
 
 vi.mock('@/i18n', () => ({
     useTranslation: () => ({
@@ -9,8 +9,8 @@ vi.mock('@/i18n', () => ({
     }),
 }));
 
-vi.mock('@/features/workspace/hooks/useProjectSettingsForm', () => ({
-    useProjectSettingsForm: () => ({
+vi.mock('@/features/workspace/hooks/useWorkspaceSettingsForm', () => ({
+    useWorkspaceSettingsForm: () => ({
         formData: {},
         setFormData: vi.fn(),
         isDirty: false,
@@ -60,14 +60,14 @@ vi.mock('@/features/workspace/components/settings/WorkspaceSection', () => ({
     WorkspaceSection: () => null,
 }));
 
-describe('ProjectSettingsPanel', () => {
+describe('WorkspaceSettingsPanel', () => {
     const project = { id: 'p1', title: 'Demo Project' } as unknown as Parameters<
-        typeof ProjectSettingsPanel
+        typeof WorkspaceSettingsPanel
     >[0]['project'];
 
     it('renders landmark and switches sections', () => {
         render(
-            <ProjectSettingsPanel
+            <WorkspaceSettingsPanel
                 project={project}
                 onUpdate={vi.fn(async () => {})}
                 language={'en'}

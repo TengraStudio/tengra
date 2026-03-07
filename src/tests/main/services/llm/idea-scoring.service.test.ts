@@ -1,6 +1,6 @@
 import { IdeaScoringService } from '@main/services/llm/idea-scoring.service';
 import { LLMService } from '@main/services/llm/llm.service';
-import { ProjectIdea } from '@shared/types/ideas';
+import { WorkspaceIdea } from '@shared/types/ideas';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@main/logging/logger', () => ({
@@ -18,7 +18,7 @@ const mockLlmService = {
     chat: vi.fn(),
 };
 
-function makeIdea(overrides: Partial<ProjectIdea> = {}): ProjectIdea {
+function makeIdea(overrides: Partial<WorkspaceIdea> = {}): WorkspaceIdea {
     return {
         id: 'idea-1',
         sessionId: 'session-1',
@@ -30,7 +30,7 @@ function makeIdea(overrides: Partial<ProjectIdea> = {}): ProjectIdea {
         createdAt: Date.now(),
         updatedAt: Date.now(),
         ...overrides,
-    } as ProjectIdea;
+    } as WorkspaceIdea;
 }
 
 describe('IdeaScoringService', () => {

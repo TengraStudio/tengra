@@ -1,7 +1,7 @@
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
-import { ProjectScaffoldService } from '@main/services/project/project-scaffold.service';
+import { WorkspaceScaffoldService } from '@main/services/workspace/workspace-scaffold.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { ProcessService } from '@main/services/system/process.service';
 import { SystemService } from '@main/services/system/system.service';
@@ -50,8 +50,8 @@ describe('Missing service TODO coverage (functional)', () => {
         expect(dataService.getPath('logs')).toContain('logs');
     });
 
-    it('ProjectScaffoldService generates README with core sections', () => {
-        const service = new ProjectScaffoldService();
+    it('WorkspaceScaffoldService generates README with core sections', () => {
+        const service = new WorkspaceScaffoldService();
         const readme = service.generateReadme({
             id: 'idea-1',
             sessionId: 'session-1',

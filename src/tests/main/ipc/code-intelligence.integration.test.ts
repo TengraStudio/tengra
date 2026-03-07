@@ -1,7 +1,7 @@
 /**
  * Integration tests for Code Intelligence IPC handlers
  */
-import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service';
+import { CodeIntelligenceService } from '@main/services/workspace/code-intelligence.service';
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
 import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
@@ -13,7 +13,7 @@ vi.mock('electron', () => ({
 }));
 
 interface MockCodeIntelligenceService extends Partial<CodeIntelligenceService> {
-    scanProjectTodos: Mock;
+    scanWorkspaceTodos: Mock;
     findSymbols: Mock;
     findDefinition: Mock;
     findReferences: Mock;
@@ -22,7 +22,7 @@ interface MockCodeIntelligenceService extends Partial<CodeIntelligenceService> {
     generateFileDocumentation: Mock;
     analyzeCodeQuality: Mock;
     searchFiles: Mock;
-    indexProject: Mock;
+    indexWorkspace: Mock;
     queryIndexedSymbols: Mock;
     getSymbolAnalytics: Mock;
 }
@@ -40,7 +40,7 @@ describe('Code Intelligence IPC Handlers', () => {
         }) as typeof ipcMain.handle);
 
         mockService = {
-            scanProjectTodos: vi.fn().mockResolvedValue([
+            scanWorkspaceTodos: vi.fn().mockResolvedValue([
                 { file: 'src/main.ts', line: 10, content: 'TODO: implement feature', todoType: 'todo' }
             ]),
             findSymbols: vi.fn().mockResolvedValue([
@@ -99,7 +99,7 @@ describe('Code Intelligence IPC Handlers', () => {
             searchFiles: vi.fn().mockResolvedValue([
                 { file: 'src/main.ts', line: 1, name: 'main', type: 'file' }
             ]),
-            indexProject: vi.fn().mockResolvedValue(undefined),
+            indexWorkspace: vi.fn().mockResolvedValue(undefined),
             queryIndexedSymbols: vi.fn().mockResolvedValue([
                 { file: 'src/main.ts', line: 5, name: 'functionName', type: 'function' }
             ]),
@@ -124,13 +124,13 @@ describe('Code Intelligence IPC Handlers', () => {
         it('should scan project for TODOs', async () => {
             const handler = async (_event: IpcMainInvokeEvent, ...args: unknown[]) => {
                 const rootPath = args[0] as string;
-                return await mockService.scanProjectTodos!(rootPath);
+                return await mockService.scanWorkspaceTodos!(rootPath);
             };
             registeredHandlers.set('code:scanTodos', handler);
 
             const result = await registeredHandlers.get('code:scanTodos')!({} as IpcMainInvokeEvent, '/project');
 
-            expect(mockService.scanProjectTodos).toHaveBeenCalledWith('/project');
+            expect(mockService.scanWorkspaceTodos).toHaveBeenCalledWith('/project');
             expect(result).toEqual([
                 { file: 'src/main.ts', line: 10, content: 'TODO: implement feature', todoType: 'todo' }
             ]);
@@ -160,9 +160,9 @@ describe('Code Intelligence IPC Handlers', () => {
             const handler = async (_event: IpcMainInvokeEvent, ...args: unknown[]) => {
                 const rootPath = args[0] as string;
                 const query = args[1] as string;
-                const projectId = args[2] as string;
+                const workspaceId = args[2] as string;
                 const isRegex = args[3] as boolean | undefined;
-                return await mockService.searchFiles!(rootPath, query, projectId, isRegex ?? false);
+                return await mockService.searchFiles!(rootPath, query, workspaceId, isRegex ?? false);
             };
             registeredHandlers.set('code:searchFiles', handler);
 
@@ -175,19 +175,19 @@ describe('Code Intelligence IPC Handlers', () => {
         });
     });
 
-    describe('code:indexProject', () => {
+    describe('code:indexWorkspace', () => {
         it('should index a project', async () => {
             const handler = async (_event: IpcMainInvokeEvent, ...args: unknown[]) => {
                 const rootPath = args[0] as string;
-                const projectId = args[1] as string;
+                const workspaceId = args[1] as string;
                 const force = args[2] as boolean | undefined;
-                return await mockService.indexProject!(rootPath, projectId, force ?? false);
+                return await mockService.indexWorkspace!(rootPath, workspaceId, force ?? false);
             };
-            registeredHandlers.set('code:indexProject', handler);
+            registeredHandlers.set('code:indexWorkspace', handler);
 
-            const result = await registeredHandlers.get('code:indexProject')!({} as IpcMainInvokeEvent, '/project', 'project-1', true);
+            const result = await registeredHandlers.get('code:indexWorkspace')!({} as IpcMainInvokeEvent, '/project', 'project-1', true);
 
-            expect(mockService.indexProject).toHaveBeenCalledWith('/project', 'project-1', true);
+            expect(mockService.indexWorkspace).toHaveBeenCalledWith('/project', 'project-1', true);
             expect(result).toBeUndefined();
         });
     });

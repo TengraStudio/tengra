@@ -3,14 +3,14 @@ import { LogoService } from '@main/services/external/logo.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
 import { ModelProviderInfo, ModelRegistryService } from '@main/services/llm/model-registry.service';
-import { ProjectAnalysis, ProjectService } from '@main/services/project/project.service';
+import { WorkspaceAnalysis, WorkspaceService } from '@main/services/workspace/workspace.service';
 import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 interface LogoServicePrivate {
     saveGeneratedImage(
-        projectPath: string,
+        workspacePath: string,
         sourcePathOrUrl: string,
         prompt: string,
         model: string
@@ -23,7 +23,7 @@ interface LogoTestContext {
     getAllModelsMock: ReturnType<typeof vi.fn<ModelRegistryService['getAllModels']>>;
 }
 
-const PROJECT_ANALYSIS: ProjectAnalysis = {
+const PROJECT_ANALYSIS: WorkspaceAnalysis = {
     type: 'node',
     frameworks: ['react'],
     dependencies: {},
@@ -47,8 +47,8 @@ const createService = (): LogoTestContext => {
     const deps: ConstructorParameters<typeof LogoService>[0] = {
         llmService: { chat: chatMock } as unknown as LLMService,
         workspaceService: {
-            analyzeProject: vi.fn<ProjectService['analyzeProject']>().mockResolvedValue(PROJECT_ANALYSIS),
-        } as unknown as ProjectService,
+            analyzeWorkspace: vi.fn<WorkspaceService['analyzeProject']>().mockResolvedValue(PROJECT_ANALYSIS),
+        } as unknown as WorkspaceService,
         localImageService: {
             generateImage: vi.fn<LocalImageService['generateImage']>().mockResolvedValue(''),
         } as unknown as LocalImageService,

@@ -1,4 +1,4 @@
-import { IdeaSession, ProjectIdea } from '@shared/types/ideas';
+import { IdeaSession, WorkspaceIdea } from '@shared/types/ideas';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { exportIdeas } from '@/features/ideas/utils/exportIdeas';
@@ -15,7 +15,7 @@ const mockSession: IdeaSession = {
     updatedAt: Date.now(),
 };
 
-const mockIdeas: ProjectIdea[] = [
+const mockIdeas: WorkspaceIdea[] = [
     {
         id: 'idea-1',
         sessionId: 'session-1',
@@ -25,7 +25,7 @@ const mockIdeas: ProjectIdea[] = [
         status: 'pending',
         createdAt: Date.now(),
         updatedAt: Date.now(),
-    } as ProjectIdea,
+    } as WorkspaceIdea,
 ];
 
 describe('exportIdeas', () => {

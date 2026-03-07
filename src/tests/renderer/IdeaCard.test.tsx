@@ -31,7 +31,7 @@ describe('IdeaCard', () => {
         render(<IdeaCard idea={idea} onClick={onClick} />);
 
         fireEvent.click(screen.getByRole('button', { name: 'ideas.idea.viewDetails' }));
-        fireEvent.click(screen.getByRole('button', { name: 'ideas.idea.openFullProject' }));
+        fireEvent.click(screen.getByRole('button', { name: 'ideas.idea.openFullWorkspace' }));
 
         expect(onClick).toHaveBeenCalledTimes(1);
     });

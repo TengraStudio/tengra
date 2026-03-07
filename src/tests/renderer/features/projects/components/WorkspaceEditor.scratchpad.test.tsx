@@ -6,11 +6,11 @@ import type { WorkspaceSnippet } from '@/features/workspace/utils/snippet-manage
 import { EditorTab } from '@/types';
 
 const {
-    mockLoadWorkspaceSnippets,
+    mockLoadProjectSnippets,
     mockLoadReviewRuleConfig,
     mockFilterWorkspaceSnippets,
 } = vi.hoisted(() => ({
-    mockLoadWorkspaceSnippets: vi.fn((): WorkspaceSnippet[] => []),
+    mockLoadProjectSnippets: vi.fn((): WorkspaceSnippet[] => []),
     mockLoadReviewRuleConfig: vi.fn(() => ({
         detectConsoleLog: false,
         detectAnyType: false,
@@ -48,11 +48,9 @@ vi.mock('@/features/workspace/utils/dev-ai-assistant', () => ({
 vi.mock('@/features/workspace/utils/snippet-manager', () => ({
     createShareCode: vi.fn(() => ''),
     filterWorkspaceSnippets: mockFilterWorkspaceSnippets,
-    loadWorkspaceSnippets: mockLoadWorkspaceSnippets,
+    loadProjectSnippets: mockLoadProjectSnippets,
     filterSnippets: mockFilterWorkspaceSnippets,
-    loadProjectSnippets: mockLoadWorkspaceSnippets,
     parseShareCode: vi.fn(() => null),
-    saveWorkspaceSnippets: vi.fn(),
     saveProjectSnippets: vi.fn(),
     createWorkspaceShareCode: vi.fn(() => ''),
     parseWorkspaceShareCode: vi.fn(() => null),
@@ -147,7 +145,7 @@ describe('WorkspaceEditor – scratchpad command & file-save', () => {
             render(<WorkspaceEditor {...createMockProps()} />);
 
             fireEvent.change(getScratchTextarea(), { target: { value: 'npm run build' } });
-            await clickAndFlush('projectDashboard.editor.runScratch');
+            await clickAndFlush('workspaceDashboard.editor.runScratch');
 
             await vi.waitFor(() => {
                 expect(mockRunCommand).toHaveBeenCalledWith('npm', ['run', 'build'], 'C:\\workspace');
@@ -160,7 +158,7 @@ describe('WorkspaceEditor – scratchpad command & file-save', () => {
             render(<WorkspaceEditor {...createMockProps()} />);
 
             fireEvent.change(getScratchTextarea(), { target: { value: 'npm run build' } });
-            await clickAndFlush('projectDashboard.editor.runScratch');
+            await clickAndFlush('workspaceDashboard.editor.runScratch');
 
             await vi.waitFor(() => {
                 expect(screen.getByText(/build success/)).toBeInTheDocument();
@@ -172,7 +170,7 @@ describe('WorkspaceEditor – scratchpad command & file-save', () => {
             render(<WorkspaceEditor {...createMockProps()} />);
 
             fireEvent.change(getScratchTextarea(), { target: { value: 'ls' } });
-            await clickAndFlush('projectDashboard.editor.runScratch');
+            await clickAndFlush('workspaceDashboard.editor.runScratch');
 
             await vi.waitFor(() => {
                 expect(mockRunCommand).toHaveBeenCalledWith('ls', [], 'C:\\workspace');
@@ -182,7 +180,7 @@ describe('WorkspaceEditor – scratchpad command & file-save', () => {
         it('does not execute when scratchpad content is empty', async () => {
             render(<WorkspaceEditor {...createMockProps()} />);
 
-            await clickAndFlush('projectDashboard.editor.runScratch');
+            await clickAndFlush('workspaceDashboard.editor.runScratch');
 
             // Give a tick for any async call to resolve
             await vi.waitFor(() => {
@@ -194,7 +192,7 @@ describe('WorkspaceEditor – scratchpad command & file-save', () => {
             render(<WorkspaceEditor {...createMockProps()} />);
 
             fireEvent.change(getScratchTextarea(), { target: { value: '   \n  ' } });
-            await clickAndFlush('projectDashboard.editor.runScratch');
+            await clickAndFlush('workspaceDashboard.editor.runScratch');
 
             await vi.waitFor(() => {
                 expect(mockRunCommand).not.toHaveBeenCalled();
@@ -205,7 +203,7 @@ describe('WorkspaceEditor – scratchpad command & file-save', () => {
             render(<WorkspaceEditor {...createMockProps({ projectPath: undefined })} />);
 
             fireEvent.change(getScratchTextarea(), { target: { value: 'echo hello' } });
-            await clickAndFlush('projectDashboard.editor.runScratch');
+            await clickAndFlush('workspaceDashboard.editor.runScratch');
 
             await vi.waitFor(() => {
                 expect(mockRunCommand).not.toHaveBeenCalled();
@@ -220,7 +218,7 @@ describe('WorkspaceEditor – scratchpad command & file-save', () => {
             render(<WorkspaceEditor {...createMockProps()} />);
 
             fireEvent.change(getScratchTextarea(), { target: { value: 'Documentation content' } });
-            await clickAndFlush('projectDashboard.editor.saveScratchDoc');
+            await clickAndFlush('workspaceDashboard.editor.saveScratchDoc');
 
             await vi.waitFor(() => {
                 expect(mockWriteFile).toHaveBeenCalledWith(
@@ -241,7 +239,7 @@ describe('WorkspaceEditor – scratchpad command & file-save', () => {
 
             fireEvent.change(nameInput!, { target: { value: 'my-design-doc' } });
             fireEvent.change(getScratchTextarea(), { target: { value: 'Design notes' } });
-            await clickAndFlush('projectDashboard.editor.saveScratchDoc');
+            await clickAndFlush('workspaceDashboard.editor.saveScratchDoc');
 
             await vi.waitFor(() => {
                 expect(mockWriteFile).toHaveBeenCalledWith(
@@ -255,10 +253,10 @@ describe('WorkspaceEditor – scratchpad command & file-save', () => {
             render(<WorkspaceEditor {...createMockProps()} />);
 
             fireEvent.change(getScratchTextarea(), { target: { value: 'content' } });
-            await clickAndFlush('projectDashboard.editor.saveScratchDoc');
+            await clickAndFlush('workspaceDashboard.editor.saveScratchDoc');
 
             await vi.waitFor(() => {
-                expect(screen.getByText('projectDashboard.editor.scratchSavedDoc')).toBeInTheDocument();
+                expect(screen.getByText('workspaceDashboard.editor.scratchSavedDoc')).toBeInTheDocument();
             });
         });
 
@@ -266,7 +264,7 @@ describe('WorkspaceEditor – scratchpad command & file-save', () => {
             render(<WorkspaceEditor {...createMockProps({ projectPath: undefined })} />);
 
             fireEvent.change(getScratchTextarea(), { target: { value: 'content' } });
-            await clickAndFlush('projectDashboard.editor.saveScratchDoc');
+            await clickAndFlush('workspaceDashboard.editor.saveScratchDoc');
 
             await vi.waitFor(() => {
                 expect(mockWriteFile).not.toHaveBeenCalled();
@@ -281,7 +279,7 @@ describe('WorkspaceEditor – scratchpad command & file-save', () => {
             render(<WorkspaceEditor {...createMockProps()} />);
 
             fireEvent.change(getScratchTextarea(), { target: { value: 'Fix the login bug' } });
-            await clickAndFlush('projectDashboard.editor.saveScratchTask');
+            await clickAndFlush('workspaceDashboard.editor.saveScratchTask');
 
             await vi.waitFor(() => {
                 expect(mockWriteFile).toHaveBeenCalledWith(
@@ -300,7 +298,7 @@ describe('WorkspaceEditor – scratchpad command & file-save', () => {
             );
             fireEvent.change(nameInput!, { target: { value: 'login-fix' } });
             fireEvent.change(getScratchTextarea(), { target: { value: 'Fix login' } });
-            await clickAndFlush('projectDashboard.editor.saveScratchTask');
+            await clickAndFlush('workspaceDashboard.editor.saveScratchTask');
 
             await vi.waitFor(() => {
                 expect(mockWriteFile).toHaveBeenCalledWith(
@@ -314,10 +312,10 @@ describe('WorkspaceEditor – scratchpad command & file-save', () => {
             render(<WorkspaceEditor {...createMockProps()} />);
 
             fireEvent.change(getScratchTextarea(), { target: { value: 'task content' } });
-            await clickAndFlush('projectDashboard.editor.saveScratchTask');
+            await clickAndFlush('workspaceDashboard.editor.saveScratchTask');
 
             await vi.waitFor(() => {
-                expect(screen.getByText('projectDashboard.editor.scratchSavedTask')).toBeInTheDocument();
+                expect(screen.getByText('workspaceDashboard.editor.scratchSavedTask')).toBeInTheDocument();
             });
         });
 
@@ -325,7 +323,7 @@ describe('WorkspaceEditor – scratchpad command & file-save', () => {
             render(<WorkspaceEditor {...createMockProps({ projectPath: undefined })} />);
 
             fireEvent.change(getScratchTextarea(), { target: { value: 'task' } });
-            await clickAndFlush('projectDashboard.editor.saveScratchTask');
+            await clickAndFlush('workspaceDashboard.editor.saveScratchTask');
 
             await vi.waitFor(() => {
                 expect(mockWriteFile).not.toHaveBeenCalled();
@@ -339,7 +337,7 @@ describe('WorkspaceEditor – scratchpad command & file-save', () => {
         it('saves empty scratchpad content to doc file without error', async () => {
             render(<WorkspaceEditor {...createMockProps()} />);
 
-            await clickAndFlush('projectDashboard.editor.saveScratchDoc');
+            await clickAndFlush('workspaceDashboard.editor.saveScratchDoc');
 
             await vi.waitFor(() => {
                 expect(mockWriteFile).toHaveBeenCalledWith(
@@ -352,7 +350,7 @@ describe('WorkspaceEditor – scratchpad command & file-save', () => {
         it('saves empty scratchpad content to task file without error', async () => {
             render(<WorkspaceEditor {...createMockProps()} />);
 
-            await clickAndFlush('projectDashboard.editor.saveScratchTask');
+            await clickAndFlush('workspaceDashboard.editor.saveScratchTask');
 
             await vi.waitFor(() => {
                 expect(mockWriteFile).toHaveBeenCalledWith(
@@ -366,7 +364,7 @@ describe('WorkspaceEditor – scratchpad command & file-save', () => {
             render(<WorkspaceEditor {...createMockProps()} />);
 
             fireEvent.change(getScratchTextarea(), { target: { value: 'special chars: <>|' } });
-            await clickAndFlush('projectDashboard.editor.saveScratchDoc');
+            await clickAndFlush('workspaceDashboard.editor.saveScratchDoc');
 
             await vi.waitFor(() => {
                 expect(mockWriteFile).toHaveBeenCalledWith(
@@ -380,7 +378,7 @@ describe('WorkspaceEditor – scratchpad command & file-save', () => {
             render(<WorkspaceEditor {...createMockProps()} />);
 
             fireEvent.change(getScratchTextarea(), { target: { value: 'line1\nline2\nline3' } });
-            await clickAndFlush('projectDashboard.editor.saveScratchTask');
+            await clickAndFlush('workspaceDashboard.editor.saveScratchTask');
 
             await vi.waitFor(() => {
                 expect(mockWriteFile).toHaveBeenCalledWith(
@@ -394,7 +392,7 @@ describe('WorkspaceEditor – scratchpad command & file-save', () => {
             render(<WorkspaceEditor {...createMockProps()} />);
 
             fireEvent.change(getScratchTextarea(), { target: { value: 'git   status  --short' } });
-            await clickAndFlush('projectDashboard.editor.runScratch');
+            await clickAndFlush('workspaceDashboard.editor.runScratch');
 
             await vi.waitFor(() => {
                 // split(/\s+/) collapses multiple spaces
@@ -406,7 +404,7 @@ describe('WorkspaceEditor – scratchpad command & file-save', () => {
             render(<WorkspaceEditor {...createMockProps()} />);
 
             fireEvent.change(getScratchTextarea(), { target: { value: 'doc content' } });
-            await clickAndFlush('projectDashboard.editor.saveScratchDoc');
+            await clickAndFlush('workspaceDashboard.editor.saveScratchDoc');
 
             await vi.waitFor(() => {
                 expect(mockWriteFile).toHaveBeenCalledWith(
@@ -416,7 +414,7 @@ describe('WorkspaceEditor – scratchpad command & file-save', () => {
             });
 
             fireEvent.change(getScratchTextarea(), { target: { value: 'task content' } });
-            await clickAndFlush('projectDashboard.editor.saveScratchTask');
+            await clickAndFlush('workspaceDashboard.editor.saveScratchTask');
 
             await vi.waitFor(() => {
                 expect(mockWriteFile).toHaveBeenCalledWith(

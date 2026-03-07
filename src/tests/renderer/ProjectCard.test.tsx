@@ -1,11 +1,11 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { ProjectCard, ProjectCardSurfaceProvider } from '@/features/workspace/components/ProjectCard';
+import { ProjectCard as WorkspaceCard, ProjectCardSurfaceProvider as WorkspaceCardSurfaceProvider } from '@/features/workspace/components/WorkspaceCard';
 import { Project } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
-describe('ProjectCard', () => {
+describe('WorkspaceCard', () => {
     afterEach(() => {
         vi.restoreAllMocks();
     });
@@ -33,7 +33,7 @@ describe('ProjectCard', () => {
         const onSelect = vi.fn();
 
         render(
-            <ProjectCardSurfaceProvider
+            <WorkspaceCardSurfaceProvider
                 onSelect={onSelect}
                 activeMenuId={null}
                 setActiveMenuId={vi.fn()}
@@ -42,11 +42,11 @@ describe('ProjectCard', () => {
                 onArchive={vi.fn()}
                 t={t}
             >
-                <ProjectCard
+                <WorkspaceCard
                     project={project}
                     index={0}
                 />
-            </ProjectCardSurfaceProvider>
+            </WorkspaceCardSurfaceProvider>
         );
 
         const card = screen.getByRole('button', { name: 'Orbit Project' });
@@ -59,7 +59,7 @@ describe('ProjectCard', () => {
         const setShowMenu = vi.fn();
 
         render(
-            <ProjectCardSurfaceProvider
+            <WorkspaceCardSurfaceProvider
                 onSelect={vi.fn()}
                 activeMenuId={project.id}
                 setActiveMenuId={setShowMenu}
@@ -68,14 +68,14 @@ describe('ProjectCard', () => {
                 onArchive={onArchive}
                 t={t}
             >
-                <ProjectCard
+                <WorkspaceCard
                     project={project}
                     index={0}
                 />
-            </ProjectCardSurfaceProvider>
+            </WorkspaceCardSurfaceProvider>
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'projects.archiveProject' }));
+        fireEvent.click(screen.getByRole('button', { name: 'projects.archiveWorkspace' }));
         expect(onArchive).toHaveBeenCalledWith(project);
         expect(setShowMenu).toHaveBeenCalledWith(null);
     });
@@ -94,7 +94,7 @@ describe('ProjectCard', () => {
         const cancelAnimationFrameSpy = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
 
         render(
-            <ProjectCardSurfaceProvider
+            <WorkspaceCardSurfaceProvider
                 onSelect={vi.fn()}
                 activeMenuId={null}
                 setActiveMenuId={vi.fn()}
@@ -103,16 +103,16 @@ describe('ProjectCard', () => {
                 onArchive={vi.fn()}
                 t={t}
             >
-                <ProjectCard
+                <WorkspaceCard
                     project={project}
                     index={2}
                 />
-            </ProjectCardSurfaceProvider>
+            </WorkspaceCardSurfaceProvider>
         );
 
         await waitFor(() => {
             expect(debugSpy).toHaveBeenCalledWith(
-                'ProjectCard',
+                'WorkspaceCard',
                 'Slow project card render detected',
                 expect.objectContaining({
                     projectId: project.id,
@@ -122,7 +122,7 @@ describe('ProjectCard', () => {
                 })
             );
         });
-        const telemetryCall = debugSpy.mock.calls.find((call) => call[0] === 'ProjectCard');
+        const telemetryCall = debugSpy.mock.calls.find((call) => call[0] === 'WorkspaceCard');
         expect(telemetryCall).toBeDefined();
         const telemetryPayload = telemetryCall?.[2] as { renderDurationMs: number };
         expect(telemetryPayload.renderDurationMs).toBeGreaterThanOrEqual(10);

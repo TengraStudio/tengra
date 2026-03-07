@@ -35,7 +35,7 @@ function createFragment(overrides: Partial<SemanticFragment> = {}): SemanticFrag
     };
 }
 
-function createProject(overrides: Partial<Project> = {}): Project {
+function createWorkspace(overrides: Partial<Project> = {}): Project {
     const now = Date.now();
     return {
         id: 'project-id',
@@ -85,7 +85,7 @@ function createService() {
 describe('ContextRetrievalService', () => {
     it('deduplicates fragments and returns ranked summary lines', async () => {
         const { service, mocks } = createService();
-        mocks.getProjects.mockResolvedValue([createProject({ id: 'p1', path: '/repo' })]);
+        mocks.getProjects.mockResolvedValue([createWorkspace({ id: 'p1', path: '/repo' })]);
         mocks.searchCodeSymbols.mockResolvedValue([createSymbol()]);
         mocks.searchSemanticFragments.mockResolvedValue([
             createFragment(),

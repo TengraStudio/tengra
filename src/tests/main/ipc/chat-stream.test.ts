@@ -582,7 +582,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
             });
         });
 
-        it('should skip RAG injection when no projectId', async () => {
+        it('should skip RAG injection when no workspaceId', async () => {
             initIPC();
             const handler = ipcMainHandlers.get('chat:stream');
             mockLLMService.chatStream.mockReturnValue((async function* () {

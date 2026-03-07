@@ -19,7 +19,7 @@ interface MockSurfaceProps {
     children: React.ReactNode
 }
 
-interface MockProjectCardProps {
+interface MockWorkspaceCardProps {
     project: Project
     index: number
     isSelected?: boolean
@@ -42,7 +42,7 @@ const projectCardSpy = vi.fn(
         project,
         isSelected,
         onToggleSelection,
-    }: MockProjectCardProps) => (
+    }: MockWorkspaceCardProps) => (
         <button
             type="button"
             data-testid={`project-card-${project.id}`}
@@ -89,9 +89,9 @@ vi.mock('react-virtuoso', () => ({
     ),
 }));
 
-vi.mock('@/features/workspace/components/ProjectCard', () => ({
-    ProjectCardSurfaceProvider: (props: MockSurfaceProps) => projectCardSurfaceProviderSpy(props),
-    ProjectCard: (props: MockProjectCardProps) => projectCardSpy(props),
+vi.mock('@/features/workspace/components/WorkspaceCard', () => ({
+    WorkspaceCardSurfaceProvider: (props: MockSurfaceProps) => projectCardSurfaceProviderSpy(props),
+    WorkspaceCard: (props: MockWorkspaceCardProps) => projectCardSpy(props),
 }));
 
 const workspaceFixture = {

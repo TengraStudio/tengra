@@ -12,20 +12,20 @@ describe('workspace/workflow renderer entrypoint compatibility shims', () => {
         expect(content).toContain("export { WorkspacesPage as ProjectsPage } from './WorkspacePage';");
     });
 
-    it('keeps ProjectCard shim bound to WorkspaceCard canonical entrypoint', () => {
-        const content = read('src/renderer/features/workspace/components/ProjectCard.tsx');
-        expect(content).toContain("export { ProjectCard } from './WorkspaceCard';");
+    it('keeps WorkspaceCard shim bound to WorkspaceCard canonical entrypoint', () => {
+        const content = read('src/renderer/features/workspace/components/WorkspaceCard.tsx');
+        expect(content).toContain("export { WorkspaceCard } from './WorkspaceCard';");
         expect(content).toContain("export * from './WorkspaceCard';");
     });
 
-    it('keeps VirtualizedProjectGrid shim exports bound to workspace canonical exports', () => {
-        const content = read('src/renderer/features/workspace/components/VirtualizedProjectGrid.tsx');
+    it('keeps VirtualizedWorkspaceGrid shim exports bound to workspace canonical exports', () => {
+        const content = read('src/renderer/features/workspace/components/VirtualizedWorkspaceGrid.tsx');
         expect(content).toContain("export { default } from './VirtualizedWorkspaceGrid';");
         expect(content).toContain("export * from './VirtualizedWorkspaceGrid';");
     });
 
-    it('keeps ProjectAgentTab shim bound to AutomationWorkflowTab entrypoint', () => {
-        const content = read('src/renderer/features/workspace/components/ProjectAgentTab.tsx');
+    it('keeps WorkspaceAgentTab shim bound to AutomationWorkflowTab entrypoint', () => {
+        const content = read('src/renderer/features/workspace/components/WorkspaceAgentTab.tsx');
         expect(content).toBe("export * from './AutomationWorkflowTab';");
     });
 });

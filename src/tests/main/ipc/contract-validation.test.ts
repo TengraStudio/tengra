@@ -183,9 +183,9 @@ describe('IPC Contract Validation (IDEA-025)', () => {
                 'settings:save',
             ],
             project: [
-                'project:start',
-                'project:stop',
-                'project:get-status',
+                'workspace:start',
+                'workspace:stop',
+                'workspace:get-status',
             ],
             terminal: [
                 'terminal:getProfiles',

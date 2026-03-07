@@ -36,7 +36,7 @@ const mockMarketResearchService = {
     getDeepMarketData: vi.fn(),
 };
 
-const mockProjectScaffoldService = {};
+const mockWorkspaceScaffoldService = {};
 
 const mockAuthService = {};
 
@@ -55,7 +55,7 @@ function createService(): IdeaGeneratorService {
         databaseService: mockDatabaseService as unknown as IdeaGenDeps['databaseService'],
         llmService: mockLlmService as unknown as IdeaGenDeps['llmService'],
         marketResearchService: mockMarketResearchService as unknown as IdeaGenDeps['marketResearchService'],
-        projectScaffoldService: mockProjectScaffoldService as unknown as IdeaGenDeps['projectScaffoldService'],
+        projectScaffoldService: mockWorkspaceScaffoldService as unknown as IdeaGenDeps['projectScaffoldService'],
         authService: mockAuthService as unknown as IdeaGenDeps['authService'],
         eventBus: mockEventBus as unknown as IdeaGenDeps['eventBus'],
         localImageService: mockLocalImageService as unknown as IdeaGenDeps['localImageService'],

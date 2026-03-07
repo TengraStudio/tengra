@@ -4,7 +4,7 @@ import { runWorkspaceStartupPreflight } from '@/features/workspace/utils/workspa
 import { Project } from '@/types';
 import { webElectronMock } from '@/web-bridge';
 
-const baseProject: Project = {
+const baseWorkspace: Project = {
     id: 'workspace-1',
     title: 'Workspace',
     description: 'Workspace for preflight tests',
@@ -82,15 +82,15 @@ describe('workspace-startup-preflight runbook and issue filtering', () => {
     it('generates setup/build/test/release runbooks when commands are configured', async () => {
         mountPreflightElectronMock({
             existingPaths: new Set([
-                baseProject.path,
-                `${baseProject.path}\\package.json`,
-                `${baseProject.path}\\.nvmrc`,
-                `${baseProject.path}\\package-lock.json`,
+                baseWorkspace.path,
+                `${baseWorkspace.path}\\package.json`,
+                `${baseWorkspace.path}\\.nvmrc`,
+                `${baseWorkspace.path}\\package-lock.json`,
             ]),
         });
 
         const result = await runWorkspaceStartupPreflight({
-            ...baseProject,
+            ...baseWorkspace,
             buildConfig: {
                 buildCommand: 'npm run build',
                 testCommand: 'npm run test',
@@ -112,9 +112,9 @@ describe('workspace-startup-preflight runbook and issue filtering', () => {
     it('only reports tool issues for required ecosystems', async () => {
         const { runCommand } = mountPreflightElectronMock({
             existingPaths: new Set([
-                baseProject.path,
-                `${baseProject.path}\\package.json`,
-                `${baseProject.path}\\package-lock.json`,
+                baseWorkspace.path,
+                `${baseWorkspace.path}\\package.json`,
+                `${baseWorkspace.path}\\package-lock.json`,
             ]),
             commandExitCodes: {
                 node: 1,
@@ -124,16 +124,16 @@ describe('workspace-startup-preflight runbook and issue filtering', () => {
             },
         });
 
-        const result = await runWorkspaceStartupPreflight(baseProject);
+        const result = await runWorkspaceStartupPreflight(baseWorkspace);
         const toolIssueIds = result.issues
             .map(issue => issue.id)
             .filter(issueId => issueId.startsWith('tool-'));
 
         expect(toolIssueIds).toEqual(['tool-node']);
         expect(result.canOpen).toBe(false);
-        expect(runCommand).toHaveBeenCalledWith('node', ['--version'], baseProject.path);
-        expect(runCommand).toHaveBeenCalledWith('npm', ['--version'], baseProject.path);
-        expect(runCommand).not.toHaveBeenCalledWith('python', ['--version'], baseProject.path);
-        expect(runCommand).not.toHaveBeenCalledWith('go', ['--version'], baseProject.path);
+        expect(runCommand).toHaveBeenCalledWith('node', ['--version'], baseWorkspace.path);
+        expect(runCommand).toHaveBeenCalledWith('npm', ['--version'], baseWorkspace.path);
+        expect(runCommand).not.toHaveBeenCalledWith('python', ['--version'], baseWorkspace.path);
+        expect(runCommand).not.toHaveBeenCalledWith('go', ['--version'], baseWorkspace.path);
     });
 });

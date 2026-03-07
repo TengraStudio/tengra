@@ -2,7 +2,7 @@ import { render, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { VirtualizedProjectGrid } from '@/features/workspace/components/VirtualizedProjectGrid';
+import { VirtualizedWorkspaceGrid } from '@/features/workspace/components/VirtualizedWorkspaceGrid';
 import { Project } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -16,7 +16,7 @@ vi.mock('react-virtuoso', () => ({
     )
 }));
 
-function createProject(index: number): Project {
+function createWorkspace(index: number): Project {
     return {
         id: `project-${index}`,
         title: `Project ${index}`,
@@ -35,7 +35,7 @@ function createProject(index: number): Project {
     };
 }
 
-describe('VirtualizedProjectGrid telemetry', () => {
+describe('VirtualizedWorkspaceGrid telemetry', () => {
     afterEach(() => {
         vi.restoreAllMocks();
     });
@@ -54,11 +54,11 @@ describe('VirtualizedProjectGrid telemetry', () => {
         };
         const t = (key: string): string => key;
         const { rerender } = render(
-            <VirtualizedProjectGrid
-                projects={Array.from({ length: 11 }, (_, index) => createProject(index))}
-                onSelectProject={vi.fn()}
-                showProjectMenu={null}
-                setShowProjectMenu={vi.fn()}
+            <VirtualizedWorkspaceGrid
+                workspaces={Array.from({ length: 11 }, (_, index) => createWorkspace(index))}
+                onSelectWorkspace={vi.fn()}
+                showWorkspaceMenu={null}
+                setShowWorkspaceMenu={vi.fn()}
                 projectStateMachine={projectStateMachine}
                 itemsPerRow={3}
                 t={t}
@@ -66,11 +66,11 @@ describe('VirtualizedProjectGrid telemetry', () => {
         );
 
         rerender(
-            <VirtualizedProjectGrid
-                projects={Array.from({ length: 12 }, (_, index) => createProject(index))}
-                onSelectProject={vi.fn()}
-                showProjectMenu={null}
-                setShowProjectMenu={vi.fn()}
+            <VirtualizedWorkspaceGrid
+                workspaces={Array.from({ length: 12 }, (_, index) => createWorkspace(index))}
+                onSelectWorkspace={vi.fn()}
+                showWorkspaceMenu={null}
+                setShowWorkspaceMenu={vi.fn()}
                 projectStateMachine={projectStateMachine}
                 itemsPerRow={3}
                 t={t}
@@ -79,20 +79,20 @@ describe('VirtualizedProjectGrid telemetry', () => {
 
         await waitFor(() => {
             expect(debugSpy).toHaveBeenCalledWith(
-                'VirtualizedProjectGrid',
+                'VirtualizedWorkspaceGrid',
                 'Virtualization threshold state changed',
                 expect.objectContaining({
-                    projectCount: 11,
+                    workspaceCount: 11,
                     virtualizationThreshold: 12,
                     itemsPerRow: 3,
                     isThresholdReached: false
                 })
             );
             expect(debugSpy).toHaveBeenCalledWith(
-                'VirtualizedProjectGrid',
+                'VirtualizedWorkspaceGrid',
                 'Virtualization threshold state changed',
                 expect.objectContaining({
-                    projectCount: 12,
+                    workspaceCount: 12,
                     virtualizationThreshold: 12,
                     itemsPerRow: 3,
                     isThresholdReached: true

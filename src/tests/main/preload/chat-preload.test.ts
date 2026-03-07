@@ -48,7 +48,7 @@ interface ExpectedChatStreamParams {
     provider?: string;
     options?: JsonObject;
     chatId?: string;
-    projectId?: string;
+    workspaceId?: string;
     systemMode?: 'thinking' | 'agent' | 'fast' | 'architect';
 }
 

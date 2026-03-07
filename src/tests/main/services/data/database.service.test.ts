@@ -84,22 +84,22 @@ describe('DatabaseService', () => {
         });
     });
 
-    describe('Project Operations', () => {
+    describe('Workspace Operations', () => {
         it('should create and get a project', async () => {
             // mockQuery already returns default project for SELECT by id
-            const project = await service.createProject('Test', '/path');
+            const project = await service.createWorkspace('Test', '/path');
             expect(project.title).toBe('Test');
         });
 
         it('should archive a project', async () => {
-            const updateSpy = vi.spyOn((service as any)._projects, 'updateProject').mockResolvedValue({
+            const updateSpy = vi.spyOn((service as any)._projects, 'updateWorkspace').mockResolvedValue({
                 id: '1',
                 title: 'ToArchive',
                 path: '/path',
                 status: 'archived',
             });
 
-            const archived = await service.archiveProject('1', true);
+            const archived = await service.archiveWorkspace('1', true);
 
             expect(updateSpy).toHaveBeenCalledWith('1', { status: 'archived' });
             expect(archived?.status).toBe('archived');
@@ -224,13 +224,13 @@ describe('DatabaseService', () => {
         });
     });
 
-    describe('bulkDeleteProjects validation', () => {
+    describe('bulkDeleteWorkspaces validation', () => {
         it('should reject non-array input', async () => {
-            await expect(service.bulkDeleteProjects('not-array' as unknown as string[])).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
+            await expect(service.bulkDeleteWorkspaces('not-array' as unknown as string[])).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
         });
 
         it('should reject array with invalid id', async () => {
-            await expect(service.bulkDeleteProjects(['valid-id', ''])).rejects.toThrow(DatabaseServiceErrorCode.INVALID_ID);
+            await expect(service.bulkDeleteWorkspaces(['valid-id', ''])).rejects.toThrow(DatabaseServiceErrorCode.INVALID_ID);
         });
     });
 
@@ -296,13 +296,13 @@ describe('DatabaseService', () => {
         });
     });
 
-    describe('bulkArchiveProjects validation', () => {
+    describe('bulkArchiveWorkspaces validation', () => {
         it('rejects non-array input', async () => {
-            await expect(service.bulkArchiveProjects('bad' as unknown as string[], false)).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
+            await expect(service.bulkArchiveWorkspaces('bad' as unknown as string[], false)).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
         });
 
         it('rejects array with empty id', async () => {
-            await expect(service.bulkArchiveProjects(['valid', ''], false)).rejects.toThrow(DatabaseServiceErrorCode.INVALID_ID);
+            await expect(service.bulkArchiveWorkspaces(['valid', ''], false)).rejects.toThrow(DatabaseServiceErrorCode.INVALID_ID);
         });
     });
 

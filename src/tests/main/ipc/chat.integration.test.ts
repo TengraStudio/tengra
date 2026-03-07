@@ -528,7 +528,7 @@ describe('Chat IPC Integration', () => {
         expect(mockLLMService.chatOpenCodeStream).toHaveBeenCalled();
     });
 
-    it('should keep projectRoot undefined when projectId is provided', async () => {
+    it('should keep workspaceRoot undefined when workspaceId is provided', async () => {
         initIPC();
         const handler = ipcMainHandlers.get('chat:stream');
         mockLLMService.chatStream.mockReturnValue((async function* () { })());
@@ -537,11 +537,11 @@ describe('Chat IPC Integration', () => {
 
         expect(mockLLMService.chatStream).toHaveBeenCalled();
         expect(mockLLMService.chatStream.mock.calls[0][4]).toEqual(
-            expect.objectContaining({ projectRoot: undefined })
+            expect.objectContaining({ workspaceRoot: undefined })
         );
     });
 
-    it('should set runtime projectRoot when projectId is omitted', async () => {
+    it('should set runtime workspaceRoot when workspaceId is omitted', async () => {
         initIPC();
         const handler = ipcMainHandlers.get('chat:stream');
         mockLLMService.chatStream.mockReturnValue((async function* () { })());
@@ -550,7 +550,7 @@ describe('Chat IPC Integration', () => {
 
         expect(mockLLMService.chatStream).toHaveBeenCalled();
         expect(mockLLMService.chatStream.mock.calls[0][4]).toEqual(
-            expect.objectContaining({ projectRoot: expect.stringContaining('runtime') })
+            expect.objectContaining({ workspaceRoot: expect.stringContaining('runtime') })
         );
     });
 
