@@ -41,7 +41,7 @@ const AI_REVIEW_INITIAL_STATE: AIReviewState = {
 
 export interface UseEditorAIReviewParams {
     activeTab: EditorTab | null;
-    projectPath?: string;
+    workspacePath?: string;
 }
 
 export interface UseEditorAIReviewResult {
@@ -60,7 +60,7 @@ export interface UseEditorAIReviewResult {
  */
 export function useEditorAIReview({
     activeTab,
-    projectPath,
+    workspacePath,
 }: UseEditorAIReviewParams): UseEditorAIReviewResult {
     const [state, dispatch] = React.useReducer(aiReviewReducer, AI_REVIEW_INITIAL_STATE);
 
@@ -76,9 +76,9 @@ export function useEditorAIReview({
         if (!activeTab) {
             return;
         }
-        const report = await runCodeReviewAnalysis(projectPath, activeTab.name, activeTab.content, state.rules);
+        const report = await runCodeReviewAnalysis(workspacePath, activeTab.name, activeTab.content, state.rules);
         dispatch({ type: 'SET_REVIEW_SUMMARY', summary: report.reviewComments.join('\n') });
-    }, [activeTab, projectPath, state.rules]);
+    }, [activeTab, workspacePath, state.rules]);
 
     const runAiBugScan = React.useCallback(() => {
         if (!activeTab) {

@@ -6,9 +6,9 @@ import { ImagePersistenceService } from '@main/services/data/image-persistence.s
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
 import { ModelProviderInfo, ModelRegistryService } from '@main/services/llm/model-registry.service';
-import { WorkspaceService } from '@main/services/workspace/workspace.service';
 import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
+import { WorkspaceService } from '@main/services/workspace/workspace.service';
 import { JsonObject } from '@shared/types/common';
 import { ModelQuotaItem } from '@shared/types/quota';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
@@ -85,8 +85,8 @@ export class LogoService {
         const analysis = await this.workspaceService.analyzeWorkspace(workspacePath);
 
         const context = `
- Project Name: ${pkgData.name ?? workspacePath.split(/[\\/]/).pop() ?? 'Untitled'}
- Description: ${pkgData.description ?? analysis.type + ' project'}
+ Workspace Name: ${pkgData.name ?? workspacePath.split(/[\\/]/).pop() ?? 'Untitled'}
+ Description: ${pkgData.description ?? analysis.type + ' workspace'}
 Type: ${analysis.type}
 Frameworks: ${analysis.frameworks.join(', ')}
 Main Languages: ${Object.keys(analysis.languages).join(', ')}
@@ -103,7 +103,7 @@ Consider standard tech branding (e.g., Python: Blue/Yellow, Node: Green/Lime, Re
 
 Return JSON only: { "concepts": ["concept 1", "concept 2", "concept 3"], "colors": ["#hex1", "#hex2", "#hex3"] }
 
-Project Info:
+Workspace Info:
 ${context}`;
 
         try {
@@ -150,7 +150,7 @@ ${context}`;
         }
 
         return {
-            suggestedPrompts: [`Professional modern logo for a ${analysis.type} project`],
+            suggestedPrompts: [`Professional modern logo for a ${analysis.type} workspace`],
             colors: [],
         };
     }

@@ -1,5 +1,5 @@
 import { IpcValue } from '@shared/types';
-import { ProjectState } from '@shared/types/project-agent';
+import { WorkspaceState } from '@shared/types/workspace-agent';
 import {
     addEdge,
     Background,
@@ -301,12 +301,12 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, onAddNode }) =
     );
 };
 
-const useProjectAgentState = (
+const useWorkspaceAgentState = (
     setNodes: React.Dispatch<React.SetStateAction<Node[]>>,
     isLoaded: boolean,
     updateNodeData: (id: string, data: Record<string, unknown>) => void,
     getNodes: () => Node[],
-    syncPlanNodesForTask: (taskNodeId: string, plan?: ProjectState['plan']) => void
+    syncPlanNodesForTask: (taskNodeId: string, plan?: WorkspaceState['plan']) => void
 ) => {
     useEffect(() => {
         // Don't fetch initial state until canvas is loaded
@@ -317,20 +317,20 @@ const useProjectAgentState = (
         // Fetch initial state after canvas is loaded
         const fetchInitialState = async () => {
             try {
-                const projectState = await window.electron.workspaceAgent.getStatus();
+                const workspaceState = await window.electron.workspaceAgent.getStatus();
                 appLogger.info(
-                    'ProjectAgentView',
-                    `Fetched initial state - status: ${projectState.status}, plan: ${projectState.plan?.length ?? 0}, nodeId: ${projectState.nodeId ?? 'none'}`
+                    'WorkspaceAgentView',
+                    `Fetched initial state - status: ${workspaceState.status}, plan: ${workspaceState.plan?.length ?? 0}, nodeId: ${workspaceState.nodeId ?? 'none'}`
                 );
 
-                if (projectState.nodeId || projectState.status !== 'idle') {
+                if (workspaceState.nodeId || workspaceState.status !== 'idle') {
                     let resolvedTaskNodeId: string | undefined;
 
                     setNodes(nds => {
-                        const targetNodeId = projectState.nodeId;
+                        const targetNodeId = workspaceState.nodeId;
 
                         appLogger.debug(
-                            'ProjectAgentView',
+                            'WorkspaceAgentView',
                             `Initial state: nodes count=${nds.length}, targetNodeId=${targetNodeId}`
                         );
 
@@ -338,7 +338,7 @@ const useProjectAgentState = (
                         const existingNode = nds.find(n => n.id === targetNodeId);
                         if (existingNode) {
                             appLogger.info(
-                                'ProjectAgentView',
+                                'WorkspaceAgentView',
                                 `Found existing node ${targetNodeId}, applying initial state`
                             );
                             resolvedTaskNodeId = targetNodeId;
@@ -348,24 +348,24 @@ const useProjectAgentState = (
                                         ...node,
                                         data: {
                                             ...node.data,
-                                            status: projectState.status,
-                                            plan: projectState.plan,
-                                            history: projectState.history,
-                                            currentTask: projectState.currentTask,
-                                            taskId: projectState.taskId,
-                                            totalTokens: projectState.totalTokens,
-                                            timing: projectState.timing,
+                                            status: workspaceState.status,
+                                            plan: workspaceState.plan,
+                                            history: workspaceState.history,
+                                            currentTask: workspaceState.currentTask,
+                                            taskId: workspaceState.taskId,
+                                            totalTokens: workspaceState.totalTokens,
+                                            timing: workspaceState.timing,
                                             // Restore model config if node doesn't have it
                                             model:
                                                 (node.data as Record<string, unknown>).model ??
-                                                projectState.config?.model,
+                                                workspaceState.config?.model,
                                             systemMode:
                                                 (node.data as Record<string, unknown>).systemMode ??
-                                                projectState.config?.systemMode,
+                                                workspaceState.config?.systemMode,
                                             agentProfileId:
                                                 (node.data as Record<string, unknown>)
                                                     .agentProfileId ??
-                                                projectState.config?.agentProfileId,
+                                                workspaceState.config?.agentProfileId,
                                             isExpanded: true,
                                         },
                                     };
@@ -381,7 +381,7 @@ const useProjectAgentState = (
                             );
                             if (plannerNode) {
                                 appLogger.info(
-                                    'ProjectAgentView',
+                                    'WorkspaceAgentView',
                                     `No targetNodeId, applying to first planner node ${plannerNode.id}`
                                 );
                                 resolvedTaskNodeId = plannerNode.id;
@@ -392,24 +392,24 @@ const useProjectAgentState = (
                                         ...node,
                                         data: {
                                             ...node.data,
-                                            status: projectState.status,
-                                            plan: projectState.plan,
-                                            history: projectState.history,
-                                            currentTask: projectState.currentTask,
-                                            taskId: projectState.taskId,
-                                            totalTokens: projectState.totalTokens,
-                                            timing: projectState.timing,
+                                            status: workspaceState.status,
+                                            plan: workspaceState.plan,
+                                            history: workspaceState.history,
+                                            currentTask: workspaceState.currentTask,
+                                            taskId: workspaceState.taskId,
+                                            totalTokens: workspaceState.totalTokens,
+                                            timing: workspaceState.timing,
                                             // Restore model config
                                             model:
                                                 (node.data as Record<string, unknown>).model ??
-                                                projectState.config?.model,
+                                                workspaceState.config?.model,
                                             systemMode:
                                                 (node.data as Record<string, unknown>).systemMode ??
-                                                projectState.config?.systemMode,
+                                                workspaceState.config?.systemMode,
                                             agentProfileId:
                                                 (node.data as Record<string, unknown>)
                                                     .agentProfileId ??
-                                                projectState.config?.agentProfileId,
+                                                workspaceState.config?.agentProfileId,
                                             isExpanded: true,
                                         },
                                     };
@@ -419,7 +419,7 @@ const useProjectAgentState = (
                         }
 
                         appLogger.warn(
-                            'ProjectAgentView',
+                            'WorkspaceAgentView',
                             `Target node ${targetNodeId} not found during initial state load`
                         );
                         return nds;
@@ -427,13 +427,13 @@ const useProjectAgentState = (
 
                     if (resolvedTaskNodeId) {
                         window.requestAnimationFrame(() => {
-                            syncPlanNodesForTask(resolvedTaskNodeId as string, projectState.plan);
+                            syncPlanNodesForTask(resolvedTaskNodeId as string, workspaceState.plan);
                         });
                     }
                 }
             } catch (error) {
                 appLogger.error(
-                    'ProjectAgentView',
+                    'WorkspaceAgentView',
                     'Failed to fetch initial state',
                     error as Error
                 );
@@ -445,20 +445,20 @@ const useProjectAgentState = (
 
     useEffect(() => {
         if (!isLoaded) {
-            appLogger.debug('ProjectAgentView', 'Event listener waiting for canvas to load...');
+            appLogger.debug('WorkspaceAgentView', 'Event listener waiting for canvas to load...');
             return;
         }
 
-        appLogger.info('ProjectAgentView', 'Setting up project:update event listener');
+        appLogger.info('WorkspaceAgentView', 'Setting up workspace:update event listener');
 
-        const unsubscribe = window.electron.workspaceAgent.onUpdate((projectState: ProjectState) => {
+        const unsubscribe = window.electron.workspaceAgent.onUpdate((workspaceState: WorkspaceState) => {
             appLogger.info(
-                'ProjectAgentView',
-                `Received project:update - status: ${projectState.status}, plan steps: ${projectState.plan?.length ?? 0}, nodeId: ${projectState.nodeId ?? 'none'}`
+                'WorkspaceAgentView',
+                `Received workspace:update - status: ${workspaceState.status}, plan steps: ${workspaceState.plan?.length ?? 0}, nodeId: ${workspaceState.nodeId ?? 'none'}`
             );
 
             const nodes = getNodes();
-            let targetNodeId = projectState.nodeId;
+            let targetNodeId = workspaceState.nodeId;
 
             // If no target node ID, try to find the first planner node
             if (!targetNodeId) {
@@ -468,12 +468,12 @@ const useProjectAgentState = (
                 if (plannerNode) {
                     targetNodeId = plannerNode.id;
                     appLogger.debug(
-                        'ProjectAgentView',
+                        'WorkspaceAgentView',
                         `No targetNodeId, using first planner node: ${targetNodeId}`
                     );
                 } else {
                     appLogger.warn(
-                        'ProjectAgentView',
+                        'WorkspaceAgentView',
                         'No targetNodeId and no planner node found to update'
                     );
                     return;
@@ -484,30 +484,30 @@ const useProjectAgentState = (
             const targetNode = nodes.find(n => n.id === targetNodeId);
             if (!targetNode) {
                 appLogger.warn(
-                    'ProjectAgentView',
+                    'WorkspaceAgentView',
                     `Target node ${targetNodeId} not found in canvas! Available nodes: ${nodes.map(n => n.id).join(', ')}`
                 );
                 return;
             }
 
             appLogger.info(
-                'ProjectAgentView',
-                `Updating node ${targetNodeId} with status=${projectState.status}, plan=${projectState.plan?.length ?? 0} steps`
+                'WorkspaceAgentView',
+                `Updating node ${targetNodeId} with status=${workspaceState.status}, plan=${workspaceState.plan?.length ?? 0} steps`
             );
 
             // Use updateNodeData for reliable React Flow updates
             updateNodeData(targetNodeId, {
-                status: projectState.status,
-                plan: projectState.plan,
-                history: projectState.history,
-                currentTask: projectState.currentTask,
-                taskId: projectState.taskId,
-                totalTokens: projectState.totalTokens,
-                timing: projectState.timing,
+                status: workspaceState.status,
+                plan: workspaceState.plan,
+                history: workspaceState.history,
+                currentTask: workspaceState.currentTask,
+                taskId: workspaceState.taskId,
+                totalTokens: workspaceState.totalTokens,
+                timing: workspaceState.timing,
                 isExpanded: true,
             });
 
-            syncPlanNodesForTask(targetNodeId, projectState.plan);
+            syncPlanNodesForTask(targetNodeId, workspaceState.plan);
         });
 
         return () => {
@@ -527,13 +527,13 @@ const InternalAutomationWorkflowView: React.FC = () => {
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
     const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
-    const [latestProjectState, setLatestProjectState] = useState<ProjectState | null>(null);
+    const [latestWorkspaceState, setLatestWorkspaceState] = useState<WorkspaceState | null>(null);
     const [stateHistory, setStateHistory] = useState<
-        Array<{ status: ProjectState['status']; timestamp: number }>
+        Array<{ status: WorkspaceState['status']; timestamp: number }>
     >([]);
     const { screenToFlowPosition, updateNodeData, getNodes } = useReactFlow();
     const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
-    const pushStateHistory = useCallback((status: ProjectState['status']) => {
+    const pushStateHistory = useCallback((status: WorkspaceState['status']) => {
         setStateHistory(previous => {
             const last = previous[previous.length - 1];
             if (last?.status === status) {
@@ -545,11 +545,11 @@ const InternalAutomationWorkflowView: React.FC = () => {
         });
     }, []);
     const syncPlanNodesForTask = useCallback(
-        (taskNodeId: string, plan?: ProjectState['plan']) => {
+        (taskNodeId: string, plan?: WorkspaceState['plan']) => {
             const taskNode = getNodes().find((n: Node) => n.id === taskNodeId);
             if (!taskNode) {
                 appLogger.warn(
-                    'ProjectAgentView',
+                    'WorkspaceAgentView',
                     `Cannot sync plan nodes: task node ${taskNodeId} not found`
                 );
                 return;
@@ -666,13 +666,13 @@ const InternalAutomationWorkflowView: React.FC = () => {
     useEffect(() => {
         const loadCanvas = async () => {
             try {
-                const [savedNodes, savedEdges, projectState] = await Promise.all([
+                const [savedNodes, savedEdges, workspaceState] = await Promise.all([
                     window.electron.workspaceAgent.getCanvasNodes(),
                     window.electron.workspaceAgent.getCanvasEdges(),
                     window.electron.workspaceAgent.getStatus(),
                 ]);
-                setLatestProjectState(projectState);
-                pushStateHistory(projectState.status);
+                setLatestWorkspaceState(workspaceState);
+                pushStateHistory(workspaceState.status);
 
                 let nodesToSet: Node[] = [];
 
@@ -686,36 +686,36 @@ const InternalAutomationWorkflowView: React.FC = () => {
                 }
 
                 // Check if there's an active task with a nodeId that doesn't exist in saved nodes
-                if (projectState.nodeId && projectState.status !== 'idle') {
-                    const nodeExists = nodesToSet.some(n => n.id === projectState.nodeId);
+                if (workspaceState.nodeId && workspaceState.status !== 'idle') {
+                    const nodeExists = nodesToSet.some(n => n.id === workspaceState.nodeId);
 
                     if (!nodeExists) {
                         appLogger.info(
-                            'ProjectAgentView',
-                            `Active task found with nodeId ${projectState.nodeId} but node doesn't exist in canvas. Creating node.`
+                            'WorkspaceAgentView',
+                            `Active task found with nodeId ${workspaceState.nodeId} but node doesn't exist in canvas. Creating node.`
                         );
 
                         // Create a new node for the orphaned task
                         const newNode: Node = {
-                            id: projectState.nodeId,
+                            id: workspaceState.nodeId,
                             type: 'task',
                             position: { x: 100, y: 100 },
                             data: {
                                 label: 'Restored Task',
                                 taskType: 'planner',
-                                status: projectState.status,
-                                title: projectState.currentTask,
-                                plan: projectState.plan,
-                                history: projectState.history,
-                                totalTokens: projectState.totalTokens,
-                                timing: projectState.timing,
-                                taskId: projectState.taskId,
-                                isExpanded: projectState.status === 'waiting_for_approval',
+                                status: workspaceState.status,
+                                title: workspaceState.currentTask,
+                                plan: workspaceState.plan,
+                                history: workspaceState.history,
+                                totalTokens: workspaceState.totalTokens,
+                                timing: workspaceState.timing,
+                                taskId: workspaceState.taskId,
+                                isExpanded: workspaceState.status === 'waiting_for_approval',
                                 activeTab: 'plan',
                                 // Restore model config from task state
-                                model: projectState.config?.model,
-                                systemMode: projectState.config?.systemMode,
-                                agentProfileId: projectState.config?.agentProfileId,
+                                model: workspaceState.config?.model,
+                                systemMode: workspaceState.config?.systemMode,
+                                agentProfileId: workspaceState.config?.agentProfileId,
                             },
                         };
 
@@ -750,11 +750,11 @@ const InternalAutomationWorkflowView: React.FC = () => {
                 }
 
                 appLogger.info(
-                    'ProjectAgentView',
+                    'WorkspaceAgentView',
                     `Loaded ${nodesToSet.length} nodes and ${savedEdges.length} edges from database`
                 );
             } catch (error) {
-                appLogger.error('ProjectAgentView', 'Failed to load canvas state', error as Error);
+                appLogger.error('WorkspaceAgentView', 'Failed to load canvas state', error as Error);
             } finally {
                 setIsLoaded(true);
             }
@@ -797,12 +797,12 @@ const InternalAutomationWorkflowView: React.FC = () => {
                     await window.electron.workspaceAgent.saveCanvasEdges(edgesToSave);
 
                     appLogger.debug(
-                        'ProjectAgentView',
+                        'WorkspaceAgentView',
                         `Saved ${nodes.length} nodes and ${edges.length} edges`
                     );
                 } catch (error) {
                     appLogger.error(
-                        'ProjectAgentView',
+                        'WorkspaceAgentView',
                         'Failed to save canvas state',
                         error as Error
                     );
@@ -819,12 +819,12 @@ const InternalAutomationWorkflowView: React.FC = () => {
         };
     }, [nodes, edges, isLoaded]);
 
-    useProjectAgentState(setNodes, isLoaded, updateNodeData, getNodes, syncPlanNodesForTask);
+    useWorkspaceAgentState(setNodes, isLoaded, updateNodeData, getNodes, syncPlanNodesForTask);
 
     useEffect(() => {
-        const unsubscribe = window.electron.workspaceAgent.onUpdate((projectState: ProjectState) => {
-            setLatestProjectState(projectState);
-            pushStateHistory(projectState.status);
+        const unsubscribe = window.electron.workspaceAgent.onUpdate((workspaceState: WorkspaceState) => {
+            setLatestWorkspaceState(workspaceState);
+            pushStateHistory(workspaceState.status);
         });
         return () => {
             unsubscribe();
@@ -940,10 +940,10 @@ const InternalAutomationWorkflowView: React.FC = () => {
                 onClick={event => event.stopPropagation()}
             >
                 <AgentStateMachinePanel
-                    currentStatus={latestProjectState?.status ?? 'idle'}
+                    currentStatus={latestWorkspaceState?.status ?? 'idle'}
                     stateHistory={stateHistory}
                 />
-                <AgentVotingPanel taskId={latestProjectState?.taskId} />
+                <AgentVotingPanel taskId={latestWorkspaceState?.taskId} />
             </div>
 
             <AnimatePresence>
@@ -961,7 +961,7 @@ const InternalAutomationWorkflowView: React.FC = () => {
 };
 
 /**
- * ProjectAgentView - The Quantum Canvas for Tengra Autonomous Core (UAC)
+ * WorkspaceAgentView - The Quantum Canvas for Tengra Autonomous Core (UAC)
  *
  * Provides an infinite canvas with a grid system for visualizing autonomous nodes.
  */

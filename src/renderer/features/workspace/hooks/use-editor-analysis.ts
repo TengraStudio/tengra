@@ -13,7 +13,7 @@ import { useTranslation } from '@/i18n';
 interface UseEditorAnalysisParams {
     activeTabContent: string | undefined;
     activeTabName: string | undefined;
-    projectPath: string | undefined;
+    workspacePath: string | undefined;
     setSnippetStatus: (status: string) => void;
     updateTabContent: (value: string) => void;
 }
@@ -24,7 +24,7 @@ interface UseEditorAnalysisParams {
 export function useEditorAnalysis({
     activeTabContent,
     activeTabName,
-    projectPath,
+    workspacePath,
     setSnippetStatus,
     updateTabContent,
 }: UseEditorAnalysisParams) {
@@ -43,9 +43,9 @@ export function useEditorAnalysis({
         if (activeTabContent === undefined || !activeTabName) {
             return;
         }
-        const report = await runCodeReviewAnalysis(projectPath, activeTabName, activeTabContent, reviewRules);
+        const report = await runCodeReviewAnalysis(workspacePath, activeTabName, activeTabContent, reviewRules);
         setReviewSummary(report.reviewComments.join('\n'));
-    }, [activeTabContent, activeTabName, projectPath, reviewRules]);
+    }, [activeTabContent, activeTabName, workspacePath, reviewRules]);
 
     const runAiBugScan = React.useCallback(() => {
         if (activeTabContent === undefined) {

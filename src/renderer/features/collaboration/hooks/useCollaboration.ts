@@ -2,10 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { Awareness } from 'y-protocols/awareness';
 import * as Y from 'yjs';
 
-import { IpcProvider } from '../lib/ipc-provider';
+import {
+    type CollaborationRoomType,
+    type CollaborationRoomTypeInput,
+    normalizeCollaborationRoomType,
+} from '@/features/collaboration/lib/collaboration-room-type';
+import { IpcProvider } from '@/features/collaboration/lib/ipc-provider';
 
 interface UseCollaborationOptions {
-    type: 'chat' | 'project';
+    type: CollaborationRoomTypeInput;
     id: string;
     enabled?: boolean;
 }
@@ -21,7 +26,7 @@ interface CollaborationState {
 /**
  * Creates a fresh Y.Doc for a given collaboration target.
  */
-function createCollaborationDoc(_type: string, _id: string): Y.Doc {
+function createCollaborationDoc(_type: CollaborationRoomType, _id: string): Y.Doc {
     return new Y.Doc();
 }
 
@@ -31,7 +36,8 @@ function createCollaborationDoc(_type: string, _id: string): Y.Doc {
  * Hook to manage a Yjs document and its IPC synchronization provider.
  */
 export function useCollaboration({ type, id, enabled = true }: UseCollaborationOptions): CollaborationState {
-    const doc = useMemo(() => createCollaborationDoc(type, id), [type, id]);
+    const normalizedType = useMemo(() => normalizeCollaborationRoomType(type), [type]);
+    const doc = useMemo(() => createCollaborationDoc(normalizedType, id), [normalizedType, id]);
     const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
     const [error, setError] = useState<string | null>(null);
     const [awareness, setAwareness] = useState<Awareness | null>(null);
@@ -39,7 +45,7 @@ export function useCollaboration({ type, id, enabled = true }: UseCollaborationO
     useEffect(() => {
         if (!enabled) { return; }
 
-        const p = new IpcProvider(type, id, doc);
+        const p = new IpcProvider(normalizedType, id, doc);
 
         const handleStatus = (evt: { status: 'connecting' | 'connected' | 'disconnected'; error?: Error }) => {
             setStatus(evt.status);
@@ -58,7 +64,7 @@ export function useCollaboration({ type, id, enabled = true }: UseCollaborationO
             p.destroy();
             setAwareness(null);
         };
-    }, [doc, type, id, enabled]);
+    }, [doc, normalizedType, id, enabled]);
 
     return { doc, provider: null, awareness, status, error };
 }

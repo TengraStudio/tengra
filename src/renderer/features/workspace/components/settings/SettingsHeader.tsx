@@ -3,7 +3,7 @@ import React from 'react';
 
 interface SettingsHeaderProps {
     t: (key: string) => string;
-    projectTitle: string;
+    workspaceTitle: string;
     isDirty: boolean;
     onReset: () => void;
     onSave: () => void;
@@ -11,7 +11,7 @@ interface SettingsHeaderProps {
 
 export const SettingsHeader: React.FC<SettingsHeaderProps> = ({
     t,
-    projectTitle,
+    workspaceTitle,
     isDirty,
     onReset,
     onSave,
@@ -25,7 +25,7 @@ export const SettingsHeader: React.FC<SettingsHeaderProps> = ({
                 <h2 className="text-lg font-semibold text-foreground">
                     {t('workspaces.workspaceSettings')}
                 </h2>
-                <p className="text-xs text-muted-foreground">{projectTitle}</p>
+                <p className="text-xs text-muted-foreground">{workspaceTitle}</p>
             </div>
         </div>
 

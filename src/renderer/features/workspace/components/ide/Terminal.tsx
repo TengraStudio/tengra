@@ -11,7 +11,7 @@ import 'xterm/css/xterm.css';
 
 interface TerminalComponentProps {
     cwd?: string | undefined
-    projectId?: string | undefined  // For persistent command history
+    workspaceId?: string | undefined  // For persistent command history
 }
 
 interface TerminalCleanups {
@@ -32,15 +32,15 @@ interface TerminalStateRefs {
 const HISTORY_KEY_PREFIX = 'Tengra_terminal_history_';
 const MAX_HISTORY_SIZE = 500;
 
-// Get history storage key for a project
-const getHistoryKey = (projectId?: string) => {
-    return `${HISTORY_KEY_PREFIX}${projectId ?? 'global'}`;
+// Get history storage key for a workspace
+const getHistoryKey = (workspaceId?: string) => {
+    return `${HISTORY_KEY_PREFIX}${workspaceId ?? 'global'}`;
 };
 
 // Load command history from localStorage
-const loadHistory = (projectId?: string): string[] => {
+const loadHistory = (workspaceId?: string): string[] => {
     try {
-        const stored = localStorage.getItem(getHistoryKey(projectId));
+        const stored = localStorage.getItem(getHistoryKey(workspaceId));
         if (stored) {
             return safeJsonParse<string[]>(stored, []);
         }
@@ -51,11 +51,11 @@ const loadHistory = (projectId?: string): string[] => {
 };
 
 // Save command history to localStorage
-const saveHistory = (history: string[], projectId?: string) => {
+const saveHistory = (history: string[], workspaceId?: string) => {
     try {
         // Keep only the last MAX_HISTORY_SIZE commands
         const trimmed = history.slice(-MAX_HISTORY_SIZE);
-        localStorage.setItem(getHistoryKey(projectId), JSON.stringify(trimmed));
+        localStorage.setItem(getHistoryKey(workspaceId), JSON.stringify(trimmed));
     } catch (error) {
         window.electron.log.warn('Failed to save terminal history:', error);
     }
@@ -237,7 +237,7 @@ const setupTerminalDataHandler = (
 
 const useTerminalInstance = (
     terminalRef: React.RefObject<HTMLDivElement>,
-    projectId: string | undefined,
+    workspaceId: string | undefined,
     cwd: string | undefined,
     addToHistory: (command: string) => void,
     t: (key: string) => string
@@ -248,7 +248,7 @@ const useTerminalInstance = (
     const terminalIdRef = useRef<string | null>(null);
 
     // Command history state
-    const historyRef = useRef<string[]>(loadHistory(projectId));
+    const historyRef = useRef<string[]>(loadHistory(workspaceId));
     const historyIndexRef = useRef<number>(-1);
     const currentInputRef = useRef<string>('');
 
@@ -256,7 +256,7 @@ const useTerminalInstance = (
         if (isInitializedRef.current || !terminalRef.current) { return; }
 
         isInitializedRef.current = true;
-        const terminalId = `term-${projectId ?? 'global'}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        const terminalId = `term-${workspaceId ?? 'global'}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
         terminalIdRef.current = terminalId;
 
         const term = createTerminalInstance();
@@ -343,12 +343,12 @@ const useTerminalInstance = (
             }
             terminalInstanceRef.current = null;
         };
-    }, [projectId, cwd, terminalRef, addToHistory, t]);
+    }, [workspaceId, cwd, terminalRef, addToHistory, t]);
 
     return { historyRef, historyIndexRef, currentInputRef };
 };
 
-export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) => {
+export const TerminalComponent = ({ cwd, workspaceId }: TerminalComponentProps) => {
     const { t } = useTranslation();
     const terminalRef = useRef<HTMLDivElement>(null);
     const [terminalRuntimeHealth, setTerminalRuntimeHealth] = useState<{
@@ -360,7 +360,7 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
     const [dockerAvailable, setDockerAvailable] = useState<boolean | null>(null);
 
     // Command history logic
-    const historyRef = useRef<string[]>(loadHistory(projectId));
+    const historyRef = useRef<string[]>(loadHistory(workspaceId));
     const historyIndexRef = useRef<number>(-1);
     const currentInputRef = useRef<string>('');
 
@@ -368,14 +368,14 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
         if (command.trim()) {
             if (historyRef.current.length === 0 || historyRef.current[historyRef.current.length - 1] !== command) {
                 historyRef.current.push(command);
-                saveHistory(historyRef.current, projectId);
+                saveHistory(historyRef.current, workspaceId);
             }
         }
         historyIndexRef.current = -1;
         currentInputRef.current = '';
-    }, [projectId]);
+    }, [workspaceId]);
 
-    useTerminalInstance(terminalRef, projectId, cwd, addToHistory, t);
+    useTerminalInstance(terminalRef, workspaceId, cwd, addToHistory, t);
 
     useEffect(() => {
         let cancelled = false;

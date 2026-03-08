@@ -54,7 +54,7 @@ const sectionData = {
         "impactHigh": "高い (推定)",
         "effort": "努力",
         "effortMedium": "中くらい",
-        "openFullProject": "完全なプロジェクトを開く"
+        "openFullWorkspace": "完全なプロジェクトを開く"
     },
     "techStack": {
         "frontend": "フロントエンド",
@@ -188,8 +188,8 @@ const sectionData = {
         },
         "statusLabel": "状態",
         "readyForPilot": "パイロットの準備完了",
-        "projectCreated": "プロジェクトが作成されました",
-        "projectNamePlaceholder": "プロジェクト名",
+        "workspaceCreated": "プロジェクトが作成されました",
+        "workspaceNamePlaceholder": "プロジェクト名",
         "regenerateTitle": "このアイデアを再現する",
         "regenerate": "再生する",
         "regenerating": "再生中...",

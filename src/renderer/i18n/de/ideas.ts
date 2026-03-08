@@ -43,7 +43,7 @@ const sectionData = {
         "marketTrends": "Markttrends",
         "competitors": "Wettbewerber",
         "selectPath": "Projektpfad auswählen",
-        "pathPlaceholder": "C:\\\\Projects\\\\my-project",
+        "pathPlaceholder": "C:\\\\Workspaces\\\\my-workspace",
         "creating": "Projekt wird erstellt...",
         "detailedDescription": "Detaillierte Beschreibung",
         "roadmap": "Projekt-Roadmap",
@@ -54,7 +54,7 @@ const sectionData = {
         "impactHigh": "Hoch (geschätzt)",
         "effort": "Bemühung",
         "effortMedium": "Medium",
-        "openFullProject": "Vollständiges Projekt öffnen"
+        "openFullWorkspace": "Vollständiges Projekt öffnen"
     },
     "techStack": {
         "frontend": "Frontend",
@@ -171,8 +171,8 @@ const sectionData = {
         },
         "statusLabel": "Status",
         "readyForPilot": "Bereit für Pilot",
-        "projectCreated": "Projekt erstellt",
-        "projectNamePlaceholder": "Projektname",
+        "workspaceCreated": "Projekt erstellt",
+        "workspaceNamePlaceholder": "Projektname",
         "regenerateTitle": "Diese Idee neu generieren",
         "regenerate": "Neu generieren",
         "regenerating": "Wird neu generiert...",

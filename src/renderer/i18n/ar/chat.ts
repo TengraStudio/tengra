@@ -22,7 +22,7 @@ const sectionData = {
         "plaintext": "نص عادي",
         "running": "جري...",
         "execute": "ينفذ",
-        "addToProject": "أضف إلى المشروع",
+        "addToWorkspace": "أضف إلى المشروع",
         "openInEditor": "افتح في المحرر",
         "output": "الإخراج",
         "executed": "تم تنفيذ كتلة {{language}} بنجاح."

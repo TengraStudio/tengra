@@ -95,6 +95,7 @@ const sectionData = {
     "userVerified": "用户已验证",
     "accessed": "已访问",
     "restore": "恢复",
+    "shareToWorkspace": "共享到工作区",
     "tabs": {
         "pending": "待办的",
         "confirmed": "确认的",
@@ -104,7 +105,7 @@ const sectionData = {
     "categories": {
         "preference": "偏爱",
         "personal": "个人的",
-        "project": "项目",
+        "workspace": "工作区",
         "technical": "技术的",
         "workflow": "工作流程",
         "relationship": "关系",

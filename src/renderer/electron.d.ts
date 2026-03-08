@@ -65,11 +65,6 @@ import {
     IdeaSessionConfig,
     IpcValue,
     Message,
-    Project,
-    ProjectAnalysis,
-    ProjectIdea,
-    ProjectState,
-    ProjectStep,
     QuotaResponse,
     ResearchData,
     ResearchProgress,
@@ -94,6 +89,11 @@ import {
     ToolCall,
     ToolDefinition,
     ToolResult,
+    Workspace,
+    WorkspaceAnalysis,
+    WorkspaceIdea,
+    WorkspaceState,
+    WorkspaceStep,
 } from '@/shared/types';
 import {
     AdvancedSemanticFragment,
@@ -129,7 +129,7 @@ export interface ProcessInfo {
     memory: number;
 }
 
-export interface OrchestratorStateView extends ProjectState {
+export interface OrchestratorStateView extends WorkspaceState {
     activeAgentId?: string;
     assignments: Record<string, string>;
 }
@@ -199,7 +199,7 @@ export interface TokenData {
  */
 import type { ElectronApiIntegrationsDomain } from '@renderer/electron-api/electron-api-integrations';
 import type { ElectronApiModelsMemoryDomain } from '@renderer/electron-api/electron-api-models-memory';
-import type { ElectronApiProjectSystemDomain } from '@renderer/electron-api/electron-api-project-system';
+import type { ElectronApiWorkspaceSystemDomain } from '@renderer/electron-api/electron-api-workspace-system';
 
 
 export interface ElectronAPI {
@@ -387,10 +387,10 @@ export interface ElectronAPI {
     setAuthSessionTimeout: (timeoutMs: number) => Promise<{ timeoutMs: number }>;
     getAuthSessionTimeout: () => Promise<{ timeoutMs: number }>;
 
-    code: ElectronApiProjectSystemDomain['code'];
-    project: ElectronApiProjectSystemDomain['project'];
-    process: ElectronApiProjectSystemDomain['process'];
-    files: ElectronApiProjectSystemDomain['files'];
+    code: ElectronApiWorkspaceSystemDomain['code'];
+    workspace: ElectronApiWorkspaceSystemDomain['workspace'];
+    process: ElectronApiWorkspaceSystemDomain['process'];
+    files: ElectronApiWorkspaceSystemDomain['files'];
     getProxyModels: () => Promise<{ id: string; object: string }[]>;
     getQuota: (provider?: string) => Promise<{
         accounts: Array<QuotaResponse & { accountId?: string; email?: string }>;
@@ -411,13 +411,13 @@ export interface ElectronAPI {
         provider?: string,
         model?: string
     ) => Promise<number>;
-    performance: ElectronApiProjectSystemDomain['performance'];
+    performance: ElectronApiWorkspaceSystemDomain['performance'];
     runCommand: (
         command: string,
         args: string[],
         cwd?: string
     ) => Promise<{ stdout: string; stderr: string; code: number }>;
-    git: ElectronApiProjectSystemDomain['git'];
+    git: ElectronApiWorkspaceSystemDomain['git'];
     getModels: () => Promise<ModelDefinition[] | { antigravityError?: string }>;
     chat: (messages: Message[], model: string) => Promise<{ content: string }>;
     chatOpenAI: (request: ChatRequest) => Promise<IpcValue>;
@@ -472,7 +472,7 @@ export interface ElectronAPI {
     marketplace: ElectronApiModelsMemoryDomain['marketplace'];
     llama: ElectronApiModelsMemoryDomain['llama'];
     sdCpp: ElectronApiModelsMemoryDomain['sdCpp'];
-    clipboard: ElectronApiProjectSystemDomain['clipboard'];
+    clipboard: ElectronApiWorkspaceSystemDomain['clipboard'];
     db: ElectronApiIntegrationsDomain['db'];
     terminal: ElectronApiIntegrationsDomain['terminal'];
     agent: ElectronApiIntegrationsDomain['agent'];
@@ -561,7 +561,7 @@ export interface ElectronAPI {
         listener: (event: IpcRendererEvent, ...args: IpcValue[]) => void
     ) => () => void;
 
-    projectAgent: ElectronApiIntegrationsDomain['projectAgent'];
+    workspaceAgent: ElectronApiIntegrationsDomain['workspaceAgent'];
     orchestrator: ElectronApiIntegrationsDomain['orchestrator'];
     metrics: ElectronApiIntegrationsDomain['metrics'];
     usage: ElectronApiIntegrationsDomain['usage'];

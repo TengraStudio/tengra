@@ -12,7 +12,7 @@ import {
     VotingConfiguration,
     VotingSession,
     VotingTemplate,
-} from '@shared/types/project-agent';
+} from '@shared/types/workspace-agent';
 
 export interface VotingDependencies {
     llm: LLMService;

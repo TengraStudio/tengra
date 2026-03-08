@@ -20,7 +20,7 @@ const DEFAULT_FLOW_STATUS: GitFlowStatus = {
  */
 export function useGitAdvancedOperations(
     canRun: boolean,
-    projectPath: string | undefined,
+    workspacePath: string | undefined,
     invokeGit: InvokeGitFn
 ) {
     const DEFAULT_OPERATION_TIMEOUT_MS = 60000;
@@ -47,8 +47,8 @@ export function useGitAdvancedOperations(
 
     const runControlledOperation = useCallback(
         async (command: string) => {
-            if (!canRun || !projectPath) {
-                return { success: false, error: 'Project is not ready' };
+            if (!canRun || !workspacePath) {
+                return { success: false, error: 'Workspace is not ready' };
             }
             const operationId = `git-op-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
             setActiveOperationId(operationId);
@@ -61,7 +61,7 @@ export function useGitAdvancedOperations(
                     stderr?: string;
                 }>(
                     'git:runControlledOperation',
-                    projectPath,
+                    workspacePath,
                     command,
                     operationId,
                     operationTimeoutMs
@@ -74,29 +74,29 @@ export function useGitAdvancedOperations(
                 setActiveOperationId(null);
             }
         },
-        [canRun, invokeGit, operationTimeoutMs, projectPath]
+        [canRun, invokeGit, operationTimeoutMs, workspacePath]
     );
 
     const fetchRebasePlan = useCallback(
         async (ontoBranch: string) => {
-            if (!canRun || !projectPath || !ontoBranch.trim()) {
+            if (!canRun || !workspacePath || !ontoBranch.trim()) {
                 return;
             }
             const response = await invokeGit<{ success: boolean; plan?: GitRebasePlanCommit[] }>(
                 'git:getRebasePlan',
-                projectPath,
+                workspacePath,
                 ontoBranch
             );
             if (response.success) {
                 setRebasePlan(response.plan ?? []);
             }
         },
-        [canRun, projectPath, invokeGit]
+        [canRun, workspacePath, invokeGit]
     );
 
     const runRebaseAction = useCallback(
         async (action: 'continue' | 'abort' | 'skip' | 'start', ontoBranch?: string) => {
-            if (!canRun || !projectPath) {
+            if (!canRun || !workspacePath) {
                 return false;
             }
             let command = '';
@@ -118,28 +118,28 @@ export function useGitAdvancedOperations(
             const response = await runControlledOperation(command);
             return response.success;
         },
-        [canRun, projectPath, runControlledOperation, sanitizeShellArg]
+        [canRun, workspacePath, runControlledOperation, sanitizeShellArg]
     );
 
     const fetchSubmodules = useCallback(async () => {
-        if (!canRun || !projectPath) {
+        if (!canRun || !workspacePath) {
             return;
         }
         const response = await invokeGit<{ success: boolean; submodules?: GitSubmodule[] }>(
             'git:getSubmodules',
-            projectPath
+            workspacePath
         );
         if (response.success) {
             setSubmodules(response.submodules ?? []);
         }
-    }, [canRun, projectPath, invokeGit]);
+    }, [canRun, workspacePath, invokeGit]);
 
     const runSubmoduleAction = useCallback(
         async (
             action: 'init' | 'update' | 'sync' | 'deinit' | 'add' | 'remove',
             options?: string | { recursive?: boolean; remote?: boolean; url?: string; path?: string; branch?: string }
         ) => {
-            if (!canRun || !projectPath) {
+            if (!canRun || !workspacePath) {
                 return false;
             }
 
@@ -176,7 +176,7 @@ export function useGitAdvancedOperations(
             await fetchSubmodules();
             return response.success;
         },
-        [canRun, fetchSubmodules, projectPath, runControlledOperation, sanitizeShellArg]
+        [canRun, fetchSubmodules, workspacePath, runControlledOperation, sanitizeShellArg]
     );
 
     const cancelActiveOperation = useCallback(async () => {
@@ -191,26 +191,26 @@ export function useGitAdvancedOperations(
     }, [activeOperationId, invokeGit]);
 
     const fetchFlowStatus = useCallback(async () => {
-        if (!canRun || !projectPath) {
+        if (!canRun || !workspacePath) {
             return;
         }
         const response = await invokeGit<{ success: boolean; flowStatus?: GitFlowStatus }>(
             'git:getFlowStatus',
-            projectPath
+            workspacePath
         );
         if (response.success && response.flowStatus) {
             setFlowStatus(response.flowStatus);
         }
-    }, [canRun, projectPath, invokeGit]);
+    }, [canRun, workspacePath, invokeGit]);
 
     const startFlowBranch = useCallback(
         async (branchType: 'feature' | 'release' | 'hotfix' | 'support', branchName: string, baseBranch?: string) => {
-            if (!canRun || !projectPath || !branchName.trim()) {
+            if (!canRun || !workspacePath || !branchName.trim()) {
                 return false;
             }
             const response = await invokeGit<{ success: boolean }>(
                 'git:startFlowBranch',
-                projectPath,
+                workspacePath,
                 branchType,
                 branchName,
                 baseBranch || ''
@@ -218,17 +218,17 @@ export function useGitAdvancedOperations(
             await fetchFlowStatus();
             return response.success;
         },
-        [canRun, projectPath, invokeGit, fetchFlowStatus]
+        [canRun, workspacePath, invokeGit, fetchFlowStatus]
     );
 
     const finishFlowBranch = useCallback(
         async (branchName: string, targetBranch?: string, shouldDelete?: boolean) => {
-            if (!canRun || !projectPath || !branchName.trim()) {
+            if (!canRun || !workspacePath || !branchName.trim()) {
                 return false;
             }
             const response = await invokeGit<{ success: boolean }>(
                 'git:finishFlowBranch',
-                projectPath,
+                workspacePath,
                 branchName,
                 targetBranch || '',
                 !!shouldDelete
@@ -236,71 +236,71 @@ export function useGitAdvancedOperations(
             await fetchFlowStatus();
             return response.success;
         },
-        [canRun, projectPath, invokeGit, fetchFlowStatus]
+        [canRun, workspacePath, invokeGit, fetchFlowStatus]
     );
 
     const fetchHooks = useCallback(async () => {
-        if (!canRun || !projectPath) {
+        if (!canRun || !workspacePath) {
             return;
         }
         const response = await invokeGit<{ success: boolean; hooks?: GitHookInfo[]; templates?: string[] }>(
             'git:getHooks',
-            projectPath
+            workspacePath
         );
         if (response.success) {
             setHooks(response.hooks ?? []);
             setHookTemplates(response.templates ?? []);
         }
-    }, [canRun, projectPath, invokeGit]);
+    }, [canRun, workspacePath, invokeGit]);
 
     const installHook = useCallback(
         async (hookName: string, templateName: string) => {
-            if (!canRun || !projectPath || !hookName.trim()) {
+            if (!canRun || !workspacePath || !hookName.trim()) {
                 return false;
             }
             const response = await invokeGit<{ success: boolean }>(
                 'git:installHook',
-                projectPath,
+                workspacePath,
                 hookName,
                 templateName
             );
             await fetchHooks();
             return response.success;
         },
-        [canRun, projectPath, invokeGit, fetchHooks]
+        [canRun, workspacePath, invokeGit, fetchHooks]
     );
 
     const validateHook = useCallback(
         async (hookName: string) => {
-            if (!canRun || !projectPath || !hookName.trim()) {
+            if (!canRun || !workspacePath || !hookName.trim()) {
                 return;
             }
             const response = await invokeGit<{
                 success: boolean;
                 validation?: { hookName: string; hasShebang: boolean; executable: boolean; valid: boolean };
-            }>('git:validateHook', projectPath, hookName);
+            }>('git:validateHook', workspacePath, hookName);
             if (response.success && response.validation) {
                 setHookValidation(response.validation);
             }
         },
-        [canRun, projectPath, invokeGit]
+        [canRun, workspacePath, invokeGit]
     );
 
     const testHook = useCallback(
         async (hookName: string) => {
-            if (!canRun || !projectPath || !hookName.trim()) {
+            if (!canRun || !workspacePath || !hookName.trim()) {
                 return;
             }
             const response = await invokeGit<{ success: boolean; stdout?: string; stderr?: string }>(
                 'git:testHook',
-                projectPath,
+                workspacePath,
                 hookName
             );
             if (response.success) {
                 setHookTestOutput({ stdout: response.stdout ?? '', stderr: response.stderr ?? '' });
             }
         },
-        [canRun, projectPath, invokeGit]
+        [canRun, workspacePath, invokeGit]
     );
 
     const exportHooks = useCallback(async () => {
@@ -316,28 +316,28 @@ export function useGitAdvancedOperations(
 
     const fetchStats = useCallback(
         async (days?: number) => {
-            if (!canRun || !projectPath) {
+            if (!canRun || !workspacePath) {
                 return;
             }
             const response = await invokeGit<{ success: boolean; stats?: GitRepositoryStats }>(
                 'git:getRepositoryStats',
-                projectPath,
+                workspacePath,
                 days || 365
             );
             if (response.success && response.stats) {
                 setStats(response.stats);
             }
         },
-        [canRun, projectPath, invokeGit]
+        [canRun, workspacePath, invokeGit]
     );
 
     const exportStats = useCallback(async (days?: number) => {
-        if (!canRun || !projectPath) {
+        if (!canRun || !workspacePath) {
             return;
         }
         const response = await invokeGit<{ success: boolean; export?: { authorsCsv: string } }>(
             'git:exportRepositoryStats',
-            projectPath,
+            workspacePath,
             days || 365
         );
         if (response.success && response.export) {
@@ -349,7 +349,7 @@ export function useGitAdvancedOperations(
             anchor.click();
             URL.revokeObjectURL(url);
         }
-    }, [canRun, projectPath, invokeGit]);
+    }, [canRun, workspacePath, invokeGit]);
 
     return {
         rebasePlan,

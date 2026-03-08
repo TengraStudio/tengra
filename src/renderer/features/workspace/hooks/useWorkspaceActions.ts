@@ -1,35 +1,35 @@
-import { Project } from '@/types';
+import { Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
-export interface ProjectActionsProps {
-    project: Project;
+export interface WorkspaceActionsProps {
+    workspace: Workspace;
     notify: (type: 'success' | 'error' | 'info', message: string) => void;
     t: (key: string) => string;
-    onUpdateProject?: (updates: Partial<Project>) => Promise<void>;
+    onUpdateWorkspace?: (updates: Partial<Workspace>) => Promise<void>;
     agentChatMessage?: string;
 }
 
-export function useProjectActions({
-    project,
+export function useWorkspaceActions({
+    workspace,
     notify,
     t,
-    onUpdateProject,
+    onUpdateWorkspace,
     agentChatMessage: _agentChatMessage,
-}: ProjectActionsProps) {
-    const handleUpdateProject = async (updates: Partial<Project>) => {
+}: WorkspaceActionsProps) {
+    const handleUpdateWorkspace = async (updates: Partial<Workspace>) => {
         try {
-            if (onUpdateProject) {
-                await onUpdateProject(updates);
+            if (onUpdateWorkspace) {
+                await onUpdateWorkspace(updates);
             } else {
-                await window.electron.db.updateWorkspace(project.id, updates);
+                await window.electron.db.updateWorkspace(workspace.id, updates);
             }
         } catch (error) {
-            appLogger.error('ProjectActions', 'Update failed', error as Error);
+            appLogger.error('WorkspaceActions', 'Update failed', error as Error);
             notify('error', t('workspaceDashboard.updateFailed'));
         }
     };
 
     return {
-        handleUpdateProject,
+        handleUpdateWorkspace,
     };
 }

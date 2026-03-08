@@ -1,7 +1,7 @@
-import { IdeaSession, ProjectIdea } from '@shared/types/ideas';
+import { IdeaSession, WorkspaceIdea } from '@shared/types/ideas';
 
-export const generateMarkdownExport = (currentSession: IdeaSession, ideas: ProjectIdea[]): string => {
-    let content = `# Project Ideas - ${new Date().toLocaleDateString()}\n\n`;
+export const generateMarkdownExport = (currentSession: IdeaSession, ideas: WorkspaceIdea[]): string => {
+    let content = `# Workspace Ideas - ${new Date().toLocaleDateString()}\n\n`;
     content += `**Session ID:** ${currentSession.id}\n`;
     content += `**Total Ideas:** ${ideas.length}\n\n`;
     content += `---\n\n`;
@@ -30,7 +30,7 @@ export const generateMarkdownExport = (currentSession: IdeaSession, ideas: Proje
     return content;
 };
 
-export const generateJsonExport = (currentSession: IdeaSession, ideas: ProjectIdea[]): string => {
+export const generateJsonExport = (currentSession: IdeaSession, ideas: WorkspaceIdea[]): string => {
     const exportData = {
         exportedAt: new Date().toISOString(),
         sessionId: currentSession.id,

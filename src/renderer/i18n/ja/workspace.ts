@@ -30,7 +30,7 @@ const sectionData = {
     "previewArea": "プレビュー領域",
     "convertToCode": "コードに変換",
     "placeholders": {
-        "rootPath": "C:\\\\Users\\\\Project",
+        "rootPath": "C:\\\\Users\\\\Workspace",
         "name": "名前..."
     },
     "run": "プロジェクトを実行",

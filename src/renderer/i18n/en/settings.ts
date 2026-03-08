@@ -190,6 +190,26 @@ const sectionData = {
         "editPrompt": "Edit Prompt",
         "editMode": "Edit Mode",
         "editRun": "Run Edit"
+    },
+    "storageDashboard": {
+        "title": "Storage Dashboard",
+        "subtitle": "Track database usage and total application records.",
+        "loadError": "Failed to load storage statistics.",
+        "dbSize": "Database",
+        "totalChats": "Chats",
+        "totalMessages": "Messages",
+        "totalWorkspaces": "Workspaces"
+    },
+    "databaseSizeDashboard": {
+        "title": "Database Size",
+        "subtitle": "Break down storage usage by record type.",
+        "loadError": "Failed to load database statistics.",
+        "dbSize": "Database",
+        "chats": "Chats",
+        "messages": "Messages",
+        "workspaces": "Workspaces",
+        "folders": "Folders",
+        "prompts": "Prompts"
     }
 };
 

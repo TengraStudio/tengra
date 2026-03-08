@@ -31,7 +31,6 @@ export interface TerminalSession {
     status: 'running' | 'stopped' | 'error';
     createdAt: number;
     lastActive: number;
-    projectId?: string;
     workspaceId?: string;
 }
 

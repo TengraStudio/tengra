@@ -5,11 +5,15 @@
 
 import { BaseService } from '@main/services/base.service';
 import { DatabaseClientService } from '@main/services/data/database-client.service';
+import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { v4 as uuidv4 } from 'uuid';
+
+const WORKSPACE_COMPAT_CODING_TYPE = WORKSPACE_COMPAT_SCHEMA_VALUES.CODING_TABLE;
+const WORKSPACE_COMPAT_ID_COLUMN = WORKSPACE_COMPAT_SCHEMA_VALUES.ID_COLUMN;
 
 export interface TimeTrackingRecord {
     id: string
-    type: 'app_online' | 'coding' | 'project_coding'
+    type: 'app_online' | 'coding' | typeof WORKSPACE_COMPAT_CODING_TYPE
     workspaceId?: string
     startTime: number
     endTime?: number
@@ -113,7 +117,7 @@ export class TimeTrackingService extends BaseService {
             if (startTime) {
                 const duration = now - startTime;
                 await this.recordTime({
-                    type: 'project_coding',
+                    type: WORKSPACE_COMPAT_CODING_TYPE,
                     workspaceId,
                     startTime,
                     endTime: now,
@@ -145,7 +149,7 @@ export class TimeTrackingService extends BaseService {
 
             await this.databaseClient.executeQuery({
                 sql: `
-                    INSERT INTO time_tracking (id, type, project_id, start_time, end_time, duration_ms, created_at, updated_at)
+                    INSERT INTO time_tracking (id, type, ${WORKSPACE_COMPAT_ID_COLUMN}, start_time, end_time, duration_ms, created_at, updated_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 `,
                 params: [
@@ -237,14 +241,16 @@ export class TimeTrackingService extends BaseService {
      */
     private async getWorkspaceCodingStats(): Promise<Record<string, number>> {
         const response = await this.databaseClient.executeQuery({
-            sql: `SELECT project_id, COALESCE(SUM(duration_ms), 0) as total FROM time_tracking WHERE type = 'project_coding' AND project_id IS NOT NULL GROUP BY project_id`
+            sql: `SELECT ${WORKSPACE_COMPAT_ID_COLUMN}, COALESCE(SUM(duration_ms), 0) as total FROM time_tracking WHERE type = ? AND ${WORKSPACE_COMPAT_ID_COLUMN} IS NOT NULL GROUP BY ${WORKSPACE_COMPAT_ID_COLUMN}`,
+            params: [WORKSPACE_COMPAT_CODING_TYPE]
         });
 
         const workspaceCodingTime: Record<string, number> = {};
         const rows = response.rows ?? [];
         for (const row of rows) {
-            if (row.project_id) {
-                workspaceCodingTime[String(row.project_id)] = Number(row.total);
+            const workspaceId = row[WORKSPACE_COMPAT_ID_COLUMN];
+            if (workspaceId) {
+                workspaceCodingTime[String(workspaceId)] = Number(row.total);
             }
         }
         return workspaceCodingTime;

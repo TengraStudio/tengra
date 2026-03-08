@@ -28,9 +28,7 @@ import { z } from 'zod';
 /** Dependencies required by the workspace IPC handlers. */
 export interface WorkspaceIpcDeps {
     /** Service for workspace analysis, watching, and environment management. */
-    workspaceService?: WorkspaceService;
-    /** Legacy alias accepted during workspace-to-workspace migration. */
-    projectService?: WorkspaceService;
+    workspaceService: WorkspaceService;
     /** Service for logo generation and workspace identity analysis. */
     logoService: LogoService;
     /** Service for inline code suggestions and completions. */
@@ -58,7 +56,6 @@ export const registerWorkspaceIpc = (
 ): void => {
     const {
         workspaceService,
-        projectService,
         logoService,
         inlineSuggestionService,
         codeIntelligenceService,
@@ -66,14 +63,7 @@ export const registerWorkspaceIpc = (
         databaseService,
         auditLogService,
     } = deps;
-
-    const resolvedWorkspaceService = (() => {
-        const service = projectService ?? workspaceService;
-        if (!service) {
-            throw new Error('WorkspaceService is required to register workspace IPC handlers');
-        }
-        return service;
-    })();
+    const resolvedWorkspaceService = workspaceService;
 
     /**
      * Internal utility for audit logging sensitive file system operations.
@@ -115,7 +105,7 @@ export const registerWorkspaceIpc = (
 
                 // Trigger background indexing
                 if (workspaceId) {
-                    codeIntelligenceService.indexProject(rootPath, workspaceId).catch((err: unknown) => {
+                    codeIntelligenceService.indexWorkspace(rootPath, workspaceId).catch((err: unknown) => {
                         appLogger.error('WorkspaceIPC', `Failed to auto-index workspace: ${err}`);
                     });
                 }

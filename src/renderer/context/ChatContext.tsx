@@ -137,7 +137,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     const { appSettings, language } = useAuth();
     const { selectedModel, selectedProvider, selectedModels } = useModel();
     const { t } = useTranslation();
-    const { projects: workspaces, selectedProject: selectedWorkspace, setSelectedProject: setSelectedWorkspace, loadProjects: loadWorkspaces } = useWorkspace();
+    const { workspaces: workspaces, selectedWorkspace: selectedWorkspace, setSelectedWorkspace: setSelectedWorkspace, loadWorkspaces: loadWorkspaces } = useWorkspace();
     const { speak: handleSpeak, stop: handleStopSpeak, isSpeaking, speakingMessageId } = useTextToSpeech();
     const historyManager = useChatHistory();
     const isRestoringRef = useRef(false);

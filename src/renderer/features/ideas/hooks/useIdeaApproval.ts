@@ -1,41 +1,42 @@
 /**
  * Hook for managing idea approval workflow
  */
-import { Project } from '@shared/types/project';
 import { useCallback, useState } from 'react';
+
+import type { Workspace } from '@/types';
 
 interface UseIdeaApprovalReturn {
     isApproving: boolean
     isRejecting: boolean
     isArchiving: boolean
-    approvedProject: Project | null
+    approvedWorkspace: Workspace | null
     error: string | null
-    approveIdea: (ideaId: string, projectPath: string, selectedName?: string) => Promise<Project | null>
+    approveIdea: (ideaId: string, workspacePath: string, selectedName?: string) => Promise<Workspace | null>
     rejectIdea: (ideaId: string) => Promise<boolean>
     archiveIdea: (ideaId: string) => Promise<boolean>
     clearError: () => void
-    clearApprovedProject: () => void
+    clearApprovedWorkspace: () => void
 }
 
 export function useIdeaApproval(): UseIdeaApprovalReturn {
     const [isApproving, setIsApproving] = useState(false);
     const [isRejecting, setIsRejecting] = useState(false);
     const [isArchiving, setIsArchiving] = useState(false);
-    const [approvedProject, setApprovedProject] = useState<Project | null>(null);
+    const [approvedWorkspace, setApprovedWorkspace] = useState<Workspace | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    const approveIdea = useCallback(async (ideaId: string, projectPath: string, selectedName?: string): Promise<Project | null> => {
+    const approveIdea = useCallback(async (ideaId: string, workspacePath: string, selectedName?: string): Promise<Workspace | null> => {
         setIsApproving(true);
         setError(null);
-        setApprovedProject(null);
+        setApprovedWorkspace(null);
 
         try {
-            const result = await window.electron.ideas.approveIdea(ideaId, projectPath, selectedName);
+            const result = await window.electron.ideas.approveIdea(ideaId, workspacePath, selectedName);
             if (result.success && result.workspace) {
-                setApprovedProject(result.workspace);
+                setApprovedWorkspace(result.workspace);
                 return result.workspace;
             }
-            throw new Error('Failed to create project');
+            throw new Error('Failed to create workspace');
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Failed to approve idea';
             setError(message);
@@ -81,20 +82,20 @@ export function useIdeaApproval(): UseIdeaApprovalReturn {
         setError(null);
     }, []);
 
-    const clearApprovedProject = useCallback(() => {
-        setApprovedProject(null);
+    const clearApprovedWorkspace = useCallback(() => {
+        setApprovedWorkspace(null);
     }, []);
 
     return {
         isApproving,
         isRejecting,
         isArchiving,
-        approvedProject,
+        approvedWorkspace,
         error,
         approveIdea,
         rejectIdea,
         archiveIdea,
         clearError,
-        clearApprovedProject
+        clearApprovedWorkspace
     };
 }

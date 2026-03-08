@@ -1,3 +1,3 @@
 export { ModelsSkeleton } from './ModelsSkeleton';
-export { WorkspacesSkeleton } from './ProjectsSkeleton';
 export { SettingsSkeleton } from './SettingsSkeleton';
+export { WorkspacesSkeleton } from './WorkspacesSkeleton';

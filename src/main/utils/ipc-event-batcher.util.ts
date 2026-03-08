@@ -1,4 +1,4 @@
-import { BrowserWindow } from 'electron'
+import { BrowserWindow } from 'electron';
 
 interface BatchedEventEmitterOptions {
     /** Channel name for the batched event */
@@ -19,41 +19,41 @@ export function createBatchedEventEmitter<T>(options: BatchedEventEmitterOptions
     flush: () => void
     dispose: () => void
 } {
-    const { channel, windowMs = 50, maxBatchSize = 100 } = options
-    let buffer: T[] = []
-    let timer: ReturnType<typeof setTimeout> | null = null
+    const { channel, windowMs = 50, maxBatchSize = 100 } = options;
+    let buffer: T[] = [];
+    let timer: ReturnType<typeof setTimeout> | null = null;
 
     function flush(): void {
-        if (buffer.length === 0) return
-        const batch = buffer
-        buffer = []
-        timer = null
-        const windows = BrowserWindow.getAllWindows()
+        if (buffer.length === 0) {return;}
+        const batch = buffer;
+        buffer = [];
+        timer = null;
+        const windows = BrowserWindow.getAllWindows();
         for (const win of windows) {
             if (!win.isDestroyed()) {
-                win.webContents.send(channel, batch)
+                win.webContents.send(channel, batch);
             }
         }
     }
 
     function emit(item: T): void {
-        buffer.push(item)
+        buffer.push(item);
         if (buffer.length >= maxBatchSize) {
-            if (timer) { clearTimeout(timer); timer = null }
-            flush()
-            return
+            if (timer) { clearTimeout(timer); timer = null; }
+            flush();
+            return;
         }
         if (!timer) {
-            timer = setTimeout(flush, windowMs)
+            timer = setTimeout(flush, windowMs);
         }
     }
 
     function dispose(): void {
-        if (timer) { clearTimeout(timer); timer = null }
-        flush()
+        if (timer) { clearTimeout(timer); timer = null; }
+        flush();
     }
 
-    return { emit, flush, dispose }
+    return { emit, flush, dispose };
 }
 
 interface ThrottledEventEmitterOptions {
@@ -72,52 +72,52 @@ export function createThrottledEventEmitter<T>(options: ThrottledEventEmitterOpt
     emit: (item: T) => void
     dispose: () => void
 } {
-    const { channel, intervalMs = 200 } = options
-    let lastSendTime = 0
-    let pendingItem: T | null = null
-    let timer: ReturnType<typeof setTimeout> | null = null
+    const { channel, intervalMs = 200 } = options;
+    let lastSendTime = 0;
+    let pendingItem: T | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
 
     function sendToWindows(item: T): void {
-        const windows = BrowserWindow.getAllWindows()
+        const windows = BrowserWindow.getAllWindows();
         for (const win of windows) {
             if (!win.isDestroyed()) {
-                win.webContents.send(channel, item)
+                win.webContents.send(channel, item);
             }
         }
-        lastSendTime = Date.now()
+        lastSendTime = Date.now();
     }
 
     function emit(item: T): void {
-        const now = Date.now()
-        const elapsed = now - lastSendTime
+        const now = Date.now();
+        const elapsed = now - lastSendTime;
 
         if (elapsed >= intervalMs) {
-            if (timer) { clearTimeout(timer); timer = null }
-            pendingItem = null
-            sendToWindows(item)
-            return
+            if (timer) { clearTimeout(timer); timer = null; }
+            pendingItem = null;
+            sendToWindows(item);
+            return;
         }
 
-        pendingItem = item
+        pendingItem = item;
         if (!timer) {
-            const remaining = intervalMs - elapsed
+            const remaining = intervalMs - elapsed;
             timer = setTimeout(() => {
-                timer = null
+                timer = null;
                 if (pendingItem !== null) {
-                    sendToWindows(pendingItem)
-                    pendingItem = null
+                    sendToWindows(pendingItem);
+                    pendingItem = null;
                 }
-            }, remaining)
+            }, remaining);
         }
     }
 
     function dispose(): void {
-        if (timer) { clearTimeout(timer); timer = null }
+        if (timer) { clearTimeout(timer); timer = null; }
         if (pendingItem !== null) {
-            sendToWindows(pendingItem)
-            pendingItem = null
+            sendToWindows(pendingItem);
+            pendingItem = null;
         }
     }
 
-    return { emit, dispose }
+    return { emit, dispose };
 }

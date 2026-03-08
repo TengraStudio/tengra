@@ -10,11 +10,11 @@ import type {
     IdeaSession,
     IdeaSessionConfig,
     IpcValue,
-    Project,
-    ProjectIdea,
     ResearchData,
     ResearchProgress,
     SemanticFragment,
+    Workspace,
+    WorkspaceIdea,
 } from '@/shared/types';
 import type {
     AdvancedSemanticFragment,
@@ -391,15 +391,15 @@ export interface ElectronApiModelsMemoryDomain {
         }>;
         startResearch: (sessionId: string) => Promise<{ success: boolean; data?: ResearchData }>;
         startGeneration: (sessionId: string) => Promise<{ success: boolean }>;
-        enrichIdea: (ideaId: string) => Promise<{ success: boolean; data?: ProjectIdea }>;
-        getIdea: (id: string) => Promise<ProjectIdea | null>;
-        getIdeas: (sessionId?: string) => Promise<ProjectIdea[]>;
-        regenerateIdea: (ideaId: string) => Promise<{ success: boolean; idea?: ProjectIdea }>;
+        enrichIdea: (ideaId: string) => Promise<{ success: boolean; data?: WorkspaceIdea }>;
+        getIdea: (id: string) => Promise<WorkspaceIdea | null>;
+        getIdeas: (sessionId?: string) => Promise<WorkspaceIdea[]>;
+        regenerateIdea: (ideaId: string) => Promise<{ success: boolean; idea?: WorkspaceIdea }>;
         approveIdea: (
             ideaId: string,
             workspacePath: string,
             selectedName?: string
-        ) => Promise<{ success: boolean; workspace?: Project }>;
+        ) => Promise<{ success: boolean; workspace?: Workspace }>;
         rejectIdea: (ideaId: string) => Promise<{ success: boolean }>;
         canGenerateLogo: () => Promise<boolean>;
         generateLogo: (
@@ -438,7 +438,7 @@ export interface ElectronApiModelsMemoryDomain {
         deleteSession: (sessionId: string) => Promise<{ success: boolean }>;
         archiveIdea: (ideaId: string) => Promise<{ success: boolean }>;
         restoreIdea: (ideaId: string) => Promise<{ success: boolean }>;
-        getArchivedIdeas: (sessionId?: string) => Promise<ProjectIdea[]>;
+        getArchivedIdeas: (sessionId?: string) => Promise<WorkspaceIdea[]>;
         // Progress events
         onResearchProgress: (callback: (progress: ResearchProgress) => void) => () => void;
         onIdeaProgress: (callback: (progress: IdeaProgress) => void) => () => void;

@@ -1,33 +1,33 @@
 import { useEffect, useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
-import { Project } from '@/types';
+import { Workspace } from '@/types';
 
-import { useProjectActions } from './useProjectActions';
-import { useProjectState } from './useProjectState';
+import { useWorkspaceActions } from './useWorkspaceActions';
 import { useWorkspaceManager } from './useWorkspaceManager';
+import { useWorkspaceState } from './useWorkspaceState';
 
-interface UseProjectWorkspaceControllerProps {
-    project: Project;
+interface UseWorkspaceDetailsControllerProps {
+    workspace: Workspace;
     language: Language;
 }
 
-export function useProjectWorkspaceController({
-    project,
+export function useWorkspaceDetailsController({
+    workspace,
     language,
-}: UseProjectWorkspaceControllerProps) {
+}: UseWorkspaceDetailsControllerProps) {
     const { t } = useTranslation(language);
-    const ps = useProjectState();
+    const ps = useWorkspaceState();
     const { notify, logActivity } = ps;
 
-    const wm = useWorkspaceManager({ project, notify, logActivity, t });
+    const wm = useWorkspaceManager({ workspace, notify, logActivity, t });
 
     useEffect(() => {
         const handleProgress = (_event: unknown, ...args: unknown[]) => {
             const progress = args[0] as
-                | { projectId: string; status: string; current: number; total: number }
+                | { workspaceId: string; status: string; current: number; total: number }
                 | undefined;
-            if (progress?.projectId === project.id) {
+            if (progress?.workspaceId === workspace.id) {
                 if (progress.status === 'Complete') {
                     ps.notify(
                         'success',
@@ -40,7 +40,7 @@ export function useProjectWorkspaceController({
                     if (progress.current === 1) {
                         ps.notify(
                             'info',
-                            t('workspaceDashboard.indexingStarted') || 'Starting project indexing...'
+                            t('workspaceDashboard.indexingStarted') || 'Starting workspace indexing...'
                         );
                     }
                 }
@@ -54,10 +54,10 @@ export function useProjectWorkspaceController({
         return () => {
             window.electron.ipcRenderer.off('code:indexing-progress', listener);
         };
-    }, [project.id, ps, t]);
+    }, [workspace.id, ps, t]);
 
-    const { handleUpdateProject } = useProjectActions({
-        project,
+    const { handleUpdateWorkspace } = useWorkspaceActions({
+        workspace,
         notify,
         t,
         agentChatMessage: ps.agentChatMessage,
@@ -123,7 +123,7 @@ export function useProjectWorkspaceController({
     return {
         ps,
         wm,
-        handleUpdateProject,
+        handleUpdateWorkspace,
         submitEntryModal,
         entryBusy,
         t,

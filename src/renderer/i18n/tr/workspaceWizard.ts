@@ -1,12 +1,12 @@
 const sectionData = {
     "title": "Proje Sihirbazı",
-    "localProject": "Yerel Proje",
-    "localProjectDesc": "Bilgisayarınızda yeni bir proje oluşturun.",
+    "localWorkspace": "Yerel Proje",
+    "localWorkspaceDesc": "Bilgisayarınızda yeni bir proje oluşturun.",
     "remoteSSH": "Uzak SSH",
     "remoteSSHDesc": "Uzak bir sunucuya bağlanın ve geliştirme yapın.",
     "import": "İçe Aktar",
     "importDesc": "Mevcut bir projeyi veya klasörü çalışma alanına ekleyin.",
-    "projectName": "PROJE ADI",
+    "workspaceName": "PROJE ADI",
     "namePlaceholder": "Örn: CRM Dashboard",
     "placeholder": {
         "example": "ornek.com"

@@ -8,7 +8,7 @@ const sectionData = {
     "commandPalette": "Komut Paleti",
     "toggleSidebar": "Kenar Çubuğunu Aç/Kapat",
     "goToChat": "Sohbete Git",
-    "goToProjects": "Projelere Git",
+    "goToWorkspaces": "Projelere Git",
     "goToCouncil": "Konseye Git",
     "goToSettings": "Ayarlara Git",
     "sendMessage": "Mesaj Gönder",

@@ -1,4 +1,4 @@
-import type { PlanCostBreakdown, StepComment, StepConfidence } from '@shared/types/project-agent';
+import type { PlanCostBreakdown, StepComment, StepConfidence } from '@shared/types/workspace-agent';
 import {
     CheckCircle2,
     Coins,

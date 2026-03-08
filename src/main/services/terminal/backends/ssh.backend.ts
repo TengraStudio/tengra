@@ -1,5 +1,5 @@
 import { appLogger } from '@main/logging/logger';
-import { SSHService } from '@main/services/project/ssh.service';
+import { SSHService } from '@main/services/workspace/ssh.service';
 
 import { ITerminalBackend, ITerminalProcess, TerminalCreateOptions } from './terminal-backend.interface';
 

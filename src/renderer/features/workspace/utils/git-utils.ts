@@ -173,19 +173,19 @@ const extractSectionErrors = ({
             .join(', '),
 });
 
-export async function fetchFullGitData(projectPath: string): Promise<FullGitData | null> {
-    const repoCheck = await window.electron.git.isRepository(projectPath);
+export async function fetchFullGitData(workspacePath: string): Promise<FullGitData | null> {
+    const repoCheck = await window.electron.git.isRepository(workspacePath);
     if (!repoCheck.isRepository) { return null; }
 
-    const batchedGitData = await CommonBatches.loadWorkspaceData(projectPath);
+    const batchedGitData = await CommonBatches.loadWorkspaceData(workspacePath);
 
     const [recentCommitsResult, detailedStatus, remotesResult, trackingResult, diffStatsResult, commitStatsResult] = await Promise.all([
-        window.electron.git.getRecentCommits(projectPath, 10),
-        window.electron.git.getDetailedStatus(projectPath),
-        window.electron.git.getRemotes(projectPath),
-        window.electron.git.getTrackingInfo(projectPath),
-        window.electron.git.getDiffStats(projectPath),
-        window.electron.git.getCommitStats(projectPath, 365)
+        window.electron.git.getRecentCommits(workspacePath, 10),
+        window.electron.git.getDetailedStatus(workspacePath),
+        window.electron.git.getRemotes(workspacePath),
+        window.electron.git.getTrackingInfo(workspacePath),
+        window.electron.git.getDiffStats(workspacePath),
+        window.electron.git.getCommitStats(workspacePath, 365)
     ]);
 
     return {

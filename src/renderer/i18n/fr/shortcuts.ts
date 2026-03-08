@@ -8,7 +8,7 @@ const sectionData = {
     "commandPalette": "Palette de commandes",
     "toggleSidebar": "Basculer la barre latérale",
     "goToChat": "Aller à la discussion",
-    "goToProjects": "Aller aux projets",
+    "goToWorkspaces": "Aller aux projets",
     "goToCouncil": "Aller au conseil",
     "goToSettings": "Aller aux paramètres",
     "sendMessage": "Envoyer le message",

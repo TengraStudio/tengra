@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { Project } from '@/types';
+import { Workspace } from '@/types';
 
 import { ActivityLog } from '../components/agent/ActivityStream';
 import { ExecutionPlan } from '../components/agent/ExecutionPlanView';
@@ -48,10 +48,10 @@ export interface AgentTaskStatus {
 /**
  * Hook for managing agent task execution and state
  *
- * @param {Project} project The active project
+ * @param {Workspace} workspace The active workspace
  * @returns {object} The agent task state and handlers
  */
-export const useAgentTask = (project: Project) => {
+export const useAgentTask = (workspace: Workspace) => {
     const [status, setStatus] = useState<AgentTaskStatus>({
         taskId: null,
         state: 'idle',
@@ -84,7 +84,7 @@ export const useAgentTask = (project: Project) => {
             setCurrentPlan(null);
 
             // Invoke the start task command (selectedModel is validated above)
-            const result = await invokeStartTask(userPrompt, agentFiles, selectedModel as ModelOption, project);
+            const result = await invokeStartTask(userPrompt, agentFiles, selectedModel as ModelOption, workspace);
 
             if (result.success) {
                 const taskId = result.taskId ?? null;
@@ -102,7 +102,7 @@ export const useAgentTask = (project: Project) => {
         } finally {
             setIsLoading(false);
         }
-    }, [project]);
+    }, [workspace]);
 
     const pauseTask = useCallback(async (taskId: string) => {
         try {

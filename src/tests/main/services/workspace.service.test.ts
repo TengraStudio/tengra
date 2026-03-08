@@ -41,8 +41,8 @@ describe('WorkspaceService', () => {
         workspaceService = new WorkspaceService();
     });
 
-    it('should analyze a project correctly', async () => {
-        const mockDirPath = '/mock/project';
+    it('should analyze a workspace correctly', async () => {
+        const mockDirPath = '/mock/workspace';
 
         // Mock readdir for scanFiles
         vi.mocked(fs.readdir).mockResolvedValue([
@@ -78,7 +78,7 @@ describe('WorkspaceService', () => {
     });
 
     it('should analyze a directory correctly', async () => {
-        const mockDirPath = '/mock/project';
+        const mockDirPath = '/mock/workspace';
 
         vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify({ name: 'test-pkg' }));
         vi.mocked(fs.readdir).mockResolvedValue([
@@ -99,7 +99,7 @@ describe('WorkspaceService', () => {
     });
 
     it('should return safe defaults when directory listing fails', async () => {
-        const mockDirPath = '/restricted/project';
+        const mockDirPath = '/restricted/workspace';
 
         vi.mocked(fs.readFile).mockRejectedValue(new Error('EACCES'));
         vi.mocked(fs.readdir).mockRejectedValue(new Error('EACCES'));
@@ -113,8 +113,8 @@ describe('WorkspaceService', () => {
         expect(result.stats.totalSize).toBe(0);
     });
 
-    it('should tolerate scan permission failures during project analysis', async () => {
-        const mockDirPath = '/restricted/project';
+    it('should tolerate scan permission failures during workspace analysis', async () => {
+        const mockDirPath = '/restricted/workspace';
 
         vi.mocked(fs.readdir).mockRejectedValue(new Error('EACCES'));
 
@@ -125,12 +125,12 @@ describe('WorkspaceService', () => {
         expect(result.stats.fileCount).toBe(0);
     });
 
-    it('throws when project root path input is invalid', async () => {
-        await expect(workspaceService.analyzeWorkspace('')).rejects.toThrow('Invalid project root path');
+    it('throws when workspace root path input is invalid', async () => {
+        await expect(workspaceService.analyzeWorkspace('')).rejects.toThrow('Invalid workspace root path');
     });
 
     it('applies incremental invalidation from changed path set', async () => {
-        const mockDirPath = '/mock/project';
+        const mockDirPath = '/mock/workspace';
 
         vi.mocked(fs.readdir)
             .mockResolvedValueOnce([
@@ -159,7 +159,7 @@ describe('WorkspaceService', () => {
         const trackChangedPath = (
             workspaceService as unknown as { trackChangedPath: (rootPath: string, changedPath: string) => void }
         ).trackChangedPath.bind(workspaceService);
-        trackChangedPath(mockDirPath, '/mock/project/src/new-file.ts');
+        trackChangedPath(mockDirPath, '/mock/workspace/src/new-file.ts');
         const updated = await workspaceService.analyzeWorkspace(mockDirPath);
 
         expect(updated.stats.fileCount).toBe(initial.stats.fileCount + 1);
@@ -167,7 +167,7 @@ describe('WorkspaceService', () => {
     });
 
     it('normalizes pagination bounds for file pages', async () => {
-        const mockDirPath = '/mock/project';
+        const mockDirPath = '/mock/workspace';
 
         vi.mocked(fs.readdir).mockResolvedValueOnce([
             mockDirent('index.ts', false),
@@ -208,7 +208,7 @@ describe('WorkspaceService', () => {
             'INVALID_LINE'
         ].join('\n'));
 
-        const vars = await workspaceService.getEnvVars('/mock/project');
+        const vars = await workspaceService.getEnvVars('/mock/workspace');
 
         expect(vars).toEqual({
             PLAIN: 'value',
@@ -219,21 +219,21 @@ describe('WorkspaceService', () => {
         });
     });
 
-    it('writes env vars to the project .env file', async () => {
-        await workspaceService.saveEnvVars('/mock/project', {
+    it('writes env vars to the workspace .env file', async () => {
+        await workspaceService.saveEnvVars('/mock/workspace', {
             API_KEY: 'secret',
             NODE_ENV: 'development'
         });
 
         expect(fs.writeFile).toHaveBeenCalledWith(
-            expect.stringMatching(/mock[\\/]+project[\\/]+\.env$/),
+            expect.stringMatching(/mock[\\/]+workspace[\\/]+\.env$/),
             'API_KEY=secret\nNODE_ENV=development',
             'utf-8'
         );
     });
 
     it('rejects env save payloads with invalid variable names', async () => {
-        await expect(workspaceService.saveEnvVars('/mock/project', {
+        await expect(workspaceService.saveEnvVars('/mock/workspace', {
             'INVALID-NAME': 'x'
         })).rejects.toThrow('Invalid environment variable payload');
     });

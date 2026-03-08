@@ -1,7 +1,7 @@
 import { SSHProfileTestResult } from '@shared/types/ssh';
 import { useCallback, useState } from 'react';
 
-import { recordWorkspacesPageHealthEvent } from '@/store/projects-page-health.store';
+import { recordWorkspacesPageHealthEvent } from '@/store/workspaces-page-health.store';
 import { MountForm, WorkspaceMount } from '@/types';
 
 import {
@@ -13,7 +13,7 @@ import {
  * Props for the mount management hook.
  */
 interface UseMountManagementProps {
-    projectId: string;
+    workspaceId: string;
     mounts: WorkspaceMount[];
     setMounts: (mounts: WorkspaceMount[]) => void;
     notify: (type: 'success' | 'error' | 'info', message: string) => void;
@@ -39,7 +39,7 @@ const DEFAULT_MOUNT_FORM: MountForm = {
  * Persist mounts to the database and record health events.
  */
 function usePersistMounts(
-    projectId: string,
+    workspaceId: string,
     setMounts: (mounts: WorkspaceMount[]) => void,
     notify: (type: 'success' | 'error' | 'info', message: string) => void,
     t: (key: string) => string
@@ -49,7 +49,7 @@ function usePersistMounts(
             const startedAt = Date.now();
             setMounts(nextMounts);
             try {
-                await window.electron.db.updateWorkspace(projectId, { mounts: nextMounts });
+                await window.electron.db.updateWorkspace(workspaceId, { mounts: nextMounts });
                 recordWorkspacesPageHealthEvent({
                     channel: 'workspace.persistMounts',
                     status: 'success',
@@ -68,7 +68,7 @@ function usePersistMounts(
                 return false;
             }
         },
-        [projectId, notify, setMounts, t]
+        [workspaceId, notify, setMounts, t]
     );
 }
 
@@ -114,13 +114,13 @@ async function saveSSHProfileIfNeeded(
  * Extracted from useWorkspaceManager to keep function sizes under the NASA 60-line limit.
  */
 export function useMountManagement({
-    projectId,
+    workspaceId,
     mounts,
     setMounts,
     notify,
     t,
 }: UseMountManagementProps) {
-    const persistMounts = usePersistMounts(projectId, setMounts, notify, t);
+    const persistMounts = usePersistMounts(workspaceId, setMounts, notify, t);
     const [mountForm, setMountForm] = useState<MountForm>(DEFAULT_MOUNT_FORM);
 
     const addMount = useCallback(async () => {

@@ -5,7 +5,7 @@ import {
     terminalWriteResponseSchema
 } from '@shared/schemas/terminal.schema';
 import type { TerminalIpcContract } from '@shared/terminal-ipc';
-import { ProjectId, toProjectId, toTerminalSessionId } from '@shared/types/ids';
+import { toTerminalSessionId,toWorkspaceId, WorkspaceId } from '@shared/types/ids';
 import { useCallback, useEffect, useRef } from 'react';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
@@ -140,12 +140,12 @@ const handleCharInput = (data: string, lineBuffer: string): string => {
     return lineBuffer;
 };
 
-export function useTerminal(cwd?: string, projectId?: string, t?: (key: string) => string) {
+export function useTerminal(cwd?: string, workspaceId?: string, t?: (key: string) => string) {
     const terminalRef = useRef<HTMLDivElement>(null);
     const pidRef = useRef<string | null>(null);
     const isInitializedRef = useRef(false);
     const terminalIdRef = useRef<string | null>(null);
-    const historyRef = useRef<string[]>(loadHistory(projectId));
+    const historyRef = useRef<string[]>(loadHistory(workspaceId));
     const historyIndexRef = useRef<number>(-1);
     const currentInputRef = useRef<string>('');
     const cleanupsRef = useRef<TerminalCleanups>({});
@@ -158,19 +158,19 @@ export function useTerminal(cwd?: string, projectId?: string, t?: (key: string) 
         if (command.trim()) {
             if (historyRef.current.length === 0 || historyRef.current[historyRef.current.length - 1] !== command) {
                 historyRef.current.push(command);
-                saveHistory(historyRef.current, projectId);
+                saveHistory(historyRef.current, workspaceId);
             }
         }
         historyIndexRef.current = -1;
         currentInputRef.current = '';
-    }, [projectId]);
+    }, [workspaceId]);
 
     useEffect(() => {
         if (isInitializedRef.current || !terminalRef.current) { return; }
 
         isInitializedRef.current = true;
-        const normalizedProjectId: ProjectId = toProjectId(projectId ?? 'global');
-        const terminalId = toTerminalSessionId(`term-${normalizedProjectId}-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`);
+        const normalizedWorkspaceId: WorkspaceId = toWorkspaceId(workspaceId ?? 'global');
+        const terminalId = toTerminalSessionId(`term-${normalizedWorkspaceId}-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`);
         terminalIdRef.current = terminalId;
 
         const terminalConfig = getTerminalConfig(settings);
@@ -253,7 +253,7 @@ export function useTerminal(cwd?: string, projectId?: string, t?: (key: string) 
 
                     if (pidRef.current) {
                         invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [pidRef.current, data], { responseSchema: terminalWriteResponseSchema }).catch(error => {
-                            appLogger.warn('ProjectsUseTerminal', 'Failed to write terminal input', error as Error);
+                            appLogger.warn('WorkspaceUseTerminal', 'Failed to write terminal input', error as Error);
                         });
                     }
                 });
@@ -261,13 +261,13 @@ export function useTerminal(cwd?: string, projectId?: string, t?: (key: string) 
                 term.onResize(({ cols, rows }) => {
                     if (pidRef.current) {
                         invokeTypedIpc<TerminalIpcContract, 'terminal:resize'>('terminal:resize', [pidRef.current, cols, rows], { responseSchema: terminalResizeResponseSchema }).catch(error => {
-                            appLogger.warn('ProjectsUseTerminal', 'Failed to resize terminal', error as Error);
+                            appLogger.warn('WorkspaceUseTerminal', 'Failed to resize terminal', error as Error);
                         });
                     }
                 });
 
             } catch (error) {
-                appLogger.error('ProjectsUseTerminal', 'Failed to initialize terminal', error as Error);
+                appLogger.error('WorkspaceUseTerminal', 'Failed to initialize terminal', error as Error);
                 term.write(`\r\n\x1b[31mFailed to start terminal\x1b[0m\r\n`);
             }
         };
@@ -289,14 +289,14 @@ export function useTerminal(cwd?: string, projectId?: string, t?: (key: string) 
                 initializedTerminals.delete(terminalId);
                 initializingTerminals.delete(terminalId);
                 invokeTypedIpc<TerminalIpcContract, 'terminal:kill'>('terminal:kill', [terminalId], { responseSchema: terminalKillResponseSchema }).catch(error => {
-                    appLogger.warn('ProjectsUseTerminal', 'Failed to kill terminal during cleanup', error as Error);
+                    appLogger.warn('WorkspaceUseTerminal', 'Failed to kill terminal during cleanup', error as Error);
                 });
             }
             if (cleanupsRef.current.data) { cleanupsRef.current.data(); }
             if (cleanupsRef.current.exit) { cleanupsRef.current.exit(); }
             term.dispose();
         };
-    }, [cwd, projectId, t, addToHistory, settings]);
+    }, [cwd, workspaceId, t, addToHistory, settings]);
 
     // Update terminal options when settings change
     useEffect(() => {

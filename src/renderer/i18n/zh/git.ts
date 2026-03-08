@@ -2,7 +2,7 @@ const sectionData = {
     "commitGenerator": "Git 提交生成器",
     "generatorSubtitle": "AI 驱动的提交信息建议",
     "generate": "生成",
-    "selectProject": "选择一个项目以生成提交信息",
+    "selectWorkspace": "选择一个项目以生成提交信息",
     "suggestedMessage": "建议的提交信息",
     "stagedChanges": "暂存更改预览",
     "noStagedChanges": "未找到暂存的更改。请先使用 `git add` 暂存更改。",

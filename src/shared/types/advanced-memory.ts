@@ -11,6 +11,8 @@
  * - Hierarchical knowledge graph relationships
  */
 
+import { normalizeWorkspaceCompatCategory } from '@shared/constants';
+
 import { JsonValue } from './common';
 
 // ============================================================================
@@ -49,15 +51,77 @@ export type MemorySource =
     | 'tool_result';     // Learned from tool execution
 
 /** Memory category for organization */
-export type MemoryCategory =
-    | 'preference'       // User preferences (dark mode, language, etc.)
-    | 'personal'         // Personal info (name, location, etc.)
-    | 'project'          // Workspace-specific knowledge
-    | 'technical'        // Technical preferences/knowledge
-    | 'workflow'         // How user likes to work
-    | 'relationship'     // Relationships between entities
-    | 'fact'             // General facts
-    | 'instruction';     // How user wants AI to behave
+export const MEMORY_CATEGORY_VALUES = [
+    'preference',
+    'personal',
+    'workspace',
+    'technical',
+    'workflow',
+    'relationship',
+    'fact',
+    'instruction'
+] as const;
+
+export type MemoryCategory = (typeof MEMORY_CATEGORY_VALUES)[number];
+
+const MEMORY_CATEGORY_SET = new Set<string>(MEMORY_CATEGORY_VALUES);
+
+export function normalizeMemoryCategory(value?: string | null): MemoryCategory | undefined {
+    if (typeof value !== 'string') {
+        return undefined;
+    }
+
+    const normalizedValue = value.trim().toLowerCase();
+    if (!normalizedValue) {
+        return undefined;
+    }
+
+    const legacyCategory = normalizeWorkspaceCompatCategory(normalizedValue);
+    if (legacyCategory) {
+        return legacyCategory;
+    }
+
+    return MEMORY_CATEGORY_SET.has(normalizedValue)
+        ? normalizedValue as MemoryCategory
+        : undefined;
+}
+
+export function coerceMemoryCategory(
+    value?: string | null,
+    fallback: MemoryCategory = 'fact'
+): MemoryCategory {
+    return normalizeMemoryCategory(value) ?? fallback;
+}
+
+export function createEmptyMemoryCategoryCounts(): Record<MemoryCategory, number> {
+    return {
+        preference: 0,
+        personal: 0,
+        workspace: 0,
+        technical: 0,
+        workflow: 0,
+        relationship: 0,
+        fact: 0,
+        instruction: 0
+    };
+}
+
+export function normalizeMemoryCategoryCounts(
+    counts: Partial<Record<string, number>>
+): Record<MemoryCategory, number> {
+    const normalizedCounts = createEmptyMemoryCategoryCounts();
+
+    for (const [rawCategory, value] of Object.entries(counts)) {
+        const category = normalizeMemoryCategory(rawCategory);
+        if (!category || typeof value !== 'number' || !Number.isFinite(value)) {
+            continue;
+        }
+
+        normalizedCounts[category] += value;
+    }
+
+    return normalizedCounts;
+}
 
 // ============================================================================
 // ADVANCED SEMANTIC FRAGMENT (Enhanced Facts)

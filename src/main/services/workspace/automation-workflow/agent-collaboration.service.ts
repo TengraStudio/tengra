@@ -15,14 +15,14 @@ import {
     HelperHandoffPackage,
     HelperMergeGateDecision,
     ModelRoutingRule,
-    ProjectStep,
     TaskType,
     VotingAnalytics,
     VotingConfiguration,
     VotingSession,
     VotingTemplate,
     WorkerAvailabilityRecord,
-} from '@shared/types/project-agent';
+    WorkspaceStep,
+} from '@shared/types/workspace-agent';
 
 import { AgentConsensusService } from './collaboration/agent-consensus.service';
 import { AgentDebateService } from './collaboration/agent-debate.service';
@@ -74,8 +74,8 @@ export class AgentCollaborationService extends BaseService {
     }
 
     // --- Routing Delegation ---
-    analyzeSteps(steps: ProjectStep[]) { return this.routing.analyzeSteps(steps); }
-    getModelForStep(step: ProjectStep, availableProviders: string[]) { return this.routing.getModelForStep(step, availableProviders); }
+    analyzeSteps(steps: WorkspaceStep[]) { return this.routing.analyzeSteps(steps); }
+    getModelForStep(step: WorkspaceStep, availableProviders: string[]) { return this.routing.getModelForStep(step, availableProviders); }
     routeByTaskType(taskType: TaskType, availableProviders: string[]) { return this.routing.routeByTaskType(taskType, availableProviders); }
     detectTaskType(text: string) { return this.routing.detectTaskType(text); }
     getRoutingRules() { return this.routing.getRules(); }
@@ -88,7 +88,7 @@ export class AgentCollaborationService extends BaseService {
     }
 
     /** AGT-COL-01: Explicitly assign a model to a step */
-    assignModelToStep(step: ProjectStep, provider: string, model: string, reason?: string): ProjectStep {
+    assignModelToStep(step: WorkspaceStep, provider: string, model: string, reason?: string): WorkspaceStep {
         return {
             ...step,
             modelConfig: { provider, model, reason }

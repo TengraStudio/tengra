@@ -1,5 +1,6 @@
 import { TimeTrackingService } from '@main/services/analysis/time-tracking.service';
 import { DatabaseClientService } from '@main/services/data/database-client.service';
+import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { DbQueryRequest, DbQueryResponse } from '@shared/types/db-api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -17,6 +18,9 @@ vi.mock('@main/logging/logger', () => ({
         debug: vi.fn(),
     },
 }));
+
+const WORKSPACE_COMPAT_CODING_TYPE = WORKSPACE_COMPAT_SCHEMA_VALUES.CODING_TABLE;
+const WORKSPACE_COMPAT_ID_COLUMN = WORKSPACE_COMPAT_SCHEMA_VALUES.ID_COLUMN;
 
 /**
  * Creates a mock DatabaseClientService with a controllable executeQuery stub.
@@ -186,9 +190,9 @@ describe('TimeTrackingService', () => {
             expect(params[5]).toBe(3000);
         });
 
-        it('should start project-specific coding tracking with workspaceId', async () => {
+        it('should start workspace-specific coding tracking with workspaceId', async () => {
             // Arrange
-            const workspaceId = 'project-abc';
+            const workspaceId = 'workspace-abc';
             service.startCodingTracking(workspaceId);
             vi.advanceTimersByTime(7000);
 
@@ -199,32 +203,32 @@ describe('TimeTrackingService', () => {
             const executeQuery = vi.mocked(mockDbClient.executeQuery);
             expect(executeQuery).toHaveBeenCalledTimes(1);
             const params = executeQuery.mock.calls[0][0].params as (string | number | null)[];
-            expect(params[1]).toBe('project_coding');
+            expect(params[1]).toBe(WORKSPACE_COMPAT_CODING_TYPE);
             expect(params[2]).toBe(workspaceId);
             expect(params[5]).toBe(7000);
         });
 
-        it('should track multiple projects simultaneously', async () => {
+        it('should track multiple workspaces simultaneously', async () => {
             // Arrange
-            service.startCodingTracking('project-1');
+            service.startCodingTracking('workspace-1');
             vi.advanceTimersByTime(2000);
-            service.startCodingTracking('project-2');
+            service.startCodingTracking('workspace-2');
             vi.advanceTimersByTime(3000);
 
             // Act
-            await service.stopCodingTracking('project-1');
-            await service.stopCodingTracking('project-2');
+            await service.stopCodingTracking('workspace-1');
+            await service.stopCodingTracking('workspace-2');
 
             // Assert
             const executeQuery = vi.mocked(mockDbClient.executeQuery);
             expect(executeQuery).toHaveBeenCalledTimes(2);
 
             const params1 = executeQuery.mock.calls[0][0].params as (string | number | null)[];
-            expect(params1[2]).toBe('project-1');
+            expect(params1[2]).toBe('workspace-1');
             expect(params1[5]).toBe(5000); // 2000 + 3000
 
             const params2 = executeQuery.mock.calls[1][0].params as (string | number | null)[];
-            expect(params2[2]).toBe('project-2');
+            expect(params2[2]).toBe('workspace-2');
             expect(params2[5]).toBe(3000);
         });
     });
@@ -238,9 +242,9 @@ describe('TimeTrackingService', () => {
             expect(vi.mocked(mockDbClient.executeQuery)).not.toHaveBeenCalled();
         });
 
-        it('should be a no-op when stopping project coding without active session', async () => {
+        it('should be a no-op when stopping workspace coding without active session', async () => {
             // Act
-            await service.stopCodingTracking('non-existent-project');
+            await service.stopCodingTracking('non-existent-workspace');
 
             // Assert
             expect(vi.mocked(mockDbClient.executeQuery)).not.toHaveBeenCalled();
@@ -259,7 +263,7 @@ describe('TimeTrackingService', () => {
             expect(vi.mocked(mockDbClient.executeQuery)).toHaveBeenCalledTimes(1);
         });
 
-        it('should clear project state after stop', async () => {
+        it('should clear workspace state after stop', async () => {
             // Arrange
             service.startCodingTracking('proj-1');
             vi.advanceTimersByTime(1000);
@@ -302,7 +306,7 @@ describe('TimeTrackingService', () => {
                 }
                 // workspace_coding query
                 return {
-                    rows: [{ project_id: 'p1', total: 20000 }],
+                    rows: [{ [WORKSPACE_COMPAT_ID_COLUMN]: 'p1', total: 20000 }],
                     affected_rows: 0,
                 };
             });
@@ -336,13 +340,13 @@ describe('TimeTrackingService', () => {
             expect(stats.workspaceCodingTime).toEqual({ 'proj-x': 4000 });
         });
 
-        it('should combine persisted and active project times', async () => {
+        it('should combine persisted and active workspace times', async () => {
             // Arrange
             const executeQuery = vi.mocked(mockDbClient.executeQuery);
             executeQuery.mockImplementation(async (req: DbQueryRequest) => {
                 if (req.sql.includes('GROUP BY')) {
                     return {
-                        rows: [{ project_id: 'proj-x', total: 10000 }],
+                        rows: [{ [WORKSPACE_COMPAT_ID_COLUMN]: 'proj-x', total: 10000 }],
                         affected_rows: 0,
                     };
                 }
@@ -444,16 +448,16 @@ describe('TimeTrackingService', () => {
 
         it('should insert correct fields for workspace_coding', async () => {
             // Arrange
-            service.startCodingTracking('my-project');
+            service.startCodingTracking('my-workspace');
             vi.advanceTimersByTime(6000);
 
             // Act
-            await service.stopCodingTracking('my-project');
+            await service.stopCodingTracking('my-workspace');
 
             // Assert
             const params = (vi.mocked(mockDbClient.executeQuery).mock.calls[0][0].params) as (string | number | null)[];
-            expect(params[1]).toBe('project_coding');
-            expect(params[2]).toBe('my-project');
+            expect(params[1]).toBe(WORKSPACE_COMPAT_CODING_TYPE);
+            expect(params[2]).toBe('my-workspace');
             expect(params[5]).toBe(6000);
         });
 
@@ -481,15 +485,15 @@ describe('TimeTrackingService', () => {
             expect(vi.mocked(mockDbClient.executeQuery)).toHaveBeenCalledTimes(5);
         });
 
-        it('should handle starting project tracking after overwriting same project', async () => {
-            // Arrange - start same project twice (overwrites start time)
-            service.startCodingTracking('proj-1');
+        it('should handle starting workspace tracking after overwriting the same workspace', async () => {
+            // Arrange - start the same workspace twice (overwrites start time).
+            service.startCodingTracking('workspace-1');
             vi.advanceTimersByTime(3000);
-            service.startCodingTracking('proj-1'); // overwrites
+            service.startCodingTracking('workspace-1'); // overwrites
             vi.advanceTimersByTime(2000);
 
             // Act
-            await service.stopCodingTracking('proj-1');
+            await service.stopCodingTracking('workspace-1');
 
             // Assert - duration should be from the second start
             const params = (vi.mocked(mockDbClient.executeQuery).mock.calls[0][0].params) as (string | number | null)[];

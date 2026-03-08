@@ -10,32 +10,35 @@ import type {
 import { getContextWindowService } from '@main/services/llm/context-window.service';
 import { getCostEstimationService } from '@main/services/llm/cost-estimation.service';
 import { LLMService } from '@main/services/llm/llm.service';
-import { AgentCheckpointService } from '@main/services/project/agent/agent-checkpoint.service';
-import { AgentCollaborationService } from '@main/services/project/agent/agent-collaboration.service';
-import { AgentRegistryService } from '@main/services/project/agent/agent-registry.service';
-import { createInitialAgentState } from '@main/services/project/agent/agent-state-machine';
-import { AgentTaskPlanCompiler } from '@main/services/project/agent/agent-task-plan-compiler';
-import { AgentTestRunnerService, getAgentTestRunnerService } from '@main/services/project/agent/agent-test-runner.service';
-import { TaskStateMachine } from '@main/services/project/agent/task-state-machine';
-import { ToolInvocationManager } from '@main/services/project/agent/tool-invocation-manager';
-import { GitService } from '@main/services/project/git.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
+import { AgentCheckpointService } from '@main/services/workspace/agent/agent-checkpoint.service';
+import { AgentCollaborationService } from '@main/services/workspace/agent/agent-collaboration.service';
+import { AgentRegistryService } from '@main/services/workspace/agent/agent-registry.service';
+import { createInitialAgentState } from '@main/services/workspace/automation-workflow/agent-state-machine';
+import { AgentTaskPlanCompiler } from '@main/services/workspace/automation-workflow/agent-task-plan-compiler';
+import { AgentTestRunnerService, getAgentTestRunnerService } from '@main/services/workspace/automation-workflow/agent-test-runner.service';
+import { TaskStateMachine } from '@main/services/workspace/automation-workflow/task-state-machine';
+import { ToolInvocationManager } from '@main/services/workspace/automation-workflow/tool-invocation-manager';
+import { GitService } from '@main/services/workspace/git.service';
 import { ToolExecutor } from '@main/tools/tool-executor';
 import { StateMachine } from '@main/utils/state-machine.util';
+import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { AgentTaskState } from '@shared/types/agent-state';
 import { Message, ToolCall, ToolDefinition } from '@shared/types/chat';
 import {
     AgentStartOptions,
     PlanVersionItem,
-    ProjectState,
-    ProjectStep,
-    ProjectStepStatus,
     RollbackCheckpointResult,
     StepComment,
     TestRunConfig,
     TestRunResult,
-} from '@shared/types/project-agent';
+    WorkspaceState,
+    WorkspaceStep,
+    WorkspaceStepStatus,
+} from '@shared/types/workspace-agent';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
+
+const WORKSPACE_COMPAT_PATH_COLUMN = WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN;
 
 export interface AgentServices {
     database: DatabaseService;
@@ -67,8 +70,8 @@ export class AgentTaskExecutor {
     /** AGT-PLN-01: Maximum auto-retry attempts per step */
     private static readonly MAX_AUTO_RETRIES = 2;
 
-    public state: ProjectState;
-    private stateMachine: StateMachine<ProjectState['status'], string>;
+    public state: WorkspaceState;
+    private stateMachine: StateMachine<WorkspaceState['status'], string>;
     private abortController: AbortController | null = null;
     private toolExecutor?: ToolExecutor;
     private currentStepTokens = { prompt: 0, completion: 0 };
@@ -162,7 +165,7 @@ export class AgentTaskExecutor {
         this.toolExecutor = toolExecutor;
     }
 
-    public getStatus(): ProjectState {
+    public getStatus(): WorkspaceState {
         return this.state;
     }
 
@@ -179,18 +182,18 @@ export class AgentTaskExecutor {
     }
 
     private emitUpdate() {
-        this.services.eventBus.emit('project:update', {
+        this.services.eventBus.emit('workspace:update', {
             ...this.state,
         });
     }
 
     private setupEventListeners() {
-        this.unsubscribeStepUpdate = this.services.eventBus.on('project:step-update', payload => {
+        this.unsubscribeStepUpdate = this.services.eventBus.on('workspace:step-update', payload => {
             if (payload.taskId && payload.taskId !== this.taskId) { return; } // Filtering
 
             void (async () => {
                 try {
-                    this.logInfo(`Received project:step-update: ${JSON.stringify(payload)}`);
+                    this.logInfo(`Received workspace:step-update: ${JSON.stringify(payload)}`);
                     const { index, status, message } = payload;
                     if (index >= 0 && index < this.state.plan.length) {
                         this.handleStepStatusUpdate(index, status);
@@ -213,10 +216,10 @@ export class AgentTaskExecutor {
             })();
         });
 
-        this.unsubscribePlanProposed = this.services.eventBus.on('project:plan-proposed', payload => {
+        this.unsubscribePlanProposed = this.services.eventBus.on('workspace:plan-proposed', payload => {
             if (payload.taskId && payload.taskId !== this.taskId) { return; }
 
-            this.logInfo(`Received project:plan-proposed event with ${payload.steps.length} steps`);
+            this.logInfo(`Received workspace:plan-proposed event with ${payload.steps.length} steps`);
             if (this.state.status !== 'planning') {
                 this.logWarn(`Ignoring proposed plan while state is ${this.state.status}`);
                 return;
@@ -229,7 +232,7 @@ export class AgentTaskExecutor {
                             return step;
                         }
                         if (step && typeof step === 'object') {
-                            const candidate = step as Partial<ProjectStep> & { text?: string };
+                            const candidate = step as Partial<WorkspaceStep> & { text?: string };
                             if (typeof candidate.text === 'string') {
                                 return {
                                     id: candidate.id ?? randomUUID(),
@@ -240,13 +243,13 @@ export class AgentTaskExecutor {
                                     priority: candidate.priority,
                                     parallelLane: candidate.parallelLane,
                                     branchId: candidate.branchId,
-                                } as ProjectStep;
+                                } as WorkspaceStep;
                             }
                         }
                         return String(step);
                     });
                     this.state.plan = this.normalizePlan(
-                        normalizedSteps as Array<string> | Array<ProjectStep>
+                        normalizedSteps as Array<string> | Array<WorkspaceStep>
                     );
                     await this.enrichPlanWithCollaboration();
 
@@ -281,7 +284,7 @@ export class AgentTaskExecutor {
         });
 
         // AGT-PLN-02: Listen for plan revision events
-        this.unsubscribePlanRevised = this.services.eventBus.on('project:plan-revised', payload => {
+        this.unsubscribePlanRevised = this.services.eventBus.on('workspace:plan-revised', payload => {
             if (payload.taskId && payload.taskId !== this.taskId) { return; }
 
             this.logInfo(`Received plan revision: ${payload.action} - ${payload.reason}`);
@@ -377,7 +380,7 @@ export class AgentTaskExecutor {
             );
 
             // Emit cost estimation event for UI updates
-            this.services.eventBus.emit('project:cost-estimated', {
+            this.services.eventBus.emit('workspace:cost-estimated', {
                 taskId: this.taskId,
                 estimate: costBreakdown,
             });
@@ -516,7 +519,7 @@ export class AgentTaskExecutor {
             const steps = await this.services.database.uac.getSteps(this.taskId);
             const logs = await this.services.database.uac.getLogs(this.taskId);
 
-            this.state = this.buildProjectStateFromRecords(task, steps, logs);
+            this.state = this.buildWorkspaceStateFromRecords(task, steps, logs);
             this.stateMachine.setState(this.state.status);
 
             this.logInfo(`Restored state with status: ${this.state.status}`);
@@ -564,7 +567,7 @@ export class AgentTaskExecutor {
 
         // Restore plan steps
         if (snapshotState.plan && snapshotState.plan.steps.length > 0) {
-            const restoredSteps: ProjectStep[] = snapshotState.plan.steps.map(s => ({
+            const restoredSteps: WorkspaceStep[] = snapshotState.plan.steps.map(s => ({
                 id: randomUUID(),
                 text: s.description,
                 status: s.status === 'in_progress' ? 'running' :
@@ -636,7 +639,7 @@ export class AgentTaskExecutor {
                     {
                         id: randomUUID(),
                         role: 'user',
-                        content: `Task: ${String(task)} \n\nProject Context: ${workspaceId ?? 'None'} \nAttachments: ${attachments?.map(a => a.name).join(', ') ?? 'None'} `,
+                        content: `Task: ${String(task)} \n\nWorkspace Context: ${workspaceId ?? 'None'} \nAttachments: ${attachments?.map(a => a.name).join(', ') ?? 'None'} `,
                         timestamp: new Date(),
                     } as Message,
                 ];
@@ -688,7 +691,7 @@ export class AgentTaskExecutor {
                 {
                     id: randomUUID(),
                     role: 'user',
-                    content: `Task: ${String(task)}\n\nProject Context: ${workspaceId ?? 'None'}\n\nINSTRUCTIONS:\n1. Analyze this task briefly\n2. Call the \`propose_plan\` tool with your implementation steps\n\nFALLBACK (if tool calling is not available):\nReturn a JSON object: { "steps": ["step 1", "step 2", ...] }`,
+                    content: `Task: ${String(task)}\n\nWorkspace Context: ${workspaceId ?? 'None'}\n\nINSTRUCTIONS:\n1. Analyze this task briefly\n2. Call the \`propose_plan\` tool with your implementation steps\n\nFALLBACK (if tool calling is not available):\nReturn a JSON object: { "steps": ["step 1", "step 2", ...] }`,
                     timestamp: new Date(),
                 } as Message,
             ];
@@ -729,7 +732,7 @@ export class AgentTaskExecutor {
 
     // --- Plan Management ---
 
-    async approvePlan(plan: ProjectStep[] | string[]): Promise<void> {
+    async approvePlan(plan: WorkspaceStep[] | string[]): Promise<void> {
         if (!this.stateMachine.can('running')) {
             this.logWarn(`Cannot approve plan in state: ${this.state.status}`);
             return;
@@ -917,7 +920,7 @@ export class AgentTaskExecutor {
             return;
         }
 
-        const interventionStep: ProjectStep = {
+        const interventionStep: WorkspaceStep = {
             id: randomUUID(),
             text: '[Manual Intervention Point]',
             status: 'pending',
@@ -956,16 +959,16 @@ export class AgentTaskExecutor {
         };
     }
 
-    private async resolveProjectPath(): Promise<string | null> {
-        const projectId = this.state.config?.workspaceId;
-        if (!projectId) {
+    private async resolveWorkspacePath(): Promise<string | null> {
+        const workspaceId = this.state.config?.workspaceId;
+        if (!workspaceId) {
             return null;
         }
-        if (projectId.includes('/') || projectId.includes('\\')) {
-            return projectId;
+        if (workspaceId.includes('/') || workspaceId.includes('\\')) {
+            return workspaceId;
         }
-        const project = await this.services.database.getProject(projectId);
-        return project?.path ?? null;
+        const wsRecord = await this.services.database.getWorkspace(workspaceId);
+        return wsRecord?.path ?? null;
     }
 
     private async getCurrentBranch(repoPath: string): Promise<string | null> {
@@ -993,13 +996,13 @@ export class AgentTaskExecutor {
             return;
         }
 
-        const repoPath = await this.resolveProjectPath();
+        const repoPath = await this.resolveWorkspacePath();
         if (!repoPath) {
-            this.logInfo('Skipping AGT-GIT automation: no project selected');
+            this.logInfo('Skipping AGT-GIT automation: no workspace selected');
             return;
         }
         if (!(await this.isGitRepository(repoPath))) {
-            this.logWarn(`Skipping AGT-GIT automation: selected project is not a git repository (${repoPath})`);
+            this.logWarn(`Skipping AGT-GIT automation: selected workspace is not a Git repository (${repoPath})`);
             return;
         }
 
@@ -1200,12 +1203,12 @@ export class AgentTaskExecutor {
             return { success: false, error: 'No active GitHub account linked.' };
         }
 
-        const repoPath = this.gitContext?.repoPath ?? (await this.resolveProjectPath());
+        const repoPath = this.gitContext?.repoPath ?? (await this.resolveWorkspacePath());
         if (!repoPath) {
-            return { success: false, error: 'No project selected.' };
+            return { success: false, error: 'No workspace selected.' };
         }
         if (!(await this.isGitRepository(repoPath))) {
-            return { success: false, error: 'Selected project is not a Git repository.' };
+            return { success: false, error: 'Selected workspace is not a Git repository.' };
         }
 
         const baseBranch = this.gitContext?.baseBranch ?? (await this.getCurrentBranch(repoPath));
@@ -1660,7 +1663,7 @@ ${content}`;
 
         if (currentCost.costUsd >= budgetLimit) {
             // Emit budget exceeded event for UI notification
-            this.services.eventBus.emit('project:budget-exceeded', {
+            this.services.eventBus.emit('workspace:budget-exceeded', {
                 taskId: this.taskId,
                 budgetLimitUsd: budgetLimit,
                 currentCostUsd: currentCost.costUsd,
@@ -1890,7 +1893,7 @@ ${content}`;
     private async autoProposeTextPlan(content: string): Promise<boolean> {
         const jsonSteps = this.planCompiler.parseJsonPlan(content);
         if (jsonSteps && jsonSteps.length > 0) {
-            this.services.eventBus.emit('project:plan-proposed', { steps: jsonSteps, taskId: this.taskId });
+            this.services.eventBus.emit('workspace:plan-proposed', { steps: jsonSteps, taskId: this.taskId });
             this.shouldStop = true;
             return true;
         }
@@ -1911,7 +1914,7 @@ ${content}`;
 
     private handleStepStatusUpdate(
         index: number,
-        status: ProjectStepStatus
+        status: WorkspaceStepStatus
     ): void {
         if (status === 'running') {
             if (!this.canRunStep(index)) {
@@ -1945,7 +1948,7 @@ ${content}`;
         this.taskStateMachine.activateReadyDependentSteps(this.state.plan);
     }
 
-    private normalizePlan(plan: ProjectStep[] | string[]): ProjectStep[] {
+    private normalizePlan(plan: WorkspaceStep[] | string[]): WorkspaceStep[] {
         return this.planCompiler.normalizePlan(plan);
     }
 
@@ -1999,7 +2002,7 @@ ${content}`;
         }
     }
 
-    private async syncTaskSteps(taskId: string, steps: ProjectStep[]): Promise<void> {
+    private async syncTaskSteps(taskId: string, steps: WorkspaceStep[]): Promise<void> {
         const existingSteps = await this.services.database.uac.getSteps(taskId);
 
         if (existingSteps.length === 0) {
@@ -2034,27 +2037,30 @@ ${content}`;
         return await this.services.checkpoint.createPlanVersion(this.taskId, this.state.plan, reason);
     }
 
-    private buildProjectStateFromRecords(
+    private buildWorkspaceStateFromRecords(
         activeTask: UacTaskRecord,
         steps: UacStepRecord[],
         logs: UacLogRecord[]
-    ): ProjectState {
+    ): WorkspaceState {
         const metadata = activeTask.metadata
             ? safeJsonParse<Record<string, unknown>>(activeTask.metadata, {})
             : {};
 
         const agentProfileId = metadata['agentProfileId'];
         const profileId = typeof agentProfileId === 'string' ? agentProfileId : 'default';
+        const workspaceId = typeof activeTask[WORKSPACE_COMPAT_PATH_COLUMN] === 'string'
+            ? activeTask[WORKSPACE_COMPAT_PATH_COLUMN]
+            : undefined;
 
         return {
-            status: activeTask.status as ProjectState['status'],
+            status: activeTask.status as WorkspaceState['status'],
             currentTask: activeTask.description,
             taskId: activeTask.id,
             nodeId: activeTask.node_id ?? undefined,
             plan: steps.map(step => ({
                 id: step.id,
                 text: step.text,
-                status: step.status as ProjectStep['status'],
+                status: step.status as WorkspaceStep['status'],
             })),
             history: logs.map(log => ({
                 id: log.id,
@@ -2065,7 +2071,7 @@ ${content}`;
             })),
             config: {
                 task: activeTask.description,
-                workspaceId: activeTask.project_path,
+                workspaceId,
                 agentProfileId: profileId,
                 model: metadata['model'] as { provider: string; model: string } | undefined,
                 systemMode: metadata['systemMode'] as 'fast' | 'thinking' | 'architect' | undefined,
@@ -2148,10 +2154,10 @@ ${content}`;
             return;
         }
 
-        // Get project path from git context or working directory
-        const projectPath = this.gitContext?.repoPath ?? process.cwd();
-        if (!projectPath) {
-            this.logWarn('Cannot run tests: no project path available');
+        // Get workspace path from git context or working directory
+        const workspacePath = this.gitContext?.repoPath ?? process.cwd();
+        if (!workspacePath) {
+            this.logWarn('Cannot run tests: no workspace path available');
             return;
         }
 
@@ -2159,7 +2165,7 @@ ${content}`;
 
         try {
             const result = await this.testRunner.runTestsForStep(
-                projectPath,
+                workspacePath,
                 stepTestConfig,
                 this.testConfig ?? undefined
             );
@@ -2271,7 +2277,7 @@ ${content}`;
         return baseState;
     }
 
-    private mapTaskTypeToCheckpointStepType(taskType?: ProjectStep['taskType']):
+    private mapTaskTypeToCheckpointStepType(taskType?: WorkspaceStep['taskType']):
         'analysis' | 'code_generation' | 'refactoring' | 'testing' | 'documentation' | 'deployment' {
         switch (taskType) {
             case 'research':

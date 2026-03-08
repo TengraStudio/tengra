@@ -14,6 +14,7 @@ import {
 } from '@main/services/data/database.service';
 import { DatabaseClientService } from '@main/services/data/database-client.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
+import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@main/logging/logger', () => ({
@@ -46,7 +47,7 @@ function buildMocks() {
         recycleConnectionPool: vi.fn().mockResolvedValue(undefined)
     } as unknown as DatabaseClientService;
     const timeTracking = {
-        getTimeStats: vi.fn().mockResolvedValue({ totalOnlineTime: 0, totalCodingTime: 0, projectCodingTime: {} })
+        getTimeStats: vi.fn().mockResolvedValue({ totalOnlineTime: 0, totalCodingTime: 0, workspaceCodingTime: {} })
     } as unknown as TimeTrackingService;
     return { dataService, eventBus, dbClient, timeTracking };
 }
@@ -69,7 +70,7 @@ describe('Database Regression Tests', () => {
         it('tracks multiple queries and returns sorted analysis', async () => {
             await service.query('SELECT id FROM chats');
             await service.query('SELECT id FROM chats');
-            await service.query('SELECT * FROM projects');
+            await service.query(`SELECT * FROM ${WORKSPACE_COMPAT_SCHEMA_VALUES.TABLE}`);
 
             const analysis = service.getQueryAnalysis();
             expect(analysis.length).toBe(2);

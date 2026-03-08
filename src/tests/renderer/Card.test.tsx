@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 describe('Card', () => {
     it('uses region role when an accessible name is provided', () => {
-        render(<Card aria-label="Project summary">Body</Card>);
+        render(<Card aria-label="Workspace summary">Body</Card>);
 
-        expect(screen.getByRole('region', { name: 'Project summary' })).toBeInTheDocument();
+        expect(screen.getByRole('region', { name: 'Workspace summary' })).toBeInTheDocument();
     });
 
     it('respects explicit role instead of implicit region', () => {

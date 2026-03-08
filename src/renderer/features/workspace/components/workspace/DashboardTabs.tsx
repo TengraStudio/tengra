@@ -7,14 +7,14 @@ import { WorkspaceDashboardTab } from '@/types';
 interface DashboardTabsProps {
     dashboardTab: WorkspaceDashboardTab;
     onDashboardTabChange?: (tab: WorkspaceDashboardTab) => void;
-    handleRunProject: () => void;
+    handleRunWorkspace: () => void;
     t: (key: string) => string;
 }
 
 export const DashboardTabs: React.FC<DashboardTabsProps> = ({
     dashboardTab,
     onDashboardTabChange,
-    handleRunProject,
+    handleRunWorkspace,
     t
 }) => {
     const tabs = [
@@ -38,7 +38,7 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
                     <React.Fragment key={tab.id}>
                         {idx === 2 && (
                             <button
-                                onClick={handleRunProject}
+                                onClick={handleRunWorkspace}
                                 className="p-1.5 rounded-md hover:bg-white/10 text-success transition-colors"
                                 title={t('workspace.run')}
                             >

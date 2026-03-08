@@ -85,13 +85,13 @@ const sectionData = {
     "copyStripAnsi": "Kopieren (Strip ANSI)",
     "pastePreview": "Vorschau einfügen",
     "pasteTest": "Testpaste",
-    "projectIssuesTabTitle": "Projektprobleme",
-    "projectIssuesTitle": "Projektwarnungen und -fehler",
-    "projectIssuesDescription": "Aggregierte Warnungen und Fehler, die im aktuellen Projekt erkannt wurden.",
-    "projectIssuesLoading": "Auffrischende Projektdiagnose...",
-    "projectIssuesNoProject": "Öffnen Sie ein Projekt, um die Diagnose zu überprüfen.",
-    "projectIssuesNoIssues": "Beim letzten Scan wurden keine Warnungen oder Fehler erkannt.",
-    "projectIssuesLoadFailed": "Die Projektdiagnose konnte nicht geladen werden."
+    "workspaceIssuesTabTitle": "Projektprobleme",
+    "workspaceIssuesTitle": "Projektwarnungen und -fehler",
+    "workspaceIssuesDescription": "Aggregierte Warnungen und Fehler, die im aktuellen Projekt erkannt wurden.",
+    "workspaceIssuesLoading": "Auffrischende Projektdiagnose...",
+    "workspaceIssuesNoWorkspace": "Öffnen Sie ein Projekt, um die Diagnose zu überprüfen.",
+    "workspaceIssuesNoIssues": "Beim letzten Scan wurden keine Warnungen oder Fehler erkannt.",
+    "workspaceIssuesLoadFailed": "Die Projektdiagnose konnte nicht geladen werden."
 };
 
 export default sectionData;

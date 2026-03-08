@@ -1,6 +1,6 @@
-import { IdeaSession, ProjectIdea } from '@shared/types/ideas';
+import { IdeaSession, WorkspaceIdea } from '@shared/types/ideas';
 
-export const exportIdeas = (currentSession: IdeaSession, ideas: ProjectIdea[], format: 'markdown' | 'json') => {
+export const exportIdeas = (currentSession: IdeaSession, ideas: WorkspaceIdea[], format: 'markdown' | 'json') => {
     try {
         const timestamp = new Date().toISOString().split('T')[0];
         const filename = `ideas-${currentSession.id}-${timestamp}.${format === 'markdown' ? 'md' : 'json'}`;
@@ -8,7 +8,7 @@ export const exportIdeas = (currentSession: IdeaSession, ideas: ProjectIdea[], f
         let content: string;
 
         if (format === 'markdown') {
-            content = `# Project Ideas - ${new Date().toLocaleDateString()}\n\n`;
+            content = `# Workspace Ideas - ${new Date().toLocaleDateString()}\n\n`;
             content += `**Session ID:** ${currentSession.id}\n`;
             content += `**Total Ideas:** ${ideas.length}\n\n`;
             content += `---\n\n`;

@@ -2,8 +2,8 @@
  * Council Scenarios 3–4: Quota-End Flow & Provider-Down Flow
  */
 
-import { AgentExecutorService } from '@main/services/workspace/automation-workflow/agent-executor.service';
 import { AgentPersistenceService } from '@main/services/workspace/agent/agent-persistence.service';
+import { AgentExecutorService } from '@main/services/workspace/automation-workflow/agent-executor.service';
 import { AgentProviderRotationService } from '@main/services/workspace/automation-workflow/agent-provider-rotation.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

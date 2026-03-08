@@ -14,8 +14,8 @@ import {
     AgentCheckpointSnapshotV1,
     AgentCheckpointTrigger,
     PlanVersionItem,
-    ProjectStep
-} from '@shared/types/project-agent';
+    WorkspaceStep
+} from '@shared/types/workspace-agent';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 /** Standardized error for agent checkpointing */
@@ -317,7 +317,7 @@ export class AgentCheckpointService extends BaseService {
 
     async createPlanVersion(
         taskId: string,
-        plan: ProjectStep[],
+        plan: WorkspaceStep[],
         reason: PlanVersionItem['reason']
     ): Promise<PlanVersionItem> {
         const latest = await this.databaseService.uac.getLatestPlanVersion(taskId);
@@ -348,7 +348,7 @@ export class AgentCheckpointService extends BaseService {
             taskId: row.task_id,
             versionNumber: row.version_number,
             reason: this.normalizePlanVersionReason(row.reason),
-            plan: safeJsonParse<ProjectStep[]>(row.plan_snapshot, []),
+            plan: safeJsonParse<WorkspaceStep[]>(row.plan_snapshot, []),
             createdAt: row.created_at
         }));
     }

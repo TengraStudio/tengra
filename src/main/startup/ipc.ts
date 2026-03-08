@@ -36,8 +36,6 @@ import { registerOllamaIpc } from '@main/ipc/ollama';
 import { registerOrchestratorIpc } from '@main/ipc/orchestrator';
 import { registerPerformanceIpc } from '@main/ipc/performance';
 import { registerProcessIpc, setupProcessEvents } from '@main/ipc/process';
-import { registerProjectIpc } from '@main/ipc/project';
-import { registerProjectAgentIpc } from '@main/ipc/project-agent';
 import { registerPromptTemplatesIpc } from '@main/ipc/prompt-templates';
 import { registerProxyIpc } from '@main/ipc/proxy';
 import { registerProxyEmbedIpc } from '@main/ipc/proxy-embed';
@@ -52,6 +50,8 @@ import { registerUsageIpc } from '@main/ipc/usage';
 import { registerVoiceIpc } from '@main/ipc/voice';
 import { registerWindowIpc } from '@main/ipc/window';
 import { registerWorkflowIpc } from '@main/ipc/workflow';
+import { registerWorkspaceIpc } from '@main/ipc/workspace';
+import { registerWorkspaceAgentIpc } from '@main/ipc/workspace-agent';
 import { appLogger } from '@main/logging/logger';
 import { McpDispatcher } from '@main/mcp/dispatcher';
 import { Services } from '@main/startup/services';
@@ -133,8 +133,8 @@ export async function registerIpcHandlers(
         rateLimitService: services.rateLimitService,
     });
 
-    registerProjectIpc(getMainWindow, {
-        projectService: services.projectService,
+    registerWorkspaceIpc(getMainWindow, {
+        workspaceService: services.workspaceService,
         logoService,
         inlineSuggestionService: services.inlineSuggestionService,
         codeIntelligenceService: services.codeIntelligenceService,
@@ -224,8 +224,8 @@ export async function registerIpcHandlers(
     // Register Idea Generator IPC
     registerIdeaGeneratorIpc(services.ideaGeneratorService, services.eventBusService);
 
-    services.projectAgentService.setToolExecutor(toolExecutor);
-    registerProjectAgentIpc(services.projectAgentService, getMainWindow, services.databaseService);
+    services.workspaceAgentService.setToolExecutor(toolExecutor);
+    registerWorkspaceAgentIpc(services.workspaceAgentService, getMainWindow, services.databaseService);
 
     // Register Multi-Agent Orchestrator IPC
     registerOrchestratorIpc(services.multiAgentOrchestratorService, getMainWindow);

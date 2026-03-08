@@ -103,7 +103,4 @@ export function createWorkspaceBridge(ipc: IpcRenderer): WorkspaceBridge {
             return () => ipc.removeListener('workspace:file-change', listener);
         },
     };
-}
-
-export type ProjectBridge = WorkspaceBridge;
-export const createProjectBridge = createWorkspaceBridge;
+}

@@ -3,11 +3,10 @@
  */
 import {
     IdeaProgress,
-    ProjectIdea,
     ResearchData,
     ResearchProgress,
-    ResearchStage
-} from '@shared/types/ideas';
+    ResearchStage,
+    WorkspaceIdea} from '@shared/types/ideas';
 import { useCallback, useEffect, useState } from 'react';
 
 interface UseIdeaGenerationReturn {
@@ -19,14 +18,14 @@ interface UseIdeaGenerationReturn {
     isResearching: boolean
 
     // Generation state
-    ideas: ProjectIdea[]
+    ideas: WorkspaceIdea[]
     generationProgress: IdeaProgress | null
     isGenerating: boolean
 
     // Actions
     startResearch: (sessionId: string) => Promise<ResearchData | null>
     startGeneration: (sessionId: string) => Promise<void>
-    enrichIdea: (ideaId: string) => Promise<ProjectIdea | null>
+    enrichIdea: (ideaId: string) => Promise<WorkspaceIdea | null>
     loadIdeas: (sessionId?: string) => Promise<void>
 
     // Error handling
@@ -43,7 +42,7 @@ export function useIdeaGeneration(): UseIdeaGenerationReturn {
     const [isResearching, setIsResearching] = useState(false);
 
     // Generation state
-    const [ideas, setIdeas] = useState<ProjectIdea[]>([]);
+    const [ideas, setIdeas] = useState<WorkspaceIdea[]>([]);
     const [generationProgress, setGenerationProgress] = useState<IdeaProgress | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
 
@@ -61,7 +60,7 @@ export function useIdeaGeneration(): UseIdeaGenerationReturn {
         const handleIdeaProgress = (progress: IdeaProgress) => {
             setGenerationProgress(progress);
             if (progress.currentIdea?.id) {
-                const newIdea = progress.currentIdea as ProjectIdea;
+                const newIdea = progress.currentIdea as WorkspaceIdea;
                 setIdeas(prev => {
                     const existing = prev.find(i => i.id === newIdea.id);
                     if (existing) {
@@ -126,7 +125,7 @@ export function useIdeaGeneration(): UseIdeaGenerationReturn {
         }
     }, []);
 
-    const enrichIdea = useCallback(async (ideaId: string): Promise<ProjectIdea | null> => {
+    const enrichIdea = useCallback(async (ideaId: string): Promise<WorkspaceIdea | null> => {
         setError(null);
         try {
             const result = await window.electron.ideas.enrichIdea(ideaId);

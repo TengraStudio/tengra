@@ -1,12 +1,12 @@
 const sectionData = {
     "title": "معالج المشروع",
-    "localProject": "مشروع محلي",
-    "localProjectDesc": "إنشاء مشروع جديد على جهاز الكمبيوتر الخاص بك.",
+    "localWorkspace": "مشروع محلي",
+    "localWorkspaceDesc": "إنشاء مشروع جديد على جهاز الكمبيوتر الخاص بك.",
     "remoteSSH": "SSH عن بعد",
     "remoteSSHDesc": "الاتصال بخادم بعيد للتطوير.",
     "import": "استيراد",
     "importDesc": "إضافة مشروع أو مجلد موجود إلى مساحة العمل.",
-    "projectName": "اسم المشروع",
+    "workspaceName": "اسم المشروع",
     "namePlaceholder": "مثال: لوحة تحكم CRM",
     "placeholder": {
         "example": "example.com"

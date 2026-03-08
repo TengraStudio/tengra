@@ -24,7 +24,7 @@ vi.mock('fs', () => ({
 
 describe('RuleService', () => {
     let service: RuleService;
-    const workspaceRoot = '/test/project';
+    const workspaceRoot = '/test/workspace';
     const rulesPath = path.join(workspaceRoot, '.tengra', 'RULES.md');
 
     beforeEach(() => {
@@ -104,12 +104,12 @@ describe('RuleService', () => {
             expect(result).toBe('');
         });
 
-        it('should handle different project roots independently', async () => {
+        it('should handle different workspace roots independently', async () => {
             mockStat.mockResolvedValue({ mtimeMs: 1000 });
             mockReadFile.mockResolvedValueOnce('rules A').mockResolvedValueOnce('rules B');
 
-            const resultA = await service.getRules('/project-a');
-            const resultB = await service.getRules('/project-b');
+            const resultA = await service.getRules('/workspace-a');
+            const resultB = await service.getRules('/workspace-b');
 
             expect(resultA).toBe('rules A');
             expect(resultB).toBe('rules B');
@@ -139,7 +139,7 @@ describe('RuleService', () => {
             expect(mockReadFile).toHaveBeenCalledTimes(1);
         });
 
-        it('should not throw when clearing cache for uncached project', () => {
+        it('should not throw when clearing cache for an uncached workspace', () => {
             expect(() => service.clearCache('/nonexistent')).not.toThrow();
         });
     });

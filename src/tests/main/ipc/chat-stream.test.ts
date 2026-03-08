@@ -93,7 +93,7 @@ const createStreamRequest = (overrides?: Record<string, unknown>) => ({
     provider: 'openai',
     optionsJson: {},
     chatId: 'stream-test-1',
-    projectId: 'proj-1',
+    workspaceId: 'proj-1',
     systemMode: 'architect',
     ...(overrides ?? {})
 });
@@ -559,7 +559,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
     // ─── RAG context injection ───────────────────────────────────────
 
     describe('RAG context injection', () => {
-        it('should emit metadata chunk with sources when project has RAG context', async () => {
+        it('should emit metadata chunk with sources when a workspace has RAG context', async () => {
             mockContextRetrievalService.retrieveContext.mockResolvedValue({
                 contextString: 'function foo() { return 42; }',
                 sources: ['src/foo.ts:10']
@@ -570,7 +570,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: 'response' };
             })());
 
-            await handler?.(mockEvent, createStreamRequest({ projectId: 'proj-rag' }));
+            await handler?.(mockEvent, createStreamRequest({ workspaceId: 'proj-rag' }));
 
             const chunks = getStreamChunkCalls();
             const metadataChunks = chunks.filter(c => c.type === 'metadata');
@@ -589,7 +589,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: 'no-rag' };
             })());
 
-            await handler?.(mockEvent, createStreamRequest({ projectId: undefined }));
+            await handler?.(mockEvent, createStreamRequest({ workspaceId: undefined }));
 
             expect(mockContextRetrievalService.retrieveContext).not.toHaveBeenCalled();
         });
@@ -604,7 +604,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: 'still-works' };
             })());
 
-            await handler?.(mockEvent, createStreamRequest({ projectId: 'proj-broken-rag' }));
+            await handler?.(mockEvent, createStreamRequest({ workspaceId: 'proj-broken-rag' }));
 
             const chunks = getStreamChunkCalls();
             expect(chunks.some(c => c.content === 'still-works')).toBe(true);

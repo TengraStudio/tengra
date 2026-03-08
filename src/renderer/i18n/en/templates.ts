@@ -7,7 +7,7 @@ const sectionData = {
     "analyze": {
         "title": "Analyze",
         "description": "Inspect files and data.",
-        "prompt": "Can you analyze the architecture in this project and provide improvement suggestions?"
+        "prompt": "Can you analyze the architecture in this workspace and provide improvement suggestions?"
     },
     "creative": {
         "title": "Creative Writing",

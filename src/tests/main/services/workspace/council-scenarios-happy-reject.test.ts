@@ -3,8 +3,8 @@
  */
 
 import { AgentCollaborationService } from '@main/services/workspace/agent/agent-collaboration.service';
-import { AgentExecutorService } from '@main/services/workspace/automation-workflow/agent-executor.service';
 import { AgentPersistenceService } from '@main/services/workspace/agent/agent-persistence.service';
+import { AgentExecutorService } from '@main/services/workspace/automation-workflow/agent-executor.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createMockPersistence, createMockPlan, createMockTaskState } from './council-scenarios.helpers';
@@ -22,7 +22,7 @@ describe('Council Scenario 1 – Happy Path: plan → approve → execute → do
         const state = createMockTaskState();
         const next = await executor.dispatch(state, {
             type: 'START_TASK',
-            payload: { taskId: 'task-001', task: 'Build feature', projectId: 'proj-001' }
+            payload: { taskId: 'task-001', task: 'Build feature', workspaceId: 'proj-001' }
         });
 
         expect(next.state).toBe('initializing');
@@ -61,7 +61,7 @@ describe('Council Scenario 1 – Happy Path: plan → approve → execute → do
         // 1. Start
         state = await executor.dispatch(state, {
             type: 'START_TASK',
-            payload: { taskId: 'task-001', task: 'Build feature', projectId: 'proj-001' }
+            payload: { taskId: 'task-001', task: 'Build feature', workspaceId: 'proj-001' }
         });
         expect(state.state).toBe('initializing');
 

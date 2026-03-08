@@ -55,7 +55,7 @@ function createService(): IdeaGeneratorService {
         databaseService: mockDatabaseService as unknown as IdeaGenDeps['databaseService'],
         llmService: mockLlmService as unknown as IdeaGenDeps['llmService'],
         marketResearchService: mockMarketResearchService as unknown as IdeaGenDeps['marketResearchService'],
-        projectScaffoldService: mockWorkspaceScaffoldService as unknown as IdeaGenDeps['projectScaffoldService'],
+        workspaceScaffoldService: mockWorkspaceScaffoldService as unknown as IdeaGenDeps['workspaceScaffoldService'],
         authService: mockAuthService as unknown as IdeaGenDeps['authService'],
         eventBus: mockEventBus as unknown as IdeaGenDeps['eventBus'],
         localImageService: mockLocalImageService as unknown as IdeaGenDeps['localImageService'],

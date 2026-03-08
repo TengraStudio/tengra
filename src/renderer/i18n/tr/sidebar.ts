@@ -45,7 +45,6 @@ const sectionData = {
     "active": "Aktif",
     "memory": "Hafıza",
     "automationWorkflow": "Otomasyon İş Akışı",
-    "project": "Proje",
     "moveTo": "Taşı...",
     "ideas": "Fikirler",
     "models": "Modeller",

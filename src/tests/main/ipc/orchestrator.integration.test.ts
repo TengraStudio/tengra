@@ -1,5 +1,5 @@
 import { registerOrchestratorIpc } from '@main/ipc/orchestrator';
-import { OrchestratorState, ProjectStep } from '@shared/types/project-agent';
+import { OrchestratorState, WorkspaceStep } from '@shared/types/workspace-agent';
 import { IpcMainInvokeEvent } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -128,11 +128,11 @@ describe('Orchestrator IPC Integration', () => {
         expect(mockOrchestratorService.orchestrate).toHaveBeenCalledWith('Build login feature', undefined);
     });
 
-    it('starts orchestration with task and project ID', async () => {
+    it('starts orchestration with task and workspace ID', async () => {
         const handler = ipcMainHandlers.get('orchestrator:start')!;
-        await handler({} as IpcMainInvokeEvent, 'Build login feature', 'project-123');
+        await handler({} as IpcMainInvokeEvent, 'Build login feature', 'workspace-123');
 
-        expect(mockOrchestratorService.orchestrate).toHaveBeenCalledWith('Build login feature', 'project-123');
+        expect(mockOrchestratorService.orchestrate).toHaveBeenCalledWith('Build login feature', 'workspace-123');
     });
 
     it('throws error for empty task string', async () => {
@@ -165,20 +165,20 @@ describe('Orchestrator IPC Integration', () => {
         expect(mockOrchestratorService.orchestrate).not.toHaveBeenCalled();
     });
 
-    it('throws error for non-string project ID', async () => {
+    it('throws error for non-string workspace ID', async () => {
         const handler = ipcMainHandlers.get('orchestrator:start')!;
 
         await expect(
             handler({} as IpcMainInvokeEvent, 'Build feature', 123)
-        ).rejects.toThrow('Project ID must be a string');
+        ).rejects.toThrow('Workspace ID must be a string');
 
         expect(mockOrchestratorService.orchestrate).not.toHaveBeenCalled();
     });
 
     it('approves plan with valid array', async () => {
         const handler = ipcMainHandlers.get('orchestrator:approve')!;
-        const plan: ProjectStep[] = [
-            { id: '1', text: 'Initialize project', status: 'pending' },
+        const plan: WorkspaceStep[] = [
+            { id: '1', text: 'Initialize workspace', status: 'pending' },
             { id: '2', text: 'Build feature', status: 'pending' }
         ];
 
@@ -199,7 +199,7 @@ describe('Orchestrator IPC Integration', () => {
 
         await expect(
             handler({} as IpcMainInvokeEvent, 'not an array')
-        ).rejects.toThrow('Plan must be an array of ProjectStep');
+        ).rejects.toThrow('Plan must be an array of WorkspaceStep');
 
         expect(mockOrchestratorService.approvePlan).not.toHaveBeenCalled();
     });
@@ -209,7 +209,7 @@ describe('Orchestrator IPC Integration', () => {
 
         await expect(
             handler({} as IpcMainInvokeEvent, null)
-        ).rejects.toThrow('Plan must be an array of ProjectStep');
+        ).rejects.toThrow('Plan must be an array of WorkspaceStep');
 
         expect(mockOrchestratorService.approvePlan).not.toHaveBeenCalled();
     });
@@ -219,7 +219,7 @@ describe('Orchestrator IPC Integration', () => {
 
         await expect(
             handler({} as IpcMainInvokeEvent, { step: 'build' })
-        ).rejects.toThrow('Plan must be an array of ProjectStep');
+        ).rejects.toThrow('Plan must be an array of WorkspaceStep');
 
         expect(mockOrchestratorService.approvePlan).not.toHaveBeenCalled();
     });

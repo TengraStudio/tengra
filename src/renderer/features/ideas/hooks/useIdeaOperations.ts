@@ -1,16 +1,16 @@
 /**
  * Hook for managing idea approval operations with optimistic updates
  */
-import type { IdeaSession, ProjectIdea } from '@shared/types/ideas';
+import type { IdeaSession, WorkspaceIdea } from '@shared/types/ideas';
 import { useCallback } from 'react';
 
 interface UseIdeaApprovalStateProps {
-    selectedIdea: ProjectIdea | null;
+    selectedIdea: WorkspaceIdea | null;
     currentSession: IdeaSession | null;
-    onApproveSuccess: (projectId: string) => void;
+    onApproveSuccess: (workspaceId: string) => void;
     onError: () => void;
     onLoadIdeas: (sessionId: string) => void;
-    approveIdea: (ideaId: string, projectPath: string, selectedName?: string) => Promise<{ id: string } | null>;
+    approveIdea: (ideaId: string, workspacePath: string, selectedName?: string) => Promise<{ id: string } | null>;
 }
 
 export function useIdeaApprovalState({
@@ -22,15 +22,15 @@ export function useIdeaApprovalState({
     approveIdea
 }: UseIdeaApprovalStateProps) {
     return useCallback(
-        async (projectPath: string, selectedName?: string) => {
+        async (workspacePath: string, selectedName?: string) => {
             if (!selectedIdea || !currentSession?.id) {
                 return;
             }
 
             try {
-                const project = await approveIdea(selectedIdea.id, projectPath, selectedName);
-                if (project) {
-                    onApproveSuccess(project.id);
+                const workspace = await approveIdea(selectedIdea.id, workspacePath, selectedName);
+                if (workspace) {
+                    onApproveSuccess(workspace.id);
                 }
             } catch {
                 onError();
@@ -45,7 +45,7 @@ export function useIdeaApprovalState({
  * Hook for managing idea rejection with optimistic updates
  */
 interface UseIdeaRejectionProps {
-    selectedIdea: ProjectIdea | null;
+    selectedIdea: WorkspaceIdea | null;
     currentSession: IdeaSession | null;
     onRejectSuccess: () => void;
     onError: () => void;
@@ -82,7 +82,7 @@ export function useIdeaRejection({
  * Hook for managing idea archiving with optimistic updates
  */
 interface UseIdeaArchivingProps {
-    selectedIdea: ProjectIdea | null;
+    selectedIdea: WorkspaceIdea | null;
     currentSession: IdeaSession | null;
     onArchiveSuccess: () => void;
     onError: () => void;

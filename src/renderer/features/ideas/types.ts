@@ -8,5 +8,5 @@ export interface IdeaWithSession {
     sessionId: string
     sessionStatus: string
     sessionCreatedAt: number
-    ideas: import('@shared/types/ideas').ProjectIdea[]
+    ideas: import('@shared/types/ideas').WorkspaceIdea[]
 }

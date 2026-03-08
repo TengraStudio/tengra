@@ -20,7 +20,7 @@ interface FormData {
     customPath: string;
 }
 
-interface UseProjectWizardStateReturn {
+interface UseWorkspaceWizardStateReturn {
     step: 'selection' | 'details' | 'ssh-connection' | 'ssh-browser' | 'creating';
     setStep: (step: 'selection' | 'details' | 'ssh-connection' | 'ssh-browser' | 'creating') => void;
     formData: FormData;
@@ -40,7 +40,7 @@ interface UseProjectWizardStateReturn {
     resetWizardState: () => void;
 }
 
-export const useProjectWizardState = (isOpen: boolean): UseProjectWizardStateReturn => {
+export const useWorkspaceWizardState = (isOpen: boolean): UseWorkspaceWizardStateReturn => {
     const [step, setStep] = useState<'selection' | 'details' | 'ssh-connection' | 'ssh-browser' | 'creating'>('selection');
     const [formData, setFormData] = useState<FormData>({ name: '', description: '', category: 'web', goal: '', customPath: '' });
     const [isLoading, setIsLoading] = useState(false);

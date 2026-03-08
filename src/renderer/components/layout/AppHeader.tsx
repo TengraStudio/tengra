@@ -38,7 +38,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
     const viewIcons: Record<string, React.ElementType> = {
         chat: MessageSquare,
-        projects: LayoutGrid,
+        workspaces: LayoutGrid,
         settings: SettingsIcon,
 
         mcp: Container,

@@ -1,6 +1,6 @@
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
-import { UserCollaborationService } from '@main/services/project/user-collaboration.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
+import { UserCollaborationService } from '@main/services/workspace/user-collaboration.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import {
     CollaborationResponseSchema,

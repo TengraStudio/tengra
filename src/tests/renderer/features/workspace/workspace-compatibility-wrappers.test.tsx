@@ -6,21 +6,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { VirtualizedWorkspaceGrid } from '@/features/workspace/components/VirtualizedWorkspaceGrid';
 import { WorkspaceHeader } from '@/features/workspace/components/WorkspaceHeader';
 import { WorkspaceModals } from '@/features/workspace/components/WorkspaceModals';
-import { Project } from '@/types';
+
 
 interface MockSurfaceProps {
     activeMenuId: string | null
     setActiveMenuId: (id: string | null) => void
-    onSelect: (project: Project) => void
-    onEdit: (project: Project, event?: React.MouseEvent) => void
-    onDelete: (project: Project, event?: React.MouseEvent) => void
-    onArchive: (project: Project) => void
+    onSelect: (workspace: Workspace) => void
+    onEdit: (workspace: Workspace, event?: React.MouseEvent) => void
+    onDelete: (workspace: Workspace, event?: React.MouseEvent) => void
+    onArchive: (workspace: Workspace) => void
     t: (key: string) => string
     children: React.ReactNode
 }
 
 interface MockWorkspaceCardProps {
-    project: Project
+    workspace: Workspace
     index: number
     isSelected?: boolean
     onToggleSelection?: () => void
@@ -31,31 +31,31 @@ interface MockVirtuosoProps {
     itemContent: (index: number) => React.ReactNode
 }
 
-const projectCardSurfaceProviderSpy = vi.fn(
+const workspaceCardSurfaceProviderSpy = vi.fn(
     ({
         children,
-    }: MockSurfaceProps) => <div data-testid="project-card-surface">{children}</div>
+    }: MockSurfaceProps) => <div data-testid="workspace-card-surface">{children}</div>
 );
 
-const projectCardSpy = vi.fn(
+const workspaceCardSpy = vi.fn(
     ({
-        project,
+        workspace,
         isSelected,
         onToggleSelection,
     }: MockWorkspaceCardProps) => (
         <button
             type="button"
-            data-testid={`project-card-${project.id}`}
+            data-testid={`workspace-card-${workspace.id}`}
             data-selected={String(Boolean(isSelected))}
             onClick={() => onToggleSelection?.()}
         >
-            {project.title}
+            {workspace.title}
         </button>
     )
 );
 
-vi.mock('@/features/workspace/components/ProjectsPageHealthIndicator', () => ({
-    ProjectsPageHealthIndicator: () => <div data-testid="projects-health-indicator" />,
+vi.mock('@/features/workspace/components/WorkspacesPageHealthIndicator', () => ({
+    WorkspacesPageHealthIndicator: () => <div data-testid="workspaces-health-indicator" />,
 }));
 
 vi.mock('@/components/ui/modal', () => ({
@@ -77,9 +77,26 @@ vi.mock('@/components/ui/modal', () => ({
     ),
 }));
 
-vi.mock('@/lib/framer-motion-compat', () => ({
-    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
+vi.mock('@/lib/framer-motion-compat', () => {
+    type MotionProps = React.HTMLAttributes<HTMLElement> & {
+        children?: React.ReactNode
+    };
+
+    const motion = new Proxy<Record<string, React.FC<MotionProps>>>({}, {
+        get: (_target, key) => {
+            const element = typeof key === 'string' ? key : 'div';
+            const MotionComponent: React.FC<MotionProps> = ({ children, ...props }) => (
+                React.createElement(element, props, children)
+            );
+            return MotionComponent;
+        },
+    });
+
+    return {
+        AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+        motion,
+    };
+});
 
 vi.mock('react-virtuoso', () => ({
     Virtuoso: ({ totalCount, itemContent }: MockVirtuosoProps) => (
@@ -90,8 +107,8 @@ vi.mock('react-virtuoso', () => ({
 }));
 
 vi.mock('@/features/workspace/components/WorkspaceCard', () => ({
-    WorkspaceCardSurfaceProvider: (props: MockSurfaceProps) => projectCardSurfaceProviderSpy(props),
-    WorkspaceCard: (props: MockWorkspaceCardProps) => projectCardSpy(props),
+    WorkspaceCardSurfaceProvider: (props: MockSurfaceProps) => workspaceCardSurfaceProviderSpy(props),
+    WorkspaceCard: (props: MockWorkspaceCardProps) => workspaceCardSpy(props),
 }));
 
 const workspaceFixture = {
@@ -118,7 +135,7 @@ describe('workspace compatibility wrappers', () => {
         vi.clearAllMocks();
     });
 
-    it('maps WorkspaceHeader actions to the legacy project header implementation', () => {
+    it('maps WorkspaceHeader actions to the legacy header implementation', () => {
         const onNewWorkspace = vi.fn();
         const setSearchQuery = vi.fn();
         const onViewModeChange = vi.fn();
@@ -127,7 +144,7 @@ describe('workspace compatibility wrappers', () => {
             <WorkspaceHeader
                 title="Workspaces"
                 subtitle="Manage workspaces"
-                newProjectLabel="Create workspace"
+                newWorkspaceLabel="Create workspace"
                 searchPlaceholder="Search workspaces"
                 searchQuery=""
                 setSearchQuery={setSearchQuery}
@@ -156,10 +173,10 @@ describe('workspace compatibility wrappers', () => {
         expect(onNewWorkspace).toHaveBeenCalledTimes(1);
         expect(setSearchQuery).toHaveBeenCalledWith('alpha');
         expect(onViewModeChange).toHaveBeenCalledWith('list');
-        expect(screen.getByTestId('projects-health-indicator')).toBeInTheDocument();
+        expect(screen.getByTestId('workspaces-health-indicator')).toBeInTheDocument();
     });
 
-    it('maps WorkspaceModals save and delete actions to the legacy project handlers', async () => {
+    it('maps WorkspaceModals save and delete actions to the legacy handlers', async () => {
         const handleUpdateWorkspace = vi.fn<() => Promise<boolean>>().mockResolvedValue(true);
         const handleDeleteWorkspace = vi.fn<(deleteFiles: boolean) => Promise<void>>().mockResolvedValue(undefined);
         const handleArchiveWorkspace = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
@@ -168,10 +185,10 @@ describe('workspace compatibility wrappers', () => {
 
         const { rerender } = render(
             <WorkspaceModals
-                editingProject={workspaceFixture}
-                setEditingProject={vi.fn()}
-                deletingProject={null}
-                setDeletingProject={vi.fn()}
+                editingWorkspace={workspaceFixture}
+                setEditingWorkspace={vi.fn()}
+                deletingWorkspace={null}
+                setDeletingWorkspace={vi.fn()}
                 isArchiving={null}
                 setIsArchiving={vi.fn()}
                 isBulkDeleting={false}
@@ -198,10 +215,10 @@ describe('workspace compatibility wrappers', () => {
 
         rerender(
             <WorkspaceModals
-                editingProject={null}
-                setEditingProject={vi.fn()}
-                deletingProject={workspaceFixture}
-                setDeletingProject={vi.fn()}
+                editingWorkspace={null}
+                setEditingWorkspace={vi.fn()}
+                deletingWorkspace={workspaceFixture}
+                setDeletingWorkspace={vi.fn()}
                 isArchiving={null}
                 setIsArchiving={vi.fn()}
                 isBulkDeleting={false}
@@ -227,7 +244,7 @@ describe('workspace compatibility wrappers', () => {
         });
     });
 
-    it('maps VirtualizedWorkspaceGrid workspace props into the legacy project grid contract', () => {
+    it('maps VirtualizedWorkspaceGrid workspace props into the legacy grid contract', () => {
         const setShowWorkspaceMenu = vi.fn();
         const onSelectWorkspace = vi.fn();
         const startEdit = vi.fn();
@@ -241,13 +258,13 @@ describe('workspace compatibility wrappers', () => {
                 onSelectWorkspace={onSelectWorkspace}
                 showWorkspaceMenu="workspace-1"
                 setShowWorkspaceMenu={setShowWorkspaceMenu}
-                projectStateMachine={{
+                workspaceStateMachine={{
                     startEdit,
                     startDelete,
                     startArchive,
                     toggleSelection,
                     state: {
-                        selectedProjectIds: new Set(['workspace-1']),
+                        selectedWorkspaceIds: new Set(['workspace-1']),
                     },
                 }}
                 itemsPerRow={2}
@@ -257,12 +274,12 @@ describe('workspace compatibility wrappers', () => {
         );
 
         expect(screen.getByTestId('virtuoso-root')).toHaveAttribute('data-total-count', '1');
-        expect(screen.getByTestId('project-card-workspace-1')).toHaveAttribute('data-selected', 'true');
+        expect(screen.getByTestId('workspace-card-workspace-1')).toHaveAttribute('data-selected', 'true');
 
-        fireEvent.click(screen.getByTestId('project-card-workspace-1'));
+        fireEvent.click(screen.getByTestId('workspace-card-workspace-1'));
         expect(toggleSelection).toHaveBeenCalledWith('workspace-1');
 
-        const surfaceProps = projectCardSurfaceProviderSpy.mock.calls[0][0] as MockSurfaceProps;
+        const surfaceProps = workspaceCardSurfaceProviderSpy.mock.calls[0][0] as MockSurfaceProps;
         surfaceProps.onSelect(workspaceFixture);
         surfaceProps.onEdit(workspaceFixture);
         surfaceProps.onDelete(workspaceFixture);

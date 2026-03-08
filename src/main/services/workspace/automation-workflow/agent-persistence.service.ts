@@ -9,6 +9,7 @@ import { randomUUID } from 'crypto';
 
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
+import { WORKSPACE_COMPAT_INDEX_VALUES, WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import {
     AgentError,
     AgentEventRecord,
@@ -23,12 +24,15 @@ import {
 import { Message } from '@shared/types/chat';
 import { getErrorMessage } from '@shared/utils/error.util';
 
+const LEGACY_AGENT_TASKS_WORKSPACE_INDEX = WORKSPACE_COMPAT_INDEX_VALUES.AGENT_TASKS_BY_SINGULAR;
+const WORKSPACE_COMPAT_ID_COLUMN = WORKSPACE_COMPAT_SCHEMA_VALUES.ID_COLUMN;
+
 /**
  * Database row type for agent_tasks table
  */
 interface TaskRow {
     id: string;
-    project_id: string;
+    [WORKSPACE_COMPAT_ID_COLUMN]: string;
     description: string;
     state: string;
     current_step: number;
@@ -162,14 +166,14 @@ export class AgentPersistenceService extends BaseService {
             const db = this.databaseService.getDatabase();
             await db.prepare(
                 `INSERT INTO agent_tasks (
-                    id, project_id, description, state, current_step, total_steps,
+                    id, ${WORKSPACE_COMPAT_ID_COLUMN}, description, state, current_step, total_steps,
                     execution_plan, context, current_provider, recovery_attempts,
                     total_tokens_used, total_llm_calls, total_tool_calls,
                     created_at, updated_at, started_at, estimated_cost
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
             ).run(
                 state.taskId,
-                state.projectId,
+                state.workspaceId,
                 state.description,
                 state.state,
                 state.currentStep,
@@ -334,24 +338,24 @@ export class AgentPersistenceService extends BaseService {
     }
 
     /**
-     * Get all tasks for a project (lightweight - no message loading)
+     * Get all tasks for a workspace (lightweight - no message loading)
      * For full task details including messages, use loadTask()
      *
-     * @param projectId ID of the project
+     * @param workspaceId ID of the workspace
      * @param limit Maximum number of tasks to return (capped at 100)
      */
-    async getTasksByProject(projectId: string, limit: number = 50): Promise<AgentTaskState[]> {
+    async getTasksByWorkspace(workspaceId: string, limit: number = 50): Promise<AgentTaskState[]> {
         try {
             const db = this.databaseService.getDatabase();
             const rows = await db.prepare(
-                `SELECT * FROM agent_tasks WHERE project_id = ? ORDER BY created_at DESC LIMIT ?`
-            ).all(projectId, Math.min(limit, 100)) as TaskRow[];
+                `SELECT * FROM agent_tasks WHERE ${WORKSPACE_COMPAT_ID_COLUMN} = ? ORDER BY created_at DESC LIMIT ?`
+            ).all(workspaceId, Math.min(limit, 100)) as TaskRow[];
 
             // Don't load messages for history list - it's too slow
             // Messages will be loaded on-demand when task is selected
             return rows.map(row => this.deserializeTask(row, []));
         } catch (error) {
-            this.logError(`Failed to get tasks for project ${projectId}`, error as Error);
+            this.logError(`Failed to get tasks for workspace ${workspaceId}`, error as Error);
             throw error;
         }
     }
@@ -868,7 +872,7 @@ export class AgentPersistenceService extends BaseService {
         await db.exec(`
             CREATE TABLE IF NOT EXISTS agent_tasks (
                 id TEXT PRIMARY KEY,
-                project_id TEXT NOT NULL,
+                ${WORKSPACE_COMPAT_ID_COLUMN} TEXT NOT NULL,
                 description TEXT NOT NULL,
                 current_step INTEGER DEFAULT 0,
                 total_steps INTEGER DEFAULT 0,
@@ -983,7 +987,7 @@ export class AgentPersistenceService extends BaseService {
             `CREATE INDEX IF NOT EXISTS idx_agent_events_task ON agent_events(task_id, timestamp)`
         );
         await db.exec(
-            `CREATE INDEX IF NOT EXISTS idx_agent_tasks_project ON agent_tasks(project_id)`
+            `CREATE INDEX IF NOT EXISTS ${LEGACY_AGENT_TASKS_WORKSPACE_INDEX} ON agent_tasks(${WORKSPACE_COMPAT_ID_COLUMN})`
         );
 
         await db.exec(
@@ -1043,10 +1047,11 @@ export class AgentPersistenceService extends BaseService {
             status: 'active'
         });
         const result = parseJson(row.result, null);
+        const workspaceId = typeof row[WORKSPACE_COMPAT_ID_COLUMN] === 'string' ? row[WORKSPACE_COMPAT_ID_COLUMN] : '';
 
         return {
             taskId: row.id,
-            projectId: row.project_id,
+            workspaceId,
             description: row.description,
             state: row.state as AgentState,
             currentStep: row.current_step,

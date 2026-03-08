@@ -39,7 +39,7 @@ describe('BrainService - multilingual fact extraction', () => {
         expect((service as any).isUserFact('Yo uso Neovim y prefiero terminal.')).toBe(true);
     });
 
-    it('rejects project-only statements in validation helper', () => {
+    it('rejects workspace-local statements in validation helper', () => {
         const { service } = createService();
         expect((service as any).isUserFact('Bu proje dosyasında bir hata var.')).toBe(false);
     });

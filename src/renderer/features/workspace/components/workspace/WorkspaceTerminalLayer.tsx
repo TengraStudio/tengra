@@ -28,8 +28,8 @@ interface WorkspaceTerminalLayerProps {
     setIsResizingTerminal: React.Dispatch<React.SetStateAction<boolean>>;
     setIsFloatingTerminal: React.Dispatch<React.SetStateAction<boolean>>;
     setTerminalHeight: (height: number) => void;
-    projectId: string;
-    projectPath: string;
+    workspaceId: string;
+    workspacePath: string;
     tabs: TerminalTab[];
     activeTabId: string | null;
     setTabs: (tabs: TerminalTab[] | ((prev: TerminalTab[]) => TerminalTab[])) => void;
@@ -53,8 +53,8 @@ export const WorkspaceTerminalLayer: React.FC<WorkspaceTerminalLayerProps> = ({
     setIsResizingTerminal,
     setIsFloatingTerminal,
     setTerminalHeight,
-    projectId,
-    projectPath,
+    workspaceId,
+    workspacePath,
     tabs,
     activeTabId,
     setTabs,
@@ -161,8 +161,8 @@ export const WorkspaceTerminalLayer: React.FC<WorkspaceTerminalLayerProps> = ({
                             onMaximizeChange={setIsMaximizedTerminal}
                             isFloating={isFloatingTerminal}
                             onFloatingChange={setIsFloatingTerminal}
-                            workspaceId={projectId}
-                            workspacePath={projectPath}
+                            workspaceId={workspaceId}
+                            workspacePath={workspacePath}
                             tabs={tabs}
                             activeTabId={activeTabId}
                             setTabs={setTabs}

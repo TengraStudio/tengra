@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
-import type { SSHConnection } from '@main/services/project/ssh.service';
+import type { SSHConnection } from '@main/services/workspace/ssh.service';
 import {
     SSHProfileTemplate,
     SSHProfileTestResult,

@@ -8,7 +8,7 @@ const sectionData = {
     "commandPalette": "コマンドパレット",
     "toggleSidebar": "サイドバーを切り替え",
     "goToChat": "チャットへ移動",
-    "goToProjects": "プロジェクトへ移動",
+    "goToWorkspaces": "プロジェクトへ移動",
     "goToCouncil": "評議会へ移動",
     "goToSettings": "設定へ移動",
     "sendMessage": "メッセージを送信",

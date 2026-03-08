@@ -1,5 +1,5 @@
 /**
- * Project Agent State Machine Types
+ * Workspace Agent State Machine Types
  * 
  * NASA Power of Ten Compliance:
  * - Rule #6: Minimal variable scope
@@ -51,7 +51,7 @@ export type ToolExecutionStatus = 'pending' | 'running' | 'success' | 'error' | 
 // ============================================================================
 
 export type AgentEvent =
-    | { type: 'START_TASK'; payload: { taskId: string; task: string; projectId: string } }
+    | { type: 'START_TASK'; payload: { taskId: string; task: string; workspaceId: string } }
     | { type: 'TASK_VALIDATED'; payload: { context: AgentContext } }
     | { type: 'PLAN_READY'; payload: { plan: ExecutionPlan } }
     | { type: 'PLAN_APPROVED'; payload: { taskId: string } }
@@ -87,7 +87,7 @@ export type AgentEvent =
 export interface AgentTaskState {
     // Identity
     taskId: string;
-    projectId: string;
+    workspaceId: string;
 
     // Task details
     description: string;

@@ -1,4 +1,4 @@
-import { VotingAnalytics, VotingConfiguration, VotingSession, VotingTemplate } from '@shared/types/project-agent';
+import { VotingAnalytics, VotingConfiguration, VotingSession, VotingTemplate } from '@shared/types/workspace-agent';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useTranslation } from '@/i18n';

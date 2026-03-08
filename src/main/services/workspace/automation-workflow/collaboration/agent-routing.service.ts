@@ -4,10 +4,10 @@ import {
     AGENT_COLLABORATION_PERFORMANCE_BUDGETS,
     AgentCollaborationTelemetryEvent,
     ModelRoutingRule,
-    ProjectStep,
     StepModelConfig,
     TaskType,
-} from '@shared/types/project-agent';
+    WorkspaceStep,
+} from '@shared/types/workspace-agent';
 
 /** Default model routing rules based on task type */
 const DEFAULT_ROUTING_RULES: ModelRoutingRule[] = [
@@ -58,14 +58,14 @@ export class AgentRoutingService extends BaseService {
         this.logInfo('Initializing Agent Routing Service...');
     }
 
-    analyzeSteps(steps: ProjectStep[]): ProjectStep[] {
+    analyzeSteps(steps: WorkspaceStep[]): WorkspaceStep[] {
         return steps.map(step => ({
             ...step,
             taskType: this.detectTaskType(step.text)
         }));
     }
 
-    getModelForStep(step: ProjectStep, availableProviders: string[]): StepModelConfig {
+    getModelForStep(step: WorkspaceStep, availableProviders: string[]): StepModelConfig {
         const startMs = Date.now();
         const taskType = step.taskType || this.detectTaskType(step.text);
 

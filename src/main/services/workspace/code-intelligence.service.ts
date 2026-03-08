@@ -5,6 +5,7 @@ import * as path from 'path';
 import { appLogger } from '@main/logging/logger';
 import { DatabaseService, SemanticFragment } from '@main/services/data/database.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
+import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import type { FileSearchResult } from '@shared/types/common';
 import { BrowserWindow } from 'electron';
 
@@ -13,7 +14,7 @@ import {
 } from './code-intelligence/code-quality-scanner.util';
 import {
     generateFileDocumentation as createFileDocumentation,
-    generateProjectDocumentation as createWorkspaceDocumentation,
+    generateWorkspaceDocumentation as createWorkspaceDocumentation,
     getFileOutline as readFileOutline
 } from './code-intelligence/documentation-generator.util';
 import {
@@ -51,6 +52,7 @@ export type {
     SymbolAnalytics
 } from './code-intelligence/types';
 
+const WORKSPACE_COMPAT_PATH_COLUMN = WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN;
 const FULL_CHUNK_EXTENSIONS = new Set([
     '.md', '.txt', '.ts', '.tsx', '.js', '.jsx', '.py', '.go',
     '.rs', '.kt', '.kts', '.java', '.xml', '.gradle', '.cpp', '.h'
@@ -164,7 +166,7 @@ export class CodeIntelligenceService {
         }
 
         this.indexingInProgress.add(workspaceId);
-        appLogger.info('code-intelligence.service', `[CodeIntelligence] Indexing project ${workspaceId} at ${rootPath} (force=${force})`);
+        appLogger.info('code-intelligence.service', `[CodeIntelligence] Indexing workspace ${workspaceId} at ${rootPath} (force=${force})`);
 
         try {
             this.sendIndexingProgress(workspaceId, 0, 0, 'Scanning files...');
@@ -194,10 +196,6 @@ export class CodeIntelligenceService {
         } finally {
             this.indexingInProgress.delete(workspaceId);
         }
-    }
-
-    async indexProject(rootPath: string, projectId: string, force = false): Promise<void> {
-        return this.indexWorkspace(rootPath, projectId, force);
     }
 
     async updateFileIndex(workspaceId: string, rootPath: string, filePath: string): Promise<void> {
@@ -281,10 +279,6 @@ export class CodeIntelligenceService {
         return Array.from(fileMap.values());
     }
 
-    async scanProjectTodos(rootPath: string) {
-        return this.scanWorkspaceTodos(rootPath);
-    }
-
     async getFileDimensions(filePath: string): Promise<FileSearchResult[]> {
         return await readFileOutline(filePath);
     }
@@ -337,13 +331,6 @@ export class CodeIntelligenceService {
         return await createWorkspaceDocumentation(rootPath, maxFiles);
     }
 
-    async generateProjectDocumentation(
-        rootPath: string,
-        maxFiles: number = 30
-    ): Promise<DocumentationPreviewResult> {
-        return this.generateWorkspaceDocumentation(rootPath, maxFiles);
-    }
-
     async analyzeCodeQuality(rootPath: string, maxFiles: number = 300): Promise<CodeQualityAnalysis> {
         return await analyzeWorkspaceCodeQuality(rootPath, maxFiles);
     }
@@ -388,7 +375,7 @@ export class CodeIntelligenceService {
 
         try {
             const content = await fs.readFile(filePath, 'utf-8');
-            await this.storeCodeSymbols(rootPath, filePath, parseFileSymbols(filePath, content), 'project');
+            await this.storeCodeSymbols(rootPath, filePath, parseFileSymbols(filePath, content), 'workspace');
 
             const extension = path.extname(filePath).toLowerCase();
             if (FULL_CHUNK_EXTENSIONS.has(extension)) {
@@ -407,17 +394,17 @@ export class CodeIntelligenceService {
         rootPath: string,
         filePath: string,
         symbols: CodeSymbol[],
-        mode: 'project' | 'update'
+        mode: 'workspace' | 'update'
     ): Promise<void> {
         for (const symbol of symbols) {
-            const text = mode === 'project'
+            const text = mode === 'workspace'
                 ? `${symbol.kind} ${symbol.name} ${symbol.signature}\n${symbol.docstring}`
                 : `${symbol.kind} ${symbol.name}\n${symbol.signature}\n${symbol.docstring}`;
             const vector = await this.embedding.generateEmbedding(text);
 
             await this.db.storeCodeSymbol({
                 id: crypto.randomUUID(),
-                project_path: rootPath,
+                [WORKSPACE_COMPAT_PATH_COLUMN]: rootPath,
                 file_path: filePath,
                 name: symbol.name,
                 kind: symbol.kind,
@@ -452,7 +439,7 @@ export class CodeIntelligenceService {
                         importance: 0.5,
                         createdAt: Date.now(),
                         updatedAt: Date.now(),
-                        projectPath: rootPath
+                        workspacePath: rootPath
                     };
 
                     await this.db.storeSemanticFragment(fragment);

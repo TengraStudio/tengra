@@ -6,6 +6,10 @@ import {
     scheduleNotification,
     setNotificationPreferences,
 } from '@renderer/store/notification-center.store';
+import {
+    WORKSPACE_COMPAT_SOURCE_VALUES,
+    WORKSPACE_COMPAT_TARGET_VALUES
+} from '@shared/constants';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('notification center store', () => {
@@ -109,5 +113,28 @@ describe('notification center store', () => {
         expect(snapshot.history).toHaveLength(12);
         expect(snapshot.active[0]?.message).toBe('Notification 12');
         expect(snapshot.active[7]?.message).toBe('Notification 5');
+    });
+
+    it('normalizes legacy agent sources to workspace-agent', () => {
+        pushNotification({
+            type: 'warning',
+            message: 'Quota interrupt',
+            source: WORKSPACE_COMPAT_SOURCE_VALUES.AGENT,
+            durationMs: null,
+        });
+        scheduleNotification(
+            {
+                type: 'info',
+                message: 'Try again later',
+                source: WORKSPACE_COMPAT_SOURCE_VALUES.AGENT,
+                durationMs: null,
+            },
+            Date.now() + 30_000
+        );
+
+        const snapshot = getNotificationCenterSnapshot();
+        expect(snapshot.active[0]?.source).toBe(WORKSPACE_COMPAT_TARGET_VALUES.WORKSPACE_AGENT);
+        expect(snapshot.history[0]?.source).toBe(WORKSPACE_COMPAT_TARGET_VALUES.WORKSPACE_AGENT);
+        expect(snapshot.scheduled[0]?.payload.source).toBe(WORKSPACE_COMPAT_TARGET_VALUES.WORKSPACE_AGENT);
     });
 });

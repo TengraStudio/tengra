@@ -20,11 +20,11 @@ export async function findSymbols(
     query: string
 ): Promise<FileSearchResult[]> {
     try {
-        const projects = await db.getProjects();
-        const project = projects.find(p => p.path === rootPath || rootPath.startsWith(p.path));
+        const workspaces = await db.getWorkspaces();
+        const ws = workspaces.find(p => p.path === rootPath || rootPath.startsWith(p.path));
 
-        if (project) {
-            const dbSymbols = await db.findCodeSymbolsByName(project.path, query);
+        if (ws) {
+            const dbSymbols = await db.findCodeSymbolsByName(ws.path, query);
             if (dbSymbols.length > 0) {
                 return dbSymbols.map(s => ({
                     file: s.path,
@@ -49,14 +49,14 @@ export async function searchFiles(
     db: DatabaseService,
     rootPath: string,
     query: string,
-    projectId: string | undefined,
+    workspaceId: string | undefined,
     isRegex: boolean = false
 ): Promise<FileSearchResult[]> {
     const results: FileSearchResult[] = [];
-    appLogger.info('SymbolNavigation', `Starting search for "${query}" (regex=${isRegex}) project=${projectId} root=${rootPath}`);
+    appLogger.info('SymbolNavigation', `Starting search for "${query}" (regex=${isRegex}) workspace=${workspaceId} root=${rootPath}`);
 
     try {
-        if (projectId || rootPath) {
+        if (workspaceId || rootPath) {
             const symbols = await db.findCodeSymbolsByName(rootPath, query);
             results.push(...symbols.map(s => ({
                 file: s.path, line: s.line,
@@ -199,7 +199,7 @@ export async function getSymbolRelationships(
         const baseSymbols = await db.findCodeSymbolsByName(rootPath, trimmed);
         if (baseSymbols.length === 0) { return []; }
 
-        const allSymbols = await db.getCodeSymbolsByProjectPath(rootPath);
+        const allSymbols = await db.getCodeSymbolsByWorkspacePath(rootPath);
         const results: FileSearchResult[] = [];
 
         for (const base of baseSymbols) {

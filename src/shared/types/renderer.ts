@@ -37,19 +37,6 @@ export interface BenchmarkResult {
 
 
 
-export interface ProjectMount {
-    id: string;
-    name: string;
-    type: 'local' | 'ssh';
-    rootPath?: string;
-    // SSH Specific
-    host?: string;
-    port?: number;
-    username?: string;
-    privateKeyPath?: string;
-    remotePath?: string;
-}
-
 
 export interface GroupedModel {
     id: string;

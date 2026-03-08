@@ -29,6 +29,7 @@ import {
 import {
     AdvancedMemoryConfig,
     AdvancedSemanticFragment,
+    coerceMemoryCategory,
     ConsolidationResult,
     ContradictionCandidate,
     DEFAULT_MEMORY_CONFIG,
@@ -314,6 +315,7 @@ export class AdvancedMemoryService {
         try {
             const embedding = await this.generateEmbeddingWithRetry(content);
             const now = Date.now();
+            const normalizedCategory = coerceMemoryCategory(category);
 
             const memory: AdvancedSemanticFragment = {
                 id: this.generateId(),
@@ -321,7 +323,7 @@ export class AdvancedMemoryService {
                 embedding,
                 source: 'user_explicit',
                 sourceId,
-                category,
+                category: normalizedCategory,
                 tags,
                 confidence: 1.0,  // User explicitly stated - maximum confidence
                 importance: 0.9,  // High importance for explicit memories
@@ -374,6 +376,7 @@ export class AdvancedMemoryService {
         workspaceId?: string;
     }): Promise<PendingMemory | null> {
         const { content, source, sourceId, sourceContext, category, extractionConfidence, tags, workspaceId } = params;
+        const normalizedCategory = coerceMemoryCategory(category);
         // Check staging buffer limit
         if (this.stagingBuffer.size >= this.config.maxPendingMemories) {
             // Remove oldest pending memory
@@ -385,7 +388,7 @@ export class AdvancedMemoryService {
         const embedding = await this.embedding.generateEmbedding(content);
 
         // Calculate scores
-        const relevanceScore = await this.calculateRelevanceScore(content, category);
+        const relevanceScore = await this.calculateRelevanceScore(content, normalizedCategory);
         const noveltyScore = await this.calculateNoveltyScore(content, embedding);
 
         // Skip if too low confidence or not novel enough
@@ -413,7 +416,7 @@ export class AdvancedMemoryService {
             sourceId,
             sourceContext,
             extractedAt: Date.now(),
-            suggestedCategory: category,
+            suggestedCategory: normalizedCategory,
             suggestedTags: tags,
             extractionConfidence,
             relevanceScore,
@@ -1059,7 +1062,7 @@ ${transcript}`;
         const categoryWeights: Record<MemoryCategory, number> = {
             preference: 0.8,
             personal: 0.85,
-            project: 0.7,
+            workspace: 0.7,
             technical: 0.6,
             workflow: 0.75,
             relationship: 0.65,
@@ -1119,7 +1122,7 @@ ${transcript}`;
             personal: 0.85,
             instruction: 0.95,
             workflow: 0.8,
-            project: 0.75,
+            workspace: 0.75,
             technical: 0.7,
             relationship: 0.65,
             fact: 0.5
@@ -1197,7 +1200,7 @@ Message: "${content}"
 
 For each fact, determine:
 1. The fact itself (rewrite as a clear, standalone statement)
-2. Category: preference, personal, project, technical, workflow, relationship, fact, or instruction
+2. Category: preference, personal, workspace, technical, workflow, relationship, fact, or instruction
 3. Confidence (0.0-1.0): How confident are you this is accurate?
 4. Tags: relevant keywords
 
@@ -1230,7 +1233,7 @@ If no facts worth remembering, return [].`;
 
             return parsed.map(f => ({
                 content: f.content,
-                category: f.category as MemoryCategory,
+                category: coerceMemoryCategory(f.category),
                 confidence: Math.min(1, Math.max(0, f.confidence)),
                 tags: f.tags
             }));

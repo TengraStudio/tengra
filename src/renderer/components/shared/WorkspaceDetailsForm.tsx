@@ -49,7 +49,7 @@ export const WorkspaceDetailsForm: React.FC<WorkspaceDetailsFormProps> = ({
                 transition={{ duration: 0.3 }}
             >
                 <label className="text-xs font-bold uppercase text-muted-foreground mb-2 block tracking-wider ml-1">
-                    {t('workspaceWizard.projectName')}
+                    {t('workspaceWizard.workspaceName')}
                 </label>
                 <div className="relative group">
                     <input
@@ -187,6 +187,4 @@ export const WorkspaceDetailsForm: React.FC<WorkspaceDetailsFormProps> = ({
     );
 };
 
-export type CategoryConfig = WorkspaceCategoryConfig;
-export type ProjectFormData = WorkspaceFormData;
-export const ProjectDetailsForm = WorkspaceDetailsForm;
+export type CategoryConfig = WorkspaceCategoryConfig;

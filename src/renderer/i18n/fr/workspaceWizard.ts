@@ -1,7 +1,7 @@
 const sectionData = {
     "title": "Assistant de projet",
-    "localProject": "Projet local",
-    "localProjectDesc": "Créer un nouveau projet sur votre ordinateur.",
+    "localWorkspace": "Projet local",
+    "localWorkspaceDesc": "Créer un nouveau projet sur votre ordinateur.",
     "remoteSSH": "SSH distant",
     "remoteSSHDesc": "Connectez-vous à un serveur distant via SSH.",
     "selectFolder": "Sélectionner un dossier",
@@ -22,7 +22,7 @@ const sectionData = {
     },
     "import": "Importer",
     "importDesc": "Ajoutez un projet ou un dossier existant à l'espace de travail.",
-    "projectName": "NOM DU PROJET",
+    "workspaceName": "NOM DU PROJET",
     "namePlaceholder": "Ex: Tableau de bord CRM",
     "placeholder": {
         "example": "exemple.com"

@@ -2,6 +2,8 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 import { appLogger } from '@main/logging/logger';
+import { BaseService } from '@main/services/base.service';
+import { WORKSPACE_COMPAT_FILE_VALUES } from '@shared/constants';
 import {
     WorkspaceEnvKeySchema,
     WorkspaceEnvVarsSchema,
@@ -55,15 +57,13 @@ export interface WorkspaceAnalysis {
 
 const LOG_CONTEXT = 'WorkspaceService';
 
-import { BaseService } from '@main/services/base.service';
-
 export class WorkspaceService extends BaseService {
     private watchers: Map<string, import('fs').FSWatcher> = new Map();
     private analysisCache: Map<string, { data: WorkspaceAnalysis; timestamp: number }> = new Map();
     private fileListCache: Map<string, { files: string[]; timestamp: number }> = new Map();
     private changedPathSets: Map<string, Set<string>> = new Map();
     private readonly ANALYSIS_CACHE_TTL_MS = 300000;
-    private readonly PROJECT_FILES_PAGE_SIZE = 1000;
+    private readonly WORKSPACE_FILES_PAGE_SIZE = 1000;
 
     constructor() {
         super('WorkspaceService');
@@ -200,7 +200,7 @@ export class WorkspaceService extends BaseService {
         if (!cachedAnalysis) {
             return;
         }
-        const initialFilePage = this.paginateFiles(updatedFiles, 0, this.PROJECT_FILES_PAGE_SIZE);
+        const initialFilePage = this.paginateFiles(updatedFiles, 0, this.WORKSPACE_FILES_PAGE_SIZE);
         this.analysisCache.set(rootPath, {
             timestamp,
             data: {
@@ -250,7 +250,7 @@ export class WorkspaceService extends BaseService {
         const monorepo = await this.detectMonorepo(rootPath, files);
         const todos: string[] = [];
         const issues = await this.findIssues(rootPath, files);
-        const initialFilePage = this.paginateFiles(files, 0, this.PROJECT_FILES_PAGE_SIZE);
+        const initialFilePage = this.paginateFiles(files, 0, this.WORKSPACE_FILES_PAGE_SIZE);
 
         this.logInfo(`Analysis complete in ${Date.now() - runStart}ms`);
 
@@ -279,17 +279,13 @@ export class WorkspaceService extends BaseService {
         return analysis;
     }
 
-    async analyzeProject(rootPath: string): Promise<WorkspaceAnalysis> {
-        return this.analyzeWorkspace(rootPath);
-    }
-
     /**
      * Returns a lazily paginated file list for previously scanned workspace analysis results.
      * @param rootPath The absolute path to the workspace root.
      * @param offset Starting offset for pagination.
      * @param limit Number of files to return.
      */
-    async getWorkspaceFilePage(rootPath: string, offset = 0, limit = this.PROJECT_FILES_PAGE_SIZE): Promise<WorkspaceFilesPageResult> {
+    async getWorkspaceFilePage(rootPath: string, offset = 0, limit = this.WORKSPACE_FILES_PAGE_SIZE): Promise<WorkspaceFilesPageResult> {
         rootPath = this.resolveAndValidateRootPath(rootPath);
         await this.applyIncrementalInvalidation(rootPath);
 
@@ -304,14 +300,6 @@ export class WorkspaceService extends BaseService {
         }
 
         return this.paginateFiles(files, offset, limit);
-    }
-
-    async getProjectFilePage(rootPath: string, offset = 0, limit = this.PROJECT_FILES_PAGE_SIZE): Promise<WorkspaceFilesPageResult> {
-        return this.getWorkspaceFilePage(rootPath, offset, limit);
-    }
-
-    async watchProject(rootPath: string, onChange: (event: string, path: string) => void): Promise<void> {
-        return this.watchWorkspace(rootPath, onChange);
     }
 
     private paginateFiles(files: string[], offset: number, limit: number): WorkspaceFilesPageResult {
@@ -619,7 +607,9 @@ export class WorkspaceService extends BaseService {
     }
 
     private isPythonWorkspace(fileNames: string[]): boolean {
-        return fileNames.includes('requirements.txt') || fileNames.includes('pyproject.toml') || fileNames.some(f => f.endsWith('.py'));
+        return fileNames.includes(WORKSPACE_COMPAT_FILE_VALUES.REQUIREMENTS_TXT)
+            || fileNames.includes(WORKSPACE_COMPAT_FILE_VALUES.PY_SINGULAR_TOML)
+            || fileNames.some(f => f.endsWith('.py'));
     }
 
     private isJavaWorkspace(fileNames: string[]): boolean {
@@ -725,13 +715,13 @@ export class WorkspaceService extends BaseService {
 
     private async analyzePyWorkspace(rootPath: string, dependencies: Record<string, string>) {
         try {
-            const pyworkspacePath = path.join(rootPath, 'pyproject.toml');
-            const content = await fs.readFile(pyworkspacePath, 'utf-8');
+            const pythonManifestPath = path.join(rootPath, WORKSPACE_COMPAT_FILE_VALUES.PY_SINGULAR_TOML);
+            const content = await fs.readFile(pythonManifestPath, 'utf-8');
 
             this.parsePyWorkspaceDependencies(content, dependencies);
             this.parsePoetryDependencies(content, dependencies);
         } catch (error) {
-            this.logDebug('pyproject.toml not found:', getErrorMessage(error as Error));
+            this.logDebug(`${WORKSPACE_COMPAT_FILE_VALUES.PY_SINGULAR_TOML} not found:`, getErrorMessage(error as Error));
         }
     }
 

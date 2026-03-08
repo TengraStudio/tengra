@@ -1,21 +1,21 @@
-import { IpcValue, Message, OrchestratorState, ProjectStep } from '@shared/types';
+import { IpcValue, Message, OrchestratorState, WorkspaceStep } from '@shared/types';
 import { IpcRenderer, IpcRendererEvent } from 'electron';
 
 export interface OrchestratorBridge {
     start: (task: string, workspaceId?: string) => Promise<void>;
-    approve: (plan: ProjectStep[]) => Promise<void>;
+    approve: (plan: WorkspaceStep[]) => Promise<void>;
     getState: () => Promise<OrchestratorState>;
     stop: () => Promise<void>;
     onUpdate: (callback: (state: OrchestratorState) => void) => () => void;
 }
 
-function normalizeOrchestratorPlan(plan: unknown[]): ProjectStep[] {
+function normalizeOrchestratorPlan(plan: unknown[]): WorkspaceStep[] {
     return plan.map(item => {
         const step = item as Record<string, unknown>;
         return {
             id: typeof step['id'] === 'string' ? step['id'] : String(Math.random()),
             text: (typeof step['text'] === 'string' ? step['text'] : (typeof step['description'] === 'string' ? step['description'] : '')),
-            status: (typeof step['status'] === 'string' ? step['status'] : 'pending') as ProjectStep['status'],
+            status: (typeof step['status'] === 'string' ? step['status'] : 'pending') as WorkspaceStep['status'],
         };
     });
 }

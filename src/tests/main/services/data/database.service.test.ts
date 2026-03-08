@@ -2,6 +2,7 @@ import { TimeTrackingService } from '@main/services/analysis/time-tracking.servi
 import { DataService } from '@main/services/data/data.service';
 import { DatabaseService, DatabaseServiceErrorCode } from '@main/services/data/database.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
+import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock modules
@@ -14,7 +15,7 @@ const mockQuery = vi.fn().mockImplementation(async (sql: string, _params: any[])
     const rows: any[] = [];
     const normalizedSql = typeof sql === 'string' ? sql.replace(/\s+/g, ' ').trim() : '';
 
-    if (normalizedSql.includes('SELECT') && normalizedSql.includes('projects') && (normalizedSql.includes('id = $1') || normalizedSql.includes('id = ?'))) {
+    if (normalizedSql.includes('SELECT') && normalizedSql.includes(WORKSPACE_COMPAT_SCHEMA_VALUES.TABLE) && (normalizedSql.includes('id = $1') || normalizedSql.includes('id = ?'))) {
         return { rows: [{ id: '1', title: 'Test', path: '/path', status: 'active' }], affectedRows: 1 };
     }
     // Handle count queries for getDetailedStats
@@ -69,7 +70,7 @@ describe('DatabaseService', () => {
             getTimeStats: vi.fn().mockResolvedValue({
                 totalOnlineTime: 100,
                 totalCodingTime: 50,
-                projectCodingTime: {}
+                workspaceCodingTime: {}
             })
         } as unknown as TimeTrackingService;
 
@@ -85,14 +86,14 @@ describe('DatabaseService', () => {
     });
 
     describe('Workspace Operations', () => {
-        it('should create and get a project', async () => {
-            // mockQuery already returns default project for SELECT by id
-            const project = await service.createWorkspace('Test', '/path');
-            expect(project.title).toBe('Test');
+        it('should create and get a workspace', async () => {
+            // mockQuery already returns the default workspace for SELECT by id
+            const workspace = await service.createWorkspace('Test', '/path');
+            expect(workspace.title).toBe('Test');
         });
 
-        it('should archive a project', async () => {
-            const updateSpy = vi.spyOn((service as any)._projects, 'updateWorkspace').mockResolvedValue({
+        it('should archive a workspace', async () => {
+            const updateSpy = vi.spyOn((service as any)._workspaces, 'updateWorkspace').mockResolvedValue({
                 id: '1',
                 title: 'ToArchive',
                 path: '/path',
@@ -166,15 +167,15 @@ describe('DatabaseService', () => {
                     source_id: 'src-1',
                     tags: [],
                     importance: 0.5,
-                    project_path: '/project',
+                    [WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN]: '/workspace',
                     created_at: Date.now(),
                     updated_at: Date.now()
                 }
             ]);
 
             const vector = [1, 0];
-            await service.searchSemanticFragments(vector, 1, '/project');
-            await service.searchSemanticFragments(vector, 1, '/project');
+            await service.searchSemanticFragments(vector, 1, '/workspace');
+            await service.searchSemanticFragments(vector, 1, '/workspace');
 
             expect(dbClient.searchSemanticFragments).toHaveBeenCalledTimes(1);
             const analytics = service.getVectorSearchAnalytics();

@@ -1,6 +1,6 @@
 const sectionData = {
-    "title": "Project Ideas",
-    "subtitle": "AI-powered project idea generation with market research",
+    "title": "Workspace Ideas",
+    "subtitle": "AI-powered workspace idea generation with market research",
     "newSession": "New Session",
     "backToSetup": "Back to Setup",
     "selectModel": "Select AI Model",
@@ -34,7 +34,7 @@ const sectionData = {
     },
     "idea": {
         "viewDetails": "View Details",
-        "approve": "Approve & Create Project",
+        "approve": "Approve & Create Workspace",
         "reject": "Reject",
         "archive": "Archive",
         "archiving": "Archiving...",
@@ -43,11 +43,11 @@ const sectionData = {
         "competitiveAdvantages": "Competitive Advantages",
         "marketTrends": "Market Trends",
         "competitors": "Competitors",
-        "selectPath": "Select Project Path",
-        "pathPlaceholder": "C:\\Projects\\my-project",
-        "creating": "Creating project...",
+        "selectPath": "Select Workspace Path",
+        "pathPlaceholder": "C:\\Workspaces\\my-workspace",
+        "creating": "Creating workspace...",
         "detailedDescription": "Detailed Description",
-        "roadmap": "Project Roadmap",
+        "roadmap": "Workspace Roadmap",
         "techStack": "Technology Stack",
         "competitorAnalysis": "Competitor Analysis",
         "technicalDetails": "Technical Details",
@@ -55,7 +55,7 @@ const sectionData = {
         "impactHigh": "High (Estimated)",
         "effort": "Effort",
         "effortMedium": "Medium",
-        "openFullProject": "Open Full Project"
+        "openFullWorkspace": "Open Full Workspace"
     },
     "techStack": {
         "frontend": "Frontend",
@@ -75,7 +75,7 @@ const sectionData = {
         "ideaResearch": "Researching market for this idea...",
         "naming": "Creating name suggestions...",
         "longDescription": "Writing detailed description...",
-        "roadmap": "Building project roadmap...",
+        "roadmap": "Building workspace roadmap...",
         "techStack": "Selecting technology stack...",
         "competitorAnalysis": "Analyzing competitors...",
         "finalizing": "Finalizing idea...",
@@ -104,12 +104,12 @@ const sectionData = {
         "categoriesRequired": "Please select at least one category",
         "researchFailed": "Research failed. Please try again.",
         "generationFailed": "Idea generation failed. Please try again.",
-        "approvalFailed": "Failed to create project. Please try again.",
+        "approvalFailed": "Failed to create workspace. Please try again.",
         "logoFailed": "Logo generation failed. Please try again."
     },
     "empty": {
         "noSessions": "No idea sessions yet",
-        "noSessionsDesc": "Start a new session to generate project ideas",
+        "noSessionsDesc": "Start a new session to generate workspace ideas",
         "noIdeas": "No ideas generated",
         "noIdeasDesc": "Complete the research phase to generate ideas"
     },
@@ -187,8 +187,8 @@ const sectionData = {
         },
         "statusLabel": "Status",
         "readyForPilot": "Ready for Pilot",
-        "projectCreated": "Project Created",
-        "projectNamePlaceholder": "Project Name",
+        "workspaceCreated": "Workspace Created",
+        "workspaceNamePlaceholder": "Workspace Name",
         "regenerateTitle": "Regenerate this idea",
         "regenerate": "Regenerate",
         "regenerating": "Regenerating...",

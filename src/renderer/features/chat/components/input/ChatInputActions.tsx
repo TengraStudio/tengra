@@ -1,4 +1,4 @@
-import { Code2, Mic, MicOff, Paperclip, Send, Sparkles, Square } from 'lucide-react';
+import { Mic, MicOff, Paperclip, Send, Sparkles, Square } from 'lucide-react';
 import { memo } from 'react';
 
 import { ModelSelector } from '@/components/shared/ModelSelector';
@@ -157,16 +157,4 @@ export const AttachButton = memo(({ onClick, ctrl }: { onClick: () => void; ctrl
     </button>
 ));
 AttachButton.displayName = 'AttachButton';
-
-export const CodeSandboxButton = memo(({ onClick, ctrl }: { onClick: () => void; ctrl: ControllerType }) => (
-    <button
-        type="button"
-        onClick={onClick}
-        className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors"
-        title={ctrl.t('input.openCodeSandbox')}
-        aria-label={ctrl.t('input.openCodeSandbox')}
-    >
-        <Code2 size={20} aria-hidden="true" />
-    </button>
-));
-CodeSandboxButton.displayName = 'CodeSandboxButton';
+ 

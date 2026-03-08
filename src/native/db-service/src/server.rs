@@ -8,7 +8,7 @@ use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
 
 use crate::database::Database;
-use crate::handlers::{chats, knowledge, marketplace, projects, system};
+use crate::handlers::{chats, knowledge, marketplace, system, workspaces};
 use crate::types::{ApiResponse, HealthResponse};
 
 /// Create the Axum router with all routes
@@ -42,12 +42,12 @@ pub fn create_router(db: Arc<Database>, start_time: std::time::Instant) -> Route
         .route("/api/v1/messages", post(chats::add_message))
         .route("/api/v1/messages/:id", put(chats::update_message))
         .route("/api/v1/messages/:id", delete(chats::delete_message))
-        // Project routes
-        .route("/api/v1/projects", get(projects::list_projects))
-        .route("/api/v1/projects", post(projects::create_project))
-        .route("/api/v1/projects/:id", get(projects::get_project))
-        .route("/api/v1/projects/:id", put(projects::update_project))
-        .route("/api/v1/projects/:id", delete(projects::delete_project))
+        // Workspace routes
+        .route("/api/v1/workspaces", get(workspaces::list_workspaces))
+        .route("/api/v1/workspaces", post(workspaces::create_workspace))
+        .route("/api/v1/workspaces/:id", get(workspaces::get_workspace))
+        .route("/api/v1/workspaces/:id", put(workspaces::update_workspace))
+        .route("/api/v1/workspaces/:id", delete(workspaces::delete_workspace))
         // Knowledge routes
         .route("/api/v1/knowledge/symbols", post(knowledge::store_code_symbol))
         .route("/api/v1/knowledge/symbols/search", post(knowledge::search_code_symbols))

@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { runWorkspaceStartupPreflight } from '@/features/workspace/utils/workspace-startup-preflight';
-import { Project } from '@/types';
+import { Workspace } from '@/types';
 import { webElectronMock } from '@/web-bridge';
 
-const baseWorkspace: Project = {
+const baseWorkspace: Workspace = {
     id: 'workspace-1',
     title: 'Workspace',
     description: 'Workspace for preflight tests',
@@ -54,8 +54,8 @@ function mountPreflightElectronMock(options: PreflightMockOptions) {
                 ],
             })),
         },
-        project: {
-            ...base.project,
+        workspace: {
+            ...base.workspace,
             analyzeDirectory: vi.fn(async () => ({
                 hasPackageJson: true,
                 pkg: {},

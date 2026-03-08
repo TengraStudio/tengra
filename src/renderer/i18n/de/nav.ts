@@ -1,10 +1,10 @@
 const sectionData = {
     "chat": "Chat",
-    "projects": "Projekte",
+    "workspaces": "Arbeitsbereiche",
     "settings": "Einstellungen",
     "council": "Rat",
     "mcp": "MCP-Verwaltung",
-    "project-agent": "Projektagent"
+    "workspace-agent": "Arbeitsbereich-Agent"
 };
 
 export default sectionData;

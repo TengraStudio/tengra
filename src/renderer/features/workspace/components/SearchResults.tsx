@@ -6,7 +6,7 @@ import { useTranslation } from '@/i18n';
 
 interface SearchResultsProps {
     results: FileSearchResult[];
-    projectRoot: string;
+    workspaceRoot: string;
     searchQuery: string;
     onSelect: (path: string, line?: number) => void;
 }
@@ -47,7 +47,7 @@ const renderHighlightedSnippet = (text: string, query: string): React.ReactNode 
 
 export const SearchResults: React.FC<SearchResultsProps> = ({
     results,
-    projectRoot,
+    workspaceRoot,
     searchQuery,
     onSelect,
 }) => {
@@ -64,7 +64,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
         >
             <div className="flex items-center gap-2 text-xs text-primary mb-0.5">
                 <span className="font-mono">
-                    {res.file.replace(projectRoot, '')}:{res.line}
+                    {res.file.replace(workspaceRoot, '')}:{res.line}
                 </span>
                 {res.type && (
                     <span className="px-1.5 py-0.5 bg-primary/10 rounded-full text-xxs uppercase tracking-wider">

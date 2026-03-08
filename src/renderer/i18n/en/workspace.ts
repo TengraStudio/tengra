@@ -53,7 +53,7 @@ const sectionData = {
         "rootPath": "Root Path",
         "name": "Name..."
     },
-    "run": "Run Project",
+    "run": "Run Workspace",
     "toggleSidebar": "Toggle Sidebar",
     "aiAssistant": "AI Assistant",
     "aiLabel": "AI",

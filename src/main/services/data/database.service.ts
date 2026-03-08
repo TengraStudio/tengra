@@ -10,6 +10,7 @@ import { BaseService } from '@main/services/base.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobState } from '@main/services/system/job-scheduler.service';
 import { PromptTemplate } from '@main/utils/prompt-templates.util';
+import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { AdvancedSemanticFragment, PendingMemory } from '@shared/types/advanced-memory';
 import { IpcValue, JsonObject, JsonValue } from '@shared/types/common';
 import { DatabaseAdapter, SqlParams, SqlValue } from '@shared/types/database';
@@ -87,7 +88,26 @@ export interface EntityKnowledge { id: string; entityType: string; entityName: s
 export interface Chat { id: string; title: string; model?: string | undefined; messages: JsonObject[]; createdAt: Date; updatedAt: Date; isPinned?: boolean | undefined; isFavorite?: boolean | undefined; folderId?: string | undefined; workspaceId?: string | undefined; isGenerating?: boolean | undefined; backend?: string | undefined; metadata?: JsonObject | undefined; }
 
 export interface CodeSymbolSearchResult { id: string; name: string; path: string; line: number; kind: string; signature: string; docstring: string; score?: number; }
-export interface CodeSymbolRecord { id: string; workspace_path?: string; project_path?: string; workspaceId?: string; file_path?: string; name: string; path?: string; line: number; kind: string; signature?: string; docstring?: string; embedding?: number[]; vector?: number[]; }
+const WORKSPACE_COMPAT_CORE_TABLES = [
+    'chats',
+    'messages',
+    WORKSPACE_COMPAT_SCHEMA_VALUES.TABLE,
+    'folders',
+    'prompts',
+    'linked_accounts'
+] as const;
+const WORKSPACE_COMPAT_PATH_COLUMN = WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN;
+const VALID_SCHEMA_TABLE_NAMES = [
+    ...WORKSPACE_COMPAT_CORE_TABLES,
+    'users',
+    'sessions',
+    'settings',
+    'attachments',
+    'memory',
+    'knowledge'
+] as const;
+
+export interface CodeSymbolRecord { id: string; workspace_path?: string; [WORKSPACE_COMPAT_PATH_COLUMN]?: string; workspaceId?: string; file_path?: string; name: string; path?: string; line: number; kind: string; signature?: string; docstring?: string; embedding?: number[]; vector?: number[]; }
 
 export interface SearchChatsOptions {
     query?: string;
@@ -243,7 +263,6 @@ export class DatabaseService extends BaseService {
 
     get chats() { return this._chats; }
     get workspaces() { return this._workspaces; }
-    get projects() { return this._workspaces; }
     get knowledge() { return this._knowledge; }
     get system() { return this._system; }
     get uac() { return this._uac; }
@@ -785,9 +804,9 @@ export class DatabaseService extends BaseService {
      * @param expectedTables - List of table names to check (defaults to core tables)
      * @returns Validation result with present/missing tables and warnings
      */
-    async validateSchema(expectedTables: string[] = ['chats', 'messages', 'projects', 'folders', 'prompts', 'linked_accounts']): Promise<SchemaValidationResult> {
+    async validateSchema(expectedTables: string[] = [...WORKSPACE_COMPAT_CORE_TABLES]): Promise<SchemaValidationResult> {
         // Validate table names to prevent SQL injection
-        const validTableNames = ['chats', 'messages', 'projects', 'folders', 'prompts', 'linked_accounts', 'users', 'sessions', 'settings', 'attachments', 'memory', 'knowledge'];
+        const validTableNames: ReadonlyArray<string> = [...VALID_SCHEMA_TABLE_NAMES];
         for (const tableName of expectedTables) {
             if (!validTableNames.includes(tableName)) {
                 throw new Error(`Invalid table name: ${tableName}`);
@@ -824,7 +843,7 @@ export class DatabaseService extends BaseService {
      * Returns a sorted list of tables that are present in the current schema.
      * @param expectedTables - List of table names to check (defaults to core tables)
      */
-    async getSchemaSnapshot(expectedTables: string[] = ['chats', 'messages', 'projects', 'folders', 'prompts', 'linked_accounts']): Promise<string[]> {
+    async getSchemaSnapshot(expectedTables: string[] = [...WORKSPACE_COMPAT_CORE_TABLES]): Promise<string[]> {
         const result = await this.validateSchema(expectedTables);
         return result.tablesPresent.sort();
     }
@@ -1029,28 +1048,22 @@ export class DatabaseService extends BaseService {
     async deletePrompt(id: string): Promise<void> { return this._system.deletePrompt(id); }
 
     // Workspaces
-    /** Retrieves all projects. */
+    /** Retrieves all workspaces. */
     async getWorkspaces(): Promise<Workspace[]> { return this._workspaces.getWorkspaces(); }
-    async getProjects(): Promise<Workspace[]> { return this.getWorkspaces(); }
-    /** Retrieves a project by ID. */
+    /** Retrieves a workspace by ID. */
     async getWorkspace(id: string): Promise<Workspace | null | undefined> { return this._workspaces.getWorkspace(id); }
-    async getProject(id: string): Promise<Workspace | null | undefined> { return this.getWorkspace(id); }
-    /** Checks whether a project path has indexed symbols. */
+    /** Checks whether a workspace path has indexed symbols. */
     async hasIndexedSymbols(workspacePath: string): Promise<boolean> { return this._workspaces.hasIndexedSymbols(workspacePath); }
-    /** Creates a new project with the given title, path, description, and optional metadata. */
+    /** Creates a new workspace with the given title, path, description, and optional metadata. */
     async createWorkspace(title: string, path: string, desc: string = '', m?: string, c?: string): Promise<Workspace> { return this._workspaces.createWorkspace(title, path, desc, m, c); }
-    async createProject(title: string, path: string, desc: string = '', m?: string, c?: string): Promise<Workspace> { return this.createWorkspace(title, path, desc, m, c); }
-    /** Updates a project by ID with the provided partial updates. */
+    /** Updates a workspace by ID with the provided partial updates. */
     async updateWorkspace(id: string, updates: Partial<Workspace>): Promise<Workspace | undefined> { return this._workspaces.updateWorkspace(id, updates); }
-    async updateProject(id: string, updates: Partial<Workspace>): Promise<Workspace | undefined> { return this.updateWorkspace(id, updates); }
-    /** Deletes a project by ID, optionally removing associated files. */
+    /** Deletes a workspace by ID, optionally removing associated files. */
     async deleteWorkspace(id: string, deleteFiles: boolean = false): Promise<void> { return this._workspaces.deleteWorkspace(id, deleteFiles); }
-    async deleteProject(id: string, deleteFiles: boolean = false): Promise<void> { return this.deleteWorkspace(id, deleteFiles); }
-    /** Archives or unarchives a project by ID. */
+    /** Archives or unarchives a workspace by ID. */
     async archiveWorkspace(id: string, isArchived: boolean): Promise<Workspace | undefined> { return this._workspaces.updateWorkspace(id, { status: isArchived ? 'archived' : 'active' }); }
-    async archiveProject(id: string, isArchived: boolean): Promise<Workspace | undefined> { return this.archiveWorkspace(id, isArchived); }
 
-    /** Deletes multiple projects by ID, optionally removing associated files. */
+    /** Deletes multiple workspaces by ID, optionally removing associated files. */
     async bulkDeleteWorkspaces(ids: string[], deleteFiles: boolean = false) {
         this.validateArray(ids, 'ids');
         for (const id of ids) {
@@ -1059,21 +1072,13 @@ export class DatabaseService extends BaseService {
         }
     }
 
-    async bulkDeleteProjects(ids: string[], deleteFiles: boolean = false) {
-        return this.bulkDeleteWorkspaces(ids, deleteFiles);
-    }
-
-    /** Archives or unarchives multiple projects by ID. */
+    /** Archives or unarchives multiple workspaces by ID. */
     async bulkArchiveWorkspaces(ids: string[], isArchived: boolean) {
         this.validateArray(ids, 'ids');
         for (const id of ids) {
             this.validateId(id, 'workspaceId');
             await this.archiveWorkspace(id, isArchived);
         }
-    }
-
-    async bulkArchiveProjects(ids: string[], isArchived: boolean) {
-        return this.bulkArchiveWorkspaces(ids, isArchived);
     }
 
     // Chats & Messages
@@ -1120,7 +1125,6 @@ export class DatabaseService extends BaseService {
     // Knowledge & Memories
     async findCodeSymbolsByName(workspacePath: string, name: string) { return this._knowledge.findCodeSymbolsByName(workspacePath, name); }
     async getCodeSymbolsByWorkspacePath(workspacePath: string) { return this._knowledge.getCodeSymbolsByWorkspacePath(workspacePath); }
-    async getCodeSymbolsByProjectPath(workspacePath: string) { return this.getCodeSymbolsByWorkspacePath(workspacePath); }
     async searchCodeSymbols(vec: number[], workspacePath?: string, options: VectorSearchOptions = {}): Promise<CodeSymbolSearchResult[]> {
         const limit = 10;
         const useCache = options.useCache !== false;
@@ -1138,7 +1142,11 @@ export class DatabaseService extends BaseService {
         }
 
         const searchLimit = approximate ? limit : Math.min(limit * 2, 30);
-        const results = await this.dbClient.searchCodeSymbols({ embedding: vec, limit: searchLimit, workspace_path: workspacePath });
+        const results = await this.dbClient.searchCodeSymbols({
+            embedding: vec,
+            limit: searchLimit,
+            [WORKSPACE_COMPAT_PATH_COLUMN]: workspacePath
+        });
         const mapped = results.map(r => ({
             id: r.id,
             name: r.name,
@@ -1161,7 +1169,7 @@ export class DatabaseService extends BaseService {
         // Use HTTP API for storing code symbols with embeddings
         await this.dbClient.storeCodeSymbol({
             id: symbol.id,
-            workspace_path: symbol.workspace_path ?? symbol.workspaceId ?? '',
+            [WORKSPACE_COMPAT_PATH_COLUMN]: symbol[WORKSPACE_COMPAT_PATH_COLUMN] ?? symbol.workspace_path ?? symbol.workspaceId ?? '',
             file_path: symbol.file_path ?? symbol.path ?? '',
             name: symbol.name,
             line: symbol.line,
@@ -1184,7 +1192,7 @@ export class DatabaseService extends BaseService {
             source_id: f.sourceId,
             tags: f.tags,
             importance: f.importance,
-            workspace_path: f.workspacePath
+            [WORKSPACE_COMPAT_PATH_COLUMN]: f.workspacePath
         });
     }
     async searchSemanticFragments(v: number[], l: number, workspacePath?: string, options: VectorSearchOptions = {}): Promise<SemanticFragment[]> {
@@ -1203,19 +1211,26 @@ export class DatabaseService extends BaseService {
         }
 
         const searchLimit = approximate ? l : Math.min(Math.max(l * 2, l + 4), 60);
-        const results = await this.dbClient.searchSemanticFragments({ embedding: v, limit: searchLimit, workspace_path: workspacePath });
-        const mapped = results.map(r => ({
-            id: r.id,
-            content: r.content,
-            embedding: r.embedding,
-            source: r.source,
-            sourceId: r.source_id,
-            tags: r.tags,
-            importance: r.importance,
-            workspacePath: r.workspace_path,
-            createdAt: r.created_at,
-            updatedAt: r.updated_at
-        }));
+        const results = await this.dbClient.searchSemanticFragments({
+            embedding: v,
+            limit: searchLimit,
+            [WORKSPACE_COMPAT_PATH_COLUMN]: workspacePath
+        });
+        const mapped = results.map(r => {
+            const workspacePathValue = r[WORKSPACE_COMPAT_PATH_COLUMN];
+            return {
+                id: r.id,
+                content: r.content,
+                embedding: r.embedding,
+                source: r.source,
+                sourceId: r.source_id,
+                tags: r.tags,
+                importance: r.importance,
+                workspacePath: typeof workspacePathValue === 'string' ? workspacePathValue : undefined,
+                createdAt: r.created_at,
+                updatedAt: r.updated_at
+            };
+        });
 
         const ranked = approximate
             ? mapped.slice(0, l)
@@ -1252,8 +1267,8 @@ export class DatabaseService extends BaseService {
     }
 
     private buildVectorCacheKey(type: 'code' | 'semantic', vector: number[], limit: number, workspacePath?: string, approximate: boolean = false): string {
-        const projected = vector.slice(0, 24).map(n => n.toFixed(3)).join(',');
-        return `${type}:${workspacePath ?? '*'}:${limit}:${approximate ? 'ann' : 'exact'}:${projected}`;
+        const workspaceed = vector.slice(0, 24).map(n => n.toFixed(3)).join(',');
+        return `${type}:${workspacePath ?? '*'}:${limit}:${approximate ? 'ann' : 'exact'}:${workspaceed}`;
     }
 
     private readVectorCache<T>(key: string): T | null {

@@ -4,12 +4,11 @@ import {
     JourneyStep,
     MarketingPlan,
     MarketTrend,
-    ProjectIdea,
-    ProjectRoadmap,
     SWOTAnalysis,
     TechStack,
-    UserPersona
-} from '@shared/types/ideas';
+    UserPersona,
+    WorkspaceIdea,
+    WorkspaceRoadmap} from '@shared/types/ideas';
 import {
     CheckCircle,
     ChevronRight,
@@ -35,7 +34,7 @@ import { cn } from '@/lib/utils';
 import { LogoGenerator } from './LogoGenerator';
 
 interface IdeaDetailsContentProps {
-    idea: ProjectIdea
+    idea: WorkspaceIdea
     activeTab: 'overview' | 'market' | 'strategy' | 'technology' | 'roadmap' | 'users' | 'business'
     selectedName: string
     onNameSelect: (name: string) => void
@@ -49,7 +48,7 @@ interface IdeaDetailsContentProps {
 type TabType = IdeaDetailsContentProps['activeTab'];
 
 interface OverviewTabProps {
-    idea: ProjectIdea
+    idea: WorkspaceIdea
     selectedName: string
     selectedDescription: string
     nameSuggestions: string[]
@@ -154,7 +153,7 @@ const MarketTrends: React.FC<{ trends: MarketTrend[] }> = ({ trends }) => {
 
 // ==================== New Multi-Stage Pipeline Components ====================
 
-const RoadmapSection: React.FC<{ roadmap?: ProjectRoadmap }> = ({ roadmap }) => {
+const RoadmapSection: React.FC<{ roadmap?: WorkspaceRoadmap }> = ({ roadmap }) => {
     const { t } = useTranslation();
     const [expandedPhase, setExpandedPhase] = useState<number | null>(null);
 
@@ -728,7 +727,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     );
 };
 
-const MarketTab: React.FC<{ idea: ProjectIdea; trends: MarketTrend[] }> = ({ idea, trends }) => {
+const MarketTab: React.FC<{ idea: WorkspaceIdea; trends: MarketTrend[] }> = ({ idea, trends }) => {
     const { t } = useTranslation();
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
@@ -756,7 +755,7 @@ const TechnologyTab: React.FC<{ techStack?: TechStack }> = ({ techStack }) => (
     </div>
 );
 
-const RoadmapTab: React.FC<{ roadmap?: ProjectRoadmap }> = ({ roadmap }) => (
+const RoadmapTab: React.FC<{ roadmap?: WorkspaceRoadmap }> = ({ roadmap }) => (
     <div className="animate-in fade-in slide-in-from-right-2 duration-300">
         <RoadmapSection roadmap={roadmap} />
     </div>

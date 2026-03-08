@@ -95,6 +95,7 @@ const sectionData = {
     "userVerified": "User verified",
     "accessed": "Accessed",
     "restore": "Restore",
+    "shareToWorkspace": "Share to Workspace",
     "tabs": {
         "pending": "Pending",
         "confirmed": "Confirmed",

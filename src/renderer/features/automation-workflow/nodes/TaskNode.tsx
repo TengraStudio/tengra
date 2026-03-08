@@ -19,9 +19,9 @@ import { Message } from '@shared/types/chat';
 import {
     AgentProfile,
     AgentStartOptions,
-    ProjectState,
-    ProjectStep,
-} from '@shared/types/project-agent';
+    WorkspaceState,
+    WorkspaceStep,
+} from '@shared/types/workspace-agent';
 import { Handle, Node, NodeProps, Position, useReactFlow } from '@xyflow/react';
 import {
     AlertCircle,
@@ -58,7 +58,7 @@ import { LogConsole } from '@/features/automation-workflow/components/LogConsole
 import { useLanguage } from '@/i18n';
 import { cn } from '@/lib/utils';
 import type { GroupedModels } from '@/types';
-import { Project } from '@/types';
+import { Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 // Interface definitions from old file
@@ -78,9 +78,9 @@ export type TaskNodeData = {
     description?: string;
     title?: string;
     model?: { provider: string; model: string };
-    projectId?: string;
+    workspaceId?: string;
     attachments?: Array<{ name: string; path: string; size: number }>;
-    plan?: ProjectStep[];
+    plan?: WorkspaceStep[];
     history?: Message[];
     activeTab?: 'plan' | 'logs';
     isExpanded?: boolean;
@@ -88,9 +88,9 @@ export type TaskNodeData = {
     systemMode?: 'thinking' | 'fast' | 'architect';
     agentProfileId?: string;
     /** Total token usage */
-    totalTokens?: ProjectState['totalTokens'];
+    totalTokens?: WorkspaceState['totalTokens'];
     /** Task timing */
-    timing?: ProjectState['timing'];
+    timing?: WorkspaceState['timing'];
 };
 
 interface TaskNodeActionProps {
@@ -99,7 +99,7 @@ interface TaskNodeActionProps {
     updateNodeData: (id: string, data: Partial<TaskNodeData>) => void;
     currentProviderId: string;
     currentModelId: string;
-    selectedProjectId?: string;
+    selectedWorkspaceId?: string;
 }
 
 const useTaskNodeActions = ({
@@ -108,7 +108,7 @@ const useTaskNodeActions = ({
     updateNodeData,
     currentProviderId,
     currentModelId,
-    selectedProjectId,
+    selectedWorkspaceId,
 }: TaskNodeActionProps) => {
     const { t, language } = useLanguage();
     const planInFlightRef = useRef(false);
@@ -133,7 +133,7 @@ const useTaskNodeActions = ({
                 task: data.title ?? data.description ?? t('workspaceAgent.newTask'),
                 nodeId: id,
                 model: { provider: currentProviderId, model: currentModelId },
-                workspaceId: selectedProjectId,
+                workspaceId: selectedWorkspaceId,
                 attachments: data.attachments,
                 systemMode: data.systemMode,
                 agentProfileId: data.agentProfileId,
@@ -163,7 +163,7 @@ const useTaskNodeActions = ({
         data.agentProfileId,
         currentProviderId,
         currentModelId,
-        selectedProjectId,
+        selectedWorkspaceId,
         id,
         updateNodeData,
         t,
@@ -216,7 +216,7 @@ const useTaskNodeActions = ({
                 task: data.title ?? data.description ?? t('workspaceAgent.newTask'),
                 nodeId: id,
                 model: { provider: currentProviderId, model: currentModelId },
-                workspaceId: selectedProjectId,
+                workspaceId: selectedWorkspaceId,
                 attachments: data.attachments,
                 systemMode: data.systemMode,
                 agentProfileId: data.agentProfileId,
@@ -225,6 +225,7 @@ const useTaskNodeActions = ({
             await window.electron.workspaceAgent.start(options);
         } catch (error) {
             updateNodeData(id, { status: 'failed' });
+            appLogger.error('TaskNode', 'Failed to execute task', error as Error);
         } finally {
             executeInFlightRef.current = false;
         }
@@ -238,7 +239,7 @@ const useTaskNodeActions = ({
         data.taskId,
         currentProviderId,
         currentModelId,
-        selectedProjectId,
+        selectedWorkspaceId,
         id,
         updateNodeData,
         t,
@@ -274,8 +275,8 @@ const useTaskNodeActions = ({
 interface TaskNodeStateProps {
     id: string;
     data: TaskNodeData;
-    projects: Project[];
-    globalSelectedProject: Project | null;
+    workspaces: Workspace[];
+    globalSelectedWorkspace: Workspace | null;
     globalModelId: string;
     globalProviderId: string;
     updateNodeData: (id: string, data: Partial<TaskNodeData>) => void;
@@ -302,25 +303,25 @@ const useTaskExpandedLogs = (
     }, [status, id, updateNodeData]);
 };
 
-const getSelectedProjectId = (
+const getSelectedWorkspaceId = (
     data: TaskNodeData,
-    globalSelectedProject: Project | null,
-    projects: Project[]
+    globalSelectedWorkspace: Workspace | null,
+    workspaces: Workspace[]
 ) => {
-    if (data.projectId) {
-        return data.projectId;
+    if (data.workspaceId) {
+        return data.workspaceId;
     }
-    if (globalSelectedProject?.id) {
-        return globalSelectedProject.id;
+    if (globalSelectedWorkspace?.id) {
+        return globalSelectedWorkspace.id;
     }
-    return projects.length > 0 ? projects[0].id : undefined;
+    return workspaces.length > 0 ? workspaces[0].id : undefined;
 };
 
 const useTaskNodeState = ({
     id,
     data,
-    projects,
-    globalSelectedProject,
+    workspaces,
+    globalSelectedWorkspace,
     globalModelId,
     globalProviderId,
     updateNodeData,
@@ -333,8 +334,8 @@ const useTaskNodeState = ({
 
     const isPlanner = data.taskType === 'planner';
     const isAction = data.taskType === 'action' || data.taskType === 'fork' || data.taskType === 'join' || data.taskType === 'create-pr';
-    const selectedProjectId = getSelectedProjectId(data, globalSelectedProject, projects);
-    const selectedProject = projects.find(p => p.id === selectedProjectId);
+    const selectedWorkspaceId = getSelectedWorkspaceId(data, globalSelectedWorkspace, workspaces);
+    const selectedWorkspace = workspaces.find(p => p.id === selectedWorkspaceId);
     const currentModelId = data.model?.model ?? globalModelId;
     const currentProviderId = data.model?.provider ?? globalProviderId;
 
@@ -344,8 +345,8 @@ const useTaskNodeState = ({
         isModelOpen,
         isPlanner,
         isAction,
-        selectedProjectId,
-        selectedProject,
+        selectedWorkspaceId,
+        selectedWorkspace,
         currentModelId,
         currentProviderId,
     };
@@ -530,12 +531,12 @@ const TaskTabs = ({
     </div>
 );
 
-// Locally defined definition of ProjectStep to support drag and drop grouping
+// Locally defined definition of WorkspaceStep to support drag and drop grouping
 
 interface PlanStageProps {
-    plan: ProjectStep[];
+    plan: WorkspaceStep[];
     status: string;
-    onUpdatePlan: (newPlan: ProjectStep[]) => void;
+    onUpdatePlan: (newPlan: WorkspaceStep[]) => void;
     onRetry: (index: number) => void | Promise<void>;
     planContainerRef: React.RefObject<HTMLDivElement>;
     activeStepRef: React.RefObject<HTMLDivElement>;
@@ -553,7 +554,7 @@ const SortableStepItem = ({
     isActive,
     activeRef,
 }: {
-    step: ProjectStep;
+    step: WorkspaceStep;
     index: number;
     status: string;
     onUpdate: (val: string) => void;
@@ -884,7 +885,7 @@ const ProgressBar = ({
     plan,
     totalTokens,
 }: {
-    plan: ProjectStep[];
+    plan: WorkspaceStep[];
     totalTokens?: { prompt: number; completion: number };
 }) => {
     const { t } = useLanguage();
@@ -1008,10 +1009,10 @@ const TaskHeader = ({
     isPlanner,
     isAction,
     label,
-    selectedProject,
-    projects,
-    selectedProjectId,
-    onProjectSelect,
+    selectedWorkspace,
+    workspaces,
+    selectedWorkspaceId,
+    onWorkspaceSelect,
     isExpanded,
     setIsExpanded,
     onDelete,
@@ -1021,10 +1022,10 @@ const TaskHeader = ({
     isPlanner: boolean;
     isAction: boolean;
     label: string;
-    selectedProject?: { title: string };
-    projects: Array<{ id: string; title: string }>;
-    selectedProjectId?: string;
-    onProjectSelect: (id: string) => void;
+    selectedWorkspace?: { title: string };
+    workspaces: Array<{ id: string; title: string }>;
+    selectedWorkspaceId?: string;
+    onWorkspaceSelect: (id: string) => void;
     isExpanded: boolean;
     setIsExpanded: (expanded: boolean) => void;
     onDelete: () => void;
@@ -1071,7 +1072,7 @@ const TaskHeader = ({
                             <button className="flex items-center gap-1.5 text-xs font-medium hover:bg-muted/20 px-2 py-1 rounded-md transition-colors truncate max-w-[120px]">
                                 <FolderGit2 className="w-3.5 h-3.5 text-muted-foreground" />
                                 <span className="truncate">
-                                    {selectedProject?.title ?? t('workspaceAgent.selectWorkspace')}
+                                    {selectedWorkspace?.title ?? t('workspaceAgent.selectWorkspace')}
                                 </span>
                                 <ChevronDown className="w-3 h-3 text-muted-foreground opacity-50" />
                             </button>
@@ -1081,13 +1082,13 @@ const TaskHeader = ({
                             className="w-48 p-1 bg-popover/95 backdrop-blur-xl"
                         >
                             <div className="max-h-48 overflow-y-auto custom-scrollbar">
-                                {projects.map(p => (
+                                {workspaces.map(p => (
                                     <button
                                         key={p.id}
-                                        onClick={() => onProjectSelect(p.id)}
+                                        onClick={() => onWorkspaceSelect(p.id)}
                                         className={cn(
                                             'w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors',
-                                            p.id === selectedProjectId
+                                            p.id === selectedWorkspaceId
                                                 ? 'bg-primary/20 text-primary'
                                                 : 'hover:bg-muted/20 text-foreground'
                                         )}
@@ -1500,7 +1501,7 @@ const getTaskNodeClasses = (isExpanded: boolean, selected: boolean, status: stri
 
 export const TaskNode = ({ id, data, selected }: NodeProps<Node<TaskNodeData>>) => {
     const { updateNodeData, deleteElements } = useReactFlow();
-    const { projects, selectedProject: globalSelectedProject } = useWorkspace();
+    const { workspaces, selectedWorkspace: globalSelectedWorkspace } = useWorkspace();
     const {
         groupedModels,
         selectedModel: globalModelId,
@@ -1540,15 +1541,15 @@ export const TaskNode = ({ id, data, selected }: NodeProps<Node<TaskNodeData>>) 
         isModelOpen,
         isPlanner,
         isAction,
-        selectedProjectId,
-        selectedProject,
+        selectedWorkspaceId,
+        selectedWorkspace,
         currentModelId,
         currentProviderId,
     } = useTaskNodeState({
         id,
         data,
-        projects,
-        globalSelectedProject,
+        workspaces,
+        globalSelectedWorkspace,
         globalModelId,
         globalProviderId,
         updateNodeData,
@@ -1561,7 +1562,7 @@ export const TaskNode = ({ id, data, selected }: NodeProps<Node<TaskNodeData>>) 
             updateNodeData,
             currentProviderId,
             currentModelId,
-            selectedProjectId,
+            selectedWorkspaceId,
         });
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1625,10 +1626,10 @@ export const TaskNode = ({ id, data, selected }: NodeProps<Node<TaskNodeData>>) 
                 isPlanner={isPlanner}
                 isAction={isAction}
                 label={data.label}
-                selectedProject={selectedProject}
-                projects={projects}
-                selectedProjectId={selectedProjectId}
-                onProjectSelect={pid => updateNodeData(id, { projectId: pid })}
+                selectedWorkspace={selectedWorkspace}
+                workspaces={workspaces}
+                selectedWorkspaceId={selectedWorkspaceId}
+                onWorkspaceSelect={pid => updateNodeData(id, { workspaceId: pid })}
                 isExpanded={isExpanded}
                 setIsExpanded={expanded => updateNodeData(id, { isExpanded: expanded })}
                 onDelete={() => void deleteElements({ nodes: [{ id }] })}

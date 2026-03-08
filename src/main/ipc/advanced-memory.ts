@@ -12,6 +12,7 @@
 import { appLogger } from '@main/logging/logger';
 import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { WORKSPACE_COMPAT_ALIAS_VALUES } from '@shared/constants';
 import {
     AdvancedMemoryCategorySchema,
     AdvancedMemoryHealthSchema,
@@ -35,6 +36,15 @@ import { z } from 'zod';
 
 const LOG_TAG = 'AdvancedMemoryIPC';
 const MAX_ADVANCED_MEMORY_TELEMETRY_EVENTS = 250;
+
+function toPascalCompatValue(value: string): string {
+    return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
+}
+
+const ADVANCED_MEMORY_COMPAT_CHANNELS = {
+    SHARE_WITH_LEGACY_WORKSPACE: `advancedMemory:shareWith${toPascalCompatValue(WORKSPACE_COMPAT_ALIAS_VALUES.SINGULAR)}`,
+    SEARCH_ACROSS_LEGACY_WORKSPACES: `advancedMemory:searchAcross${toPascalCompatValue(WORKSPACE_COMPAT_ALIAS_VALUES.PLURAL)}`
+} as const;
 
 const ADVANCED_MEMORY_ERROR_CODE = {
     VALIDATION: 'ADVANCED_MEMORY_VALIDATION_ERROR',
@@ -948,7 +958,7 @@ function registerManagementHandlers(advancedMemoryService: AdvancedMemoryService
         })
     }));
 
-    ipcMain.handle('advancedMemory:shareWithProject', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string, string]>('advancedMemory:shareWithProject', async (_event, memoryId, targetWorkspaceId) => {
+    ipcMain.handle(ADVANCED_MEMORY_COMPAT_CHANNELS.SHARE_WITH_LEGACY_WORKSPACE, createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string, string]>(ADVANCED_MEMORY_COMPAT_CHANNELS.SHARE_WITH_LEGACY_WORKSPACE, async (_event, memoryId, targetWorkspaceId) => {
         const shared = await advancedMemoryService.shareMemoryWithWorkspace(memoryId, targetWorkspaceId);
         return { success: !!shared, data: shared };
     }, {
@@ -1021,7 +1031,7 @@ function registerManagementHandlers(advancedMemoryService: AdvancedMemoryService
         })
     }));
 
-    ipcMain.handle('advancedMemory:searchAcrossProjects', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [unknown]>('advancedMemory:searchAcrossProjects', async (
+    ipcMain.handle(ADVANCED_MEMORY_COMPAT_CHANNELS.SEARCH_ACROSS_LEGACY_WORKSPACES, createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [unknown]>(ADVANCED_MEMORY_COMPAT_CHANNELS.SEARCH_ACROSS_LEGACY_WORKSPACES, async (
         _event,
         payload
     ) => {

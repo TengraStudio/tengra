@@ -1,10 +1,14 @@
+import { WORKSPACE_COMPAT_INDEX_VALUES, WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { DatabaseAdapter, SqlValue } from '@shared/types/database';
-import { AgentCollaborationMessage, ProjectStep } from '@shared/types/project-agent';
+import { AgentCollaborationMessage, WorkspaceStep } from '@shared/types/workspace-agent';
 import { v4 as uuidv4 } from 'uuid';
+
+const LEGACY_UAC_TASKS_STATUS_INDEX = WORKSPACE_COMPAT_INDEX_VALUES.UAC_TASKS_BY_SINGULAR_STATUS;
+const WORKSPACE_COMPAT_PATH_COLUMN = WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN;
 
 export interface UacTaskRecord {
     id: string;
-    project_path: string;
+    [WORKSPACE_COMPAT_PATH_COLUMN]: string;
     description: string;
     status: string;
     created_at: number;
@@ -175,7 +179,7 @@ export class UacRepository {
         await this.db.exec(`
             CREATE TABLE IF NOT EXISTS uac_tasks (
                 id TEXT PRIMARY KEY,
-                project_path TEXT NOT NULL,
+                ${WORKSPACE_COMPAT_PATH_COLUMN} TEXT NOT NULL,
                 description TEXT NOT NULL,
                 status TEXT NOT NULL,
                 created_at BIGINT NOT NULL,
@@ -390,7 +394,7 @@ export class UacRepository {
         );
 
         await this.db.exec(
-            `CREATE INDEX IF NOT EXISTS idx_uac_tasks_project_status ON uac_tasks(project_path, status, updated_at DESC);`
+            `CREATE INDEX IF NOT EXISTS ${LEGACY_UAC_TASKS_STATUS_INDEX} ON uac_tasks(${WORKSPACE_COMPAT_PATH_COLUMN}, status, updated_at DESC);`
         );
         await this.db.exec(
             `CREATE INDEX IF NOT EXISTS idx_uac_tasks_node_id ON uac_tasks(node_id);`
@@ -455,7 +459,7 @@ export class UacRepository {
         const metadataJson = metadata ? JSON.stringify(metadata) : null;
         await this.db
             .prepare(
-                `INSERT INTO uac_tasks (id, project_path, description, status, created_at, updated_at, node_id, metadata, parent_task_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                `INSERT INTO uac_tasks (id, ${WORKSPACE_COMPAT_PATH_COLUMN}, description, status, created_at, updated_at, node_id, metadata, parent_task_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
             )
             .run(
                 id,
@@ -502,7 +506,7 @@ export class UacRepository {
     async getActiveTask(workspacePath: string): Promise<UacTaskRecord | undefined> {
         return this.db
             .prepare(
-                `SELECT * FROM uac_tasks WHERE project_path = ? AND status IN ('running', 'planning', 'paused', 'waiting_for_approval') ORDER BY updated_at DESC LIMIT 1`
+                `SELECT * FROM uac_tasks WHERE ${WORKSPACE_COMPAT_PATH_COLUMN} = ? AND status IN ('running', 'planning', 'paused', 'waiting_for_approval') ORDER BY updated_at DESC LIMIT 1`
             )
             .get<UacTaskRecord>(workspacePath);
     }
@@ -510,7 +514,7 @@ export class UacRepository {
     async getTasks(workspacePath: string, limit: number = 50): Promise<UacTaskRecord[]> {
         return this.db
             .prepare(
-                `SELECT * FROM uac_tasks WHERE project_path = ? ORDER BY created_at DESC LIMIT ?`
+                `SELECT * FROM uac_tasks WHERE ${WORKSPACE_COMPAT_PATH_COLUMN} = ? ORDER BY created_at DESC LIMIT ?`
             )
             .all<UacTaskRecord>(workspacePath, limit);
     }
@@ -554,7 +558,7 @@ export class UacRepository {
      * @param taskId - Task ID to associate steps with
      * @param steps - Array of steps to create
      */
-    async createSteps(taskId: string, steps: ProjectStep[]): Promise<void> {
+    async createSteps(taskId: string, steps: WorkspaceStep[]): Promise<void> {
         const now = Date.now();
         // PERF-003-3: Use batch insert with VALUES clause instead of loop
         if (steps.length === 0) {

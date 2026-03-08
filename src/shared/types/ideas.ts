@@ -304,7 +304,6 @@ export interface WorkspaceIdea {
     // Status and references
     status: IdeaStatus
     workspaceId?: string
-    projectId?: string
     logoPath?: string
     metadata?: JsonObject
     createdAt: number
@@ -324,9 +323,6 @@ export interface EnrichedIdea extends WorkspaceIdea {
     techStack: TechStack
     ideaCompetitors: IdeaCompetitor[]
 }
-
-export type ProjectRoadmap = WorkspaceRoadmap;
-export type ProjectIdea = WorkspaceIdea;
 
 /**
  * Research progress event

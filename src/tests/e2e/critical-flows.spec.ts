@@ -33,7 +33,7 @@ test.describe('Critical Flows E2E', () => {
         await chatInput.fill('hello');
     });
 
-    test('project and agent surface availability', async () => {
+    test('workspace and agent surface availability', async () => {
         const sidebar = window.getByTestId('sidebar');
         await expect(sidebar).toBeVisible();
     });

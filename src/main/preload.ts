@@ -39,8 +39,6 @@ import { createOllamaBridge } from './preload/domains/ollama.preload';
 import { createOrchestratorBridge } from './preload/domains/orchestrator.preload';
 import { createPerformanceBridge } from './preload/domains/performance.preload';
 import { createProcessBridge } from './preload/domains/process.preload';
-import { createProjectBridge } from './preload/domains/project.preload';
-import { createProjectAgentBridge } from './preload/domains/project-agent.preload';
 import { createProxyBridge } from './preload/domains/proxy.preload';
 import { createProxyEmbedBridge } from './preload/domains/proxy-embed.preload';
 import { createProxyRateLimitBridge } from './preload/domains/proxy-rate-limit.preload';
@@ -54,6 +52,8 @@ import { createUsageBridge } from './preload/domains/usage.preload';
 import { createVoiceBridge } from './preload/domains/voice.preload';
 import { createWindowControlsBridge } from './preload/domains/window-controls.preload';
 import { createWorkflowBridge } from './preload/domains/workflow.preload';
+import { createWorkspaceBridge } from './preload/domains/workspace.preload';
+import { createWorkspaceAgentBridge } from './preload/domains/workspace-agent.preload';
 
 const api = {
     ...createWindowControlsBridge(ipcRenderer),
@@ -140,8 +140,8 @@ const api = {
     gallery: createGalleryBridge(ipcRenderer),
     update: createUpdateBridge(ipcRenderer),
     ideas: createIdeasBridge(ipcRenderer),
-    projectAgent: createProjectAgentBridge(ipcRenderer),
-    project: createProjectBridge(ipcRenderer),
+    workspaceAgent: createWorkspaceAgentBridge(ipcRenderer),
+    workspace: createWorkspaceBridge(ipcRenderer),
     modelRegistry: createModelRegistryBridge(ipcRenderer),
     process: createProcessBridge(ipcRenderer),
     batch: createBatchBridge(ipcRenderer),

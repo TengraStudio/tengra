@@ -1,6 +1,7 @@
 import { DatabaseClientService } from '@main/services/data/database-client.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
+import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@main/logging/logger', () => ({
@@ -159,7 +160,7 @@ describe('DatabaseClientService input validation', () => {
     describe('storeCodeSymbol', () => {
         it('rejects empty name', async () => {
             await expect(svc.storeCodeSymbol({
-                workspace_path: '/p', file_path: '/f', name: '', line: 1, kind: 'function'
+                [WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN]: '/p', file_path: '/f', name: '', line: 1, kind: 'function'
             })).rejects.toThrow('name must be a non-empty string');
         });
     });

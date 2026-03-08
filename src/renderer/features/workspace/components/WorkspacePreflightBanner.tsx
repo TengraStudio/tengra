@@ -58,7 +58,7 @@ export const WorkspacePreflightBanner: React.FC<WorkspacePreflightBannerProps> =
     return (
         <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 space-y-3">
             <div className="text-sm font-semibold text-destructive">
-                Startup checks for {preflightWorkspaceTitle || 'project'} ({preflightResult.openingMode} mode)
+                Startup checks for {preflightWorkspaceTitle || 'workspace'} ({preflightResult.openingMode} mode)
             </div>
             <div className="text-xs text-muted-foreground">
                 Security posture: {preflightResult.securityPosture.risk} risk •

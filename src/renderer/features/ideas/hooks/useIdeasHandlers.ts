@@ -1,6 +1,7 @@
-import { IdeaSession, IdeaSessionConfig, ProjectIdea } from '@shared/types/ideas';
-import { Project } from '@shared/types/project';
+import { IdeaSession, IdeaSessionConfig, WorkspaceIdea } from '@shared/types/ideas';
 import { useCallback, useState } from 'react';
+
+import type { Workspace } from '@/types';
 
 import { WorkflowStage } from '../types';
 
@@ -10,18 +11,18 @@ interface IdeasHandlersOptions {
     createSession: (config: IdeaSessionConfig) => Promise<IdeaSession | null>;
     startResearch: (sessionId: string) => Promise<import('@shared/types/ideas').ResearchData | null>;
     startGeneration: (sessionId: string) => Promise<boolean>;
-    approveIdea: (ideaId: string, projectPath: string, selectedName?: string) => Promise<Project | null>;
+    approveIdea: (ideaId: string, workspacePath: string, selectedName?: string) => Promise<Workspace | null>;
     rejectIdea: (ideaId: string) => Promise<boolean>;
     archiveIdea: (ideaId: string) => Promise<boolean>;
     setWorkflowStage: (stage: WorkflowStage) => void;
-    onNavigateToProject?: (projectId: string) => void;
+    onNavigateToWorkspace?: (workspaceId: string) => void;
 }
 
 export function useIdeasHandlers({
     currentSession, loadIdeas, createSession, startResearch, startGeneration,
-    approveIdea, rejectIdea, archiveIdea, setWorkflowStage, onNavigateToProject
+    approveIdea, rejectIdea, archiveIdea, setWorkflowStage, onNavigateToWorkspace
 }: IdeasHandlersOptions) {
-    const [selectedIdea, setSelectedIdea] = useState<ProjectIdea | null>(null);
+    const [selectedIdea, setSelectedIdea] = useState<WorkspaceIdea | null>(null);
     const [isRegenerating, setIsRegenerating] = useState(false);
     const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; id?: string; type: 'idea' | 'session' | 'bulk'; ids?: string[] }>({
         isOpen: false,
@@ -40,16 +41,16 @@ export function useIdeasHandlers({
         }
     }, [createSession, startResearch, startGeneration, setWorkflowStage]);
 
-    const handleApprove = useCallback(async (projectPath: string, selectedName?: string) => {
+    const handleApprove = useCallback(async (workspacePath: string, selectedName?: string) => {
         if (!selectedIdea || !currentSession?.id) { return; }
         const originalIdea = selectedIdea;
         setSelectedIdea({ ...selectedIdea, status: 'approved' });
         try {
-            const project = await approveIdea(selectedIdea.id, projectPath, selectedName);
-            if (project) {
+            const workspace = await approveIdea(selectedIdea.id, workspacePath, selectedName);
+            if (workspace) {
                 setSelectedIdea(null);
-                if (onNavigateToProject) {
-                    onNavigateToProject(project.id);
+                if (onNavigateToWorkspace) {
+                    onNavigateToWorkspace(workspace.id);
                 } else {
                     void loadIdeas(currentSession.id);
                 }
@@ -57,7 +58,7 @@ export function useIdeasHandlers({
         } catch {
             setSelectedIdea(originalIdea);
         }
-    }, [selectedIdea, approveIdea, currentSession, loadIdeas, onNavigateToProject]);
+    }, [selectedIdea, approveIdea, currentSession, loadIdeas, onNavigateToWorkspace]);
 
     const handleReject = useCallback(async () => {
         if (!selectedIdea || !currentSession?.id) { return; }

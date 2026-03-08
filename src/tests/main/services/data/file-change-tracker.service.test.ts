@@ -153,7 +153,7 @@ describe('FileChangeTracker', () => {
 
         it('skips diff persistence when file contents are unchanged', async () => {
             const result = await context.tracker.trackFileChange('/repo/file.ts', 'same', 'same', {
-                aiSystem: 'project',
+                aiSystem: 'workspace',
             });
 
             expect(result).toBeNull();
@@ -170,7 +170,7 @@ describe('FileChangeTracker', () => {
         });
 
         it('handles all AI system types', async () => {
-            const aiSystems = ['chat', 'project', 'council'] as const;
+            const aiSystems = ['chat', 'workspace', 'council'] as const;
 
             for (const aiSystem of aiSystems) {
                 const ctx = createTracker();
@@ -191,7 +191,7 @@ describe('FileChangeTracker', () => {
                 '/repo/file.ts',
                 'old',
                 'new',
-                { aiSystem: 'project' }
+                { aiSystem: 'workspace' }
             );
 
             expect(result).not.toBeNull();
@@ -381,9 +381,9 @@ describe('FileChangeTracker', () => {
         it('returns error when filesystem write fails', async () => {
             const mockDiff: FileDiff = {
                 id: 'diff-002',
-                aiSystem: 'project',
+                aiSystem: 'workspace',
                 filePath: '/repo/locked.ts',
-                beforeContent: 'content',
+                beforeContent: 'old content',
                 afterContent: 'new content',
                 diffContent: 'diff',
                 timestamp: 1_717_171_717_000,

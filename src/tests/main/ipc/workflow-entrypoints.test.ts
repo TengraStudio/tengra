@@ -1,5 +1,5 @@
-import { registerWorkspaceIpc } from '@main/ipc/workspace';
 import { registerWorkflowExecutionIpc } from '@main/ipc/workflow-execution';
+import { registerWorkspaceIpc } from '@main/ipc/workspace';
 import { AutomationWorkflowService } from '@main/services/workspace/automation-workflow.service';
 import { WorkflowExecutionService } from '@main/services/workspace/workflow-execution.service';
 import { describe, expect, it } from 'vitest';

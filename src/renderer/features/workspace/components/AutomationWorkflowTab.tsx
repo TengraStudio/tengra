@@ -4,7 +4,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Language } from '@/i18n';
 import type { GroupedModels } from '@/types';
-import { AppSettings, CodexUsage, Project, QuotaResponse, WorkspaceDashboardTab } from '@/types';
+import { AppSettings, CodexUsage, QuotaResponse, Workspace, WorkspaceDashboardTab } from '@/types';
 
 import { useAgentEvents } from '../hooks/useAgentEvents';
 import { useAgentHandlers } from '../hooks/useAgentHandlers';
@@ -19,8 +19,8 @@ import { TaskSidebar } from './agent/TaskSidebar';
 
 const getWorkspaceAgentBridge = () => window.electron.workspaceAgent;
 
-interface ProjectAgentTabProps {
-    project: Project;
+interface WorkspaceAgentTabProps {
+    workspace: Workspace;
     t: (key: string, options?: Record<string, string | number>) => string;
     activeTab: WorkspaceDashboardTab;
     language: Language;
@@ -58,8 +58,8 @@ const CollapsedSidebarButton: React.FC<{ onClick: () => void }> = ({ onClick }) 
     </button>
 );
 
-export const ProjectAgentTab: React.FC<ProjectAgentTabProps> = ({
-    project,
+export const WorkspaceAgentTab: React.FC<WorkspaceAgentTabProps> = ({
+    workspace,
     t,
     language,
     groupedModels,
@@ -96,8 +96,8 @@ export const ProjectAgentTab: React.FC<ProjectAgentTabProps> = ({
         editStep,
         addStepComment,
         insertIntervention,
-    } = useAgentTask(project);
-    const { loadTaskHistory, deleteTask, getCheckpoints, groupedTasks } = useAgentHistory(project);
+    } = useAgentTask(workspace);
+    const { loadTaskHistory, deleteTask, getCheckpoints, groupedTasks } = useAgentHistory(workspace);
     const {
         userPrompt,
         setUserPrompt,

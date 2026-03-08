@@ -1,14 +1,20 @@
 import { appLogger } from '@main/logging/logger';
 import { PromptTemplate } from '@main/utils/prompt-templates.util';
+import { WORKSPACE_COMPAT_INDEX_VALUES, WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { JsonObject } from '@shared/types/common';
 import { DatabaseAdapter, SqlValue } from '@shared/types/database';
 import { DbDetailedStats, DbStats, DbTokenStats } from '@shared/types/db-api';
-import { AgentProfile, AgentTemplate } from '@shared/types/project-agent';
+import { AgentProfile, AgentTemplate } from '@shared/types/workspace-agent';
 import { v4 as uuidv4 } from 'uuid';
 
 import { AuditLogEntry, Folder, JobState, LinkedAccount, Prompt, TokenUsageRecord } from '../database.service';
 
 import { BaseRepository } from './base.repository';
+
+const LEGACY_CHAT_WORKSPACE_INDEX = WORKSPACE_COMPAT_INDEX_VALUES.CHATS_BY_SINGULAR_ID;
+const LEGACY_TOKEN_USAGE_WORKSPACE_TIME_INDEX = WORKSPACE_COMPAT_INDEX_VALUES.TOKEN_USAGE_BY_SINGULAR_TIME;
+const WORKSPACE_COMPAT_ID_COLUMN = WORKSPACE_COMPAT_SCHEMA_VALUES.ID_COLUMN;
+const WORKSPACE_COMPAT_PATH_COLUMN = WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN;
 
 export class SystemRepository extends BaseRepository {
     constructor(adapter: DatabaseAdapter) {
@@ -19,7 +25,7 @@ export class SystemRepository extends BaseRepository {
         const indexStatements = [
             // Chat and message hot paths
             'CREATE INDEX IF NOT EXISTS idx_chats_updated_at ON chats(updated_at DESC)',
-            'CREATE INDEX IF NOT EXISTS idx_chats_project_id ON chats(project_id)',
+            `CREATE INDEX IF NOT EXISTS ${LEGACY_CHAT_WORKSPACE_INDEX} ON chats(${WORKSPACE_COMPAT_ID_COLUMN})`,
             'CREATE INDEX IF NOT EXISTS idx_chats_folder_id ON chats(folder_id)',
             'CREATE INDEX IF NOT EXISTS idx_messages_chat_time ON messages(chat_id, timestamp ASC)',
             'CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp DESC)',
@@ -27,7 +33,7 @@ export class SystemRepository extends BaseRepository {
             // Stats and usage hot paths
             'CREATE INDEX IF NOT EXISTS idx_token_usage_timestamp ON token_usage(timestamp DESC)',
             'CREATE INDEX IF NOT EXISTS idx_token_usage_provider_model_time ON token_usage(provider, model, timestamp DESC)',
-            'CREATE INDEX IF NOT EXISTS idx_token_usage_project_time ON token_usage(project_path, timestamp DESC)',
+            `CREATE INDEX IF NOT EXISTS ${LEGACY_TOKEN_USAGE_WORKSPACE_TIME_INDEX} ON token_usage(${WORKSPACE_COMPAT_PATH_COLUMN}, timestamp DESC)`,
             'CREATE INDEX IF NOT EXISTS idx_usage_tracking_timestamp ON usage_tracking(timestamp DESC)',
             'CREATE INDEX IF NOT EXISTS idx_usage_tracking_provider_model ON usage_tracking(provider, model)',
 
@@ -331,7 +337,7 @@ export class SystemRepository extends BaseRepository {
         const id = uuidv4();
         const timestamp = record.timestamp ?? Date.now();
         await this.adapter.prepare(`
-            INSERT INTO token_usage(id, chat_id, project_path, message_id, provider, model, tokens_sent, tokens_received, cost_estimate, timestamp)
+            INSERT INTO token_usage(id, chat_id, ${WORKSPACE_COMPAT_PATH_COLUMN}, message_id, provider, model, tokens_sent, tokens_received, cost_estimate, timestamp)
             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(id, record.chatId, record.workspaceId ?? null, record.messageId ?? null, record.provider, record.model, record.tokensSent, record.tokensReceived, record.costEstimate ?? 0, timestamp);
     }

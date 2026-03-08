@@ -1,43 +1,43 @@
 import { useState } from 'react';
 
-import { Project } from '@/types';
+import { Workspace } from '@/types';
 
 interface UseDashboardInlineEditProps {
-    project: Project;
-    onUpdate?: (updates: Partial<Project>) => Promise<void>;
+    workspace: Workspace;
+    onUpdate?: (updates: Partial<Workspace>) => Promise<void>;
 }
 
-export const useDashboardInlineEdit = ({ project, onUpdate }: UseDashboardInlineEditProps) => {
+export const useDashboardInlineEdit = ({ workspace, onUpdate }: UseDashboardInlineEditProps) => {
     const [isEditingName, setIsEditingName] = useState(false);
     const [isEditingDesc, setIsEditingDesc] = useState(false);
-    const [editName, setEditName] = useState(project.title);
-    const [editDesc, setEditDesc] = useState(project.description);
+    const [editName, setEditName] = useState(workspace.title);
+    const [editDesc, setEditDesc] = useState(workspace.description);
 
-    const [prevProject, setPrevProject] = useState({ title: project.title, description: project.description });
+    const [prevWorkspace, setPrevWorkspace] = useState({ title: workspace.title, description: workspace.description });
 
-    if (project.title !== prevProject.title || project.description !== prevProject.description) {
-        setPrevProject({ title: project.title, description: project.description });
-        setEditName(project.title);
-        setEditDesc(project.description);
+    if (workspace.title !== prevWorkspace.title || workspace.description !== prevWorkspace.description) {
+        setPrevWorkspace({ title: workspace.title, description: workspace.description });
+        setEditName(workspace.title);
+        setEditDesc(workspace.description);
     }
 
     const handleSaveName = async () => {
-        if (!editName.trim() || editName === project.title) {
+        if (!editName.trim() || editName === workspace.title) {
             setIsEditingName(false);
-            setEditName(project.title);
+            setEditName(workspace.title);
             return;
         }
         try {
             await onUpdate?.({ title: editName });
             setIsEditingName(false);
         } catch (error) {
-            setEditName(project.title);
+            setEditName(workspace.title);
             window.electron.log.error('Failed to update name', error);
         }
     };
 
     const handleSaveDesc = async () => {
-        if (editDesc === project.description) {
+        if (editDesc === workspace.description) {
             setIsEditingDesc(false);
             return;
         }
@@ -45,7 +45,7 @@ export const useDashboardInlineEdit = ({ project, onUpdate }: UseDashboardInline
             await onUpdate?.({ description: editDesc });
             setIsEditingDesc(false);
         } catch (error) {
-            setEditDesc(project.description);
+            setEditDesc(workspace.description);
             window.electron.log.error('Failed to update description', error);
         }
     };

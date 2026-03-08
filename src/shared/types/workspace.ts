@@ -18,9 +18,7 @@ export type WorkspaceDashboardTab =
     | 'agent'
     | 'editor';
 
-export type ProjectDashboardTab = WorkspaceDashboardTab;
-
-export type WorkspaceMountType = 'local' | 'ssh';
+export type WorkspaceMountType= 'local' | 'ssh';
 
 export interface WorkspaceSshConfig {
     host: string;
@@ -129,8 +127,6 @@ export interface Workspace {
         autoSave?: boolean;             // Auto-save files
     };
 }
-
-export type Project = Workspace;
 
 export interface WorkspaceCouncilMessage extends Message {
     votes?: Record<string, 'agree' | 'disagree' | 'neutral'>;

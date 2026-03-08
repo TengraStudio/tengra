@@ -3,7 +3,7 @@
  * Uses react-virtuoso for efficient rendering of large idea lists
  */
 
-import { ProjectIdea } from '@shared/types/ideas';
+import { WorkspaceIdea } from '@shared/types/ideas';
 import { Lightbulb } from 'lucide-react';
 import React, { useMemo } from 'react';
 import { Virtuoso } from 'react-virtuoso';
@@ -13,8 +13,8 @@ import { useTranslation } from '@/i18n';
 import { IdeaCard } from './IdeaCard';
 
 interface VirtualizedIdeaGridProps {
-    ideas: ProjectIdea[]
-    onSelectIdea: (idea: ProjectIdea) => void
+    ideas: WorkspaceIdea[]
+    onSelectIdea: (idea: WorkspaceIdea) => void
     itemsPerRow?: number
     itemHeight?: number
 }

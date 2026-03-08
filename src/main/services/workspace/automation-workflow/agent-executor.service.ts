@@ -1,8 +1,8 @@
 
 
 import { BaseService } from '@main/services/base.service';
-import { AgentPersistenceService } from '@main/services/project/agent/agent-persistence.service';
-import { agentStateReducer } from '@main/services/project/agent/agent-state-machine';
+import { AgentPersistenceService } from '@main/services/workspace/agent/agent-persistence.service';
+import { agentStateReducer } from '@main/services/workspace/automation-workflow/agent-state-machine';
 import { AgentEvent, AgentTaskState } from '@shared/types/agent-state';
 
 /**

@@ -29,8 +29,8 @@ function createIdea(category: WorkspaceIdea['category']): WorkspaceIdea {
     return {
         id: 'idea-1',
         sessionId: 'session-1',
-        title: 'Test Project',
-        description: 'A test project description',
+        title: 'Test Workspace',
+        description: 'A test workspace description',
         explanation: 'This is a test',
         category,
         valueProposition: 'Great value',
@@ -55,7 +55,7 @@ describe('WorkspaceScaffoldService', () => {
             const idea = createIdea('website');
             await service.scaffoldWorkspace(idea, '/target/path');
 
-            // Creates project directory + subdirectories
+            // Creates workspace directory + subdirectories.
             expect(mockedMkdir).toHaveBeenCalledWith('/target/path', { recursive: true });
             expect(mockedMkdir).toHaveBeenCalledWith(
                 expect.stringContaining('css'),
@@ -65,11 +65,11 @@ describe('WorkspaceScaffoldService', () => {
             // Creates files including README
             expect(mockedWriteFile).toHaveBeenCalledWith(
                 expect.stringContaining('README.md'),
-                expect.stringContaining('Test Project')
+                expect.stringContaining('Test Workspace')
             );
             expect(mockedWriteFile).toHaveBeenCalledWith(
                 expect.stringContaining('index.html'),
-                expect.stringContaining('Test Project')
+                expect.stringContaining('Test Workspace')
             );
         });
     });
@@ -164,8 +164,8 @@ describe('WorkspaceScaffoldService', () => {
         it('should generate README with title and description', () => {
             const idea = createIdea('website');
             const readme = service.generateReadme(idea);
-            expect(readme).toContain('# Test Project');
-            expect(readme).toContain('A test project description');
+            expect(readme).toContain('# Test Workspace');
+            expect(readme).toContain('A test workspace description');
             expect(readme).toContain('Great value');
             expect(readme).toContain('Fast');
             expect(readme).toContain('TestApp');
@@ -178,7 +178,7 @@ describe('WorkspaceScaffoldService', () => {
             idea.explanation = undefined as never;
             idea.valueProposition = undefined as never;
             const readme = service.generateReadme(idea);
-            expect(readme).toContain('# Test Project');
+            expect(readme).toContain('# Test Workspace');
         });
     });
 

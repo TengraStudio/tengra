@@ -3,11 +3,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
-import { SSHKeyManager } from '@main/services/project/ssh-key-manager';
-import { SSHProfileManager } from '@main/services/project/ssh-profile-manager';
-import { SSHSessionRecordingManager } from '@main/services/project/ssh-session-recording-manager';
-import { SSHTunnelManager } from '@main/services/project/ssh-tunnel-manager';
 import { SecurityService } from '@main/services/security/security.service';
+import { SSHKeyManager } from '@main/services/workspace/ssh-key-manager';
+import { SSHProfileManager } from '@main/services/workspace/ssh-profile-manager';
+import { SSHSessionRecordingManager } from '@main/services/workspace/ssh-session-recording-manager';
+import { SSHTunnelManager } from '@main/services/workspace/ssh-tunnel-manager';
 import { validateCommand } from '@main/utils/command-validator.util';
 import { withRetry } from '@main/utils/retry.util';
 import {

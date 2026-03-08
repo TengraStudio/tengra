@@ -34,7 +34,7 @@ const sectionData = {
     "thinkingOff": "Pensamiento desactivado",
     "selectAction": "Seleccionar acción",
     "noDescription": "Sin descripción proporcionada",
-    "selectProject": "Seleccionar proyecto",
+    "selectWorkspace": "Seleccionar proyecto",
     "unnamedGroup": "Grupo sin nombre",
     "votingPanel": {
         "title": "Sesiones de votación",

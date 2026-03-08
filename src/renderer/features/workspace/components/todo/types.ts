@@ -1,4 +1,4 @@
-import { TodoFile, TodoItem } from '@/types/project';
+import type { TodoFile, TodoItem } from '@/types';
 
 export type { TodoFile, TodoItem };
 

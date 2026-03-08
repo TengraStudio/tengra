@@ -42,19 +42,19 @@ const mountElectronMock = (selectedPath: string) => {
     };
 };
 
-const renderWizard = (onProjectCreated = vi.fn().mockResolvedValue(true)) => {
+const renderWizard = (onWorkspaceCreated = vi.fn().mockResolvedValue(true)) => {
     const onClose = vi.fn();
 
     render(
         <WorkspaceWizardModal
             isOpen={true}
             onClose={onClose}
-            onProjectCreated={onProjectCreated}
+            onWorkspaceCreated={onWorkspaceCreated}
             language="en"
         />
     );
 
-    return { onClose, onProjectCreated };
+    return { onClose, onWorkspaceCreated };
 };
 
 describe('WorkspaceWizardModal', () => {
@@ -63,7 +63,7 @@ describe('WorkspaceWizardModal', () => {
     });
 
     it('derives a workspace name from a Windows path with a trailing slash', async () => {
-        const { onClose, onProjectCreated } = renderWizard();
+        const { onClose, onWorkspaceCreated } = renderWizard();
 
         fireEvent.click(screen.getByText('workspaceWizard.alreadyExists'));
 
@@ -74,7 +74,7 @@ describe('WorkspaceWizardModal', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Next' }));
 
         await waitFor(() => {
-            expect(onProjectCreated).toHaveBeenCalledWith(
+            expect(onWorkspaceCreated).toHaveBeenCalledWith(
                 'C:\\workspaces\\Demo Workspace\\',
                 'Demo Workspace',
                 '',
@@ -94,7 +94,7 @@ describe('WorkspaceWizardModal', () => {
 
     it('derives a workspace name from a POSIX path with a trailing slash', async () => {
         mountElectronMock('/var/tmp/demo-workspace/');
-        const { onProjectCreated } = renderWizard();
+        const { onWorkspaceCreated } = renderWizard();
 
         fireEvent.click(screen.getByText('workspaceWizard.alreadyExists'));
 
@@ -105,7 +105,7 @@ describe('WorkspaceWizardModal', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Next' }));
 
         await waitFor(() => {
-            expect(onProjectCreated).toHaveBeenCalledWith(
+            expect(onWorkspaceCreated).toHaveBeenCalledWith(
                 '/var/tmp/demo-workspace/',
                 'demo-workspace',
                 '',

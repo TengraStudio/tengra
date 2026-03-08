@@ -6,7 +6,7 @@ import { Workspace } from '@/types';
 
 interface WorkspaceListViewProps {
     workspaces: Workspace[];
-    selectedProjectIds: Set<string>;
+    selectedWorkspaceIds: Set<string>;
     toggleSelection: (id: string) => void;
     handleSelectWorkspace: (workspace: Workspace) => void;
     startEdit: (workspace: Workspace) => void;
@@ -18,7 +18,7 @@ interface WorkspaceListViewProps {
 
 export const WorkspaceListView: React.FC<WorkspaceListViewProps> = memo(({
     workspaces,
-    selectedProjectIds,
+    selectedWorkspaceIds,
     toggleSelection,
     handleSelectWorkspace,
     startEdit,
@@ -43,55 +43,55 @@ export const WorkspaceListView: React.FC<WorkspaceListViewProps> = memo(({
             <Virtuoso
                 style={{ height: 520 }}
                 data={workspaces}
-                itemContent={(_index, project) => (
+                itemContent={(_index, workspace) => (
                     <div className="grid grid-cols-[40px_2fr_2fr_1fr_160px] gap-3 px-4 py-3 border-t border-border/20 items-center text-sm">
                         <div>
                             <input
                                 type="checkbox"
-                                checked={selectedProjectIds.has(project.id)}
-                                onChange={() => toggleSelection(project.id)}
+                                checked={selectedWorkspaceIds.has(workspace.id)}
+                                onChange={() => toggleSelection(workspace.id)}
                                 className="w-4 h-4 rounded border-border/40 bg-muted/30 text-foreground focus:ring-foreground/20 cursor-pointer"
                             />
                         </div>
                         <button
                             onClick={() => {
-                                void handleSelectWorkspace(project);
+                                void handleSelectWorkspace(workspace);
                             }}
                             className="text-left min-w-0"
-                            title={project.description || t('workspaces.noDescription')}
+                            title={workspace.description || t('workspaces.noDescription')}
                         >
-                            <div className="font-medium truncate">{project.title}</div>
-                            <div className="text-xs text-muted-foreground truncate">{project.description || t('workspaces.noDescription')}</div>
+                            <div className="font-medium truncate">{workspace.title}</div>
+                            <div className="text-xs text-muted-foreground truncate">{workspace.description || t('workspaces.noDescription')}</div>
                         </button>
-                        <div className="text-xs text-muted-foreground truncate font-mono">{project.path}</div>
+                        <div className="text-xs text-muted-foreground truncate font-mono">{workspace.path}</div>
                         <div className="text-xs text-muted-foreground">
-                            {new Date(project.updatedAt).toLocaleDateString()}
+                            {new Date(workspace.updatedAt).toLocaleDateString()}
                         </div>
                         <div className="flex items-center justify-end gap-1">
                             <button
                                 onClick={() => {
-                                    void handleSelectWorkspace(project);
+                                    void handleSelectWorkspace(workspace);
                                 }}
                                 className="p-2 rounded-md hover:bg-muted/30"
                                 title="Open"
                             >
                                 <FolderOpen className="w-4 h-4" />
                             </button>
-                            <button onClick={() => startEdit(project)} className="p-2 rounded-md hover:bg-muted/30" title={t('common.edit')}>
+                            <button onClick={() => startEdit(workspace)} className="p-2 rounded-md hover:bg-muted/30" title={t('common.edit')}>
                                 <Edit className="w-4 h-4" />
                             </button>
                             <button
-                                onClick={() => startArchive(project)}
+                                onClick={() => startArchive(workspace)}
                                 className="p-2 rounded-md hover:bg-muted/30"
                                 title={
-                                    project.status === 'archived'
+                                    workspace.status === 'archived'
                                         ? t('common.unarchive') || 'Restore'
                                         : t('workspaces.archiveWorkspace')
                                 }
                             >
                                 <Archive className="w-4 h-4" />
                             </button>
-                            <button onClick={() => startDelete(project)} className="p-2 rounded-md hover:bg-destructive/10 text-destructive" title={t('common.delete')}>
+                            <button onClick={() => startDelete(workspace)} className="p-2 rounded-md hover:bg-destructive/10 text-destructive" title={t('common.delete')}>
                                 <Trash2 className="w-4 h-4" />
                             </button>
                         </div>

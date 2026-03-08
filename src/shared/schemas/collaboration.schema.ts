@@ -5,7 +5,7 @@ import { z } from 'zod';
  * Used for both group chats and multi-user workspace editing.
  */
 export const JoinCollaborationRoomSchema = z.object({
-    type: z.enum(['chat', 'project']),
+    type: z.enum(['chat', 'workspace']),
     id: z.string(),
 });
 

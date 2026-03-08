@@ -1,12 +1,12 @@
 const sectionData = {
     "title": "Asistente de proyecto",
-    "localProject": "Proyecto local",
-    "localProjectDesc": "Crea un nuevo proyecto en tu ordenador.",
+    "localWorkspace": "Proyecto local",
+    "localWorkspaceDesc": "Crea un nuevo proyecto en tu ordenador.",
     "remoteSSH": "SSH remoto",
     "remoteSSHDesc": "Conéctate a un servidor remoto y desarrolla.",
     "import": "Importar",
     "importDesc": "Añade un proyecto o carpeta existente al espacio de trabajo.",
-    "projectName": "NOMBRE DEL PROYECTO",
+    "workspaceName": "NOMBRE DEL PROYECTO",
     "namePlaceholder": "Ej: Dashboard CRM",
     "placeholder": {
         "example": "ejemplo.com"

@@ -2,7 +2,7 @@ const sectionData = {
     "commitGenerator": "Git Commit Oluşturucu",
     "generatorSubtitle": "Yapay zeka destekli commit mesajı önerileri",
     "generate": "Oluştur",
-    "selectProject": "Commit mesajı oluşturmak için bir proje seçin",
+    "selectWorkspace": "Commit mesajı oluşturmak için bir proje seçin",
     "suggestedMessage": "Önerilen Commit Mesajı",
     "stagedChanges": "Hazırlanan Değişiklikler (Staged)",
     "noStagedChanges": "Hazırlanmış değişiklik bulunamadı. Önce `git add` ile değişiklikleri stage edin.",

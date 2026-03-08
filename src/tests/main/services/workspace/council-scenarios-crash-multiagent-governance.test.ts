@@ -3,8 +3,8 @@
  */
 
 import { AgentCollaborationService } from '@main/services/workspace/agent/agent-collaboration.service';
-import { AgentExecutorService } from '@main/services/workspace/automation-workflow/agent-executor.service';
 import { AgentPersistenceService } from '@main/services/workspace/agent/agent-persistence.service';
+import { AgentExecutorService } from '@main/services/workspace/automation-workflow/agent-executor.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createMockPersistence, createMockPlan, createMockTaskState } from './council-scenarios.helpers';

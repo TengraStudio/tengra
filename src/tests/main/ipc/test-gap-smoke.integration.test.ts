@@ -100,7 +100,7 @@ describe('Missing IPC TODO coverage (behavior)', () => {
 
         vi.mocked(dialog.showOpenDialog).mockResolvedValue({
             canceled: false,
-            filePaths: ['C:/workspace/project']
+            filePaths: ['C:/workspaces/demo-workspace']
         } as never);
 
         registerFilesIpc(() => mockWin, fileSystemService as never, roots);
@@ -108,9 +108,9 @@ describe('Missing IPC TODO coverage (behavior)', () => {
         const handler = handlers.get('files:selectDirectory');
         const result = await handler?.(mockEvent);
 
-        expect(result).toMatchObject({ success: true, path: 'C:/workspace/project' });
+        expect(result).toMatchObject({ success: true, path: 'C:/workspaces/demo-workspace' });
         expect(fileSystemService.updateAllowedRoots).toHaveBeenCalledTimes(1);
-        expect(Array.from(roots)).toContain('C:/workspace/project');
+        expect(Array.from(roots)).toContain('C:/workspaces/demo-workspace');
     });
 
 });

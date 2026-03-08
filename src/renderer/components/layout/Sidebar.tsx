@@ -42,7 +42,7 @@ export const Sidebar = React.memo(({
     } = useChat();
 
     // const { language: authLanguage } = useAuth() // Removed unused
-    const { selectedProject: selectedWorkspace } = useWorkspace();
+    const { selectedWorkspace: selectedWorkspace } = useWorkspace();
     const { t, language } = useTranslation();
 
     const [searchQuery, setSearchQuery] = useState('');

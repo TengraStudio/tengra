@@ -9,7 +9,7 @@ const sectionData = {
     "commandPalette": "Command Palette",
     "toggleSidebar": "Toggle Sidebar",
     "goToChat": "Go to Chat",
-    "goToProjects": "Go to Projects",
+    "goToWorkspaces": "Go to Workspaces",
     "goToCouncil": "Go to Council",
     "goToSettings": "Go to Settings",
     "sendMessage": "Send Message",

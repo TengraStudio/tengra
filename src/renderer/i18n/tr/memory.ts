@@ -94,6 +94,7 @@ const sectionData = {
     "userVerified": "Kullanıcı doğruladı",
     "accessed": "Erişildi",
     "restore": "Geri Yükle",
+    "shareToWorkspace": "Çalışma Alanına Paylaş",
     "tabs": {
         "pending": "Bekleyen",
         "confirmed": "Onaylı",
@@ -103,7 +104,7 @@ const sectionData = {
     "categories": {
         "preference": "Tercih",
         "personal": "Kişisel",
-        "project": "Proje",
+        "workspace": "Çalışma Alanı",
         "technical": "Teknik",
         "workflow": "İş Akışı",
         "relationship": "İlişki",

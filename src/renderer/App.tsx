@@ -116,7 +116,7 @@ function MainApp() {
     const { isListening, startListening, stopListening } = useVoiceInput(handleVoiceInput);
     const { stop: handleStopSpeak, isSpeaking } = useTextToSpeech();
     const { models, loadModels, selectedModel, setSelectedModel } = useModel();
-    const { projects: workspaces, selectedProject: selectedWorkspace, setSelectedProject: setSelectedWorkspace } = useWorkspace();
+    const { workspaces: workspaces, selectedWorkspace: selectedWorkspace, setSelectedWorkspace: setSelectedWorkspace } = useWorkspace();
     const appState = useAppState();
     const {
         currentView,

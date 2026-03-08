@@ -34,7 +34,7 @@ const sectionData = {
     "thinkingOff": "思考关闭",
     "selectAction": "选择操作",
     "noDescription": "未提供描述",
-    "selectProject": "选择项目",
+    "selectWorkspace": "选择项目",
     "unnamedGroup": "未命名团体",
     "votingPanel": {
         "title": "投票会议",

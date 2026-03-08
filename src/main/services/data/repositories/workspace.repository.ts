@@ -1,12 +1,15 @@
 import * as fs from 'fs';
 
 import { appLogger } from '@main/logging/logger';
+import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { JsonObject } from '@shared/types/common';
 import { DatabaseAdapter, SqlValue } from '@shared/types/database';
 import { Workspace } from '@shared/types/workspace';
 import { v4 as uuidv4 } from 'uuid';
 
 import { BaseRepository } from './base.repository';
+
+const WORKSPACE_COMPAT_PATH_COLUMN = WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN;
 
 export class WorkspaceRepository extends BaseRepository {
     constructor(adapter: DatabaseAdapter) {
@@ -18,10 +21,6 @@ export class WorkspaceRepository extends BaseRepository {
         return rows.map(r => this.mapRowToWorkspace(r));
     }
 
-    async getProjects(): Promise<Workspace[]> {
-        return this.getWorkspaces();
-    }
-
     async getWorkspace(id: string): Promise<Workspace | undefined> {
         const row = await this.adapter
             .prepare('SELECT * FROM workspaces WHERE id = ?')
@@ -29,13 +28,9 @@ export class WorkspaceRepository extends BaseRepository {
         return row ? this.mapRowToWorkspace(row) : undefined;
     }
 
-    async getProject(id: string): Promise<Workspace | undefined> {
-        return this.getWorkspace(id);
-    }
-
     async hasIndexedSymbols(workspacePath: string): Promise<boolean> {
         const row = await this.adapter
-            .prepare('SELECT count(*) as count FROM code_symbols WHERE project_path = ?')
+            .prepare(`SELECT count(*) as count FROM code_symbols WHERE ${WORKSPACE_COMPAT_PATH_COLUMN} = ?`)
             .get<{ count: number }>(workspacePath);
         return (row?.count ?? 0) > 0;
     }
@@ -93,16 +88,6 @@ export class WorkspaceRepository extends BaseRepository {
         });
     }
 
-    async createProject(
-        title: string,
-        workspacePath: string,
-        description: string = '',
-        mountsJson?: string,
-        councilConfigJson?: string
-    ): Promise<Workspace> {
-        return this.createWorkspace(title, workspacePath, description, mountsJson, councilConfigJson);
-    }
-
     async updateWorkspace(id: string, updates: Partial<Workspace>): Promise<Workspace | undefined> {
         const fields: string[] = [];
         const values: unknown[] = [];
@@ -122,10 +107,6 @@ export class WorkspaceRepository extends BaseRepository {
             .prepare(`UPDATE workspaces SET ${fields.join(', ')} WHERE id = ? `)
             .run(...(values as SqlValue[]));
         return this.getWorkspace(id);
-    }
-
-    async updateProject(id: string, updates: Partial<Workspace>): Promise<Workspace | undefined> {
-        return this.updateWorkspace(id, updates);
     }
 
     private collectWorkspaceUpdates(
@@ -194,10 +175,6 @@ export class WorkspaceRepository extends BaseRepository {
             }
         }
         await this.adapter.prepare('DELETE FROM workspaces WHERE id = ?').run(id);
-    }
-
-    async deleteProject(id: string, deleteFiles: boolean = false): Promise<void> {
-        return this.deleteWorkspace(id, deleteFiles);
     }
 
     private mapRowToWorkspace(row: JsonObject): Workspace {
@@ -286,19 +263,19 @@ export class WorkspaceRepository extends BaseRepository {
 
         const hasWorkspaceSettings = Boolean(nextBuildConfig ?? nextDevServer ?? nextAdvancedOptions);
         if (hasWorkspaceSettings) {
-            const projectSettings: JsonObject = {};
+            const workspaceSettings: JsonObject = {};
             if (nextBuildConfig) {
-                projectSettings.buildConfig = nextBuildConfig as unknown as JsonObject;
+                workspaceSettings.buildConfig = nextBuildConfig as unknown as JsonObject;
             }
             if (nextDevServer) {
-                projectSettings.devServer = nextDevServer as unknown as JsonObject;
+                workspaceSettings.devServer = nextDevServer as unknown as JsonObject;
             }
             if (nextAdvancedOptions) {
-                projectSettings.advancedOptions = nextAdvancedOptions as unknown as JsonObject;
+                workspaceSettings.advancedOptions = nextAdvancedOptions as unknown as JsonObject;
             }
-            baseMetadata.projectSettings = projectSettings;
+            baseMetadata.workspaceSettings = workspaceSettings;
         } else {
-            delete (baseMetadata as Record<string, unknown>).projectSettings;
+            delete (baseMetadata as Record<string, unknown>).workspaceSettings;
         }
 
         // Remove legacy top-level keys to keep metadata shape stable.
@@ -319,9 +296,9 @@ export class WorkspaceRepository extends BaseRepository {
         }
 
         const settingsContainer = this.isObject(
-            (metadata as Record<string, unknown>).projectSettings
+            (metadata as Record<string, unknown>).workspaceSettings
         )
-            ? ((metadata as Record<string, unknown>).projectSettings as Record<string, unknown>)
+            ? ((metadata as Record<string, unknown>).workspaceSettings as Record<string, unknown>)
             : (metadata as Record<string, unknown>);
 
         return {

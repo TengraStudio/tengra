@@ -2,8 +2,8 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const PROJECT_ROOT = process.cwd();
-const SRC_ROOT = path.join(PROJECT_ROOT, 'src');
+const WORKSPACE_ROOT = process.cwd();
+const SRC_ROOT = path.join(WORKSPACE_ROOT, 'src');
 const IPC_DIR = path.join(SRC_ROOT, 'main', 'ipc');
 const PRELOAD_FILE = path.join(SRC_ROOT, 'main', 'preload.ts');
 const PRELOAD_DOMAINS_DIR = path.join(SRC_ROOT, 'main', 'preload', 'domains');
@@ -193,7 +193,7 @@ describe('SAFE-005 IPC contract parity', () => {
             const hasSharedSchemaImport = /from ['"]@shared\/schemas\/[^'"]+['"]/.test(content);
             const hasSharedTypeImport = /from ['"]@shared\/types(?:\/[^'"]+)?['"]/.test(content);
             if (!hasSharedSchemaImport && !hasSharedTypeImport) {
-                nonSharedTypedFiles.push(path.relative(PROJECT_ROOT, filePath));
+                nonSharedTypedFiles.push(path.relative(WORKSPACE_ROOT, filePath));
             }
         }
 

@@ -37,13 +37,13 @@ const downloadText = (filename: string, content: string, mimeType = 'text/plain'
 /**
  * Advanced Git operations hook that composes multiple specialized git hooks
  */
-export function useGitAdvanced(projectPath?: string) {
+export function useGitAdvanced(workspacePath?: string) {
     const [isLoading, setIsLoading] = useState(false);
     const [blameLines, setBlameLines] = useState<GitBlameLine[]>([]);
     const [commitDetails, setCommitDetails] = useState<GitCommitDetails | null>(null);
     const [rebaseStatus, setRebaseStatus] = useState<RebaseStatus>(DEFAULT_REBASE_STATUS);
 
-    const canRun = useMemo(() => !!projectPath && projectPath.trim().length > 0, [projectPath]);
+    const canRun = useMemo(() => !!workspacePath && workspacePath.trim().length > 0, [workspacePath]);
 
     const invokeGit = useCallback(
         async <T>(channel: string, ...args: (string | number | boolean)[]) => {
@@ -53,9 +53,9 @@ export function useGitAdvanced(projectPath?: string) {
     );
 
     // Compose sub-hooks
-    const conflictsHook = useGitConflicts(canRun, projectPath, invokeGit);
-    const stashesHook = useGitStashes(canRun, projectPath, invokeGit);
-    const advancedOpsHook = useGitAdvancedOperations(canRun, projectPath, invokeGit);
+    const conflictsHook = useGitConflicts(canRun, workspacePath, invokeGit);
+    const stashesHook = useGitStashes(canRun, workspacePath, invokeGit);
+    const advancedOpsHook = useGitAdvancedOperations(canRun, workspacePath, invokeGit);
 
     const exportConflictReport = useCallback(() => {
         const payload = {
@@ -68,40 +68,40 @@ export function useGitAdvanced(projectPath?: string) {
 
     const loadBlame = useCallback(
         async (filePath: string) => {
-            if (!canRun || !projectPath || !filePath.trim()) {
+            if (!canRun || !workspacePath || !filePath.trim()) {
                 return;
             }
             const response = await invokeGit<{ success: boolean; lines?: GitBlameLine[] }>(
                 'git:getBlame',
-                projectPath,
+                workspacePath,
                 filePath
             );
             if (response.success) {
                 setBlameLines(response.lines ?? []);
             }
         },
-        [canRun, projectPath, invokeGit]
+        [canRun, workspacePath, invokeGit]
     );
 
     const loadCommitDetails = useCallback(
         async (commitHash: string) => {
-            if (!canRun || !projectPath || !commitHash.trim()) {
+            if (!canRun || !workspacePath || !commitHash.trim()) {
                 return;
             }
             const response = await invokeGit<{ success: boolean; details?: GitCommitDetails }>(
                 'git:getCommitDetails',
-                projectPath,
+                workspacePath,
                 commitHash
             );
             if (response.success && response.details) {
                 setCommitDetails(response.details);
             }
         },
-        [canRun, projectPath, invokeGit]
+        [canRun, workspacePath, invokeGit]
     );
 
     const fetchRebaseStatus = useCallback(async () => {
-        if (!canRun || !projectPath) {
+        if (!canRun || !workspacePath) {
             return;
         }
         const response = await invokeGit<{
@@ -110,7 +110,7 @@ export function useGitAdvanced(projectPath?: string) {
             currentBranch?: string;
             conflictCount?: number;
             conflicts?: GitConflict[];
-        }>('git:getRebaseStatus', projectPath);
+        }>('git:getRebaseStatus', workspacePath);
         if (response.success) {
             setRebaseStatus({
                 inRebase: response.inRebase ?? false,
@@ -119,7 +119,7 @@ export function useGitAdvanced(projectPath?: string) {
                 conflicts: response.conflicts ?? [],
             });
         }
-    }, [canRun, projectPath, invokeGit]);
+    }, [canRun, workspacePath, invokeGit]);
 
     const refreshAll = useCallback(async () => {
         if (!canRun) {

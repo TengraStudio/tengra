@@ -1,8 +1,8 @@
 import { appLogger } from '@main/logging/logger';
 import {
     AdvancedSemanticFragment,
+    coerceMemoryCategory,
     ContradictionCandidate,
-    MemoryCategory,
     MemorySource,
     MemoryStatus,
     PendingMemory,
@@ -328,6 +328,7 @@ export class KnowledgeRepository extends BaseRepository {
     async storeAdvancedMemory(memory: AdvancedSemanticFragment): Promise<void> {
         try {
             const vec = memory.embedding.length > 0 ? `[${memory.embedding.join(',')}]` : null;
+            const category = coerceMemoryCategory(memory.category);
             await this.adapter.prepare(`
                 INSERT INTO advanced_memories (
                     id, content, embedding, source, source_id, source_context,
@@ -343,7 +344,7 @@ export class KnowledgeRepository extends BaseRepository {
                 memory.source,
                 memory.sourceId,
                 memory.sourceContext ?? null,
-                memory.category,
+                category,
                 JSON.stringify(memory.tags),
                 memory.confidence,
                 memory.importance,
@@ -371,6 +372,7 @@ export class KnowledgeRepository extends BaseRepository {
 
     async updateAdvancedMemory(memory: AdvancedSemanticFragment): Promise<void> {
         const vec = memory.embedding.length > 0 ? `[${memory.embedding.join(',')}]` : null;
+        const category = coerceMemoryCategory(memory.category);
         await this.adapter.prepare(`
             UPDATE advanced_memories SET
                 content = ?, embedding = ?, source = ?, source_id = ?, source_context = ?,
@@ -385,7 +387,7 @@ export class KnowledgeRepository extends BaseRepository {
             memory.source,
             memory.sourceId,
             memory.sourceContext ?? null,
-            memory.category,
+            category,
             JSON.stringify(memory.tags),
             memory.confidence,
             memory.importance,
@@ -442,7 +444,9 @@ export class KnowledgeRepository extends BaseRepository {
             source: String(r.source) as MemorySource,
             sourceId: String(r.source_id),
             sourceContext: r.source_context as string | undefined,
-            category: String(r.category) as MemoryCategory,
+            category: coerceMemoryCategory(
+                typeof r.category === 'string' ? r.category : undefined
+            ),
             tags: this.parseJsonField(r.tags as string | null, []),
             confidence: Number(r.confidence ?? 0),
             importance: Number(r.importance ?? 0),
@@ -469,6 +473,7 @@ export class KnowledgeRepository extends BaseRepository {
 
     async savePendingMemory(pending: PendingMemory): Promise<void> {
         const vec = pending.embedding.length > 0 ? `[${pending.embedding.join(',')}]` : null;
+        const suggestedCategory = coerceMemoryCategory(pending.suggestedCategory);
         await this.adapter.prepare(`
             INSERT INTO pending_memories (
                 id, content, embedding, source, source_id, source_context, extracted_at,
@@ -494,7 +499,7 @@ export class KnowledgeRepository extends BaseRepository {
             pending.sourceId,
             pending.sourceContext,
             pending.extractedAt,
-            pending.suggestedCategory,
+            suggestedCategory,
             JSON.stringify(pending.suggestedTags),
             pending.extractionConfidence,
             pending.relevanceScore,
@@ -525,7 +530,9 @@ export class KnowledgeRepository extends BaseRepository {
             sourceId: String(r.source_id),
             sourceContext: String(r.source_context),
             extractedAt: Number(r.extracted_at),
-            suggestedCategory: String(r.suggested_category) as MemoryCategory,
+            suggestedCategory: coerceMemoryCategory(
+                typeof r.suggested_category === 'string' ? r.suggested_category : undefined
+            ),
             suggestedTags: this.parseJsonField(r.suggested_tags as string | null, []),
             extractionConfidence: Number(r.extraction_confidence ?? 0),
             relevanceScore: Number(r.relevance_score ?? 0),

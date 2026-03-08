@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { TodoFile, TodoItem } from '../components/todo/types';
 
-export function useProjectTodoLogic(projectRoot: string) {
+export function useWorkspaceTodoLogic(workspaceRoot: string) {
     const [todoFiles, setTodoFiles] = useState<TodoFile[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -31,11 +31,11 @@ export function useProjectTodoLogic(projectRoot: string) {
     );
 
     const fetchTodos = useCallback(async () => {
-        if (!projectRoot) { return; }
+        if (!workspaceRoot) { return; }
         setLoading(true);
         setError(null);
         try {
-            const validFiles = await window.electron.code.scanTodos(projectRoot);
+            const validFiles = await window.electron.code.scanTodos(workspaceRoot);
             setTodoFiles(validFiles);
             undoStackRef.current = [];
             redoStackRef.current = [];
@@ -47,12 +47,12 @@ export function useProjectTodoLogic(projectRoot: string) {
             setExpandedFiles(expanded);
 
         } catch (err) {
-            window.electron.log.error('useProjectTodoLogic: fetchTodos failed', { error: err });
+            window.electron.log.error('useWorkspaceTodoLogic: fetchTodos failed', { error: err });
             setError(err instanceof Error ? err.message : String(err));
         } finally {
             setLoading(false);
         }
-    }, [projectRoot]);
+    }, [workspaceRoot]);
 
     useEffect(() => {
         void fetchTodos();
@@ -97,7 +97,7 @@ export function useProjectTodoLogic(projectRoot: string) {
 
         try {
             // Default to root TODO.md
-            const targetPath = `${projectRoot}/TODO.md`;
+            const targetPath = `${workspaceRoot}/TODO.md`;
             let content = '';
 
             // Check if file exists
@@ -105,7 +105,7 @@ export function useProjectTodoLogic(projectRoot: string) {
                 content = await window.electron.files.readFile(targetPath);
                 if (content && !content.endsWith('\n')) { content += '\n'; }
             } else {
-                content = '# Project Tasks\n\n';
+                content = '# Workspace Tasks\n\n';
             }
 
             const newTaskLine = `- [ ] ${text}`;
@@ -118,7 +118,7 @@ export function useProjectTodoLogic(projectRoot: string) {
         } catch (e) {
             setError(e instanceof Error ? e.message : String(e));
         }
-    }, [fetchTodos, projectRoot, pushUndoSnapshot, todoFiles]);
+    }, [fetchTodos, workspaceRoot, pushUndoSnapshot, todoFiles]);
 
     const totalStats = useMemo(() => {
         let total = 0;

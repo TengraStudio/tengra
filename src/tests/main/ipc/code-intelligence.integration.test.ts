@@ -83,7 +83,7 @@ describe('Code Intelligence IPC Handlers', () => {
                 generatedAt: '2026-02-16T00:00:00.000Z',
             }),
             analyzeCodeQuality: vi.fn().mockResolvedValue({
-                rootPath: '/project',
+                rootPath: '/workspace',
                 filesScanned: 5,
                 totalLines: 500,
                 functionSymbols: 20,
@@ -121,16 +121,16 @@ describe('Code Intelligence IPC Handlers', () => {
     });
 
     describe('code:scanTodos', () => {
-        it('should scan project for TODOs', async () => {
+        it('should scan a workspace for TODOs', async () => {
             const handler = async (_event: IpcMainInvokeEvent, ...args: unknown[]) => {
                 const rootPath = args[0] as string;
                 return await mockService.scanWorkspaceTodos!(rootPath);
             };
             registeredHandlers.set('code:scanTodos', handler);
 
-            const result = await registeredHandlers.get('code:scanTodos')!({} as IpcMainInvokeEvent, '/project');
+            const result = await registeredHandlers.get('code:scanTodos')!({} as IpcMainInvokeEvent, '/workspace');
 
-            expect(mockService.scanWorkspaceTodos).toHaveBeenCalledWith('/project');
+            expect(mockService.scanWorkspaceTodos).toHaveBeenCalledWith('/workspace');
             expect(result).toEqual([
                 { file: 'src/main.ts', line: 10, content: 'TODO: implement feature', todoType: 'todo' }
             ]);
@@ -138,7 +138,7 @@ describe('Code Intelligence IPC Handlers', () => {
     });
 
     describe('code:findSymbols', () => {
-        it('should find symbols in project', async () => {
+        it('should find symbols in a workspace', async () => {
             const handler = async (_event: IpcMainInvokeEvent, ...args: unknown[]) => {
                 const rootPath = args[0] as string;
                 const query = args[1] as string;
@@ -146,9 +146,9 @@ describe('Code Intelligence IPC Handlers', () => {
             };
             registeredHandlers.set('code:findSymbols', handler);
 
-            const result = await registeredHandlers.get('code:findSymbols')!({} as IpcMainInvokeEvent, '/project', 'functionName');
+            const result = await registeredHandlers.get('code:findSymbols')!({} as IpcMainInvokeEvent, '/workspace', 'functionName');
 
-            expect(mockService.findSymbols).toHaveBeenCalledWith('/project', 'functionName');
+            expect(mockService.findSymbols).toHaveBeenCalledWith('/workspace', 'functionName');
             expect(result).toEqual([
                 { file: 'src/main.ts', line: 5, name: 'functionName', type: 'function' }
             ]);
@@ -156,7 +156,7 @@ describe('Code Intelligence IPC Handlers', () => {
     });
 
     describe('code:searchFiles', () => {
-        it('should search files in project', async () => {
+        it('should search files in a workspace', async () => {
             const handler = async (_event: IpcMainInvokeEvent, ...args: unknown[]) => {
                 const rootPath = args[0] as string;
                 const query = args[1] as string;
@@ -166,9 +166,9 @@ describe('Code Intelligence IPC Handlers', () => {
             };
             registeredHandlers.set('code:searchFiles', handler);
 
-            const result = await registeredHandlers.get('code:searchFiles')!({} as IpcMainInvokeEvent, '/project', 'main', 'project-1', false);
+            const result = await registeredHandlers.get('code:searchFiles')!({} as IpcMainInvokeEvent, '/workspace', 'main', 'workspace-1', false);
 
-            expect(mockService.searchFiles).toHaveBeenCalledWith('/project', 'main', 'project-1', false);
+            expect(mockService.searchFiles).toHaveBeenCalledWith('/workspace', 'main', 'workspace-1', false);
             expect(result).toEqual([
                 { file: 'src/main.ts', line: 1, name: 'main', type: 'file' }
             ]);
@@ -176,7 +176,7 @@ describe('Code Intelligence IPC Handlers', () => {
     });
 
     describe('code:indexWorkspace', () => {
-        it('should index a project', async () => {
+        it('should index a workspace', async () => {
             const handler = async (_event: IpcMainInvokeEvent, ...args: unknown[]) => {
                 const rootPath = args[0] as string;
                 const workspaceId = args[1] as string;
@@ -185,9 +185,9 @@ describe('Code Intelligence IPC Handlers', () => {
             };
             registeredHandlers.set('code:indexWorkspace', handler);
 
-            const result = await registeredHandlers.get('code:indexWorkspace')!({} as IpcMainInvokeEvent, '/project', 'project-1', true);
+            const result = await registeredHandlers.get('code:indexWorkspace')!({} as IpcMainInvokeEvent, '/workspace', 'workspace-1', true);
 
-            expect(mockService.indexWorkspace).toHaveBeenCalledWith('/project', 'project-1', true);
+            expect(mockService.indexWorkspace).toHaveBeenCalledWith('/workspace', 'workspace-1', true);
             expect(result).toBeUndefined();
         });
     });
@@ -220,11 +220,11 @@ describe('Code Intelligence IPC Handlers', () => {
 
             const result = await registeredHandlers.get('code:findDefinition')!(
                 {} as IpcMainInvokeEvent,
-                '/project',
+                '/workspace',
                 'functionName'
             );
 
-            expect(mockService.findDefinition).toHaveBeenCalledWith('/project', 'functionName');
+            expect(mockService.findDefinition).toHaveBeenCalledWith('/workspace', 'functionName');
             expect((result as { line: number } | null)?.line).toBe(5);
         });
     });
@@ -240,11 +240,11 @@ describe('Code Intelligence IPC Handlers', () => {
 
             const result = await registeredHandlers.get('code:findReferences')!(
                 {} as IpcMainInvokeEvent,
-                '/project',
+                '/workspace',
                 'functionName'
             );
 
-            expect(mockService.findReferences).toHaveBeenCalledWith('/project', 'functionName');
+            expect(mockService.findReferences).toHaveBeenCalledWith('/workspace', 'functionName');
             const refs = result as Array<{ line: number }>;
             expect(refs).toHaveLength(1);
             expect(refs[0].line).toBe(25);
@@ -261,10 +261,10 @@ describe('Code Intelligence IPC Handlers', () => {
 
             const result = await registeredHandlers.get('code:getFileOutline')!(
                 {} as IpcMainInvokeEvent,
-                '/project/src/main.ts'
+                '/workspace/src/main.ts'
             );
 
-            expect(mockService.getFileOutline).toHaveBeenCalledWith('/project/src/main.ts');
+            expect(mockService.getFileOutline).toHaveBeenCalledWith('/workspace/src/main.ts');
             expect((result as Array<{ name: string }>)[0].name).toBe('functionName');
         });
     });
@@ -282,14 +282,14 @@ describe('Code Intelligence IPC Handlers', () => {
 
             const result = await registeredHandlers.get('code:previewRenameSymbol')!(
                 {} as IpcMainInvokeEvent,
-                '/project',
+                '/workspace',
                 'oldName',
                 'newName',
                 100
             );
 
             expect(mockService.renameSymbol).toHaveBeenCalledWith(
-                '/project',
+                '/workspace',
                 'oldName',
                 'newName',
                 false,
@@ -326,14 +326,14 @@ describe('Code Intelligence IPC Handlers', () => {
 
             const result = await registeredHandlers.get('code:applyRenameSymbol')!(
                 {} as IpcMainInvokeEvent,
-                '/project',
+                '/workspace',
                 'oldName',
                 'newName',
                 100
             );
 
             expect(mockService.renameSymbol).toHaveBeenCalledWith(
-                '/project',
+                '/workspace',
                 'oldName',
                 'newName',
                 true,
@@ -346,7 +346,7 @@ describe('Code Intelligence IPC Handlers', () => {
     });
 
     describe('code:getSymbolAnalytics', () => {
-        it('should return symbol analytics for project', async () => {
+        it('should return symbol analytics for a workspace', async () => {
             const handler = async (_event: IpcMainInvokeEvent, ...args: unknown[]) => {
                 const rootPath = args[0] as string;
                 return await mockService.getSymbolAnalytics!(rootPath);
@@ -355,10 +355,10 @@ describe('Code Intelligence IPC Handlers', () => {
 
             const result = await registeredHandlers.get('code:getSymbolAnalytics')!(
                 {} as IpcMainInvokeEvent,
-                '/project'
+                '/workspace'
             );
 
-            expect(mockService.getSymbolAnalytics).toHaveBeenCalledWith('/project');
+            expect(mockService.getSymbolAnalytics).toHaveBeenCalledWith('/workspace');
             const analytics = result as { totalSymbols: number; byKind: Record<string, number>; topFiles: Array<{ path: string }> };
             expect(analytics.totalSymbols).toBe(10);
             expect(analytics.byKind.function).toBe(6);
@@ -377,11 +377,11 @@ describe('Code Intelligence IPC Handlers', () => {
 
             const result = await registeredHandlers.get('code:generateFileDocumentation')!(
                 {} as IpcMainInvokeEvent,
-                '/project/src/main.ts',
+                '/workspace/src/main.ts',
                 'markdown'
             );
 
-            expect(mockService.generateFileDocumentation).toHaveBeenCalledWith('/project/src/main.ts', 'markdown');
+            expect(mockService.generateFileDocumentation).toHaveBeenCalledWith('/workspace/src/main.ts', 'markdown');
             const docResult = result as { success: boolean; symbolCount: number };
             expect(docResult.success).toBe(true);
             expect(docResult.symbolCount).toBe(3);
@@ -399,11 +399,11 @@ describe('Code Intelligence IPC Handlers', () => {
 
             const result = await registeredHandlers.get('code:analyzeQuality')!(
                 {} as IpcMainInvokeEvent,
-                '/project',
+                '/workspace',
                 200
             );
 
-            expect(mockService.analyzeCodeQuality).toHaveBeenCalledWith('/project', 200);
+            expect(mockService.analyzeCodeQuality).toHaveBeenCalledWith('/workspace', 200);
             const qualityResult = result as { qualityScore: number; filesScanned: number };
             expect(qualityResult.qualityScore).toBe(87);
             expect(qualityResult.filesScanned).toBe(5);

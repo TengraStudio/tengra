@@ -4,8 +4,8 @@
 
 ## Quick Start
 
-1. **READ RULES FIRST**: Call `view_file` on [.agent/rules/MASTER_COMMANDMENTS.md](.agent/rules/MASTER_COMMANDMENTS.md) and [docs/guides/AI_RULES.md](docs/guides/AI_RULES.md) before ANY code work.
-2. Check [docs/tasks/TODO.md](docs/tasks/TODO.md) - Current tasks and priorities.
+1. **READ RULES FIRST**: Call `view_file` on [.agent/rules/MASTER_COMMANDMENTS.md](.agent/rules/MASTER_COMMANDMENTS.md) and [AI_RULES.md](AI_RULES.md) before ANY code work.
+2. Check [TODO.md](TODO.md) - Current tasks and priorities.
 3. **VALIDATE**: Run `npm run build && npm run lint && npm run type-check && npm run test` before every commit.
 4. **FRIDAY BAN**: No commits on Fridays. NO EXCEPTIONS.
 
@@ -84,9 +84,9 @@ tengra/
 │   │   └── themes/           # Theme system
 │   ├── shared/               # Shared code
 │   └── services/             # Native microservices (Rust, Go)
-├── docs/                     # Documentation
-├── scripts/                  # Build scripts
-└── tests/                    # Test suites
+├── resources/          # Static assets
+├── scripts/            # Build scripts
+└── tests/              # Test suites
 ```
 
 ## Service Architecture
@@ -255,10 +255,10 @@ npm run test         # Run tests
 
 ## Workflow
 
-1. Read docs/guides/AI_RULES.md
+1. Read AI_RULES.md
 2. Make changes
 3. `npm run build && npm run lint`
-4. Update docs/tasks/TODO.md (mark `[x]`, don't delete)
+4. Update TODO.md (mark `[x]`, don't delete)
 5. Update `docs/changelog/data/changelog.entries.json`
 6. Run `npm run changelog:sync`
 7. Commit and push
@@ -378,7 +378,7 @@ Located in `src/main/mcp/templates/server.template.ts`
 
 ### Getting Help
 
-- Check [docs/guides/TROUBLESHOOTING.md](docs/guides/TROUBLESHOOTING.md)
-- Review [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)
-- Check [docs/api/API_REFERENCE.md](docs/api/API_REFERENCE.md)
+- Check [GUIDE.md](GUIDE.md)
+- Review [ARCHITECTURE.md](ARCHITECTURE.md)
+- Check [API.md](API.md)
 

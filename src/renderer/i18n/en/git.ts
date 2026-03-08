@@ -2,7 +2,7 @@ const sectionData = {
     "commitGenerator": "Git Commit Generator",
     "generatorSubtitle": "AI-powered commit message suggestions",
     "generate": "Generate",
-    "selectProject": "Select a project to generate commit messages",
+    "selectWorkspace": "Select a workspace to generate commit messages",
     "suggestedMessage": "Suggested Commit Message",
     "stagedChanges": "Staged Changes Preview",
     "noStagedChanges": "No staged changes found. Use `git add` to stage changes first.",

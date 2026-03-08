@@ -1,6 +1,6 @@
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
-import { AgentPerformanceMetrics } from '@shared/types/project-agent';
+import { AgentPerformanceMetrics } from '@shared/types/workspace-agent';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 /**

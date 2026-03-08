@@ -4,10 +4,10 @@ import { EventBusService } from '@main/services/system/event-bus.service';
 import {
     IdeaCategory,
     IdeaCompetitor,
-    ProjectIdea,
     ResearchData,
     ResearchProgress,
     ResearchStage,
+    WorkspaceIdea,
 } from '@shared/types/ideas';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { v4 as uuidv4 } from 'uuid';
@@ -77,7 +77,7 @@ export class IdeaResearchService extends IdeaBaseService {
     /**
      * Stage 3: Targeted idea-specific research
      */
-    async stageIdeaResearch(model: string, provider: string, idea: ProjectIdea): Promise<string> {
+    async stageIdeaResearch(model: string, provider: string, idea: WorkspaceIdea): Promise<string> {
         const prompt = IDEA_PROMPTS.IDEA_RESEARCH({
             title: idea.title,
             description: idea.description,
@@ -98,7 +98,7 @@ export class IdeaResearchService extends IdeaBaseService {
     /**
      * Stage 8: Idea-specific competitor analysis
      */
-    async stageCompetitorAnalysis(model: string, provider: string, idea: ProjectIdea, research: string): Promise<{
+    async stageCompetitorAnalysis(model: string, provider: string, idea: WorkspaceIdea, research: string): Promise<{
         competitors: IdeaCompetitor[],
         advantages: string[]
     }> {

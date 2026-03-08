@@ -125,7 +125,7 @@ describe('Offline critical path smoke', () => {
             model: 'llama3',
             tools: [],
             provider: 'ollama',
-            projectId: 'workspace-1',
+            workspaceId: 'workspace-1',
         });
         const memoryResult = await ipcMainHandlers.get('memory:search')?.(mockEvent, 'local fact');
 

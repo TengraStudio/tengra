@@ -1,4 +1,4 @@
-import { IdeaSession, IdeaSessionConfig, ProjectIdea, ResearchStage } from '@shared/types/ideas';
+import { IdeaSession, IdeaSessionConfig, ResearchStage,WorkspaceIdea } from '@shared/types/ideas';
 import React from 'react';
 
 import { WorkflowStage } from '../types';
@@ -18,8 +18,8 @@ interface WorkflowStagesProps {
     isSessionLoading: boolean
     isResearching: boolean
     isGenerating: boolean
-    ideas: ProjectIdea[]
-    setSelectedIdea: (idea: ProjectIdea) => void
+    ideas: WorkspaceIdea[]
+    setSelectedIdea: (idea: WorkspaceIdea) => void
     handleCreateSession: (config: IdeaSessionConfig) => Promise<void>
     startGeneration: (sessionId: string) => Promise<void>
     setWorkflowStage: (stage: WorkflowStage) => void

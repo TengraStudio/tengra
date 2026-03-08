@@ -16,13 +16,13 @@ import {
 import { ModelDefinition } from '@/electron';
 import { useLogoGenerator } from '@/features/workspace/hooks/useLogoGenerator';
 import { Language, useTranslation } from '@/i18n';
-import { Project } from '@/types';
+import { Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 interface LogoGeneratorModalProps {
     isOpen: boolean;
     onClose: () => void;
-    project: Project;
+    workspace: Workspace;
     onApply: (logoPath: string) => void;
     language: Language;
 }
@@ -30,7 +30,7 @@ interface LogoGeneratorModalProps {
 export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
     isOpen,
     onClose,
-    project,
+    workspace,
     onApply,
     language,
 }) => {
@@ -50,7 +50,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
         handleGenerate,
         handleApply,
         handleManualUpload,
-    } = useLogoGenerator(project, onApply, onClose);
+    } = useLogoGenerator(workspace, onApply, onClose);
 
     const [activeTab, setActiveTab] = useState('generate');
     const [mode, setMode] = useState<'auto' | 'manual'>('auto');

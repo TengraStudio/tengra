@@ -44,7 +44,7 @@ const sectionData = {
         "marketTrends": "Pazar Trendleri",
         "competitors": "Rakipler",
         "selectPath": "Proje Yolunu Seç",
-        "pathPlaceholder": "C:\\\\Projects\\\\my-project",
+        "pathPlaceholder": "C:\\\\Workspaces\\\\my-workspace",
         "creating": "Proje oluşturuluyor...",
         "detailedDescription": "Detaylı Açıklama",
         "roadmap": "Proje Yol Haritası",
@@ -55,7 +55,7 @@ const sectionData = {
         "impactHigh": "Yüksek (Tahmini)",
         "effort": "Efor",
         "effortMedium": "Orta",
-        "openFullProject": "Projeyi Aç"
+        "openFullWorkspace": "Projeyi Aç"
     },
     "techStack": {
         "frontend": "Frontend",
@@ -187,8 +187,8 @@ const sectionData = {
         },
         "statusLabel": "Durum",
         "readyForPilot": "Pilot İçin Hazır",
-        "projectCreated": "Proje Oluşturuldu",
-        "projectNamePlaceholder": "Proje Adı",
+        "workspaceCreated": "Proje Oluşturuldu",
+        "workspaceNamePlaceholder": "Proje Adı",
         "regenerateTitle": "Bu fikri yeniden üret",
         "regenerate": "Yeniden Üret",
         "regenerating": "Yeniden üretiliyor...",

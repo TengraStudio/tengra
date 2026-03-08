@@ -44,13 +44,13 @@ interface QualityResult {
     generatedAt: string;
 }
 
-interface ProjectCodeTabProps {
-    projectRoot: string;
+interface WorkspaceCodeTabProps {
+    workspaceRoot: string;
     onOpenFile: (path: string, line?: number) => void;
     t: (key: string) => string;
 }
 
-export const ProjectCodeTab: React.FC<ProjectCodeTabProps> = ({ projectRoot, onOpenFile, t }) => {
+export const WorkspaceCodeTab: React.FC<WorkspaceCodeTabProps> = ({ workspaceRoot, onOpenFile, t }) => {
     const [symbol, setSymbol] = useState('');
     const [filePath, setFilePath] = useState('');
     const [newSymbol, setNewSymbol] = useState('');
@@ -121,7 +121,7 @@ export const ProjectCodeTab: React.FC<ProjectCodeTabProps> = ({ projectRoot, onO
                         disabled={busyKey !== '' || symbol.trim().length === 0}
                         onClick={() => {
                             void call('definition', async () => {
-                                const result = await window.electron.code.findDefinition(projectRoot, symbol.trim());
+                                const result = await window.electron.code.findDefinition(workspaceRoot, symbol.trim());
                                 setDefinition(result);
                             });
                         }}
@@ -133,7 +133,7 @@ export const ProjectCodeTab: React.FC<ProjectCodeTabProps> = ({ projectRoot, onO
                         disabled={busyKey !== '' || symbol.trim().length === 0}
                         onClick={() => {
                             void call('references', async () => {
-                                const result = await window.electron.code.findReferences(projectRoot, symbol.trim());
+                                const result = await window.electron.code.findReferences(workspaceRoot, symbol.trim());
                                 setReferences(result);
                             });
                         }}
@@ -147,7 +147,7 @@ export const ProjectCodeTab: React.FC<ProjectCodeTabProps> = ({ projectRoot, onO
                         disabled={busyKey !== '' || symbol.trim().length === 0}
                         onClick={() => {
                             void call('implementations', async () => {
-                                const result = await window.electron.code.findImplementations(projectRoot, symbol.trim());
+                                const result = await window.electron.code.findImplementations(workspaceRoot, symbol.trim());
                                 setImplementations(result);
                             });
                         }}
@@ -159,7 +159,7 @@ export const ProjectCodeTab: React.FC<ProjectCodeTabProps> = ({ projectRoot, onO
                         disabled={busyKey !== '' || symbol.trim().length === 0}
                         onClick={() => {
                             void call('relationships', async () => {
-                                const result = await window.electron.code.getSymbolRelationships(projectRoot, symbol.trim(), 200);
+                                const result = await window.electron.code.getSymbolRelationships(workspaceRoot, symbol.trim(), 200);
                                 setRelationships(result);
                             });
                         }}
@@ -277,7 +277,7 @@ export const ProjectCodeTab: React.FC<ProjectCodeTabProps> = ({ projectRoot, onO
                         disabled={busyKey !== '' || symbol.trim() === '' || newSymbol.trim() === ''}
                         onClick={() => {
                             void call('rename-preview', async () => {
-                                const result = await window.electron.code.previewRenameSymbol(projectRoot, symbol.trim(), newSymbol.trim(), safeMaxFiles);
+                                const result = await window.electron.code.previewRenameSymbol(workspaceRoot, symbol.trim(), newSymbol.trim(), safeMaxFiles);
                                 setRenamePreview(result as RenameResult);
                             });
                         }}
@@ -289,7 +289,7 @@ export const ProjectCodeTab: React.FC<ProjectCodeTabProps> = ({ projectRoot, onO
                         disabled={busyKey !== '' || symbol.trim() === '' || newSymbol.trim() === ''}
                         onClick={() => {
                             void call('rename-apply', async () => {
-                                const result = await window.electron.code.applyRenameSymbol(projectRoot, symbol.trim(), newSymbol.trim(), safeMaxFiles);
+                                const result = await window.electron.code.applyRenameSymbol(workspaceRoot, symbol.trim(), newSymbol.trim(), safeMaxFiles);
                                 setRenameApply(result as RenameResult);
                             });
                         }}
@@ -333,20 +333,20 @@ export const ProjectCodeTab: React.FC<ProjectCodeTabProps> = ({ projectRoot, onO
                         className="px-3 py-2 rounded-md bg-primary text-primary-foreground text-xs disabled:opacity-60"
                         disabled={busyKey !== ''}
                         onClick={() => {
-                            void call('project-docs', async () => {
-                                const result = await window.electron.code.generateWorkspaceDocumentation(projectRoot, safeMaxFiles);
+                            void call('workspace-docs', async () => {
+                                const result = await window.electron.code.generateWorkspaceDocumentation(workspaceRoot, safeMaxFiles);
                                 setDocsPreview(result);
                             });
                         }}
                     >
-                        Project Docs
+                        Workspace Docs
                     </button>
                     <button
                         className="px-3 py-2 rounded-md bg-primary text-primary-foreground text-xs disabled:opacity-60"
                         disabled={busyKey !== ''}
                         onClick={() => {
                             void call('quality', async () => {
-                                const result = await window.electron.code.analyzeQuality(projectRoot, safeMaxFiles);
+                                const result = await window.electron.code.analyzeQuality(workspaceRoot, safeMaxFiles);
                                 setQuality(result);
                             });
                         }}

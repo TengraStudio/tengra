@@ -1,4 +1,4 @@
-import { Chat, Folder, Message, Project } from '@shared/types';
+import { Chat, Folder, Message, Workspace } from '@shared/types';
 import { IpcRenderer } from 'electron';
 
 export interface DbBridge {
@@ -65,14 +65,14 @@ export interface DbBridge {
         tokensReceived: number;
         costEstimate?: number;
     }) => Promise<{ success: boolean }>;
-    getWorkspaces: () => Promise<Project[]>;
+    getWorkspaces: () => Promise<Workspace[]>;
     createWorkspace: (
         name: string,
         path: string,
         description: string,
         mounts?: string
-    ) => Promise<Project>;
-    updateWorkspace: (id: string, updates: Partial<Project>) => Promise<void>;
+    ) => Promise<Workspace>;
+    updateWorkspace: (id: string, updates: Partial<Workspace>) => Promise<void>;
     deleteWorkspace: (id: string, deleteFiles?: boolean) => Promise<void>;
     archiveWorkspace: (id: string, isArchived: boolean) => Promise<void>;
     bulkDeleteWorkspaces: (ids: string[], deleteFiles?: boolean) => Promise<void>;

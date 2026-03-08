@@ -25,7 +25,7 @@ const PatternSchema = z.string().min(1).max(MAX_PATTERN_LENGTH).trim();
 const JobIdSchema = z.string().min(1).max(MAX_JOB_ID_LENGTH).regex(/^[\w-]+$/).trim();
 
 const WriteContextSchema = z.object({
-    aiSystem: z.enum(['chat', 'project', 'council']).optional(),
+    aiSystem: z.enum(['chat', 'workspace', 'council']).optional(),
     chatSessionId: z.string().optional(),
     changeReason: z.string().optional(),
 }).optional();

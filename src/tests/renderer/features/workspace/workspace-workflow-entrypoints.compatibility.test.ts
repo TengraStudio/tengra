@@ -7,21 +7,20 @@ describe('workspace/workflow renderer entrypoint compatibility shims', () => {
     const read = (relativePath: string): string =>
         fs.readFileSync(path.join(root, relativePath), 'utf-8').replace(/\r\n/g, '\n').trim();
 
-    it('keeps ProjectsPage shim bound to WorkspacesPage', () => {
-        const content = read('src/renderer/features/workspace/ProjectsPage.tsx');
-        expect(content).toContain("export { WorkspacesPage as ProjectsPage } from './WorkspacePage';");
+    it('keeps WorkspacesPage shim bound to WorkspacePage', () => {
+        const content = read('src/renderer/features/workspace/WorkspacesPage.tsx');
+        expect(content).toContain("export { WorkspacesPage as WorkspacesPage } from './WorkspacePage';");
+        expect(content).toContain("export * from './WorkspacePage';");
     });
 
-    it('keeps WorkspaceCard shim bound to WorkspaceCard canonical entrypoint', () => {
+    it('keeps WorkspaceCard entrypoint exporting the canonical component', () => {
         const content = read('src/renderer/features/workspace/components/WorkspaceCard.tsx');
-        expect(content).toContain("export { WorkspaceCard } from './WorkspaceCard';");
-        expect(content).toContain("export * from './WorkspaceCard';");
+        expect(content).toContain('export const WorkspaceCard');
     });
 
-    it('keeps VirtualizedWorkspaceGrid shim exports bound to workspace canonical exports', () => {
+    it('keeps VirtualizedWorkspaceGrid entrypoint exporting the canonical component', () => {
         const content = read('src/renderer/features/workspace/components/VirtualizedWorkspaceGrid.tsx');
-        expect(content).toContain("export { default } from './VirtualizedWorkspaceGrid';");
-        expect(content).toContain("export * from './VirtualizedWorkspaceGrid';");
+        expect(content).toContain('export const VirtualizedWorkspaceGrid');
     });
 
     it('keeps WorkspaceAgentTab shim bound to AutomationWorkflowTab entrypoint', () => {

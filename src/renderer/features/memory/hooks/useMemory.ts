@@ -63,7 +63,7 @@ interface UseMemoryReturn {
     handleRestore: (id: string) => Promise<void>;
     handleExport: () => Promise<void>;
     handleImport: (fileContent: string, replaceExisting: boolean) => Promise<void>;
-    handleShare: (memoryId: string, targetProjectId: string) => Promise<void>;
+    handleShare: (memoryId: string, targetWorkspaceId: string) => Promise<void>;
     handleRecategorize: (ids?: string[]) => Promise<void>;
     getHistory: (id: string) => Promise<import('@shared/types/advanced-memory').MemoryVersion[]>;
     handleRollback: (id: string, versionIndex: number) => Promise<void>;
@@ -448,8 +448,8 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
         }
     }, [importFailedMessage, loadData, recordOperationFailure, setHookError, unexpectedMessage]);
 
-    const handleShare = useCallback(async (memoryId: string, targetProjectId: string) => {
-        const res = await window.electron.advancedMemory.shareWithWorkspace(memoryId, targetProjectId);
+    const handleShare = useCallback(async (memoryId: string, targetWorkspaceId: string) => {
+        const res = await window.electron.advancedMemory.shareWithWorkspace(memoryId, targetWorkspaceId);
         if (res.success) { void loadData(); }
     }, [loadData]);
 

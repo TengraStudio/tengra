@@ -1,3 +1,4 @@
+import { WORKSPACE_COMPAT_INDEX_VALUES, WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { JsonObject } from '@shared/types/common';
 import { DatabaseAdapter } from '@shared/types/database';
 import {
@@ -7,12 +8,17 @@ import {
     IdeaSession,
     IdeaSessionStatus,
     IdeaStatus,
-    ProjectIdea,
-    ProjectRoadmap,
     ResearchData,
     TechStack,
+    WorkspaceIdea,
+    WorkspaceRoadmap,
 } from '@shared/types/ideas';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
+
+const WORKSPACE_COMPAT_ID_COLUMN = WORKSPACE_COMPAT_SCHEMA_VALUES.ID_COLUMN;
+const WORKSPACE_COMPAT_IDEAS_STATUS_INDEX = WORKSPACE_COMPAT_INDEX_VALUES.IDEAS_BY_STATUS;
+const WORKSPACE_COMPAT_IDEAS_SESSION_INDEX = WORKSPACE_COMPAT_INDEX_VALUES.IDEAS_BY_SESSION_ID;
+const WORKSPACE_COMPAT_IDEAS_TABLE = WORKSPACE_COMPAT_SCHEMA_VALUES.IDEAS_TABLE;
 
 /**
  * Idea Repository
@@ -84,14 +90,14 @@ export class IdeaRepository {
 
     // ==================== Idea Operations ====================
 
-    async saveIdea(idea: ProjectIdea): Promise<void> {
+    async saveIdea(idea: WorkspaceIdea): Promise<void> {
         const stmt = this.db.prepare(
-            `INSERT OR REPLACE INTO project_ideas (
+            `INSERT OR REPLACE INTO ${WORKSPACE_COMPAT_IDEAS_TABLE} (
                 id, session_id, title, category, description, explanation,
                 value_proposition, long_description, name_suggestions,
                 competitive_advantages, roadmap, tech_stack, idea_competitors,
                 market_research, generation_stage, research_context, status,
-                project_id, logo_path, metadata, created_at, updated_at
+                ${WORKSPACE_COMPAT_ID_COLUMN}, logo_path, metadata, created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         );
         await stmt.run(
@@ -120,62 +126,62 @@ export class IdeaRepository {
         );
     }
 
-    async getIdea(id: string): Promise<ProjectIdea | null> {
-        const row = await this.db.prepare('SELECT * FROM project_ideas WHERE id = ?').get<JsonObject>(id);
+    async getIdea(id: string): Promise<WorkspaceIdea | null> {
+        const row = await this.db.prepare(`SELECT * FROM ${WORKSPACE_COMPAT_IDEAS_TABLE} WHERE id = ?`).get<JsonObject>(id);
         return row ? this.mapRowToIdea(row) : null;
     }
 
-    async getIdeas(sessionId?: string): Promise<ProjectIdea[]> {
+    async getIdeas(sessionId?: string): Promise<WorkspaceIdea[]> {
         if (sessionId) {
             const rows = await this.db
-                .prepare('SELECT * FROM project_ideas WHERE session_id = ? ORDER BY created_at DESC')
+                .prepare(`SELECT * FROM ${WORKSPACE_COMPAT_IDEAS_TABLE} WHERE session_id = ? ORDER BY created_at DESC`)
                 .all<JsonObject>(sessionId);
             return rows.map((row) => this.mapRowToIdea(row));
         }
 
         const rows = await this.db
-            .prepare('SELECT * FROM project_ideas ORDER BY created_at DESC')
+            .prepare(`SELECT * FROM ${WORKSPACE_COMPAT_IDEAS_TABLE} ORDER BY created_at DESC`)
             .all<JsonObject>();
         return rows.map((row) => this.mapRowToIdea(row));
     }
 
     async updateIdeaStatus(id: string, status: IdeaStatus): Promise<void> {
-        const stmt = this.db.prepare('UPDATE project_ideas SET status = ?, updated_at = ? WHERE id = ?');
+        const stmt = this.db.prepare(`UPDATE ${WORKSPACE_COMPAT_IDEAS_TABLE} SET status = ?, updated_at = ? WHERE id = ?`);
         await stmt.run(status, Date.now(), id);
     }
 
     async deleteIdea(id: string): Promise<void> {
-        const stmt = this.db.prepare('DELETE FROM project_ideas WHERE id = ?');
+        const stmt = this.db.prepare(`DELETE FROM ${WORKSPACE_COMPAT_IDEAS_TABLE} WHERE id = ?`);
         await stmt.run(id);
     }
 
     async archiveIdea(id: string): Promise<void> {
-        const stmt = this.db.prepare('UPDATE project_ideas SET status = ?, updated_at = ? WHERE id = ?');
+        const stmt = this.db.prepare(`UPDATE ${WORKSPACE_COMPAT_IDEAS_TABLE} SET status = ?, updated_at = ? WHERE id = ?`);
         await stmt.run('archived', Date.now(), id);
     }
 
     async restoreIdea(id: string): Promise<void> {
-        const stmt = this.db.prepare('UPDATE project_ideas SET status = ?, updated_at = ? WHERE id = ?');
+        const stmt = this.db.prepare(`UPDATE ${WORKSPACE_COMPAT_IDEAS_TABLE} SET status = ?, updated_at = ? WHERE id = ?`);
         await stmt.run('pending', Date.now(), id);
     }
 
-    async getArchivedIdeas(sessionId?: string): Promise<ProjectIdea[]> {
+    async getArchivedIdeas(sessionId?: string): Promise<WorkspaceIdea[]> {
         if (sessionId) {
             const rows = await this.db
-                .prepare("SELECT * FROM project_ideas WHERE session_id = ? AND status = 'archived' ORDER BY created_at DESC")
+                .prepare(`SELECT * FROM ${WORKSPACE_COMPAT_IDEAS_TABLE} WHERE session_id = ? AND status = 'archived' ORDER BY created_at DESC`)
                 .all<JsonObject>(sessionId);
             return rows.map((row) => this.mapRowToIdea(row));
         }
 
         const rows = await this.db
-            .prepare("SELECT * FROM project_ideas WHERE status = 'archived' ORDER BY created_at DESC")
+            .prepare(`SELECT * FROM ${WORKSPACE_COMPAT_IDEAS_TABLE} WHERE status = 'archived' ORDER BY created_at DESC`)
             .all<JsonObject>();
         return rows.map((row) => this.mapRowToIdea(row));
     }
 
-    async getIdeasByStatus(status: IdeaStatus): Promise<ProjectIdea[]> {
+    async getIdeasByStatus(status: IdeaStatus): Promise<WorkspaceIdea[]> {
         const rows = await this.db
-            .prepare('SELECT * FROM project_ideas WHERE status = ? ORDER BY created_at DESC')
+            .prepare(`SELECT * FROM ${WORKSPACE_COMPAT_IDEAS_TABLE} WHERE status = ? ORDER BY created_at DESC`)
             .all<JsonObject>(status);
         return rows.map((row) => this.mapRowToIdea(row));
     }
@@ -200,7 +206,7 @@ export class IdeaRepository {
         `).run();
 
         await this.db.prepare(`
-            CREATE TABLE IF NOT EXISTS project_ideas (
+            CREATE TABLE IF NOT EXISTS ${WORKSPACE_COMPAT_IDEAS_TABLE} (
                 id TEXT PRIMARY KEY,
                 session_id TEXT NOT NULL,
                 title TEXT NOT NULL,
@@ -218,7 +224,7 @@ export class IdeaRepository {
                 generation_stage TEXT NOT NULL DEFAULT 'complete',
                 research_context TEXT,
                 status TEXT NOT NULL,
-                project_id TEXT,
+                ${WORKSPACE_COMPAT_ID_COLUMN} TEXT,
                 logo_path TEXT,
                 metadata TEXT,
                 created_at INTEGER NOT NULL,
@@ -229,10 +235,10 @@ export class IdeaRepository {
 
         // Create indexes
         await this.db.prepare(
-            'CREATE INDEX IF NOT EXISTS idx_project_ideas_session_id ON project_ideas(session_id)'
+            `CREATE INDEX IF NOT EXISTS ${WORKSPACE_COMPAT_IDEAS_SESSION_INDEX} ON ${WORKSPACE_COMPAT_IDEAS_TABLE}(session_id)`
         ).run();
         await this.db.prepare(
-            'CREATE INDEX IF NOT EXISTS idx_project_ideas_status ON project_ideas(status)'
+            `CREATE INDEX IF NOT EXISTS ${WORKSPACE_COMPAT_IDEAS_STATUS_INDEX} ON ${WORKSPACE_COMPAT_IDEAS_TABLE}(status)`
         ).run();
     }
 
@@ -256,7 +262,7 @@ export class IdeaRepository {
         };
     }
 
-    private mapRowToIdea(row: JsonObject): ProjectIdea {
+    private mapRowToIdea(row: JsonObject): WorkspaceIdea {
         return {
             id: String(row.id),
             sessionId: String(row.session_id),
@@ -273,7 +279,7 @@ export class IdeaRepository {
                 ? (safeJsonParse(row.competitive_advantages as string, []) as string[])
                 : undefined,
             roadmap: row.roadmap
-                ? (safeJsonParse(row.roadmap as string, undefined) as ProjectRoadmap | undefined)
+                ? (safeJsonParse(row.roadmap as string, undefined) as WorkspaceRoadmap | undefined)
                 : undefined,
             techStack: row.tech_stack
                 ? (safeJsonParse(row.tech_stack as string, undefined) as TechStack | undefined)
@@ -289,7 +295,7 @@ export class IdeaRepository {
                 : 'complete',
             researchContext: row.research_context as string | undefined,
             status: String(row.status) as IdeaStatus,
-            workspaceId: row.project_id as string | undefined,
+            workspaceId: row[WORKSPACE_COMPAT_ID_COLUMN] as string | undefined,
             logoPath: row.logo_path as string | undefined,
             metadata: safeJsonParse(row.metadata as string, {}),
             createdAt: Number(row.created_at),

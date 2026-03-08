@@ -93,7 +93,7 @@ describe('Repository-DB Integration', () => {
             getTimeStats: vi.fn().mockResolvedValue({
                 totalOnlineTime: 100,
                 totalCodingTime: 50,
-                projectCodingTime: {}
+                workspaceCodingTime: {}
             })
         } as any;
 

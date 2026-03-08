@@ -1,6 +1,6 @@
 import { LLMService } from '@main/services/llm/llm.service';
 import { AgentCollaborationService } from '@main/services/workspace/agent/agent-collaboration.service';
-import { ProjectStep } from '@shared/types/project-agent';
+import { WorkspaceStep } from '@shared/types/workspace-agent';
 import { beforeEach,describe, expect, it, vi } from 'vitest';
 
 describe('AgentCollaborationService', () => {
@@ -18,7 +18,7 @@ describe('AgentCollaborationService', () => {
 
     describe('getModelForStep', () => {
         it('identifies code_generation tasks correctly', () => {
-            const step: ProjectStep = {
+            const step: WorkspaceStep = {
                 id: 's1',
                 text: 'Create a new function to calculate total',
                 status: 'pending'
@@ -29,7 +29,7 @@ describe('AgentCollaborationService', () => {
         });
 
         it('identifies research tasks correctly', () => {
-            const step: ProjectStep = {
+            const step: WorkspaceStep = {
                 id: 's2',
                 text: 'Investigate the best way to implement SSO',
                 status: 'pending'
@@ -40,7 +40,7 @@ describe('AgentCollaborationService', () => {
         });
 
         it('falls back to general model for unknown task types', () => {
-            const step: ProjectStep = {
+            const step: WorkspaceStep = {
                 id: 's3',
                 text: 'Do some magic',
                 status: 'pending'

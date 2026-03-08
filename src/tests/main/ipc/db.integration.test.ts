@@ -73,11 +73,11 @@ describe('Database IPC Handlers', () => {
                 deleteAllChats: vi.fn().mockResolvedValue({ success: true }),
                 updateMessage: vi.fn().mockResolvedValue({ success: true }),
             },
-            projects: {
-                getProjects: vi.fn().mockResolvedValue([]),
-                createProject: vi.fn().mockResolvedValue({ success: true, id: 'proj-1' }),
-                getProject: vi.fn().mockResolvedValue({ id: 'proj-1', title: 'Test Project' }),
-                updateProject: vi.fn().mockResolvedValue({ success: true }),
+            workspaces: {
+                getWorkspaces: vi.fn().mockResolvedValue([]),
+                createWorkspace: vi.fn().mockResolvedValue({ success: true, id: 'proj-1' }),
+                getWorkspace: vi.fn().mockResolvedValue({ id: 'proj-1', title: 'Test Workspace' }),
+                updateWorkspace: vi.fn().mockResolvedValue({ success: true }),
                 deleteWorkspace: vi.fn().mockResolvedValue({ success: true }),
             },
             system: {
@@ -156,14 +156,14 @@ describe('Database IPC Handlers', () => {
 
     });
 
-    describe('Project Handlers', () => {
-        it('should create a project', async () => {
-            const handler = registeredHandlers.get('db:createProject')!;
-            const result = await handler(mockEvent, { title: 'My Project', path: '/path', description: 'desc' }) as Record<string, unknown>;
+    describe('Workspace Handlers', () => {
+        it('should create a workspace', async () => {
+            const handler = registeredHandlers.get('db:createWorkspace')!;
+            const result = await handler(mockEvent, { title: 'My Workspace', path: '/path', description: 'desc' }) as Record<string, unknown>;
 
 
 
-            expect((mockDatabaseService as unknown as Record<string, Record<string, Mock>>).workspaces.createProject).toHaveBeenCalledWith('My Project', '/path', 'desc', undefined, undefined);
+            expect((mockDatabaseService as unknown as Record<string, Record<string, Mock>>).workspaces.createWorkspace).toHaveBeenCalledWith('My Workspace', '/path', 'desc', undefined, undefined);
 
             expect(result.success).toBe(true);
         });

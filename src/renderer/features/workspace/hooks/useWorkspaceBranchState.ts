@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 interface UseWorkspaceBranchStateOptions {
-    projectPath?: string;
+    workspacePath?: string;
     notify: (type: 'success' | 'error' | 'info', message: string) => void;
     t: (path: string, options?: Record<string, string | number>) => string;
 }
@@ -11,15 +11,15 @@ interface WorkspaceBranchSnapshot {
     branches: string[];
 }
 
-async function loadWorkspaceBranchSnapshot(projectPath: string): Promise<WorkspaceBranchSnapshot> {
-    const repoResult = await window.electron.git.isRepository(projectPath);
+async function loadWorkspaceBranchSnapshot(workspacePath: string): Promise<WorkspaceBranchSnapshot> {
+    const repoResult = await window.electron.git.isRepository(workspacePath);
     if (!repoResult.isRepository) {
         return { branchName: 'N/A', branches: [] };
     }
 
     const [branchResult, branchesResult] = await Promise.all([
-        window.electron.git.getBranch(projectPath),
-        window.electron.git.getBranches(projectPath),
+        window.electron.git.getBranch(workspacePath),
+        window.electron.git.getBranches(workspacePath),
     ]);
 
     return {
@@ -28,14 +28,14 @@ async function loadWorkspaceBranchSnapshot(projectPath: string): Promise<Workspa
     };
 }
 
-export function useWorkspaceBranchState({ projectPath, notify, t }: UseWorkspaceBranchStateOptions) {
+export function useWorkspaceBranchState({ workspacePath, notify, t }: UseWorkspaceBranchStateOptions) {
     const [currentBranchName, setCurrentBranchName] = useState('main');
     const [availableBranches, setAvailableBranches] = useState<string[]>([]);
     const [isBranchLoading, setIsBranchLoading] = useState(false);
     const [isBranchSwitching, setIsBranchSwitching] = useState(false);
 
     const refreshBranchState = useCallback(async () => {
-        if (!projectPath) {
+        if (!workspacePath) {
             setCurrentBranchName('main');
             setAvailableBranches([]);
             return;
@@ -43,7 +43,7 @@ export function useWorkspaceBranchState({ projectPath, notify, t }: UseWorkspace
 
         setIsBranchLoading(true);
         try {
-            const snapshot = await loadWorkspaceBranchSnapshot(projectPath);
+            const snapshot = await loadWorkspaceBranchSnapshot(workspacePath);
             setCurrentBranchName(snapshot.branchName);
             setAvailableBranches(snapshot.branches);
         } catch (error) {
@@ -55,7 +55,7 @@ export function useWorkspaceBranchState({ projectPath, notify, t }: UseWorkspace
         } finally {
             setIsBranchLoading(false);
         }
-    }, [projectPath]);
+    }, [workspacePath]);
 
     useEffect(() => {
         void refreshBranchState();
@@ -63,13 +63,13 @@ export function useWorkspaceBranchState({ projectPath, notify, t }: UseWorkspace
 
     const handleBranchSelect = useCallback(
         async (branch: string) => {
-            if (!projectPath || branch === currentBranchName) {
+            if (!workspacePath || branch === currentBranchName) {
                 return;
             }
 
             setIsBranchSwitching(true);
             try {
-                const result = await window.electron.git.checkout(projectPath, branch);
+                const result = await window.electron.git.checkout(workspacePath, branch);
                 if (!result.success) {
                     notify('error', result.error ?? t('workspace.branchSwitchFailed'));
                     return;
@@ -88,7 +88,7 @@ export function useWorkspaceBranchState({ projectPath, notify, t }: UseWorkspace
                 setIsBranchSwitching(false);
             }
         },
-        [currentBranchName, notify, projectPath, refreshBranchState, t]
+        [currentBranchName, notify, workspacePath, refreshBranchState, t]
     );
 
     return {

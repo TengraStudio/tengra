@@ -279,7 +279,7 @@ function registerWorkspaceHandlers(databaseService: DatabaseService, validateSen
 
     ipcMain.handle('db:createWorkspace', createValidatedIpcHandler('db:createWorkspace', async (event, workspace: Workspace) => {
         validateSender(event);
-        const existingWorkspaces = await databaseService.projects.getProjects();
+        const existingWorkspaces = await databaseService.workspaces.getWorkspaces();
         const existingMountKeys = new Set<string>();
         for (const existingWorkspace of existingWorkspaces) {
             for (const key of extractMountKeys(existingWorkspace)) {
@@ -293,7 +293,7 @@ function registerWorkspaceHandlers(databaseService: DatabaseService, validateSen
             }
         }
 
-        const createdWorkspace = await withRateLimit('db', () => databaseService.projects.createProject(
+        const createdWorkspace = await withRateLimit('db', () => databaseService.workspaces.createWorkspace(
             workspace.title,
             workspace.path,
             workspace.description,
@@ -309,12 +309,12 @@ function registerWorkspaceHandlers(databaseService: DatabaseService, validateSen
 
     ipcMain.handle('db:getWorkspaces', createValidatedIpcHandler('db:getWorkspaces', async (event) => {
         validateSender(event);
-        return await databaseService.projects.getProjects();
+        return await databaseService.workspaces.getWorkspaces();
     }, { defaultValue: [] }));
 
     ipcMain.handle('db:getWorkspaceById', createValidatedIpcHandler('db:getWorkspaceById', async (event, id: string) => {
         validateSender(event);
-        return await databaseService.projects.getProject(id);
+        return await databaseService.workspaces.getWorkspace(id);
     }, {
         defaultValue: null,
         argsSchema: z.tuple([IdSchema])
@@ -322,7 +322,7 @@ function registerWorkspaceHandlers(databaseService: DatabaseService, validateSen
 
     ipcMain.handle('db:updateWorkspace', createValidatedIpcHandler('db:updateWorkspace', async (event, id: string, updates: Partial<Workspace>) => {
         validateSender(event);
-        return await withRateLimit('db', () => databaseService.projects.updateProject(id, updates as JsonObject));
+        return await withRateLimit('db', () => databaseService.workspaces.updateWorkspace(id, updates as JsonObject));
     }, {
         defaultValue: null,
         argsSchema: z.tuple([IdSchema, z.record(z.string(), z.unknown())])
@@ -330,7 +330,7 @@ function registerWorkspaceHandlers(databaseService: DatabaseService, validateSen
 
     ipcMain.handle('db:deleteWorkspace', createValidatedIpcHandler('db:deleteWorkspace', async (event, id: string) => {
         validateSender(event);
-        await withRateLimit('db', () => databaseService.projects.deleteProject(id));
+        await withRateLimit('db', () => databaseService.workspaces.deleteWorkspace(id));
         return { success: true };
     }, {
         defaultValue: { success: false },

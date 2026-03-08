@@ -87,6 +87,7 @@ const sectionData = {
     "userVerified": "Utilisateur vérifié",
     "accessed": "Accédé",
     "restore": "Restaurer",
+    "shareToWorkspace": "Partager avec l’espace de travail",
     "tabs": {
         "pending": "En attente",
         "confirmed": "Confirmé",
@@ -96,7 +97,7 @@ const sectionData = {
     "categories": {
         "preference": "Préférence",
         "personal": "Personnel",
-        "project": "Projet",
+        "workspace": "Espace de travail",
         "technical": "Technique",
         "workflow": "Flux de travail",
         "relationship": "Relation",

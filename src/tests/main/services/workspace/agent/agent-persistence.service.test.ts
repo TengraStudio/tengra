@@ -1,4 +1,5 @@
 import { AgentPersistenceService } from '@main/services/workspace/agent/agent-persistence.service';
+import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { AgentTaskState } from '@shared/types/agent-state';
 import { beforeEach,describe, expect, it, vi } from 'vitest';
 
@@ -29,7 +30,7 @@ describe('AgentPersistenceService', () => {
 
     const mockTask: AgentTaskState = {
         taskId: 'task-123',
-        projectId: 'proj-456',
+        workspaceId: 'proj-456',
         description: 'Test task',
         state: 'idle',
         currentStep: 0,
@@ -99,7 +100,7 @@ describe('AgentPersistenceService', () => {
     it('should load a task from database', async () => {
         const mockRow = {
             id: 'task-123',
-            project_id: 'proj-456',
+            [WORKSPACE_COMPAT_SCHEMA_VALUES.ID_COLUMN]: 'proj-456',
             description: 'Test task',
             state: 'idle',
             current_step: 0,

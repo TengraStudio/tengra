@@ -1,7 +1,7 @@
 import { CodeSymbolSearchResult, DatabaseService, SemanticFragment } from '@main/services/data/database.service';
 import { ContextRetrievalService } from '@main/services/llm/context-retrieval.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
-import { Project } from '@shared/types/project';
+import { Workspace } from '@shared/types/workspace';
 import { describe, expect, it, vi } from 'vitest';
 
 function createSymbol(overrides: Partial<CodeSymbolSearchResult> = {}): CodeSymbolSearchResult {
@@ -35,12 +35,12 @@ function createFragment(overrides: Partial<SemanticFragment> = {}): SemanticFrag
     };
 }
 
-function createWorkspace(overrides: Partial<Project> = {}): Project {
+function createWorkspace(overrides: Partial<Workspace> = {}): Workspace {
     const now = Date.now();
     return {
-        id: 'project-id',
-        title: 'Test Project',
-        description: 'Project for unit tests',
+        id: 'workspace-id',
+        title: 'Test Workspace',
+        description: 'Workspace for unit tests',
         path: '/repo',
         mounts: [],
         createdAt: now,
@@ -58,14 +58,14 @@ function createWorkspace(overrides: Partial<Project> = {}): Project {
 
 function createService() {
     const mocks = {
-        getProjects: vi.fn(async (): Promise<Project[]> => []),
+        getWorkspaces: vi.fn(async (): Promise<Workspace[]> => []),
         searchCodeSymbols: vi.fn(async (): Promise<CodeSymbolSearchResult[]> => []),
         searchSemanticFragments: vi.fn(async (): Promise<SemanticFragment[]> => []),
         generateEmbedding: vi.fn(async (_query: string) => [0.11, 0.22])
     };
 
-    const db: Pick<DatabaseService, 'getProjects' | 'searchCodeSymbols' | 'searchSemanticFragments'> = {
-        getProjects: mocks.getProjects,
+    const db: Pick<DatabaseService, 'getWorkspaces' | 'searchCodeSymbols' | 'searchSemanticFragments'> = {
+        getWorkspaces: mocks.getWorkspaces,
         searchCodeSymbols: mocks.searchCodeSymbols,
         searchSemanticFragments: mocks.searchSemanticFragments
     };
@@ -85,7 +85,7 @@ function createService() {
 describe('ContextRetrievalService', () => {
     it('deduplicates fragments and returns ranked summary lines', async () => {
         const { service, mocks } = createService();
-        mocks.getProjects.mockResolvedValue([createWorkspace({ id: 'p1', path: '/repo' })]);
+        mocks.getWorkspaces.mockResolvedValue([createWorkspace({ id: 'p1', path: '/repo' })]);
         mocks.searchCodeSymbols.mockResolvedValue([createSymbol()]);
         mocks.searchSemanticFragments.mockResolvedValue([
             createFragment(),

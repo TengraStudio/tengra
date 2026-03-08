@@ -13,6 +13,7 @@
  * Note: These tests require the db-service to be running or will mock the client.
  */
 
+import { WORKSPACE_COMPAT_INDEX_VALUES, WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock modules
@@ -20,11 +21,17 @@ vi.mock('@main/logging/logger', () => ({
     appLogger: { info: vi.fn(), error: vi.fn(), debug: vi.fn(), warn: vi.fn() }
 }));
 
+const WORKSPACES_UPDATED_AT_INDEX = `idx_${WORKSPACE_COMPAT_SCHEMA_VALUES.TABLE}_updated_at`;
+const LEGACY_SEMANTIC_FRAGMENTS_WORKSPACE_ID_INDEX = `idx_semantic_fragments_${WORKSPACE_COMPAT_SCHEMA_VALUES.ID_COLUMN}`;
+const LEGACY_RENAME_WORKSPACE_ID_TO_PATH = `rename_${WORKSPACE_COMPAT_SCHEMA_VALUES.ID_COLUMN}_to_${WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN}`;
+const LEGACY_RENAME_WORKSPACE_ID_TO_PATH_FILE_DIFFS = `${LEGACY_RENAME_WORKSPACE_ID_TO_PATH}_file_diffs`;
+const LEGACY_RENAME_WORKSPACE_ID_TO_PATH_TOKEN_USAGE = `${LEGACY_RENAME_WORKSPACE_ID_TO_PATH}_token_usage`;
+
 // Expected schema structure after all migrations
 const EXPECTED_TABLES = [
     'chats',
     'messages',
-    'projects',
+    WORKSPACE_COMPAT_SCHEMA_VALUES.TABLE,
     'folders',
     'prompts',
     'code_symbols',
@@ -47,16 +54,16 @@ const EXPECTED_TABLES = [
 const EXPECTED_INDEXES = [
     'idx_chats_updated_at',
     'idx_chats_folder_id',
-    'idx_chats_project_id',
+    WORKSPACE_COMPAT_INDEX_VALUES.CHATS_BY_SINGULAR_ID,
     'idx_messages_chat_id',
     'idx_messages_timestamp',
-    'idx_projects_status',
-    'idx_projects_updated_at',
-    'idx_code_symbols_project_path',
+    WORKSPACE_COMPAT_INDEX_VALUES.TABLE_BY_STATUS,
+    WORKSPACES_UPDATED_AT_INDEX,
+    WORKSPACE_COMPAT_INDEX_VALUES.CODE_SYMBOLS_BY_SINGULAR_PATH,
     'idx_code_symbols_name',
     'idx_code_symbols_file_path',
     'idx_semantic_fragments_source',
-    'idx_semantic_fragments_project_path',
+    WORKSPACE_COMPAT_INDEX_VALUES.SEMANTIC_FRAGMENTS_BY_SINGULAR_PATH,
     'idx_episodic_memories_timestamp',
     'idx_entity_knowledge_name',
     'idx_token_usage_timestamp',
@@ -74,27 +81,27 @@ const EXPECTED_INDEXES = [
 const EXPECTED_COLUMNS = {
     chats: [
         'id', 'title', 'is_Generating', 'model', 'backend', 'folder_id',
-        'project_id', 'is_pinned', 'is_favorite', 'is_archived', 'metadata',
+        WORKSPACE_COMPAT_SCHEMA_VALUES.ID_COLUMN, 'is_pinned', 'is_favorite', 'is_archived', 'metadata',
         'created_at', 'updated_at'
     ],
     messages: [
         'id', 'chat_id', 'role', 'content', 'timestamp', 'provider',
         'model', 'metadata', 'vector'
     ],
-    projects: [
+    workspaces: [
         'id', 'title', 'description', 'path', 'logo', 'mounts', 'chat_ids',
         'council_config', 'status', 'metadata', 'created_at', 'updated_at'
     ],
     semantic_fragments: [
         'id', 'content', 'embedding', 'source', 'source_id', 'tags',
-        'importance', 'project_path', 'created_at', 'updated_at'
+        'importance', WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN, 'created_at', 'updated_at'
     ],
     file_diffs: [
-        'id', 'project_path', 'file_path', 'diff', 'created_at',
+        'id', WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN, 'file_path', 'diff', 'created_at',
         'session_id', 'system_id'
     ],
     token_usage: [
-        'id', 'message_id', 'chat_id', 'project_path', 'provider', 'model',
+        'id', 'message_id', 'chat_id', WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN, 'provider', 'model',
         'tokens_sent', 'tokens_received', 'cost_estimate', 'timestamp'
     ]
 };
@@ -242,7 +249,7 @@ describe('Database Migration Integration Tests', () => {
             expect(columnNames).toContain('vector');
         });
 
-        it('should have project_path column in semantic_fragments after rename migration (5)', async () => {
+        it(`should have ${WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN} column in semantic_fragments after rename migration (5)`, async () => {
             const mockClient = createMockDbClient();
 
             const result = await mockClient.executeQuery({
@@ -252,12 +259,12 @@ describe('Database Migration Integration Tests', () => {
 
             const columnNames = result.rows.map((r: Record<string, unknown>) => r.name as string);
 
-            // Migration 5 renamed project_id to project_path
-            expect(columnNames).toContain('project_path');
-            expect(columnNames).not.toContain('project_id');
+            // Migration 5 renamed the legacy workspace id column to the legacy workspace path column.
+            expect(columnNames).toContain(WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN);
+            expect(columnNames).not.toContain(WORKSPACE_COMPAT_SCHEMA_VALUES.ID_COLUMN);
         });
 
-        it('should have project_path column in file_diffs after rename migration (6)', async () => {
+        it(`should have ${WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN} column in file_diffs after rename migration (6)`, async () => {
             const mockClient = createMockDbClient();
 
             const result = await mockClient.executeQuery({
@@ -267,11 +274,11 @@ describe('Database Migration Integration Tests', () => {
 
             const columnNames = result.rows.map((r: Record<string, unknown>) => r.name as string);
 
-            // Migration 6 renamed project_id to project_path
-            expect(columnNames).toContain('project_path');
+            // Migration 6 renamed the legacy workspace id column to the legacy workspace path column.
+            expect(columnNames).toContain(WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN);
         });
 
-        it('should have project_path column in token_usage after rename migration (7)', async () => {
+        it(`should have ${WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN} column in token_usage after rename migration (7)`, async () => {
             const mockClient = createMockDbClient();
 
             const result = await mockClient.executeQuery({
@@ -281,8 +288,8 @@ describe('Database Migration Integration Tests', () => {
 
             const columnNames = result.rows.map((r: Record<string, unknown>) => r.name as string);
 
-            // Migration 7 renamed project_id to project_path
-            expect(columnNames).toContain('project_path');
+            // Migration 7 renamed the legacy workspace id column to the legacy workspace path column.
+            expect(columnNames).toContain(WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN);
         });
     });
 
@@ -430,7 +437,7 @@ describe('Database Migration Integration Tests', () => {
                 model: null,
                 backend: null,
                 folder_id: null,
-                project_id: null,
+                [WORKSPACE_COMPAT_SCHEMA_VALUES.ID_COLUMN]: null,
                 is_pinned: 0,
                 is_favorite: 0,
                 is_archived: 0,
@@ -494,14 +501,14 @@ describe('Database Migration Integration Tests', () => {
             expect(EXPECTED_INDEXES).toContain('idx_messages_chat_id');
         });
 
-        it('should have index on code_symbols.project_path for filtering', async () => {
+        it(`should have index on code_symbols.${WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN} for filtering`, async () => {
             // Verify the index exists for code intelligence queries
-            expect(EXPECTED_INDEXES).toContain('idx_code_symbols_project_path');
+            expect(EXPECTED_INDEXES).toContain(WORKSPACE_COMPAT_INDEX_VALUES.CODE_SYMBOLS_BY_SINGULAR_PATH);
         });
 
-        it('should have index on semantic_fragments.project_path after rename', async () => {
+        it(`should have index on semantic_fragments.${WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN} after rename`, async () => {
             // Migration 5 should recreate the index with new column name
-            expect(EXPECTED_INDEXES).toContain('idx_semantic_fragments_project_path');
+            expect(EXPECTED_INDEXES).toContain(WORKSPACE_COMPAT_INDEX_VALUES.SEMANTIC_FRAGMENTS_BY_SINGULAR_PATH);
         });
     });
 
@@ -550,29 +557,25 @@ describe('Database Migration Integration Tests', () => {
     });
 
     describe('Column Rename Migrations (5, 6, 7)', () => {
-        it('should document migration 5: semantic_fragments.project_id -> project_path', () => {
-            // Migration 5 renames:
-            // ALTER TABLE semantic_fragments RENAME COLUMN project_id TO project_path
-            // DROP INDEX IF EXISTS idx_semantic_fragments_project_id
-            // CREATE INDEX IF NOT EXISTS idx_semantic_fragments_project_path
+        it(`should document migration 5: semantic_fragments.${WORKSPACE_COMPAT_SCHEMA_VALUES.ID_COLUMN} -> ${WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN}`, () => {
+            // Migration 5 renames the legacy workspace id column and refreshes the related index.
             const migration5 = {
                 id: 5,
-                name: 'rename_project_id_to_project_path',
+                name: LEGACY_RENAME_WORKSPACE_ID_TO_PATH,
                 tables_affected: ['semantic_fragments'],
-                indexes_dropped: ['idx_semantic_fragments_project_id'],
-                indexes_created: ['idx_semantic_fragments_project_path']
+                indexes_dropped: [LEGACY_SEMANTIC_FRAGMENTS_WORKSPACE_ID_INDEX],
+                indexes_created: [WORKSPACE_COMPAT_INDEX_VALUES.SEMANTIC_FRAGMENTS_BY_SINGULAR_PATH]
             };
 
             expect(migration5.id).toBe(5);
             expect(migration5.tables_affected).toContain('semantic_fragments');
         });
 
-        it('should document migration 6: file_diffs.project_id -> project_path', () => {
-            // Migration 6 renames:
-            // ALTER TABLE file_diffs RENAME COLUMN project_id TO project_path
+        it(`should document migration 6: file_diffs.${WORKSPACE_COMPAT_SCHEMA_VALUES.ID_COLUMN} -> ${WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN}`, () => {
+            // Migration 6 renames the legacy workspace id column for file diff records.
             const migration6 = {
                 id: 6,
-                name: 'rename_project_id_to_project_path_file_diffs',
+                name: LEGACY_RENAME_WORKSPACE_ID_TO_PATH_FILE_DIFFS,
                 tables_affected: ['file_diffs']
             };
 
@@ -580,12 +583,11 @@ describe('Database Migration Integration Tests', () => {
             expect(migration6.tables_affected).toContain('file_diffs');
         });
 
-        it('should document migration 7: token_usage.project_id -> project_path', () => {
-            // Migration 7 renames:
-            // ALTER TABLE token_usage RENAME COLUMN project_id TO project_path
+        it(`should document migration 7: token_usage.${WORKSPACE_COMPAT_SCHEMA_VALUES.ID_COLUMN} -> ${WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN}`, () => {
+            // Migration 7 renames the legacy workspace id column for token usage records.
             const migration7 = {
                 id: 7,
-                name: 'rename_project_id_to_project_path_token_usage',
+                name: LEGACY_RENAME_WORKSPACE_ID_TO_PATH_TOKEN_USAGE,
                 tables_affected: ['token_usage']
             };
 

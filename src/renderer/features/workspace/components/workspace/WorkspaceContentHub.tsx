@@ -1,4 +1,8 @@
-﻿import React from 'react';
+import {
+    normalizeWorkspaceCompatScope,
+    WORKSPACE_COMPAT_ALIAS_VALUES,
+    WORKSPACE_COMPAT_TARGET_VALUES} from '@shared/constants';
+import React from 'react';
 
 import {
     autocompleteMasteryGuide,
@@ -10,24 +14,37 @@ import {
     workspaceSshPlaybook
 } from '@/data/workspace-content-packs';
 import { useTranslation } from '@/i18n';
-import { Project } from '@/types';
+import { Workspace } from '@/types';
 
 interface WorkspaceContentHubProps {
-    project: Project;
-    onApplyTemplate: (updates: Partial<Project>) => Promise<void>;
+    workspace: Workspace;
+    onApplyTemplate: (updates: Partial<Workspace>) => Promise<void>;
 }
+
+type MemoryAccessScope =
+    | typeof WORKSPACE_COMPAT_TARGET_VALUES.WORKSPACE
+    | typeof WORKSPACE_COMPAT_TARGET_VALUES.RELATED_WORKSPACES;
+type StoredMemoryAccessScope =
+    | MemoryAccessScope
+    | typeof WORKSPACE_COMPAT_ALIAS_VALUES.SINGULAR
+    | typeof WORKSPACE_COMPAT_ALIAS_VALUES.RELATED_PLURAL;
 
 const CHECKLIST_STORAGE_KEY_PREFIX = 'workspace.onboarding.v1:';
 const DEBATE_HISTORY_STORAGE_KEY_PREFIX = 'workspace.debate.history:v1:';
 const MEMORY_SYNC_STORAGE_KEY_PREFIX = 'workspace.memory.sync:v1:';
 const AGENT_METRICS_STORAGE_KEY_PREFIX = 'workspace.agent.metrics:v1:';
+const DEFAULT_MEMORY_ACCESS_SCOPE: MemoryAccessScope = WORKSPACE_COMPAT_TARGET_VALUES.WORKSPACE;
 
-export const WorkspaceContentHub: React.FC<WorkspaceContentHubProps> = ({ project, onApplyTemplate }) => {
+function normalizeMemoryAccessScope(scope?: StoredMemoryAccessScope): MemoryAccessScope {
+    return normalizeWorkspaceCompatScope(scope) ?? WORKSPACE_COMPAT_TARGET_VALUES.WORKSPACE;
+}
+
+export const WorkspaceContentHub: React.FC<WorkspaceContentHubProps> = ({ workspace, onApplyTemplate }) => {
     const { t } = useTranslation();
-    const storageKey = `${CHECKLIST_STORAGE_KEY_PREFIX}${project.id}`;
-    const debateStorageKey = `${DEBATE_HISTORY_STORAGE_KEY_PREFIX}${project.id}`;
-    const memoryStorageKey = `${MEMORY_SYNC_STORAGE_KEY_PREFIX}${project.id}`;
-    const agentMetricsStorageKey = `${AGENT_METRICS_STORAGE_KEY_PREFIX}${project.id}`;
+    const storageKey = `${CHECKLIST_STORAGE_KEY_PREFIX}${workspace.id}`;
+    const debateStorageKey = `${DEBATE_HISTORY_STORAGE_KEY_PREFIX}${workspace.id}`;
+    const memoryStorageKey = `${MEMORY_SYNC_STORAGE_KEY_PREFIX}${workspace.id}`;
+    const agentMetricsStorageKey = `${AGENT_METRICS_STORAGE_KEY_PREFIX}${workspace.id}`;
     const [query, setQuery] = React.useState('');
     const [checklistState, setChecklistState] = React.useState<Record<string, boolean>>({});
     const [status, setStatus] = React.useState('');
@@ -35,7 +52,7 @@ export const WorkspaceContentHub: React.FC<WorkspaceContentHubProps> = ({ projec
     const [debateOutput, setDebateOutput] = React.useState('');
     const [debateHistory, setDebateHistory] = React.useState<string[]>([]);
     const [memorySyncEnabled, setMemorySyncEnabled] = React.useState(false);
-    const [memoryAccessScope, setMemoryAccessScope] = React.useState<'project' | 'related-projects'>('project');
+    const [memoryAccessScope, setMemoryAccessScope] = React.useState<MemoryAccessScope>(DEFAULT_MEMORY_ACCESS_SCOPE);
     const [agentMetrics, setAgentMetrics] = React.useState({
         completionRate: 84,
         efficiencyScore: 78,
@@ -62,9 +79,9 @@ export const WorkspaceContentHub: React.FC<WorkspaceContentHubProps> = ({ projec
             }
             const memory = localStorage.getItem(memoryStorageKey);
             if (memory) {
-                const parsed = JSON.parse(memory) as { enabled?: boolean; scope?: 'project' | 'related-projects' };
+                const parsed = JSON.parse(memory) as { enabled?: boolean; scope?: StoredMemoryAccessScope };
                 setMemorySyncEnabled(Boolean(parsed.enabled));
-                setMemoryAccessScope(parsed.scope ?? 'project');
+                setMemoryAccessScope(normalizeMemoryAccessScope(parsed.scope));
             }
             const metrics = localStorage.getItem(agentMetricsStorageKey);
             if (metrics) {
@@ -83,6 +100,10 @@ export const WorkspaceContentHub: React.FC<WorkspaceContentHubProps> = ({ projec
     const saveDebateHistory = (next: string[]) => {
         setDebateHistory(next);
         localStorage.setItem(debateStorageKey, JSON.stringify(next));
+    };
+
+    const saveMemorySyncSettings = (enabled: boolean, scope: MemoryAccessScope) => {
+        localStorage.setItem(memoryStorageKey, JSON.stringify({ enabled, scope }));
     };
 
     const filteredKnowledge = React.useMemo(() => {
@@ -109,7 +130,7 @@ export const WorkspaceContentHub: React.FC<WorkspaceContentHubProps> = ({ projec
             'Pro: Faster execution and lower cycle time.',
             'Con: Elevated risk if review coverage is weak.',
             'Consensus: Use guarded rollout with mandatory checks.',
-            'Source: project coding standards + recent runbook guidance.',
+            'Source: workspace coding standards + recent runbook guidance.',
         ].join('\n');
         setDebateOutput(output);
         saveDebateHistory([`${new Date().toISOString()} | ${debateTopic}`, ...debateHistory].slice(0, 20));
@@ -228,7 +249,7 @@ export const WorkspaceContentHub: React.FC<WorkspaceContentHubProps> = ({ projec
                     )}
                 </section>
                 <section className="space-y-2">
-                    <div className="font-medium">Cross-project Memory</div>
+                    <div className="font-medium">Cross-workspace Memory</div>
                     <label className="flex items-center gap-2">
                         <input
                             type="checkbox"
@@ -236,22 +257,22 @@ export const WorkspaceContentHub: React.FC<WorkspaceContentHubProps> = ({ projec
                             onChange={event => {
                                 const next = event.target.checked;
                                 setMemorySyncEnabled(next);
-                                localStorage.setItem(memoryStorageKey, JSON.stringify({ enabled: next, scope: memoryAccessScope }));
+                                saveMemorySyncSettings(next, memoryAccessScope);
                             }}
                         />
-                        Sync related-project memory
+                        Sync related-workspace memory
                     </label>
                     <select
                         value={memoryAccessScope}
                         onChange={event => {
-                            const nextScope = event.target.value as 'project' | 'related-projects';
+                            const nextScope = normalizeMemoryAccessScope(event.target.value as StoredMemoryAccessScope);
                             setMemoryAccessScope(nextScope);
-                            localStorage.setItem(memoryStorageKey, JSON.stringify({ enabled: memorySyncEnabled, scope: nextScope }));
+                            saveMemorySyncSettings(memorySyncEnabled, nextScope);
                         }}
                         className="w-full rounded border border-border/40 bg-background px-2 py-1"
                     >
-                        <option value="project">Project-only access</option>
-                        <option value="related-projects">Related-projects namespace</option>
+                        <option value={WORKSPACE_COMPAT_TARGET_VALUES.WORKSPACE}>Workspace-only access</option>
+                        <option value={WORKSPACE_COMPAT_TARGET_VALUES.RELATED_WORKSPACES}>Related-workspaces namespace</option>
                     </select>
                     <div className="text-muted-foreground">Versioning: enabled | Merge conflict strategy: latest+manual review</div>
                 </section>

@@ -1,3 +1,4 @@
+import { normalizeWorkspaceCompatSource } from '@shared/constants';
 import { useSyncExternalStore } from 'react';
 
 import type { Toast } from '@/types';
@@ -128,6 +129,14 @@ function createActionKey(notificationId: string, actionId: string): string {
     return `${notificationId}:${actionId}`;
 }
 
+function normalizeNotificationSource(source?: string): string | undefined {
+    const trimmedSource = source?.trim();
+    if (!trimmedSource) {
+        return undefined;
+    }
+    return normalizeWorkspaceCompatSource(trimmedSource) ?? trimmedSource;
+}
+
 function isObject(value: unknown): value is Record<string, unknown> {
     return !!value && typeof value === 'object' && !Array.isArray(value);
 }
@@ -176,7 +185,9 @@ function normalizeRecord(value: unknown): NotificationRecord | null {
             ? value.dismissedAt
             : undefined;
     const title = typeof value.title === 'string' ? value.title.trim() || undefined : undefined;
-    const source = typeof value.source === 'string' ? value.source.trim() || undefined : undefined;
+    const source = typeof value.source === 'string'
+        ? normalizeNotificationSource(value.source)
+        : undefined;
 
     const actionsRaw = Array.isArray(value.actions) ? value.actions : [];
     const actions = actionsRaw
@@ -291,7 +302,7 @@ function normalizeScheduled(value: unknown): ScheduledNotification | null {
                 typeof payloadRaw.title === 'string' ? payloadRaw.title.trim() || undefined : undefined,
             source:
                 typeof payloadRaw.source === 'string'
-                    ? payloadRaw.source.trim() || undefined
+                    ? normalizeNotificationSource(payloadRaw.source)
                     : undefined,
             actions,
             durationMs: normalizeDurationMs(payloadRaw.durationMs),
@@ -535,7 +546,7 @@ export function pushNotification(input: NotificationInput): string | null {
         type,
         message,
         title: input.title?.trim() || undefined,
-        source: input.source?.trim() || undefined,
+        source: normalizeNotificationSource(input.source),
         createdAt,
         actions,
     };
@@ -715,7 +726,7 @@ export function scheduleNotification(
             type: normalizeType(input.type),
             message,
             title: input.title?.trim() || undefined,
-            source: input.source?.trim() || undefined,
+            source: normalizeNotificationSource(input.source),
             actions,
             durationMs: normalizeDurationMs(input.durationMs),
         },

@@ -1,100 +1,100 @@
 import { useState } from 'react';
 
-import { Project, WorkspaceMount } from '@/types';
+import { Workspace, WorkspaceMount } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
-export interface ProjectListActionsOptions {
-    filteredProjects: Project[]
+export interface WorkspaceListActionsOptions {
+    filteredWorkspaces: Workspace[]
 }
 
-export const useProjectListActions = ({ filteredProjects }: ProjectListActionsOptions) => {
-    const [editingProject, setEditingProject] = useState<Project | null>(null);
-    const [deletingProject, setDeletingProject] = useState<Project | null>(null);
-    const [isArchiving, setIsArchiving] = useState<Project | null>(null);
+export const useWorkspaceListActions = ({ filteredWorkspaces }: WorkspaceListActionsOptions) => {
+    const [editingWorkspace, setEditingWorkspace] = useState<Workspace | null>(null);
+    const [deletingWorkspace, setDeletingWorkspace] = useState<Workspace | null>(null);
+    const [isArchiving, setIsArchiving] = useState<Workspace | null>(null);
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
     const [isBulkArchiving, setIsBulkArchiving] = useState(false);
     const [editForm, setEditForm] = useState({ title: '', description: '' });
-    const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set());
+    const [selectedWorkspaceIds, setSelectedWorkspaceIds] = useState<Set<string>>(new Set());
 
-    const handleEditClick = (project: Project, e: React.MouseEvent) => {
+    const handleEditClick = (workspace: Workspace, e: React.MouseEvent) => {
         e.stopPropagation();
-        setEditingProject(project);
-        setEditForm({ title: project.title, description: project.description });
+        setEditingWorkspace(workspace);
+        setEditForm({ title: workspace.title, description: workspace.description });
     };
 
-    const handleDeleteClick = (project: Project, e: React.MouseEvent) => {
+    const handleDeleteClick = (workspace: Workspace, e: React.MouseEvent) => {
         e.stopPropagation();
-        setDeletingProject(project);
+        setDeletingWorkspace(workspace);
     };
 
-    const handleUpdateProject = async () => {
-        if (!editingProject) { return; }
+    const handleUpdateWorkspace = async () => {
+        if (!editingWorkspace) { return; }
         try {
-            await window.electron.db.updateWorkspace(editingProject.id, editForm);
-            setEditingProject(null);
+            await window.electron.db.updateWorkspace(editingWorkspace.id, editForm);
+            setEditingWorkspace(null);
         } catch (error) {
-            appLogger.error('ProjectListActions', 'Failed to update project', error as Error);
+            appLogger.error('WorkspaceListActions', 'Failed to update workspace', error as Error);
         }
     };
 
-    const handleDeleteProject = async (deleteFiles: boolean = false) => {
-        if (!deletingProject) { return; }
+    const handleDeleteWorkspace = async (deleteFiles: boolean = false) => {
+        if (!deletingWorkspace) { return; }
         try {
-            await window.electron.db.deleteWorkspace(deletingProject.id, deleteFiles);
-            setDeletingProject(null);
+            await window.electron.db.deleteWorkspace(deletingWorkspace.id, deleteFiles);
+            setDeletingWorkspace(null);
         } catch (error) {
-            appLogger.error('ProjectListActions', 'Failed to delete project', error as Error);
+            appLogger.error('WorkspaceListActions', 'Failed to delete workspace', error as Error);
         }
     };
 
-    const handleArchiveProject = async () => {
+    const handleArchiveWorkspace = async () => {
         if (!isArchiving) { return; }
         try {
             const newStatus = isArchiving.status === 'archived' ? 'active' : 'archived';
             await window.electron.db.archiveWorkspace(isArchiving.id, newStatus === 'archived');
             setIsArchiving(null);
         } catch (error) {
-            appLogger.error('ProjectListActions', 'Failed to archive project', error as Error);
+            appLogger.error('WorkspaceListActions', 'Failed to archive workspace', error as Error);
         }
     };
 
     const handleBulkDelete = async (deleteFiles: boolean = false) => {
-        if (selectedProjectIds.size === 0) { return; }
+        if (selectedWorkspaceIds.size === 0) { return; }
         try {
-            await window.electron.db.bulkDeleteWorkspaces(Array.from(selectedProjectIds), deleteFiles);
-            setSelectedProjectIds(new Set());
+            await window.electron.db.bulkDeleteWorkspaces(Array.from(selectedWorkspaceIds), deleteFiles);
+            setSelectedWorkspaceIds(new Set());
             setIsBulkDeleting(false);
         } catch (error) {
-            appLogger.error('ProjectListActions', 'Failed to bulk delete projects', error as Error);
+            appLogger.error('WorkspaceListActions', 'Failed to bulk delete workspaces', error as Error);
         }
     };
 
     const handleBulkArchive = async (isArchived: boolean = true) => {
-        if (selectedProjectIds.size === 0) { return; }
+        if (selectedWorkspaceIds.size === 0) { return; }
         try {
-            await window.electron.db.bulkArchiveWorkspaces(Array.from(selectedProjectIds), isArchived);
-            setSelectedProjectIds(new Set());
+            await window.electron.db.bulkArchiveWorkspaces(Array.from(selectedWorkspaceIds), isArchived);
+            setSelectedWorkspaceIds(new Set());
             setIsBulkArchiving(false);
         } catch (error) {
-            appLogger.error('ProjectListActions', 'Failed to bulk archive projects', error as Error);
+            appLogger.error('WorkspaceListActions', 'Failed to bulk archive workspaces', error as Error);
         }
     };
 
-    const toggleProjectSelection = (id: string) => {
-        const next = new Set(selectedProjectIds);
+    const toggleWorkspaceSelection = (id: string) => {
+        const next = new Set(selectedWorkspaceIds);
         if (next.has(id)) {
             next.delete(id);
         } else {
             next.add(id);
         }
-        setSelectedProjectIds(next);
+        setSelectedWorkspaceIds(next);
     };
 
     const toggleSelectAll = () => {
-        if (selectedProjectIds.size === filteredProjects.length) {
-            setSelectedProjectIds(new Set());
+        if (selectedWorkspaceIds.size === filteredWorkspaces.length) {
+            setSelectedWorkspaceIds(new Set());
         } else {
-            setSelectedProjectIds(new Set(filteredProjects.map(p => p.id)));
+            setSelectedWorkspaceIds(new Set(filteredWorkspaces.map(p => p.id)));
         }
     };
 
@@ -109,36 +109,36 @@ export const useProjectListActions = ({ filteredProjects }: ProjectListActionsOp
             await window.electron.db.createWorkspace(name, path, description, JSON.stringify(mounts));
             return true;
         } catch (error) {
-            appLogger.error('ProjectListActions', 'Failed to register project', error as Error);
+            appLogger.error('WorkspaceListActions', 'Failed to register workspace', error as Error);
             return false;
         }
     };
 
     return {
         state: {
-            editingProject,
-            deletingProject,
+            editingWorkspace,
+            deletingWorkspace,
             isArchiving,
             isBulkDeleting,
             isBulkArchiving,
             editForm,
-            selectedProjectIds
+            selectedWorkspaceIds
         },
         actions: {
-            setEditingProject,
-            setDeletingProject,
+            setEditingWorkspace,
+            setDeletingWorkspace,
             setIsArchiving,
             setIsBulkDeleting,
             setIsBulkArchiving,
             setEditForm,
             handleEditClick,
             handleDeleteClick,
-            handleUpdateProject,
-            handleDeleteProject,
-            handleArchiveProject,
+            handleUpdateWorkspace,
+            handleDeleteWorkspace,
+            handleArchiveWorkspace,
             handleBulkDelete,
             handleBulkArchive,
-            toggleProjectSelection,
+            toggleWorkspaceSelection,
             toggleSelectAll,
             handleWizardCreate
         }

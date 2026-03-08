@@ -15,6 +15,7 @@ import * as path from 'path';
 import { BaseService } from '@main/services/base.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
+import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { OPERATION_TIMEOUTS } from '@shared/constants/timeouts';
 import {
     DbApiResponse,
@@ -23,14 +24,13 @@ import {
     DbCreateChatRequest,
     DbCreateFolderRequest,
     DbCreateMessageRequest,
-    DbCreateWorkspaceRequest,
     DbCreatePromptRequest,
+    DbCreateWorkspaceRequest,
     DbFolder,
     DbGetMarketplaceModelsRequest,
     DbHealthResponse,
     DbMarketplaceModel,
     DbMessage,
-    DbWorkspace,
     DbPrompt,
     DbQueryRequest,
     DbQueryResponse,
@@ -42,10 +42,11 @@ import {
     DbUpdateChatRequest,
     DbUpdateFolderRequest,
     DbUpdateMessageRequest,
-    DbUpdateWorkspaceRequest,
     DbUpdatePromptRequest,
+    DbUpdateWorkspaceRequest,
     DbUpsertMarketplaceModelsRequest,
     DbVectorSearchRequest,
+    DbWorkspace,
 } from '@shared/types/db-api';
 import { delay } from '@shared/utils/delay.util';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -64,6 +65,7 @@ const PORT_FILE_CACHE_TTL_MS = 5_000;
 const SERVICE_NAME = 'db-service';
 const MAX_HEALTH_RETRIES = 30;
 const HEALTH_RETRY_DELAY_MS = 500;
+const WORKSPACE_COMPAT_PATH_FIELD = WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN;
 
 // PERF-003-4: HTTP agent configuration for connection pooling
 const HTTP_AGENT_CONFIG = {
@@ -517,13 +519,13 @@ export class DatabaseClientService extends BaseService {
     // ========================================================================
 
     async getWorkspaces(): Promise<DbWorkspace[]> {
-        const response = await this.apiCall<DbWorkspace[]>('GET', '/api/v1/projects');
+        const response = await this.apiCall<DbWorkspace[]>('GET', '/api/v1/workspaces');
         return response.data ?? [];
     }
 
     async getWorkspace(id: string): Promise<DbWorkspace | null> {
         this.validatePathId(id, 'workspaceId');
-        const response = await this.apiCall<DbWorkspace | null>('GET', `/api/v1/projects/${id}`);
+        const response = await this.apiCall<DbWorkspace | null>('GET', `/api/v1/workspaces/${id}`);
         return response.data ?? null;
     }
 
@@ -532,7 +534,7 @@ export class DatabaseClientService extends BaseService {
     ): Promise<{ success: boolean; workspace?: DbWorkspace; error?: string }> {
         this.validateRequiredString(req.title, 'title');
         this.validateRequiredString(req.path, 'path');
-        const response = await this.apiCall<DbWorkspace>('POST', '/api/v1/projects', req);
+        const response = await this.apiCall<DbWorkspace>('POST', '/api/v1/workspaces', req);
         return {
             success: response.success,
             workspace: response.data,
@@ -542,13 +544,13 @@ export class DatabaseClientService extends BaseService {
 
     async updateWorkspace(id: string, updates: DbUpdateWorkspaceRequest): Promise<boolean> {
         this.validatePathId(id, 'workspaceId');
-        const response = await this.apiCall<boolean>('PUT', `/api/v1/projects/${id}`, updates);
+        const response = await this.apiCall<boolean>('PUT', `/api/v1/workspaces/${id}`, updates);
         return response.data ?? false;
     }
 
     async deleteWorkspace(id: string): Promise<boolean> {
         this.validatePathId(id, 'workspaceId');
-        const response = await this.apiCall<boolean>('DELETE', `/api/v1/projects/${id}`);
+        const response = await this.apiCall<boolean>('DELETE', `/api/v1/workspaces/${id}`);
         return response.data ?? false;
     }
 
@@ -625,7 +627,10 @@ export class DatabaseClientService extends BaseService {
 
     async storeCodeSymbol(req: DbStoreCodeSymbolRequest): Promise<void> {
         this.validateRequiredString(req.name, 'name');
-        this.validateRequiredString(req.project_path, 'project_path');
+        this.validateRequiredString(
+            req[WORKSPACE_COMPAT_PATH_FIELD],
+            WORKSPACE_COMPAT_PATH_FIELD
+        );
         this.validateRequiredString(req.file_path, 'file_path');
         await this.apiCall<void>('POST', '/api/v1/knowledge/symbols', req);
     }

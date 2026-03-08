@@ -45,7 +45,6 @@ const sectionData = {
     "active": "Active",
     "memory": "Memory",
     "automationWorkflow": "Automation Workflow",
-    "project": "Workspace",
     "moveTo": "Move to...",
     "ideas": "Ideas",
     "models": "Models",

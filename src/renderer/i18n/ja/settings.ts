@@ -189,6 +189,26 @@ const sectionData = {
         "editPrompt": "プロンプトの編集",
         "editMode": "編集モード",
         "editRun": "編集を実行"
+    },
+    "storageDashboard": {
+        "title": "ストレージダッシュボード",
+        "subtitle": "データベース使用量とアプリ全体のレコード数を確認します。",
+        "loadError": "ストレージ統計を読み込めませんでした。",
+        "dbSize": "データベース",
+        "totalChats": "チャット",
+        "totalMessages": "メッセージ",
+        "totalWorkspaces": "ワークスペース"
+    },
+    "databaseSizeDashboard": {
+        "title": "データベースサイズ",
+        "subtitle": "レコード種別ごとのストレージ使用量を表示します。",
+        "loadError": "データベース統計を読み込めませんでした。",
+        "dbSize": "データベース",
+        "chats": "チャット",
+        "messages": "メッセージ",
+        "workspaces": "ワークスペース",
+        "folders": "フォルダー",
+        "prompts": "プロンプト"
     }
 };
 

@@ -17,7 +17,7 @@ import {
     TestCoverageResult,
     TestRunConfig,
     TestRunResult,
-} from '@shared/types/project-agent';
+} from '@shared/types/workspace-agent';
 
 /** Default test configurations by framework */
 const FRAMEWORK_CONFIGS: Record<
@@ -54,7 +54,7 @@ export class AgentTestRunnerService extends BaseService {
      * Run tests for a step based on its configuration
      */
     async runTestsForStep(
-        projectPath: string,
+        workspacePath: string,
         stepTestConfig: StepTestConfig,
         planTestConfig?: TestRunConfig
     ): Promise<TestRunResult> {
@@ -70,19 +70,19 @@ export class AgentTestRunnerService extends BaseService {
             filter: stepTestConfig.filter,
         };
 
-        return this.runTests(projectPath, config);
+        return this.runTests(workspacePath, config);
     }
 
     /**
      * Run tests with the given configuration
      */
-    async runTests(projectPath: string, config: TestRunConfig): Promise<TestRunResult> {
+    async runTests(workspacePath: string, config: TestRunConfig): Promise<TestRunResult> {
         const startedAt = Date.now();
-        appLogger.info('AgentTestRunner', `Running tests in ${projectPath} with ${config.framework}`);
+        appLogger.info('AgentTestRunner', `Running tests in ${workspacePath} with ${config.framework}`);
 
         try {
             const command = this.buildTestCommand(config);
-            const output = await this.executeTestCommand(projectPath, command, config.timeout);
+            const output = await this.executeTestCommand(workspacePath, command, config.timeout);
 
             const result = this.parseTestOutput(output, config.framework, startedAt);
             appLogger.info(
@@ -135,7 +135,7 @@ export class AgentTestRunnerService extends BaseService {
      * Execute the test command in a subprocess
      */
     private executeTestCommand(
-        projectPath: string,
+        workspacePath: string,
         builtCommand: BuiltTestCommand,
         timeout: number = DEFAULT_TEST_TIMEOUT
     ): Promise<string> {
@@ -144,7 +144,7 @@ export class AgentTestRunnerService extends BaseService {
             let errorOutput = '';
 
             const proc = spawn(builtCommand.command, builtCommand.args, {
-                cwd: projectPath,
+                cwd: workspacePath,
                 shell: false,
                 env: { ...process.env, CI: 'true', FORCE_COLOR: '0' },
             });

@@ -58,7 +58,6 @@ export const WizardDetailsStep: React.FC<WizardDetailsStepProps> = ({
                             className="w-full bg-background border border-border/60 rounded-xl px-5 py-4 focus:outline-none focus:border-primary/60 focus:bg-background transition-all text-lg font-semibold placeholder:text-muted-foreground/40"
                             placeholder={t('workspaceWizard.namePlaceholder')}
                         />
-                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/8 to-transparent opacity-0 group-focus-within:opacity-100 pointer-events-none transition-opacity duration-300" />
                     </div>
                 </motion.div>
 

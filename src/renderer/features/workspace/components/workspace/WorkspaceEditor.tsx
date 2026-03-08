@@ -13,8 +13,8 @@ import { useEditorSnippets } from './useEditorSnippets';
 export interface WorkspaceEditorProps {
     activeTab: EditorTab | null;
     updateTabContent: (value: string) => void;
-    projectKey?: string;
-    projectPath?: string;
+    workspaceKey?: string;
+    workspacePath?: string;
     emptyState: React.ReactNode;
 }
 
@@ -129,7 +129,7 @@ function useViewStatePersistence(storageKey: string): Record<string, EditorViewS
 
 interface WorkspaceActionDeps {
     activeTab: EditorTab | null;
-    projectPath: string | undefined;
+    workspacePath: string | undefined;
     updateTabContent: (value: string) => void;
     dispatch: React.Dispatch<WorkspaceToolsAction>;
     tools: WorkspaceToolsState;
@@ -138,7 +138,7 @@ interface WorkspaceActionDeps {
 
 /** Semantic refactoring and rename preview actions. */
 function useRefactorActions(deps: WorkspaceActionDeps) {
-    const { activeTab, projectPath, updateTabContent, dispatch, tools, setStatusMessage } = deps;
+    const { activeTab, workspacePath, updateTabContent, dispatch, tools, setStatusMessage } = deps;
     const { t } = useTranslation();
 
     const previewSemanticRefactor = React.useCallback(() => {
@@ -158,27 +158,27 @@ function useRefactorActions(deps: WorkspaceActionDeps) {
     }, [activeTab, setStatusMessage, t, updateTabContent]);
 
     const previewRename = React.useCallback(async () => {
-        if (!projectPath || !tools.renameFrom || !tools.renameTo) {
+        if (!workspacePath || !tools.renameFrom || !tools.renameTo) {
             return;
         }
-        const preview = await window.electron.code.previewRenameSymbol(projectPath, tools.renameFrom, tools.renameTo, 200);
+        const preview = await window.electron.code.previewRenameSymbol(workspacePath, tools.renameFrom, tools.renameTo, 200);
         const excluded = preview.updatedFiles.filter(file => new RegExp(tools.excludePattern, 'i').test(file));
         if (excluded.length > 0) {
             dispatch({ type: 'SET_RENAME_IMPACT', value: t('workspaceDashboard.editor.renameBlocked', { count: excluded.length }) });
             return;
         }
         dispatch({ type: 'SET_RENAME_IMPACT', value: t('workspaceDashboard.editor.renameImpact', { files: preview.totalFiles, occurrences: preview.totalOccurrences }) });
-    }, [dispatch, projectPath, tools.excludePattern, tools.renameFrom, tools.renameTo, t]);
+    }, [dispatch, workspacePath, tools.excludePattern, tools.renameFrom, tools.renameTo, t]);
 
     return { previewSemanticRefactor, applySemanticRefactor, previewRename };
 }
 
 /** Test runner and scratchpad actions. */
-function useTestAndScratchActions({ activeTab, projectPath, dispatch, tools, setStatusMessage }: WorkspaceActionDeps) {
+function useTestAndScratchActions({ activeTab, workspacePath, dispatch, tools, setStatusMessage }: WorkspaceActionDeps) {
     const { t } = useTranslation();
 
     const runTestCommand = React.useCallback(async (mode: 'nearest' | 'file' | 'suite') => {
-        if (!projectPath) {
+        if (!workspacePath) {
             return;
         }
         const fileArg = activeTab?.name ?? '';
@@ -187,14 +187,14 @@ function useTestAndScratchActions({ activeTab, projectPath, dispatch, tools, set
             file: ['test', '--', fileArg],
             suite: ['test'],
         };
-        const result = await window.electron.runCommand('npm', commandByMode[mode], projectPath);
+        const result = await window.electron.runCommand('npm', commandByMode[mode], workspacePath);
         const output = `${result.stdout}\n${result.stderr}`.trim();
         const lines = output.split('\n').filter(line => /fail|pass|error/i.test(line)).slice(0, 20);
         dispatch({ type: 'SET_TEST_RESULTS', output, lines });
-    }, [activeTab?.name, dispatch, projectPath]);
+    }, [activeTab?.name, dispatch, workspacePath]);
 
     const runScratchCommand = React.useCallback(async () => {
-        if (!projectPath || !tools.scratchNote.trim()) {
+        if (!workspacePath || !tools.scratchNote.trim()) {
             return;
         }
         const parts = tools.scratchNote.trim().split(/\s+/);
@@ -202,25 +202,25 @@ function useTestAndScratchActions({ activeTab, projectPath, dispatch, tools, set
         if (!command) {
             return;
         }
-        const result = await window.electron.runCommand(command, parts.slice(1), projectPath);
+        const result = await window.electron.runCommand(command, parts.slice(1), workspacePath);
         dispatch({ type: 'SET_TEST_RESULTS', output: `${result.stdout}\n${result.stderr}`.trim(), lines: [] });
-    }, [dispatch, projectPath, tools.scratchNote]);
+    }, [dispatch, workspacePath, tools.scratchNote]);
 
     const saveScratchAsDoc = React.useCallback(async () => {
-        if (!projectPath) {
+        if (!workspacePath) {
             return;
         }
-        await window.electron.files.writeFile(`${projectPath}\\docs\\${tools.scratchName}.md`, tools.scratchNote);
+        await window.electron.files.writeFile(`${workspacePath}\\docs\\${tools.scratchName}.md`, tools.scratchNote);
         setStatusMessage(t('workspaceDashboard.editor.scratchSavedDoc'));
-    }, [projectPath, tools.scratchName, tools.scratchNote, setStatusMessage, t]);
+    }, [workspacePath, tools.scratchName, tools.scratchNote, setStatusMessage, t]);
 
     const saveScratchAsTask = React.useCallback(async () => {
-        if (!projectPath) {
+        if (!workspacePath) {
             return;
         }
-        await window.electron.files.writeFile(`${projectPath}\\tasks\\${tools.scratchName}.txt`, tools.scratchNote);
+        await window.electron.files.writeFile(`${workspacePath}\\tasks\\${tools.scratchName}.txt`, tools.scratchNote);
         setStatusMessage(t('workspaceDashboard.editor.scratchSavedTask'));
-    }, [projectPath, tools.scratchName, tools.scratchNote, setStatusMessage, t]);
+    }, [workspacePath, tools.scratchName, tools.scratchNote, setStatusMessage, t]);
 
     return { runTestCommand, runScratchCommand, saveScratchAsDoc, saveScratchAsTask };
 }
@@ -240,8 +240,8 @@ function useTestAndScratchActions({ activeTab, projectPath, dispatch, tools, set
 export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
     activeTab,
     updateTabContent,
-    projectKey = 'global',
-    projectPath,
+    workspaceKey = 'global',
+    workspacePath,
     emptyState
 }) => {
     const { t } = useTranslation();
@@ -250,14 +250,14 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
     const [statusMessage, setStatusMessage] = React.useState('');
     const [tools, dispatch] = React.useReducer(workspaceToolsReducer, WORKSPACE_TOOLS_INITIAL);
 
-    const viewStateMap = useViewStatePersistence(`workspace.editor.viewstate:${projectKey}`);
+    const viewStateMap = useViewStatePersistence(`workspace.editor.viewstate:${workspaceKey}`);
     void (activeTab ? viewStateMap[activeTab.path] : undefined);
     useUnsavedChangesGuard(hasUnsavedChanges);
 
-    const snippetHook = useEditorSnippets({ activeTab, activeLanguage, projectKey, updateTabContent, setStatusMessage });
-    const aiReview = useEditorAIReview({ activeTab, projectPath });
+    const snippetHook = useEditorSnippets({ activeTab, activeLanguage, workspaceKey, updateTabContent, setStatusMessage });
+    const aiReview = useEditorAIReview({ activeTab, workspacePath });
     const macros = useEditorMacros({ updateTabContent, setStatusMessage });
-    const actionDeps: WorkspaceActionDeps = { activeTab, projectPath, updateTabContent, dispatch, tools, setStatusMessage };
+    const actionDeps: WorkspaceActionDeps = { activeTab, workspacePath, updateTabContent, dispatch, tools, setStatusMessage };
     const refactorActions = useRefactorActions(actionDeps);
     const testScratchActions = useTestAndScratchActions(actionDeps);
 

@@ -1,13 +1,13 @@
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { DatabaseService } from '@main/services/data/database.service';
 import { UacCanvasEdgeRecord, UacCanvasNodeRecord } from '@main/services/data/repositories/uac.repository';
-import { ProjectAgentService } from '@main/services/project/project-agent.service';
+import { WorkspaceAgentService } from '@main/services/workspace/workspace-agent.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import type {
     AgentTemplate,
     AgentTemplateCategory,
     AgentTemplateExport,
-} from '@shared/types/project-agent';
+} from '@shared/types/workspace-agent';
 import { BrowserWindow, ipcMain } from 'electron';
 import { z } from 'zod';
 
@@ -29,7 +29,7 @@ interface CanvasEdge {
 export function registerWorkspaceAgentCanvasHandlers(
     getMainWindow: () => BrowserWindow | null,
     databaseService?: DatabaseService,
-    projectAgentService?: ProjectAgentService
+    workspaceAgentService?: WorkspaceAgentService
 ): void {
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'canvas persistence');
 
@@ -158,13 +158,13 @@ export function registerWorkspaceAgentCanvasHandlers(
             'agent:get-templates',
             async (event, category?: AgentTemplateCategory): Promise<AgentTemplate[]> => {
                 validateSender(event);
-                if (!projectAgentService) {
+                if (!workspaceAgentService) {
                     return [];
                 }
                 if (category) {
-                    return projectAgentService.getTemplatesByCategory(category);
+                    return workspaceAgentService.getTemplatesByCategory(category);
                 }
-                return projectAgentService.getTemplates();
+                return workspaceAgentService.getTemplates();
             },
             {
                 argsSchema: z.tuple([z.string().optional()]),
@@ -179,10 +179,10 @@ export function registerWorkspaceAgentCanvasHandlers(
             'agent:save-template',
             async (event, template: AgentTemplate): Promise<{ success: boolean; error?: string }> => {
                 validateSender(event);
-                if (!projectAgentService) {
+                if (!workspaceAgentService) {
                     return { success: false, error: 'Database not available' };
                 }
-                return await projectAgentService.saveTemplate(template);
+                return await workspaceAgentService.saveTemplate(template);
             },
             {
                 argsSchema: z.tuple([z.record(z.string(), z.any())]),
@@ -197,10 +197,10 @@ export function registerWorkspaceAgentCanvasHandlers(
             'agent:delete-template',
             async (event, id: string): Promise<{ success: boolean }> => {
                 validateSender(event);
-                if (!projectAgentService) {
+                if (!workspaceAgentService) {
                     return { success: false };
                 }
-                const success = await projectAgentService.deleteTemplate(id);
+                const success = await workspaceAgentService.deleteTemplate(id);
                 return { success };
             },
             {
@@ -216,10 +216,10 @@ export function registerWorkspaceAgentCanvasHandlers(
             'agent:export-template',
             async (event, id: string): Promise<AgentTemplateExport | null> => {
                 validateSender(event);
-                if (!projectAgentService) {
+                if (!workspaceAgentService) {
                     return null;
                 }
-                return projectAgentService.exportTemplate(id);
+                return workspaceAgentService.exportTemplate(id);
             },
             {
                 argsSchema: z.tuple([z.string().min(1)]),
@@ -234,11 +234,11 @@ export function registerWorkspaceAgentCanvasHandlers(
             'agent:import-template',
             async (event, exported: AgentTemplateExport): Promise<{ success: boolean; template?: AgentTemplate; error?: string }> => {
                 validateSender(event);
-                if (!projectAgentService) {
+                if (!workspaceAgentService) {
                     return { success: false, error: 'Database not available' };
                 }
                 try {
-                    const template = await projectAgentService.importTemplate(exported);
+                    const template = await workspaceAgentService.importTemplate(exported);
                     return { success: true, template };
                 } catch (error) {
                     const message = error instanceof Error ? error.message : String(error);
@@ -258,11 +258,11 @@ export function registerWorkspaceAgentCanvasHandlers(
             'agent:apply-template',
             async (event, payload): Promise<{ success: boolean; error?: string; template?: AgentTemplate; task?: string; steps?: string[] }> => {
                 validateSender(event);
-                if (!projectAgentService) {
+                if (!workspaceAgentService) {
                     return { success: false, error: 'Workspace agent service not available' };
                 }
                 try {
-                    const result = projectAgentService.applyTemplate(payload.templateId, payload.values);
+                    const result = workspaceAgentService.applyTemplate(payload.templateId, payload.values);
                     return { success: true, ...result };
                 } catch (error) {
                     const message = error instanceof Error ? error.message : String(error);
@@ -285,10 +285,10 @@ export function registerWorkspaceAgentCanvasHandlers(
             'agent:get-template',
             async (event, id: string): Promise<AgentTemplate | null> => {
                 validateSender(event);
-                if (!projectAgentService) {
+                if (!workspaceAgentService) {
                     return null;
                 }
-                return projectAgentService.getTemplates().find(template => template.id === id) ?? null;
+                return workspaceAgentService.getTemplates().find(template => template.id === id) ?? null;
             },
             {
                 argsSchema: z.tuple([z.string().min(1)]),
@@ -298,5 +298,4 @@ export function registerWorkspaceAgentCanvasHandlers(
     );
 }
 
-/** @deprecated Use registerWorkspaceAgentCanvasHandlers instead */
-export const registerProjectAgentCanvasHandlers = registerWorkspaceAgentCanvasHandlers;
+/** @deprecated Use registerWorkspaceAgentCanvasHandlers instead */

@@ -62,11 +62,8 @@ export const WizardSelectionStep: React.FC<WizardSelectionStepProps> = ({
     };
 
     return (
-        <div className="flex flex-col justify-center flex-1 h-full">
-            <div className="mb-6 px-2">
-                <h3 className="text-lg font-bold text-foreground">{t('workspaceWizard.title')}</h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full">
+        <div className="flex flex-col justify-center flex-1 h-full"> 
+            <div className="grid grid-cols-1 gap-5 w-full">
                 {options.map((option) => (
                     <WizardOptionCard
                         key={option.id}

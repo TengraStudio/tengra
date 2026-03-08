@@ -1,6 +1,6 @@
 const sectionData = {
     "chats": "チャット",
-    "projects": "プロジェクト",
+    "workspaces": "ワークスペース",
     "mcp": "MCPサーバー",
     "mcpServices": "MCPサービス",
     "mcpDescription": "Model Context Protocol",
@@ -38,7 +38,6 @@ const sectionData = {
     "copilotDescription": "コード補完",
     "copilotActive": "アクティブ",
     "councilReady": "準備完了",
-    "project": "プロジェクト",
     "moveTo": "移動...",
     "ideas": "アイデア",
     "expand": "サイドバーを展開する",

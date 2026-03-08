@@ -1,6 +1,6 @@
 export * from './automation-workflow';
 export * from './electron-api.types';
-export * from './project-agent';
+export * from './workspace-agent';
 export * from '@/types/agent';
 export * from '@/types/ai';
 export * from '@/types/chat';
@@ -12,7 +12,6 @@ export * from '@/types/ids';
 export * from '@/types/llm-provider-types';
 export * from '@/types/memory';
 export * from '@/types/model.types';
-export type { Project, ProjectAnalysis, ProjectIssue, ProjectStats } from '@/types/project';
 export * from '@/types/quota';
 export * from '@/types/renderer';
 export * from '@/types/settings';

@@ -11,12 +11,12 @@ interface LogEntry {
     message: string;
 }
 
-interface ProjectLogsTabProps {
-    projectPath: string;
+interface WorkspaceLogsTabProps {
+    workspacePath: string;
     language: Language;
 }
 
-export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, language }) => {
+export const WorkspaceLogsTab: React.FC<WorkspaceLogsTabProps> = ({ workspacePath, language }) => {
     const { t } = useTranslation(language);
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [filter, setFilter] = useState('');
@@ -55,7 +55,7 @@ export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, lan
         return () => {
             window.electron.ipcRenderer.off('terminal:data', listener);
         };
-    }, [projectPath]);
+    }, [workspacePath]);
 
     useEffect(() => {
         if (autoScroll && logsEndRef.current) {
@@ -126,7 +126,7 @@ export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, lan
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `project-logs-${new Date().toISOString().slice(0, 10)}.txt`;
+        a.download = `workspace-logs-${new Date().toISOString().slice(0, 10)}.txt`;
         a.click();
         URL.revokeObjectURL(url);
     }, [filteredLogs]);

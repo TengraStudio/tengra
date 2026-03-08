@@ -48,13 +48,13 @@ const sectionData = {
         "competitorAnalysis": "تحليل المنافسين",
         "archive": "أرشيف",
         "archiving": "أرشفة...",
-        "pathPlaceholder": "C:\\المشاريع\\my-project",
+        "pathPlaceholder": "C:\\مساحات-العمل\\my-workspace",
         "technicalDetails": "التفاصيل الفنية",
         "impact": "تأثير",
         "impactHigh": "عالية (تقديري)",
         "effort": "جهد",
         "effortMedium": "واسطة",
-        "openFullProject": "فتح المشروع الكامل"
+        "openFullWorkspace": "فتح المشروع الكامل"
     },
     "techStack": {
         "frontend": "الواجهة الأمامية",
@@ -188,8 +188,8 @@ const sectionData = {
         },
         "statusLabel": "حالة",
         "readyForPilot": "جاهز للطيار",
-        "projectCreated": "تم إنشاء المشروع",
-        "projectNamePlaceholder": "اسم المشروع",
+        "workspaceCreated": "تم إنشاء المشروع",
+        "workspaceNamePlaceholder": "اسم المشروع",
         "regenerateTitle": "تجديد هذه الفكرة",
         "regenerate": "تجديد",
         "regenerating": "تجديد...",

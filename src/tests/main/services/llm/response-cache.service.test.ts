@@ -131,7 +131,7 @@ describe('ResponseCacheService', () => {
     describe('setCacheNamespace', () => {
         it('invalidates cache on namespace change', async () => {
             await service.set([makeMessage('a')], 'gpt-4', makeResponse('r'));
-            const result = service.setCacheNamespace('project-x');
+            const result = service.setCacheNamespace('workspace-x');
             expect(result.removed).toBe(1);
             expect(result.reason).toBe('namespace-change');
         });

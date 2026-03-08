@@ -9,57 +9,57 @@ type InvokeGitFn = <T>(channel: string, ...args: (string | number | boolean)[]) 
  */
 export function useGitConflicts(
     canRun: boolean,
-    projectPath: string | undefined,
+    workspacePath: string | undefined,
     invokeGit: InvokeGitFn
 ) {
     const [conflicts, setConflicts] = useState<GitConflict[]>([]);
     const [conflictAnalytics, setConflictAnalytics] = useState<Record<string, number>>({});
 
     const fetchConflicts = useCallback(async () => {
-        if (!canRun || !projectPath) {
+        if (!canRun || !workspacePath) {
             return;
         }
         const response = await invokeGit<{ success: boolean; conflicts?: GitConflict[]; analytics?: Record<string, number> }>(
             'git:getConflicts',
-            projectPath
+            workspacePath
         );
         if (response.success) {
             setConflicts(response.conflicts ?? []);
             setConflictAnalytics(response.analytics ?? {});
         }
-    }, [canRun, projectPath, invokeGit]);
+    }, [canRun, workspacePath, invokeGit]);
 
     const resolveConflict = useCallback(
         async (filePath: string, strategy: 'ours' | 'theirs' | 'manual') => {
-            if (!canRun || !projectPath) {
+            if (!canRun || !workspacePath) {
                 return false;
             }
             const response = await invokeGit<{ success: boolean }>(
                 'git:resolveConflict',
-                projectPath,
+                workspacePath,
                 filePath,
                 strategy
             );
             await fetchConflicts();
             return response.success;
         },
-        [canRun, projectPath, invokeGit, fetchConflicts]
+        [canRun, workspacePath, invokeGit, fetchConflicts]
     );
 
     const openMergeTool = useCallback(
         async (filePath?: string) => {
-            if (!canRun || !projectPath) {
+            if (!canRun || !workspacePath) {
                 return false;
             }
             const response = await invokeGit<{ success: boolean }>(
                 'git:openMergeTool',
-                projectPath,
+                workspacePath,
                 filePath ?? ''
             );
             await fetchConflicts();
             return response.success;
         },
-        [canRun, projectPath, invokeGit, fetchConflicts]
+        [canRun, workspacePath, invokeGit, fetchConflicts]
     );
 
     return {

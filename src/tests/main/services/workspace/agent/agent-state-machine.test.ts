@@ -5,7 +5,7 @@ import { describe, expect,it } from 'vitest';
 describe('Agent State Machine', () => {
     const initialState: AgentTaskState = {
         taskId: 'test-task',
-        projectId: 'test-project',
+        workspaceId: 'test-workspace',
         description: 'test description',
         state: 'idle',
         currentStep: 0,
@@ -57,7 +57,7 @@ describe('Agent State Machine', () => {
     it('should transition from idle to initializing on START_TASK', () => {
         const newState = agentStateReducer(initialState, {
             type: 'START_TASK',
-            payload: { taskId: 'test-task', task: 'test', projectId: 'test-project' }
+            payload: { taskId: 'test-task', task: 'test', workspaceId: 'test-workspace' }
         });
         expect(newState.state).toBe('initializing');
     });

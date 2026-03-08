@@ -1,4 +1,4 @@
-import { AgentPerformanceMetrics } from '@shared/types/project-agent';
+import { AgentPerformanceMetrics } from '@shared/types/workspace-agent';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';

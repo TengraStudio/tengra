@@ -1,5 +1,5 @@
-import { AgentExecutorService } from '@main/services/workspace/automation-workflow/agent-executor.service';
 import { AgentPersistenceService } from '@main/services/workspace/agent/agent-persistence.service';
+import { AgentExecutorService } from '@main/services/workspace/automation-workflow/agent-executor.service';
 import { AgentTaskState } from '@shared/types/agent-state';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -9,7 +9,7 @@ describe('AgentExecutorService', () => {
 
     const mockState: AgentTaskState = {
         taskId: 'task-123',
-        projectId: 'proj-456',
+        workspaceId: 'proj-456',
         description: 'Test task',
         state: 'executing',
         currentStep: 1,

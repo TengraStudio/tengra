@@ -69,10 +69,6 @@ import onboardingSection from '@renderer/i18n/ja/onboarding';
 import panelLayoutSection from '@renderer/i18n/ja/panelLayout';
 import personasSection from '@renderer/i18n/ja/personas';
 import placeholderSection from '@renderer/i18n/ja/placeholder';
-import workspaceAgentSection from '@renderer/i18n/ja/workspaceAgent';
-import workspaceDashboardSection from '@renderer/i18n/ja/workspaceDashboard';
-import workspacesSection from '@renderer/i18n/ja/workspaces';
-import workspaceWizardSection from '@renderer/i18n/ja/workspaceWizard';
 import promptOptimizerSection from '@renderer/i18n/ja/promptOptimizer';
 import providerLabelsSection from '@renderer/i18n/ja/providerLabels';
 import quickActionSection from '@renderer/i18n/ja/quickAction';
@@ -100,7 +96,11 @@ import voiceSection from '@renderer/i18n/ja/voice';
 import welcomeSection from '@renderer/i18n/ja/welcome';
 import workflowsSection from '@renderer/i18n/ja/workflows';
 import workspaceSection from '@renderer/i18n/ja/workspace';
+import workspaceAgentSection from '@renderer/i18n/ja/workspaceAgent';
+import workspaceDashboardSection from '@renderer/i18n/ja/workspaceDashboard';
 import workspaceModalsSection from '@renderer/i18n/ja/workspaceModals';
+import workspacesSection from '@renderer/i18n/ja/workspaces';
+import workspaceWizardSection from '@renderer/i18n/ja/workspaceWizard';
 
 export const ja = {
     "about": aboutSection,

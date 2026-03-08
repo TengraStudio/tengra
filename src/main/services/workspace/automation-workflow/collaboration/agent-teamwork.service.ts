@@ -5,7 +5,7 @@ import {
     AgentTeamworkAnalytics,
     HelperCandidateScore,
     WorkerAvailabilityRecord,
-} from '@shared/types/project-agent';
+} from '@shared/types/workspace-agent';
 
 export interface TeamworkDependencies {
     telemetry?: TelemetryService;

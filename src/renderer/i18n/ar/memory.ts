@@ -87,6 +87,7 @@ const sectionData = {
     "userVerified": "تم التحقق من المستخدم",
     "accessed": "تم الوصول إليها",
     "restore": "يعيد",
+    "shareToWorkspace": "المشاركة إلى مساحة العمل",
     "tabs": {
         "pending": "قيد الانتظار",
         "confirmed": "مؤكد",
@@ -96,7 +97,7 @@ const sectionData = {
     "categories": {
         "preference": "التفضيل",
         "personal": "شخصي",
-        "project": "مشروع",
+        "workspace": "مساحة العمل",
         "technical": "اِصطِلاحِيّ",
         "workflow": "سير العمل",
         "relationship": "علاقة",

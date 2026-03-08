@@ -3,9 +3,9 @@ import { LogoService } from '@main/services/external/logo.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
 import { ModelProviderInfo, ModelRegistryService } from '@main/services/llm/model-registry.service';
-import { WorkspaceAnalysis, WorkspaceService } from '@main/services/workspace/workspace.service';
 import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
+import { WorkspaceAnalysis, WorkspaceService } from '@main/services/workspace/workspace.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 interface LogoServicePrivate {
@@ -23,7 +23,7 @@ interface LogoTestContext {
     getAllModelsMock: ReturnType<typeof vi.fn<ModelRegistryService['getAllModels']>>;
 }
 
-const PROJECT_ANALYSIS: WorkspaceAnalysis = {
+const WORKSPACE_ANALYSIS: WorkspaceAnalysis = {
     type: 'node',
     frameworks: ['react'],
     dependencies: {},
@@ -47,7 +47,7 @@ const createService = (): LogoTestContext => {
     const deps: ConstructorParameters<typeof LogoService>[0] = {
         llmService: { chat: chatMock } as unknown as LLMService,
         workspaceService: {
-            analyzeWorkspace: vi.fn<WorkspaceService['analyzeProject']>().mockResolvedValue(PROJECT_ANALYSIS),
+            analyzeWorkspace: vi.fn<WorkspaceService['analyzeWorkspace']>().mockResolvedValue(WORKSPACE_ANALYSIS),
         } as unknown as WorkspaceService,
         localImageService: {
             generateImage: vi.fn<LocalImageService['generateImage']>().mockResolvedValue(''),
@@ -99,7 +99,7 @@ describe('LogoService generation model fallback', () => {
             .mockResolvedValue('/tmp/logo-registry.png');
 
         const result = await context.service.generateLogo(
-            'C:\\project',
+            'C:\\workspaces\\brand-workspace',
             'orbit app',
             'Minimalist',
             'gpt-4o-mini'
@@ -113,7 +113,7 @@ describe('LogoService generation model fallback', () => {
             'openai'
         );
         expect(saveSpy).toHaveBeenCalledWith(
-            'C:\\project',
+            'C:\\workspaces\\brand-workspace',
             'https://assets.example/logo.png',
             expect.stringContaining('Core Concept: orbit app'),
             'openai/gpt-4o-mini'
@@ -126,7 +126,7 @@ describe('LogoService generation model fallback', () => {
             .mockResolvedValue('/tmp/logo-prefixed.png');
 
         const result = await context.service.generateLogo(
-            'C:\\project',
+            'C:\\workspaces\\brand-workspace',
             'orbital telemetry',
             'Minimalist',
             'openai/gpt-4.1-mini'
@@ -141,7 +141,7 @@ describe('LogoService generation model fallback', () => {
             'openai'
         );
         expect(saveSpy).toHaveBeenCalledWith(
-            'C:\\project',
+            'C:\\workspaces\\brand-workspace',
             'https://assets.example/logo.png',
             expect.stringContaining('Core Concept: orbital telemetry'),
             'openai/gpt-4.1-mini'
@@ -155,7 +155,7 @@ describe('LogoService generation model fallback', () => {
             .mockResolvedValue('/tmp/logo-fallback.png');
 
         const result = await context.service.generateLogo(
-            'C:\\project',
+            'C:\\workspaces\\brand-workspace',
             'fallback logo',
             'Minimalist',
             'mystery-model'
@@ -169,7 +169,7 @@ describe('LogoService generation model fallback', () => {
             undefined
         );
         expect(saveSpy).toHaveBeenCalledWith(
-            'C:\\project',
+            'C:\\workspaces\\brand-workspace',
             'https://assets.example/logo.png',
             expect.stringContaining('Core Concept: fallback logo'),
             'undefined/mystery-model'

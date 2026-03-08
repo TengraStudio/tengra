@@ -59,7 +59,7 @@ Before responding, carefully consider:
 
 Respond ONLY with valid JSON:
 {
-    "title": "Unique, Memorable Project Name",
+    "title": "Unique, Memorable Workspace Name",
     "description": "2-3 sentences: the specific problem, target users, and key differentiator"
 }`,
 
@@ -140,7 +140,7 @@ Respond in JSON:
     "competition": "..."
 }`,
 
-    IDEA_RESEARCH: (options: { title: string, description: string, category: string }) => `Perform targeted market research for the following project idea:
+    IDEA_RESEARCH: (options: { title: string, description: string, category: string }) => `Perform targeted market research for the following workspace idea:
 Title: ${options.title}
 Description: ${options.description}
 Category: ${options.category}
@@ -161,7 +161,7 @@ Idea Context: ${options.research}
 Identify:
 - 3-5 specific competitors with strengths and weaknesses
 - Specific opportunities for differentiation
-- List our project's competitive advantages (USPs)
+- List our workspace's competitive advantages (USPs)
 
 Respond in JSON:
 {

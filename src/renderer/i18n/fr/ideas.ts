@@ -43,7 +43,7 @@ const sectionData = {
         "marketTrends": "Tendances du marché",
         "competitors": "Concurrents",
         "selectPath": "Sélectionner le chemin du projet",
-        "pathPlaceholder": "C:\\\\Projects\\\\my-project",
+        "pathPlaceholder": "C:\\\\Workspaces\\\\my-workspace",
         "creating": "Création du projet...",
         "detailedDescription": "Description détaillée",
         "roadmap": "Feuille de route",
@@ -54,7 +54,7 @@ const sectionData = {
         "impactHigh": "Élevé (estimé)",
         "effort": "Effort",
         "effortMedium": "Moyen",
-        "openFullProject": "Ouvrir le projet complet"
+        "openFullWorkspace": "Ouvrir le projet complet"
     },
     "techStack": {
         "frontend": "Frontend",
@@ -147,8 +147,8 @@ const sectionData = {
         },
         "statusLabel": "Statut",
         "readyForPilot": "Prêt pour le pilote",
-        "projectCreated": "Projet créé",
-        "projectNamePlaceholder": "Nom du projet",
+        "workspaceCreated": "Projet créé",
+        "workspaceNamePlaceholder": "Nom du projet",
         "regenerateTitle": "Régénérer cette idée",
         "regenerate": "Régénérer",
         "regenerating": "Régénération...",

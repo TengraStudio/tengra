@@ -1,5 +1,5 @@
-import { SSHService } from '@main/services/project/ssh.service';
 import { CommandService } from '@main/services/system/command.service';
+import { SSHService } from '@main/services/workspace/ssh.service';
 import { JsonObject } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 

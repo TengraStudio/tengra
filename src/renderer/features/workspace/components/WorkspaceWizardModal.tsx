@@ -6,17 +6,17 @@ import { Modal } from '@/components/ui/modal';
 import { Language, useTranslation } from '@/i18n';
 import { WorkspaceMount } from '@/types';
 
-import { useProjectWizardState } from '../hooks/useProjectWizardState';
-import { useCreateProjectHandler, useSSHBrowserNextHandler, useSSHConnectHandler } from '../hooks/useWizardHandlers';
+import { useCreateWorkspaceHandler, useSSHBrowserNextHandler, useSSHConnectHandler } from '../hooks/useWizardHandlers';
+import { useWorkspaceWizardState } from '../hooks/useWorkspaceWizardState';
 
 import { WizardFooter } from './WizardFooter';
 import { WizardLoadingOverlay } from './WizardLoadingOverlay';
 import { WizardStepRenderer } from './WizardStepRenderer';
 
-interface ProjectWizardModalProps {
+interface WorkspaceWizardModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onProjectCreated: (path: string, name: string, description: string, mounts?: WorkspaceMount[]) => Promise<boolean>;
+    onWorkspaceCreated: (path: string, name: string, description: string, mounts?: WorkspaceMount[]) => Promise<boolean>;
     language: Language;
 }
 
@@ -36,7 +36,7 @@ const CATEGORIES: CategoryConfig[] = [
     { id: 'other', nameKey: 'workspaceWizard.categories.other', icon: Code, color: 'text-muted-foreground', bg: 'bg-muted/10' },
 ];
 
-export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, onClose, onProjectCreated, language }) => {
+export const WorkspaceWizardModal: React.FC<WorkspaceWizardModalProps> = ({ isOpen, onClose, onWorkspaceCreated, language }) => {
     const { t } = useTranslation(language);
     const {
         step,
@@ -55,7 +55,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
         setIsLoading,
         error,
         setError
-    } = useProjectWizardState(isOpen);
+    } = useWorkspaceWizardState(isOpen);
 
     const isSSHFlow = !!sshConnectionId || step === 'ssh-connection' || step === 'ssh-browser';
     const isImportedLocalFlow = step === 'details' && !sshConnectionId && sshPath.trim() !== '' && sshPath !== '/';
@@ -106,7 +106,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
         try {
             const result = await window.electron.selectDirectory();
             if (result.success && result.path) {
-                const dirName = result.path.split(/[/\\]/).pop() ?? 'Project';
+                const dirName = result.path.split(/[/\\]/).pop() ?? 'Workspace';
                 setFormData(p => ({ ...p, name: p.name || dirName }));
                 setSshConnectionId(null);
                 setSshPath(result.path); // Use as local path
@@ -119,12 +119,12 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
         }
     }, [setIsLoading, setError, setFormData, setStep, setSshPath, setSshConnectionId]);
 
-    const handleCreateFinal = useCreateProjectHandler({
+    const handleCreateFinal = useCreateWorkspaceHandler({
         formData,
         setIsLoading,
         setError,
         setStep,
-        onProjectCreated,
+        onWorkspaceCreated,
         onClose
     });
 
@@ -135,11 +135,11 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
             type: 'local',
             rootPath: sshPath
         }];
-        const success = await onProjectCreated(sshPath, formData.name, formData.description, mounts);
+        const success = await onWorkspaceCreated(sshPath, formData.name, formData.description, mounts);
         if (success) {
             onClose();
         }
-    }, [formData, sshPath, onProjectCreated, onClose]);
+    }, [formData, sshPath, onWorkspaceCreated, onClose]);
 
     const handleCreateNewSelection = useCallback(() => {
         setSshConnectionId(null);
@@ -152,7 +152,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
         formData,
         sshForm,
         sshPath,
-        onProjectCreated,
+        onWorkspaceCreated,
         onClose
     });
 
@@ -255,4 +255,3 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({ isOpen, 
 };
 
 // Workspace alias for the new naming convention
-export const WorkspaceWizardModal = ProjectWizardModal;

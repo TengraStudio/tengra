@@ -1,7 +1,7 @@
 /**
  * Hook for managing deletion confirmation state and logic
  */
-import type { ProjectIdea } from '@shared/types/ideas';
+import type { WorkspaceIdea } from '@shared/types/ideas';
 import { useCallback, useState } from 'react';
 
 import type { DeleteConfirmType } from '../components/DeleteConfirmation';
@@ -27,8 +27,8 @@ interface UseDeleteConfirmationReturn {
 export function useDeleteConfirmation(
     onLoadIdeas: (sessionId: string) => void | Promise<void>,
     currentSessionId: string | undefined,
-    selectedIdea: ProjectIdea | null,
-    setSelectedIdea: (idea: ProjectIdea | null) => void
+    selectedIdea: WorkspaceIdea | null,
+    setSelectedIdea: (idea: WorkspaceIdea | null) => void
 ): UseDeleteConfirmationReturn {
     const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({
         isOpen: false,

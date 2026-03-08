@@ -5,7 +5,7 @@
 ```tsx
 <TerminalPanel
   isOpen={isTerminalOpen}
-  projectPath={projectPath}
+  workspacePath={workspacePath}
   hideTerminalPanel={() => setTerminalOpen(false)}
   onToggle={() => setTerminalOpen(prev => !prev)}
 />

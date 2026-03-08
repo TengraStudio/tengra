@@ -4,12 +4,12 @@
  */
 
 import { Message } from '../types/chat';
-import { AgentStartOptions, ProjectState, ProjectStep } from '../types/project-agent';
+import { AgentStartOptions, WorkspaceState, WorkspaceStep } from '../types/workspace-agent';
 
 /**
  * Valid status values for agent state
  */
-const PROJECT_STATE_STATUSES = new Set([
+const WORKSPACE_STATE_STATUSES = new Set([
     'idle', 'planning', 'waiting_for_approval', 'running',
     'paused', 'failed', 'completed', 'error'
 ]);
@@ -17,7 +17,7 @@ const PROJECT_STATE_STATUSES = new Set([
 /**
  * Valid status values for agent step
  */
-const PROJECT_STEP_STATUSES = new Set(['pending', 'running', 'completed', 'failed']);
+const WORKSPACE_STEP_STATUSES = new Set(['pending', 'running', 'completed', 'failed']);
 
 /**
  * Valid system modes for AgentStartOptions
@@ -67,9 +67,9 @@ function isValidSystemMode(mode: unknown): boolean {
 }
 
 /**
- * Type guard for agent step (ProjectStep)
+ * Type guard for agent step (WorkspaceStep)
  */
-export function isProjectStep(value: unknown): value is ProjectStep {
+export function isWorkspaceStep(value: unknown): value is WorkspaceStep {
     if (!isObject(value)) {
         return false;
     }
@@ -78,7 +78,7 @@ export function isProjectStep(value: unknown): value is ProjectStep {
         isString(value.id) &&
         isString(value.text) &&
         isString(value.status) &&
-        PROJECT_STEP_STATUSES.has(value.status)
+        WORKSPACE_STEP_STATUSES.has(value.status)
     );
 }
 
@@ -135,7 +135,7 @@ export function isAgentStartOptions(value: unknown): value is AgentStartOptions 
  */
 function hasValidRequiredFields(value: Record<string, unknown>): boolean {
     // status must be valid
-    if (!isString(value.status) || !PROJECT_STATE_STATUSES.has(value.status)) {
+    if (!isString(value.status) || !WORKSPACE_STATE_STATUSES.has(value.status)) {
         return false;
     }
 
@@ -145,7 +145,7 @@ function hasValidRequiredFields(value: Record<string, unknown>): boolean {
     }
 
     // plan must be an array of valid agent steps
-    if (!Array.isArray(value.plan) || !arrayOf(value.plan, isProjectStep)) {
+    if (!Array.isArray(value.plan) || !arrayOf(value.plan, isWorkspaceStep)) {
         return false;
     }
 
@@ -180,10 +180,10 @@ function hasValidOptionalFields(value: Record<string, unknown>): boolean {
 }
 
 /**
- * Type guard for agent state (ProjectState)
+ * Type guard for agent state (WorkspaceState)
  * Validates the structure of incoming IPC data before casting
  */
-export function isProjectState(value: unknown): value is ProjectState {
+export function isWorkspaceState(value: unknown): value is WorkspaceState {
     if (!isObject(value)) {
         return false;
     }
@@ -200,13 +200,13 @@ export function isProjectState(value: unknown): value is ProjectState {
  * @returns The validated state
  * @throws Error if validation fails
  */
-export function assertProjectState(value: unknown, context?: string): ProjectState {
-    if (isProjectState(value)) {
+export function assertWorkspaceState(value: unknown, context?: string): WorkspaceState {
+    if (isWorkspaceState(value)) {
         return value;
     }
 
     const contextMsg = context ? ` (${context})` : '';
-    throw new Error(`Invalid ProjectState received${contextMsg}`);
+    throw new Error(`Invalid WorkspaceState received${contextMsg}`);
 }
 
 /**
@@ -216,8 +216,8 @@ export function assertProjectState(value: unknown, context?: string): ProjectSta
  * @param value - The value to convert
  * @returns agent state or undefined
  */
-export function toProjectState(value: unknown): ProjectState | undefined {
-    if (isProjectState(value)) {
+export function toWorkspaceState(value: unknown): WorkspaceState | undefined {
+    if (isWorkspaceState(value)) {
         return value;
     }
     return undefined;

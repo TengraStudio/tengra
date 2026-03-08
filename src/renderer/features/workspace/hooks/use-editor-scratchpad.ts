@@ -3,7 +3,7 @@ import React from 'react';
 import { useTranslation } from '@/i18n';
 
 interface UseEditorScratchpadParams {
-    projectPath: string | undefined;
+    workspacePath: string | undefined;
     activeTabName: string | undefined;
     setSnippetStatus: (status: string) => void;
 }
@@ -11,7 +11,7 @@ interface UseEditorScratchpadParams {
 /**
  * Manages scratchpad notes, test execution, and diagnostic output.
  */
-export function useEditorScratchpad({ projectPath, activeTabName, setSnippetStatus }: UseEditorScratchpadParams) {
+export function useEditorScratchpad({ workspacePath, activeTabName, setSnippetStatus }: UseEditorScratchpadParams) {
     const { t } = useTranslation();
     const [scratchNote, setScratchNote] = React.useState('');
     const [scratchName, setScratchName] = React.useState('scratch-note');
@@ -19,7 +19,7 @@ export function useEditorScratchpad({ projectPath, activeTabName, setSnippetStat
     const [diagnosticLines, setDiagnosticLines] = React.useState<string[]>([]);
 
     const runTestCommand = React.useCallback(async (mode: 'nearest' | 'file' | 'suite') => {
-        if (!projectPath) {
+        if (!workspacePath) {
             return;
         }
         const fileArg = activeTabName ?? '';
@@ -28,7 +28,7 @@ export function useEditorScratchpad({ projectPath, activeTabName, setSnippetStat
             file: ['test', '--', fileArg],
             suite: ['test'],
         };
-        const result = await window.electron.runCommand('npm', commandByMode[mode], projectPath);
+        const result = await window.electron.runCommand('npm', commandByMode[mode], workspacePath);
         const output = `${result.stdout}\n${result.stderr}`.trim();
         setTestOutput(output);
         const lines = output
@@ -36,10 +36,10 @@ export function useEditorScratchpad({ projectPath, activeTabName, setSnippetStat
             .filter(line => /fail|pass|error/i.test(line))
             .slice(0, 20);
         setDiagnosticLines(lines);
-    }, [activeTabName, projectPath]);
+    }, [activeTabName, workspacePath]);
 
     const runScratchCommand = React.useCallback(async () => {
-        if (!projectPath || !scratchNote.trim()) {
+        if (!workspacePath || !scratchNote.trim()) {
             return;
         }
         const parts = scratchNote.trim().split(/\s+/);
@@ -48,27 +48,27 @@ export function useEditorScratchpad({ projectPath, activeTabName, setSnippetStat
         if (!command) {
             return;
         }
-        const result = await window.electron.runCommand(command, args, projectPath);
+        const result = await window.electron.runCommand(command, args, workspacePath);
         setTestOutput(`${result.stdout}\n${result.stderr}`.trim());
-    }, [projectPath, scratchNote]);
+    }, [workspacePath, scratchNote]);
 
     const saveScratchAsDoc = React.useCallback(async () => {
-        if (!projectPath) {
+        if (!workspacePath) {
             return;
         }
-        const path = `${projectPath}\\docs\\${scratchName}.md`;
+        const path = `${workspacePath}\\docs\\${scratchName}.md`;
         await window.electron.files.writeFile(path, scratchNote);
         setSnippetStatus(t('workspaceDashboard.editor.scratchSavedDoc'));
-    }, [projectPath, scratchName, scratchNote, t, setSnippetStatus]);
+    }, [workspacePath, scratchName, scratchNote, t, setSnippetStatus]);
 
     const saveScratchAsTask = React.useCallback(async () => {
-        if (!projectPath) {
+        if (!workspacePath) {
             return;
         }
-        const path = `${projectPath}\\tasks\\${scratchName}.txt`;
+        const path = `${workspacePath}\\tasks\\${scratchName}.txt`;
         await window.electron.files.writeFile(path, scratchNote);
         setSnippetStatus(t('workspaceDashboard.editor.scratchSavedTask'));
-    }, [projectPath, scratchName, scratchNote, t, setSnippetStatus]);
+    }, [workspacePath, scratchName, scratchNote, t, setSnippetStatus]);
 
     return {
         scratchNote,

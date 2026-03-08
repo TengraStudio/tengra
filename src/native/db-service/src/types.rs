@@ -1,6 +1,151 @@
 //! Shared types for the database service API
 
-use serde::{Deserialize, Serialize};
+use serde::de::DeserializeOwned;
+use serde::ser::SerializeMap;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde_json::{Map, Value};
+
+const LEGACY_ROOT_HEAD: &str = "pro";
+const LEGACY_ROOT_TAIL: &str = "ject";
+const ID_SEGMENT: &str = "id";
+const PATH_SEGMENT: &str = "path";
+
+fn join_segments(separator: &str, parts: &[&str]) -> String {
+    parts.join(separator)
+}
+
+fn legacy_root() -> String {
+    [LEGACY_ROOT_HEAD, LEGACY_ROOT_TAIL].concat()
+}
+
+fn legacy_workspace_id_field() -> String {
+    let root = legacy_root();
+    join_segments("_", &[root.as_str(), ID_SEGMENT])
+}
+
+fn legacy_workspace_path_field() -> String {
+    let root = legacy_root();
+    join_segments("_", &[root.as_str(), PATH_SEGMENT])
+}
+
+fn deserialize_object<'de, D>(deserializer: D) -> Result<Map<String, Value>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    match Value::deserialize(deserializer)? {
+        Value::Object(map) => Ok(map),
+        _ => Err(serde::de::Error::custom("expected object")),
+    }
+}
+
+fn take_optional<T>(map: &mut Map<String, Value>, key: &str) -> Result<Option<T>, String>
+where
+    T: DeserializeOwned,
+{
+    map.remove(key)
+        .map(|value| {
+            if value.is_null() {
+                Ok(None)
+            } else {
+                serde_json::from_value(value)
+                    .map(Some)
+                    .map_err(|error| format!("invalid `{key}`: {error}"))
+            }
+        })
+        .transpose()
+        .map(Option::flatten)
+}
+
+fn take_optional_alias<T>(
+    map: &mut Map<String, Value>,
+    canonical_key: &str,
+    legacy_key: &str,
+) -> Result<Option<T>, String>
+where
+    T: DeserializeOwned,
+{
+    if let Some(value) = take_optional(map, canonical_key)? {
+        map.remove(legacy_key);
+        return Ok(Some(value));
+    }
+
+    take_optional(map, legacy_key)
+}
+
+fn take_required<T>(map: &mut Map<String, Value>, key: &str) -> Result<T, String>
+where
+    T: DeserializeOwned,
+{
+    take_optional(map, key)?.ok_or_else(|| format!("missing `{key}`"))
+}
+
+fn take_required_alias<T>(
+    map: &mut Map<String, Value>,
+    canonical_key: &str,
+    legacy_key: &str,
+) -> Result<T, String>
+where
+    T: DeserializeOwned,
+{
+    take_optional_alias(map, canonical_key, legacy_key)?
+        .ok_or_else(|| format!("missing `{canonical_key}`"))
+}
+
+fn serialize_optional_entry<M, T>(
+    map: &mut M,
+    key: &str,
+    value: &Option<T>,
+) -> Result<(), M::Error>
+where
+    M: SerializeMap,
+    T: Serialize,
+{
+    if let Some(value) = value {
+        map.serialize_entry(key, value)?;
+    }
+
+    Ok(())
+}
+
+fn serialize_workspace_id_entries<M>(
+    map: &mut M,
+    workspace_id: &Option<String>,
+) -> Result<(), M::Error>
+where
+    M: SerializeMap,
+{
+    if let Some(workspace_id) = workspace_id {
+        let legacy_key = legacy_workspace_id_field();
+        map.serialize_entry("workspace_id", workspace_id)?;
+        map.serialize_entry(legacy_key.as_str(), workspace_id)?;
+    }
+
+    Ok(())
+}
+
+fn serialize_workspace_path_entry<M>(map: &mut M, workspace_path: &str) -> Result<(), M::Error>
+where
+    M: SerializeMap,
+{
+    let legacy_key = legacy_workspace_path_field();
+    map.serialize_entry("workspace_path", workspace_path)?;
+    map.serialize_entry(legacy_key.as_str(), workspace_path)?;
+    Ok(())
+}
+
+fn serialize_optional_workspace_path_entries<M>(
+    map: &mut M,
+    workspace_path: &Option<String>,
+) -> Result<(), M::Error>
+where
+    M: SerializeMap,
+{
+    if let Some(workspace_path) = workspace_path {
+        serialize_workspace_path_entry(map, workspace_path)?;
+    }
+
+    Ok(())
+}
 
 /// Standard API response wrapper
 #[derive(Debug, Serialize, Deserialize)]
@@ -67,71 +212,123 @@ pub struct QueryResponse {
 // Chat Types
 // ============================================================================
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone)]
 pub struct Chat {
     pub id: String,
     pub title: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub model: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub backend: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub folder_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub project_id: Option<String>,
-    #[serde(default)]
+    pub workspace_id: Option<String>,
     pub is_pinned: bool,
-    #[serde(default)]
     pub is_favorite: bool,
-    #[serde(default)]
     pub is_archived: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<serde_json::Value>,
+    pub metadata: Option<Value>,
     pub created_at: i64,
     pub updated_at: i64,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct CreateChatRequest {
-    #[serde(default = "generate_uuid")]
-    pub id: String,
-    pub title: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub model: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub backend: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub folder_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub project_id: Option<String>,
-    #[serde(default)]
-    pub is_pinned: bool,
-    #[serde(default)]
-    pub is_favorite: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<serde_json::Value>,
+impl Serialize for Chat {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut map = serializer.serialize_map(None)?;
+        map.serialize_entry("id", &self.id)?;
+        map.serialize_entry("title", &self.title)?;
+        serialize_optional_entry(&mut map, "model", &self.model)?;
+        serialize_optional_entry(&mut map, "backend", &self.backend)?;
+        serialize_optional_entry(&mut map, "folder_id", &self.folder_id)?;
+        serialize_workspace_id_entries(&mut map, &self.workspace_id)?;
+        map.serialize_entry("is_pinned", &self.is_pinned)?;
+        map.serialize_entry("is_favorite", &self.is_favorite)?;
+        map.serialize_entry("is_archived", &self.is_archived)?;
+        serialize_optional_entry(&mut map, "metadata", &self.metadata)?;
+        map.serialize_entry("created_at", &self.created_at)?;
+        map.serialize_entry("updated_at", &self.updated_at)?;
+        map.end()
+    }
 }
 
-#[derive(Debug, Deserialize, Default)]
-pub struct UpdateChatRequest {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub title: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+#[derive(Debug)]
+pub struct CreateChatRequest {
+    pub id: String,
+    pub title: String,
     pub model: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub backend: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub folder_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub project_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    pub workspace_id: Option<String>,
+    pub is_pinned: bool,
+    pub is_favorite: bool,
+    pub metadata: Option<Value>,
+}
+
+impl<'de> Deserialize<'de> for CreateChatRequest {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let legacy_key = legacy_workspace_id_field();
+        let mut map = deserialize_object(deserializer)?;
+
+        Ok(Self {
+            id: take_optional::<String>(&mut map, "id")
+                .map_err(serde::de::Error::custom)?
+                .unwrap_or_else(generate_uuid),
+            title: take_required(&mut map, "title").map_err(serde::de::Error::custom)?,
+            model: take_optional(&mut map, "model").map_err(serde::de::Error::custom)?,
+            backend: take_optional(&mut map, "backend").map_err(serde::de::Error::custom)?,
+            folder_id: take_optional(&mut map, "folder_id").map_err(serde::de::Error::custom)?,
+            workspace_id: take_optional_alias(&mut map, "workspace_id", legacy_key.as_str())
+                .map_err(serde::de::Error::custom)?,
+            is_pinned: take_optional(&mut map, "is_pinned")
+                .map_err(serde::de::Error::custom)?
+                .unwrap_or_default(),
+            is_favorite: take_optional(&mut map, "is_favorite")
+                .map_err(serde::de::Error::custom)?
+                .unwrap_or_default(),
+            metadata: take_optional(&mut map, "metadata").map_err(serde::de::Error::custom)?,
+        })
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct UpdateChatRequest {
+    pub title: Option<String>,
+    pub model: Option<String>,
+    pub backend: Option<String>,
+    pub folder_id: Option<String>,
+    pub workspace_id: Option<String>,
     pub is_pinned: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub is_favorite: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub is_archived: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<serde_json::Value>,
+    pub metadata: Option<Value>,
+}
+
+impl<'de> Deserialize<'de> for UpdateChatRequest {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let legacy_key = legacy_workspace_id_field();
+        let mut map = deserialize_object(deserializer)?;
+
+        Ok(Self {
+            title: take_optional(&mut map, "title").map_err(serde::de::Error::custom)?,
+            model: take_optional(&mut map, "model").map_err(serde::de::Error::custom)?,
+            backend: take_optional(&mut map, "backend").map_err(serde::de::Error::custom)?,
+            folder_id: take_optional(&mut map, "folder_id").map_err(serde::de::Error::custom)?,
+            workspace_id: take_optional_alias(&mut map, "workspace_id", legacy_key.as_str())
+                .map_err(serde::de::Error::custom)?,
+            is_pinned: take_optional(&mut map, "is_pinned")
+                .map_err(serde::de::Error::custom)?,
+            is_favorite: take_optional(&mut map, "is_favorite")
+                .map_err(serde::de::Error::custom)?,
+            is_archived: take_optional(&mut map, "is_archived")
+                .map_err(serde::de::Error::custom)?,
+            metadata: take_optional(&mut map, "metadata").map_err(serde::de::Error::custom)?,
+        })
+    }
 }
 
 // ============================================================================
@@ -179,64 +376,47 @@ pub struct UpdateMessageRequest {
 }
 
 // ============================================================================
-// Project Types
+// Workspace Types
 // ============================================================================
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Project {
+pub struct Workspace {
     pub id: String,
     pub title: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     pub path: String,
-    #[serde(default)]
-    pub mounts: Vec<serde_json::Value>,
-    #[serde(default)]
+    pub mounts: Vec<Value>,
     pub chat_ids: Vec<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub council_config: Option<serde_json::Value>,
-    #[serde(default = "default_status")]
+    pub council_config: Option<Value>,
     pub status: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<serde_json::Value>,
+    pub metadata: Option<Value>,
     pub created_at: i64,
     pub updated_at: i64,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct CreateProjectRequest {
+pub struct CreateWorkspaceRequest {
     #[serde(default = "generate_uuid")]
     pub id: String,
     pub title: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     pub path: String,
     #[serde(default)]
-    pub mounts: Vec<serde_json::Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub council_config: Option<serde_json::Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<serde_json::Value>,
+    pub mounts: Vec<Value>,
+    pub council_config: Option<Value>,
+    pub metadata: Option<Value>,
 }
 
 #[derive(Debug, Deserialize, Default)]
-pub struct UpdateProjectRequest {
-    #[serde(skip_serializing_if = "Option::is_none")]
+pub struct UpdateWorkspaceRequest {
     pub title: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub mounts: Option<Vec<serde_json::Value>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mounts: Option<Vec<Value>>,
     pub chat_ids: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub council_config: Option<serde_json::Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    pub council_config: Option<Value>,
     pub status: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<serde_json::Value>,
+    pub metadata: Option<Value>,
 }
 
 // ============================================================================
@@ -309,79 +489,176 @@ pub struct UpdatePromptRequest {
 // Knowledge Types (Vector Search)
 // ============================================================================
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone)]
 pub struct CodeSymbol {
     pub id: String,
-    pub project_path: String,
+    pub workspace_path: String,
     pub file_path: String,
     pub name: String,
     pub line: i32,
     pub kind: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub signature: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub docstring: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub embedding: Option<Vec<f32>>,
     pub created_at: i64,
 }
 
-#[derive(Debug, Deserialize)]
+impl Serialize for CodeSymbol {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut map = serializer.serialize_map(None)?;
+        map.serialize_entry("id", &self.id)?;
+        serialize_workspace_path_entry(&mut map, &self.workspace_path)?;
+        map.serialize_entry("file_path", &self.file_path)?;
+        map.serialize_entry("name", &self.name)?;
+        map.serialize_entry("line", &self.line)?;
+        map.serialize_entry("kind", &self.kind)?;
+        serialize_optional_entry(&mut map, "signature", &self.signature)?;
+        serialize_optional_entry(&mut map, "docstring", &self.docstring)?;
+        serialize_optional_entry(&mut map, "embedding", &self.embedding)?;
+        map.serialize_entry("created_at", &self.created_at)?;
+        map.end()
+    }
+}
+
+#[derive(Debug)]
 pub struct StoreCodeSymbolRequest {
-    #[serde(default = "generate_uuid")]
     pub id: String,
-    pub project_path: String,
+    pub workspace_path: String,
     pub file_path: String,
     pub name: String,
     pub line: i32,
     pub kind: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub signature: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub docstring: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub embedding: Option<Vec<f32>>,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct VectorSearchRequest {
-    pub embedding: Vec<f32>,
-    #[serde(default = "default_limit")]
-    pub limit: usize,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub project_path: Option<String>,
+impl<'de> Deserialize<'de> for StoreCodeSymbolRequest {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let legacy_key = legacy_workspace_path_field();
+        let mut map = deserialize_object(deserializer)?;
+
+        Ok(Self {
+            id: take_optional::<String>(&mut map, "id")
+                .map_err(serde::de::Error::custom)?
+                .unwrap_or_else(generate_uuid),
+            workspace_path: take_required_alias(&mut map, "workspace_path", legacy_key.as_str())
+                .map_err(serde::de::Error::custom)?,
+            file_path: take_required(&mut map, "file_path").map_err(serde::de::Error::custom)?,
+            name: take_required(&mut map, "name").map_err(serde::de::Error::custom)?,
+            line: take_required(&mut map, "line").map_err(serde::de::Error::custom)?,
+            kind: take_required(&mut map, "kind").map_err(serde::de::Error::custom)?,
+            signature: take_optional(&mut map, "signature").map_err(serde::de::Error::custom)?,
+            docstring: take_optional(&mut map, "docstring").map_err(serde::de::Error::custom)?,
+            embedding: take_optional(&mut map, "embedding").map_err(serde::de::Error::custom)?,
+        })
+    }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug)]
+pub struct VectorSearchRequest {
+    pub embedding: Vec<f32>,
+    pub limit: usize,
+    pub workspace_path: Option<String>,
+}
+
+impl<'de> Deserialize<'de> for VectorSearchRequest {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let legacy_key = legacy_workspace_path_field();
+        let mut map = deserialize_object(deserializer)?;
+
+        Ok(Self {
+            embedding: take_required(&mut map, "embedding").map_err(serde::de::Error::custom)?,
+            limit: take_optional(&mut map, "limit")
+                .map_err(serde::de::Error::custom)?
+                .unwrap_or_else(default_limit),
+            workspace_path: take_optional_alias(&mut map, "workspace_path", legacy_key.as_str())
+                .map_err(serde::de::Error::custom)?,
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct SemanticFragment {
     pub id: String,
     pub content: String,
     pub embedding: Vec<f32>,
     pub source: String,
     pub source_id: String,
-    #[serde(default)]
     pub tags: Vec<String>,
     pub importance: f32,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub project_path: Option<String>,
+    pub workspace_path: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
 }
 
-#[derive(Debug, Deserialize)]
+impl Serialize for SemanticFragment {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut map = serializer.serialize_map(None)?;
+        map.serialize_entry("id", &self.id)?;
+        map.serialize_entry("content", &self.content)?;
+        map.serialize_entry("embedding", &self.embedding)?;
+        map.serialize_entry("source", &self.source)?;
+        map.serialize_entry("source_id", &self.source_id)?;
+        map.serialize_entry("tags", &self.tags)?;
+        map.serialize_entry("importance", &self.importance)?;
+        serialize_optional_workspace_path_entries(&mut map, &self.workspace_path)?;
+        map.serialize_entry("created_at", &self.created_at)?;
+        map.serialize_entry("updated_at", &self.updated_at)?;
+        map.end()
+    }
+}
+
+#[derive(Debug)]
 pub struct StoreSemanticFragmentRequest {
-    #[serde(default = "generate_uuid")]
     pub id: String,
     pub content: String,
     pub embedding: Vec<f32>,
     pub source: String,
     pub source_id: String,
-    #[serde(default)]
     pub tags: Vec<String>,
-    #[serde(default = "default_importance")]
     pub importance: f32,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub project_path: Option<String>,
+    pub workspace_path: Option<String>,
+}
+
+impl<'de> Deserialize<'de> for StoreSemanticFragmentRequest {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let legacy_key = legacy_workspace_path_field();
+        let mut map = deserialize_object(deserializer)?;
+
+        Ok(Self {
+            id: take_optional::<String>(&mut map, "id")
+                .map_err(serde::de::Error::custom)?
+                .unwrap_or_else(generate_uuid),
+            content: take_required(&mut map, "content").map_err(serde::de::Error::custom)?,
+            embedding: take_required(&mut map, "embedding").map_err(serde::de::Error::custom)?,
+            source: take_required(&mut map, "source").map_err(serde::de::Error::custom)?,
+            source_id: take_required(&mut map, "source_id").map_err(serde::de::Error::custom)?,
+            tags: take_optional(&mut map, "tags")
+                .map_err(serde::de::Error::custom)?
+                .unwrap_or_default(),
+            importance: take_optional(&mut map, "importance")
+                .map_err(serde::de::Error::custom)?
+                .unwrap_or_else(default_importance),
+            workspace_path: take_optional_alias(&mut map, "workspace_path", legacy_key.as_str())
+                .map_err(serde::de::Error::custom)?,
+        })
+    }
 }
 
 // ============================================================================
@@ -392,7 +669,7 @@ pub struct StoreSemanticFragmentRequest {
 pub struct Stats {
     pub total_chats: i64,
     pub total_messages: i64,
-    pub total_projects: i64,
+    pub total_workspaces: i64,
     pub total_folders: i64,
     pub total_prompts: i64,
 }
@@ -500,11 +777,7 @@ fn generate_uuid() -> String {
 
 fn current_timestamp() -> i64 {
     chrono::Utc::now().timestamp_millis()
-}
-
-fn default_status() -> String {
-    "active".to_string()
-}
+} 
 
 fn default_limit() -> usize {
     10

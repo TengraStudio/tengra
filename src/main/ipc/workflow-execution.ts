@@ -6,8 +6,8 @@ import {
     AgentProfileSchema,
     AgentStartOptionsSchema,
     ModelRoutingRuleSchema,
-    ProjectStateSchema,
-    ProjectStepSchema,
+    WorkspaceAgentStepSchema,
+    WorkspaceStateSchema,
 } from '@shared/schemas/workflow-execution-hardening.schema';
 import type { AgentEventRecord, TaskMetrics } from '@shared/types/agent-state';
 import type {
@@ -16,12 +16,12 @@ import type {
     AgentTaskHistoryItem,
     ModelRoutingRule,
 } from '@shared/types/automation-workflow';
-import type { ProjectState, ProjectStep } from '@shared/types/project-agent';
 import type {
     AgentCheckpointItem,
     PlanVersionItem,
     RollbackCheckpointResult,
 } from '@shared/types/automation-workflow';
+import type { WorkspaceState, WorkspaceStep } from '@shared/types/workspace-agent';
 import { BrowserWindow, ipcMain } from 'electron';
 import { z } from 'zod';
 
@@ -367,9 +367,9 @@ export function registerWorkflowExecutionIpc(
 ) {
     // Forward workflow updates to renderer
     const eventBus = workflowExecutionService.eventBus;
-    let lastStatus: ProjectState['status'] = 'idle';
+    let lastStatus: WorkspaceState['status'] = 'idle';
     let updateSequence = 0;
-    let queuedState: ProjectState | null = null;
+    let queuedState: WorkspaceState | null = null;
     let updateTimer: ReturnType<typeof setTimeout> | null = null;
 
     const emitAgentEvent = (
@@ -424,7 +424,7 @@ export function registerWorkflowExecutionIpc(
         updateTimer = setTimeout(flushAgentUpdate, AGENT_UPDATE_THROTTLE_MS);
     };
 
-    eventBus.on('project:update', (state: ProjectState) => {
+    eventBus.on('workspace:update', (state: WorkspaceState) => {
         queuedState = state;
         scheduleAgentUpdateFlush();
     });
@@ -546,11 +546,11 @@ export function registerWorkflowExecutionIpc(
 
     ipcMain.handle(
         'agent:approve',
-        createValidatedIpcHandler<void, [ProjectStep[] | { plan: ProjectStep[]; taskId?: string }]>(
+        createValidatedIpcHandler<void, [WorkspaceStep[] | { plan: WorkspaceStep[]; taskId?: string }]>(
             'agent:approve',
             async (
                 event,
-                payload: ProjectStep[] | { plan: ProjectStep[]; taskId?: string }
+                payload: WorkspaceStep[] | { plan: WorkspaceStep[]; taskId?: string }
             ): Promise<void> => {
                 validateSender(event);
                 if (Array.isArray(payload)) {
@@ -560,7 +560,7 @@ export function registerWorkflowExecutionIpc(
                 await workflowExecutionService.approvePlan(payload.plan, payload.taskId);
             },
             {
-                argsSchema: z.tuple([z.union([z.array(ProjectStepSchema), z.object({ plan: z.array(ProjectStepSchema), taskId: z.string().optional() })])]),
+                argsSchema: z.tuple([z.union([z.array(WorkspaceAgentStepSchema), z.object({ plan: z.array(WorkspaceAgentStepSchema), taskId: z.string().optional() })])]),
                 wrapResponse: true
             }
         )
@@ -606,15 +606,15 @@ export function registerWorkflowExecutionIpc(
 
     ipcMain.handle(
         'agent:get-status',
-        createValidatedIpcHandler<ProjectState | null, [{ taskId?: string } | undefined]>(
+        createValidatedIpcHandler<WorkspaceState | null, [{ taskId?: string } | undefined]>(
             'agent:get-status',
-            async (event, payload?: { taskId?: string }): Promise<ProjectState | null> => {
+            async (event, payload?: { taskId?: string }): Promise<WorkspaceState | null> => {
                 validateSender(event);
                 return await workflowExecutionService.getStatus(payload?.taskId);
             },
             {
                 argsSchema: z.tuple([z.object({ taskId: z.string().optional() }).optional()]),
-                responseSchema: ProjectStateSchema.nullable(),
+                responseSchema: WorkspaceStateSchema.nullable(),
                 wrapResponse: true
             }
         )
@@ -673,9 +673,9 @@ export function registerWorkflowExecutionIpc(
 
     ipcMain.handle(
         'agent:council-get-proposal',
-        createValidatedIpcHandler<{ success: boolean; plan: ProjectStep[] }, [{ taskId: string }]>(
+        createValidatedIpcHandler<{ success: boolean; plan: WorkspaceStep[] }, [{ taskId: string }]>(
             'agent:council-get-proposal',
-            async (event, payload: { taskId: string }): Promise<{ success: boolean; plan: ProjectStep[] }> => {
+            async (event, payload: { taskId: string }): Promise<{ success: boolean; plan: WorkspaceStep[] }> => {
                 validateSender(event);
                 const status = await workflowExecutionService.getStatus(payload.taskId);
                 return {

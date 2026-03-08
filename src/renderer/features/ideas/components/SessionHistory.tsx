@@ -1,7 +1,7 @@
 /**
  * Session History component for viewing all past idea generation sessions
  */
-import { IdeaSession, IdeaStatus, ProjectIdea } from '@shared/types/ideas';
+import { IdeaSession, IdeaStatus, WorkspaceIdea } from '@shared/types/ideas';
 import {
     Calendar,
     CheckCircle,
@@ -23,7 +23,7 @@ import { getCategoryMeta } from '../utils/categories';
 
 interface SessionHistoryProps {
     sessions: IdeaSession[]
-    onSelectIdea: (idea: ProjectIdea) => void
+    onSelectIdea: (idea: WorkspaceIdea) => void
     onSelectSession: (sessionId: string) => void
     onBulkDelete: (ideaIds: string[]) => void
     t: (key: string) => string
@@ -31,7 +31,7 @@ interface SessionHistoryProps {
 
 interface SessionWithIdeas {
     session: IdeaSession
-    ideas: ProjectIdea[]
+    ideas: WorkspaceIdea[]
     isExpanded: boolean
     isLoading: boolean
 }
@@ -271,7 +271,7 @@ interface SessionsGroupDisplayProps {
     filteredGroupedSessions: Array<{ label: string; sessions: SessionWithIdeas[] }>
     selectedIdeaIds: Set<string>
     onToggleSession: (sessionId: string) => void | Promise<void>
-    onSelectIdea: (idea: ProjectIdea) => void
+    onSelectIdea: (idea: WorkspaceIdea) => void
     onSelectSession: (sessionId: string) => void
     onToggleIdeaSelect: (ideaId: string) => void
     t: (key: string, params?: Record<string, unknown>) => string
@@ -459,7 +459,7 @@ const computeStats = (
  * Filters ideas based on search query and status/category filters
  */
 const filterIdeasByQuery = (
-    idea: ProjectIdea,
+    idea: WorkspaceIdea,
     searchQuery: string,
     statusFilter: string,
     categoryFilter: string
@@ -516,14 +516,14 @@ const filterGroupedSessions = (
 };
 
 interface IdeaRowProps {
-    idea: ProjectIdea
-    onSelect: (idea: ProjectIdea) => void
+    idea: WorkspaceIdea
+    onSelect: (idea: WorkspaceIdea) => void
     isSelected: boolean
     onToggleSelect: (ideaId: string) => void
     t: (key: string) => string
 }
 
-const IdeaRowContent: React.FC<{ idea: ProjectIdea; meta: ReturnType<typeof getCategoryMeta>; t: (key: string) => string }> = ({ idea, meta, t }) => {
+const IdeaRowContent: React.FC<{ idea: WorkspaceIdea; meta: ReturnType<typeof getCategoryMeta>; t: (key: string) => string }> = ({ idea, meta, t }) => {
     const Icon = meta.icon;
     return (
         <div className="flex-1 flex items-center gap-3 text-left">
@@ -653,10 +653,10 @@ const SessionHeader: React.FC<SessionHeaderProps> = ({
 SessionHeader.displayName = 'SessionHeader';
 
 interface IdeasListProps {
-    ideas: ProjectIdea[]
+    ideas: WorkspaceIdea[]
     isLoading: boolean
     selectedIdeaIds: Set<string>
-    onSelectIdea: (idea: ProjectIdea) => void
+    onSelectIdea: (idea: WorkspaceIdea) => void
     onToggleIdeaSelect: (ideaId: string) => void
     t: (key: string) => string
 }
@@ -705,7 +705,7 @@ IdeasList.displayName = 'IdeasList';
 interface SessionRowProps {
     sessionData: SessionWithIdeas
     onToggle: (sessionId: string) => void | Promise<void>
-    onSelectIdea: (idea: ProjectIdea) => void
+    onSelectIdea: (idea: WorkspaceIdea) => void
     onSelectSession: (sessionId: string) => void
     selectedIdeaIds: Set<string>
     onToggleIdeaSelect: (ideaId: string) => void

@@ -54,7 +54,7 @@ const sectionData = {
         "impactHigh": "Alto (estimado)",
         "effort": "Esfuerzo",
         "effortMedium": "Medio",
-        "openFullProject": "Abrir proyecto completo"
+        "openFullWorkspace": "Abrir proyecto completo"
     },
     "techStack": {
         "frontend": "Frontend",
@@ -188,8 +188,8 @@ const sectionData = {
         },
         "statusLabel": "Estado",
         "readyForPilot": "Listo para piloto",
-        "projectCreated": "Proyecto creado",
-        "projectNamePlaceholder": "Nombre del proyecto",
+        "workspaceCreated": "Proyecto creado",
+        "workspaceNamePlaceholder": "Nombre del proyecto",
         "regenerateTitle": "Regenerar esta idea",
         "regenerate": "Regenerado",
         "regenerating": "Regenerante...",

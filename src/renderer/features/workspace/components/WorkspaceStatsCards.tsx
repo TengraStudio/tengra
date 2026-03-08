@@ -1,10 +1,10 @@
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
-import { ProjectStats } from '@/types';
+import { WorkspaceStats } from '@/types';
 
-interface ProjectStatsCardsProps {
-    stats: ProjectStats | null;
+interface WorkspaceStatsCardsProps {
+    stats: WorkspaceStats | null;
     type: string;
     moduleCount: number;
 }
@@ -17,7 +17,7 @@ const formatBytes = (bytes: number) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 };
 
-export const ProjectStatsCards: React.FC<ProjectStatsCardsProps> = ({ stats, type, moduleCount }) => {
+export const WorkspaceStatsCards: React.FC<WorkspaceStatsCardsProps> = ({ stats, type, moduleCount }) => {
     const { t } = useTranslation();
 
     const formattedSize = React.useMemo(() => {

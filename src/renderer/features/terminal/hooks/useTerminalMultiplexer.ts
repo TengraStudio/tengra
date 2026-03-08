@@ -9,7 +9,7 @@ import { parseScreenSessions, parseTmuxSessions, quoteCommandValue } from '../ut
  * Props for useTerminalMultiplexer hook
  */
 interface UseTerminalMultiplexerProps {
-    /** Project path for command execution */
+    /** Workspace path for command execution */
     workspacePath?: string;
     /** Currently active tab ID ref */
     activeTabIdRef: React.MutableRefObject<string | null>;

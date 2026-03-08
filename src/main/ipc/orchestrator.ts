@@ -1,6 +1,6 @@
-import { MultiAgentOrchestratorService } from '@main/services/project/orchestrator.service';
+import { MultiAgentOrchestratorService } from '@main/services/workspace/orchestrator.service';
 import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { OrchestratorState, ProjectStep } from '@shared/types/project-agent';
+import { OrchestratorState, WorkspaceStep } from '@shared/types/workspace-agent';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 
 /**
@@ -32,7 +32,7 @@ export function registerOrchestratorIpc(
                     throw new Error('Task must be a non-empty string');
                 }
                 if (workspaceId !== undefined && typeof workspaceId !== 'string') {
-                    throw new Error('Project ID must be a string');
+                    throw new Error('Workspace ID must be a string');
                 }
                 await orchestrator.orchestrate(task, workspaceId);
             }
@@ -41,11 +41,11 @@ export function registerOrchestratorIpc(
 
     ipcMain.handle(
         'orchestrator:approve',
-        createIpcHandler<void, [ProjectStep[]]>(
+        createIpcHandler<void, [WorkspaceStep[]]>(
             'orchestrator:approve',
-            async (_event: IpcMainInvokeEvent, plan: ProjectStep[]) => {
+            async (_event: IpcMainInvokeEvent, plan: WorkspaceStep[]) => {
                 if (!Array.isArray(plan)) {
-                    throw new Error('Plan must be an array of ProjectStep');
+                    throw new Error('Plan must be an array of WorkspaceStep');
                 }
                 await orchestrator.approvePlan(plan);
             }

@@ -5,7 +5,7 @@ import {
     AGENT_COLLABORATION_PERFORMANCE_BUDGETS,
     AgentCollaborationTelemetryEvent,
     ConsensusResult,
-} from '@shared/types/project-agent';
+} from '@shared/types/workspace-agent';
 
 export interface ConsensusDependencies {
     llm: LLMService;

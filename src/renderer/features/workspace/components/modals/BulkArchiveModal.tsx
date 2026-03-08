@@ -26,7 +26,7 @@ export const BulkArchiveModal: React.FC<BulkArchiveModalProps> = ({
                         <p className="text-sm text-success/90 leading-relaxed font-light">
                             {t('workspaces.archiveConfirmation')}{' '}
                             <span className="font-semibold text-foreground">
-                                {count} {t('sidebar.projects').toLowerCase()}
+                                {count} {t('sidebar.workspaces').toLowerCase()}
                             </span>
                             ?
                             <span className="block mt-1 text-xs text-success font-normal italic opacity-80">

@@ -85,13 +85,13 @@ const sectionData = {
     "copyStripAnsi": "コピー (ANSI をストリップ)",
     "pastePreview": "プレビューの貼り付け",
     "pasteTest": "テストペースト",
-    "projectIssuesTabTitle": "プロジェクトの問題",
-    "projectIssuesTitle": "プロジェクトの警告とエラー",
-    "projectIssuesDescription": "現在のプロジェクト全体で検出された警告とエラーの集約。",
-    "projectIssuesLoading": "プロジェクト診断を更新しています...",
-    "projectIssuesNoProject": "プロジェクトを開いて診断を検査します。",
-    "projectIssuesNoIssues": "最新のスキャンでは警告やエラーは検出されませんでした。",
-    "projectIssuesLoadFailed": "プロジェクト診断のロードに失敗しました。"
+    "workspaceIssuesTabTitle": "プロジェクトの問題",
+    "workspaceIssuesTitle": "プロジェクトの警告とエラー",
+    "workspaceIssuesDescription": "現在のプロジェクト全体で検出された警告とエラーの集約。",
+    "workspaceIssuesLoading": "プロジェクト診断を更新しています...",
+    "workspaceIssuesNoWorkspace": "プロジェクトを開いて診断を検査します。",
+    "workspaceIssuesNoIssues": "最新のスキャンでは警告やエラーは検出されませんでした。",
+    "workspaceIssuesLoadFailed": "プロジェクト診断のロードに失敗しました。"
 };
 
 export default sectionData;

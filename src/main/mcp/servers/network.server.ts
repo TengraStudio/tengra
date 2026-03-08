@@ -1,6 +1,6 @@
 import { buildActions, ensureAllowedTarget, McpDeps, validateCommand, validateHostname, validateString, withTimeout } from '@main/mcp/server-utils';
 import { McpService } from '@main/mcp/types';
-import { SSHConnection } from '@main/services/project/ssh.service';
+import { SSHConnection } from '@main/services/workspace/ssh.service';
 
 /**
  * Validates SSH connection ID format

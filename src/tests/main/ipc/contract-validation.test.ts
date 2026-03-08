@@ -9,7 +9,7 @@
  * compare channel sets without instantiating Electron.
  */
 
-import { describe, expect, it,vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 // Unmock fs and path so we can do real file I/O for static analysis
 vi.unmock('fs');
@@ -22,8 +22,8 @@ import * as path from 'path';
 // Helpers
 // ---------------------------------------------------------------------------
 
-const PROJECT_ROOT = process.cwd();
-const SRC = path.join(PROJECT_ROOT, 'src');
+const WORKSPACE_ROOT = process.cwd();
+const SRC = path.join(WORKSPACE_ROOT, 'src');
 const IPC_DIR = path.join(SRC, 'main', 'ipc');
 const ELECTRON_DTS = path.join(SRC, 'renderer', 'electron.d.ts');
 const PRELOAD_TS = path.join(SRC, 'main', 'preload.ts');
@@ -131,7 +131,7 @@ function extractElectronApiTopLevelKeys(): string[] {
     const interfaceMatch = content.match(
         /export interface ElectronAPI\s*\{([\s\S]*?)^declare global/m
     );
-    if (!interfaceMatch) {return [];}
+    if (!interfaceMatch) { return []; }
 
     const body = interfaceMatch[1];
     const keys: string[] = [];
@@ -182,10 +182,10 @@ describe('IPC Contract Validation (IDEA-025)', () => {
                 'settings:get',
                 'settings:save',
             ],
-            project: [
-                'workspace:start',
-                'workspace:stop',
-                'workspace:get-status',
+            workspace: [
+                'workspace:analyze',
+                'workspace:generateLogo',
+                'workspace:saveEnv',
             ],
             terminal: [
                 'terminal:getProfiles',
@@ -204,7 +204,7 @@ describe('IPC Contract Validation (IDEA-025)', () => {
                 'db:createChat',
                 'db:searchChats',
                 'db:deleteMessages',
-                'db:getProjects',
+                'db:getWorkspaces',
             ],
             git: [
                 'git:isRepository',
@@ -248,7 +248,7 @@ describe('IPC Contract Validation (IDEA-025)', () => {
                 'createSettingsBridge',
                 'createOllamaBridge',
                 'createTerminalBridge',
-                'createProjectBridge',
+                'createWorkspaceBridge',
                 'createDbBridge',
                 'createGitBridge',
                 'createMemoryBridge',
@@ -281,7 +281,7 @@ describe('IPC Contract Validation (IDEA-025)', () => {
         });
 
         it('preload domain files invoke channels with matching domain prefixes in main', () => {
-            if (preloadInvokeChannels.size === 0) {return;}
+            if (preloadInvokeChannels.size === 0) { return; }
 
             // Extract domain prefixes from both sets
             const preloadDomains = new Set<string>();
@@ -408,7 +408,7 @@ describe('IPC Contract Validation (IDEA-025)', () => {
 
         it('process event channels are handled in preload', () => {
             const preloadDomainsDir = path.join(SRC, 'main', 'preload', 'domains');
-            if (!fs.existsSync(preloadDomainsDir)) {return;}
+            if (!fs.existsSync(preloadDomainsDir)) { return; }
 
             const processPreload = fs.readFileSync(
                 path.join(preloadDomainsDir, 'process.preload.ts'),
@@ -518,7 +518,7 @@ describe('IPC Contract Validation (IDEA-025)', () => {
 
             const orphanedDomains: string[] = [];
             for (const domain of domainPrefixes) {
-                if (INTERNAL_OR_GENERIC_INVOKE_DOMAINS.has(domain)) {continue;}
+                if (INTERNAL_OR_GENERIC_INVOKE_DOMAINS.has(domain)) { continue; }
 
                 const found =
                     combined.includes(`${domain}:`) ||
@@ -537,7 +537,7 @@ describe('IPC Contract Validation (IDEA-025)', () => {
         });
 
         it('majority of preload invoke channels have corresponding main handlers', () => {
-            if (preloadInvokeChannels.size === 0) {return;}
+            if (preloadInvokeChannels.size === 0) { return; }
 
             const matchedCount = [...preloadInvokeChannels].filter(ch =>
                 allMainChannels.has(ch)
@@ -569,7 +569,7 @@ describe('IPC Contract Validation (IDEA-025)', () => {
                 'maximize',
                 'close',
                 'code',
-                'project',
+                'workspace',
                 'process',
                 'files',
                 'db',

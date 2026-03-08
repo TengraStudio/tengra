@@ -189,6 +189,26 @@ const sectionData = {
         "editPrompt": "تحرير المطالبة",
         "editMode": "وضع التحرير",
         "editRun": "تشغيل التحرير"
+    },
+    "storageDashboard": {
+        "title": "لوحة التخزين",
+        "subtitle": "تتبّع استخدام قاعدة البيانات وإجمالي سجلات التطبيق.",
+        "loadError": "تعذر تحميل إحصاءات التخزين.",
+        "dbSize": "قاعدة البيانات",
+        "totalChats": "الدردشات",
+        "totalMessages": "الرسائل",
+        "totalWorkspaces": "مساحات العمل"
+    },
+    "databaseSizeDashboard": {
+        "title": "حجم قاعدة البيانات",
+        "subtitle": "اعرض استخدام التخزين حسب نوع السجل.",
+        "loadError": "تعذر تحميل إحصاءات قاعدة البيانات.",
+        "dbSize": "قاعدة البيانات",
+        "chats": "الدردشات",
+        "messages": "الرسائل",
+        "workspaces": "مساحات العمل",
+        "folders": "المجلدات",
+        "prompts": "المطالبات"
     }
 };
 

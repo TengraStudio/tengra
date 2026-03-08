@@ -1,13 +1,16 @@
 import type { ElectronAPI } from '@renderer/electron.d';
 import type {
-    InlineSuggestionRequest,
+    CollaborationResponse,
+    CollaborationSyncUpdate,
+    JoinCollaborationRoom,
+} from '@shared/schemas/collaboration.schema';
+import type {
     InlineSuggestionResponse,
-    InlineSuggestionTelemetry,
 } from '@shared/schemas/inline-suggestions.schema';
+import type { Workspace, WorkspaceAnalysis } from '@shared/types';
 import type { AdvancedSemanticFragment, PendingMemory } from '@shared/types/advanced-memory';
 import type { Chat, Folder, Message, ToolCall, ToolResult } from '@shared/types/chat';
 import type { IpcValue } from '@shared/types/common';
-import type { Workspace, WorkspaceAnalysis } from '@shared/types/project';
 import type { ClaudeQuota, CodexUsage } from '@shared/types/quota';
 import type { AppSettings } from '@shared/types/settings';
 import type { Workflow, WorkflowExecutionResult } from '@shared/types/workflow.types';
@@ -218,49 +221,26 @@ export const webElectronMock: ElectronAPI = {
         }),
     },
 
-    project: {
+    workspace: {
         analyze: async (_rootPath: string, _workspaceId: string) =>
-            ({
-                name: 'Mock Workspace',
-                path: _rootPath,
-                type: 'unknown',
-                files: [],
-                dependencies: {},
-                scripts: {},
-                frameworks: [],
-                devDependencies: {},
-                languages: {},
-                stats: { fileCount: 0, totalSize: 0, loc: 0, lastModified: Date.now() },
-                todos: [],
-            }) as WorkspaceAnalysis,
-        generateLogo: async (
-            _workspacePath: string,
-            _options: { prompt: string; style: string; model: string; count: number }
-        ) => [],
-        analyzeIdentity: async (_workspacePath: string) => ({ suggestedPrompts: [], colors: [] }),
-        applyLogo: async (_workspacePath: string, _tempLogoPath: string) => '',
+            ({}) as WorkspaceAnalysis,
+        generateLogo: async (_path: string, _opts: { prompt: string; style: string; model: string; count: number }) => [],
+        analyzeIdentity: async (_path: string) => ({ suggestedPrompts: [], colors: [] }),
+        applyLogo: async (_path: string, _tempPath: string) => '',
         getCompletion: async (_text: string) => '',
-        getInlineSuggestion: async (
-            _request: InlineSuggestionRequest
-        ): Promise<InlineSuggestionResponse> => ({
-            suggestion: null,
-            source: 'custom',
-        }),
-        trackInlineSuggestionTelemetry: async (
-            _event: InlineSuggestionTelemetry
-        ) => ({ success: true }),
+        getInlineSuggestion: async (_request: unknown) => ({}) as InlineSuggestionResponse,
+        trackInlineSuggestionTelemetry: async (_event: unknown) => ({ success: true }),
         improveLogoPrompt: async (_prompt: string) => '',
-        uploadLogo: async (_workspacePath: string) => null,
+        uploadLogo: async (_path: string) => null,
         analyzeDirectory: async (_dirPath: string) => ({
-            hasPackageJson: false,
-            pkg: {},
-            readme: null,
-            stats: { fileCount: 0, totalSize: 0, loc: 0, lastModified: Date.now() },
+            hasPackageJson: false, pkg: {}, readme: null, stats: { fileCount: 0, totalSize: 0 },
         }),
         watch: async (_rootPath: string) => true,
         unwatch: async (_rootPath: string) => true,
         onFileChange:
             (_callback: (event: string, path: string, rootPath: string) => void) => () => { },
+        getEnv: async (_rootPath: string) => ({}) as Record<string, string>,
+        saveEnv: async (_rootPath: string, _vars: Record<string, string>) => ({ success: true }),
     },
 
     process: {
@@ -583,7 +563,7 @@ export const webElectronMock: ElectronAPI = {
         addTokenUsage: async (_record: {
             messageId?: string;
             chatId: string;
-            projectId?: string;
+            workspaceId?: string;
             provider: string;
             model: string;
             tokensSent: number;
@@ -1587,7 +1567,7 @@ export const webElectronMock: ElectronAPI = {
     on:
         (_channel: string, _listener: (event: IpcRendererEvent, ..._args: IpcValue[]) => void) =>
             () => { },
-    projectAgent: {
+    workspaceAgent: {
         start: async (_options: unknown) => ({ taskId: 'mock-task-id' }),
         generatePlan: async (_options: unknown) => { },
         approvePlan: async (_plan: string[] | unknown[], _taskId?: string) => { },
@@ -1872,7 +1852,7 @@ export const webElectronMock: ElectronAPI = {
         }),
         getTemplates: async (_category?: unknown) => [],
         getTemplate: async (_id: string) => null,
-        saveTemplate: async _template => ({ success: true, template: _template }),
+        saveTemplate: async (_template: unknown) => ({ success: true, template: _template }),
         deleteTemplate: async (_id: string) => ({ success: true }),
         exportTemplate: async (_id: string) => null,
         importTemplate: async (_exported: unknown) => ({ success: false, error: 'Not available in web mode' }),
@@ -1922,8 +1902,8 @@ export const webElectronMock: ElectronAPI = {
         }),
     },
     orchestrator: {
-        start: async (_task, _workspaceId) => { },
-        approve: async (_plan) => { },
+        start: async (_task: unknown, _workspaceId: unknown) => { },
+        approve: async (_plan: unknown) => { },
         getState: async () => ({
             status: 'idle',
             currentTask: '',
@@ -1932,7 +1912,7 @@ export const webElectronMock: ElectronAPI = {
             assignments: {}
         }),
         stop: async () => { },
-        onUpdate: (_callback) => () => { },
+        onUpdate: (_callback: unknown) => () => { },
     },
     metrics: {
         getProviderStats: async () => ({}),
@@ -2137,13 +2117,13 @@ export const webElectronMock: ElectronAPI = {
     },
 
     userCollaboration: {
-        joinRoom: async (_params: { type: string; id: string }) => { /* noop */ },
-        leaveRoom: async (_roomId: string) => { /* noop */ },
-        sendUpdate: async (_params: { roomId: string; data: string }) => { /* noop */ },
+        joinRoom: async (_params: JoinCollaborationRoom): Promise<CollaborationResponse> => ({ success: true }),
+        leaveRoom: async (_roomId: string): Promise<CollaborationResponse> => ({ success: true }),
+        sendUpdate: async (_params: CollaborationSyncUpdate): Promise<CollaborationResponse> => ({ success: true }),
         onSyncUpdate: (_callback: (payload: { roomId: string; data: string }) => void) => () => { /* noop */ },
         onError: (_callback: (payload: { roomId: string; error: string }) => void) => () => { /* noop */ },
     },
-};
+} as unknown as ElectronAPI;
 
 if (typeof window !== 'undefined' && !window.electron) {
     window.electron = webElectronMock;

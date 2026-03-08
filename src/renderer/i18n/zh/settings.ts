@@ -189,6 +189,26 @@ const sectionData = {
         "editPrompt": "编辑提示",
         "editMode": "编辑模式",
         "editRun": "运行编辑"
+    },
+    "storageDashboard": {
+        "title": "存储仪表板",
+        "subtitle": "跟踪数据库使用情况和应用记录总数。",
+        "loadError": "无法加载存储统计信息。",
+        "dbSize": "数据库",
+        "totalChats": "聊天",
+        "totalMessages": "消息",
+        "totalWorkspaces": "工作区"
+    },
+    "databaseSizeDashboard": {
+        "title": "数据库大小",
+        "subtitle": "按记录类型查看存储使用情况。",
+        "loadError": "无法加载数据库统计信息。",
+        "dbSize": "数据库",
+        "chats": "聊天",
+        "messages": "消息",
+        "workspaces": "工作区",
+        "folders": "文件夹",
+        "prompts": "提示词"
     }
 };
 

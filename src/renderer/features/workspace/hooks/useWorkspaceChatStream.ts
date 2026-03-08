@@ -19,7 +19,7 @@ interface UseWorkspaceChatStreamOptions {
     provider: string;
     model: string;
     language: string;
-    projectId: string;
+    workspaceId: string;
 }
 
 export interface UseWorkspaceChatStreamResult {
@@ -39,7 +39,7 @@ export interface UseWorkspaceChatStreamResult {
 export function useWorkspaceChatStream(
     options: UseWorkspaceChatStreamOptions
 ): UseWorkspaceChatStreamResult {
-    const { provider, model, language, projectId } = options;
+    const { provider, model, language, workspaceId } = options;
 
     const [messages, setMessages] = useState<Message[]>([]);
     const [isStreaming, setIsStreaming] = useState(false);
@@ -109,7 +109,7 @@ export function useWorkspaceChatStream(
                         provider,
                         tools: [],
                         chatId,
-                        workspaceId: projectId,
+                        workspaceId: workspaceId,
                         options: {},
                     });
 
@@ -171,7 +171,7 @@ export function useWorkspaceChatStream(
 
             void run();
         },
-        [isStreaming, provider, model, language, projectId]
+        [isStreaming, provider, model, language, workspaceId]
     );
 
     const retry = useCallback(() => {

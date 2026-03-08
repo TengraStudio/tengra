@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { Project } from '@/types';
+import { Workspace } from '@/types';
 
-import { ProjectSettingsFormData } from '../components/settings/types';
+import { WorkspaceSettingsFormData } from '../components/settings/types';
 
-function getBuildState(config?: Project['buildConfig']) {
+function getBuildState(config?: Workspace['buildConfig']) {
     const defaults = {
         buildCommand: '',
         testCommand: '',
@@ -24,7 +24,7 @@ function getBuildState(config?: Project['buildConfig']) {
     };
 }
 
-function getDevState(server?: Project['devServer']) {
+function getDevState(server?: Workspace['devServer']) {
     return {
         devCommand: server?.command ?? '',
         devPort: server?.port ?? 3000,
@@ -32,7 +32,7 @@ function getDevState(server?: Project['devServer']) {
     };
 }
 
-function getAdvancedState(options?: Project['advancedOptions']) {
+function getAdvancedState(options?: Workspace['advancedOptions']) {
     return {
         fileWatchEnabled: options?.fileWatchEnabled ?? true,
         indexingEnabled: options?.indexingEnabled ?? true,
@@ -40,23 +40,23 @@ function getAdvancedState(options?: Project['advancedOptions']) {
     };
 }
 
-function getInitialState(project: Project): ProjectSettingsFormData {
+function getInitialState(workspace: Workspace): WorkspaceSettingsFormData {
     return {
-        title: project.title,
-        description: project.description,
-        status: project.status,
-        councilEnabled: project.councilConfig.enabled,
-        councilMembers: project.councilConfig.members,
-        consensusThreshold: project.councilConfig.consensusThreshold,
-        ...getBuildState(project.buildConfig),
-        ...getDevState(project.devServer),
-        ...getAdvancedState(project.advancedOptions),
+        title: workspace.title,
+        description: workspace.description,
+        status: workspace.status,
+        councilEnabled: workspace.councilConfig.enabled,
+        councilMembers: workspace.councilConfig.members,
+        consensusThreshold: workspace.councilConfig.consensusThreshold,
+        ...getBuildState(workspace.buildConfig),
+        ...getDevState(workspace.devServer),
+        ...getAdvancedState(workspace.advancedOptions),
     };
 }
 
 function checkBuildDirty(
-    formData: ProjectSettingsFormData,
-    config?: Project['buildConfig']
+    formData: WorkspaceSettingsFormData,
+    config?: Workspace['buildConfig']
 ): boolean {
     const defaults = getBuildState(config);
     const fields: (keyof typeof defaults)[] = [
@@ -69,7 +69,7 @@ function checkBuildDirty(
     return fields.some(field => formData[field] !== defaults[field]);
 }
 
-function checkDevDirty(formData: ProjectSettingsFormData, server?: Project['devServer']): boolean {
+function checkDevDirty(formData: WorkspaceSettingsFormData, server?: Workspace['devServer']): boolean {
     return (
         formData.devCommand !== (server?.command ?? '') ||
         formData.devPort !== (server?.port ?? 3000) ||
@@ -78,8 +78,8 @@ function checkDevDirty(formData: ProjectSettingsFormData, server?: Project['devS
 }
 
 function checkAdvancedDirty(
-    formData: ProjectSettingsFormData,
-    options?: Project['advancedOptions']
+    formData: WorkspaceSettingsFormData,
+    options?: Workspace['advancedOptions']
 ): boolean {
     return (
         formData.fileWatchEnabled !== (options?.fileWatchEnabled ?? true) ||
@@ -88,39 +88,39 @@ function checkAdvancedDirty(
     );
 }
 
-function checkIsDirty(formData: ProjectSettingsFormData, project: Project): boolean {
+function checkIsDirty(formData: WorkspaceSettingsFormData, workspace: Workspace): boolean {
     const generalDirty =
-        formData.title !== project.title ||
-        formData.description !== project.description ||
-        formData.status !== project.status;
+        formData.title !== workspace.title ||
+        formData.description !== workspace.description ||
+        formData.status !== workspace.status;
 
     const councilDirty =
-        formData.councilEnabled !== project.councilConfig.enabled ||
-        JSON.stringify(formData.councilMembers) !== JSON.stringify(project.councilConfig.members) ||
-        formData.consensusThreshold !== project.councilConfig.consensusThreshold;
+        formData.councilEnabled !== workspace.councilConfig.enabled ||
+        JSON.stringify(formData.councilMembers) !== JSON.stringify(workspace.councilConfig.members) ||
+        formData.consensusThreshold !== workspace.councilConfig.consensusThreshold;
 
     return (
         generalDirty ||
         councilDirty ||
-        checkBuildDirty(formData, project.buildConfig) ||
-        checkDevDirty(formData, project.devServer) ||
-        checkAdvancedDirty(formData, project.advancedOptions)
+        checkBuildDirty(formData, workspace.buildConfig) ||
+        checkDevDirty(formData, workspace.devServer) ||
+        checkAdvancedDirty(formData, workspace.advancedOptions)
     );
 }
 
-export const useProjectSettingsForm = (
-    project: Project,
-    onUpdate: (updates: Partial<Project>) => Promise<void>
+export const useWorkspaceSettingsForm = (
+    workspace: Workspace,
+    onUpdate: (updates: Partial<Workspace>) => Promise<void>
 ) => {
-    const [formData, setFormData] = useState<ProjectSettingsFormData>(() =>
-        getInitialState(project)
+    const [formData, setFormData] = useState<WorkspaceSettingsFormData>(() =>
+        getInitialState(workspace)
     );
 
     useEffect(() => {
-        setFormData(getInitialState(project));
-    }, [project]);
+        setFormData(getInitialState(workspace));
+    }, [workspace]);
 
-    const isDirty = useMemo(() => checkIsDirty(formData, project), [formData, project]);
+    const isDirty = useMemo(() => checkIsDirty(formData, workspace), [formData, workspace]);
 
     const handleSave = useCallback(async () => {
         const buildConfig = {
@@ -141,11 +141,11 @@ export const useProjectSettingsForm = (
             fileWatchEnabled: formData.fileWatchEnabled,
             indexingEnabled: formData.indexingEnabled,
             autoSave: formData.autoSave,
-            fileWatchIgnore: project.advancedOptions?.fileWatchIgnore,
-            indexingInterval: project.advancedOptions?.indexingInterval,
+            fileWatchIgnore: workspace.advancedOptions?.fileWatchIgnore,
+            indexingInterval: workspace.advancedOptions?.indexingInterval,
         };
 
-        const updates: Partial<Project> = {
+        const updates: Partial<Workspace> = {
             title: formData.title,
             description: formData.description,
             status: formData.status,
@@ -160,11 +160,11 @@ export const useProjectSettingsForm = (
         };
 
         await onUpdate(updates);
-    }, [formData, onUpdate, project.advancedOptions]);
+    }, [formData, onUpdate, workspace.advancedOptions]);
 
     const handleReset = useCallback(() => {
-        setFormData(getInitialState(project));
-    }, [project]);
+        setFormData(getInitialState(workspace));
+    }, [workspace]);
 
     const toggleMember = useCallback((id: string) => {
         setFormData(prev => ({

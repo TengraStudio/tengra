@@ -44,8 +44,8 @@ vi.mock('@main/services/workspace/code-intelligence/documentation-generator.util
     generateFileDocumentation: vi.fn(async () => ({
         success: true, filePath: 'f.ts', format: 'markdown', content: '# Doc', symbolCount: 1, generatedAt: ''
     })),
-    generateProjectDocumentation: vi.fn(async () => ({
-        success: true, filePath: '/root', format: 'markdown', content: '# Project', symbolCount: 5, generatedAt: ''
+    generateWorkspaceDocumentation: vi.fn(async () => ({
+        success: true, filePath: '/root', format: 'markdown', content: '# Workspace', symbolCount: 5, generatedAt: ''
     }))
 }));
 
@@ -75,7 +75,7 @@ import { CodeIntelligenceService } from '@main/services/workspace/code-intellige
 import { analyzeCodeQuality } from '@main/services/workspace/code-intelligence/code-quality-scanner.util';
 import {
     generateFileDocumentation,
-    generateProjectDocumentation,
+    generateWorkspaceDocumentation,
     getFileOutline} from '@main/services/workspace/code-intelligence/documentation-generator.util';
 import { scanDirForTodos,scanDirRecursively } from '@main/services/workspace/code-intelligence/file-scanner.util';
 import { renameSymbol } from '@main/services/workspace/code-intelligence/rename-symbol.util';
@@ -88,6 +88,7 @@ import {
     searchFiles} from '@main/services/workspace/code-intelligence/symbol-navigation.util';
 import { parseFileSymbols } from '@main/services/workspace/code-intelligence/symbol-parser.util';
 import type { CodeSymbol } from '@main/services/workspace/code-intelligence/types';
+import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { BrowserWindow } from 'electron';
 
 function createMockDb(): {
@@ -204,7 +205,7 @@ describe('CodeIntelligenceService', () => {
     });
 
     describe('indexWorkspace', () => {
-        it('should index all scanned files and mark project as indexed', async () => {
+        it('should index all scanned files and mark the workspace as indexed', async () => {
             vi.mocked(scanDirRecursively).mockImplementation(async (_root: string, files: string[]) => {
                 files.push('/root/a.ts', '/root/b.ts');
             });
@@ -243,7 +244,7 @@ describe('CodeIntelligenceService', () => {
             );
         });
 
-        it('should skip indexing when project is already indexed (no force)', async () => {
+        it('should skip indexing when the workspace is already indexed (no force)', async () => {
             vi.mocked(scanDirRecursively).mockImplementation(async (_root: string, files: string[]) => {
                 files.push('/root/a.ts');
             });
@@ -297,7 +298,7 @@ describe('CodeIntelligenceService', () => {
             await service.indexWorkspace('/root', 'proj-progress');
 
             expect(mockSend).toHaveBeenCalledWith('code:indexing-progress', expect.objectContaining({
-                projectId: 'proj-progress',
+                workspaceId: 'proj-progress',
                 status: 'Complete'
             }));
         });
@@ -335,7 +336,7 @@ describe('CodeIntelligenceService', () => {
 
             expect(mockEmbedding.generateEmbedding).toHaveBeenCalled();
             expect(mockDb.storeCodeSymbol).toHaveBeenCalledWith(expect.objectContaining({
-                project_path: '/root',
+                [WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN]: '/root',
                 file_path: '/root/a.ts',
                 name: 'myFunc',
                 kind: 'function'
@@ -533,13 +534,13 @@ describe('CodeIntelligenceService', () => {
     describe('generateWorkspaceDocumentation', () => {
         it('should delegate to documentation-generator util', async () => {
             const result = await service.generateWorkspaceDocumentation('/root', 20);
-            expect(generateProjectDocumentation).toHaveBeenCalledWith('/root', 20);
+            expect(generateWorkspaceDocumentation).toHaveBeenCalledWith('/root', 20);
             expect(result.success).toBe(true);
         });
 
         it('should default maxFiles to 30', async () => {
             await service.generateWorkspaceDocumentation('/root');
-            expect(generateProjectDocumentation).toHaveBeenCalledWith('/root', 30);
+            expect(generateWorkspaceDocumentation).toHaveBeenCalledWith('/root', 30);
         });
     });
 

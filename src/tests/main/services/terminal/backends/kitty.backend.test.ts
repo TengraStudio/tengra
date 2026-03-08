@@ -167,7 +167,7 @@ describe('KittyBackend', () => {
             mockSpawn.mockReturnValue(mockChild);
 
             const options = createOptions({
-                cwd: '/projects/my-app',
+                cwd: '/workspaces/my-app',
                 shell: '/bin/zsh',
                 args: ['-l'],
             });
@@ -176,9 +176,9 @@ describe('KittyBackend', () => {
 
             expect(mockSpawn).toHaveBeenCalledWith(
                 '/usr/bin/kitty',
-                ['--directory', '/projects/my-app', '--', '/bin/zsh', '-l'],
+                ['--directory', '/workspaces/my-app', '--', '/bin/zsh', '-l'],
                 expect.objectContaining({
-                    cwd: '/projects/my-app',
+                    cwd: '/workspaces/my-app',
                     detached: true,
                     stdio: 'ignore',
                 })

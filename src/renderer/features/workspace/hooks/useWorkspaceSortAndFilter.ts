@@ -35,12 +35,12 @@ export function useWorkspaceSortAndFilter(workspaces: Workspace[]) {
 
     const normalizedSearchQuery = useMemo(() => searchQuery.trim().toLowerCase(), [searchQuery]);
 
-    const projectSearchIndex = useMemo(() => {
+    const workspaceSearchIndex = useMemo(() => {
         const index = new Map<string, string>();
-        for (const project of workspaces) {
+        for (const workspace of workspaces) {
             index.set(
-                project.id,
-                `${project.title} ${project.description}`.toLowerCase()
+                workspace.id,
+                `${workspace.title} ${workspace.description}`.toLowerCase()
             );
         }
         return index;
@@ -56,14 +56,14 @@ export function useWorkspaceSortAndFilter(workspaces: Workspace[]) {
         });
     }, [workspaces, sortBy, sortDirection]);
 
-    const filteredProjects = useMemo(
+    const filteredWorkspaces = useMemo(
         () =>
             normalizedSearchQuery === ''
                 ? sortedWorkspacesByActiveSort
-                : sortedWorkspacesByActiveSort.filter(project =>
-                    (projectSearchIndex.get(project.id) ?? '').includes(normalizedSearchQuery)
+                : sortedWorkspacesByActiveSort.filter(workspace =>
+                    (workspaceSearchIndex.get(workspace.id) ?? '').includes(normalizedSearchQuery)
                 ),
-        [sortedWorkspacesByActiveSort, normalizedSearchQuery, projectSearchIndex]
+        [sortedWorkspacesByActiveSort, normalizedSearchQuery, workspaceSearchIndex]
     );
 
     const toggleSort = (nextSortBy: 'title' | 'updatedAt' | 'createdAt') => {
@@ -105,7 +105,7 @@ export function useWorkspaceSortAndFilter(workspaces: Workspace[]) {
         sortBy,
         sortDirection,
         listPreset,
-        filteredProjects,
+        filteredWorkspaces,
         toggleSort,
         applyListPreset
     };

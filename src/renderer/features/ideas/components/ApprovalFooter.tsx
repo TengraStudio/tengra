@@ -4,8 +4,8 @@ import React from 'react';
 import { useTranslation } from '@/i18n';
 
 interface ApprovalFooterProps {
-    projectPath: string
-    setProjectPath: (path: string) => void
+    workspacePath: string
+    setWorkspacePath: (path: string) => void
     handleSelectFolder: () => Promise<void>
     onReject: () => Promise<void>
     handleApprove: () => Promise<void>
@@ -49,8 +49,8 @@ const ActionButton: React.FC<ActionButtonProps> = ({ onClick, disabled, Icon, la
 );
 
 export const ApprovalFooter: React.FC<ApprovalFooterProps> = ({
-    projectPath,
-    setProjectPath,
+    workspacePath,
+    setWorkspacePath,
     handleSelectFolder,
     onReject,
     handleApprove,
@@ -71,8 +71,8 @@ export const ApprovalFooter: React.FC<ApprovalFooterProps> = ({
                     <div className="flex gap-2">
                         <input
                             type="text"
-                            value={projectPath}
-                            onChange={e => setProjectPath(e.target.value)}
+                            value={workspacePath}
+                            onChange={e => setWorkspacePath(e.target.value)}
                             placeholder={t('ideas.idea.pathPlaceholder')}
                             className="flex-1 px-4 py-2 bg-muted/20 border border-border/50 rounded-lg text-foreground placeholder-muted-foreground/30 focus:outline-none focus:border-primary/50 transition-all font-mono text-xs"
                         />
@@ -97,7 +97,7 @@ export const ApprovalFooter: React.FC<ApprovalFooterProps> = ({
                     />
                     <ActionButton
                         onClick={() => void handleApprove()}
-                        disabled={!projectPath || isApproving || isRejecting || isArchiving}
+                        disabled={!workspacePath || isApproving || isRejecting || isArchiving}
                         Icon={CheckCircle}
                         label={t('ideas.idea.approve')}
                         loadingLabel={t('ideas.idea.creating')}

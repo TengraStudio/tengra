@@ -9,78 +9,78 @@ type InvokeGitFn = <T>(channel: string, ...args: (string | number | boolean)[]) 
  */
 export function useGitStashes(
     canRun: boolean,
-    projectPath: string | undefined,
+    workspacePath: string | undefined,
     invokeGit: InvokeGitFn
 ) {
     const [stashes, setStashes] = useState<GitStash[]>([]);
 
     const fetchStashes = useCallback(async () => {
-        if (!canRun || !projectPath) {
+        if (!canRun || !workspacePath) {
             return;
         }
         const response = await invokeGit<{ success: boolean; stashes?: GitStash[] }>(
             'git:getStashes',
-            projectPath
+            workspacePath
         );
         if (response.success) {
             setStashes(response.stashes ?? []);
         }
-    }, [canRun, projectPath, invokeGit]);
+    }, [canRun, workspacePath, invokeGit]);
 
     const createStash = useCallback(
         async (message: string, includeUntracked = true) => {
-            if (!canRun || !projectPath) {
+            if (!canRun || !workspacePath) {
                 return false;
             }
             const response = await invokeGit<{ success: boolean }>(
                 'git:createStash',
-                projectPath,
+                workspacePath,
                 message,
                 includeUntracked
             );
             await fetchStashes();
             return response.success;
         },
-        [canRun, projectPath, invokeGit, fetchStashes]
+        [canRun, workspacePath, invokeGit, fetchStashes]
     );
 
     const applyStash = useCallback(
         async (stashRef: string, pop: boolean) => {
-            if (!canRun || !projectPath) {
+            if (!canRun || !workspacePath) {
                 return false;
             }
             const response = await invokeGit<{ success: boolean }>(
                 'git:applyStash',
-                projectPath,
+                workspacePath,
                 stashRef,
                 pop
             );
             await fetchStashes();
             return response.success;
         },
-        [canRun, projectPath, invokeGit, fetchStashes]
+        [canRun, workspacePath, invokeGit, fetchStashes]
     );
 
     const dropStash = useCallback(
         async (stashRef: string) => {
-            if (!canRun || !projectPath) {
+            if (!canRun || !workspacePath) {
                 return false;
             }
-            const response = await invokeGit<{ success: boolean }>('git:dropStash', projectPath, stashRef);
+            const response = await invokeGit<{ success: boolean }>('git:dropStash', workspacePath, stashRef);
             await fetchStashes();
             return response.success;
         },
-        [canRun, projectPath, invokeGit, fetchStashes]
+        [canRun, workspacePath, invokeGit, fetchStashes]
     );
 
     const exportStash = useCallback(
         async (stashRef: string) => {
-            if (!canRun || !projectPath) {
+            if (!canRun || !workspacePath) {
                 return;
             }
             const response = await invokeGit<{ success: boolean; patch?: string }>(
                 'git:exportStash',
-                projectPath,
+                workspacePath,
                 stashRef
             );
             if (!response.success) {
@@ -95,7 +95,7 @@ export function useGitStashes(
             anchor.click();
             URL.revokeObjectURL(url);
         },
-        [canRun, projectPath, invokeGit]
+        [canRun, workspacePath, invokeGit]
     );
 
     return {

@@ -1,9 +1,9 @@
-import { ProjectDashboard } from '@renderer/features/workspace/components/ProjectDashboard';
+import { WorkspaceDashboard } from '@renderer/features/workspace/components/WorkspaceDashboard';
 import React from 'react';
 
 import { Language } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { EditorTab, Project, ProjectDashboardTab, WorkspaceDashboardTab } from '@/types';
+import { EditorTab, Workspace, WorkspaceDashboardTab } from '@/types';
 
 import { EditorTabs } from './EditorTabs';
 import { WorkspaceContentHub } from './WorkspaceContentHub';
@@ -24,14 +24,14 @@ interface WorkspaceMainProps {
     revealTabInExplorer: (id: string) => Promise<void>;
     activeTab: EditorTab | null;
     updateTabContent: (content: string) => void;
-    project: Project;
-    handleUpdateProject: (updates: Partial<Project>) => Promise<void>;
+    workspace: Workspace;
+    handleUpdateWorkspace: (updates: Partial<Workspace>) => Promise<void>;
     onAddMount?: () => void;
     setShowLogoModal: (show: boolean) => void;
     t: (key: string) => string;
     language: Language;
     setDashboardTab: (tab: WorkspaceDashboardTab) => void;
-    onDeleteProject?: () => void;
+    onDeleteWorkspace?: () => void;
     selectedEntry?: { path: string; isDirectory: boolean } | null;
     onOpenFile?: (path: string) => void;
 }
@@ -51,14 +51,14 @@ export const WorkspaceMain: React.FC<WorkspaceMainProps> = ({
     revealTabInExplorer,
     activeTab,
     updateTabContent,
-    project,
-    handleUpdateProject,
+    workspace,
+    handleUpdateWorkspace,
     onAddMount,
     setShowLogoModal,
     t,
     language,
     setDashboardTab,
-    onDeleteProject,
+    onDeleteWorkspace,
     selectedEntry,
     onOpenFile,
 }) => {
@@ -126,31 +126,31 @@ export const WorkspaceMain: React.FC<WorkspaceMainProps> = ({
                     <WorkspaceEditor
                         activeTab={activeTab}
                         updateTabContent={updateTabContent}
-                        projectKey={project.id}
-                        projectPath={project.path}
+                        workspaceKey={workspace.id}
+                        workspacePath={workspace.path}
                         emptyState={null}
                     />
                 </div>
 
                 {dashboardTab !== 'editor' && (
                     <div className="absolute inset-0 z-10 bg-background animate-in fade-in duration-200">
-                        <ProjectDashboard
-                            project={project}
-                            onUpdate={handleUpdateProject}
+                        <WorkspaceDashboard
+                            workspace={workspace}
+                            onUpdate={handleUpdateWorkspace}
                             onAddMount={onAddMount}
                             onOpenLogoGenerator={() => setShowLogoModal(true)}
                             language={language}
                             activeTab={
                                 dashboardTab === 'terminal'
                                     ? 'overview'
-                                    : (dashboardTab as ProjectDashboardTab)
+                                    : (dashboardTab as WorkspaceDashboardTab)
                             }
                             onTabChange={setDashboardTab}
-                            onDelete={onDeleteProject}
+                            onDelete={onDeleteWorkspace}
                             selectedEntry={selectedEntry}
                             onOpenFile={onOpenFile}
                         />
-                        <WorkspaceContentHub project={project} onApplyTemplate={handleUpdateProject} />
+                        <WorkspaceContentHub workspace={workspace} onApplyTemplate={handleUpdateWorkspace} />
                     </div>
                 )}
             </div>

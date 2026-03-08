@@ -1,34 +1,34 @@
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { DatabaseService } from '@main/services/data/database.service';
-import { ProjectAgentService } from '@main/services/project/project-agent.service';
+import { WorkspaceAgentService } from '@main/services/workspace/workspace-agent.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import {
     AgentProfileSchema,
     AgentStartOptionsSchema,
     ModelRoutingRuleSchema,
-    ProjectStateSchema,
-    ProjectStepSchema,
-} from '@shared/schemas/project-agent-hardening.schema';
+    WorkspaceAgentStepSchema,
+    WorkspaceStateSchema,
+} from '@shared/schemas/workspace-agent-hardening.schema';
 import type { AgentEventRecord, TaskMetrics } from '@shared/types/agent-state';
 import type {
     AgentProfile,
     AgentStartOptions,
     AgentTaskHistoryItem,
     ModelRoutingRule,
-    ProjectState,
-    ProjectStep,
-} from '@shared/types/project-agent';
+    WorkspaceState,
+    WorkspaceStep,
+} from '@shared/types/workspace-agent';
 import type {
     AgentCheckpointItem,
     PlanVersionItem,
     RollbackCheckpointResult,
-} from '@shared/types/project-agent';
+} from '@shared/types/workspace-agent';
 import { BrowserWindow, ipcMain } from 'electron';
 import { z } from 'zod';
 
-import { registerWorkspaceAgentCanvasHandlers } from './project-agent-canvas';
-import { registerWorkspaceAgentCouncilHandlers } from './project-agent-council';
-import { registerWorkspaceAgentDecisionHandlers } from './project-agent-decision';
+import { registerWorkspaceAgentCanvasHandlers } from './workspace-agent-canvas';
+import { registerWorkspaceAgentCouncilHandlers } from './workspace-agent-council';
+import { registerWorkspaceAgentDecisionHandlers } from './workspace-agent-decision';
 
 interface AvailableModelInfo {
     id: string;
@@ -36,7 +36,7 @@ interface AvailableModelInfo {
     provider: string;
 }
 
-type TaskMessagesResult = Awaited<ReturnType<ProjectAgentService['getTaskMessages']>>;
+type TaskMessagesResult = Awaited<ReturnType<WorkspaceAgentService['getTaskMessages']>>;
 
 const AGENT_UPDATE_THROTTLE_MS = 50;
 const STREAM_EVENT_VERSION = 'v1' as const;
@@ -46,7 +46,7 @@ const createEventDedupeKey = (prefix: string, taskId: string, sequence: number):
 };
 
 function registerWorkspaceAgentAdvancedHandlers(
-    projectAgentService: ProjectAgentService,
+    workspaceAgentService: WorkspaceAgentService,
     validateSender: ReturnType<typeof createMainWindowSenderValidator>
 ): void {
     ipcMain.handle(
@@ -55,7 +55,7 @@ function registerWorkspaceAgentAdvancedHandlers(
             'agent:get-available-models',
             async (event): Promise<{ success: boolean; models: AvailableModelInfo[] }> => {
                 validateSender(event);
-                const models = await projectAgentService.getAvailableModels();
+                const models = await workspaceAgentService.getAvailableModels();
                 return {
                     success: true,
                     models
@@ -74,10 +74,10 @@ function registerWorkspaceAgentAdvancedHandlers(
             async (event, payload: number | { index: number; taskId?: string }): Promise<void> => {
                 validateSender(event);
                 if (typeof payload === 'number') {
-                    await projectAgentService.retryStep(payload);
+                    await workspaceAgentService.retryStep(payload);
                     return;
                 }
-                await projectAgentService.retryStep(payload.index, payload.taskId);
+                await workspaceAgentService.retryStep(payload.index, payload.taskId);
             },
             {
                 argsSchema: z.tuple([z.union([z.number(), z.object({ index: z.number(), taskId: z.string().optional() })])]),
@@ -92,7 +92,7 @@ function registerWorkspaceAgentAdvancedHandlers(
             'agent:select-model',
             async (event, payload: { taskId: string; provider: string; model: string }): Promise<{ success: boolean; error?: string }> => {
                 validateSender(event);
-                const success = await projectAgentService.selectModel(
+                const success = await workspaceAgentService.selectModel(
                     payload.taskId,
                     payload.provider,
                     payload.model
@@ -117,7 +117,7 @@ function registerWorkspaceAgentAdvancedHandlers(
             'agent:approve-step',
             async (event, payload: { taskId: string; stepId: string }): Promise<void> => {
                 validateSender(event);
-                await projectAgentService.approveStep(payload.taskId, payload.stepId);
+                await workspaceAgentService.approveStep(payload.taskId, payload.stepId);
             },
             {
                 argsSchema: z.tuple([z.object({ taskId: z.string().min(1), stepId: z.string().min(1) })]),
@@ -132,7 +132,7 @@ function registerWorkspaceAgentAdvancedHandlers(
             'agent:skip-step',
             async (event, payload: { taskId: string; stepId: string }): Promise<void> => {
                 validateSender(event);
-                await projectAgentService.skipStep(payload.taskId, payload.stepId);
+                await workspaceAgentService.skipStep(payload.taskId, payload.stepId);
             },
             {
                 argsSchema: z.tuple([z.object({ taskId: z.string().min(1), stepId: z.string().min(1) })]),
@@ -147,7 +147,7 @@ function registerWorkspaceAgentAdvancedHandlers(
             'agent:edit-step',
             async (event, payload: { taskId: string; stepId: string; text: string }): Promise<void> => {
                 validateSender(event);
-                await projectAgentService.editStep(payload.taskId, payload.stepId, payload.text);
+                await workspaceAgentService.editStep(payload.taskId, payload.stepId, payload.text);
             },
             {
                 argsSchema: z.tuple([z.object({ taskId: z.string().min(1), stepId: z.string().min(1), text: z.string().min(1) })]),
@@ -162,7 +162,7 @@ function registerWorkspaceAgentAdvancedHandlers(
             'agent:add-step-comment',
             async (event, payload: { taskId: string; stepId: string; comment: string }): Promise<void> => {
                 validateSender(event);
-                await projectAgentService.addStepComment(payload.taskId, payload.stepId, payload.comment);
+                await workspaceAgentService.addStepComment(payload.taskId, payload.stepId, payload.comment);
             },
             {
                 argsSchema: z.tuple([z.object({ taskId: z.string().min(1), stepId: z.string().min(1), comment: z.string().min(1) })]),
@@ -177,7 +177,7 @@ function registerWorkspaceAgentAdvancedHandlers(
             'agent:insert-intervention',
             async (event, payload: { taskId: string; afterStepId: string }): Promise<void> => {
                 validateSender(event);
-                await projectAgentService.insertInterventionPoint(payload.taskId, payload.afterStepId);
+                await workspaceAgentService.insertInterventionPoint(payload.taskId, payload.afterStepId);
             },
             {
                 argsSchema: z.tuple([z.object({ taskId: z.string().min(1), afterStepId: z.string().min(1) })]),
@@ -192,7 +192,7 @@ function registerWorkspaceAgentAdvancedHandlers(
             'agent:resume-checkpoint',
             async (event, checkpointId: string): Promise<void> => {
                 validateSender(event);
-                await projectAgentService.resumeFromCheckpoint(checkpointId);
+                await workspaceAgentService.resumeFromCheckpoint(checkpointId);
             },
             {
                 argsSchema: z.tuple([z.string().min(1)]),
@@ -207,7 +207,7 @@ function registerWorkspaceAgentAdvancedHandlers(
             'agent:get-checkpoints',
             async (event, taskId: string): Promise<AgentCheckpointItem[]> => {
                 validateSender(event);
-                return await projectAgentService.getCheckpoints(taskId);
+                return await workspaceAgentService.getCheckpoints(taskId);
             },
             {
                 argsSchema: z.tuple([z.string().min(1)]),
@@ -222,7 +222,7 @@ function registerWorkspaceAgentAdvancedHandlers(
             'agent:rollback-checkpoint',
             async (event, checkpointId: string): Promise<RollbackCheckpointResult | null> => {
                 validateSender(event);
-                return await projectAgentService.rollbackCheckpoint(checkpointId);
+                return await workspaceAgentService.rollbackCheckpoint(checkpointId);
             },
             {
                 argsSchema: z.tuple([z.string().min(1)]),
@@ -237,7 +237,7 @@ function registerWorkspaceAgentAdvancedHandlers(
             'agent:get-plan-versions',
             async (event, taskId: string): Promise<PlanVersionItem[]> => {
                 validateSender(event);
-                return await projectAgentService.getPlanVersions(taskId);
+                return await workspaceAgentService.getPlanVersions(taskId);
             },
             {
                 argsSchema: z.tuple([z.string().min(1)]),
@@ -252,7 +252,7 @@ function registerWorkspaceAgentAdvancedHandlers(
             'agent:delete-task-by-node',
             async (event, nodeId: string): Promise<boolean> => {
                 validateSender(event);
-                return await projectAgentService.deleteTaskByNodeId(nodeId);
+                return await workspaceAgentService.deleteTaskByNodeId(nodeId);
             },
             {
                 argsSchema: z.tuple([z.string().min(1)]),
@@ -267,7 +267,7 @@ function registerWorkspaceAgentAdvancedHandlers(
             'agent:create-pr',
             async (event, payload?: { taskId?: string }): Promise<{ success: boolean; url?: string; error?: string } | null> => {
                 validateSender(event);
-                return await projectAgentService.createPullRequest(payload?.taskId);
+                return await workspaceAgentService.createPullRequest(payload?.taskId);
             },
             {
                 argsSchema: z.tuple([z.object({ taskId: z.string().optional() }).optional()]),
@@ -282,7 +282,7 @@ function registerWorkspaceAgentAdvancedHandlers(
             'agent:get-profiles',
             async (event): Promise<AgentProfile[]> => {
                 validateSender(event);
-                return await projectAgentService.getProfiles();
+                return await workspaceAgentService.getProfiles();
             },
             {
                 responseSchema: z.array(AgentProfileSchema),
@@ -297,7 +297,7 @@ function registerWorkspaceAgentAdvancedHandlers(
             'agent:register-profile',
             async (event, profile: AgentProfile): Promise<AgentProfile | null> => {
                 validateSender(event);
-                return await projectAgentService.registerProfile(profile);
+                return await workspaceAgentService.registerProfile(profile);
             },
             {
                 argsSchema: z.tuple([AgentProfileSchema]),
@@ -312,7 +312,7 @@ function registerWorkspaceAgentAdvancedHandlers(
             'agent:delete-profile',
             async (event, id: string): Promise<boolean> => {
                 validateSender(event);
-                return await projectAgentService.deleteProfile(id);
+                return await workspaceAgentService.deleteProfile(id);
             },
             {
                 argsSchema: z.tuple([z.string().min(1)]),
@@ -327,7 +327,7 @@ function registerWorkspaceAgentAdvancedHandlers(
             'agent:get-routing-rules',
             async (event): Promise<ModelRoutingRule[]> => {
                 validateSender(event);
-                return projectAgentService.getRoutingRules();
+                return workspaceAgentService.getRoutingRules();
             },
             {
                 responseSchema: z.array(ModelRoutingRuleSchema),
@@ -342,7 +342,7 @@ function registerWorkspaceAgentAdvancedHandlers(
             'agent:set-routing-rules',
             async (event, rules: ModelRoutingRule[]): Promise<{ success: true }> => {
                 validateSender(event);
-                projectAgentService.setRoutingRules(rules);
+                workspaceAgentService.setRoutingRules(rules);
                 return { success: true };
             },
             {
@@ -357,20 +357,20 @@ function registerWorkspaceAgentAdvancedHandlers(
  * Registers all workspace agent IPC handlers including core operations,
  * human-in-the-loop workflows, voting sessions, legacy compatibility,
  * and canvas persistence.
- * @param projectAgentService - The workspace agent service instance
+ * @param workspaceAgentService - The workspace agent service instance
  * @param getMainWindow - Factory function to retrieve the main BrowserWindow
  * @param databaseService - Optional database service for canvas persistence
  */
 export function registerWorkspaceAgentIpc(
-    projectAgentService: ProjectAgentService,
+    workspaceAgentService: WorkspaceAgentService,
     getMainWindow: () => BrowserWindow | null,
     databaseService?: DatabaseService
 ) {
     // Forward workspace updates to renderer
-    const eventBus = projectAgentService.eventBus;
-    let lastStatus: ProjectState['status'] = 'idle';
+    const eventBus = workspaceAgentService.eventBus;
+    let lastStatus: WorkspaceState['status'] = 'idle';
     let updateSequence = 0;
-    let queuedState: ProjectState | null = null;
+    let queuedState: WorkspaceState | null = null;
     let updateTimer: ReturnType<typeof setTimeout> | null = null;
 
     const emitAgentEvent = (
@@ -378,7 +378,7 @@ export function registerWorkspaceAgentIpc(
         type: string,
         data: Record<string, string | number | boolean | undefined>
     ): void => {
-        const currentTaskId = projectAgentService.getCurrentTaskId() ?? '';
+        const currentTaskId = workspaceAgentService.getCurrentTaskId() ?? '';
         updateSequence += 1;
         windowInstance.webContents.send('agent-event', {
             v: STREAM_EVENT_VERSION,
@@ -403,7 +403,7 @@ export function registerWorkspaceAgentIpc(
         }
 
         win.webContents.send('agent:update', state);
-        const currentTaskId = projectAgentService.getCurrentTaskId() ?? '';
+        const currentTaskId = workspaceAgentService.getCurrentTaskId() ?? '';
         if (currentTaskId && state.status === 'running' && lastStatus !== 'running') {
             emitAgentEvent(win, 'agent:task_started', {
                 taskId: currentTaskId,
@@ -425,7 +425,7 @@ export function registerWorkspaceAgentIpc(
         updateTimer = setTimeout(flushAgentUpdate, AGENT_UPDATE_THROTTLE_MS);
     };
 
-    eventBus.on('project:update', (state: ProjectState) => {
+    eventBus.on('workspace:update', (state: WorkspaceState) => {
         queuedState = state;
         scheduleAgentUpdateFlush();
     });
@@ -437,7 +437,7 @@ export function registerWorkspaceAgentIpc(
             'agent:start',
             async (event, options: AgentStartOptions): Promise<{ taskId: string }> => {
                 validateSender(event);
-                const taskId = await projectAgentService.start(options);
+                const taskId = await workspaceAgentService.start(options);
                 return { taskId };
             },
             {
@@ -453,7 +453,7 @@ export function registerWorkspaceAgentIpc(
             'agent:stop',
             async (event, payload?: { taskId?: string }): Promise<void> => {
                 validateSender(event);
-                await projectAgentService.stop(payload?.taskId);
+                await workspaceAgentService.stop(payload?.taskId);
             },
             {
                 argsSchema: z.tuple([z.object({ taskId: z.string().optional() }).optional()]),
@@ -468,7 +468,7 @@ export function registerWorkspaceAgentIpc(
             'agent:pause-task',
             async (event, payload: { taskId: string }): Promise<{ success: true }> => {
                 validateSender(event);
-                await projectAgentService.pauseTask(payload.taskId);
+                await workspaceAgentService.pauseTask(payload.taskId);
                 return { success: true };
             },
             {
@@ -484,7 +484,7 @@ export function registerWorkspaceAgentIpc(
             'agent:resume-task',
             async (event, payload: { taskId: string }): Promise<{ success: boolean; error?: string }> => {
                 validateSender(event);
-                const success = await projectAgentService.resumeTask(payload.taskId);
+                const success = await workspaceAgentService.resumeTask(payload.taskId);
                 return {
                     success,
                     error: success ? undefined : 'Failed to resume task'
@@ -503,7 +503,7 @@ export function registerWorkspaceAgentIpc(
             'agent:save-snapshot',
             async (event, payload: { taskId: string }): Promise<{ success: boolean; checkpointId: string }> => {
                 validateSender(event);
-                const checkpointId = await projectAgentService.saveSnapshot(payload.taskId);
+                const checkpointId = await workspaceAgentService.saveSnapshot(payload.taskId);
                 return {
                     success: Boolean(checkpointId),
                     checkpointId: checkpointId ?? ''
@@ -522,7 +522,7 @@ export function registerWorkspaceAgentIpc(
             'agent:reset-state',
             async (event): Promise<void> => {
                 validateSender(event);
-                await projectAgentService.resetState();
+                await workspaceAgentService.resetState();
             },
             {
                 wrapResponse: true
@@ -536,7 +536,7 @@ export function registerWorkspaceAgentIpc(
             'agent:plan',
             async (event, options: AgentStartOptions): Promise<void> => {
                 validateSender(event);
-                await projectAgentService.generatePlan(options);
+                await workspaceAgentService.generatePlan(options);
             },
             {
                 argsSchema: z.tuple([AgentStartOptionsSchema]),
@@ -547,21 +547,21 @@ export function registerWorkspaceAgentIpc(
 
     ipcMain.handle(
         'agent:approve',
-        createValidatedIpcHandler<void, [ProjectStep[] | { plan: ProjectStep[]; taskId?: string }]>(
+        createValidatedIpcHandler<void, [WorkspaceStep[] | { plan: WorkspaceStep[]; taskId?: string }]>(
             'agent:approve',
             async (
                 event,
-                payload: ProjectStep[] | { plan: ProjectStep[]; taskId?: string }
+                payload: WorkspaceStep[] | { plan: WorkspaceStep[]; taskId?: string }
             ): Promise<void> => {
                 validateSender(event);
                 if (Array.isArray(payload)) {
-                    await projectAgentService.approvePlan(payload);
+                    await workspaceAgentService.approvePlan(payload);
                     return;
                 }
-                await projectAgentService.approvePlan(payload.plan, payload.taskId);
+                await workspaceAgentService.approvePlan(payload.plan, payload.taskId);
             },
             {
-                argsSchema: z.tuple([z.union([z.array(ProjectStepSchema), z.object({ plan: z.array(ProjectStepSchema), taskId: z.string().optional() })])]),
+                argsSchema: z.tuple([z.union([z.array(WorkspaceAgentStepSchema), z.object({ plan: z.array(WorkspaceAgentStepSchema), taskId: z.string().optional() })])]),
                 wrapResponse: true
             }
         )
@@ -573,7 +573,7 @@ export function registerWorkspaceAgentIpc(
             'agent:approve-current-plan',
             async (event, payload: { taskId: string }): Promise<{ success: boolean; error?: string }> => {
                 validateSender(event);
-                const success = await projectAgentService.approveCurrentPlan(payload.taskId);
+                const success = await workspaceAgentService.approveCurrentPlan(payload.taskId);
                 return {
                     success,
                     error: success ? undefined : 'Failed to approve plan'
@@ -592,7 +592,7 @@ export function registerWorkspaceAgentIpc(
             'agent:reject-current-plan',
             async (event, payload: { taskId: string; reason?: string }): Promise<{ success: boolean; error?: string }> => {
                 validateSender(event);
-                const success = await projectAgentService.rejectCurrentPlan(payload.taskId, payload.reason);
+                const success = await workspaceAgentService.rejectCurrentPlan(payload.taskId, payload.reason);
                 return {
                     success,
                     error: success ? undefined : 'Failed to reject plan'
@@ -607,15 +607,15 @@ export function registerWorkspaceAgentIpc(
 
     ipcMain.handle(
         'agent:get-status',
-        createValidatedIpcHandler<ProjectState | null, [{ taskId?: string } | undefined]>(
+        createValidatedIpcHandler<WorkspaceState | null, [{ taskId?: string } | undefined]>(
             'agent:get-status',
-            async (event, payload?: { taskId?: string }): Promise<ProjectState | null> => {
+            async (event, payload?: { taskId?: string }): Promise<WorkspaceState | null> => {
                 validateSender(event);
-                return await projectAgentService.getStatus(payload?.taskId);
+                return await workspaceAgentService.getStatus(payload?.taskId);
             },
             {
                 argsSchema: z.tuple([z.object({ taskId: z.string().optional() }).optional()]),
-                responseSchema: ProjectStateSchema.nullable(),
+                responseSchema: WorkspaceStateSchema.nullable(),
                 wrapResponse: true
             }
         )
@@ -627,7 +627,7 @@ export function registerWorkspaceAgentIpc(
             'agent:get-messages',
             async (event, payload: { taskId: string }): Promise<TaskMessagesResult> => {
                 validateSender(event);
-                return await projectAgentService.getTaskMessages(payload.taskId);
+                return await workspaceAgentService.getTaskMessages(payload.taskId);
             },
             {
                 argsSchema: z.tuple([z.object({ taskId: z.string().min(1) })]),
@@ -642,7 +642,7 @@ export function registerWorkspaceAgentIpc(
             'agent:get-events',
             async (event, payload: { taskId: string }): Promise<{ success: boolean; events: AgentEventRecord[] }> => {
                 validateSender(event);
-                return await projectAgentService.getTaskEvents(payload.taskId);
+                return await workspaceAgentService.getTaskEvents(payload.taskId);
             },
             {
                 argsSchema: z.tuple([z.object({ taskId: z.string().min(1) })]),
@@ -658,7 +658,7 @@ export function registerWorkspaceAgentIpc(
             'agent:council-generate-plan',
             async (event, payload: { taskId: string; task: string }): Promise<{ success: true }> => {
                 validateSender(event);
-                await projectAgentService.generatePlan({
+                await workspaceAgentService.generatePlan({
                     task: payload.task,
                     workspaceId: payload.taskId,
                     agentProfileId: 'council-president'
@@ -674,11 +674,11 @@ export function registerWorkspaceAgentIpc(
 
     ipcMain.handle(
         'agent:council-get-proposal',
-        createValidatedIpcHandler<{ success: boolean; plan: ProjectStep[] }, [{ taskId: string }]>(
+        createValidatedIpcHandler<{ success: boolean; plan: WorkspaceStep[] }, [{ taskId: string }]>(
             'agent:council-get-proposal',
-            async (event, payload: { taskId: string }): Promise<{ success: boolean; plan: ProjectStep[] }> => {
+            async (event, payload: { taskId: string }): Promise<{ success: boolean; plan: WorkspaceStep[] }> => {
                 validateSender(event);
-                const status = await projectAgentService.getStatus(payload.taskId);
+                const status = await workspaceAgentService.getStatus(payload.taskId);
                 return {
                     success: true,
                     plan: status.plan || []
@@ -697,7 +697,7 @@ export function registerWorkspaceAgentIpc(
             'agent:council-approve-proposal',
             async (event, payload: { taskId: string }): Promise<{ success: boolean; error?: string }> => {
                 validateSender(event);
-                const success = await projectAgentService.approveCurrentPlan(payload.taskId);
+                const success = await workspaceAgentService.approveCurrentPlan(payload.taskId);
                 return { success, error: success ? undefined : 'Failed to approve current plan' };
             },
             {
@@ -713,7 +713,7 @@ export function registerWorkspaceAgentIpc(
             'agent:council-reject-proposal',
             async (event, payload: { taskId: string; reason?: string }): Promise<{ success: boolean; error?: string }> => {
                 validateSender(event);
-                const success = await projectAgentService.rejectCurrentPlan(payload.taskId, payload.reason);
+                const success = await workspaceAgentService.rejectCurrentPlan(payload.taskId, payload.reason);
                 return { success, error: success ? undefined : 'Failed to reject current plan' };
             },
             {
@@ -729,7 +729,7 @@ export function registerWorkspaceAgentIpc(
             'agent:council-start-execution',
             async (event, payload: { taskId: string }): Promise<{ success: boolean; error?: string }> => {
                 validateSender(event);
-                const success = await projectAgentService.resumeTask(payload.taskId);
+                const success = await workspaceAgentService.resumeTask(payload.taskId);
                 return { success, error: success ? undefined : 'Failed to start execution' };
             },
             {
@@ -745,7 +745,7 @@ export function registerWorkspaceAgentIpc(
             'agent:council-pause-execution',
             async (event, payload: { taskId: string }): Promise<{ success: true }> => {
                 validateSender(event);
-                await projectAgentService.pauseTask(payload.taskId);
+                await workspaceAgentService.pauseTask(payload.taskId);
                 return { success: true };
             },
             {
@@ -761,7 +761,7 @@ export function registerWorkspaceAgentIpc(
             'agent:council-resume-execution',
             async (event, payload: { taskId: string }): Promise<{ success: boolean; error?: string }> => {
                 validateSender(event);
-                const success = await projectAgentService.resumeTask(payload.taskId);
+                const success = await workspaceAgentService.resumeTask(payload.taskId);
                 return { success, error: success ? undefined : 'Failed to resume execution' };
             },
             {
@@ -777,7 +777,7 @@ export function registerWorkspaceAgentIpc(
             'agent:council-get-timeline',
             async (event, payload: { taskId: string }): Promise<{ success: boolean; events: AgentEventRecord[] }> => {
                 validateSender(event);
-                const events = await projectAgentService.getTaskEvents(payload.taskId);
+                const events = await workspaceAgentService.getTaskEvents(payload.taskId);
                 return { success: true, events: events.events || [] };
             },
             {
@@ -794,7 +794,7 @@ export function registerWorkspaceAgentIpc(
             'agent:get-telemetry',
             async (event, payload: { taskId: string }): Promise<{ success: boolean; telemetry: TaskMetrics[] }> => {
                 validateSender(event);
-                return await projectAgentService.getTaskTelemetry(payload.taskId);
+                return await workspaceAgentService.getTaskTelemetry(payload.taskId);
             },
             {
                 argsSchema: z.tuple([z.object({ taskId: z.string().min(1) })]),
@@ -809,7 +809,7 @@ export function registerWorkspaceAgentIpc(
             'agent:get-task-history',
             async (event, payload?: { workspaceId?: string }): Promise<AgentTaskHistoryItem[]> => {
                 validateSender(event);
-                return await projectAgentService.getTaskHistory(payload?.workspaceId ?? '');
+                return await workspaceAgentService.getTaskHistory(payload?.workspaceId ?? '');
             },
             {
                 argsSchema: z.tuple([z.object({ workspaceId: z.string().optional() }).optional()]),
@@ -824,7 +824,7 @@ export function registerWorkspaceAgentIpc(
             'agent:delete-task',
             async (event, payload: { taskId: string }): Promise<{ success: boolean; error?: string }> => {
                 validateSender(event);
-                const success = await projectAgentService.deleteTask(payload.taskId);
+                const success = await workspaceAgentService.deleteTask(payload.taskId);
                 return {
                     success,
                     error: success ? undefined : 'Failed to delete task'
@@ -837,11 +837,11 @@ export function registerWorkspaceAgentIpc(
         )
     );
 
-    registerWorkspaceAgentAdvancedHandlers(projectAgentService, validateSender);
+    registerWorkspaceAgentAdvancedHandlers(workspaceAgentService, validateSender);
 
-    registerWorkspaceAgentDecisionHandlers(projectAgentService, getMainWindow);
+    registerWorkspaceAgentDecisionHandlers(workspaceAgentService, getMainWindow);
 
-    registerWorkspaceAgentCouncilHandlers(projectAgentService, getMainWindow);
+    registerWorkspaceAgentCouncilHandlers(workspaceAgentService, getMainWindow);
 
     ipcMain.handle(
         'agent:health',
@@ -862,8 +862,7 @@ export function registerWorkspaceAgentIpc(
         )
     );
 
-    registerWorkspaceAgentCanvasHandlers(getMainWindow, databaseService, projectAgentService);
+    registerWorkspaceAgentCanvasHandlers(getMainWindow, databaseService, workspaceAgentService);
 }
 
-/** @deprecated Use registerWorkspaceAgentIpc instead */
-export const registerProjectAgentIpc = registerWorkspaceAgentIpc;
+/** @deprecated Use registerWorkspaceAgentIpc instead */

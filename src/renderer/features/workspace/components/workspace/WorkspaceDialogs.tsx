@@ -2,17 +2,17 @@ import React from 'react';
 
 import { LogoGeneratorModal } from '@/features/workspace/components/LogoGeneratorModal';
 import { WorkspaceModals } from '@/features/workspace/components/workspace/WorkspaceModals';
-import { useProjectState } from '@/features/workspace/hooks/useProjectState';
 import { useWorkspaceManager } from '@/features/workspace/hooks/useWorkspaceManager';
+import { useWorkspaceState } from '@/features/workspace/hooks/useWorkspaceState';
 import { Language } from '@/i18n';
-import type { Project } from '@/types';
+import type { Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 interface WorkspaceDialogsProps {
-    ps: ReturnType<typeof useProjectState>;
+    ps: ReturnType<typeof useWorkspaceState>;
     wm: ReturnType<typeof useWorkspaceManager>;
-    project: Project;
-    handleUpdateProject: (updates: Partial<Project>) => Promise<void>;
+    workspace: Workspace;
+    handleUpdateWorkspace: (updates: Partial<Workspace>) => Promise<void>;
     submitEntryModal: () => Promise<void>;
     entryBusy: boolean;
     language: Language;
@@ -22,8 +22,8 @@ interface WorkspaceDialogsProps {
 export const WorkspaceDialogs: React.FC<WorkspaceDialogsProps> = ({
     ps,
     wm,
-    project,
-    handleUpdateProject,
+    workspace,
+    handleUpdateWorkspace,
     submitEntryModal,
     entryBusy,
     language,
@@ -55,9 +55,9 @@ export const WorkspaceDialogs: React.FC<WorkspaceDialogsProps> = ({
         <LogoGeneratorModal
             isOpen={ps.showLogoModal}
             onClose={() => ps.setShowLogoModal(false)}
-            project={project}
+            workspace={workspace}
             onApply={(logoPath: string) => {
-                void handleUpdateProject({ logo: logoPath }).then(() =>
+                void handleUpdateWorkspace({ logo: logoPath }).then(() =>
                     ps.setShowLogoModal(false)
                 ).catch(error => {
                     appLogger.error('WorkspaceDialogs', 'Failed to apply generated logo', error as Error);

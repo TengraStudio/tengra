@@ -329,7 +329,7 @@ export class McpMarketplaceService extends BaseService {
         {
             id: 'gitlab',
             name: 'GitLab',
-            description: 'CI/CD, source control, and project management',
+            description: 'CI/CD, source control, and work tracking',
             publisher: 'Model Context Protocol',
             command: 'npx -y @modelcontextprotocol/server-gitlab',
             categories: ['Developer Tools', 'VCS'],

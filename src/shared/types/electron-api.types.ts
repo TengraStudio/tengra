@@ -34,9 +34,6 @@ import {
     Message,
     OllamaLibraryModel,
     ProcessInfo,
-    ProjectAnalysis,
-    ProjectState,
-    ProjectStep,
     QuotaResponse,
     SSHConfig,
     SSHDevContainer,
@@ -54,10 +51,13 @@ import {
     SSHTunnelPreset,
     TodoItem,
     ToolCall,
+    WorkspaceAnalysis,
+    WorkspaceState,
+    WorkspaceStep,
 } from './index';
 import {
     OrchestratorState,
-} from './project-agent';
+} from './workspace-agent';
 
 export interface ModelDefinition {
     id: string;
@@ -898,8 +898,8 @@ export interface ElectronAPI {
         exists: (path: string) => Promise<boolean>;
     };
 
-    project: {
-        analyze: (rootPath: string, workspaceId: string) => Promise<ProjectAnalysis>;
+    workspace: {
+        analyze: (rootPath: string, workspaceId: string) => Promise<WorkspaceAnalysis>;
         analyzeIdentity: (rootPath: string) => Promise<{ suggestedPrompts: string[]; colors: string[] }>;
         generateLogo: (
             workspacePath: string,
@@ -1105,7 +1105,7 @@ export interface ElectronAPI {
         onDeepResearchProgress: (callback: (progress: unknown) => void) => () => void;
     };
 
-    projectAgent: {
+    workspaceAgent: {
         start: (options: unknown) => Promise<string>;
         generatePlan: (options: unknown) => Promise<unknown>;
         approvePlan: (plan: unknown, taskId: string) => Promise<unknown>;
@@ -1185,7 +1185,7 @@ export interface ElectronAPI {
         exportTemplate: (id: string) => Promise<string>;
         importTemplate: (exported: string) => Promise<unknown>;
         applyTemplate: (payload: unknown) => Promise<void>;
-        onUpdate: (callback: (state: ProjectState) => void) => () => void;
+        onUpdate: (callback: (state: WorkspaceState) => void) => () => void;
         onQuotaInterrupt: (callback: (payload: unknown) => void) => () => void;
         saveCanvasNodes: (nodes: unknown[]) => Promise<void>;
         getCanvasNodes: () => Promise<unknown[]>;
@@ -1198,7 +1198,7 @@ export interface ElectronAPI {
 
     orchestrator: {
         start: (task: string, workspaceId?: string) => Promise<string>;
-        approve: (plan: ProjectStep[]) => Promise<void>;
+        approve: (plan: WorkspaceStep[]) => Promise<void>;
         getState: () => Promise<OrchestratorState>;
         stop: () => Promise<void>;
         onUpdate: (callback: (state: OrchestratorState) => void) => () => void;

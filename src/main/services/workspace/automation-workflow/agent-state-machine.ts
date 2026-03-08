@@ -246,7 +246,7 @@ function handleStartTask(
     return {
         ...state,
         taskId: event.payload.taskId,
-        projectId: event.payload.projectId,
+        workspaceId: event.payload.workspaceId,
         description: event.payload.task,
         state: 'initializing',
         startedAt: new Date()
@@ -639,13 +639,13 @@ function handleStop(state: AgentTaskState): AgentTaskState {
  */
 export function createInitialAgentState(
     taskId: string,
-    projectId: string
+    workspaceId: string
 ): AgentTaskState {
     const now = new Date();
 
     return {
         taskId,
-        projectId,
+        workspaceId,
         description: '',
         state: 'idle',
         currentStep: 0,

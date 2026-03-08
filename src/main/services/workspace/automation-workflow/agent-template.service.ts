@@ -3,7 +3,7 @@
  * Handles agent task templates:
  * - AGT-TPL-01: Built-in templates (refactor, bug-fix, feature, docs)
  * - AGT-TPL-02: User-defined template creation
- * - AGT-TPL-03: Template variables (project name, file paths)
+ * - AGT-TPL-03: Template variables (workspace name, file paths)
  * - AGT-TPL-04: Template sharing/export
  */
 
@@ -16,7 +16,7 @@ import {
     AgentTemplate,
     AgentTemplateCategory,
     AgentTemplateExport,
-} from '@shared/types/project-agent';
+} from '@shared/types/workspace-agent';
 
 // ===== AGT-TPL-01: Built-in Templates =====
 

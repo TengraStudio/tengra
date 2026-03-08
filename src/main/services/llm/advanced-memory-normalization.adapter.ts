@@ -1,5 +1,6 @@
 import {
     AdvancedSemanticFragment,
+    coerceMemoryCategory,
     MemoryCategory,
     MemorySource,
     MemoryStatus,
@@ -11,23 +12,23 @@ interface NormalizationDependencies {
     getNow?: () => number
 }
 
+type NormalizableMemoryRecord = Partial<Omit<AdvancedSemanticFragment, 'category' | 'source' | 'status'>> & {
+    category?: string
+    source?: string
+    status?: string
+}
+
+type NormalizablePendingMemoryRecord = Partial<Omit<PendingMemory, 'source' | 'suggestedCategory'>> & {
+    source?: string
+    suggestedCategory?: string
+}
+
 const VALID_MEMORY_SOURCES: MemorySource[] = [
     'user_explicit',
     'user_implicit',
     'system',
     'conversation',
     'tool_result',
-];
-
-const VALID_MEMORY_CATEGORIES: MemoryCategory[] = [
-    'preference',
-    'personal',
-    'project',
-    'technical',
-    'workflow',
-    'relationship',
-    'fact',
-    'instruction',
 ];
 
 const VALID_MEMORY_STATUSES: MemoryStatus[] = [
@@ -45,7 +46,7 @@ export class AdvancedMemoryNormalizationAdapter {
         this.getNow = deps.getNow ?? Date.now;
     }
 
-    normalizeMemoryRecord(input: Partial<AdvancedSemanticFragment>): AdvancedSemanticFragment | null {
+    normalizeMemoryRecord(input: NormalizableMemoryRecord): AdvancedSemanticFragment | null {
         const rawContent = typeof input.content === 'string'
             ? input.content
             : (typeof input.sourceContext === 'string' ? input.sourceContext : '');
@@ -99,7 +100,7 @@ export class AdvancedMemoryNormalizationAdapter {
         };
     }
 
-    normalizePendingMemoryRecord(input: Partial<PendingMemory>): PendingMemory | null {
+    normalizePendingMemoryRecord(input: NormalizablePendingMemoryRecord): PendingMemory | null {
         const rawContent = typeof input.content === 'string'
             ? input.content
             : (typeof input.sourceContext === 'string' ? input.sourceContext : '');
@@ -144,10 +145,7 @@ export class AdvancedMemoryNormalizationAdapter {
     }
 
     private normalizeMemoryCategory(category?: MemoryCategory | string): MemoryCategory {
-        if (typeof category === 'string' && VALID_MEMORY_CATEGORIES.includes(category as MemoryCategory)) {
-            return category as MemoryCategory;
-        }
-        return 'fact';
+        return coerceMemoryCategory(category);
     }
 
     private normalizeMemoryStatus(status?: MemoryStatus | string): MemoryStatus {

@@ -5,7 +5,7 @@
 
 import { BaseService } from '@main/services/base.service';
 import { Message } from '@shared/types/chat';
-import { CostEstimate, PlanCostBreakdown, ProjectStep } from '@shared/types/project-agent';
+import { CostEstimate, PlanCostBreakdown, WorkspaceStep } from '@shared/types/workspace-agent';
 
 import { getTokenEstimationService, TokenEstimationService } from './token-estimation.service';
 
@@ -293,7 +293,7 @@ export class CostEstimationService extends BaseService {
      * @param provider The provider being used
      */
     estimatePlanCost(
-        plan: ProjectStep[],
+        plan: WorkspaceStep[],
         contextMessages: Message[],
         modelId: string,
         provider: string
@@ -351,7 +351,7 @@ export class CostEstimationService extends BaseService {
      * Calculate actual cost from completed plan execution
      */
     calculateActualPlanCost(
-        plan: ProjectStep[],
+        plan: WorkspaceStep[],
         modelId: string,
         provider: string
     ): PlanCostBreakdown {

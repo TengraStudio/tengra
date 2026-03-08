@@ -189,6 +189,26 @@ const sectionData = {
         "editPrompt": "Modifier l'invite",
         "editMode": "Mode édition",
         "editRun": "Exécuter Modifier"
+    },
+    "storageDashboard": {
+        "title": "Tableau de stockage",
+        "subtitle": "Suivez l'utilisation de la base de données et le total des enregistrements de l'application.",
+        "loadError": "Impossible de charger les statistiques de stockage.",
+        "dbSize": "Base de données",
+        "totalChats": "Chats",
+        "totalMessages": "Messages",
+        "totalWorkspaces": "Espaces de travail"
+    },
+    "databaseSizeDashboard": {
+        "title": "Taille de la base de données",
+        "subtitle": "Répartition de l'utilisation du stockage par type d'enregistrement.",
+        "loadError": "Impossible de charger les statistiques de la base de données.",
+        "dbSize": "Base de données",
+        "chats": "Chats",
+        "messages": "Messages",
+        "workspaces": "Espaces de travail",
+        "folders": "Dossiers",
+        "prompts": "Prompts"
     }
 };
 

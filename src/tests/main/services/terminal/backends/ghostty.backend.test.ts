@@ -72,7 +72,7 @@ function createDefaultOptions(overrides?: Partial<TerminalCreateOptions>): Termi
         id: 'test-session-1',
         shell: '/bin/bash',
         args: [],
-        cwd: '/home/user/project',
+        cwd: '/home/user/workspace',
         cols: 80,
         rows: 24,
         env: { PATH: '/usr/bin' },

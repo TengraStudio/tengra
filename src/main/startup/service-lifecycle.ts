@@ -10,7 +10,6 @@ interface ServiceGroupRegistrations {
     registerDataServices: () => void;
     registerSecurityServices: () => void;
     registerLLMServices: () => void;
-    registerProjectServices?: () => void;
     registerWorkspaceServices?: () => void;
     registerAnalysisServices: () => void;
     registerMcpServices: () => void;
@@ -36,7 +35,7 @@ export function registerServiceGroups(registrations: ServiceGroupRegistrations):
     registrations.registerSecurityServices();
     registrations.registerLLMServices();
     const registerWorkspaceLikeServices =
-        registrations.registerWorkspaceServices ?? registrations.registerProjectServices;
+        registrations.registerWorkspaceServices ?? registrations.registerWorkspaceServices;
     registerWorkspaceLikeServices?.();
     registrations.registerAnalysisServices();
     registrations.registerMcpServices();
@@ -98,12 +97,12 @@ const DEFERRED_SERVICE_NAMES: string[] = [
     'agentPersistenceService',
     'agentCheckpointService',
     'agentPerformanceService',
-    'projectAgentService',
+    'workspaceAgentService',
     'multiAgentOrchestratorService',
     // Workspace & external
     'marketResearchService',
     'ideaGeneratorService',
-    'projectScaffoldService',
+    'workspaceScaffoldService',
     'workflowService',
     'backupService',
     // MCP

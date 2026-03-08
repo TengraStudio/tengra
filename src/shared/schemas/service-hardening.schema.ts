@@ -1,18 +1,20 @@
 import { z } from 'zod';
 
+import {
+    MEMORY_CATEGORY_VALUES,
+    normalizeMemoryCategory,
+    normalizeMemoryCategoryCounts
+} from '../types/advanced-memory';
+
 export const ServiceHealthUiStateSchema = z.enum(['ready', 'empty', 'failure']);
 export const ServiceHealthStatusSchema = z.enum(['healthy', 'degraded']);
 
-export const AdvancedMemoryCategorySchema = z.enum([
-    'preference',
-    'personal',
-    'project',
-    'technical',
-    'workflow',
-    'relationship',
-    'fact',
-    'instruction'
-]);
+const CanonicalAdvancedMemoryCategorySchema = z.enum(MEMORY_CATEGORY_VALUES);
+
+export const AdvancedMemoryCategorySchema = z.preprocess(
+    value => typeof value === 'string' ? normalizeMemoryCategory(value) : value,
+    CanonicalAdvancedMemoryCategorySchema
+);
 
 export const AdvancedMemoryStatusSchema = z.enum([
     'pending',
@@ -108,7 +110,7 @@ export const MemoryImportResultSchema = z.object({
 export const MemoryStatisticsSchema = z.object({
     total: z.number().int().nonnegative(),
     byStatus: z.record(AdvancedMemoryStatusSchema, z.number().int().nonnegative()),
-    byCategory: z.record(AdvancedMemoryCategorySchema, z.number().int().nonnegative()),
+    byCategory: z.record(z.string(), z.number().int().nonnegative()).transform(normalizeMemoryCategoryCounts),
     bySource: z.record(AdvancedMemorySourceSchema, z.number().int().nonnegative()),
     averageConfidence: z.number().min(0).max(1),
     averageImportance: z.number().min(0).max(1),

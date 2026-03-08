@@ -5,7 +5,7 @@ import {
     AgentCollaborationIntent,
     AgentCollaborationMessage,
     AgentCollaborationPriority,
-} from '@shared/types/project-agent';
+} from '@shared/types/workspace-agent';
 
 const MAX_COLLABORATION_PAYLOAD_KEYS = 32;
 const MAX_COLLABORATION_STRING_LENGTH = 4000;

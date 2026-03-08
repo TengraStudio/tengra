@@ -14,7 +14,7 @@ import { EditorTab } from '@/types';
 export interface UseEditorSnippetsParams {
     activeTab: EditorTab | null;
     activeLanguage: string;
-    projectKey: string;
+    workspaceKey: string;
     updateTabContent: (value: string) => void;
     setStatusMessage: (message: string) => void;
 }
@@ -34,7 +34,7 @@ export interface UseEditorSnippetsResult {
 /**
  * Manages snippet collection state and persistence.
  */
-function useSnippetCollection(activeLanguage: string, projectKey: string): {
+function useSnippetCollection(activeLanguage: string, workspaceKey: string): {
     allSnippets: WorkspaceSnippet[];
     snippets: WorkspaceSnippet[];
     persistSnippets: (next: WorkspaceSnippet[]) => void;
@@ -42,8 +42,8 @@ function useSnippetCollection(activeLanguage: string, projectKey: string): {
     const [allSnippets, setAllSnippets] = React.useState<WorkspaceSnippet[]>(() => loadWorkspaceSnippets());
 
     const snippets = React.useMemo(
-        () => filterWorkspaceSnippets(allSnippets, activeLanguage, projectKey),
-        [activeLanguage, allSnippets, projectKey]
+        () => filterWorkspaceSnippets(allSnippets, activeLanguage, workspaceKey),
+        [activeLanguage, allSnippets, workspaceKey]
     );
 
     const persistSnippets = React.useCallback((next: WorkspaceSnippet[]) => {
@@ -89,7 +89,7 @@ function useSnippetTransfer(
                     id: `${Date.now()}-${s.name}`,
                     name: s.name,
                     language: s.language || 'all',
-                    projectKey: s.projectKey || 'global',
+                    workspaceKey: s.workspaceKey || 'global',
                     content: s.content,
                     createdAt: Date.now(),
                 }));
@@ -133,13 +133,13 @@ function useSnippetTransfer(
 export function useEditorSnippets({
     activeTab,
     activeLanguage,
-    projectKey,
+    workspaceKey,
     updateTabContent,
     setStatusMessage,
 }: UseEditorSnippetsParams): UseEditorSnippetsResult {
     const { t } = useTranslation();
     const [selectedSnippetId, setSelectedSnippetId] = React.useState('');
-    const { allSnippets, snippets, persistSnippets } = useSnippetCollection(activeLanguage, projectKey);
+    const { allSnippets, snippets, persistSnippets } = useSnippetCollection(activeLanguage, workspaceKey);
     const transfer = useSnippetTransfer(snippets, allSnippets, selectedSnippetId, persistSnippets, setStatusMessage);
 
     const saveCurrentAsSnippet = React.useCallback(() => {
@@ -150,13 +150,13 @@ export function useEditorSnippets({
             id: `${Date.now()}`,
             name: activeTab.name,
             language: activeLanguage,
-            projectKey,
+            workspaceKey,
             content: activeTab.content,
             createdAt: Date.now(),
         };
         persistSnippets([snippet, ...allSnippets]);
         setStatusMessage(t('workspaceDashboard.editor.snippetSaved'));
-    }, [activeLanguage, activeTab, allSnippets, persistSnippets, projectKey, setStatusMessage, t]);
+    }, [activeLanguage, activeTab, allSnippets, persistSnippets, workspaceKey, setStatusMessage, t]);
 
     const insertSelectedSnippet = React.useCallback(() => {
         if (!activeTab) {

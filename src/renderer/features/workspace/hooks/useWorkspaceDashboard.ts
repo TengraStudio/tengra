@@ -2,7 +2,7 @@ import { FileSearchResult } from '@shared/types/common';
 import { useCallback, useEffect, useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
-import { AgentDefinition, Project, ProjectAnalysis, ProjectDashboardTab, ProjectStats } from '@/types';
+import { AgentDefinition, Workspace, WorkspaceAnalysis, WorkspaceDashboardTab, WorkspaceStats } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 import { useDashboardInlineEdit } from './useDashboardInlineEdit';
@@ -15,41 +15,41 @@ export interface OpenFile {
     initialLine?: number
 }
 
-interface UseProjectDashboardProps {
-    project: Project
-    onUpdate?: (updates: Partial<Project>) => Promise<void>
+interface UseWorkspaceDashboardProps {
+    workspace: Workspace
+    onUpdate?: (updates: Partial<Workspace>) => Promise<void>
     language: Language
-    externalTab?: ProjectDashboardTab
-    onTabChange?: (tab: ProjectDashboardTab) => void
+    externalTab?: WorkspaceDashboardTab
+    onTabChange?: (tab: WorkspaceDashboardTab) => void
     selectedEntry?: { path: string; isDirectory: boolean } | null
     onOpenFile?: (path: string, line?: number) => void
 }
 
-export const useProjectDashboard = ({
-    project,
+export const useWorkspaceDashboard = ({
+    workspace,
     onUpdate,
     language,
     externalTab,
     onTabChange,
     selectedEntry,
     onOpenFile
-}: UseProjectDashboardProps) => {
+}: UseWorkspaceDashboardProps) => {
     const { t } = useTranslation(language);
-    const [stats, setStats] = useState<ProjectStats | null>(null);
-    const [analysis, setAnalysis] = useState<ProjectAnalysis | null>(null);
+    const [stats, setStats] = useState<WorkspaceStats | null>(null);
+    const [analysis, setAnalysis] = useState<WorkspaceAnalysis | null>(null);
     const [loading, setLoading] = useState(false);
-    const [internalTab, setInternalTab] = useState<ProjectDashboardTab>('overview');
+    const [internalTab, setInternalTab] = useState<WorkspaceDashboardTab>('overview');
 
     const activeTab = externalTab ?? internalTab;
-    const setActiveTab = (onTabChange ?? setInternalTab) as (tab: ProjectDashboardTab) => void;
+    const setActiveTab = (onTabChange ?? setInternalTab) as (tab: WorkspaceDashboardTab) => void;
 
-    const [projectRoot, setProjectRoot] = useState<string>(project.path);
+    const [workspaceRoot, setWorkspaceRoot] = useState<string>(workspace.path);
     const [openFiles, setOpenFiles] = useState<OpenFile[]>([]);
     const [activeFile, setActiveFile] = useState<string | null>(null);
     const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
 
     // Isolated inline editing logic
-    const inlineEdit = useDashboardInlineEdit({ project, onUpdate });
+    const inlineEdit = useDashboardInlineEdit({ workspace, onUpdate });
 
     // Search and Agents State
     const [searchQuery, setSearchQuery] = useState('');
@@ -63,7 +63,7 @@ export const useProjectDashboard = ({
                 const agents = await window.electron.agent.getAll();
                 setAvailableAgents(agents as AgentDefinition[]);
             } catch (error) {
-                appLogger.error('ProjectDashboard', 'Failed to fetch agents', error as Error);
+                appLogger.error('WorkspaceDashboard', 'Failed to fetch agents', error as Error);
             }
         };
         void fetchAgents();
@@ -78,36 +78,36 @@ export const useProjectDashboard = ({
     }, [selectedEntry]);
 
     useEffect(() => {
-        setProjectRoot(project.path);
-    }, [project.path]);
+        setWorkspaceRoot(workspace.path);
+    }, [workspace.path]);
 
-    const analyzeProject = useCallback(async () => {
+    const analyzeWorkspace = useCallback(async () => {
         setLoading(true);
         try {
-            const result = await window.electron.workspace.analyze(project.path, project.id);
-            setAnalysis(result as ProjectAnalysis);
+            const result = await window.electron.workspace.analyze(workspace.path, workspace.id);
+            setAnalysis(result as WorkspaceAnalysis);
             if (result.stats) { setStats(result.stats); }
         } catch (error) {
-            appLogger.error('ProjectDashboard', 'Analysis failed', error as Error);
+            appLogger.error('WorkspaceDashboard', 'Analysis failed', error as Error);
         } finally {
             setLoading(false);
         }
-    }, [project.path, project.id]);
+    }, [workspace.path, workspace.id]);
 
     useEffect(() => {
-        void analyzeProject();
-        const interval = setInterval(() => { void analyzeProject(); }, 60000);
+        void analyzeWorkspace();
+        const interval = setInterval(() => { void analyzeWorkspace(); }, 60000);
         return () => clearInterval(interval);
-    }, [analyzeProject]);
+    }, [analyzeWorkspace]);
 
     const handleSearch = async () => {
         if (searchQuery.trim().length < 2) { return; }
         setIsSearching(true);
         try {
-            const results = await window.electron.code.searchFiles(project.path, searchQuery, project.id);
+            const results = await window.electron.code.searchFiles(workspace.path, searchQuery, workspace.id);
             setSearchResults(results);
         } catch (error) {
-            appLogger.error('ProjectDashboard', 'Search failed', error as Error);
+            appLogger.error('WorkspaceDashboard', 'Search failed', error as Error);
         } finally {
             setIsSearching(false);
         }
@@ -125,7 +125,7 @@ export const useProjectDashboard = ({
             setActiveTab('files');
             onOpenFile?.(path, line);
         } catch (error) {
-            appLogger.error('ProjectDashboard', 'Failed to read file', error as Error);
+            appLogger.error('WorkspaceDashboard', 'Failed to read file', error as Error);
         }
     };
 
@@ -139,9 +139,9 @@ export const useProjectDashboard = ({
     };
 
     return {
-        t, stats, analysis, loading, activeTab, setActiveTab, projectRoot, openFiles, setOpenFiles,
+        t, stats, analysis, loading, activeTab, setActiveTab, workspaceRoot, openFiles, setOpenFiles,
         activeFile, setActiveFile, selectedFolder, searchQuery, setSearchQuery, searchResults,
-        isSearching, availableAgents, analyzeProject, handleSearch, handleFileSelect, closeFile,
+        isSearching, availableAgents, analyzeWorkspace, handleSearch, handleFileSelect, closeFile,
         ...inlineEdit
     };
 };

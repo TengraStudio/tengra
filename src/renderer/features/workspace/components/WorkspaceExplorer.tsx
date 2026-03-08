@@ -17,7 +17,7 @@ import { WorkspaceContextMenu } from './workspace/WorkspaceContextMenu';
 import { WorkspaceMountItem } from './workspace/WorkspaceMountItem';
 
 interface WorkspaceExplorerProps {
-    projectId: string;
+    workspaceId: string;
     mounts: WorkspaceMount[];
     mountStatus: Record<string, 'connected' | 'disconnected' | 'connecting'>;
     refreshSignal: number;
@@ -34,7 +34,7 @@ interface WorkspaceExplorerProps {
 }
 
 export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
-    projectId,
+    workspaceId,
     mounts,
     mountStatus,
     refreshSignal,
@@ -51,10 +51,10 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
 }) => {
     const { t } = useTranslation(language);
     const storageKey = React.useMemo(
-        () => getWorkspaceExplorerStorageKey(projectId, mounts),
-        [mounts, projectId]
+        () => getWorkspaceExplorerStorageKey(workspaceId, mounts),
+        [mounts, workspaceId]
     );
-    const treeStorageKey = React.useMemo(() => getWorkspaceTreeStorageKey(projectId), [projectId]);
+    const treeStorageKey = React.useMemo(() => getWorkspaceTreeStorageKey(workspaceId), [workspaceId]);
     const [expandedTreeNodes, setExpandedTreeNodes] = React.useState<Record<string, boolean>>(() =>
         loadExpandedTreeState(treeStorageKey)
     );

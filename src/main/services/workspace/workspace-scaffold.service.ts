@@ -56,10 +56,6 @@ export class WorkspaceScaffoldService extends BaseService {
         }
     }
 
-    async scaffoldProject(idea: WorkspaceIdea, targetPath: string): Promise<void> {
-        return this.scaffoldWorkspace(idea, targetPath);
-    }
-
     /**
      * Create website scaffold
      */

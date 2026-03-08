@@ -1,7 +1,7 @@
 const sectionData = {
     "title": "Semantic Search",
     "placeholder": "Ask about the codebase...",
-    "indexing": "Indexing Project...",
+    "indexing": "Indexing Workspace...",
     "results": "Search Results",
     "noResults": "No semantic matches found.",
     "relevance": "Relevance",

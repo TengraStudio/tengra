@@ -5,7 +5,12 @@
  * and the standalone Rust database service.
  */
 
+import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
+
 import { JsonObject, JsonValue } from './common';
+
+const WORKSPACE_COMPAT_ID_FIELD = WORKSPACE_COMPAT_SCHEMA_VALUES.ID_COLUMN;
+const WORKSPACE_COMPAT_PATH_FIELD = WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN;
 
 // ============================================================================
 // API Response Types
@@ -55,7 +60,7 @@ export interface DbChat {
     model?: string
     backend?: string
     folder_id?: string
-    project_id?: string
+    [WORKSPACE_COMPAT_ID_FIELD]?: string
     is_pinned: boolean
     is_favorite: boolean
     is_archived: boolean
@@ -70,7 +75,7 @@ export interface DbCreateChatRequest {
     model?: string
     backend?: string
     folder_id?: string
-    project_id?: string
+    [WORKSPACE_COMPAT_ID_FIELD]?: string
     is_pinned?: boolean
     is_favorite?: boolean
     metadata?: JsonObject
@@ -81,7 +86,7 @@ export interface DbUpdateChatRequest {
     model?: string
     backend?: string
     folder_id?: string
-    project_id?: string
+    [WORKSPACE_COMPAT_ID_FIELD]?: string
     is_pinned?: boolean
     is_favorite?: boolean
     is_archived?: boolean
@@ -120,10 +125,10 @@ export interface DbUpdateMessageRequest {
 }
 
 // ============================================================================
-// Project Types
+// Workspace Types
 // ============================================================================
 
-export interface DbProject {
+export interface DbWorkspace {
     id: string
     title: string
     description?: string
@@ -137,7 +142,7 @@ export interface DbProject {
     updated_at: number
 }
 
-export interface DbCreateProjectRequest {
+export interface DbCreateWorkspaceRequest {
     id?: string
     title: string
     description?: string
@@ -147,7 +152,7 @@ export interface DbCreateProjectRequest {
     metadata?: JsonObject
 }
 
-export interface DbUpdateProjectRequest {
+export interface DbUpdateWorkspaceRequest {
     title?: string
     description?: string
     path?: string
@@ -158,12 +163,7 @@ export interface DbUpdateProjectRequest {
     metadata?: JsonObject
 }
 
-/** @alias DbProject */
-export type DbWorkspace = DbProject
-/** @alias DbCreateProjectRequest */
-export type DbCreateWorkspaceRequest = DbCreateProjectRequest
-/** @alias DbUpdateProjectRequest */
-export type DbUpdateWorkspaceRequest = DbUpdateProjectRequest
+
 
 // ============================================================================
 // Folder Types
@@ -220,7 +220,7 @@ export interface DbUpdatePromptRequest {
 
 export interface DbCodeSymbol {
     id: string
-    project_path: string
+    [WORKSPACE_COMPAT_PATH_FIELD]: string
     file_path: string
     name: string
     line: number
@@ -233,7 +233,7 @@ export interface DbCodeSymbol {
 
 export interface DbStoreCodeSymbolRequest {
     id?: string
-    project_path?: string
+    [WORKSPACE_COMPAT_PATH_FIELD]?: string
     workspace_path?: string
     file_path: string
     name: string
@@ -247,7 +247,7 @@ export interface DbStoreCodeSymbolRequest {
 export interface DbVectorSearchRequest {
     embedding: number[]
     limit?: number
-    project_path?: string
+    [WORKSPACE_COMPAT_PATH_FIELD]?: string
     workspace_path?: string
 }
 
@@ -259,7 +259,7 @@ export interface DbSemanticFragment {
     source_id: string
     tags: string[]
     importance: number
-    project_path?: string
+    [WORKSPACE_COMPAT_PATH_FIELD]?: string
     workspace_path?: string
     created_at: number
     updated_at: number
@@ -273,7 +273,7 @@ export interface DbStoreSemanticFragmentRequest {
     source_id: string
     tags?: string[]
     importance?: number
-    project_path?: string
+    [WORKSPACE_COMPAT_PATH_FIELD]?: string
     workspace_path?: string
 }
 
@@ -375,12 +375,12 @@ export interface DbServiceClient {
     updateMessage(id: string, req: DbUpdateMessageRequest): Promise<DbApiResponse<boolean>>
     deleteMessage(id: string): Promise<DbApiResponse<boolean>>
 
-    // Projects
-    listProjects(): Promise<DbApiResponse<DbProject[]>>
-    getProject(id: string): Promise<DbApiResponse<DbProject | null>>
-    createProject(req: DbCreateProjectRequest): Promise<DbApiResponse<DbProject>>
-    updateProject(id: string, req: DbUpdateProjectRequest): Promise<DbApiResponse<boolean>>
-    deleteProject(id: string): Promise<DbApiResponse<boolean>>
+    // Workspaces
+    listWorkspaces(): Promise<DbApiResponse<DbWorkspace[]>>
+    getWorkspace(id: string): Promise<DbApiResponse<DbWorkspace | null>>
+    createWorkspace(req: DbCreateWorkspaceRequest): Promise<DbApiResponse<DbWorkspace>>
+    updateWorkspace(id: string, req: DbUpdateWorkspaceRequest): Promise<DbApiResponse<boolean>>
+    deleteWorkspace(id: string): Promise<DbApiResponse<boolean>>
 
     // Folders
     listFolders(): Promise<DbApiResponse<DbFolder[]>>

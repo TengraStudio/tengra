@@ -85,7 +85,7 @@ export const StorageDashboard: React.FC = () => {
 
     if (!stats) {
         return (
-            <div className="p-4 text-sm text-destructive">{t('storageDashboard.loadError')}</div>
+            <div className="p-4 text-sm text-destructive">{t('settings.storageDashboard.loadError')}</div>
         );
     }
 
@@ -96,32 +96,32 @@ export const StorageDashboard: React.FC = () => {
         <div className="space-y-4">
             <div>
                 <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">
-                    {t('storageDashboard.title')}
+                    {t('settings.storageDashboard.title')}
                 </h3>
                 <p className="text-[10px] text-muted-foreground/60 mt-1">
-                    {t('storageDashboard.subtitle')}
+                    {t('settings.storageDashboard.subtitle')}
                 </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatItem
                     icon={<HardDrive className="w-3.5 h-3.5 text-primary" />}
-                    label={t('storageDashboard.dbSize')}
+                    label={t('settings.storageDashboard.dbSize')}
                     value={formatBytes(stats.dbSize)}
                     ratio={sizeRatio}
                 />
                 <StatItem
                     icon={<MessageSquare className="w-3.5 h-3.5 text-primary" />}
-                    label={t('storageDashboard.totalChats')}
+                    label={t('settings.storageDashboard.totalChats')}
                     value={String(stats.chatCount)}
                 />
                 <StatItem
                     icon={<Database className="w-3.5 h-3.5 text-primary" />}
-                    label={t('storageDashboard.totalMessages')}
+                    label={t('settings.storageDashboard.totalMessages')}
                     value={String(stats.messageCount)}
                 />
                 <StatItem
                     icon={<FolderOpen className="w-3.5 h-3.5 text-primary" />}
-                    label={t('storageDashboard.totalProjects')}
+                    label={t('settings.storageDashboard.totalWorkspaces')}
                     value={String(stats.workspaceCount)}
                 />
             </div>

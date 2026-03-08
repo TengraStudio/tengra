@@ -10,9 +10,9 @@ vi.mock('@shared/utils/sanitize.util', () => ({
     }
 }));
 
+import { CommandService } from '@main/services/system/command.service';
 import { DockerService } from '@main/services/workspace/docker.service';
 import { SSHService } from '@main/services/workspace/ssh.service';
-import { CommandService } from '@main/services/system/command.service';
 
 interface MockCommandService {
     executeCommand: ReturnType<typeof vi.fn>;

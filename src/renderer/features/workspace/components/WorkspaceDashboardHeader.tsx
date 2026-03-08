@@ -1,13 +1,13 @@
-import { Project } from '@shared/types/project';
 import { Camera, Check, Pencil, RefreshCw, Sparkles } from 'lucide-react';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+import type { Workspace } from '@/types';
 
-interface ProjectDashboardHeaderProps {
-    project: Project;
-    projectRoot: string;
+interface WorkspaceDashboardHeaderProps {
+    workspace: Workspace;
+    workspaceRoot: string;
     type: string;
     loading: boolean;
     isEditingName: boolean;
@@ -21,12 +21,12 @@ interface ProjectDashboardHeaderProps {
     setEditDesc: (val: string) => void;
     handleSaveDesc: () => Promise<void>;
     onOpenLogoGenerator?: () => void;
-    analyzeProject: () => Promise<void>;
+    analyzeWorkspace: () => Promise<void>;
 }
 
-export const ProjectDashboardHeader: React.FC<ProjectDashboardHeaderProps> = ({
-    project,
-    projectRoot,
+export const WorkspaceDashboardHeader: React.FC<WorkspaceDashboardHeaderProps> = ({
+    workspace,
+    workspaceRoot,
     type,
     loading,
     isEditingName,
@@ -40,7 +40,7 @@ export const ProjectDashboardHeader: React.FC<ProjectDashboardHeaderProps> = ({
     setEditDesc,
     handleSaveDesc,
     onOpenLogoGenerator,
-    analyzeProject
+    analyzeWorkspace
 }) => {
     const { t } = useTranslation();
 
@@ -49,8 +49,8 @@ export const ProjectDashboardHeader: React.FC<ProjectDashboardHeaderProps> = ({
             {/* Logo Area */}
             <div className="relative group shrink-0">
                 <div className="w-32 h-32 rounded-2xl bg-muted/40 border-2 border-dashed border-border flex items-center justify-center overflow-hidden transition-all group-hover:border-primary/50 shadow-inner">
-                    {project.logo ? (
-                        <img src={`safe-file://${project.logo}`} alt="Logo" className="w-full h-full object-cover" />
+                    {workspace.logo ? (
+                        <img src={`safe-file://${workspace.logo}`} alt="Logo" className="w-full h-full object-cover" />
                     ) : (
                         <Sparkles className="w-10 h-10 text-muted-foreground/20" />
                     )}
@@ -90,7 +90,7 @@ export const ProjectDashboardHeader: React.FC<ProjectDashboardHeaderProps> = ({
                             onClick={() => { setIsEditingName(true); }}
                             className="text-4xl font-black tracking-tighter text-foreground cursor-pointer hover:text-primary transition-colors flex items-center gap-3"
                         >
-                            {project.title}
+                            {workspace.title}
                             <Pencil className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
                         </h1>
                     )}
@@ -113,7 +113,7 @@ export const ProjectDashboardHeader: React.FC<ProjectDashboardHeaderProps> = ({
                             onClick={() => { setIsEditingDesc(true); }}
                             className="text-sm text-muted-foreground leading-relaxed cursor-pointer hover:text-foreground transition-colors max-w-2xl flex items-start gap-2"
                         >
-                            {project.description || t('workspaces.noDescription')}
+                            {workspace.description || t('workspaces.noDescription')}
                             <Pencil className="w-3 h-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </p>
                     )}
@@ -125,10 +125,10 @@ export const ProjectDashboardHeader: React.FC<ProjectDashboardHeaderProps> = ({
                         <span className="text-xxs font-bold text-success uppercase tracking-wider">{type}</span>
                     </div>
                     <div className="text-xxs font-medium text-muted-foreground font-mono bg-accent/50 px-2 py-1 rounded border border-border">
-                        {projectRoot}
+                        {workspaceRoot}
                     </div>
                     <button
-                        onClick={() => { void analyzeProject(); }}
+                        onClick={() => { void analyzeWorkspace(); }}
                         disabled={loading}
                         className="p-2 rounded-lg bg-muted/20 border border-border text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all flex items-center gap-2 text-xs"
                         title={t('common.refresh')}

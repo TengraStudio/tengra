@@ -1,10 +1,10 @@
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
-import { ProjectAgentService } from '@main/services/project/project-agent.service';
+import { WorkspaceAgentService } from '@main/services/workspace/workspace-agent.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import {
     AgentCollaborationIntentSchema,
     AgentCollaborationPrioritySchema,
-} from '@shared/schemas/project-agent-hardening.schema';
+} from '@shared/schemas/workspace-agent-hardening.schema';
 import type {
     AgentCollaborationIntent,
     AgentCollaborationPriority,
@@ -16,12 +16,12 @@ import type {
     QuotaInterruptResult,
     WorkerAvailabilityInput,
     WorkerAvailabilityRecord,
-} from '@shared/types/project-agent';
+} from '@shared/types/workspace-agent';
 import type {
     AgentCollaborationMessage,
     HelperCandidateScore,
     HelperHandoffPackage,
-} from '@shared/types/project-agent';
+} from '@shared/types/workspace-agent';
 import { BrowserWindow, ipcMain } from 'electron';
 import { z } from 'zod';
 
@@ -33,7 +33,7 @@ const createEventDedupeKey = (prefix: string, taskId: string, sequence: number):
 };
 
 export function registerWorkspaceAgentCouncilHandlers(
-    projectAgentService: ProjectAgentService,
+    workspaceAgentService: WorkspaceAgentService,
     getMainWindow: () => BrowserWindow | null
 ): void {
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'council messaging');
@@ -53,7 +53,7 @@ export function registerWorkspaceAgentCouncilHandlers(
             'agent:council-send-message',
             async (event, payload): Promise<AgentCollaborationMessage | null> => {
                 validateSender(event);
-                return await projectAgentService.sendCollaborationMessage(payload);
+                return await workspaceAgentService.sendCollaborationMessage(payload);
             },
             {
                 argsSchema: z.tuple([z.object({
@@ -82,7 +82,7 @@ export function registerWorkspaceAgentCouncilHandlers(
             'agent:council-get-messages',
             async (event, payload): Promise<AgentCollaborationMessage[]> => {
                 validateSender(event);
-                return await projectAgentService.getCollaborationMessages(payload);
+                return await workspaceAgentService.getCollaborationMessages(payload);
             },
             {
                 argsSchema: z.tuple([z.object({
@@ -102,7 +102,7 @@ export function registerWorkspaceAgentCouncilHandlers(
             'agent:council-cleanup-expired-messages',
             async (event, payload?: { taskId?: string }): Promise<{ success: true; removed: number }> => {
                 validateSender(event);
-                const removed = await projectAgentService.cleanupExpiredCollaborationMessages(payload?.taskId);
+                const removed = await workspaceAgentService.cleanupExpiredCollaborationMessages(payload?.taskId);
                 return { success: true, removed };
             },
             {
@@ -118,7 +118,7 @@ export function registerWorkspaceAgentCouncilHandlers(
             'agent:council-handle-quota-interrupt',
             async (event, payload): Promise<QuotaInterruptResult | null> => {
                 validateSender(event);
-                const result = await projectAgentService.handleQuotaExhaustedInterrupt(payload);
+                const result = await workspaceAgentService.handleQuotaExhaustedInterrupt(payload);
                 councilEventSequence += 1;
                 const eventPayload = {
                     ...result,
@@ -152,7 +152,7 @@ export function registerWorkspaceAgentCouncilHandlers(
             'agent:council-register-worker-availability',
             async (event, payload): Promise<WorkerAvailabilityRecord | null> => {
                 validateSender(event);
-                return projectAgentService.registerWorkerAvailability(payload);
+                return workspaceAgentService.registerWorkerAvailability(payload);
             },
             {
                 argsSchema: z.tuple([z.object({
@@ -174,7 +174,7 @@ export function registerWorkspaceAgentCouncilHandlers(
             'agent:council-list-available-workers',
             async (event, payload): Promise<WorkerAvailabilityRecord[]> => {
                 validateSender(event);
-                return projectAgentService.listAvailableWorkers(payload.taskId);
+                return workspaceAgentService.listAvailableWorkers(payload.taskId);
             },
             {
                 argsSchema: z.tuple([z.object({ taskId: z.string().min(1) })]),
@@ -189,7 +189,7 @@ export function registerWorkspaceAgentCouncilHandlers(
             'agent:council-score-helper-candidates',
             async (event, payload): Promise<HelperCandidateScore[]> => {
                 validateSender(event);
-                return projectAgentService.scoreHelperCandidates(payload);
+                return workspaceAgentService.scoreHelperCandidates(payload);
             },
             {
                 argsSchema: z.tuple([z.object({
@@ -210,7 +210,7 @@ export function registerWorkspaceAgentCouncilHandlers(
             'agent:council-generate-helper-handoff-package',
             async (event, payload): Promise<HelperHandoffPackage> => {
                 validateSender(event);
-                return projectAgentService.generateHelperHandoffPackage(payload);
+                return workspaceAgentService.generateHelperHandoffPackage(payload);
             },
             {
                 argsSchema: z.tuple([z.object({
@@ -234,7 +234,7 @@ export function registerWorkspaceAgentCouncilHandlers(
             'agent:council-review-helper-merge-gate',
             async (event, payload): Promise<HelperMergeGateDecision> => {
                 validateSender(event);
-                return projectAgentService.reviewHelperMergeGate(payload);
+                return workspaceAgentService.reviewHelperMergeGate(payload);
             },
             {
                 argsSchema: z.tuple([z.object({

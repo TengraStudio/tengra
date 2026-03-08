@@ -25,8 +25,8 @@ export const CATEGORY_CONFIG: Record<
     icon: Settings,
   },
   personal: { labelKey: 'memory.categories.personal', color: 'bg-pink/10 text-pink', icon: Brain },
-  project: {
-    labelKey: 'memory.categories.project',
+  workspace: {
+    labelKey: 'memory.categories.workspace',
     color: 'bg-success/10 text-success',
     icon: Lightbulb,
   },

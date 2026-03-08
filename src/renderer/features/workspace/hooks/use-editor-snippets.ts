@@ -12,7 +12,7 @@ import { useTranslation } from '@/i18n';
 
 interface UseEditorSnippetsParams {
     activeLanguage: string;
-    projectKey: string;
+    workspaceKey: string;
     activeTabContent: string | undefined;
     activeTabName: string | undefined;
     updateTabContent: (value: string) => void;
@@ -23,7 +23,7 @@ interface UseEditorSnippetsParams {
  */
 export function useEditorSnippets({
     activeLanguage,
-    projectKey,
+    workspaceKey,
     activeTabContent,
     activeTabName,
     updateTabContent,
@@ -34,8 +34,8 @@ export function useEditorSnippets({
     const [snippetStatus, setSnippetStatus] = React.useState('');
 
     const snippets = React.useMemo(
-        () => filterWorkspaceSnippets(allSnippets, activeLanguage, projectKey),
-        [activeLanguage, allSnippets, projectKey]
+        () => filterWorkspaceSnippets(allSnippets, activeLanguage, workspaceKey),
+        [activeLanguage, allSnippets, workspaceKey]
     );
 
     React.useEffect(() => {
@@ -55,13 +55,13 @@ export function useEditorSnippets({
             id: `${Date.now()}`,
             name: activeTabName,
             language: activeLanguage,
-            projectKey,
+            workspaceKey,
             content: activeTabContent,
             createdAt: Date.now(),
         };
         persistSnippets([snippet, ...allSnippets]);
         setSnippetStatus(t('workspaceDashboard.editor.snippetSaved'));
-    }, [activeLanguage, activeTabContent, activeTabName, allSnippets, persistSnippets, projectKey, t]);
+    }, [activeLanguage, activeTabContent, activeTabName, allSnippets, persistSnippets, workspaceKey, t]);
 
     const insertSelectedSnippet = React.useCallback(() => {
         if (activeTabContent === undefined) {
@@ -99,7 +99,7 @@ export function useEditorSnippets({
                     id: `${Date.now()}-${snippet.name}`,
                     name: snippet.name,
                     language: snippet.language || 'all',
-                    projectKey: snippet.projectKey || 'global',
+                    workspaceKey: snippet.workspaceKey || 'global',
                     content: snippet.content,
                     createdAt: Date.now(),
                 }));

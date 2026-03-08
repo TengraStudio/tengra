@@ -1,12 +1,12 @@
 const sectionData = {
     "title": "Projekt-Assistent",
-    "localProject": "Lokales Projekt",
-    "localProjectDesc": "Erstellen Sie ein neues Projekt auf Ihrem Computer.",
+    "localWorkspace": "Lokales Projekt",
+    "localWorkspaceDesc": "Erstellen Sie ein neues Projekt auf Ihrem Computer.",
     "remoteSSH": "Remote SSH",
     "remoteSSHDesc": "Verbinden Sie sich mit einem Remote-Server.",
     "import": "Importieren",
     "importDesc": "Fügen Sie ein bestehendes Projekt zum Arbeitsbereich hinzu.",
-    "projectName": "PROJEKTNAME",
+    "workspaceName": "PROJEKTNAME",
     "namePlaceholder": "z.B. CRM Dashboard",
     "placeholder": {
         "example": "beispiel.de"

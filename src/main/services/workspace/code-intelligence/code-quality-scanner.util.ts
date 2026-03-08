@@ -102,7 +102,7 @@ function calculateQualityScore(
     return Math.max(0, Math.round(100 - penalties));
 }
 
-/** Analyze code quality across a project */
+/** Analyze code quality across a workspace */
 export async function analyzeCodeQuality(
     rootPath: string,
     maxFiles: number = 300

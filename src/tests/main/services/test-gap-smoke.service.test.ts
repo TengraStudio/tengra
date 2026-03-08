@@ -1,11 +1,11 @@
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
-import { WorkspaceScaffoldService } from '@main/services/workspace/workspace-scaffold.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { ProcessService } from '@main/services/system/process.service';
 import { SystemService } from '@main/services/system/system.service';
 import { ThemeService } from '@main/services/theme/theme.service';
+import { WorkspaceScaffoldService } from '@main/services/workspace/workspace-scaffold.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 class TestBaseService extends BaseService {

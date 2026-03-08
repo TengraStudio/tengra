@@ -1,4 +1,4 @@
-import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service';
+import { CodeIntelligenceService } from '@main/services/workspace/code-intelligence.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { ipcMain } from 'electron';
 import { z } from 'zod';
@@ -42,7 +42,7 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
      */
     ipcMain.handle('code:indexWorkspace', createValidatedIpcHandler('code:indexWorkspace', async (_, rootPath: string, workspaceId: string, forceArg?: boolean) => {
         const force = typeof forceArg === 'boolean' ? forceArg : false;
-        return await codeIntelligenceService.indexProject(rootPath, workspaceId, force);
+        return await codeIntelligenceService.indexWorkspace(rootPath, workspaceId, force);
     }, {
         defaultValue: undefined,
         argsSchema: z.tuple([
@@ -196,7 +196,7 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
      * Generate workspace documentation
      */
     ipcMain.handle('code:generateWorkspaceDocumentation', createValidatedIpcHandler('code:generateWorkspaceDocumentation', async (_, rootPath: string, maxFiles?: number) => {
-        return await codeIntelligenceService.generateProjectDocumentation(rootPath, maxFiles);
+        return await codeIntelligenceService.generateWorkspaceDocumentation(rootPath, maxFiles);
     }, {
         defaultValue: null,
         argsSchema: z.tuple([RootPathSchema, z.number().optional()])

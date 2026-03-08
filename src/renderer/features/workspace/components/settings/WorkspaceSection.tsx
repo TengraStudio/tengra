@@ -1,16 +1,16 @@
 import { FolderTree, Plus, Trash2 } from 'lucide-react';
 import React from 'react';
 
-import { Project } from '@/types';
+import { Workspace } from '@/types';
 
 interface WorkspaceSectionProps {
-    project: Project
+    workspace: Workspace
     onAddMount: () => void
     onRemoveMount: (id: string) => void
     t: (key: string) => string
 }
 
-export const WorkspaceSection: React.FC<WorkspaceSectionProps> = ({ project, onAddMount, onRemoveMount, t }) => (
+export const WorkspaceSection: React.FC<WorkspaceSectionProps> = ({ workspace, onAddMount, onRemoveMount, t }) => (
     <section className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="flex items-center justify-between">
             <div>
@@ -18,7 +18,7 @@ export const WorkspaceSection: React.FC<WorkspaceSectionProps> = ({ project, onA
                     <FolderTree className="w-4 h-4 text-primary" />
                     {t('workspaces.mounts') || 'Workspace Mounts'}
                 </h3>
-                <p className="text-xs text-muted-foreground">{t('workspaces.mountsDesc') || 'Manage folders and remote connections for this project.'}</p>
+                <p className="text-xs text-muted-foreground">{t('workspaces.mountsDesc') || 'Manage folders and remote connections for this workspace.'}</p>
             </div>
             <button
                 onClick={onAddMount}
@@ -30,7 +30,7 @@ export const WorkspaceSection: React.FC<WorkspaceSectionProps> = ({ project, onA
         </div>
 
         <div className="space-y-3">
-            {project.mounts.map(mount => (
+            {workspace.mounts.map(mount => (
                 <div
                     key={mount.id}
                     className="flex items-center justify-between p-4 rounded-xl bg-muted/20 border border-border/50 hover:border-border transition-all group"
@@ -53,10 +53,10 @@ export const WorkspaceSection: React.FC<WorkspaceSectionProps> = ({ project, onA
                 </div>
             ))}
 
-            {project.mounts.length === 0 && (
+            {workspace.mounts.length === 0 && (
                 <div className="py-12 flex flex-col items-center justify-center text-center bg-muted/20 rounded-xl border border-dashed border-border/50 p-6">
                     <FolderTree className="w-12 h-12 text-muted-foreground/20 mb-3" />
-                    <p className="text-sm text-muted-foreground">{t('workspaces.noMounts') || 'No mounts found for this project.'}</p>
+                    <p className="text-sm text-muted-foreground">{t('workspaces.noMounts') || 'No mounts found for this workspace.'}</p>
                     <button
                         onClick={onAddMount}
                         className="mt-4 text-primary text-sm hover:underline font-medium"

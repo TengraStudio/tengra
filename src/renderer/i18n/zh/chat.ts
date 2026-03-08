@@ -22,7 +22,7 @@ const sectionData = {
         "plaintext": "明文",
         "running": "跑步...",
         "execute": "执行",
-        "addToProject": "添加到项目",
+        "addToWorkspace": "添加到项目",
         "openInEditor": "在编辑器中打开",
         "output": "输出",
         "executed": "成功执行 {{language}} 块。"

@@ -10,13 +10,13 @@ import React from 'react';
 
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { Project, WorkspaceDashboardTab } from '@/types';
+import { Workspace, WorkspaceDashboardTab } from '@/types';
 
 import { DashboardTabs } from './DashboardTabs';
 
 interface WorkspaceToolbarProps {
-    project: Project;
-    projectName: string;
+    workspace: Workspace;
+    workspaceName: string;
     onNameChange: (name: string) => void;
     onBack: () => void;
     toggleSidebar: () => void;
@@ -24,15 +24,15 @@ interface WorkspaceToolbarProps {
     language: Language;
     dashboardTab: WorkspaceDashboardTab;
     onDashboardTabChange?: (tab: WorkspaceDashboardTab) => void;
-    handleRunProject: () => void;
+    handleRunWorkspace: () => void;
     showAgentPanel: boolean;
     toggleAgentPanel: () => void;
     mountStatus: Record<string, 'connected' | 'disconnected' | 'connecting'>;
 }
 
 export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
-    project,
-    projectName,
+    workspace,
+    workspaceName,
     onNameChange,
     onBack,
     toggleSidebar,
@@ -40,14 +40,14 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
     language,
     dashboardTab,
     onDashboardTabChange,
-    handleRunProject,
+    handleRunWorkspace,
     showAgentPanel,
     toggleAgentPanel,
     mountStatus,
 }) => {
     const { t } = useTranslation(language);
     const [isEditingName, setIsEditingName] = React.useState(false);
-    const [editedName, setEditedName] = React.useState(projectName);
+    const [editedName, setEditedName] = React.useState(workspaceName);
     const nameInputRef = React.useRef<HTMLInputElement>(null);
 
     React.useEffect(() => {
@@ -57,10 +57,10 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
     }, [isEditingName]);
 
     const handleNameSubmit = () => {
-        if (editedName.trim() && editedName !== projectName) {
+        if (editedName.trim() && editedName !== workspaceName) {
             void onNameChange(editedName);
         } else {
-            setEditedName(projectName);
+            setEditedName(workspaceName);
         }
         setIsEditingName(false);
     };
@@ -69,7 +69,7 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
         if (e.key === 'Enter') {
             handleNameSubmit();
         } else if (e.key === 'Escape') {
-            setEditedName(projectName);
+            setEditedName(workspaceName);
             setIsEditingName(false);
         }
     };
@@ -114,13 +114,13 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
                                 className="flex items-center gap-2 cursor-pointer hover:bg-white/5 px-1.5 py-0.5 -ml-1.5 rounded transition-colors"
                             >
                                 <span className="font-medium text-sm text-foreground truncate max-w-[300px]">
-                                    {projectName}
+                                    {workspaceName}
                                 </span>
                                 <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
                         )}
                         <div className="px-1.5 py-0.5 rounded text-xxs uppercase font-medium bg-primary/10 text-primary border border-primary/20">
-                            {project.type}
+                            {workspace.type}
                         </div>
                     </div>
                 </div>
@@ -150,7 +150,7 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
                 <DashboardTabs
                     dashboardTab={dashboardTab}
                     {...(onDashboardTabChange ? { onDashboardTabChange } : {})}
-                    handleRunProject={handleRunProject}
+                    handleRunWorkspace={handleRunWorkspace}
                     t={t}
                 />
             </div>

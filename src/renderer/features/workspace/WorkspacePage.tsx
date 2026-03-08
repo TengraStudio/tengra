@@ -30,7 +30,7 @@ import {
 interface WorkspacesPageProps {
     workspaces: Workspace[]
     selectedWorkspace?: Workspace | null
-    onSelectWorkspace?: (project: Workspace | null) => void
+    onSelectWorkspace?: (workspace: Workspace | null) => void
     language: Language
     tabs: TerminalTab[]
     activeTabId: string | null
@@ -95,12 +95,12 @@ export const WorkspacesPage: React.FC<WorkspacesPageProps> = ({
     }, [viewMode, sortBy, sortDirection, listPreset]);
 
     const normalizedSearchQuery = React.useMemo(() => searchQuery.trim().toLowerCase(), [searchQuery]);
-    const projectSearchIndex = React.useMemo(() => {
+    const workspaceSearchIndex = React.useMemo(() => {
         const index = new Map<string, string>();
-        for (const project of workspaces) {
+        for (const workspace of workspaces) {
             index.set(
-                project.id,
-                `${project.title} ${project.description}`.toLowerCase()
+                workspace.id,
+                `${workspace.title} ${workspace.description}`.toLowerCase()
             );
         }
         return index;
@@ -114,16 +114,16 @@ export const WorkspacesPage: React.FC<WorkspacesPageProps> = ({
             return (a[sortBy] - b[sortBy]) * direction;
         });
     }, [workspaces, sortBy, sortDirection]);
-    const filteredProjects = React.useMemo(
+    const filteredWorkspaces = React.useMemo(
         () =>
             normalizedSearchQuery === ''
                 ? sortedWorkspacesByActiveSort
-                : sortedWorkspacesByActiveSort.filter(project =>
-                    (projectSearchIndex.get(project.id) ?? '').includes(normalizedSearchQuery)
+                : sortedWorkspacesByActiveSort.filter(workspace =>
+                    (workspaceSearchIndex.get(workspace.id) ?? '').includes(normalizedSearchQuery)
                 ),
-        [sortedWorkspacesByActiveSort, normalizedSearchQuery, projectSearchIndex]
+        [sortedWorkspacesByActiveSort, normalizedSearchQuery, workspaceSearchIndex]
     );
-    const sortedWorkspaces = filteredProjects;
+    const sortedWorkspaces = filteredWorkspaces;
 
     const toggleSort = (nextSortBy: 'title' | 'updatedAt' | 'createdAt') => {
         if (sortBy === nextSortBy) {
@@ -160,13 +160,13 @@ export const WorkspacesPage: React.FC<WorkspacesPageProps> = ({
         const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
         const lines = [
             ['title', 'description', 'path', 'status', 'updatedAt', 'createdAt'].join(','),
-            ...sortedWorkspaces.map(project => [
-                escapeCsv(project.title),
-                escapeCsv(project.description ?? ''),
-                escapeCsv(project.path),
-                escapeCsv(project.status ?? ''),
-                new Date(project.updatedAt).toISOString(),
-                new Date(project.createdAt).toISOString(),
+            ...sortedWorkspaces.map(workspace => [
+                escapeCsv(workspace.title),
+                escapeCsv(workspace.description ?? ''),
+                escapeCsv(workspace.path),
+                escapeCsv(workspace.status ?? ''),
+                new Date(workspace.updatedAt).toISOString(),
+                new Date(workspace.createdAt).toISOString(),
             ].join(',')),
         ];
 
@@ -182,32 +182,32 @@ export const WorkspacesPage: React.FC<WorkspacesPageProps> = ({
 
     // Use state machine for coordinated state management
     const sm = useWorkspaceListStateMachine({
-        filteredProjects,
+        filteredWorkspaces,
         onError: (error: unknown) => appLogger.error('WorkspacesPage', 'Operation failed', error instanceof Error ? error : new Error(String(error)))
     });
 
     // Adapter: Map state machine state to modal props
-    const editingProject = sm.state.status === 'editing' ? sm.state.targetProject : null;
-    const deletingProject = sm.state.status === 'deleting' ? sm.state.targetProject : null;
-    const isArchiving = sm.state.status === 'archiving' ? sm.state.targetProject : null;
+    const editingWorkspace = sm.state.status === 'editing' ? sm.state.targetWorkspace : null;
+    const deletingWorkspace = sm.state.status === 'deleting' ? sm.state.targetWorkspace : null;
+    const isArchiving = sm.state.status === 'archiving' ? sm.state.targetWorkspace : null;
     const isBulkDeleting = sm.state.status === 'bulk_deleting';
     const isBulkArchiving = sm.state.status === 'bulk_archiving';
     const bulkArchiveMode = React.useMemo(() => {
-        const selectedWorkspaces = sortedWorkspaces.filter(project =>
-            sm.state.selectedProjectIds.has(project.id)
+        const selectedWorkspaces = sortedWorkspaces.filter(workspace =>
+            sm.state.selectedWorkspaceIds.has(workspace.id)
         );
         if (selectedWorkspaces.length === 0) {
             return 'archive' as const;
         }
-        return selectedWorkspaces.every(project => project.status === 'archived')
+        return selectedWorkspaces.every(workspace => workspace.status === 'archived')
             ? ('restore' as const)
             : ('archive' as const);
-    }, [sm.state.selectedProjectIds, sortedWorkspaces]);
+    }, [sm.state.selectedWorkspaceIds, sortedWorkspaces]);
 
-    const handleSelectWorkspace = React.useCallback(async (project: Workspace) => {
-        const preflight = await runWorkspaceStartupPreflight(project);
-        setPreflightWorkspace(project);
-        setPreflightWorkspaceTitle(project.title);
+    const handleSelectWorkspace = React.useCallback(async (workspace: Workspace) => {
+        const preflight = await runWorkspaceStartupPreflight(workspace);
+        setPreflightWorkspace(workspace);
+        setPreflightWorkspaceTitle(workspace.title);
         setPreflightResult(preflight);
         if (!preflight.canOpen) {
             return;
@@ -217,7 +217,7 @@ export const WorkspacesPage: React.FC<WorkspacesPageProps> = ({
         setPreflightResult(null);
         setRunbookTimeline([]);
         setRunbookOutput('');
-        onSelectWorkspace?.(project);
+        onSelectWorkspace?.(workspace);
     }, [onSelectWorkspace]);
 
     const filteredIssues = React.useMemo(() => {
@@ -250,9 +250,9 @@ export const WorkspacesPage: React.FC<WorkspacesPageProps> = ({
         return (
             <>
                 <WorkspaceDetails
-                    project={selectedWorkspace}
+                    workspace={selectedWorkspace}
                     onBack={() => onSelectWorkspace?.(null)}
-                    onDeleteProject={() => sm.startDelete(selectedWorkspace)}
+                    onDeleteWorkspace={() => sm.startDelete(selectedWorkspace)}
                     language={language}
                     tabs={tabs}
                     activeTabId={activeTabId}
@@ -271,17 +271,17 @@ export const WorkspacesPage: React.FC<WorkspacesPageProps> = ({
                     chatError={chatError}
                 />
                 <WorkspaceModals
-                    editingProject={null}
-                    setEditingProject={() => { }}
-                    deletingProject={deletingProject}
-                    setDeletingProject={(project) => project ? sm.startDelete(project) : sm.cancelDelete()}
+                    editingWorkspace={null}
+                    setEditingWorkspace={() => { }}
+                    deletingWorkspace={deletingWorkspace}
+                    setDeletingWorkspace={(workspace) => workspace ? sm.startDelete(workspace) : sm.cancelDelete()}
                     isArchiving={isArchiving}
-                    setIsArchiving={(project) => project ? sm.startArchive(project) : sm.cancelArchive()}
+                    setIsArchiving={(workspace) => workspace ? sm.startArchive(workspace) : sm.cancelArchive()}
                     isBulkDeleting={isBulkDeleting}
                     setIsBulkDeleting={(v) => v ? sm.startBulkDelete() : sm.cancelBulkDelete()}
                     isBulkArchiving={isBulkArchiving}
                     setIsBulkArchiving={(v) => v ? sm.startBulkArchive() : sm.cancelBulkArchive()}
-                    selectedCount={sm.state.selectedProjectIds.size}
+                    selectedCount={sm.state.selectedWorkspaceIds.size}
                     editForm={sm.state.editForm}
                     setEditForm={sm.updateEditForm}
                     handleUpdateWorkspace={sm.executeUpdate}
@@ -304,13 +304,13 @@ export const WorkspacesPage: React.FC<WorkspacesPageProps> = ({
                 <WorkspaceHeader
                     title={t('sidebar.workspaces')}
                     subtitle={t('workspaces.subtitle')}
-                    newProjectLabel={t('workspaces.newWorkspaceButton')}
+                    newWorkspaceLabel={t('workspaces.newWorkspaceButton')}
                     searchPlaceholder={t('workspaces.searchPlaceholder')}
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
                     onNewWorkspace={() => setShowWizard(true)}
                     // Selection props
-                    selectedCount={sm.state.selectedProjectIds.size}
+                    selectedCount={sm.state.selectedWorkspaceIds.size}
                     totalCount={sortedWorkspaces.length}
                     onToggleSelectAll={sm.toggleSelectAll}
                     onBulkDelete={sm.startBulkDelete}
@@ -335,7 +335,7 @@ export const WorkspacesPage: React.FC<WorkspacesPageProps> = ({
                             }}
                             showWorkspaceMenu={showWorkspaceMenu}
                             setShowWorkspaceMenu={setShowWorkspaceMenu}
-                            projectStateMachine={sm}
+                            workspaceStateMachine={sm}
                             t={t}
                         />
                         {sortedWorkspaces.length === 0 && (
@@ -362,55 +362,55 @@ export const WorkspacesPage: React.FC<WorkspacesPageProps> = ({
                         <Virtuoso
                             style={{ height: 520 }}
                             data={sortedWorkspaces}
-                            itemContent={(_index, project) => (
+                            itemContent={(_index, workspace) => (
                                 <div className="grid grid-cols-[40px_2fr_2fr_1fr_160px] gap-3 px-4 py-3 border-t border-border/20 items-center text-sm">
                                     <div>
                                         <input
                                             type="checkbox"
-                                            checked={sm.state.selectedProjectIds.has(project.id)}
-                                            onChange={() => sm.toggleSelection(project.id)}
+                                            checked={sm.state.selectedWorkspaceIds.has(workspace.id)}
+                                            onChange={() => sm.toggleSelection(workspace.id)}
                                             className="w-4 h-4 rounded border-border/40 bg-muted/30 text-foreground focus:ring-foreground/20 cursor-pointer"
                                         />
                                     </div>
                                     <button
                                         onClick={() => {
-                                            void handleSelectWorkspace(project);
+                                            void handleSelectWorkspace(workspace);
                                         }}
                                         className="text-left min-w-0"
-                                        title={project.description || t('workspaces.noDescription')}
+                                        title={workspace.description || t('workspaces.noDescription')}
                                     >
-                                        <div className="font-medium truncate">{project.title}</div>
-                                        <div className="text-xs text-muted-foreground truncate">{project.description || t('workspaces.noDescription')}</div>
+                                        <div className="font-medium truncate">{workspace.title}</div>
+                                        <div className="text-xs text-muted-foreground truncate">{workspace.description || t('workspaces.noDescription')}</div>
                                     </button>
-                                    <div className="text-xs text-muted-foreground truncate font-mono">{project.path}</div>
+                                    <div className="text-xs text-muted-foreground truncate font-mono">{workspace.path}</div>
                                     <div className="text-xs text-muted-foreground">
-                                        {new Date(project.updatedAt).toLocaleDateString()}
+                                        {new Date(workspace.updatedAt).toLocaleDateString()}
                                     </div>
                                     <div className="flex items-center justify-end gap-1">
                                         <button
                                             onClick={() => {
-                                                void handleSelectWorkspace(project);
+                                                void handleSelectWorkspace(workspace);
                                             }}
                                             className="p-2 rounded-md hover:bg-muted/30"
                                             title="Open"
                                         >
                                             <FolderOpen className="w-4 h-4" />
                                         </button>
-                                        <button onClick={() => sm.startEdit(project)} className="p-2 rounded-md hover:bg-muted/30" title={t('common.edit')}>
+                                        <button onClick={() => sm.startEdit(workspace)} className="p-2 rounded-md hover:bg-muted/30" title={t('common.edit')}>
                                             <Edit className="w-4 h-4" />
                                         </button>
                                         <button
-                                            onClick={() => sm.startArchive(project)}
+                                            onClick={() => sm.startArchive(workspace)}
                                             className="p-2 rounded-md hover:bg-muted/30"
                                             title={
-                                                project.status === 'archived'
+                                                workspace.status === 'archived'
                                                     ? t('common.unarchive') || 'Restore'
                                                     : t('workspaces.archiveWorkspace')
                                             }
                                         >
                                             <Archive className="w-4 h-4" />
                                         </button>
-                                        <button onClick={() => sm.startDelete(project)} className="p-2 rounded-md hover:bg-destructive/10 text-destructive" title={t('common.delete')}>
+                                        <button onClick={() => sm.startDelete(workspace)} className="p-2 rounded-md hover:bg-destructive/10 text-destructive" title={t('common.delete')}>
                                             <Trash2 className="w-4 h-4" />
                                         </button>
                                     </div>
@@ -429,7 +429,7 @@ export const WorkspacesPage: React.FC<WorkspacesPageProps> = ({
                 {preflightResult && (
                     <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 space-y-3">
                         <div className="text-sm font-semibold text-destructive">
-                            Startup checks for {preflightWorkspaceTitle || 'project'} ({preflightResult.openingMode} mode)
+                            Startup checks for {preflightWorkspaceTitle || 'workspace'} ({preflightResult.openingMode} mode)
                         </div>
                         <div className="text-xs text-muted-foreground">
                             Security posture: {preflightResult.securityPosture.risk} risk •
@@ -512,17 +512,17 @@ export const WorkspacesPage: React.FC<WorkspacesPageProps> = ({
                 )}
 
                 <WorkspaceModals
-                    editingProject={editingProject}
-                    setEditingProject={(project) => project ? sm.startEdit(project) : sm.cancelEdit()}
-                    deletingProject={deletingProject}
-                    setDeletingProject={(project) => project ? sm.startDelete(project) : sm.cancelDelete()}
+                    editingWorkspace={editingWorkspace}
+                    setEditingWorkspace={(workspace) => workspace ? sm.startEdit(workspace) : sm.cancelEdit()}
+                    deletingWorkspace={deletingWorkspace}
+                    setDeletingWorkspace={(workspace) => workspace ? sm.startDelete(workspace) : sm.cancelDelete()}
                     isArchiving={isArchiving}
-                    setIsArchiving={(project) => project ? sm.startArchive(project) : sm.cancelArchive()}
+                    setIsArchiving={(workspace) => workspace ? sm.startArchive(workspace) : sm.cancelArchive()}
                     isBulkDeleting={isBulkDeleting}
                     setIsBulkDeleting={(v) => v ? sm.startBulkDelete() : sm.cancelBulkDelete()}
                     isBulkArchiving={isBulkArchiving}
                     setIsBulkArchiving={(v) => v ? sm.startBulkArchive() : sm.cancelBulkArchive()}
-                    selectedCount={sm.state.selectedProjectIds.size}
+                    selectedCount={sm.state.selectedWorkspaceIds.size}
                     editForm={sm.state.editForm}
                     setEditForm={sm.updateEditForm}
                     handleUpdateWorkspace={sm.executeUpdate}
@@ -537,7 +537,7 @@ export const WorkspacesPage: React.FC<WorkspacesPageProps> = ({
                 <WorkspaceWizardModal
                     isOpen={showWizard}
                     onClose={() => setShowWizard(false)}
-                    onProjectCreated={async (...args) => {
+                    onWorkspaceCreated={async (...args) => {
                         const success = await sm.executeCreate(...args);
                         if (success) { setShowWizard(false); }
                         return success;

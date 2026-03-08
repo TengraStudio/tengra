@@ -202,7 +202,7 @@ export const useChatGenerator = (
 
                 const reasoningEffort = getReasoningEffort(activeModel, appSettings);
                 const fullOptions = {
-                    ...presetOptions, projectRoot: activeWorkspacePath, systemMode, thinking: systemMode === 'thinking',
+                    ...presetOptions, workspaceRoot: activeWorkspacePath, systemMode, thinking: systemMode === 'thinking',
                     agentToolsEnabled: systemMode === 'agent', reasoningEffort
                 };
                 await executeToolTurnLoop({
@@ -280,7 +280,7 @@ const executeToolTurnLoop = async (params: {
 
         const stream = chatStream({
             messages: currentMessages, model: activeModel, tools, provider: selectedProvider,
-            options: { ...fullOptions, projectRoot: activeWorkspacePath, systemMode },
+            options: { ...fullOptions, workspaceRoot: activeWorkspacePath, systemMode },
             chatId, workspaceId, systemMode
         });
         const streamStartTime = performance.now();
@@ -394,7 +394,7 @@ async function orchestrationMultiModelStreams(params: OrchestrationParams) {
 
             const stream = chatStream({
                 messages: allMessages, model: modelInfo.model, tools, provider: modelInfo.provider,
-                options: { ...presetOptions, projectRoot: activeWorkspacePath, systemMode, thinking: systemMode === 'thinking', agentToolsEnabled: systemMode === 'agent', reasoningEffort },
+                options: { ...presetOptions, workspaceRoot: activeWorkspacePath, systemMode, thinking: systemMode === 'thinking', agentToolsEnabled: systemMode === 'agent', reasoningEffort },
                 chatId: streamId, workspaceId, systemMode
             });
 

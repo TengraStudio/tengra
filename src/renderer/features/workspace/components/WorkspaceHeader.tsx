@@ -3,16 +3,16 @@ import React from 'react';
 
 import { Language } from '@/i18n';
 
-import { ProjectsPageHealthIndicator } from './ProjectsPageHealthIndicator';
+import { WorkspacesPageHealthIndicator } from './WorkspacesPageHealthIndicator';
 
-interface ProjectsHeaderProps {
+interface WorkspacesHeaderProps {
     title: string
     subtitle: string
-    newProjectLabel: string
+    newWorkspaceLabel: string
     searchPlaceholder: string
     searchQuery: string
     setSearchQuery: (query: string) => void
-    onNewProject: () => void
+    onNewWorkspace: () => void
     // Selection props
     selectedCount: number
     totalCount: number
@@ -28,8 +28,8 @@ interface ProjectsHeaderProps {
     language: Language
 }
 
-export const ProjectsHeader: React.FC<ProjectsHeaderProps> = ({
-    title, subtitle, newProjectLabel, searchPlaceholder, searchQuery, setSearchQuery, onNewProject,
+export const WorkspacesHeader: React.FC<WorkspacesHeaderProps> = ({
+    title, subtitle, newWorkspaceLabel, searchPlaceholder, searchQuery, setSearchQuery, onNewWorkspace,
     selectedCount, totalCount, onToggleSelectAll, onBulkDelete, onBulkArchive,
     viewMode, onViewModeChange, listPreset, onListPresetChange, onExportList, t, language
 }) => {
@@ -39,7 +39,7 @@ export const ProjectsHeader: React.FC<ProjectsHeaderProps> = ({
                 <div>
                     <h1 className="text-3xl font-light tracking-tight text-foreground flex items-center gap-4">
                         {title}
-                        <ProjectsPageHealthIndicator language={language} />
+                        <WorkspacesPageHealthIndicator language={language} />
                     </h1>
                     <p className="text-muted-foreground mt-2 font-light">
                         {subtitle}
@@ -71,11 +71,11 @@ export const ProjectsHeader: React.FC<ProjectsHeaderProps> = ({
 
             <div className="flex items-center gap-4">
                 <button
-                    onClick={onNewProject}
+                    onClick={onNewWorkspace}
                     className="h-12 px-6 bg-foreground text-background hover:bg-foreground/90 rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg shadow-black/5"
                 >
                     <Plus className="w-5 h-5" />
-                    {newProjectLabel}
+                    {newWorkspaceLabel}
                 </button>
 
                 {totalCount > 0 && (
@@ -149,7 +149,7 @@ export const ProjectsHeader: React.FC<ProjectsHeaderProps> = ({
 export const WorkspaceHeader: React.FC<{
     title: string
     subtitle: string
-    newProjectLabel: string
+    newWorkspaceLabel: string
     searchPlaceholder: string
     searchQuery: string
     setSearchQuery: (query: string) => void
@@ -167,8 +167,8 @@ export const WorkspaceHeader: React.FC<{
     t: (key: string, options?: Record<string, string | number>) => string
     language: Language
 }> = ({ onNewWorkspace, ...props }) => (
-    <ProjectsHeader
+    <WorkspacesHeader
         {...props}
-        onNewProject={onNewWorkspace}
+        onNewWorkspace={onNewWorkspace}
     />
 );

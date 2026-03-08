@@ -10,7 +10,7 @@ import { vi } from 'vitest';
 export function createMockTaskState(overrides: Partial<AgentTaskState> = {}): AgentTaskState {
     return {
         taskId: 'task-001',
-        projectId: 'proj-001',
+        workspaceId: 'proj-001',
         description: 'Test council task',
         state: 'idle',
         currentStep: 0,
@@ -42,9 +42,9 @@ export function createMockTaskState(overrides: Partial<AgentTaskState> = {}): Ag
             estimatedCost: 0
         },
         context: {
-            workspacePath: '/test/project',
-            workspaceName: 'test-project',
-            workspace: { rootPath: '/test/project', hasGit: true, hasDependencies: true },
+            workspacePath: '/test/workspace',
+            workspaceName: 'test-workspace',
+            workspace: { rootPath: '/test/workspace', hasGit: true, hasDependencies: true },
             constraints: { maxIterations: 50, maxDuration: 300000, maxToolCalls: 100, allowedTools: [] }
         },
         result: null,

@@ -30,7 +30,7 @@ const sectionData = {
     "previewArea": "预览区",
     "convertToCode": "转换为代码",
     "placeholders": {
-        "rootPath": "C:\\\\Users\\\\Project",
+        "rootPath": "C:\\\\Users\\\\Workspace",
         "name": "名称..."
     },
     "run": "运行项目",

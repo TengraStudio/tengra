@@ -1,22 +1,22 @@
 /**
  * Utility functions for handling idea operations
  */
-import type { IdeaSession, ProjectIdea } from '@shared/types/ideas';
+import type { IdeaSession, WorkspaceIdea } from '@shared/types/ideas';
 
 /**
  * Creates an optimistic update for idea status
  */
 export function createOptimisticIdea(
-    idea: ProjectIdea,
+    idea: WorkspaceIdea,
     status: 'approved' | 'rejected' | 'archived'
-): ProjectIdea {
+): WorkspaceIdea {
     return { ...idea, status };
 }
 
 /**
  * Rolls back optimistic update
  */
-export function rollbackIdea(original: ProjectIdea): ProjectIdea {
+export function rollbackIdea(original: WorkspaceIdea): WorkspaceIdea {
     return original;
 }
 
@@ -24,9 +24,9 @@ export function rollbackIdea(original: ProjectIdea): ProjectIdea {
  * Validates that required context exists for operations
  */
 export function validateIdeaOperationContext(
-    idea: ProjectIdea | null,
+    idea: WorkspaceIdea | null,
     session: IdeaSession | null
-): idea is ProjectIdea {
+): idea is WorkspaceIdea {
     return idea !== null && session !== null;
 }
 

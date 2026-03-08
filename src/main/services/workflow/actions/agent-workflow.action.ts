@@ -1,4 +1,4 @@
-import { ProjectAgentService } from '@main/services/project/project-agent.service';
+import { WorkspaceAgentService } from '@main/services/workspace/workspace-agent.service';
 import { JsonValue } from '@shared/types/common';
 import { WorkflowAction } from '@shared/types/workflow.types';
 import { WorkflowContext } from '@shared/types/workflow-context.types';
@@ -12,7 +12,7 @@ import { IWorkflowActionHandler } from './action.interface';
 export class AgentWorkflowAction implements IWorkflowActionHandler {
     type: string = 'agent_task';
 
-    constructor(private workspaceAgentService: ProjectAgentService) { }
+    constructor(private workspaceAgentService: WorkspaceAgentService) { }
 
     async execute(action: WorkflowAction, context?: WorkflowContext): Promise<JsonValue> {
         const agentId = action.config['agentId'] as string | undefined;

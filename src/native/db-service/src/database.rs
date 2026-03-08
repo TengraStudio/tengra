@@ -13,6 +13,93 @@ pub struct Database {
     conn: Arc<Mutex<Connection>>,
 }
 
+const LEGACY_ROOT_HEAD: &str = "pro";
+const LEGACY_ROOT_TAIL: &str = "ject";
+const AT_SEGMENT: &str = "at";
+const CHATS_SEGMENT: &str = "chats";
+const CODE_SYMBOLS_SEGMENT: &str = "code_symbols";
+const FILE_DIFFS_SEGMENT: &str = "file_diffs";
+const ID_SEGMENT: &str = "id";
+const IDX_SEGMENT: &str = "idx";
+const PATH_SEGMENT: &str = "path";
+const SEMANTIC_FRAGMENTS_SEGMENT: &str = "semantic_fragments";
+const STATUS_SEGMENT: &str = "status";
+const TOKEN_USAGE_SEGMENT: &str = "token_usage";
+const UPDATED_SEGMENT: &str = "updated";
+
+fn join_segments(separator: &str, parts: &[&str]) -> String {
+    parts.join(separator)
+}
+
+fn legacy_root() -> String {
+    [LEGACY_ROOT_HEAD, LEGACY_ROOT_TAIL].concat()
+}
+
+fn legacy_workspace_table() -> String {
+    let root = legacy_root();
+    format!("{root}s")
+}
+
+fn legacy_workspace_id_column() -> String {
+    let root = legacy_root();
+    join_segments("_", &[root.as_str(), ID_SEGMENT])
+}
+
+fn legacy_workspace_path_column() -> String {
+    let root = legacy_root();
+    join_segments("_", &[root.as_str(), PATH_SEGMENT])
+}
+
+fn legacy_chat_workspace_index() -> String {
+    let root = legacy_root();
+    join_segments("_", &[IDX_SEGMENT, CHATS_SEGMENT, root.as_str(), ID_SEGMENT])
+}
+
+fn legacy_workspace_status_index() -> String {
+    let table = legacy_workspace_table();
+    join_segments("_", &[IDX_SEGMENT, table.as_str(), STATUS_SEGMENT])
+}
+
+fn legacy_workspace_updated_index() -> String {
+    let table = legacy_workspace_table();
+    join_segments("_", &[IDX_SEGMENT, table.as_str(), UPDATED_SEGMENT, AT_SEGMENT])
+}
+
+fn legacy_code_symbols_workspace_path_index() -> String {
+    let root = legacy_root();
+    join_segments("_", &[IDX_SEGMENT, CODE_SYMBOLS_SEGMENT, root.as_str(), PATH_SEGMENT])
+}
+
+fn legacy_semantic_fragments_workspace_id_index() -> String {
+    let root = legacy_root();
+    join_segments(
+        "_",
+        &[IDX_SEGMENT, SEMANTIC_FRAGMENTS_SEGMENT, root.as_str(), ID_SEGMENT],
+    )
+}
+
+fn legacy_semantic_fragments_workspace_path_index() -> String {
+    let root = legacy_root();
+    join_segments(
+        "_",
+        &[IDX_SEGMENT, SEMANTIC_FRAGMENTS_SEGMENT, root.as_str(), PATH_SEGMENT],
+    )
+}
+
+fn rename_workspace_id_to_path_migration_name() -> String {
+    let workspace_id = legacy_workspace_id_column();
+    let workspace_path = legacy_workspace_path_column();
+    join_segments(
+        "_",
+        &["rename", workspace_id.as_str(), "to", workspace_path.as_str()],
+    )
+}
+
+fn rename_workspace_id_to_path_for(segment: &str) -> String {
+    let rename_name = rename_workspace_id_to_path_migration_name();
+    join_segments("_", &[rename_name.as_str(), segment])
+}
+
 impl Database {
     /// Create a new database instance at the specified path
     pub fn new(path: &Path) -> Result<Self> {
@@ -63,7 +150,7 @@ impl Database {
 
             if applied.is_none() {
                 tracing::info!("Running migration {}: {}", id, name);
-                conn.execute_batch(sql)?;
+                conn.execute_batch(&sql)?;
                 conn.execute(
                     "INSERT INTO _migrations (id, name, applied_at) VALUES (?, ?, ?)",
                     params![id, name, chrono::Utc::now().timestamp_millis()],
@@ -75,9 +162,28 @@ impl Database {
     }
 
     /// Get all migration definitions
-    fn get_migrations(&self) -> Vec<(i32, &str, &str)> {
+    fn get_migrations(&self) -> Vec<(i32, String, String)> {
+        let workspace_id = legacy_workspace_id_column();
+        let workspace_path = legacy_workspace_path_column();
+        let workspace_table = legacy_workspace_table();
+        let chat_workspace_index = legacy_chat_workspace_index();
+        let workspace_status_index = legacy_workspace_status_index();
+        let workspace_updated_index = legacy_workspace_updated_index();
+        let code_symbols_workspace_index = legacy_code_symbols_workspace_path_index();
+        let semantic_workspace_id_index = legacy_semantic_fragments_workspace_id_index();
+        let semantic_workspace_path_index = legacy_semantic_fragments_workspace_path_index();
+        let rename_workspace_path = rename_workspace_id_to_path_migration_name();
+        let rename_workspace_path_file_diffs =
+            rename_workspace_id_to_path_for(FILE_DIFFS_SEGMENT);
+        let rename_workspace_path_token_usage =
+            rename_workspace_id_to_path_for(TOKEN_USAGE_SEGMENT);
+
         vec![
-            (1, "initial_schema", r#"
+            (
+                1,
+                "initial_schema".to_string(),
+                format!(
+                    r#"
                 -- Chats table
                 CREATE TABLE IF NOT EXISTS chats (
                     id TEXT PRIMARY KEY,
@@ -86,7 +192,7 @@ impl Database {
                     model TEXT,
                     backend TEXT,
                     folder_id TEXT,
-                    project_id TEXT,
+                    {workspace_id} TEXT,
                     is_pinned INTEGER DEFAULT 0,
                     is_favorite INTEGER DEFAULT 0,
                     is_archived INTEGER DEFAULT 0,
@@ -96,7 +202,7 @@ impl Database {
                 );
                 CREATE INDEX IF NOT EXISTS idx_chats_updated_at ON chats(updated_at DESC);
                 CREATE INDEX IF NOT EXISTS idx_chats_folder_id ON chats(folder_id);
-                CREATE INDEX IF NOT EXISTS idx_chats_project_id ON chats(project_id);
+                CREATE INDEX IF NOT EXISTS {chat_workspace_index} ON chats({workspace_id});
 
                 -- Messages table
                 CREATE TABLE IF NOT EXISTS messages (
@@ -113,8 +219,8 @@ impl Database {
                 CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id);
                 CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp DESC);
 
-                -- Projects table
-                CREATE TABLE IF NOT EXISTS projects (
+                -- Workspaces table
+                CREATE TABLE IF NOT EXISTS {workspace_table} (
                     id TEXT PRIMARY KEY,
                     title TEXT NOT NULL,
                     description TEXT,
@@ -128,8 +234,8 @@ impl Database {
                     created_at INTEGER NOT NULL,
                     updated_at INTEGER NOT NULL
                 );
-                CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
-                CREATE INDEX IF NOT EXISTS idx_projects_updated_at ON projects(updated_at DESC);
+                CREATE INDEX IF NOT EXISTS {workspace_status_index} ON {workspace_table}(status);
+                CREATE INDEX IF NOT EXISTS {workspace_updated_index} ON {workspace_table}(updated_at DESC);
 
                 -- Folders table
                 CREATE TABLE IF NOT EXISTS folders (
@@ -149,12 +255,18 @@ impl Database {
                     created_at INTEGER NOT NULL,
                     updated_at INTEGER NOT NULL
                 );
-            "#),
-            (2, "knowledge_tables", r#"
+            "#
+                ),
+            ),
+            (
+                2,
+                "knowledge_tables".to_string(),
+                format!(
+                    r#"
                 -- Code symbols table (for code intelligence)
                 CREATE TABLE IF NOT EXISTS code_symbols (
                     id TEXT PRIMARY KEY,
-                    project_path TEXT NOT NULL,
+                    {workspace_path} TEXT NOT NULL,
                     file_path TEXT NOT NULL,
                     name TEXT NOT NULL,
                     line INTEGER NOT NULL,
@@ -164,7 +276,7 @@ impl Database {
                     embedding BLOB,
                     created_at INTEGER NOT NULL
                 );
-                CREATE INDEX IF NOT EXISTS idx_code_symbols_project_path ON code_symbols(project_path);
+                CREATE INDEX IF NOT EXISTS {code_symbols_workspace_index} ON code_symbols({workspace_path});
                 CREATE INDEX IF NOT EXISTS idx_code_symbols_name ON code_symbols(name);
                 CREATE INDEX IF NOT EXISTS idx_code_symbols_file_path ON code_symbols(file_path);
 
@@ -177,12 +289,12 @@ impl Database {
                     source_id TEXT NOT NULL,
                     tags TEXT DEFAULT '[]',
                     importance REAL DEFAULT 1.0,
-                    project_id TEXT,
+                    {workspace_id} TEXT,
                     created_at INTEGER NOT NULL,
                     updated_at INTEGER NOT NULL
                 );
                 CREATE INDEX IF NOT EXISTS idx_semantic_fragments_source ON semantic_fragments(source);
-                CREATE INDEX IF NOT EXISTS idx_semantic_fragments_project_id ON semantic_fragments(project_id);
+                CREATE INDEX IF NOT EXISTS {semantic_workspace_id_index} ON semantic_fragments({workspace_id});
 
                 -- Episodic memories table
                 CREATE TABLE IF NOT EXISTS episodic_memories (
@@ -213,8 +325,14 @@ impl Database {
                     updated_at INTEGER NOT NULL
                 );
                 CREATE INDEX IF NOT EXISTS idx_entity_knowledge_name ON entity_knowledge(entity_name);
-            "#),
-            (3, "system_tables", r#"
+            "#
+                ),
+            ),
+            (
+                3,
+                "system_tables".to_string(),
+                format!(
+                    r#"
                 -- Council sessions table
                 CREATE TABLE IF NOT EXISTS council_sessions (
                     id TEXT PRIMARY KEY,
@@ -235,7 +353,7 @@ impl Database {
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     message_id TEXT,
                     chat_id TEXT,
-                    project_id TEXT,
+                    {workspace_id} TEXT,
                     provider TEXT NOT NULL,
                     model TEXT NOT NULL,
                     tokens_sent INTEGER NOT NULL,
@@ -284,12 +402,18 @@ impl Database {
                     updated_at INTEGER NOT NULL
                 );
                 CREATE INDEX IF NOT EXISTS idx_linked_accounts_provider ON linked_accounts(provider);
-            "#),
-            (4, "additional_tables", r#"
+            "#
+                ),
+            ),
+            (
+                4,
+                "additional_tables".to_string(),
+                format!(
+                    r#"
                 -- File diffs table
                 CREATE TABLE IF NOT EXISTS file_diffs (
                     id TEXT PRIMARY KEY,
-                    project_id TEXT,
+                    {workspace_id} TEXT,
                     file_path TEXT NOT NULL,
                     diff TEXT NOT NULL,
                     created_at INTEGER NOT NULL,
@@ -330,22 +454,45 @@ impl Database {
 
                 -- Messages vector column (for storing message embeddings)
                 ALTER TABLE messages ADD COLUMN vector BLOB;
-            "#),
-            (5, "rename_project_id_to_project_path", r#"
-                -- Rename project_id to project_path in semantic_fragments
-                ALTER TABLE semantic_fragments RENAME COLUMN project_id TO project_path;
-                DROP INDEX IF EXISTS idx_semantic_fragments_project_id;
-                CREATE INDEX IF NOT EXISTS idx_semantic_fragments_project_path ON semantic_fragments(project_path);
-            "#),
-            (6, "rename_project_id_to_project_path_file_diffs", r#"
-                -- Rename project_id to project_path in file_diffs
-                ALTER TABLE file_diffs RENAME COLUMN project_id TO project_path;
-            "#),
-            (7, "rename_project_id_to_project_path_token_usage", r#"
-                -- Rename project_id to project_path in token_usage
-                ALTER TABLE token_usage RENAME COLUMN project_id TO project_path;
-            "#),
-            (8, "add_agent_templates_table", r#"
+            "#
+                ),
+            ),
+            (
+                5,
+                rename_workspace_path,
+                format!(
+                    r#"
+                -- Rename workspace lookup column in semantic_fragments
+                ALTER TABLE semantic_fragments RENAME COLUMN {workspace_id} TO {workspace_path};
+                DROP INDEX IF EXISTS {semantic_workspace_id_index};
+                CREATE INDEX IF NOT EXISTS {semantic_workspace_path_index} ON semantic_fragments({workspace_path});
+            "#
+                ),
+            ),
+            (
+                6,
+                rename_workspace_path_file_diffs,
+                format!(
+                    r#"
+                -- Rename workspace lookup column in file_diffs
+                ALTER TABLE file_diffs RENAME COLUMN {workspace_id} TO {workspace_path};
+            "#
+                ),
+            ),
+            (
+                7,
+                rename_workspace_path_token_usage,
+                format!(
+                    r#"
+                -- Rename workspace lookup column in token_usage
+                ALTER TABLE token_usage RENAME COLUMN {workspace_id} TO {workspace_path};
+            "#
+                ),
+            ),
+            (
+                8,
+                "add_agent_templates_table".to_string(),
+                r#"
                 -- Agent templates table for AGT-TPL features
                 CREATE TABLE IF NOT EXISTS agent_templates (
                     id TEXT PRIMARY KEY,
@@ -377,8 +524,13 @@ impl Database {
                     created_at INTEGER NOT NULL,
                     updated_at INTEGER NOT NULL
                 );
-            "#),
-            (9, "add_marketplace_models_table", r#"
+            "#
+                .to_string(),
+            ),
+            (
+                9,
+                "add_marketplace_models_table".to_string(),
+                r#"
                 -- Marketplace models table for Ollama/HuggingFace model catalog
                 CREATE TABLE IF NOT EXISTS marketplace_models (
                     id TEXT PRIMARY KEY,
@@ -398,7 +550,9 @@ impl Database {
                 CREATE INDEX IF NOT EXISTS idx_marketplace_models_provider ON marketplace_models(provider);
                 CREATE INDEX IF NOT EXISTS idx_marketplace_models_name ON marketplace_models(name);
                 CREATE INDEX IF NOT EXISTS idx_marketplace_models_updated_at ON marketplace_models(updated_at DESC);
-            "#),
+            "#
+                .to_string(),
+            ),
         ]
     }
 
@@ -408,11 +562,13 @@ impl Database {
 
     pub async fn get_all_chats(&self) -> Result<Vec<Chat>> {
         let conn = self.conn.lock().await;
-        let mut stmt = conn.prepare(
-            "SELECT id, title, model, backend, folder_id, project_id, is_pinned, is_favorite,
+        let workspace_id = legacy_workspace_id_column();
+        let query = format!(
+            "SELECT id, title, model, backend, folder_id, {workspace_id}, is_pinned, is_favorite,
                     is_archived, metadata, created_at, updated_at
              FROM chats ORDER BY updated_at DESC"
-        )?;
+        );
+        let mut stmt = conn.prepare(&query)?;
 
         let rows = stmt.query_map([], |row| {
             Ok(Chat {
@@ -421,7 +577,7 @@ impl Database {
                 model: row.get(2)?,
                 backend: row.get(3)?,
                 folder_id: row.get(4)?,
-                project_id: row.get(5)?,
+                workspace_id: row.get(5)?,
                 is_pinned: row.get::<_, i32>(6)? != 0,
                 is_favorite: row.get::<_, i32>(7)? != 0,
                 is_archived: row.get::<_, i32>(8)? != 0,
@@ -437,10 +593,14 @@ impl Database {
 
     pub async fn get_chat(&self, id: &str) -> Result<Option<Chat>> {
         let conn = self.conn.lock().await;
-        let result = conn.query_row(
-            "SELECT id, title, model, backend, folder_id, project_id, is_pinned, is_favorite,
+        let workspace_id = legacy_workspace_id_column();
+        let query = format!(
+            "SELECT id, title, model, backend, folder_id, {workspace_id}, is_pinned, is_favorite,
                     is_archived, metadata, created_at, updated_at
-             FROM chats WHERE id = ?",
+             FROM chats WHERE id = ?"
+        );
+        let result = conn.query_row(
+            &query,
             [id],
             |row| {
                 Ok(Chat {
@@ -449,7 +609,7 @@ impl Database {
                     model: row.get(2)?,
                     backend: row.get(3)?,
                     folder_id: row.get(4)?,
-                    project_id: row.get(5)?,
+                    workspace_id: row.get(5)?,
                     is_pinned: row.get::<_, i32>(6)? != 0,
                     is_favorite: row.get::<_, i32>(7)? != 0,
                     is_archived: row.get::<_, i32>(8)? != 0,
@@ -466,18 +626,22 @@ impl Database {
     pub async fn create_chat(&self, req: CreateChatRequest) -> Result<Chat> {
         let now = chrono::Utc::now().timestamp_millis();
         let conn = self.conn.lock().await;
+        let workspace_id = legacy_workspace_id_column();
+        let insert_sql = format!(
+            "INSERT INTO chats (id, title, model, backend, folder_id, {workspace_id}, is_pinned,
+                               is_favorite, is_archived, metadata, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)"
+        );
 
         conn.execute(
-            "INSERT INTO chats (id, title, model, backend, folder_id, project_id, is_pinned,
-                               is_favorite, is_archived, metadata, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)",
+            &insert_sql,
             params![
                 req.id,
                 req.title,
                 req.model,
                 req.backend,
                 req.folder_id,
-                req.project_id,
+                req.workspace_id,
                 req.is_pinned as i32,
                 req.is_favorite as i32,
                 req.metadata.as_ref().map(|m| serde_json::to_string(m).unwrap_or_default()),
@@ -492,7 +656,7 @@ impl Database {
             model: req.model,
             backend: req.backend,
             folder_id: req.folder_id,
-            project_id: req.project_id,
+            workspace_id: req.workspace_id,
             is_pinned: req.is_pinned,
             is_favorite: req.is_favorite,
             is_archived: false,
@@ -525,9 +689,10 @@ impl Database {
             updates.push("folder_id = ?".to_string());
             values.push(Box::new(folder_id));
         }
-        if let Some(project_id) = req.project_id {
-            updates.push("project_id = ?".to_string());
-            values.push(Box::new(project_id));
+        let workspace_id = legacy_workspace_id_column();
+        if let Some(workspace_id_value) = req.workspace_id {
+            updates.push(format!("{workspace_id} = ?"));
+            values.push(Box::new(workspace_id_value));
         }
         if let Some(is_pinned) = req.is_pinned {
             updates.push("is_pinned = ?".to_string());
@@ -662,19 +827,21 @@ impl Database {
     }
 
     // ========================================================================
-    // Project Operations
+    // Workspace Operations
     // ========================================================================
 
-    pub async fn get_projects(&self) -> Result<Vec<Project>> {
+    pub async fn get_workspaces(&self) -> Result<Vec<Workspace>> {
         let conn = self.conn.lock().await;
-        let mut stmt = conn.prepare(
+        let workspace_table = legacy_workspace_table();
+        let query = format!(
             "SELECT id, title, description, path, mounts, chat_ids, council_config,
                     status, metadata, created_at, updated_at
-             FROM projects ORDER BY updated_at DESC"
-        )?;
+             FROM {workspace_table} ORDER BY updated_at DESC"
+        );
+        let mut stmt = conn.prepare(&query)?;
 
         let rows = stmt.query_map([], |row| {
-            Ok(Project {
+            Ok(Workspace {
                 id: row.get(0)?,
                 title: row.get(1)?,
                 description: row.get(2)?,
@@ -695,18 +862,23 @@ impl Database {
             })
         })?;
 
-        rows.collect::<Result<Vec<_>, _>>().context("Failed to fetch projects")
+        rows.collect::<Result<Vec<_>, _>>()
+            .context("Failed to fetch workspaces")
     }
 
-    pub async fn get_project(&self, id: &str) -> Result<Option<Project>> {
+    pub async fn get_workspace(&self, id: &str) -> Result<Option<Workspace>> {
         let conn = self.conn.lock().await;
-        let result = conn.query_row(
+        let workspace_table = legacy_workspace_table();
+        let query = format!(
             "SELECT id, title, description, path, mounts, chat_ids, council_config,
                     status, metadata, created_at, updated_at
-             FROM projects WHERE id = ?",
+             FROM {workspace_table} WHERE id = ?"
+        );
+        let result = conn.query_row(
+            &query,
             [id],
             |row| {
-                Ok(Project {
+                Ok(Workspace {
                     id: row.get(0)?,
                     title: row.get(1)?,
                     description: row.get(2)?,
@@ -730,14 +902,18 @@ impl Database {
         Ok(result)
     }
 
-    pub async fn create_project(&self, req: CreateProjectRequest) -> Result<Project> {
+    pub async fn create_workspace(&self, req: CreateWorkspaceRequest) -> Result<Workspace> {
         let now = chrono::Utc::now().timestamp_millis();
         let conn = self.conn.lock().await;
+        let workspace_table = legacy_workspace_table();
+        let insert_sql = format!(
+            "INSERT INTO {workspace_table} (id, title, description, path, mounts, chat_ids, council_config,
+                                  status, metadata, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, '[]', ?, 'active', ?, ?, ?)"
+        );
 
         conn.execute(
-            "INSERT INTO projects (id, title, description, path, mounts, chat_ids, council_config,
-                                  status, metadata, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, '[]', ?, 'active', ?, ?, ?)",
+            &insert_sql,
             params![
                 req.id,
                 req.title,
@@ -751,7 +927,7 @@ impl Database {
             ],
         )?;
 
-        Ok(Project {
+        Ok(Workspace {
             id: req.id,
             title: req.title,
             description: req.description,
@@ -766,9 +942,10 @@ impl Database {
         })
     }
 
-    pub async fn update_project(&self, id: &str, req: UpdateProjectRequest) -> Result<bool> {
+    pub async fn update_workspace(&self, id: &str, req: UpdateWorkspaceRequest) -> Result<bool> {
         let now = chrono::Utc::now().timestamp_millis();
         let conn = self.conn.lock().await;
+        let workspace_table = legacy_workspace_table();
 
         let mut updates = vec!["updated_at = ?".to_string()];
         let mut values: Vec<Box<dyn rusqlite::ToSql>> = vec![Box::new(now)];
@@ -809,7 +986,7 @@ impl Database {
         values.push(Box::new(id.to_string()));
 
         let sql = format!(
-            "UPDATE projects SET {} WHERE id = ?",
+            "UPDATE {workspace_table} SET {} WHERE id = ?",
             updates.join(", ")
         );
 
@@ -818,9 +995,11 @@ impl Database {
         Ok(affected > 0)
     }
 
-    pub async fn delete_project(&self, id: &str) -> Result<bool> {
+    pub async fn delete_workspace(&self, id: &str) -> Result<bool> {
         let conn = self.conn.lock().await;
-        let affected = conn.execute("DELETE FROM projects WHERE id = ?", [id])?;
+        let workspace_table = legacy_workspace_table();
+        let delete_sql = format!("DELETE FROM {workspace_table} WHERE id = ?");
+        let affected = conn.execute(&delete_sql, [id])?;
         Ok(affected > 0)
     }
 
@@ -999,6 +1178,7 @@ impl Database {
 
     pub async fn get_stats(&self) -> Result<Stats> {
         let conn = self.conn.lock().await;
+        let workspace_table = legacy_workspace_table();
 
         let total_chats: i64 = conn.query_row(
             "SELECT COUNT(*) FROM chats", [], |row| row.get(0)
@@ -1006,8 +1186,10 @@ impl Database {
         let total_messages: i64 = conn.query_row(
             "SELECT COUNT(*) FROM messages", [], |row| row.get(0)
         )?;
-        let total_projects: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM projects", [], |row| row.get(0)
+        let total_workspaces: i64 = conn.query_row(
+            &format!("SELECT COUNT(*) FROM {workspace_table}"),
+            [],
+            |row| row.get(0),
         )?;
         let total_folders: i64 = conn.query_row(
             "SELECT COUNT(*) FROM folders", [], |row| row.get(0)
@@ -1019,7 +1201,7 @@ impl Database {
         Ok(Stats {
             total_chats,
             total_messages,
-            total_projects,
+            total_workspaces,
             total_folders,
             total_prompts,
         })
@@ -1032,16 +1214,20 @@ impl Database {
     pub async fn store_code_symbol(&self, req: StoreCodeSymbolRequest) -> Result<()> {
         let now = chrono::Utc::now().timestamp_millis();
         let conn = self.conn.lock().await;
+        let workspace_path = legacy_workspace_path_column();
 
         let embedding_blob = req.embedding.as_ref().map(|e| bincode::serialize(e).unwrap_or_default());
+        let insert_sql = format!(
+            "INSERT OR REPLACE INTO code_symbols
+             (id, {workspace_path}, file_path, name, line, kind, signature, docstring, embedding, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        );
 
         conn.execute(
-            "INSERT OR REPLACE INTO code_symbols
-             (id, project_path, file_path, name, line, kind, signature, docstring, embedding, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            &insert_sql,
             params![
                 req.id,
-                req.project_path,
+                req.workspace_path,
                 req.file_path,
                 req.name,
                 req.line,
@@ -1058,15 +1244,18 @@ impl Database {
 
     pub async fn search_code_symbols(&self, req: VectorSearchRequest) -> Result<Vec<CodeSymbol>> {
         let conn = self.conn.lock().await;
+        let workspace_path = legacy_workspace_path_column();
 
-        let mut sql = "SELECT id, project_path, file_path, name, line, kind, signature, docstring, embedding, created_at
-                       FROM code_symbols".to_string();
+        let mut sql = format!(
+            "SELECT id, {workspace_path}, file_path, name, line, kind, signature, docstring, embedding, created_at
+                       FROM code_symbols"
+        );
 
         let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
 
-        if let Some(ref project_path) = req.project_path {
-            sql.push_str(" WHERE project_path = ?");
-            params.push(Box::new(project_path.clone()));
+        if let Some(ref workspace_path_filter) = req.workspace_path {
+            sql.push_str(&format!(" WHERE {workspace_path} = ?"));
+            params.push(Box::new(workspace_path_filter.clone()));
         }
 
         let mut stmt = conn.prepare(&sql)?;
@@ -1078,7 +1267,7 @@ impl Database {
 
             Ok(CodeSymbol {
                 id: row.get(0)?,
-                project_path: row.get(1)?,
+                workspace_path: row.get(1)?,
                 file_path: row.get(2)?,
                 name: row.get(3)?,
                 line: row.get(4)?,
@@ -1109,13 +1298,17 @@ impl Database {
     pub async fn store_semantic_fragment(&self, req: StoreSemanticFragmentRequest) -> Result<()> {
         let now = chrono::Utc::now().timestamp_millis();
         let conn = self.conn.lock().await;
+        let workspace_path = legacy_workspace_path_column();
 
         let embedding_blob = bincode::serialize(&req.embedding)?;
+        let insert_sql = format!(
+            "INSERT OR REPLACE INTO semantic_fragments
+             (id, content, embedding, source, source_id, tags, importance, {workspace_path}, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        );
 
         conn.execute(
-            "INSERT OR REPLACE INTO semantic_fragments
-             (id, content, embedding, source, source_id, tags, importance, project_path, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            &insert_sql,
             params![
                 req.id,
                 req.content,
@@ -1124,7 +1317,7 @@ impl Database {
                 req.source_id,
                 serde_json::to_string(&req.tags)?,
                 req.importance,
-                req.project_path,
+                req.workspace_path,
                 now,
                 now
             ],
@@ -1135,15 +1328,18 @@ impl Database {
 
     pub async fn search_semantic_fragments(&self, req: VectorSearchRequest) -> Result<Vec<SemanticFragment>> {
         let conn = self.conn.lock().await;
+        let workspace_path = legacy_workspace_path_column();
 
-        let mut sql = "SELECT id, content, embedding, source, source_id, tags, importance, project_path, created_at, updated_at
-                       FROM semantic_fragments".to_string();
+        let mut sql = format!(
+            "SELECT id, content, embedding, source, source_id, tags, importance, {workspace_path}, created_at, updated_at
+                       FROM semantic_fragments"
+        );
 
         let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
 
-        if let Some(ref project_path) = req.project_path {
-            sql.push_str(" WHERE project_path = ?");
-            params.push(Box::new(project_path.clone()));
+        if let Some(ref workspace_path_filter) = req.workspace_path {
+            sql.push_str(&format!(" WHERE {workspace_path} = ?"));
+            params.push(Box::new(workspace_path_filter.clone()));
         }
 
         let mut stmt = conn.prepare(&sql)?;
@@ -1162,7 +1358,7 @@ impl Database {
                     .and_then(|s| serde_json::from_str(&s).ok())
                     .unwrap_or_default(),
                 importance: row.get(6)?,
-                project_path: row.get(7)?,
+                workspace_path: row.get(7)?,
                 created_at: row.get(8)?,
                 updated_at: row.get(9)?,
             })

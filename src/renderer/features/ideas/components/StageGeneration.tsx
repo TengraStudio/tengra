@@ -1,4 +1,4 @@
-import { ProjectIdea } from '@shared/types/ideas';
+import { WorkspaceIdea } from '@shared/types/ideas';
 import { Lightbulb, Loader2 } from 'lucide-react';
 import React from 'react';
 
@@ -10,8 +10,8 @@ interface StageGenerationProps {
     isGenerating: boolean
     ideasCount: number
     maxIdeas: number
-    ideas: ProjectIdea[]
-    setSelectedIdea: (idea: ProjectIdea) => void
+    ideas: WorkspaceIdea[]
+    setSelectedIdea: (idea: WorkspaceIdea) => void
     setWorkflowStage: (stage: WorkflowStage) => void
     t: (key: string) => string
 }

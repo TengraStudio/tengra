@@ -1,12 +1,12 @@
 const sectionData = {
     "title": "项目向导",
-    "localProject": "本地项目",
-    "localProjectDesc": "在您的计算机上创建一个新项目。",
+    "localWorkspace": "本地项目",
+    "localWorkspaceDesc": "在您的计算机上创建一个新项目。",
     "remoteSSH": "远程 SSH",
     "remoteSSHDesc": "连接到远程服务器进行开发。",
     "import": "导入",
     "importDesc": "将现有项目或文件夹添加到工作区。",
-    "projectName": "项目名称",
+    "workspaceName": "项目名称",
     "namePlaceholder": "例如：CRM 仪表板",
     "placeholder": {
         "example": "example.com"

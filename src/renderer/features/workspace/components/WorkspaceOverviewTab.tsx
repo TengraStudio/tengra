@@ -1,16 +1,15 @@
 
-import { ProjectDashboardHeader } from '@renderer/features/workspace/components/ProjectDashboardHeader';
-import { ProjectStatsCards } from '@renderer/features/workspace/components/ProjectStatsCards';
-import { Project } from '@shared/types/project';
+import { WorkspaceDashboardHeader } from '@renderer/features/workspace/components/WorkspaceDashboardHeader';
+import { WorkspaceStatsCards } from '@renderer/features/workspace/components/WorkspaceStatsCards';
 import { Trash2 } from 'lucide-react';
 
-import { ProjectAnalysis, ProjectStats } from '@/types';
+import type { Workspace, WorkspaceAnalysis, WorkspaceStats } from '@/types';
 
-interface ProjectOverviewTabProps {
-    project: Project;
-    projectRoot: string;
-    analysis: ProjectAnalysis | null;
-    stats: ProjectStats | null;
+interface WorkspaceOverviewTabProps {
+    workspace: Workspace;
+    workspaceRoot: string;
+    analysis: WorkspaceAnalysis | null;
+    stats: WorkspaceStats | null;
     loading: boolean;
     isEditingName: boolean;
     setIsEditingName: (v: boolean) => void;
@@ -23,14 +22,14 @@ interface ProjectOverviewTabProps {
     setEditDesc: (v: string) => void;
     handleSaveDesc: () => Promise<void>;
     onOpenLogoGenerator?: () => void;
-    analyzeProject: () => Promise<void>;
+    analyzeWorkspace: () => Promise<void>;
     onDelete?: () => void;
     t: (key: string) => string;
 }
 
-export const ProjectOverviewTab = ({
-    project,
-    projectRoot,
+export const WorkspaceOverviewTab = ({
+    workspace,
+    workspaceRoot,
     analysis,
     stats,
     loading,
@@ -45,19 +44,19 @@ export const ProjectOverviewTab = ({
     setEditDesc,
     handleSaveDesc,
     onOpenLogoGenerator,
-    analyzeProject,
+    analyzeWorkspace,
     onDelete,
     t
-}: ProjectOverviewTabProps) => {
+}: WorkspaceOverviewTabProps) => {
     if (!analysis) {
         return null;
     }
 
     return (
         <div className="space-y-8 overflow-y-auto pr-2 pb-12 animate-in fade-in duration-500">
-            <ProjectDashboardHeader
-                project={project}
-                projectRoot={projectRoot}
+            <WorkspaceDashboardHeader
+                workspace={workspace}
+                workspaceRoot={workspaceRoot}
                 type={analysis.type}
                 loading={loading}
                 isEditingName={isEditingName}
@@ -71,10 +70,10 @@ export const ProjectOverviewTab = ({
                 setEditDesc={setEditDesc}
                 handleSaveDesc={handleSaveDesc}
                 onOpenLogoGenerator={onOpenLogoGenerator}
-                analyzeProject={analyzeProject}
+                analyzeWorkspace={analyzeWorkspace}
             />
 
-            <ProjectStatsCards
+            <WorkspaceStatsCards
                 stats={stats}
                 type={analysis.type}
                 moduleCount={analysis.monorepo?.packages.length ?? Object.keys(analysis.dependencies).length}
@@ -147,7 +146,7 @@ export const ProjectOverviewTab = ({
                 </h3>
                 <div className="bg-destructive/5 border border-destructive/10 rounded-xl p-6 flex items-center justify-between">
                     <div>
-                        <h4 className="text-foreground font-medium mb-1">{t('workspaces.deleteWorkspace') || 'Delete Project'}</h4>
+                        <h4 className="text-foreground font-medium mb-1">{t('workspaces.deleteWorkspace') || 'Delete Workspace'}</h4>
                         <p className="text-sm text-muted-foreground">{t('workspaces.deleteWarning') || 'This action cannot be undone.'}</p>
                     </div>
                     <button

@@ -1,4 +1,4 @@
-import { ProjectStep } from '@shared/types/project-agent';
+import { WorkspaceStep } from '@shared/types/workspace-agent';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { OrchestratorStateView } from '../electron';
@@ -51,7 +51,7 @@ export function useOrchestrator() {
         }
     }, []);
 
-    const approve = useCallback(async (plan: ProjectStep[]) => {
+    const approve = useCallback(async (plan: WorkspaceStep[]) => {
         setError(null);
         try {
             await window.electron.orchestrator.approve(plan);

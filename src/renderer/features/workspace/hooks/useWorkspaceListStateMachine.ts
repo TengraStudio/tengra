@@ -1,36 +1,36 @@
 /**
- * Project List State Machine
+ * Workspace List State Machine
  * 
- * Implements a reducer-based state machine for project list operations
+ * Implements a reducer-based state machine for workspace list operations
  * to prevent race conditions and ensure consistent state transitions.
  */
 import { useCallback, useReducer } from 'react';
 
-import { Project, WorkspaceMount } from '@/types';
+import { Workspace, WorkspaceMount } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
-export type ProjectListViewMode = 'grid' | 'list';
-export type ProjectListSortBy = 'title' | 'updatedAt' | 'createdAt';
-export type ProjectListSortDirection = 'asc' | 'desc';
-export type ProjectListPreset = 'recent' | 'oldest' | 'name-az' | 'name-za';
+export type WorkspaceListViewMode = 'grid' | 'list';
+export type WorkspaceListSortBy = 'title' | 'updatedAt' | 'createdAt';
+export type WorkspaceListSortDirection = 'asc' | 'desc';
+export type WorkspaceListPreset = 'recent' | 'oldest' | 'name-az' | 'name-za';
 
-export interface ProjectListPreferences {
-    viewMode: ProjectListViewMode;
-    sortBy: ProjectListSortBy;
-    sortDirection: ProjectListSortDirection;
-    listPreset: ProjectListPreset;
+export interface WorkspaceListPreferences {
+    viewMode: WorkspaceListViewMode;
+    sortBy: WorkspaceListSortBy;
+    sortDirection: WorkspaceListSortDirection;
+    listPreset: WorkspaceListPreset;
 }
 
-export const loadProjectListPreferences = (
+export const loadWorkspaceListPreferences = (
     storageKey: string,
-    fallback: ProjectListPreferences
-): ProjectListPreferences => {
+    fallback: WorkspaceListPreferences
+): WorkspaceListPreferences => {
     try {
         const raw = localStorage.getItem(storageKey);
         if (!raw) {
             return fallback;
         }
-        const parsed = JSON.parse(raw) as Partial<ProjectListPreferences>;
+        const parsed = JSON.parse(raw) as Partial<WorkspaceListPreferences>;
         return {
             viewMode: parsed.viewMode ?? fallback.viewMode,
             sortBy: parsed.sortBy ?? fallback.sortBy,
@@ -42,9 +42,9 @@ export const loadProjectListPreferences = (
     }
 };
 
-export const saveProjectListPreferences = (
+export const saveWorkspaceListPreferences = (
     storageKey: string,
-    preferences: ProjectListPreferences
+    preferences: WorkspaceListPreferences
 ): void => {
     localStorage.setItem(storageKey, JSON.stringify(preferences));
 };
@@ -53,7 +53,7 @@ export const saveProjectListPreferences = (
 // State Machine Types
 // ============================================================================
 
-export type ProjectListStatus =
+export type WorkspaceListStatus =
     | 'idle'
     | 'loading'
     | 'editing'
@@ -64,14 +64,14 @@ export type ProjectListStatus =
     | 'creating'
     | 'error'
 
-export interface ProjectListState {
-    status: ProjectListStatus
-    // Target project for single operations
-    targetProject: Project | null
+export interface WorkspaceListState {
+    status: WorkspaceListStatus
+    // Target workspace for single operations
+    targetWorkspace: Workspace | null
     // Edit form data
     editForm: { title: string; description: string }
     // Selection
-    selectedProjectIds: Set<string>
+    selectedWorkspaceIds: Set<string>
     // Error tracking
     error: string | null
     // Loading message
@@ -82,13 +82,13 @@ export interface ProjectListState {
 // Action Types
 // ============================================================================
 
-type ProjectListAction =
-    | { type: 'START_EDIT'; project: Project }
+type WorkspaceListAction =
+    | { type: 'START_EDIT'; workspace: Workspace }
     | { type: 'UPDATE_EDIT_FORM'; form: { title: string; description: string } }
     | { type: 'CANCEL_EDIT' }
-    | { type: 'START_DELETE'; project: Project }
+    | { type: 'START_DELETE'; workspace: Workspace }
     | { type: 'CANCEL_DELETE' }
-    | { type: 'START_ARCHIVE'; project: Project }
+    | { type: 'START_ARCHIVE'; workspace: Workspace }
     | { type: 'CANCEL_ARCHIVE' }
     | { type: 'START_BULK_DELETE' }
     | { type: 'CANCEL_BULK_DELETE' }
@@ -108,11 +108,11 @@ type ProjectListAction =
 // Initial State
 // ============================================================================
 
-const initialState: ProjectListState = {
+const initialState: WorkspaceListState = {
     status: 'idle',
-    targetProject: null,
+    targetWorkspace: null,
     editForm: { title: '', description: '' },
-    selectedProjectIds: new Set(),
+    selectedWorkspaceIds: new Set(),
     error: null,
     loadingMessage: null
 };
@@ -121,80 +121,80 @@ const initialState: ProjectListState = {
 // Reducer
 // ============================================================================
 
-const handleStartEdit = (state: ProjectListState, action: Extract<ProjectListAction, { type: 'START_EDIT' }>): ProjectListState => {
+const handleStartEdit = (state: WorkspaceListState, action: Extract<WorkspaceListAction, { type: 'START_EDIT' }>): WorkspaceListState => {
     if (state.status !== 'idle') { return state; }
-    return { ...state, status: 'editing', targetProject: action.project, editForm: { title: action.project.title, description: action.project.description }, error: null };
+    return { ...state, status: 'editing', targetWorkspace: action.workspace, editForm: { title: action.workspace.title, description: action.workspace.description }, error: null };
 };
 
-const handleCancelEdit = (state: ProjectListState): ProjectListState =>
-    ({ ...state, status: 'idle', targetProject: null, editForm: { title: '', description: '' } });
+const handleCancelEdit = (state: WorkspaceListState): WorkspaceListState =>
+    ({ ...state, status: 'idle', targetWorkspace: null, editForm: { title: '', description: '' } });
 
-const handleStartDelete = (state: ProjectListState, project: Project): ProjectListState => {
+const handleStartDelete = (state: WorkspaceListState, workspace: Workspace): WorkspaceListState => {
     if (state.status !== 'idle') { return state; }
-    return { ...state, status: 'deleting', targetProject: project, error: null };
+    return { ...state, status: 'deleting', targetWorkspace: workspace, error: null };
 };
 
-const handleCancelDelete = (state: ProjectListState): ProjectListState =>
-    ({ ...state, status: 'idle', targetProject: null });
+const handleCancelDelete = (state: WorkspaceListState): WorkspaceListState =>
+    ({ ...state, status: 'idle', targetWorkspace: null });
 
-const handleStartArchive = (state: ProjectListState, project: Project): ProjectListState => {
+const handleStartArchive = (state: WorkspaceListState, workspace: Workspace): WorkspaceListState => {
     if (state.status !== 'idle') { return state; }
-    return { ...state, status: 'archiving', targetProject: project, error: null };
+    return { ...state, status: 'archiving', targetWorkspace: workspace, error: null };
 };
 
-const handleCancelArchive = (state: ProjectListState): ProjectListState =>
-    ({ ...state, status: 'idle', targetProject: null });
+const handleCancelArchive = (state: WorkspaceListState): WorkspaceListState =>
+    ({ ...state, status: 'idle', targetWorkspace: null });
 
-const handleStartBulkDelete = (state: ProjectListState): ProjectListState => {
-    if (state.status !== 'idle' || state.selectedProjectIds.size === 0) { return state; }
+const handleStartBulkDelete = (state: WorkspaceListState): WorkspaceListState => {
+    if (state.status !== 'idle' || state.selectedWorkspaceIds.size === 0) { return state; }
     return { ...state, status: 'bulk_deleting', error: null };
 };
 
-const handleStartBulkArchive = (state: ProjectListState): ProjectListState => {
-    if (state.status !== 'idle' || state.selectedProjectIds.size === 0) { return state; }
+const handleStartBulkArchive = (state: WorkspaceListState): WorkspaceListState => {
+    if (state.status !== 'idle' || state.selectedWorkspaceIds.size === 0) { return state; }
     return { ...state, status: 'bulk_archiving', error: null };
 };
 
-const handleStartCreate = (state: ProjectListState): ProjectListState => {
+const handleStartCreate = (state: WorkspaceListState): WorkspaceListState => {
     if (state.status !== 'idle') { return state; }
     return { ...state, status: 'creating', error: null };
 };
 
-const handleToggleSelection = (state: ProjectListState, id: string): ProjectListState => {
+const handleToggleSelection = (state: WorkspaceListState, id: string): WorkspaceListState => {
     if (state.status !== 'idle') { return state; }
-    const next = new Set(state.selectedProjectIds);
+    const next = new Set(state.selectedWorkspaceIds);
     if (next.has(id)) { next.delete(id); } else { next.add(id); }
-    return { ...state, selectedProjectIds: next };
+    return { ...state, selectedWorkspaceIds: next };
 };
 
-const handleSelectAll = (state: ProjectListState, ids: string[]): ProjectListState => {
+const handleSelectAll = (state: WorkspaceListState, ids: string[]): WorkspaceListState => {
     if (state.status !== 'idle') { return state; }
-    return { ...state, selectedProjectIds: new Set(ids) };
+    return { ...state, selectedWorkspaceIds: new Set(ids) };
 };
 
-const handleOperationStart = (state: ProjectListState, message?: string): ProjectListState =>
+const handleOperationStart = (state: WorkspaceListState, message?: string): WorkspaceListState =>
     ({ ...state, status: 'loading', loadingMessage: message ?? null });
 
-const handleOperationSuccess = (): ProjectListState =>
-    ({ ...initialState, selectedProjectIds: new Set() });
+const handleOperationSuccess = (): WorkspaceListState =>
+    ({ ...initialState, selectedWorkspaceIds: new Set() });
 
-const handleOperationError = (state: ProjectListState, error: string): ProjectListState =>
+const handleOperationError = (state: WorkspaceListState, error: string): WorkspaceListState =>
     ({ ...state, status: 'error', error, loadingMessage: null });
 
 // Simple action handlers that return a function
-type ActionHandler = (state: ProjectListState, action: ProjectListAction) => ProjectListState;
+type ActionHandler = (state: WorkspaceListState, action: WorkspaceListAction) => WorkspaceListState;
 
-const actionHandlers: Record<ProjectListAction['type'], ActionHandler> = {
+const actionHandlers: Record<WorkspaceListAction['type'], ActionHandler> = {
     'START_EDIT': (state, action) =>
         action.type === 'START_EDIT' ? handleStartEdit(state, action) : state,
     'UPDATE_EDIT_FORM': (state, action) =>
         action.type === 'UPDATE_EDIT_FORM' ? { ...state, editForm: action.form } : state,
     'CANCEL_EDIT': (state) => handleCancelEdit(state),
     'START_DELETE': (state, action) =>
-        action.type === 'START_DELETE' ? handleStartDelete(state, action.project) : state,
+        action.type === 'START_DELETE' ? handleStartDelete(state, action.workspace) : state,
     'CANCEL_DELETE': (state) => handleCancelDelete(state),
     'START_ARCHIVE': (state, action) =>
-        action.type === 'START_ARCHIVE' ? handleStartArchive(state, action.project) : state,
+        action.type === 'START_ARCHIVE' ? handleStartArchive(state, action.workspace) : state,
     'CANCEL_ARCHIVE': (state) => handleCancelArchive(state),
     'START_BULK_DELETE': (state) => handleStartBulkDelete(state),
     'CANCEL_BULK_DELETE': (state) => ({ ...state, status: 'idle' }),
@@ -206,7 +206,7 @@ const actionHandlers: Record<ProjectListAction['type'], ActionHandler> = {
         action.type === 'TOGGLE_SELECTION' ? handleToggleSelection(state, action.id) : state,
     'SELECT_ALL': (state, action) =>
         action.type === 'SELECT_ALL' ? handleSelectAll(state, action.ids) : state,
-    'CLEAR_SELECTION': (state) => ({ ...state, selectedProjectIds: new Set() }),
+    'CLEAR_SELECTION': (state) => ({ ...state, selectedWorkspaceIds: new Set() }),
     'OPERATION_START': (state, action) =>
         action.type === 'OPERATION_START' ? handleOperationStart(state, action.message) : state,
     'OPERATION_SUCCESS': () => handleOperationSuccess(),
@@ -215,7 +215,7 @@ const actionHandlers: Record<ProjectListAction['type'], ActionHandler> = {
     'RESET': () => initialState
 };
 
-function projectListReducer(state: ProjectListState, action: ProjectListAction): ProjectListState {
+function workspaceListReducer(state: WorkspaceListState, action: WorkspaceListAction): WorkspaceListState {
     const handler = actionHandlers[action.type];
     return handler(state, action);
 }
@@ -224,14 +224,14 @@ function projectListReducer(state: ProjectListState, action: ProjectListAction):
 // Hook
 // ============================================================================
 
-export interface UseProjectListStateMachineOptions {
-    filteredProjects: Project[]
+export interface UseWorkspaceListStateMachineOptions {
+    filteredWorkspaces: Workspace[]
     onError?: (error: string) => void
 }
 
-const useProjectListOperations = (
-    state: ProjectListState,
-    dispatch: React.Dispatch<ProjectListAction>,
+const useWorkspaceListOperations = (
+    state: WorkspaceListState,
+    dispatch: React.Dispatch<WorkspaceListAction>,
     onError?: (error: string) => void
 ) => {
     const normalizePathKey = useCallback((value: string): string => {
@@ -249,72 +249,72 @@ const useProjectListOperations = (
     }, [normalizePathKey]);
 
     const executeUpdate = useCallback(async (): Promise<boolean> => {
-        if (state.status !== 'editing' || !state.targetProject) { return false; }
-        dispatch({ type: 'OPERATION_START', message: 'Updating project...' });
+        if (state.status !== 'editing' || !state.targetWorkspace) { return false; }
+        dispatch({ type: 'OPERATION_START', message: 'Updating workspace...' });
         try {
-            await window.electron.db.updateWorkspace(state.targetProject.id, state.editForm);
+            await window.electron.db.updateWorkspace(state.targetWorkspace.id, state.editForm);
             dispatch({ type: 'OPERATION_SUCCESS' });
             return true;
         } catch (error) {
-            const msg = error instanceof Error ? error.message : 'Failed to update project';
+            const msg = error instanceof Error ? error.message : 'Failed to update workspace';
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
             return false;
         }
-    }, [state.status, state.targetProject, state.editForm, dispatch, onError]);
+    }, [state.status, state.targetWorkspace, state.editForm, dispatch, onError]);
 
     const executeDelete = useCallback(async (deleteFiles: boolean = false) => {
-        if (state.status !== 'deleting' || !state.targetProject) { return; }
-        dispatch({ type: 'OPERATION_START', message: 'Deleting project...' });
+        if (state.status !== 'deleting' || !state.targetWorkspace) { return; }
+        dispatch({ type: 'OPERATION_START', message: 'Deleting workspace...' });
         try {
-            await window.electron.db.deleteWorkspace(state.targetProject.id, deleteFiles);
+            await window.electron.db.deleteWorkspace(state.targetWorkspace.id, deleteFiles);
             dispatch({ type: 'OPERATION_SUCCESS' });
         } catch (error) {
-            const msg = error instanceof Error ? error.message : 'Failed to delete project';
+            const msg = error instanceof Error ? error.message : 'Failed to delete workspace';
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
         }
-    }, [state.status, state.targetProject, dispatch, onError]);
+    }, [state.status, state.targetWorkspace, dispatch, onError]);
 
     const executeArchive = useCallback(async () => {
-        if (state.status !== 'archiving' || !state.targetProject) { return; }
-        dispatch({ type: 'OPERATION_START', message: 'Archiving project...' });
+        if (state.status !== 'archiving' || !state.targetWorkspace) { return; }
+        dispatch({ type: 'OPERATION_START', message: 'Archiving workspace...' });
         try {
-            const newStatus = state.targetProject.status === 'archived' ? 'active' : 'archived';
-            await window.electron.db.archiveWorkspace(state.targetProject.id, newStatus === 'archived');
+            const newStatus = state.targetWorkspace.status === 'archived' ? 'active' : 'archived';
+            await window.electron.db.archiveWorkspace(state.targetWorkspace.id, newStatus === 'archived');
             dispatch({ type: 'OPERATION_SUCCESS' });
         } catch (error) {
-            const msg = error instanceof Error ? error.message : 'Failed to archive project';
+            const msg = error instanceof Error ? error.message : 'Failed to archive workspace';
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
         }
-    }, [state.status, state.targetProject, dispatch, onError]);
+    }, [state.status, state.targetWorkspace, dispatch, onError]);
 
     const executeBulkDelete = useCallback(async (deleteFiles: boolean = false) => {
-        if (state.status !== 'bulk_deleting' || state.selectedProjectIds.size === 0) { return; }
-        dispatch({ type: 'OPERATION_START', message: `Deleting ${state.selectedProjectIds.size} projects...` });
+        if (state.status !== 'bulk_deleting' || state.selectedWorkspaceIds.size === 0) { return; }
+        dispatch({ type: 'OPERATION_START', message: `Deleting ${state.selectedWorkspaceIds.size} workspaces...` });
         try {
-            await window.electron.db.bulkDeleteWorkspaces(Array.from(state.selectedProjectIds), deleteFiles);
+            await window.electron.db.bulkDeleteWorkspaces(Array.from(state.selectedWorkspaceIds), deleteFiles);
             dispatch({ type: 'OPERATION_SUCCESS' });
         } catch (error) {
-            const msg = error instanceof Error ? error.message : 'Failed to bulk delete projects';
+            const msg = error instanceof Error ? error.message : 'Failed to bulk delete workspaces';
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
         }
-    }, [state.status, state.selectedProjectIds, dispatch, onError]);
+    }, [state.status, state.selectedWorkspaceIds, dispatch, onError]);
 
     const executeBulkArchive = useCallback(async (isArchived: boolean = true) => {
-        if (state.status !== 'bulk_archiving' || state.selectedProjectIds.size === 0) { return; }
-        dispatch({ type: 'OPERATION_START', message: `Archiving ${state.selectedProjectIds.size} projects...` });
+        if (state.status !== 'bulk_archiving' || state.selectedWorkspaceIds.size === 0) { return; }
+        dispatch({ type: 'OPERATION_START', message: `Archiving ${state.selectedWorkspaceIds.size} workspaces...` });
         try {
-            await window.electron.db.bulkArchiveWorkspaces(Array.from(state.selectedProjectIds), isArchived);
+            await window.electron.db.bulkArchiveWorkspaces(Array.from(state.selectedWorkspaceIds), isArchived);
             dispatch({ type: 'OPERATION_SUCCESS' });
         } catch (error) {
-            const msg = error instanceof Error ? error.message : 'Failed to bulk archive projects';
+            const msg = error instanceof Error ? error.message : 'Failed to bulk archive workspaces';
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
         }
-    }, [state.status, state.selectedProjectIds, dispatch, onError]);
+    }, [state.status, state.selectedWorkspaceIds, dispatch, onError]);
 
     const executeCreate = useCallback(async (path: string, name: string, description: string, userMounts?: WorkspaceMount[]): Promise<boolean> => {
         dispatch({ type: 'OPERATION_START', message: 'Creating workspace...' });
@@ -325,19 +325,19 @@ const useProjectListOperations = (
                 type: 'local' as const,
                 rootPath: path
             }];
-            const existingProjects = await window.electron.db.getWorkspaces();
+            const existingWorkspaces = await window.electron.db.getWorkspaces();
             const existingMounts = new Set<string>();
-            for (const project of existingProjects) {
-                const projectMounts = Array.isArray(project.mounts) && project.mounts.length > 0
-                    ? project.mounts
+            for (const workspace of existingWorkspaces) {
+                const workspaceMounts = Array.isArray(workspace.mounts) && workspace.mounts.length > 0
+                    ? workspace.mounts
                     : [{
-                        id: `local-${project.id}`,
-                        name: project.title,
+                        id: `local-${workspace.id}`,
+                        name: workspace.title,
                         type: 'local' as const,
-                        rootPath: project.path
+                        rootPath: workspace.path
                     }];
-                for (const projectMount of projectMounts) {
-                    existingMounts.add(buildMountKey(projectMount));
+                for (const workspaceMount of workspaceMounts) {
+                    existingMounts.add(buildMountKey(workspaceMount));
                 }
             }
 
@@ -369,13 +369,13 @@ const useProjectListOperations = (
     };
 };
 
-export function useProjectListStateMachine({ filteredProjects, onError }: UseProjectListStateMachineOptions) {
-    const [state, dispatch] = useReducer(projectListReducer, initialState);
+export function useWorkspaceListStateMachine({ filteredWorkspaces, onError }: UseWorkspaceListStateMachineOptions) {
+    const [state, dispatch] = useReducer(workspaceListReducer, initialState);
 
     // Action creators
-    const startEdit = useCallback((project: Project, e?: React.MouseEvent) => {
+    const startEdit = useCallback((workspace: Workspace, e?: React.MouseEvent) => {
         e?.stopPropagation();
-        dispatch({ type: 'START_EDIT', project });
+        dispatch({ type: 'START_EDIT', workspace });
     }, []);
 
     const updateEditForm = useCallback((formOrUpdater: { title: string; description: string } | ((prev: { title: string; description: string }) => { title: string; description: string })) => {
@@ -387,12 +387,12 @@ export function useProjectListStateMachine({ filteredProjects, onError }: UsePro
     }, [state.editForm]);
 
     const cancelEdit = useCallback(() => dispatch({ type: 'CANCEL_EDIT' }), []);
-    const startDelete = useCallback((project: Project, e?: React.MouseEvent) => {
+    const startDelete = useCallback((workspace: Workspace, e?: React.MouseEvent) => {
         e?.stopPropagation();
-        dispatch({ type: 'START_DELETE', project });
+        dispatch({ type: 'START_DELETE', workspace });
     }, []);
     const cancelDelete = useCallback(() => dispatch({ type: 'CANCEL_DELETE' }), []);
-    const startArchive = useCallback((project: Project) => dispatch({ type: 'START_ARCHIVE', project }), []);
+    const startArchive = useCallback((workspace: Workspace) => dispatch({ type: 'START_ARCHIVE', workspace }), []);
     const cancelArchive = useCallback(() => dispatch({ type: 'CANCEL_ARCHIVE' }), []);
     const startBulkDelete = useCallback(() => dispatch({ type: 'START_BULK_DELETE' }), []);
     const cancelBulkDelete = useCallback(() => dispatch({ type: 'CANCEL_BULK_DELETE' }), []);
@@ -400,15 +400,15 @@ export function useProjectListStateMachine({ filteredProjects, onError }: UsePro
     const cancelBulkArchive = useCallback(() => dispatch({ type: 'CANCEL_BULK_ARCHIVE' }), []);
     const toggleSelection = useCallback((id: string) => dispatch({ type: 'TOGGLE_SELECTION', id }), []);
     const toggleSelectAll = useCallback(() => {
-        if (state.selectedProjectIds.size === filteredProjects.length) {
+        if (state.selectedWorkspaceIds.size === filteredWorkspaces.length) {
             dispatch({ type: 'CLEAR_SELECTION' });
         } else {
-            dispatch({ type: 'SELECT_ALL', ids: filteredProjects.map(p => p.id) });
+            dispatch({ type: 'SELECT_ALL', ids: filteredWorkspaces.map(p => p.id) });
         }
-    }, [filteredProjects, state.selectedProjectIds.size]);
+    }, [filteredWorkspaces, state.selectedWorkspaceIds.size]);
     const reset = useCallback(() => dispatch({ type: 'RESET' }), []);
 
-    const executors = useProjectListOperations(state, dispatch, onError);
+    const executors = useWorkspaceListOperations(state, dispatch, onError);
 
     return {
         state,
@@ -431,8 +431,3 @@ export function useProjectListStateMachine({ filteredProjects, onError }: UsePro
         ...executors
     };
 }
-
-// Workspace aliases for the new naming convention
-export const loadWorkspaceListPreferences = loadProjectListPreferences;
-export const saveWorkspaceListPreferences = saveProjectListPreferences;
-export const useWorkspaceListStateMachine = useProjectListStateMachine;

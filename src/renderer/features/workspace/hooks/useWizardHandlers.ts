@@ -27,12 +27,12 @@ interface SSHConnectOptions {
     loadRemoteDirectory: (connId: string, path: string) => Promise<void>;
 }
 
-interface CreateProjectOptions {
+interface CreateWorkspaceOptions {
     formData: FormData;
     setIsLoading: (loading: boolean) => void;
     setError: (error: string | null) => void;
     setStep: (step: 'selection' | 'details' | 'ssh-connection' | 'ssh-browser' | 'creating') => void;
-    onProjectCreated: (path: string, name: string, description: string, mounts?: WorkspaceMount[]) => void;
+    onWorkspaceCreated: (path: string, name: string, description: string, mounts?: WorkspaceMount[]) => Promise<boolean>;
     onClose: () => void;
 }
 
@@ -41,7 +41,7 @@ interface SSHBrowserNextOptions {
     formData: FormData;
     sshForm: SSHForm;
     sshPath: string;
-    onProjectCreated: (path: string, name: string, description: string, mounts?: WorkspaceMount[]) => void;
+    onWorkspaceCreated: (path: string, name: string, description: string, mounts?: WorkspaceMount[]) => Promise<boolean>;
     onClose: () => void;
 }
 
@@ -95,8 +95,8 @@ export const useSSHConnectHandler = (options: SSHConnectOptions) => {
     return handleSSHConnect;
 };
 
-export const useCreateProjectHandler = (options: CreateProjectOptions) => {
-    const { formData, setIsLoading, setError, setStep, onProjectCreated, onClose } = options;
+export const useCreateWorkspaceHandler = (options: CreateWorkspaceOptions) => {
+    const { formData, setIsLoading, setError, setStep, onWorkspaceCreated, onClose } = options;
     const handleCreate = async () => {
         if (!formData.name) {
             return;
@@ -109,22 +109,24 @@ export const useCreateProjectHandler = (options: CreateProjectOptions) => {
             const userData = await window.electron.getUserDataPath();
             const settings = await window.electron.getSettings();
             const configuredBasePath = settings.general.workspacesBasePath?.trim() ?? '';
-            const projectsDir = formData.customPath.trim() || configuredBasePath || `${userData}\\projects`;
-            const safeProjectName = formData.name.replace(/[^a-zA-Z0-9-_]/g, '-');
-            const projectPath = `${projectsDir}\\${safeProjectName}`;
+            const workspacesDir = formData.customPath.trim() || configuredBasePath || `${userData}\\workspaces`;
+            const safeWorkspaceName = formData.name.replace(/[^a-zA-Z0-9-_]/g, '-');
+            const workspacePath = `${workspacesDir}\\${safeWorkspaceName}`;
 
-            await window.electron.createDirectory(projectsDir);
-            await window.electron.createDirectory(projectPath);
+            await window.electron.createDirectory(workspacesDir);
+            await window.electron.createDirectory(workspacePath);
 
             const readmeContent = `# ${formData.name}\n\n${formData.description}\n`;
-            await window.electron.writeFile(`${projectPath}\\README.md`, readmeContent);
+            await window.electron.writeFile(`${workspacePath}\\README.md`, readmeContent);
 
-            onProjectCreated(projectPath, formData.name, formData.description);
-            onClose();
+            const success = await onWorkspaceCreated(workspacePath, formData.name, formData.description);
+            if (success) {
+                onClose();
+            }
 
         } catch (err) {
-            window.electron.log.error('Project Creation Failed:', err);
-            setError(err instanceof Error ? err.message : 'Failed to create project');
+            window.electron.log.error('Workspace Creation Failed:', err);
+            setError(err instanceof Error ? err.message : 'Failed to create workspace');
             setStep('selection');
         } finally {
             setIsLoading(false);
@@ -138,7 +140,7 @@ export const useImportLocalHandler = (
     formData: FormData,
     setIsLoading: (loading: boolean) => void,
     setError: (error: string | null) => void,
-    onProjectCreated: (path: string, name: string, description: string, mounts?: WorkspaceMount[]) => void,
+    onWorkspaceCreated: (path: string, name: string, description: string, mounts?: WorkspaceMount[]) => Promise<boolean>,
     onClose: () => void
 ) => {
     const handleImportLocal = async () => {
@@ -147,15 +149,17 @@ export const useImportLocalHandler = (
         try {
             const result = await window.electron.selectDirectory();
             if (result.success && result.path) {
-                const dirName = result.path.split(/[/\\]/).pop() ?? 'Project';
+                const dirName = result.path.split(/[/\\]/).pop() ?? 'Workspace';
                 const mounts: WorkspaceMount[] = [{
                     id: `local-${Date.now()}`,
                     name: formData.name || dirName,
                     type: 'local',
                     rootPath: result.path
                 }];
-                onProjectCreated(result.path, formData.name || mounts[0]?.name || '', formData.description, mounts);
-                onClose();
+                const success = await onWorkspaceCreated(result.path, formData.name || mounts[0]?.name || '', formData.description, mounts);
+                if (success) {
+                    onClose();
+                }
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to select directory');
@@ -168,8 +172,8 @@ export const useImportLocalHandler = (
 };
 
 export const useSSHBrowserNextHandler = (options: SSHBrowserNextOptions) => {
-    const { sshConnectionId, formData, sshForm, sshPath, onProjectCreated, onClose } = options;
-    const handleSSHBrowserNext = () => {
+    const { sshConnectionId, formData, sshForm, sshPath, onWorkspaceCreated, onClose } = options;
+    const handleSSHBrowserNext = async () => {
         const sshMount: WorkspaceMount = {
             id: sshConnectionId ?? `ssh-${Date.now()}`,
             name: formData.name || `${sshForm.username}@${sshForm.host}`,
@@ -185,9 +189,11 @@ export const useSSHBrowserNextHandler = (options: SSHBrowserNextOptions) => {
                 passphrase: sshForm.authType === 'key' ? sshForm.passphrase : undefined
             }
         };
-        const remoteProjectPath = `ssh://${sshForm.username}@${sshForm.host}:${parseInt(sshForm.port, 10) || 22}${sshPath}`;
-        onProjectCreated(remoteProjectPath, formData.name || sshMount.name, formData.description, [sshMount]);
-        onClose();
+        const remoteWorkspacePath = `ssh://${sshForm.username}@${sshForm.host}:${parseInt(sshForm.port, 10) || 22}${sshPath}`;
+        const success = await onWorkspaceCreated(remoteWorkspacePath, formData.name || sshMount.name, formData.description, [sshMount]);
+        if (success) {
+            onClose();
+        }
     };
 
     return handleSSHBrowserNext;

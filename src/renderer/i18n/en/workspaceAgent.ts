@@ -24,7 +24,7 @@ const sectionData = {
     "selectAgentProfile": "Select agent profile",
     "agentSelected": "Agent selected",
     "defaultAgent": "Default Agent",
-    "defaultAgentDesc": "General-purpose project agent",
+    "defaultAgentDesc": "General-purpose workspace agent",
     "approveAndRun": "Approve & Run",
     "planning": "Planning",
     "running": "Running",
@@ -35,7 +35,7 @@ const sectionData = {
     "thinkingOff": "Thinking off",
     "selectAction": "Select action",
     "noDescription": "No description provided",
-    "selectProject": "Select project",
+    "selectWorkspace": "Select workspace",
     "votingPanel": {
         "title": "Voting Sessions",
         "sessionCount": "{{count}} sessions",

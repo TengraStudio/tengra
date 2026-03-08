@@ -3,17 +3,17 @@ import React from 'react';
 
 import { SidebarStatusIndicator, StatusType } from '@/components/layout/sidebar-components/SidebarStatusIndicator';
 import { Language, useTranslation } from '@/i18n';
-import { useWorkspacesPageHealthStore } from '@/store/projects-page-health.store';
+import { useWorkspacesPageHealthStore } from '@/store/workspaces-page-health.store';
 
-interface ProjectsPageHealthIndicatorProps {
+interface WorkspacesPageHealthIndicatorProps {
     language: Language;
 }
 
 /**
- * Displays the health status of the projects page operations (workspace mounts, etc.).
- * Listens to the projectsPageHealthStore and provides visual feedback.
+ * Displays the health status of the workspaces page operations (workspace mounts, etc.).
+ * Listens to the workspacesPageHealthStore and provides visual feedback.
  */
-export const ProjectsPageHealthIndicator: React.FC<ProjectsPageHealthIndicatorProps> = ({ language }) => {
+export const WorkspacesPageHealthIndicator: React.FC<WorkspacesPageHealthIndicatorProps> = ({ language }) => {
     const { t } = useTranslation(language);
     const health = useWorkspacesPageHealthStore(state => state);
 

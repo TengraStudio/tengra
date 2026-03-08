@@ -1,7 +1,8 @@
 import { useGitData } from '@renderer/features/workspace/hooks/useGitData';
-import { Project } from '@shared/types/project';
 import { AlertTriangle, CheckCircle2, FileCode, Minus, Plus, RefreshCw } from 'lucide-react';
 import React, { useEffect } from 'react';
+
+import type { Workspace } from '@/types';
 
 import { GitAdvancedPanel } from './git/GitAdvancedPanel';
 import { GitChangeStats } from './git/GitChangeStats';
@@ -11,13 +12,13 @@ import { GitQuickActions } from './git/GitQuickActions';
 import { GitRemotes } from './git/GitRemotes';
 import { GitStatusHeader } from './git/GitStatusHeader';
 
-interface ProjectGitTabProps {
-    project: Project
+interface WorkspaceGitTabProps {
+    workspace: Workspace
     t: (key: string) => string
     activeTab: string
 }
 
-export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, activeTab }) => {
+export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, activeTab }) => {
     const {
         gitData,
         branches,
@@ -44,13 +45,13 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
         loadingDiff,
         sectionStates,
         handleCommitSelect
-    } = useGitData(project);
+    } = useGitData(workspace);
 
     useEffect(() => {
-        if (activeTab === 'git' && project.path) {
+        if (activeTab === 'git' && workspace.path) {
             void fetchGitData();
         }
-    }, [activeTab, project.path, fetchGitData]);
+    }, [activeTab, workspace.path, fetchGitData]);
 
     const getStatusIcon = (status: string) => {
         if (status.startsWith('A')) { return <Plus className="w-3.5 h-3.5 text-success" />; }
@@ -182,7 +183,7 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
                         />
                     )}
 
-                    <GitAdvancedPanel projectPath={project.path} />
+                    <GitAdvancedPanel workspacePath={workspace.path} />
                 </>
             )}
         </div>

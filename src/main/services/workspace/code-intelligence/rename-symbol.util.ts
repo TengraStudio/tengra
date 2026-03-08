@@ -62,7 +62,7 @@ async function processFileForRename(
     };
 }
 
-/** Rename a symbol across a project */
+/** Rename a symbol across a workspace */
 export async function renameSymbol(
     rootPath: string,
     symbol: string,

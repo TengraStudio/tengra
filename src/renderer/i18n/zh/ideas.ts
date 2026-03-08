@@ -48,13 +48,13 @@ const sectionData = {
         "competitorAnalysis": "竞争对手分析",
         "archive": "档案",
         "archiving": "存档...",
-        "pathPlaceholder": "C:\\Projects\\我的项目",
+        "pathPlaceholder": "C:\\Workspaces\\我的工作区",
         "technicalDetails": "技术细节",
         "impact": "影响",
         "impactHigh": "高（估计）",
         "effort": "努力",
         "effortMedium": "中等的",
-        "openFullProject": "打开完整项目"
+        "openFullWorkspace": "打开完整项目"
     },
     "techStack": {
         "frontend": "前端",
@@ -188,8 +188,8 @@ const sectionData = {
         },
         "statusLabel": "地位",
         "readyForPilot": "准备试点",
-        "projectCreated": "项目已创建",
-        "projectNamePlaceholder": "项目名称",
+        "workspaceCreated": "项目已创建",
+        "workspaceNamePlaceholder": "项目名称",
         "regenerateTitle": "重新产生这个想法",
         "regenerate": "再生",
         "regenerating": "正在再生...",

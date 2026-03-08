@@ -11,12 +11,15 @@ import { SecurityService } from '@main/services/security/security.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { LocalAuthServer } from '@main/utils/local-auth-server.util';
+import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { ClaudeQuota, CodexUsage, CopilotQuota, ModelQuotaItem, QuotaInfo, QuotaResponse } from '@shared/types/quota';
 import { AuthenticationError } from '@shared/utils/error.util';
 import { AppErrorCode, getErrorMessage, ProxyServiceError, ValidationError } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { net } from 'electron';
+
+const WORKSPACE_COMPAT_ID_COLUMN = WORKSPACE_COMPAT_SCHEMA_VALUES.ID_COLUMN;
 
 /**
  * Check if file/directory exists using async fs.access
@@ -583,14 +586,14 @@ export class ProxyService extends BaseService {
           try {
             const now = Date.now();
 
-            let projectId: string | undefined;
+            let workspaceId: string | undefined;
             try {
-              projectId = await this.fetchAntigravityProjectID(data.access_token);
-              if (projectId) {
-                this.logInfo(`Discovered Antigravity project ID: ${projectId}`);
+              workspaceId = await this.fetchAntigravityWorkspaceID(data.access_token);
+              if (workspaceId) {
+                this.logInfo(`Discovered Antigravity workspace ID: ${workspaceId}`);
               }
             } catch (e) {
-              this.logWarn('Failed to discover Antigravity project ID:', e as Error);
+              this.logWarn('Failed to discover Antigravity workspace ID:', e as Error);
             }
 
             // Link account using individual fields
@@ -600,7 +603,7 @@ export class ProxyService extends BaseService {
               expiresAt: now + (data.expires_in * 1000),
               scope: data.scope,
               email: data.email,
-              metadata: { ...data, project_id: projectId }
+              metadata: { ...data, [WORKSPACE_COMPAT_ID_COLUMN]: workspaceId }
             });
 
             // Sync to file system so proxy picks it up immediately
@@ -1110,7 +1113,7 @@ export class ProxyService extends BaseService {
 
 
 
-  private async fetchAntigravityProjectID(accessToken: string): Promise<string | undefined> {
+  private async fetchAntigravityWorkspaceID(accessToken: string): Promise<string | undefined> {
     await this.waitForRateLimit('antigravity', { priority: 2, isPremiumBypass: true });
     return new Promise((resolve) => {
       const body = JSON.stringify({
@@ -1140,10 +1143,10 @@ export class ProxyService extends BaseService {
             resolve(undefined);
             return;
           }
-          const json = safeJsonParse<{ cloudaicompanionProject?: { id?: string } | string }>(data, {});
-          const project = json.cloudaicompanionProject;
-          const projectID = typeof project === 'object' ? project.id : project;
-          resolve(typeof projectID === 'string' ? projectID.trim() : undefined);
+          const json = safeJsonParse<{ cloudaicompanionWorkspace?: { id?: string } | string }>(data, {});
+          const apiWorkspace = json.cloudaicompanionWorkspace;
+          const workspaceID = typeof apiWorkspace === 'object' ? apiWorkspace.id : apiWorkspace;
+          resolve(typeof workspaceID === 'string' ? workspaceID.trim() : undefined);
         });
       });
 

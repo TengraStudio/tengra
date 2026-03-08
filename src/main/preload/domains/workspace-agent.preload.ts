@@ -11,11 +11,11 @@ import {
     IpcValue,
     Message,
     ModelRoutingRule,
-    ProjectState,
-    ProjectStep,
     VotingConfiguration,
     VotingSession,
     VotingTemplate,
+    WorkspaceState,
+    WorkspaceStep,
 } from '@shared/types';
 import { AgentEventRecord, TaskMetrics } from '@shared/types/agent-state';
 import {
@@ -29,14 +29,14 @@ import {
     HelperHandoffPackage,
     HelperMergeGateDecision,
     WorkerAvailabilityRecord,
-} from '@shared/types/project-agent';
-import { isProjectState } from '@shared/utils/type-guards.util';
+} from '@shared/types/workspace-agent';
+import { isWorkspaceState } from '@shared/utils/type-guards.util';
 import { IpcRenderer, IpcRendererEvent } from 'electron';
 
 export interface WorkspaceAgentBridge {
     start: (options: AgentStartOptions) => Promise<{ taskId: string }>;
     generatePlan: (options: AgentStartOptions) => Promise<void>;
-    approvePlan: (plan: string[] | ProjectStep[], taskId?: string) => Promise<void>;
+    approvePlan: (plan: string[] | WorkspaceStep[], taskId?: string) => Promise<void>;
     stop: (taskId?: string) => Promise<void>;
     pauseTask: (taskId: string) => Promise<{ success: boolean }>;
     resumeTask: (taskId: string) => Promise<{ success: boolean; error?: string }>;
@@ -54,7 +54,7 @@ export interface WorkspaceAgentBridge {
         taskId?: string
     ) => Promise<{ success: boolean; url?: string; error?: string }>;
     resetState: () => Promise<void>;
-    getStatus: (taskId?: string) => Promise<ProjectState>;
+    getStatus: (taskId?: string) => Promise<WorkspaceState>;
     getTaskMessages: (
         taskId: string
     ) => Promise<{ success: boolean; messages?: Message[] }>;
@@ -101,7 +101,7 @@ export interface WorkspaceAgentBridge {
             taskId: string;
             versionNumber: number;
             reason: string;
-            plan: ProjectStep[];
+            plan: WorkspaceStep[];
             createdAt: number;
         }>
     >;
@@ -135,7 +135,7 @@ export interface WorkspaceAgentBridge {
         finalDecision: string;
         reason?: string;
     }) => Promise<VotingSession | null>;
-    getVotingAnalytics: (taskId?: string) => Promise<import('@shared/types/project-agent').VotingAnalytics>;
+    getVotingAnalytics: (taskId?: string) => Promise<import('@shared/types/workspace-agent').VotingAnalytics>;
     getVotingConfiguration: () => Promise<VotingConfiguration>;
     updateVotingConfiguration: (patch: Partial<VotingConfiguration>) => Promise<VotingConfiguration>;
     listVotingTemplates: () => Promise<VotingTemplate[]>;
@@ -250,7 +250,7 @@ export interface WorkspaceAgentBridge {
         steps?: string[];
         error?: string;
     }>;
-    onUpdate: (callback: (state: ProjectState) => void) => () => void;
+    onUpdate: (callback: (state: WorkspaceState) => void) => () => void;
     onQuotaInterrupt: (callback: (payload: Record<string, unknown>) => void) => () => void;
     saveCanvasNodes: (nodes: Record<string, unknown>[]) => Promise<void>;
     getCanvasNodes: () => Promise<Record<string, unknown>[]>;
@@ -261,7 +261,7 @@ export interface WorkspaceAgentBridge {
     health: () => Promise<Record<string, unknown>>;
     council: {
         generatePlan: (taskId: string, task: string) => Promise<{ success: boolean; error?: string }>;
-        getProposal: (taskId: string) => Promise<{ success: boolean; plan: ProjectStep[]; error?: string }>;
+        getProposal: (taskId: string) => Promise<{ success: boolean; plan: WorkspaceStep[]; error?: string }>;
         approveProposal: (taskId: string) => Promise<{ success: boolean; error?: string }>;
         rejectProposal: (taskId: string, reason: string) => Promise<{ success: boolean; error?: string }>;
         startExecution: (taskId: string) => Promise<{ success: boolean; error?: string }>;
@@ -370,7 +370,7 @@ export function createWorkspaceAgentBridge(ipc: IpcRenderer): WorkspaceAgentBrid
         applyTemplate: payload => ipc.invoke('agent:apply-template', payload),
         onUpdate: callback => {
             const listener = (_event: IpcRendererEvent, state: IpcValue) => {
-                if (isProjectState(state)) {
+                if (isWorkspaceState(state)) {
                     callback(state);
                 }
             };
@@ -392,7 +392,4 @@ export function createWorkspaceAgentBridge(ipc: IpcRenderer): WorkspaceAgentBrid
     };
 }
 
-/** @deprecated Use WorkspaceAgentBridge instead */
-export type ProjectAgentBridge = WorkspaceAgentBridge;
-/** @deprecated Use createWorkspaceAgentBridge instead */
-export const createProjectAgentBridge = createWorkspaceAgentBridge;
+/** @deprecated Use WorkspaceAgentBridge instead */

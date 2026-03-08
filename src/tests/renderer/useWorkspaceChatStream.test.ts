@@ -47,7 +47,7 @@ const DEFAULT_OPTIONS = {
     provider: 'ollama',
     model: 'llama3',
     language: 'en',
-    projectId: 'proj-1',
+    workspaceId: 'proj-1',
 };
 
 function emitChunk(chunk: ChatStreamChunk & { done?: boolean; chatId?: string }): void {

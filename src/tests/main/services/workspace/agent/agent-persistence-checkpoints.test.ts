@@ -29,7 +29,7 @@ describe('AgentPersistenceService Checkpoints', () => {
 
     const mockState: AgentTaskState = {
         taskId: 'task-123',
-        projectId: 'proj-456',
+        workspaceId: 'proj-456',
         description: 'Test task',
         state: 'idle',
         currentStep: 5,

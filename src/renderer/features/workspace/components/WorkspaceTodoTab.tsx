@@ -32,14 +32,14 @@ import {
 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { JsonObject, JsonValue, Project } from '@/types';
+import { JsonObject, JsonValue, Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 import '@xyflow/react/dist/style.css';
 
-interface ProjectTodoTabProps {
-    project: Project
-    onUpdate?: (updates: Partial<Project>) => Promise<void>
+interface WorkspaceTodoTabProps {
+    workspace: Workspace
+    onUpdate?: (updates: Partial<Workspace>) => Promise<void>
     t: (key: string) => string
 }
 
@@ -299,8 +299,8 @@ const FlowToolbar: React.FC<{
     );
 };
 
-const ProjectTodoTabCanvas: React.FC<ProjectTodoTabProps> = ({ project, onUpdate, t }) => {
-    const initialState = useMemo(() => parseTodoCanvas(project.metadata), [project.metadata]);
+const WorkspaceTodoTabCanvas: React.FC<WorkspaceTodoTabProps> = ({ workspace, onUpdate, t }) => {
+    const initialState = useMemo(() => parseTodoCanvas(workspace.metadata), [workspace.metadata]);
     const [nodes, setNodes, onNodesChange] = useNodesState<Node<TodoCanvasNodeData>>(initialState.nodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialState.edges);
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -345,7 +345,7 @@ const ProjectTodoTabCanvas: React.FC<ProjectTodoTabProps> = ({ project, onUpdate
     }, [syncHistoryFlags]);
 
     useEffect(() => {
-        const nextState = parseTodoCanvas(project.metadata);
+        const nextState = parseTodoCanvas(workspace.metadata);
         suppressHistoryRef.current = true;
         skipNextSaveRef.current = true;
         undoStackRef.current = [];
@@ -359,7 +359,7 @@ const ProjectTodoTabCanvas: React.FC<ProjectTodoTabProps> = ({ project, onUpdate
         window.setTimeout(() => {
             suppressHistoryRef.current = false;
         }, 0);
-    }, [project.id, project.metadata, setEdges, setNodes, syncHistoryFlags]);
+    }, [workspace.id, workspace.metadata, setEdges, setNodes, syncHistoryFlags]);
 
     useEffect(() => {
         const snapshot = JSON.stringify({ nodes, edges });
@@ -536,36 +536,36 @@ const ProjectTodoTabCanvas: React.FC<ProjectTodoTabProps> = ({ project, onUpdate
 
         const handle = window.setTimeout(() => {
             setSaving(true);
-            const nextMetadata: JsonObject = { ...(project.metadata ?? {}), [TODO_CANVAS_METADATA_KEY]: payload };
+            const nextMetadata: JsonObject = { ...(workspace.metadata ?? {}), [TODO_CANVAS_METADATA_KEY]: payload };
             void onUpdate({ metadata: nextMetadata })
                 .catch(error => {
-                    appLogger.error('ProjectTodoTab', 'Failed to persist todo canvas', { error });
+                    appLogger.error('WorkspaceTodoTab', 'Failed to persist todo canvas', { error });
                 })
                 .finally(() => setSaving(false));
         }, 220);
 
         return () => window.clearTimeout(handle);
-    }, [edges, nodes, onUpdate, project.metadata]);
+    }, [edges, nodes, onUpdate, workspace.metadata]);
 
     const exportJson = useCallback(() => {
         const payload = { version: 2, nodes, edges, exportedAt: new Date().toISOString() };
         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = `todo-canvas-${project.id}.json`;
+        link.download = `todo-canvas-${workspace.id}.json`;
         link.click();
         URL.revokeObjectURL(link.href);
-    }, [edges, nodes, project.id]);
+    }, [edges, nodes, workspace.id]);
 
     const exportMarkdown = useCallback(() => {
         const markdown = buildMarkdown(nodes, edges);
         const blob = new Blob([markdown], { type: 'text/markdown' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = `todo-canvas-${project.id}.md`;
+        link.download = `todo-canvas-${workspace.id}.md`;
         link.click();
         URL.revokeObjectURL(link.href);
-    }, [edges, nodes, project.id]);
+    }, [edges, nodes, workspace.id]);
 
     const importJson = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -584,7 +584,7 @@ const ProjectTodoTabCanvas: React.FC<ProjectTodoTabProps> = ({ project, onUpdate
                 setCanvasError(null);
             } catch (error) {
                 setCanvasError('Invalid JSON import file.');
-                appLogger.error('ProjectTodoTab', 'Failed to import todo canvas JSON', { error });
+                appLogger.error('WorkspaceTodoTab', 'Failed to import todo canvas JSON', { error });
             }
         };
         reader.readAsText(file);
@@ -645,10 +645,10 @@ const ProjectTodoTabCanvas: React.FC<ProjectTodoTabProps> = ({ project, onUpdate
     );
 };
 
-export const ProjectTodoTab: React.FC<ProjectTodoTabProps> = ({ project, onUpdate, t }) => {
+export const WorkspaceTodoTab: React.FC<WorkspaceTodoTabProps> = ({ workspace, onUpdate, t }) => {
     return (
         <ReactFlowProvider>
-            <ProjectTodoTabCanvas project={project} onUpdate={onUpdate} t={t} />
+            <WorkspaceTodoTabCanvas workspace={workspace} onUpdate={onUpdate} t={t} />
         </ReactFlowProvider>
     );
 };

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { Project } from '@/types';
+import { Workspace } from '@/types';
 
 import { ModelOption } from '../components/agent/TaskInputForm';
 import { TaskHistoryItem } from '../components/agent/TaskSidebar';
@@ -30,14 +30,14 @@ const mapStateToStatus = (state: string): TaskHistoryItem['status'] => {
     }
 };
 
-export const useAgentHistory = (project: Project) => {
+export const useAgentHistory = (workspace: Workspace) => {
     const [taskHistory, setTaskHistory] = useState<TaskHistoryItem[]>([]);
 
     const [selectedModel, setSelectedModel] = useState<ModelOption | null>(null);
 
     const loadTaskHistory = useCallback(async () => {
         try {
-            const tasks = await getWorkspaceAgentBridge().getTaskHistory(project.path);
+            const tasks = await getWorkspaceAgentBridge().getTaskHistory(workspace.path);
 
             if (Array.isArray(tasks)) {
                 const history: TaskHistoryItem[] = tasks.map(task => ({
@@ -62,7 +62,7 @@ export const useAgentHistory = (project: Project) => {
         } catch (error) {
             window.electron.log.error('Failed to load task history', { error: String(error) });
         }
-    }, [project.path]);
+    }, [workspace.path]);
 
     const deleteTask = useCallback(
         async (taskId: string) => {

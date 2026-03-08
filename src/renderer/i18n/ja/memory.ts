@@ -87,6 +87,7 @@ const sectionData = {
     "userVerified": "ユーザー認証済み",
     "accessed": "アクセス済み",
     "restore": "復元する",
+    "shareToWorkspace": "ワークスペースに共有",
     "tabs": {
         "pending": "保留中",
         "confirmed": "確認済み",
@@ -96,7 +97,7 @@ const sectionData = {
     "categories": {
         "preference": "好み",
         "personal": "個人的",
-        "project": "プロジェクト",
+        "workspace": "ワークスペース",
         "technical": "テクニカル",
         "workflow": "ワークフロー",
         "relationship": "関係",

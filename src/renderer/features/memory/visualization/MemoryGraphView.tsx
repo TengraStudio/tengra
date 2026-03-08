@@ -1,4 +1,4 @@
-import { AdvancedSemanticFragment, MemoryCategory } from '@shared/types/advanced-memory';
+import { AdvancedSemanticFragment, coerceMemoryCategory, MemoryCategory } from '@shared/types/advanced-memory';
 import {
     Background,
     Controls,
@@ -35,7 +35,7 @@ const MemoryNode = ({ data }: { data: { label: string; category: MemoryCategory;
         switch (cat) {
             case 'preference': return 'border-accent text-accent bg-accent/10';
             case 'personal': return 'border-info text-info bg-info/10';
-            case 'project': return 'border-success text-success bg-success/10';
+            case 'workspace': return 'border-success text-success bg-success/10';
             case 'technical': return 'border-primary text-primary bg-primary/10';
             case 'workflow': return 'border-warning text-warning bg-warning/10';
             default: return 'border-muted text-muted-foreground bg-white/5';
@@ -91,7 +91,12 @@ export const MemoryGraphView: React.FC = () => {
         try {
             const result = await window.electron.advancedMemory.getAllAdvancedMemories();
             if (result.success && result.data) {
-                const memories = result.data.filter(m => m.status === 'confirmed');
+                const memories = result.data
+                    .filter(m => m.status === 'confirmed')
+                    .map(memory => ({
+                        ...memory,
+                        category: coerceMemoryCategory(memory.category)
+                    }));
                 setAllMemories(memories);
             }
         } catch (error) {
@@ -239,7 +244,12 @@ export const MemoryGraphView: React.FC = () => {
                                 placeholder={t('memory.searchPlaceholder')}
                                 className="h-8 bg-transparent"
                             />
-                            <Select value={categoryFilter} onValueChange={value => setCategoryFilter(value as MemoryCategory | 'all')}>
+                            <Select
+                                value={categoryFilter}
+                                onValueChange={value => setCategoryFilter(
+                                    value === 'all' ? 'all' : coerceMemoryCategory(value)
+                                )}
+                            >
                                 <SelectTrigger className="h-8 w-[140px] bg-transparent">
                                     <SelectValue placeholder={t('memory.allCategories')} />
                                 </SelectTrigger>

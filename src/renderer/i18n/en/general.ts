@@ -1,10 +1,10 @@
 const sectionData = {
-    "projectBasics": "Project Basics",
-    "projectBasicsDesc": "Core project setttings",
+    "workspaceBasics": "Workspace Basics",
+    "workspaceBasicsDesc": "Core workspace setttings",
     "appIntelligence": "App Intelligence",
     "appIntelligenceDesc": "Configure AI features",
     "lifecycle": "Lifecycle",
-    "lifecycleDesc": "Manage project lifecycle",
+    "lifecycleDesc": "Manage workspace lifecycle",
     "autoUpdateDesc": "Automatically check for updates",
     "checkOnStartupDesc": "Check for updates on startup",
     "privacySafety": "Privacy & Safety",

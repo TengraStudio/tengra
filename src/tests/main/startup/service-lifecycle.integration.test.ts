@@ -26,14 +26,14 @@ describe('startup service lifecycle integration', () => {
             registerDataServices: () => calls.push('data'),
             registerSecurityServices: () => calls.push('security'),
             registerLLMServices: () => calls.push('llm'),
-            registerWorkspaceServices: () => calls.push('project'),
+            registerWorkspaceServices: () => calls.push('workspace'),
             registerAnalysisServices: () => calls.push('analysis'),
             registerMcpServices: () => calls.push('mcp'),
             registerLazyServices: () => calls.push('lazy'),
             registerLazyProxies: () => calls.push('lazy-proxy'),
         });
 
-        expect(calls).toEqual(['system', 'data', 'security', 'llm', 'project', 'analysis', 'mcp', 'lazy', 'lazy-proxy']);
+        expect(calls).toEqual(['system', 'data', 'security', 'llm', 'workspace', 'analysis', 'mcp', 'lazy', 'lazy-proxy']);
     });
 
     it('initializes container safely without throwing on init failure', async () => {

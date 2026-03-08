@@ -41,7 +41,7 @@ const sectionData = {
     "runTask": "Run Task",
     "taskRunner": "Task Runner",
     "tasksSearchPlaceholder": "Search tasks...",
-    "noTasksFound": "No tasks found for this project",
+    "noTasksFound": "No tasks found for this workspace",
     "closeSplit": "Close Split",
     "toggleSplitOrientation": "Toggle Split Orientation",
     "searchRegex": "Regex Search",
@@ -89,13 +89,13 @@ const sectionData = {
     "copyStripAnsi": "Copy (Strip ANSI)",
     "pastePreview": "Paste Preview",
     "pasteTest": "Test Paste",
-    "projectIssuesTabTitle": "Project Issues",
-    "projectIssuesTitle": "Project Warnings & Errors",
-    "projectIssuesDescription": "Aggregated warnings and errors detected across the current project.",
-    "projectIssuesLoading": "Refreshing project diagnostics...",
-    "projectIssuesNoProject": "Open a project to inspect diagnostics.",
-    "projectIssuesNoIssues": "No warnings or errors detected in the latest scan.",
-    "projectIssuesLoadFailed": "Failed to load project diagnostics."
+    "workspaceIssuesTabTitle": "Workspace Issues",
+    "workspaceIssuesTitle": "Workspace Warnings & Errors",
+    "workspaceIssuesDescription": "Aggregated warnings and errors detected across the current workspace.",
+    "workspaceIssuesLoading": "Refreshing workspace diagnostics...",
+    "workspaceIssuesNoWorkspace": "Open a workspace to inspect diagnostics.",
+    "workspaceIssuesNoIssues": "No warnings or errors detected in the latest scan.",
+    "workspaceIssuesLoadFailed": "Failed to load workspace diagnostics."
 };
 
 export default sectionData;

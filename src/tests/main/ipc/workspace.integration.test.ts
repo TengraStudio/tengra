@@ -43,7 +43,7 @@ describe('Workspace IPC Integration', () => {
             watchWorkspace: vi.fn(),
             stopWatch: vi.fn(),
             saveEnvVars: vi.fn(),
-            getAuditContext: vi.fn((rootPath: string) => ({ rootPath, workspaceName: 'project' }))
+            getAuditContext: vi.fn((rootPath: string) => ({ rootPath, workspaceName: 'workspace' }))
         } as unknown as WorkspaceService;
 
         mockLogoService = {
@@ -67,7 +67,7 @@ describe('Workspace IPC Integration', () => {
         } as unknown as AuditLogService;
     });
 
-    it('should register project handlers', () => {
+    it('should register workspace handlers', () => {
         registerWorkspaceIpc(() => null, {
             workspaceService: mockWorkspaceService,
             logoService: mockLogoService,
@@ -82,9 +82,9 @@ describe('Workspace IPC Integration', () => {
         expect(ipcMainHandlers.has('workspace:analyzeIdentity')).toBe(true);
     });
 
-    it('should handle project:analyze successfully', async () => {
-        const analyzeProjectMock = vi.fn();
-        mockWorkspaceService.analyzeProject = analyzeProjectMock;
+    it('should handle workspace:analyze successfully', async () => {
+        const analyzeWorkspaceMock = vi.fn();
+        mockWorkspaceService.analyzeWorkspace = analyzeWorkspaceMock;
 
         registerWorkspaceIpc(() => null, {
             workspaceService: mockWorkspaceService,
@@ -98,12 +98,12 @@ describe('Workspace IPC Integration', () => {
         const handler = ipcMainHandlers.get('workspace:analyze');
 
         const mockResult = { files: [], symbols: [] };
-        analyzeProjectMock.mockResolvedValue(mockResult);
+        analyzeWorkspaceMock.mockResolvedValue(mockResult);
 
         // handler(event, rootPath, workspaceId)
         const result = await handler?.(mockEvent, '/root', 'proj-1');
 
-        expect(analyzeProjectMock).toHaveBeenCalledWith('/root');
+        expect(analyzeWorkspaceMock).toHaveBeenCalledWith('/root');
         expect(vi.mocked(mockCodeIntelligenceService.indexWorkspace)).toHaveBeenCalledWith('/root', 'proj-1');
         expect(result).toMatchObject({
             success: true,
@@ -111,7 +111,7 @@ describe('Workspace IPC Integration', () => {
         });
     });
 
-    it('should handle project:generateLogo', async () => {
+    it('should handle workspace:generateLogo', async () => {
         const generateLogoMock = vi.fn();
         mockLogoService.generateLogo = generateLogoMock;
 
@@ -138,9 +138,9 @@ describe('Workspace IPC Integration', () => {
         });
     });
 
-    it('should handle errors in project operations', async () => {
-        const analyzeProjectMock = vi.fn();
-        mockWorkspaceService.analyzeProject = analyzeProjectMock;
+    it('should handle errors in workspace operations', async () => {
+        const analyzeWorkspaceMock = vi.fn();
+        mockWorkspaceService.analyzeWorkspace = analyzeWorkspaceMock;
 
         registerWorkspaceIpc(() => null, {
             workspaceService: mockWorkspaceService,
@@ -153,7 +153,7 @@ describe('Workspace IPC Integration', () => {
         });
         const handler = ipcMainHandlers.get('workspace:analyze');
 
-        analyzeProjectMock.mockRejectedValue(new Error('Analysis Failed'));
+        analyzeWorkspaceMock.mockRejectedValue(new Error('Analysis Failed'));
 
         const result = await handler?.(mockEvent, '/root', 'proj-1');
 
@@ -185,7 +185,7 @@ describe('Workspace IPC Integration', () => {
             data: { success: true }
         });
         expect(vi.mocked(mockAuditLogService!.logFileSystemOperation)).toHaveBeenCalledWith(
-            'project.save-env',
+            'workspace.save-env',
             true,
             expect.objectContaining({ rootPath: '/root', variableCount: 1 })
         );

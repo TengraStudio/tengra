@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
-import { AgentDefinition, Project } from '@/types';
+import { AgentDefinition, Workspace } from '@/types';
 
-import { useProjectSettingsForm } from '../hooks/useProjectSettingsForm';
+import { useWorkspaceSettingsForm } from '../hooks/useWorkspaceSettingsForm';
 
 import { AdvancedSection } from './settings/AdvancedSection';
 import { BuildSection } from './settings/BuildSection';
@@ -12,12 +12,12 @@ import { DevServerSection } from './settings/DevServerSection';
 import { GeneralSection } from './settings/GeneralSection';
 import { SettingsHeader } from './settings/SettingsHeader';
 import { SettingsSidebar } from './settings/SettingsSidebar';
-import { ProjectSettingsSection } from './settings/types';
+import { WorkspaceSettingsSection } from './settings/types';
 import { WorkspaceSection } from './settings/WorkspaceSection';
 
-interface ProjectSettingsPanelProps {
-    project: Project
-    onUpdate: (updates: Partial<Project>) => Promise<void>
+interface WorkspaceSettingsPanelProps {
+    workspace: Workspace
+    onUpdate: (updates: Partial<Workspace>) => Promise<void>
     language: Language
     availableAgents: AgentDefinition[]
     onAddMount: () => void
@@ -25,13 +25,13 @@ interface ProjectSettingsPanelProps {
 }
 
 /**
- * Project settings surface with section-based navigation.
+ * Workspace settings surface with section-based navigation.
  */
-const ProjectSettingsPanelBase: React.FC<ProjectSettingsPanelProps> = ({
-    project, onUpdate, language, availableAgents, onAddMount, onRemoveMount
+const WorkspaceSettingsPanelBase: React.FC<WorkspaceSettingsPanelProps> = ({
+    workspace, onUpdate, language, availableAgents, onAddMount, onRemoveMount
 }) => {
     const { t } = useTranslation(language);
-    const [activeSection, setActiveSection] = useState<ProjectSettingsSection>('general');
+    const [activeSection, setActiveSection] = useState<WorkspaceSettingsSection>('general');
 
     const {
         formData,
@@ -40,7 +40,7 @@ const ProjectSettingsPanelBase: React.FC<ProjectSettingsPanelProps> = ({
         handleSave,
         handleReset,
         toggleMember
-    } = useProjectSettingsForm(project, onUpdate);
+    } = useWorkspaceSettingsForm(workspace, onUpdate);
 
     return (
         <section
@@ -49,7 +49,7 @@ const ProjectSettingsPanelBase: React.FC<ProjectSettingsPanelProps> = ({
         >
             <SettingsHeader
                 t={t}
-                projectTitle={project.title}
+                workspaceTitle={workspace.title}
                 isDirty={isDirty}
                 onReset={handleReset}
                 onSave={() => void handleSave()}
@@ -80,7 +80,7 @@ const ProjectSettingsPanelBase: React.FC<ProjectSettingsPanelProps> = ({
 
                         {activeSection === 'workspace' && (
                             <WorkspaceSection
-                                project={project}
+                                workspace={workspace}
                                 onAddMount={onAddMount}
                                 onRemoveMount={onRemoveMount}
                                 t={t}
@@ -105,5 +105,5 @@ const ProjectSettingsPanelBase: React.FC<ProjectSettingsPanelProps> = ({
     );
 };
 
-export const ProjectSettingsPanel = React.memo(ProjectSettingsPanelBase);
-ProjectSettingsPanel.displayName = 'ProjectSettingsPanel';
+export const WorkspaceSettingsPanel = React.memo(WorkspaceSettingsPanelBase);
+WorkspaceSettingsPanel.displayName = 'WorkspaceSettingsPanel';

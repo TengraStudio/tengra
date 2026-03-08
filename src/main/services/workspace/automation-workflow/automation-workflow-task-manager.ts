@@ -1,7 +1,6 @@
 import { appLogger } from '@main/logging/logger';
 import { DatabaseService } from '@main/services/data/database.service';
 import { LLMService } from '@main/services/llm/llm.service';
-import { GitService } from '@main/services/project/git.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { AgentCheckpointService } from '@main/services/workspace/automation-workflow/agent-checkpoint.service';
 import { AgentCollaborationService } from '@main/services/workspace/automation-workflow/agent-collaboration.service';
@@ -10,7 +9,9 @@ import { AgentRegistryService } from '@main/services/workspace/automation-workfl
 import { AgentTaskExecutor } from '@main/services/workspace/automation-workflow/agent-task-executor';
 import { AutomationWorkflowCollaborationManager } from '@main/services/workspace/automation-workflow/automation-workflow-collaboration-manager';
 import { CouncilService } from '@main/services/workspace/automation-workflow/council.service';
+import { GitService } from '@main/services/workspace/git.service';
 import { ToolExecutor } from '@main/tools/tool-executor';
+import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { AgentEventRecord, TaskMetrics } from '@shared/types/agent-state';
 import {
     AgentStartOptions,
@@ -20,6 +21,8 @@ import {
     RollbackCheckpointResult,
 } from '@shared/types/automation-workflow';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
+
+const WORKSPACE_COMPAT_PATH_COLUMN = WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN;
 
 type TaskPriority = NonNullable<AgentStartOptions['priority']>;
 
@@ -114,9 +117,12 @@ export class AutomationWorkflowTaskManager {
                 for (const task of tasks) {
                     const isTerminal = ['completed', 'failed', 'idle'].includes(task.status);
                     if (!isTerminal || task.id === this.currentTaskId) {
+                        const workspaceId = typeof task[WORKSPACE_COMPAT_PATH_COLUMN] === 'string'
+                            ? task[WORKSPACE_COMPAT_PATH_COLUMN]
+                            : undefined;
                         const executor = await this.getOrCreateExecutor(task.id, {
                             task: task.description,
-                            workspaceId: task.project_path,
+                            workspaceId,
                             nodeId: task.node_id,
                             ...safeJsonParse<Record<string, unknown>>(task.metadata, {})
                         });
@@ -165,7 +171,7 @@ export class AutomationWorkflowTaskManager {
 
     private observeExecutionState(): void {
         this.unsubscribeExecutionObserver?.();
-        this.unsubscribeExecutionObserver = this.eventBus.on('project:update', payload => {
+        this.unsubscribeExecutionObserver = this.eventBus.on('workspace:update', payload => {
             const taskId = payload.taskId;
             if (!taskId) {
                 return;

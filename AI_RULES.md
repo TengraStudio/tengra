@@ -1,0 +1,428 @@
+# AI Agent Rules & Guidelines for Tengra
+
+> **STOP!** Read the [MASTER COMMANDMENTS](.agent/rules/MASTER_COMMANDMENTS.md) first.
+
+> **CRITICAL**: The [MASTER COMMANDMENTS](.agent/rules/MASTER_COMMANDMENTS.md) are your core logic. You MUST also follow the **Boy Scout Rule**: Every edit MUST fix at least one existing lint warning or type issue in the file. NO EXCEPTIONS. FAILURE TO DO SO RESULTS IN IMMEDIATE TERMINATION.
+
+## 🚨 CRITICAL SUMMARY (TL;DR)
+> **DANGER**: Failure to strictly follow these rules will result in immediate disqualification and task termination.
+
+1.  **NO `any` / `unknown`**: TypeScript errors are critical failures. NO EXCEPTIONS.
+2.  **NO `console.log`**: Use `appLogger`. All stdout must be clean.
+3.  **NO PLACEHOLDERS**: Write final, production-ready code with complete logic.
+4.  **BUILD & LINT**: Never deliver code that fails `npm run build`, `npm run lint`, or `npm run type-check`.
+5.  **NASA RULES**: Max 150 lines per function. Fixed loop bounds mandatory.
+6.  **BOY SCOUT RULE**: Mandatory. Every edit MUST fix at least one existing lint/type issue.
+7.  **CODEX MIRRORING**: All documentation must be kept in sync with the `.codex/` directory.
+8.  **ADVANCED HARDENING**: Strictly follow [Advanced Agent Hardening Rules](.agent/rules/advanced-hardening.md).
+9.  **FRIDAY FORBIDDEN**: NO COMMITS OR MAJOR DEPLOYMENTS ON FRIDAYS. Fridays are for testing, documentation, and review ONLY.
+10. **TEST PASS MANDATORY**: Never commit code that fails any test. `npm run test` must pass 100%.
+11. **READ RULES FIRST**: You MUST read rule files (`MASTER_COMMANDMENTS.md`, `AI_RULES.md`, `advanced-hardening.md`) using `view_file` at the start of every session before coding. (Locations: `.agent/rules/`, root).
+
+---
+
+## Table of Contents
+
+1. [Project Overview](#1-project-overview)
+2. [NASA's 10 Rules for Safety-Critical Code](#2-nasas-10-rules-for-safety-critical-code)
+3. [File Structure Rules](#3-file-structure-rules)
+4. [Service Architecture](#4-service-architecture)
+5. [Logging Rules](#5-logging-rules)
+6. [Error Handling](#6-error-handling)
+7. [Scheduled Tasks](#7-scheduled-tasks)
+8. [Authentication & Tokens](#8-authentication--tokens)
+9. [Testing Rules](#9-testing-rules)
+10. [Code Style & Conventions](#10-code-style--conventions)
+11. [Forbidden Actions](#11-forbidden-actions)
+12. [Checklist Before Committing](#12-checklist-before-committing)
+13. [Performance Optimization Rules](#13-performance-optimization-rules)
+
+---
+
+## 1. Project Overview
+
+### What is Tengra?
+
+Tengra is a **desktop AI assistant application** built with Electron, React, and TypeScript. It provides:
+
+- **Multi-LLM Support**: Connects to multiple AI providers (OpenAI, Anthropic, Google, GitHub Copilot, Ollama)
+- **Local AI**:
+  - Ollama: Core local LLM provider.
+  - Llama.cpp: High-performance C++ inference.
+  - SD-CPP (Stable Diffusion C++): Local image generation.
+    - **Fallback**: Automatic fallback to Pollinations if SD-CPP fails.
+    - **Readiness**: Non-blocking readiness check on startup if enabled.
+- **Project Management**: Analyzes and manages code projects
+- **Agent System**: Multi-agent collaboration for complex tasks
+- **Secure Token Management**: Encrypted storage with automatic refresh
+
+### Technology Stack
+
+| Layer | Technology |
+|-------|------------|
+| Desktop Framework | Electron 33+ |
+| Frontend | React 18, TypeScript, Tailwind CSS |
+| Backend | Node.js (Main Process) |
+| Database | PGlite (PostgreSQL in-process) |
+| Local AI | Ollama, Llama.cpp |
+| IPC | Electron IPC with typed bridge |
+
+---
+
+## 2. NASA's 10 Rules for Safety-Critical Code
+
+These rules, derived from NASA/JPL's "Power of 10" guidelines, are adapted for this project:
+
+### Rule 1: Simple Control Flow
+- Avoid `goto`, `setjmp`, `longjmp`, and direct/indirect recursion.
+- Keep control flow simple and verifiable.
+
+### Rule 2: Fixed Loop Bounds
+- All loops must have a fixed upper bound that can be statically verified.
+- Prevent runaway code with explicit iteration limits.
+
+```typescript
+// Correct
+for (let i = 0; i < MAX_ITERATIONS && !done; i++) {
+    // work
+}
+
+// Incorrect
+while (true) {
+    // potentially infinite
+}
+```
+
+### Rule 3: No Dynamic Memory After Init
+- Avoid dynamic memory allocation after initialization phase.
+- Pre-allocate buffers and pools during startup.
+
+### Rule 4: Short Functions
+- No function should be longer than 60 lines (excluding comments).
+- Break complex logic into smaller, testable units.
+
+### Rule 5: Low Assertion Density
+- Include at least 2 assertions per function on average.
+- Use TypeScript's type system as compile-time assertions.
+
+```typescript
+function processMessage(msg: Message): void {
+    if (!msg) throw new Error('Message is required');
+    if (!msg.content) throw new Error('Message content is required');
+    // process...
+}
+```
+
+### Rule 6: Minimal Variable Scope
+- Declare variables at the smallest possible scope.
+- Prefer `const` over `let`, never use `var`.
+
+### Rule 7: Check Return Values
+- Every function call with a return value must be checked.
+- Handle all Promise rejections.
+
+```typescript
+// Correct
+const result = await service.doSomething();
+if (!result.success) {
+    throw new Error(result.error);
+}
+
+// Incorrect
+await service.doSomething(); // Ignored return
+```
+
+### Rule 8: Limited Preprocessor Use
+- In TypeScript: Avoid complex generics and type gymnastics.
+- Keep type definitions simple and readable.
+
+### Rule 9: Restrict Pointer Use
+- In TypeScript: Avoid `any` and `unknown` types completely.
+- Use explicit interfaces or generics with constraints.
+- Use strict null checks (`strictNullChecks: true`).
+
+### Rule 10: Compile with All Warnings
+- All code must pass `tsc --noEmit` without errors.
+- ESLint must pass with zero warnings.
+- Never use `// @ts-ignore` or `// eslint-disable`.
+- **Boy Scout Rule**: Every time you edit a file, you MUST fix at least one existing lint warning or type issue in that file.
+
+---
+
+## 3. File Structure Rules
+
+### 3.1 Directory Organization
+
+```
+tengra/
+├── src/
+│   ├── main/                 # Electron main process
+│   │   ├── services/         # Backend services (by domain)
+│   │   │   ├── llm/          # AI model services
+│   │   │   ├── data/         # Data persistence
+│   │   │   ├── project/      # Project management
+│   │   │   ├── security/     # Auth, encryption
+│   │   │   ├── system/       # System utilities
+│   │   │   ├── analysis/     # Metrics, telemetry
+│   │   │   ├── ui/           # Notifications, themes
+│   │   │   └── proxy/        # Proxy management
+│   │   ├── ipc/              # IPC handlers
+│   │   ├── startup/          # App initialization
+│   │   ├── logging/          # Logger infrastructure
+│   │   └── utils/            # Utility functions
+│   ├── renderer/             # React frontend
+│   │   ├── features/         # Feature modules
+│   │   ├── components/       # Reusable components
+│   │   ├── contexts/         # React contexts
+│   │   ├── hooks/            # Custom hooks
+│   │   └── styles/           # Global styles
+│   ├── shared/               # Shared code
+│   │   ├── types/            # TypeScript types
+│   │   └── utils/            # Shared utilities
+│   ├── scripts/              # Build scripts
+│   └── tests/                # All tests
+│       ├── unit/             # Unit tests
+│       ├── integration/      # Integration tests
+│       └── e2e/              # End-to-end tests
+├── ARCHITECTURE.md           # System design and technologies (Consolidated)
+├── API.md                    # IPC and API contracts (Consolidated)
+├── AI_RULES.md               # Rules, onboarding, and standard guides
+├── TODO.md                   # Backlog and TODOs
+```
+
+### 3.2 Service Placement Guide
+
+| Domain | Folder | Examples |
+|--------|--------|----------|
+| AI/LLM | `services/llm/` | OllamaService, CopilotService, ModelRegistryService |
+| Data | `services/data/` | DatabaseService, DataService, ChatEventService |
+| Project | `services/project/` | ProjectService, GitService, DockerService |
+| Security | `services/security/` | TokenService, KeyRotationService, RateLimitService |
+| System | `services/system/` | CommandService, SystemService |
+| Analysis | `services/analysis/` | TelemetryService, PerformanceService |
+| UI | `services/ui/` | NotificationService, ClipboardService |
+| Proxy | `services/proxy/` | ProxyService, QuotaService |
+
+### 3.3 File Naming Conventions
+
+```
+Correct naming:
+my-service.service.ts
+user-profile.component.tsx
+use-chat-manager.hook.ts
+settings.types.ts
+error.util.ts
+
+Incorrect naming:
+myService.ts          # Missing suffix
+UserProfileComp.tsx   # Wrong suffix
+usechatmanager.ts     # Missing suffix, bad casing
+```
+
+---
+
+## 4. Service Architecture
+
+### 4.1 Service Template
+
+Every service MUST follow this pattern:
+
+```typescript
+import { BaseService } from '@main/services/base.service'
+import { appLogger } from '@main/logging/logger'
+import { getErrorMessage } from '@shared/utils/error.util'
+
+export class MyService extends BaseService {
+    constructor(
+        private dependency1: Dependency1,
+        private dependency2: Dependency2
+    ) {
+        super('MyService');
+    }
+
+    async initialize(): Promise<void> {
+        appLogger.info('MyService', 'Initializing...');
+        // Initialization logic
+    }
+
+    async someMethod(): Promise<Result> {
+        try {
+            // Business logic
+            return { success: true, data: result };
+        } catch (error) {
+            appLogger.error('MyService', 'someMethod failed', error as Error);
+            throw error;
+        }
+    }
+
+    async dispose(): Promise<void> {
+        appLogger.info('MyService', 'Disposing...');
+        // Cleanup logic
+    }
+}
+```
+
+---
+
+## 5. Logging Rules
+
+### 5.1 Mandatory Rules
+
+1.  **Log files** MUST be placed in `logs/` directory only
+2.  **Test scripts** that create log files MUST be placed in `scripts/testScripts/` directory
+3.  **Files WITHOUT extensions are FORBIDDEN**
+4.  Valid log extensions: `.log`, `.txt`, `.json`
+5.  Log file format: `{service}_{date}.log`
+6.  **Debugging Logs**: When an AI/agent/LLM creates a log file for debugging (format: .txt, .json, or .log), it MUST be created in the `logs/` folder at the project root. This folder is gitignored.
+
+### 5.2 Logger Usage
+
+```typescript
+import { appLogger } from '../logging/logger';
+
+// Correct usage
+appLogger.info('ServiceName', 'Operation completed successfully');
+appLogger.warn('ServiceName', 'Resource running low', { remaining: 10 });
+appLogger.error('ServiceName', 'Operation failed', error as Error);
+appLogger.debug('ServiceName', 'Debug info', { data: someData });
+
+// Never use
+console.log('Something happened');  // Use appLogger instead
+console.error('Error occurred');    // Use appLogger instead
+```
+
+---
+
+## 6. Error Handling
+
+### 6.1 Error Handling Pattern
+
+```typescript
+async function riskyOperation(): Promise<Result> {
+    try {
+        const data = await externalCall();
+        
+        if (!data) {
+            throw new Error('No data received');
+        }
+        
+        return { success: true, data };
+    } catch (error) {
+        appLogger.error('ServiceName', 'riskyOperation failed', error as Error);
+        
+        // Re-throw with context for caller
+        throw new AppError('Failed to complete operation', { 
+            cause: error,
+            context: { operationId: id }
+        });
+    }
+}
+```
+
+---
+
+## 7. Scheduled Tasks
+
+### 7.1 JobSchedulerService Usage
+
+For recurring tasks, ALWAYS use `JobSchedulerService`:
+
+```typescript
+// In service constructor or init
+this.jobScheduler.registerRecurringJob(
+    'unique-job-id',
+    async () => {
+        // Task implementation
+        await this.performTask();
+    },
+    () => {
+        // Interval getter (can read from settings)
+        const settings = this.settingsService.getSettings();
+        return settings.ai?.myInterval || 60 * 60 * 1000; // Default 1 hour
+    }
+);
+```
+
+---
+
+## 8. Authentication & Tokens
+
+1. NEVER log tokens or secrets
+2. Always use `SecurityService.encryptSync()` for storage
+3. Validate tokens before use
+4. Handle expired tokens gracefully
+
+---
+
+## 9. Testing Rules
+
+### 9.1 Test Location
+
+All tests MUST be in `tests/` at the root:
+
+```
+tests/
+├── unit/               # Unit tests (isolated)
+├── integration/        # Integration tests (multiple units)
+├── e2e/                # End-to-end tests (full app)
+└── fixtures/           # Test data and mocks
+```
+
+---
+
+## 10. Code Style & Conventions
+
+### 10.1 TypeScript Rules
+
+```typescript
+// Use strict types
+function processUser(user: User): ProcessedUser { ... }
+
+// Never use any
+function processData(data: any): any { ... }
+
+// Use const assertions
+const STATUS = {
+    PENDING: 'pending',
+    COMPLETE: 'complete'
+} as const;
+
+// Prefer interfaces for objects
+interface UserData {
+    id: string;
+    name: string;
+}
+
+// Use type for unions/primitives
+type Status = 'pending' | 'complete' | 'failed';
+```
+
+### 10.2 Import Rules - Use Path Aliases
+
+**ALWAYS use path aliases instead of relative paths (`../..`)**
+
+| Alias | Maps To | Usage |
+|-------|---------|-------|
+| `@main/*` | `src/main/*` | Backend services, IPC, utils |
+| `@renderer/*` | `src/renderer/*` | React components, hooks |
+| `@shared/*` | `src/shared/*` | Shared types, utilities |
+| `@/*` | `src/renderer/*` | Shorthand for renderer |
+
+---
+
+## 11. Forbidden Actions
+
+1. Do not create files without extensions
+2. Do not create files in root directory (except configs)
+3. Do not use `console.log` (use `appLogger`)
+4. Do not use `any` and `unknown` type
+5. Do not use `// @ts-ignore` or `// eslint-disable`
+6. Do not swallow errors silently
+7. Do not log tokens or secrets
+8. Do not create circular dependencies
+9. Do not use `var` keyword
+10. Do not leave TODO comments in production code
+11. Do not commit commented-out code
+12. Do not use synchronous file operations in main thread
+13. Do not create memory leaks (event listeners without cleanup)
+14. Do not use deprecated APIs

@@ -14,8 +14,8 @@ import { ClaudeCard } from './statistics/ClaudeCard';
 import { CodexCard } from './statistics/CodexCard';
 import { CopilotCard } from './statistics/CopilotCard';
 import { OverviewCards } from './statistics/OverviewCards';
-import { WorkspaceBarChart } from './statistics/ProjectBarChart';
 import { TokenUsageChart } from './statistics/TokenUsageChart';
+import { WorkspaceBarChart } from './statistics/WorkspaceBarChart';
 
 type StatsPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
 const PERIODS: StatsPeriod[] = ['daily', 'weekly', 'monthly', 'yearly'];

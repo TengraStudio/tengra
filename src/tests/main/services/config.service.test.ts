@@ -46,7 +46,7 @@ describe('ConfigService', () => {
         // Let's assume generic access for now or specific mapping logic in service.
 
         // If the service maps 'TEST_KEY' -> 'test.key', we need to know that mapping.
-        // Since ConfigService in this project might just look up 'TEST_KEY' in settings if not in env?
+        // Since ConfigService in this codebase might just look up 'TEST_KEY' in settings if not in env?
         // Let's test standard retrieval.
 
         // Actually, ConfigService usually prioritizes Env. If not found, it might check specific settings paths if coded.

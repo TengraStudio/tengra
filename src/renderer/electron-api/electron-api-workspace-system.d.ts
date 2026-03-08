@@ -163,7 +163,7 @@ export interface ElectronApiWorkspaceSystemDomain {
     };
 
     // Workspace System
-    project: {
+    workspace: {
         analyze: (rootPath: string, workspaceId: string) => Promise<WorkspaceAnalysis>;
         generateLogo: (
             workspacePath: string,
@@ -320,8 +320,4 @@ export interface ElectronApiWorkspaceSystemDomain {
         readText: () => Promise<{ success: boolean; text: string }>;
     };
     // Database
-}
-
-export type ElectronApiProjectSystemDomain = ElectronApiWorkspaceSystemDomain;
-export type Project = Workspace;
-export type ProjectAnalysis = WorkspaceAnalysis;
+}

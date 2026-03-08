@@ -9,10 +9,10 @@ import { buildDevServers } from './servers/dev.server';
 import { buildGitServer } from './servers/git.server';
 import { buildInternetServers } from './servers/internet.server';
 import { buildNetworkServers } from './servers/network.server';
-import { buildWorkspaceServers } from './servers/workspace.server';
 import { buildSecurityServers } from './servers/security.server';
 import { buildUtilityServers } from './servers/utility.server';
 import { buildWebServer } from './servers/web.server';
+import { buildWorkspaceServers } from './servers/workspace.server';
 import { McpDeps } from './server-utils';
 
 export function buildMcpServices(deps: McpDeps): McpService[] {

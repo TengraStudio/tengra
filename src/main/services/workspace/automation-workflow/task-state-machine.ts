@@ -1,7 +1,7 @@
-import { ProjectStep, ProjectStepStatus } from '@shared/types/project-agent';
+import { WorkspaceStep, WorkspaceStepStatus } from '@shared/types/workspace-agent';
 
 export class TaskStateMachine {
-    getPendingDependencyIds(plan: ProjectStep[], index: number): string[] {
+    getPendingDependencyIds(plan: WorkspaceStep[], index: number): string[] {
         const currentStep = plan[index];
         if (!currentStep) {
             return [];
@@ -14,11 +14,11 @@ export class TaskStateMachine {
         return dependencyIds.filter(stepId => !completedStepIds.has(stepId));
     }
 
-    canRunStep(plan: ProjectStep[], index: number): boolean {
+    canRunStep(plan: WorkspaceStep[], index: number): boolean {
         return this.getPendingDependencyIds(plan, index).length === 0;
     }
 
-    activateReadyDependentSteps(plan: ProjectStep[]): void {
+    activateReadyDependentSteps(plan: WorkspaceStep[]): void {
         for (const step of plan) {
             if (step.status !== 'pending') {
                 continue;
@@ -29,7 +29,7 @@ export class TaskStateMachine {
         }
     }
 
-    startStep(plan: ProjectStep[], stepIndex: number): void {
+    startStep(plan: WorkspaceStep[], stepIndex: number): void {
         if (stepIndex < 0 || stepIndex >= plan.length) {
             return;
         }
@@ -38,7 +38,7 @@ export class TaskStateMachine {
         step.timing = { startedAt: Date.now() };
     }
 
-    setStepStatus(plan: ProjectStep[], stepIndex: number, status: ProjectStepStatus): void {
+    setStepStatus(plan: WorkspaceStep[], stepIndex: number, status: WorkspaceStepStatus): void {
         if (stepIndex < 0 || stepIndex >= plan.length) {
             return;
         }

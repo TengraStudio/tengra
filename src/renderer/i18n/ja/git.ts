@@ -2,7 +2,7 @@ const sectionData = {
     "commitGenerator": "Gitコミットジェネレーター",
     "generatorSubtitle": "AIによるコミットメッセージの提案",
     "generate": "生成",
-    "selectProject": "コミットメッセージを生成するプロジェクトを選択してください",
+    "selectWorkspace": "コミットメッセージを生成するプロジェクトを選択してください",
     "suggestedMessage": "提案されたコミットメッセージ",
     "stagedChanges": "ステージングされた変更のプレビュー",
     "noStagedChanges": "ステージングされた変更が見つかりません。最初に `git add` を使用して変更をステージングしてください。",

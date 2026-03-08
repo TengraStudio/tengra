@@ -30,7 +30,7 @@ const sectionData = {
     "previewArea": "منطقة المعاينة",
     "convertToCode": "تحويل إلى كود",
     "placeholders": {
-        "rootPath": "C:\\\\Users\\\\Project",
+        "rootPath": "C:\\\\Users\\\\Workspace",
         "name": "الاسم..."
     },
     "run": "تشغيل المشروع",

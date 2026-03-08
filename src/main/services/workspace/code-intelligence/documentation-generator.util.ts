@@ -101,8 +101,8 @@ export async function generateFileDocumentation(
     }
 }
 
-/** Generate documentation summary for an entire project */
-export async function generateProjectDocumentation(
+/** Generate documentation summary for an entire workspace */
+export async function generateWorkspaceDocumentation(
     rootPath: string,
     maxFiles: number = 30
 ): Promise<DocumentationPreviewResult> {
@@ -131,7 +131,7 @@ export async function generateProjectDocumentation(
         }
 
         const content = [
-            '# Project Documentation Summary',
+            '# Workspace Documentation Summary',
             '',
             `- Root: \`${rootPath}\``,
             `- Files covered: ${targetFiles.length}`,

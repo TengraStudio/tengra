@@ -93,7 +93,7 @@ export const DatabaseSizeDashboard: React.FC = () => {
     if (!stats) {
         return (
             <div className="p-4 text-sm text-destructive">
-                {t('databaseSizeDashboard.loadError')}
+                {t('settings.databaseSizeDashboard.loadError')}
             </div>
         );
     }
@@ -106,49 +106,49 @@ export const DatabaseSizeDashboard: React.FC = () => {
         <div className="space-y-4">
             <div>
                 <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">
-                    {t('databaseSizeDashboard.title')}
+                    {t('settings.databaseSizeDashboard.title')}
                 </h3>
                 <p className="text-[10px] text-muted-foreground/60 mt-1">
-                    {t('databaseSizeDashboard.subtitle')}
+                    {t('settings.databaseSizeDashboard.subtitle')}
                 </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 <StatCard
                     icon={<HardDrive className="w-3.5 h-3.5 text-primary" />}
-                    label={t('databaseSizeDashboard.dbSize')}
+                    label={t('settings.databaseSizeDashboard.dbSize')}
                     value={formatBytes(stats.dbSize)}
                     ratio={sizeRatio}
                     color="primary"
                 />
                 <StatCard
                     icon={<MessageSquare className="w-3.5 h-3.5 text-blue-500" />}
-                    label={t('databaseSizeDashboard.chats')}
+                    label={t('settings.databaseSizeDashboard.chats')}
                     value={String(stats.chatCount)}
                     ratio={stats.chatCount / Math.max(totalRecords, 1)}
                     color="blue-500"
                 />
                 <StatCard
                     icon={<Database className="w-3.5 h-3.5 text-green-500" />}
-                    label={t('databaseSizeDashboard.messages')}
+                    label={t('settings.databaseSizeDashboard.messages')}
                     value={String(stats.messageCount)}
                     ratio={stats.messageCount / Math.max(totalRecords, 1)}
                     color="green-500"
                 />
                 <StatCard
                     icon={<FolderOpen className="w-3.5 h-3.5 text-yellow-500" />}
-                    label={t('databaseSizeDashboard.projects')}
+                    label={t('settings.databaseSizeDashboard.workspaces')}
                     value={String(stats.workspaceCount)}
                     color="yellow-500"
                 />
                 <StatCard
                     icon={<Layers className="w-3.5 h-3.5 text-purple-500" />}
-                    label={t('databaseSizeDashboard.folders')}
+                    label={t('settings.databaseSizeDashboard.folders')}
                     value={String(stats.folderCount)}
                     color="purple-500"
                 />
                 <StatCard
                     icon={<FileText className="w-3.5 h-3.5 text-orange-500" />}
-                    label={t('databaseSizeDashboard.prompts')}
+                    label={t('settings.databaseSizeDashboard.prompts')}
                     value={String(stats.promptCount)}
                     color="orange-500"
                 />

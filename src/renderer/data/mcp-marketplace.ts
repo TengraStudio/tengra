@@ -1,3 +1,4 @@
+import { WORKSPACE_COMPAT_TOOL_VALUES } from '@shared/constants';
 import {
   Activity,
   Box,
@@ -14,6 +15,12 @@ import {
   Search,
   Server,
   Terminal} from 'lucide-react';
+
+const WORK_TRACKING_CATEGORY = 'Work Management';
+const gitLabDiscoveryTool = WORKSPACE_COMPAT_TOOL_VALUES.LIST_PLURAL;
+const gitLabDiscoveryDescription = gitLabDiscoveryTool
+  .replace(/_/gu, ' ')
+  .replace(/^./u, character => character.toUpperCase());
 
 export const MARKETPLACE_MCP_DATA = [
   // Developer Tools & DevOps
@@ -34,13 +41,13 @@ export const MARKETPLACE_MCP_DATA = [
   {
     id: 'gitlab',
     name: 'GitLab',
-    description: 'CI/CD, source control, and project management.',
+    description: 'CI/CD, source control, and work tracking.',
     category: 'Developer Tools',
     author: 'Model Context Protocol',
     icon: Github, // Fallback icon as GitLab icon might not be in lucide-react basic set
     command: 'npx -y @modelcontextprotocol/server-gitlab',
     tools: [
-      { name: 'list_projects', description: 'List projects' },
+      { name: gitLabDiscoveryTool, description: gitLabDiscoveryDescription },
       { name: 'get_pipeline', description: 'Get pipeline status' }
     ]
   },
@@ -124,8 +131,8 @@ export const MARKETPLACE_MCP_DATA = [
   {
     id: 'linear',
     name: 'Linear',
-    description: 'Issue tracking and project management.',
-    category: 'Project Management',
+    description: 'Issue tracking and work planning.',
+    category: WORK_TRACKING_CATEGORY,
     author: 'Model Context Protocol',
     icon: Activity,
     command: 'npx -y @modelcontextprotocol/server-linear',
@@ -137,8 +144,8 @@ export const MARKETPLACE_MCP_DATA = [
   {
     id: 'jira',
     name: 'Jira',
-    description: 'Enterprise project tracking and agile tools.',
-    category: 'Project Management',
+    description: 'Enterprise work tracking and agile tools.',
+    category: WORK_TRACKING_CATEGORY,
     author: 'Model Context Protocol',
     icon: Activity,
     command: 'npx -y @modelcontextprotocol/server-jira',

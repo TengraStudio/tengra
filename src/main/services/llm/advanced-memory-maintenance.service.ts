@@ -4,10 +4,13 @@ import { ChatMessage } from '@main/types/llm.types';
 import {
     AdvancedMemoryConfig,
     AdvancedSemanticFragment,
+    createEmptyMemoryCategoryCounts,
+    MEMORY_CATEGORY_VALUES,
     MemoryCategory,
     MemorySource,
     MemoryStatistics,
     MemoryStatus,
+    normalizeMemoryCategory,
     PendingMemory,
 } from '@shared/types/advanced-memory';
 
@@ -93,16 +96,7 @@ export class AdvancedMemoryMaintenanceService {
             merged: 0,
         };
 
-        const byCategory: Record<MemoryCategory, number> = {
-            preference: 0,
-            personal: 0,
-            project: 0,
-            technical: 0,
-            workflow: 0,
-            relationship: 0,
-            fact: 0,
-            instruction: 0,
-        };
+        const byCategory: Record<MemoryCategory, number> = createEmptyMemoryCategoryCounts();
 
         const bySource: Record<MemorySource, number> = {
             user_explicit: 0,
@@ -226,31 +220,23 @@ export class AdvancedMemoryMaintenanceService {
         }
 
         let updatedCount = 0;
-        const validCategories: MemoryCategory[] = [
-            'preference',
-            'personal',
-            'project',
-            'technical',
-            'workflow',
-            'relationship',
-            'fact',
-            'instruction',
-        ];
+        const validCategories: MemoryCategory[] = [...MEMORY_CATEGORY_VALUES];
+        const categoryList = validCategories.join(', ');
 
         for (const memory of validMemories) {
-            const prompt = `Identify the best category for this fact from: preference, personal, project, technical, workflow, relationship, fact, instruction.
+            const prompt = `Identify the best category for this fact from: ${categoryList}.
 Fact: "${memory.content}"
 Current Category: ${memory.category}
 Return only the category name.`;
 
             try {
                 const response = await this.deps.callLLM([{ role: 'user', content: prompt }], model);
-                const nextCategory = response.content
+                const nextCategory = normalizeMemoryCategory(response.content
                     .trim()
                     .toLowerCase()
-                    .replace(/[^a-z]/g, '') as MemoryCategory;
+                    .replace(/[^a-z]/g, ''));
 
-                if (!validCategories.includes(nextCategory) || nextCategory === memory.category) {
+                if (!nextCategory || !validCategories.includes(nextCategory) || nextCategory === memory.category) {
                     continue;
                 }
 

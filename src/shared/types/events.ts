@@ -1,6 +1,6 @@
 import { JsonValue } from '@shared/types/common';
 import { IdeaProgress, ResearchProgress } from '@shared/types/ideas';
-import { OrchestratorState, PlanCostBreakdown, ProjectState, ProjectStep, ProjectStepStatus } from '@shared/types/project-agent';
+import { OrchestratorState, PlanCostBreakdown, WorkspaceState, WorkspaceStep, WorkspaceStepStatus } from '@shared/types/workspace-agent';
 
 export interface ModelUpdateEvent {
     provider: string
@@ -41,12 +41,12 @@ export interface SystemEvents {
     'idea:regenerated': { ideaId: string }
     'file-changed': { path: string; type: 'create' | 'update' | 'delete' }
     // Workspace Agent
-    'project:update': ProjectState
-    'project:step-update': { index: number; status: ProjectStepStatus; message?: string; taskId?: string }
-    'project:plan-proposed': { steps: Array<string | ProjectStep>; taskId?: string }
-    'project:cost-estimated': { taskId: string; estimate: PlanCostBreakdown }
-    'project:budget-exceeded': { taskId: string; budgetLimitUsd: number; currentCostUsd: number }
-    'project:plan-revised': { action: 'add' | 'remove' | 'modify' | 'insert'; index?: number; stepText?: string; reason: string; taskId?: string }
+    'workspace:update': WorkspaceState
+    'workspace:step-update': { index: number; status: WorkspaceStepStatus; message?: string; taskId?: string }
+    'workspace:plan-proposed': { steps: Array<string | WorkspaceStep>; taskId?: string }
+    'workspace:cost-estimated': { taskId: string; estimate: PlanCostBreakdown }
+    'workspace:budget-exceeded': { taskId: string; budgetLimitUsd: number; currentCostUsd: number }
+    'workspace:plan-revised': { action: 'add' | 'remove' | 'modify' | 'insert'; index?: number; stepText?: string; reason: string; taskId?: string }
     'orchestrator:update': OrchestratorState
     'sd-cpp:progress': { downloaded: number; total: number; filename: string }
     'sd-cpp:status': { state: 'installing' | 'ready' | 'failed'; error?: string }

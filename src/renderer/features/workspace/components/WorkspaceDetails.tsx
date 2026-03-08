@@ -3,28 +3,28 @@ import React from 'react';
 import { CommandStrip } from '@/features/workspace/components/workspace/CommandStrip';
 import { ShortcutHelpOverlay } from '@/features/workspace/components/workspace/ShortcutHelpOverlay';
 import { WorkspaceDialogs } from '@/features/workspace/components/workspace/WorkspaceDialogs';
-import { ProjectExplorerPanel } from '@/features/workspace/components/workspace/WorkspaceExplorerPanel';
+import { WorkspaceExplorerPanel } from '@/features/workspace/components/workspace/WorkspaceExplorerPanel';
 import { WorkspaceMain } from '@/features/workspace/components/workspace/WorkspaceMain';
 import { WorkspaceNotifications } from '@/features/workspace/components/workspace/WorkspaceNotifications';
 import { WorkspaceQuickSwitch } from '@/features/workspace/components/workspace/WorkspaceQuickSwitch';
 import { WorkspaceSidebar } from '@/features/workspace/components/workspace/WorkspaceSidebar';
 import { WorkspaceTerminalLayer } from '@/features/workspace/components/workspace/WorkspaceTerminalLayer';
 import { WorkspaceToolbar } from '@/features/workspace/components/workspace/WorkspaceToolbar';
-import { useProjectWorkspaceController } from '@/features/workspace/hooks/useProjectWorkspaceController';
 import { useQuickSwitch } from '@/features/workspace/hooks/useQuickSwitch';
 import { useTerminalLayout } from '@/features/workspace/hooks/useTerminalLayout';
 import { useWorkspaceBranchState } from '@/features/workspace/hooks/useWorkspaceBranchState';
 import { useWorkspaceShortcuts } from '@/features/workspace/hooks/useWorkspaceShortcuts';
+import { useWorkspaceDetailsController } from '@/features/workspace/hooks/useWorkspaceWorkspaceController';
 import { useRenderTracker } from '@/hooks/useRenderTracker';
 import { useWorkspaceProfiler } from '@/hooks/useWorkspaceProfiler';
 import { Language } from '@/i18n';
 import type { GroupedModels } from '@/types';
-import { AppSettings, ChatError, CodexUsage, Message, Project, QuotaResponse, TerminalTab } from '@/types';
+import { AppSettings, ChatError, CodexUsage, Message, QuotaResponse, TerminalTab,Workspace } from '@/types';
 
-interface ProjectWorkspaceProps {
-    project: Project;
+interface WorkspaceDetailsProps {
+    workspace: Workspace;
     onBack: () => void;
-    onDeleteProject?: () => void;
+    onDeleteWorkspace?: () => void;
     language: Language;
     tabs: TerminalTab[];
     activeTabId: string | null;
@@ -43,10 +43,10 @@ interface ProjectWorkspaceProps {
     chatError?: ChatError | null;
 }
 
-export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
-    project,
+export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
+    workspace,
     onBack,
-    onDeleteProject,
+    onDeleteWorkspace,
     language,
     tabs,
     activeTabId,
@@ -64,11 +64,11 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     isLoading,
     chatError,
 }) => {
-    useRenderTracker('ProjectWorkspace');
+    useRenderTracker('WorkspaceDetails');
     const { onRender } = useWorkspaceProfiler();
 
-    const { ps, wm, handleUpdateProject, submitEntryModal, entryBusy, t } =
-        useProjectWorkspaceController({ project, language });
+    const { ps, wm, handleUpdateWorkspace, submitEntryModal, entryBusy, t } =
+        useWorkspaceDetailsController({ workspace, language });
 
     const tl = useTerminalLayout({
         showTerminal: ps.showTerminal,
@@ -88,7 +88,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
         isBranchSwitching,
         handleBranchSelect,
     } = useWorkspaceBranchState({
-        projectPath: project.path,
+        workspacePath: workspace.path,
         notify: ps.notify,
         t,
     });
@@ -132,12 +132,12 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
         <div className="h-full flex flex-col bg-background relative overflow-hidden">
             <React.Profiler id="WorkspaceToolbar" onRender={onRender}>
                 <WorkspaceToolbar
-                    project={project}
-                    projectName={project.title}
+                    workspace={workspace}
+                    workspaceName={workspace.title}
                     onNameChange={title => {
-                        void handleUpdateProject({ title });
+                        void handleUpdateWorkspace({ title });
                     }}
-                    handleRunProject={() => {
+                    handleRunWorkspace={() => {
                         tl.setIsFloatingTerminal(false);
                         ps.setShowTerminal(true);
                     }}
@@ -154,9 +154,9 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             </React.Profiler>
 
             <div className="flex-1 flex overflow-hidden relative">
-                <React.Profiler id="ProjectExplorerPanel" onRender={onRender}>
-                    <ProjectExplorerPanel
-                        projectId={project.id}
+                <React.Profiler id="WorkspaceExplorerPanel" onRender={onRender}>
+                    <WorkspaceExplorerPanel
+                        workspaceId={workspace.id}
                         ps={ps}
                         wm={wm}
                         language={language}
@@ -184,14 +184,14 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                         }}
                         activeTab={wm.activeTab}
                         updateTabContent={wm.updateTabContent}
-                        project={project}
-                        handleUpdateProject={handleUpdateProject}
+                        workspace={workspace}
+                        handleUpdateWorkspace={handleUpdateWorkspace}
                         onAddMount={() => ps.setShowMountModal(true)}
                         setShowLogoModal={ps.setShowLogoModal}
                         t={t}
                         language={language}
                         setDashboardTab={wm.setDashboardTab}
-                        onDeleteProject={onDeleteProject}
+                        onDeleteWorkspace={onDeleteWorkspace}
                         selectedEntry={ps.selectedEntries[0]}
                         onOpenFile={openWorkspaceFile}
                     />
@@ -199,7 +199,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
 
                 <React.Profiler id="WorkspaceSidebar" onRender={onRender}>
                     <WorkspaceSidebar
-                        projectId={project.id}
+                        workspaceId={workspace.id}
                         showAgentPanel={ps.showAgentPanel}
                         agentPanelWidth={ps.agentPanelWidth}
                         setAgentPanelWidth={ps.setAgentPanelWidth}
@@ -252,8 +252,8 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                     setIsResizingTerminal={tl.setIsResizingTerminal}
                     setIsFloatingTerminal={tl.setIsFloatingTerminal}
                     setTerminalHeight={ps.setTerminalHeight}
-                    projectId={project.id}
-                    projectPath={project.path}
+                    workspaceId={workspace.id}
+                    workspacePath={workspace.path}
                     tabs={tabs}
                     activeTabId={activeTabId}
                     setTabs={setTabs}
@@ -265,8 +265,8 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             <WorkspaceDialogs
                 ps={ps}
                 wm={wm}
-                project={project}
-                handleUpdateProject={handleUpdateProject}
+                workspace={workspace}
+                handleUpdateWorkspace={handleUpdateWorkspace}
                 submitEntryModal={submitEntryModal}
                 entryBusy={entryBusy}
                 language={language}
@@ -318,4 +318,4 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
 };
 
 // Workspace alias for the new naming convention
-export const WorkspaceDetails = ProjectWorkspace;
+

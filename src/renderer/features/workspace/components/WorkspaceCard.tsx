@@ -3,53 +3,53 @@ import React, { createContext, memo, useContext, useEffect } from 'react';
 
 import { motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
-import { Project } from '@/types';
+import { Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
-interface ProjectCardSurfaceContextValue {
+interface WorkspaceCardSurfaceContextValue {
     activeMenuId: string | null
     setActiveMenuId: (id: string | null) => void
-    onSelect: (project: Project) => void
-    onEdit: (project: Project, e: React.MouseEvent) => void
-    onDelete: (project: Project, e: React.MouseEvent) => void
-    onArchive: (project: Project) => void
+    onSelect: (workspace: Workspace) => void
+    onEdit: (workspace: Workspace, e: React.MouseEvent) => void
+    onDelete: (workspace: Workspace, e: React.MouseEvent) => void
+    onArchive: (workspace: Workspace) => void
     t: (key: string) => string
 }
 
-const ProjectCardSurfaceContext = createContext<ProjectCardSurfaceContextValue | null>(null);
+const WorkspaceCardSurfaceContext = createContext<WorkspaceCardSurfaceContextValue | null>(null);
 
-function useProjectCardSurfaceContext(): ProjectCardSurfaceContextValue {
-    const context = useContext(ProjectCardSurfaceContext);
+function useWorkspaceCardSurfaceContext(): WorkspaceCardSurfaceContextValue {
+    const context = useContext(WorkspaceCardSurfaceContext);
     if (!context) {
-        throw new Error('ProjectCard must be used within ProjectCardSurfaceProvider');
+        throw new Error('WorkspaceCard must be used within WorkspaceCardSurfaceProvider');
     }
     return context;
 }
 
-export interface ProjectCardSurfaceProviderProps extends ProjectCardSurfaceContextValue {
+export interface WorkspaceCardSurfaceProviderProps extends WorkspaceCardSurfaceContextValue {
     children: React.ReactNode
 }
 
-const SLOW_PROJECT_CARD_RENDER_THRESHOLD_MS = 10;
+const SLOW_WORKSPACE_CARD_RENDER_THRESHOLD_MS = 10;
 
-export const ProjectCardSurfaceProvider: React.FC<ProjectCardSurfaceProviderProps> = ({
+export const WorkspaceCardSurfaceProvider: React.FC<WorkspaceCardSurfaceProviderProps> = ({
     children,
     ...value
 }) => (
-    <ProjectCardSurfaceContext.Provider value={value}>
+    <WorkspaceCardSurfaceContext.Provider value={value}>
         {children}
-    </ProjectCardSurfaceContext.Provider>
+    </WorkspaceCardSurfaceContext.Provider>
 );
 
-interface ProjectCardProps {
-    project: Project
+interface WorkspaceCardProps {
+    workspace: Workspace
     index: number
     isSelected?: boolean
     onToggleSelection?: () => void
 }
 
-const ProjectSelectionCheckbox: React.FC<{ isSelected?: boolean; onToggle?: () => void }> = ({ isSelected, onToggle }) => {
-    const { t } = useProjectCardSurfaceContext();
+const WorkspaceSelectionCheckbox: React.FC<{ isSelected?: boolean; onToggle?: () => void }> = ({ isSelected, onToggle }) => {
+    const { t } = useWorkspaceCardSurfaceContext();
     return (
     <button
         type="button"
@@ -78,7 +78,7 @@ const ProjectSelectionCheckbox: React.FC<{ isSelected?: boolean; onToggle?: () =
     );
 };
 
-const ProjectCardMenu: React.FC<{ project: Project }> = ({ project }) => {
+const WorkspaceCardMenu: React.FC<{ workspace: Workspace }> = ({ workspace }) => {
     const {
         activeMenuId,
         setActiveMenuId,
@@ -86,8 +86,8 @@ const ProjectCardMenu: React.FC<{ project: Project }> = ({ project }) => {
         onDelete,
         onArchive,
         t
-    } = useProjectCardSurfaceContext();
-    const showMenu = activeMenuId === project.id;
+    } = useWorkspaceCardSurfaceContext();
+    const showMenu = activeMenuId === workspace.id;
 
     return (
         <div className="relative">
@@ -96,7 +96,7 @@ const ProjectCardMenu: React.FC<{ project: Project }> = ({ project }) => {
             aria-label={t('common.more') || 'More options'}
             onClick={(e) => {
                 e.stopPropagation();
-                setActiveMenuId(showMenu ? null : project.id);
+                setActiveMenuId(showMenu ? null : workspace.id);
             }}
             className={cn(
                 "p-1.5 rounded-md hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors",
@@ -115,7 +115,7 @@ const ProjectCardMenu: React.FC<{ project: Project }> = ({ project }) => {
                 >
                     <button
                         type="button"
-                        onClick={(e) => onEdit(project, e)}
+                        onClick={(e) => onEdit(workspace, e)}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted/20 transition-colors text-left"
                     >
                         <Pencil className="w-3.5 h-3.5 text-primary" />
@@ -123,17 +123,17 @@ const ProjectCardMenu: React.FC<{ project: Project }> = ({ project }) => {
                     </button>
                     <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); onArchive(project); setActiveMenuId(null); }}
+                        onClick={(e) => { e.stopPropagation(); onArchive(workspace); setActiveMenuId(null); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted/20 transition-colors text-left"
                     >
                         <Archive className="w-3.5 h-3.5 text-success" />
-                        {project.status === 'archived'
+                        {workspace.status === 'archived'
                             ? t('common.unarchive') || 'Restore'
                             : t('workspaces.archiveWorkspace')}
                     </button>
                     <button
                         type="button"
-                        onClick={(e) => onDelete(project, e)}
+                        onClick={(e) => onDelete(workspace, e)}
                         className="w-full flex items-center gap-2 px-3 py-2 text-destructive/10 text-destructive hover:bg-destructive/10 transition-colors text-left"
                     >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -146,52 +146,52 @@ const ProjectCardMenu: React.FC<{ project: Project }> = ({ project }) => {
     );
 };
 
-const ProjectCardInfo: React.FC<{ project: Project }> = ({ project }) => (
+const WorkspaceCardInfo: React.FC<{ workspace: Workspace }> = ({ workspace }) => (
     <div>
         <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors truncate">
-            {project.title}
+            {workspace.title}
         </h3>
         <p className="text-xs text-muted-foreground/60 truncate mt-1 font-mono">
-            {project.path}
+            {workspace.path}
         </p>
     </div>
 );
 
-const ProjectCardFooter: React.FC<{ project: Project }> = ({ project }) => {
-    const { t } = useProjectCardSurfaceContext();
+const WorkspaceCardFooter: React.FC<{ workspace: Workspace }> = ({ workspace }) => {
+    const { t } = useWorkspaceCardSurfaceContext();
     return (
         <div className="pt-4 border-t border-border/40 mt-auto flex items-center justify-between text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5" />
-            {new Date(project.createdAt).toLocaleDateString()}
+            {new Date(workspace.createdAt).toLocaleDateString()}
         </span>
-        <span className={cn("px-2 py-0.5 rounded-full bg-muted/50 uppercase text-xxs font-bold tracking-wider", project.status === 'active' ? "text-success" : "")}>
-            {project.status === 'active' ? t('common.active') : project.status}
+        <span className={cn("px-2 py-0.5 rounded-full bg-muted/50 uppercase text-xxs font-bold tracking-wider", workspace.status === 'active' ? "text-success" : "")}>
+            {workspace.status === 'active' ? t('common.active') : workspace.status}
         </span>
     </div>
     );
 };
 
-export const ProjectCard = memo<ProjectCardProps>(({
-    project, index, isSelected, onToggleSelection
+export const WorkspaceCard = memo<WorkspaceCardProps>(({
+    workspace, index, isSelected, onToggleSelection
 }) => {
-    const { onSelect } = useProjectCardSurfaceContext();
+    const { onSelect } = useWorkspaceCardSurfaceContext();
 
     useEffect(() => {
         const renderStartMs = performance.now();
         const rafId = window.requestAnimationFrame(() => {
             const renderDurationMs = Math.round(performance.now() - renderStartMs);
-            if (renderDurationMs >= SLOW_PROJECT_CARD_RENDER_THRESHOLD_MS) {
-                appLogger.debug('ProjectCard', 'Slow project card render detected', {
-                    projectId: project.id,
+            if (renderDurationMs >= SLOW_WORKSPACE_CARD_RENDER_THRESHOLD_MS) {
+                appLogger.debug('WorkspaceCard', 'Slow workspace card render detected', {
+                    workspaceId: workspace.id,
                     cardIndex: index,
                     renderDurationMs,
-                    thresholdMs: SLOW_PROJECT_CARD_RENDER_THRESHOLD_MS
+                    thresholdMs: SLOW_WORKSPACE_CARD_RENDER_THRESHOLD_MS
                 });
             }
         });
         return () => window.cancelAnimationFrame(rafId);
-    }, [index, project.id]);
+    }, [index, workspace.id]);
 
     return (
         <motion.div
@@ -200,12 +200,12 @@ export const ProjectCard = memo<ProjectCardProps>(({
             transition={{ delay: index * 0.05 }}
             role="button"
             tabIndex={0}
-            aria-label={project.title}
-            onClick={() => onSelect(project)}
+            aria-label={workspace.title}
+            onClick={() => onSelect(workspace)}
             onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    onSelect(project);
+                    onSelect(workspace);
                 }
             }}
             className={cn(
@@ -213,12 +213,12 @@ export const ProjectCard = memo<ProjectCardProps>(({
                 isSelected ? "border-primary/50 bg-primary/5" : "hover:border-foreground/20"
             )}
         >
-            <ProjectSelectionCheckbox isSelected={isSelected} onToggle={onToggleSelection} />
+            <WorkspaceSelectionCheckbox isSelected={isSelected} onToggle={onToggleSelection} />
 
             <div className="flex items-start justify-between">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary overflow-hidden shadow-inner border border-border/50 ml-6">
-                    {project.logo ? (
-                        <img src={`safe-file://${project.logo}`} alt={project.title} className="w-full h-full object-cover" />
+                    {workspace.logo ? (
+                        <img src={`safe-file://${workspace.logo}`} alt={workspace.title} className="w-full h-full object-cover" />
                     ) : (
                         <Terminal className="w-5 h-5" />
                     )}
@@ -229,14 +229,14 @@ export const ProjectCard = memo<ProjectCardProps>(({
                         <ArrowRight className="w-5 h-5 text-muted-foreground -rotate-44 group-hover:rotate-0 transition-transform duration-300" />
                     </div>
 
-                    <ProjectCardMenu project={project} />
+                    <WorkspaceCardMenu workspace={workspace} />
                 </div>
             </div>
 
-            <ProjectCardInfo project={project} />
-            <ProjectCardFooter project={project} />
+            <WorkspaceCardInfo workspace={workspace} />
+            <WorkspaceCardFooter workspace={workspace} />
         </motion.div>
     );
 });
 
-ProjectCard.displayName = 'ProjectCard';
+WorkspaceCard.displayName = 'WorkspaceCard';

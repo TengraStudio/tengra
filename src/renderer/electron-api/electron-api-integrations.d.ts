@@ -6,6 +6,11 @@ import type {
     IpcContractVersionInfo,
 } from '@shared/constants/ipc-contract';
 import type {
+    CollaborationResponse,
+    CollaborationSyncUpdate,
+    JoinCollaborationRoom,
+} from '@shared/schemas/collaboration.schema';
+import type {
     IpcRendererEvent,
 } from 'electron';
 
@@ -16,9 +21,6 @@ import type {
     Folder,
     IpcValue,
     Message,
-    Project,
-    ProjectState,
-    ProjectStep,
     SSHConfig,
     SSHConnection,
     SSHDevContainer,
@@ -34,6 +36,9 @@ import type {
     SSHSystemStats,
     SSHTransferTask,
     SSHTunnelPreset,
+    Workspace,
+    WorkspaceState,
+    WorkspaceStep,
 } from '@/shared/types';
 import type {
     VoiceCommand,
@@ -93,15 +98,15 @@ export interface ElectronApiIntegrationsDomain {
             tokensReceived: number;
             costEstimate?: number;
         }) => Promise<{ success: boolean }>;
-        getWorkspaces: () => Promise<Project[]>;
+        getWorkspaces: () => Promise<Workspace[]>;
         getFolders: () => Promise<Folder[]>;
         createWorkspace: (
             name: string,
             path: string,
             description: string,
             mounts?: string
-        ) => Promise<Project>;
-        updateWorkspace: (id: string, updates: Partial<Project>) => Promise<void>;
+        ) => Promise<Workspace>;
+        updateWorkspace: (id: string, updates: Partial<Workspace>) => Promise<void>;
         deleteWorkspace: (id: string, deleteFiles?: boolean) => Promise<void>;
         archiveWorkspace: (id: string, isArchived: boolean) => Promise<void>;
         bulkDeleteWorkspaces: (ids: string[], deleteFiles?: boolean) => Promise<void>;
@@ -798,10 +803,10 @@ export interface ElectronApiIntegrationsDomain {
         removeAllListeners: (channel: string) => void;
     };
     // Backward compatibility for components using window.electron.on
-    projectAgent: {
+    workspaceAgent: {
         start: (options: AgentStartOptions) => Promise<{ taskId: string }>;
         generatePlan: (options: AgentStartOptions) => Promise<void>;
-        approvePlan: (plan: string[] | ProjectStep[], taskId?: string) => Promise<void>;
+        approvePlan: (plan: string[] | WorkspaceStep[], taskId?: string) => Promise<void>;
         stop: (taskId?: string) => Promise<void>;
         pauseTask: (taskId: string) => Promise<{ success: boolean }>;
         resumeTask: (taskId: string) => Promise<{ success: boolean; error?: string }>;
@@ -815,7 +820,7 @@ export interface ElectronApiIntegrationsDomain {
             taskId?: string
         ) => Promise<{ success: boolean; url?: string; error?: string }>;
         resetState: () => Promise<void>;
-        getStatus: (taskId?: string) => Promise<ProjectState>;
+        getStatus: (taskId?: string) => Promise<WorkspaceState>;
         getTaskMessages: (
             taskId: string
         ) => Promise<{ success: boolean; messages?: Message[] }>;
@@ -827,7 +832,7 @@ export interface ElectronApiIntegrationsDomain {
         ) => Promise<{ success: boolean; telemetry?: import('@shared/types/agent-state').TaskMetrics[] }>;
         getTaskHistory: (
             workspaceId?: string
-        ) => Promise<import('@shared/types/project-agent').AgentTaskHistoryItem[]>;
+        ) => Promise<import('@shared/types/workspace-agent').AgentTaskHistoryItem[]>;
         deleteTask: (taskId: string) => Promise<{ success: boolean; error?: string }>;
         getAvailableModels: () => Promise<{
             success: boolean;
@@ -861,22 +866,22 @@ export interface ElectronApiIntegrationsDomain {
                 taskId: string;
                 versionNumber: number;
                 reason: string;
-                plan: ProjectStep[];
+                plan: WorkspaceStep[];
                 createdAt: number;
             }>
         >;
         deleteTaskByNodeId: (nodeId: string) => Promise<boolean>;
-        getProfiles: () => Promise<import('@shared/types/project-agent').AgentProfile[]>;
-        getRoutingRules: () => Promise<import('@shared/types/project-agent').ModelRoutingRule[]>;
+        getProfiles: () => Promise<import('@shared/types/workspace-agent').AgentProfile[]>;
+        getRoutingRules: () => Promise<import('@shared/types/workspace-agent').ModelRoutingRule[]>;
         setRoutingRules: (
-            rules: import('@shared/types/project-agent').ModelRoutingRule[]
+            rules: import('@shared/types/workspace-agent').ModelRoutingRule[]
         ) => Promise<{ success: boolean }>;
         createVotingSession: (payload: {
             taskId: string;
             stepIndex: number;
             question: string;
             options: string[];
-        }) => Promise<import('@shared/types/project-agent').VotingSession>;
+        }) => Promise<import('@shared/types/workspace-agent').VotingSession>;
         submitVote: (payload: {
             sessionId: string;
             modelId: string;
@@ -884,86 +889,86 @@ export interface ElectronApiIntegrationsDomain {
             decision: string;
             confidence: number;
             reasoning?: string;
-        }) => Promise<import('@shared/types/project-agent').VotingSession | null>;
+        }) => Promise<import('@shared/types/workspace-agent').VotingSession | null>;
         requestVotes: (payload: {
             sessionId: string;
             models: Array<{ provider: string; model: string }>;
-        }) => Promise<import('@shared/types/project-agent').VotingSession | null>;
+        }) => Promise<import('@shared/types/workspace-agent').VotingSession | null>;
         resolveVoting: (
             sessionId: string
-        ) => Promise<import('@shared/types/project-agent').VotingSession | null>;
+        ) => Promise<import('@shared/types/workspace-agent').VotingSession | null>;
         getVotingSession: (
             sessionId: string
-        ) => Promise<import('@shared/types/project-agent').VotingSession | null>;
+        ) => Promise<import('@shared/types/workspace-agent').VotingSession | null>;
         listVotingSessions: (
             taskId?: string
-        ) => Promise<import('@shared/types/project-agent').VotingSession[]>;
+        ) => Promise<import('@shared/types/workspace-agent').VotingSession[]>;
         overrideVotingDecision: (payload: {
             sessionId: string;
             finalDecision: string;
             reason?: string;
-        }) => Promise<import('@shared/types/project-agent').VotingSession | null>;
+        }) => Promise<import('@shared/types/workspace-agent').VotingSession | null>;
         getVotingAnalytics: (
             taskId?: string
-        ) => Promise<import('@shared/types/project-agent').VotingAnalytics>;
-        getVotingConfiguration: () => Promise<import('@shared/types/project-agent').VotingConfiguration>;
+        ) => Promise<import('@shared/types/workspace-agent').VotingAnalytics>;
+        getVotingConfiguration: () => Promise<import('@shared/types/workspace-agent').VotingConfiguration>;
         updateVotingConfiguration: (
-            patch: Partial<import('@shared/types/project-agent').VotingConfiguration>
-        ) => Promise<import('@shared/types/project-agent').VotingConfiguration>;
-        listVotingTemplates: () => Promise<import('@shared/types/project-agent').VotingTemplate[]>;
+            patch: Partial<import('@shared/types/workspace-agent').VotingConfiguration>
+        ) => Promise<import('@shared/types/workspace-agent').VotingConfiguration>;
+        listVotingTemplates: () => Promise<import('@shared/types/workspace-agent').VotingTemplate[]>;
         buildConsensus: (
             outputs: Array<{ modelId: string; provider: string; output: string }>
-        ) => Promise<import('@shared/types/project-agent').ConsensusResult>;
+        ) => Promise<import('@shared/types/workspace-agent').ConsensusResult>;
         createDebateSession: (payload: {
             taskId: string;
             stepIndex: number;
             topic: string;
-        }) => Promise<import('@shared/types/project-agent').DebateSession | null>;
+        }) => Promise<import('@shared/types/workspace-agent').DebateSession | null>;
         submitDebateArgument: (payload: {
             sessionId: string;
             agentId: string;
             provider: string;
-            side: import('@shared/types/project-agent').DebateSide;
+            side: import('@shared/types/workspace-agent').DebateSide;
             content: string;
             confidence: number;
-            citations?: import('@shared/types/project-agent').DebateCitation[];
-        }) => Promise<import('@shared/types/project-agent').DebateSession | null>;
+            citations?: import('@shared/types/workspace-agent').DebateCitation[];
+        }) => Promise<import('@shared/types/workspace-agent').DebateSession | null>;
         resolveDebateSession: (
             sessionId: string
-        ) => Promise<import('@shared/types/project-agent').DebateSession | null>;
+        ) => Promise<import('@shared/types/workspace-agent').DebateSession | null>;
         overrideDebateSession: (payload: {
             sessionId: string;
             moderatorId: string;
-            decision: import('@shared/types/project-agent').DebateSide | 'balanced';
+            decision: import('@shared/types/workspace-agent').DebateSide | 'balanced';
             reason?: string;
-        }) => Promise<import('@shared/types/project-agent').DebateSession | null>;
+        }) => Promise<import('@shared/types/workspace-agent').DebateSession | null>;
         getDebateSession: (
             sessionId: string
-        ) => Promise<import('@shared/types/project-agent').DebateSession | null>;
+        ) => Promise<import('@shared/types/workspace-agent').DebateSession | null>;
         listDebateHistory: (
             taskId?: string
-        ) => Promise<import('@shared/types/project-agent').DebateSession[]>;
+        ) => Promise<import('@shared/types/workspace-agent').DebateSession[]>;
         getDebateReplay: (
             sessionId: string
-        ) => Promise<import('@shared/types/project-agent').DebateReplay | null>;
+        ) => Promise<import('@shared/types/workspace-agent').DebateReplay | null>;
         generateDebateSummary: (sessionId: string) => Promise<string | null>;
-        getTeamworkAnalytics: () => Promise<import('@shared/types/project-agent').AgentTeamworkAnalytics | null>;
+        getTeamworkAnalytics: () => Promise<import('@shared/types/workspace-agent').AgentTeamworkAnalytics | null>;
         councilSendMessage: (payload: {
             taskId: string;
             stageId: string;
             fromAgentId: string;
             toAgentId?: string;
-            intent: import('@shared/types/project-agent').AgentCollaborationIntent;
-            priority?: import('@shared/types/project-agent').AgentCollaborationPriority;
+            intent: import('@shared/types/workspace-agent').AgentCollaborationIntent;
+            priority?: import('@shared/types/workspace-agent').AgentCollaborationPriority;
             payload: Record<string, string | number | boolean | null>;
             expiresAt?: number;
-        }) => Promise<import('@shared/types/project-agent').AgentCollaborationMessage | null>;
+        }) => Promise<import('@shared/types/workspace-agent').AgentCollaborationMessage | null>;
         councilGetMessages: (payload: {
             taskId: string;
             stageId?: string;
             agentId?: string;
             includeExpired?: boolean;
-        }) => Promise<import('@shared/types/project-agent').AgentCollaborationMessage[]>;
+        }) => Promise<import('@shared/types/workspace-agent').AgentCollaborationMessage[]>;
         councilCleanupExpiredMessages: (taskId?: string) => Promise<{ success: boolean; removed: number }>;
         councilHandleQuotaInterrupt: (payload: {
             taskId: string;
@@ -989,17 +994,17 @@ export interface ElectronApiIntegrationsDomain {
             reason?: string;
             skills?: string[];
             contextReadiness?: number;
-        }) => Promise<import('@shared/types/project-agent').WorkerAvailabilityRecord | null>;
+        }) => Promise<import('@shared/types/workspace-agent').WorkerAvailabilityRecord | null>;
         councilListAvailableWorkers: (payload: {
             taskId: string;
-        }) => Promise<import('@shared/types/project-agent').WorkerAvailabilityRecord[]>;
+        }) => Promise<import('@shared/types/workspace-agent').WorkerAvailabilityRecord[]>;
         councilScoreHelperCandidates: (payload: {
             taskId: string;
             stageId: string;
             requiredSkills: string[];
             blockedAgentIds?: string[];
             contextReadinessOverrides?: Record<string, number>;
-        }) => Promise<import('@shared/types/project-agent').HelperCandidateScore[]>;
+        }) => Promise<import('@shared/types/workspace-agent').HelperCandidateScore[]>;
         councilGenerateHelperHandoff: (payload: {
             taskId: string;
             stageId: string;
@@ -1009,34 +1014,34 @@ export interface ElectronApiIntegrationsDomain {
             acceptanceCriteria: string[];
             constraints: string[];
             contextNotes?: string;
-        }) => Promise<import('@shared/types/project-agent').HelperHandoffPackage | null>;
+        }) => Promise<import('@shared/types/workspace-agent').HelperHandoffPackage | null>;
         councilReviewHelperMerge: (payload: {
             acceptanceCriteria: string[];
             constraints: string[];
             helperOutput: string;
             reviewerNotes?: string;
-        }) => Promise<import('@shared/types/project-agent').HelperMergeGateDecision>;
+        }) => Promise<import('@shared/types/workspace-agent').HelperMergeGateDecision>;
         getTemplates: (
-            category?: import('@shared/types/project-agent').AgentTemplateCategory
-        ) => Promise<import('@shared/types/project-agent').AgentTemplate[]>;
+            category?: import('@shared/types/workspace-agent').AgentTemplateCategory
+        ) => Promise<import('@shared/types/workspace-agent').AgentTemplate[]>;
         getTemplate: (
             id: string
-        ) => Promise<import('@shared/types/project-agent').AgentTemplate | null>;
+        ) => Promise<import('@shared/types/workspace-agent').AgentTemplate | null>;
         saveTemplate: (
-            template: import('@shared/types/project-agent').AgentTemplate
+            template: import('@shared/types/workspace-agent').AgentTemplate
         ) => Promise<{
             success: boolean;
-            template: import('@shared/types/project-agent').AgentTemplate;
+            template: import('@shared/types/workspace-agent').AgentTemplate;
         }>;
         deleteTemplate: (id: string) => Promise<{ success: boolean }>;
         exportTemplate: (
             id: string
-        ) => Promise<import('@shared/types/project-agent').AgentTemplateExport | null>;
+        ) => Promise<import('@shared/types/workspace-agent').AgentTemplateExport | null>;
         importTemplate: (
-            exported: import('@shared/types/project-agent').AgentTemplateExport
+            exported: import('@shared/types/workspace-agent').AgentTemplateExport
         ) => Promise<{
             success: boolean;
-            template?: import('@shared/types/project-agent').AgentTemplate;
+            template?: import('@shared/types/workspace-agent').AgentTemplate;
             error?: string;
         }>;
         applyTemplate: (payload: {
@@ -1044,12 +1049,12 @@ export interface ElectronApiIntegrationsDomain {
             values: Record<string, string | number | boolean>;
         }) => Promise<{
             success: boolean;
-            template?: import('@shared/types/project-agent').AgentTemplate;
+            template?: import('@shared/types/workspace-agent').AgentTemplate;
             task?: string;
             steps?: string[];
             error?: string;
         }>;
-        onUpdate: (callback: (state: ProjectState) => void) => () => void;
+        onUpdate: (callback: (state: WorkspaceState) => void) => () => void;
         onQuotaInterrupt: (callback: (payload: {
             success: boolean;
             interruptId: string;
@@ -1066,7 +1071,7 @@ export interface ElectronApiIntegrationsDomain {
         // ===== MARCH1-IPC-001: Council Protocol =====
         council: {
             generatePlan: (taskId: string, task: string) => Promise<{ success: boolean; error?: string }>;
-            getProposal: (taskId: string) => Promise<{ success: boolean; plan?: ProjectStep[]; error?: string }>;
+            getProposal: (taskId: string) => Promise<{ success: boolean; plan?: WorkspaceStep[]; error?: string }>;
             approveProposal: (taskId: string) => Promise<{ success: boolean; error?: string }>;
             rejectProposal: (taskId: string, reason?: string) => Promise<{ success: boolean; error?: string }>;
             startExecution: (taskId: string) => Promise<{ success: boolean; error?: string }>;
@@ -1130,7 +1135,7 @@ export interface ElectronApiIntegrationsDomain {
     };
     orchestrator: {
         start: (task: string, workspaceId?: string) => Promise<void>;
-        approve: (plan: ProjectStep[]) => Promise<void>;
+        approve: (plan: WorkspaceStep[]) => Promise<void>;
         getState: () => Promise<OrchestratorStateView>;
         stop: () => Promise<void>;
         onUpdate: (callback: (state: OrchestratorStateView) => void) => () => void;
@@ -1268,9 +1273,9 @@ export interface ElectronApiIntegrationsDomain {
     };
 
     userCollaboration: {
-        joinRoom: (params: { type: string; id: string }) => Promise<void>;
-        leaveRoom: (roomId: string) => Promise<void>;
-        sendUpdate: (params: { roomId: string; data: string }) => Promise<void>;
+        joinRoom: (params: JoinCollaborationRoom) => Promise<CollaborationResponse>;
+        leaveRoom: (roomId: string) => Promise<CollaborationResponse>;
+        sendUpdate: (params: CollaborationSyncUpdate) => Promise<CollaborationResponse>;
         onSyncUpdate: (callback: (payload: { roomId: string; data: string }) => void) => () => void;
         onError: (callback: (payload: { roomId: string; error: string }) => void) => () => void;
     };

@@ -1,7 +1,7 @@
 import { registerWorkflowExecutionIpc } from '@main/ipc/workflow-execution';
 import { DatabaseService } from '@main/services/data/database.service';
-import { WorkflowExecutionService } from '@main/services/workspace/workflow-execution.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
+import { WorkflowExecutionService } from '@main/services/workspace/workflow-execution.service';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
@@ -214,7 +214,7 @@ describe('Workflow Execution IPC Handlers', () => {
 
     describe('Checkpoint Handlers', () => {
         it('should resume from a checkpoint', async () => {
-            const handler = getRequiredHandler('workspace:resume-checkpoint');
+            const handler = getRequiredHandler('agent:resume-checkpoint');
             await handler({} as IpcMainInvokeEvent, 'cp-123');
 
             expect(mockWorkflowExecutionService.resumeFromCheckpoint).toHaveBeenCalledWith('cp-123');

@@ -1,7 +1,7 @@
 /**
  * Modal for viewing full idea details with approval workflow
  */
-import { ProjectIdea } from '@shared/types/ideas';
+import { WorkspaceIdea } from '@shared/types/ideas';
 import { Briefcase, Code2, Globe, Map, Sparkles, Target, Trash2, Users, X } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
@@ -17,9 +17,9 @@ import { IdeaDetailsContent } from './IdeaDetailsContent';
 type TabId = 'overview' | 'market' | 'strategy' | 'technology' | 'roadmap' | 'users' | 'business';
 
 interface IdeaDetailsModalProps {
-    idea: ProjectIdea
+    idea: WorkspaceIdea
     onClose: () => void
-    onApprove: (projectPath: string, selectedName?: string) => Promise<void>
+    onApprove: (workspacePath: string, selectedName?: string) => Promise<void>
     onReject: () => Promise<void>
     onArchive?: () => Promise<void>
     onDelete: () => void
@@ -38,7 +38,7 @@ interface SideNavProps {
 }
 
 interface IdeaHeaderProps {
-    idea: ProjectIdea;
+    idea: WorkspaceIdea;
     selectedName: string;
     setSelectedName: (name: string) => void;
     onRegenerate?: () => Promise<void>;
@@ -216,7 +216,7 @@ interface ModalKeyboardHandlerOptions {
     isApproving: boolean;
     isRejecting: boolean;
     showRejectConfirm: boolean;
-    projectPath: string;
+    workspacePath: string;
     selectedName: string;
     onClose: () => void;
     handleApprove: () => Promise<void>;
@@ -244,7 +244,7 @@ function handleEscapeKey(context: EscapeKeyContext): void {
 
 interface ControlKeyContext {
     key: string;
-    projectPath: string;
+    workspacePath: string;
     selectedName: string;
     showRejectConfirm: boolean;
     handleApprove: () => Promise<void>;
@@ -252,7 +252,7 @@ interface ControlKeyContext {
 }
 
 function handleControlKey(e: KeyboardEvent, context: ControlKeyContext): void {
-    if (context.key === 'Enter' && context.projectPath && context.selectedName) {
+    if (context.key === 'Enter' && context.workspacePath && context.selectedName) {
         e.preventDefault();
         void context.handleApprove();
     } else if (context.key === 'Backspace' && !context.showRejectConfirm) {
@@ -263,7 +263,7 @@ function handleControlKey(e: KeyboardEvent, context: ControlKeyContext): void {
 
 function useModalKeyboardHandler(options: ModalKeyboardHandlerOptions): void {
     const {
-        isApproving, isRejecting, showRejectConfirm, projectPath, selectedName,
+        isApproving, isRejecting, showRejectConfirm, workspacePath, selectedName,
         onClose, handleApprove, handleRejectClick, handleRejectCancel
     } = options;
     
@@ -281,7 +281,7 @@ function useModalKeyboardHandler(options: ModalKeyboardHandlerOptions): void {
 
             handleControlKey(e, {
                 key: e.key,
-                projectPath,
+                workspacePath,
                 selectedName,
                 showRejectConfirm,
                 handleApprove,
@@ -291,7 +291,7 @@ function useModalKeyboardHandler(options: ModalKeyboardHandlerOptions): void {
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [projectPath, selectedName, isApproving, isRejecting, showRejectConfirm, onClose, handleApprove, handleRejectClick, handleRejectCancel]);
+    }, [workspacePath, selectedName, isApproving, isRejecting, showRejectConfirm, onClose, handleApprove, handleRejectClick, handleRejectCancel]);
 }
 
 export const IdeaDetailsModal: React.FC<IdeaDetailsModalProps> = ({
@@ -308,7 +308,7 @@ export const IdeaDetailsModal: React.FC<IdeaDetailsModalProps> = ({
     isRegenerating = false,
     canGenerateLogo
 }) => {
-    const [projectPath, setProjectPath] = useState('');
+    const [workspacePath, setWorkspacePath] = useState('');
     const [selectedName, setSelectedName] = useState(idea.title);
     const [selectedDescription, setSelectedDescription] = useState(idea.description || '');
     const [activeTab, setActiveTab] = useState<TabId>('overview');
@@ -321,7 +321,7 @@ export const IdeaDetailsModal: React.FC<IdeaDetailsModalProps> = ({
         try {
             const result = await window.electron.selectDirectory();
             if (result.success && result.path) {
-                setProjectPath(result.path);
+                setWorkspacePath(result.path);
             }
         } catch (err) {
             if (err instanceof Error) {
@@ -331,9 +331,9 @@ export const IdeaDetailsModal: React.FC<IdeaDetailsModalProps> = ({
     };
 
     const handleApprove = useCallback(async () => {
-        if (!projectPath || !selectedName) { return; }
-        await onApprove(projectPath, selectedName);
-    }, [projectPath, selectedName, onApprove]);
+        if (!workspacePath || !selectedName) { return; }
+        await onApprove(workspacePath, selectedName);
+    }, [workspacePath, selectedName, onApprove]);
 
     const handleRejectClick = useCallback(() => { setShowRejectConfirm(true); }, []);
 
@@ -352,7 +352,7 @@ export const IdeaDetailsModal: React.FC<IdeaDetailsModalProps> = ({
         isApproving,
         isRejecting,
         showRejectConfirm,
-        projectPath,
+        workspacePath,
         selectedName,
         onClose,
         handleApprove,
@@ -395,8 +395,8 @@ export const IdeaDetailsModal: React.FC<IdeaDetailsModalProps> = ({
 
                 {idea.status === 'pending' && (
                     <ApprovalFooter
-                        projectPath={projectPath}
-                        setProjectPath={setProjectPath}
+                        workspacePath={workspacePath}
+                        setWorkspacePath={setWorkspacePath}
                         handleSelectFolder={handleSelectFolder}
                         onReject={async () => handleRejectClick()}
                         onArchive={onArchive}

@@ -1,17 +1,19 @@
 import { z } from 'zod';
 
-import { MemoryCategory, MemorySource, MemoryStatus, SharedMemoryConflictResolution } from '../types/advanced-memory';
+import {
+    MEMORY_CATEGORY_VALUES,
+    MemorySource,
+    MemoryStatus,
+    normalizeMemoryCategory,
+    normalizeMemoryCategoryCounts,
+    SharedMemoryConflictResolution} from '../types/advanced-memory';
 
-export const MemoryCategorySchema = z.enum([
-    'preference',
-    'personal',
-    'project',
-    'technical',
-    'workflow',
-    'relationship',
-    'fact',
-    'instruction'
-] as [MemoryCategory, ...MemoryCategory[]]);
+const CanonicalMemoryCategorySchema = z.enum(MEMORY_CATEGORY_VALUES);
+
+export const MemoryCategorySchema = z.preprocess(
+    value => typeof value === 'string' ? normalizeMemoryCategory(value) : value,
+    CanonicalMemoryCategorySchema
+);
 
 export const MemoryStatusSchema = z.enum([
     'pending',
@@ -171,7 +173,7 @@ export const ImportResponseSchema = AdvancedMemoryResponseEnvelopeSchema.extend(
 export const StatisticsSchema = z.object({
     total: z.number(),
     byStatus: z.record(z.string(), z.number()),
-    byCategory: z.record(z.string(), z.number()),
+    byCategory: z.record(z.string(), z.number()).transform(normalizeMemoryCategoryCounts),
     bySource: z.record(z.string(), z.number()),
     averageConfidence: z.number(),
     averageImportance: z.number(),

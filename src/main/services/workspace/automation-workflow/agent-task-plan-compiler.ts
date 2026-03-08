@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 
 import { JsonValue } from '@shared/types/common';
-import { ProjectStep } from '@shared/types/project-agent';
+import { WorkspaceStep } from '@shared/types/workspace-agent';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 type StepType = 'task' | 'fork' | 'join';
@@ -34,7 +34,7 @@ export class AgentTaskPlanCompiler {
         return null;
     }
 
-    normalizePlan(plan: ProjectStep[] | string[]): ProjectStep[] {
+    normalizePlan(plan: WorkspaceStep[] | string[]): WorkspaceStep[] {
         if (plan.length === 0) {
             return [];
         }
@@ -70,7 +70,7 @@ export class AgentTaskPlanCompiler {
         return this.buildDependenciesAndLanes(normalized);
     }
 
-    private isStringPlan(plan: ProjectStep[] | string[]): plan is string[] {
+    private isStringPlan(plan: WorkspaceStep[] | string[]): plan is string[] {
         return plan.every(step => typeof step === 'string');
     }
 
@@ -135,12 +135,12 @@ export class AgentTaskPlanCompiler {
         return 'normal';
     }
 
-    private buildDependenciesAndLanes(steps: ProjectStep[]): ProjectStep[] {
+    private buildDependenciesAndLanes(steps: WorkspaceStep[]): WorkspaceStep[] {
         if (steps.length === 0) {
             return [];
         }
 
-        const normalizedSteps: ProjectStep[] = [];
+        const normalizedSteps: WorkspaceStep[] = [];
         const laneByBranch = new Map<string, number>();
         let nextLane = 0;
 

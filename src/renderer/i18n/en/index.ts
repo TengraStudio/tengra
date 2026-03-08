@@ -69,10 +69,6 @@ import onboardingSection from '@renderer/i18n/en/onboarding';
 import panelLayoutSection from '@renderer/i18n/en/panelLayout';
 import personasSection from '@renderer/i18n/en/personas';
 import placeholderSection from '@renderer/i18n/en/placeholder';
-import workspaceAgentSection from '@renderer/i18n/en/workspaceAgent';
-import workspaceDashboardSection from '@renderer/i18n/en/workspaceDashboard';
-import workspacesSection from '@renderer/i18n/en/workspaces';
-import workspaceWizardSection from '@renderer/i18n/en/workspaceWizard';
 import promptOptimizerSection from '@renderer/i18n/en/promptOptimizer';
 import providerLabelsSection from '@renderer/i18n/en/providerLabels';
 import quickActionSection from '@renderer/i18n/en/quickAction';
@@ -100,7 +96,11 @@ import voiceSection from '@renderer/i18n/en/voice';
 import welcomeSection from '@renderer/i18n/en/welcome';
 import workflowsSection from '@renderer/i18n/en/workflows';
 import workspaceSection from '@renderer/i18n/en/workspace';
+import workspaceAgentSection from '@renderer/i18n/en/workspaceAgent';
+import workspaceDashboardSection from '@renderer/i18n/en/workspaceDashboard';
 import workspaceModalsSection from '@renderer/i18n/en/workspaceModals';
+import workspacesSection from '@renderer/i18n/en/workspaces';
+import workspaceWizardSection from '@renderer/i18n/en/workspaceWizard';
 
 export const en = {
     "about": aboutSection,

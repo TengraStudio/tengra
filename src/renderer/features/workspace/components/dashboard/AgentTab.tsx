@@ -1,12 +1,12 @@
-import { ProjectAgentTab } from '@renderer/features/workspace/components/ProjectAgentTab';
+import { WorkspaceAgentTab } from '@renderer/features/workspace/components/WorkspaceAgentTab';
 import React from 'react';
 
 import { Language } from '@/i18n';
 import type { GroupedModels } from '@/types';
-import { AgentDefinition, AppSettings, CodexUsage, Project, QuotaResponse } from '@/types';
+import { AgentDefinition, AppSettings, CodexUsage, QuotaResponse,Workspace } from '@/types';
 
 interface AgentTabProps {
-    project: Project;
+    workspace: Workspace;
     availableAgents: AgentDefinition[];
     groupedModels?: GroupedModels;
     quotas?: { accounts: QuotaResponse[] } | null;
@@ -20,7 +20,7 @@ interface AgentTabProps {
 }
 
 export const AgentTab: React.FC<AgentTabProps> = ({
-    project,
+    workspace,
     groupedModels,
     quotas,
     codexUsage,
@@ -33,8 +33,8 @@ export const AgentTab: React.FC<AgentTabProps> = ({
 }) => {
     return (
         <div className="h-full overflow-hidden animate-in fade-in duration-500">
-            <ProjectAgentTab
-                project={project}
+            <WorkspaceAgentTab
+                workspace={workspace}
                 t={t}
                 language={language}
                 activeTab="agent"

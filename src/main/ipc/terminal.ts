@@ -2,19 +2,19 @@ import { randomUUID } from 'crypto';
 
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
-import { DockerService } from '@main/services/project/docker.service';
-import { TerminalService } from '@main/services/project/terminal.service';
+import {
+    TerminalProfile,
+    TerminalProfileService,
+} from '@main/services/terminal/terminal-profile.service';
+import { DockerService } from '@main/services/workspace/docker.service';
+import { TerminalService } from '@main/services/workspace/terminal.service';
 import {
     ExplainCommandOptions,
     ExplainErrorOptions,
     FixErrorOptions,
     SuggestionOptions,
     TerminalSmartService,
-} from '@main/services/project/terminal-smart.service';
-import {
-    TerminalProfile,
-    TerminalProfileService,
-} from '@main/services/terminal/terminal-profile.service';
+} from '@main/services/workspace/terminal-smart.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
 import { getErrorMessage } from '@shared/utils/error.util';

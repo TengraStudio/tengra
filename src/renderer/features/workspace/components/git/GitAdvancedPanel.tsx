@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { useGitAdvanced } from '../../hooks/useGitAdvanced';
 
 interface GitAdvancedPanelProps {
-    projectPath: string;
+    workspacePath: string;
 }
 
 const Card: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode; className?: string }> = ({
@@ -54,9 +54,9 @@ const Field: React.FC<{
     />
 );
 
-export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ projectPath }) => {
+export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ workspacePath }) => {
     const { t } = useTranslation();
-    const git = useGitAdvanced(projectPath);
+    const git = useGitAdvanced(workspacePath);
 
     const [stashMessage, setStashMessage] = useState('WIP snapshot');
     const [stashQuery, setStashQuery] = useState('');

@@ -7,6 +7,7 @@ import {
     setAppShellState,
     setWorkspaceShellState,
 } from '@renderer/store/ui-layout.store';
+import { WORKSPACE_COMPAT_ALIAS_VALUES } from '@shared/constants';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('ui layout store', () => {
@@ -17,12 +18,12 @@ describe('ui layout store', () => {
     it('migrates legacy payloads that only contain activity bar data', () => {
         const migrated = sanitizeUiLayoutState({
             activityBar: {
-                activeItem: 'projects',
+                activeItem: WORKSPACE_COMPAT_ALIAS_VALUES.PLURAL,
                 collapsed: true,
             },
         });
 
-        expect(migrated.activityBar.activeItem).toBe('projects');
+        expect(migrated.activityBar.activeItem).toBe(WORKSPACE_COMPAT_ALIAS_VALUES.PLURAL);
         expect(migrated.activityBar.collapsed).toBe(true);
         expect(migrated.appShell.sidebarCollapsed).toBe(false);
         expect(migrated.workspaceShell.terminalHeight).toBe(250);

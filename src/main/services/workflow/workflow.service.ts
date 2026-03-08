@@ -3,7 +3,7 @@ import * as path from 'path';
 
 import { BaseService } from '@main/services/base.service';
 import { LLMService } from '@main/services/llm/llm.service';
-import { ProjectAgentService } from '@main/services/project/project-agent.service';
+import { WorkspaceAgentService } from '@main/services/workspace/workspace-agent.service';
 import {
     CreateWorkflowInputSchema,
     formatZodErrors,
@@ -52,7 +52,7 @@ export const WORKFLOW_PERFORMANCE_BUDGETS = {
 
 export interface WorkflowServiceDependencies {
     llmService?: LLMService;
-    workspaceAgentService?: ProjectAgentService;
+    workspaceAgentService?: WorkspaceAgentService;
 }
 
 export class WorkflowService extends BaseService {

@@ -1,7 +1,7 @@
 import { BaseService } from '@main/services/base.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { Message } from '@shared/types/chat';
-import { IdeaCategory, ProjectIdea } from '@shared/types/ideas';
+import { IdeaCategory, WorkspaceIdea } from '@shared/types/ideas';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { v4 as uuidv4 } from 'uuid';
@@ -59,7 +59,7 @@ const CURRENT_YEAR = new Date().getFullYear();
 
 /**
  * Idea Scoring Service
- * Provides AI-powered scoring and ranking of project ideas
+ * Provides AI-powered scoring and ranking of workspace ideas
  */
 export class IdeaScoringService extends BaseService {
     private scoringCache: Map<string, IdeaScoreBreakdown> = new Map();
@@ -96,7 +96,7 @@ export class IdeaScoringService extends BaseService {
     /**
      * Score a single idea comprehensively
      */
-    async scoreIdea(idea: ProjectIdea): Promise<IdeaScoreBreakdown> {
+    async scoreIdea(idea: WorkspaceIdea): Promise<IdeaScoreBreakdown> {
         this.logInfo(`Scoring idea: ${idea.title}`);
 
         const prompt = this.buildScoringPrompt(idea);
@@ -135,15 +135,15 @@ export class IdeaScoringService extends BaseService {
     /**
      * Rank multiple ideas and return sorted by score
      */
-    async rankIdeas(ideas: ProjectIdea[]): Promise<Array<{
-        idea: ProjectIdea
+    async rankIdeas(ideas: WorkspaceIdea[]): Promise<Array<{
+        idea: WorkspaceIdea
         score: IdeaScoreBreakdown
         rank: number
     }>> {
         this.logInfo(`Ranking ${ideas.length} ideas`);
 
         // Score all ideas in parallel (with concurrency limit)
-        const scores: Array<{ idea: ProjectIdea; score: IdeaScoreBreakdown }> = [];
+        const scores: Array<{ idea: WorkspaceIdea; score: IdeaScoreBreakdown }> = [];
 
         // Process in batches of 3 to avoid rate limits
         const batchSize = 3;
@@ -171,10 +171,10 @@ export class IdeaScoringService extends BaseService {
     /**
      * Compare two ideas directly
      */
-    async compareIdeas(idea1: ProjectIdea, idea2: ProjectIdea): Promise<IdeaComparison> {
+    async compareIdeas(idea1: WorkspaceIdea, idea2: WorkspaceIdea): Promise<IdeaComparison> {
         this.logInfo(`Comparing ideas: "${idea1.title}" vs "${idea2.title}"`);
 
-        const prompt = `Compare these two project ideas and determine which is stronger:
+        const prompt = `Compare these two workspace ideas and determine which is stronger:
 
 IDEA 1: "${idea1.title}"
 Category: ${idea1.category}
@@ -215,7 +215,7 @@ Respond in JSON:
             {
                 id: uuidv4(),
                 role: 'system',
-                content: 'You are a startup advisor comparing project ideas. Be analytical and objective. Always respond in valid JSON.',
+                content: 'You are a startup advisor comparing workspace ideas. Be analytical and objective. Always respond in valid JSON.',
                 timestamp: new Date()
             },
             {
@@ -244,7 +244,7 @@ Respond in JSON:
      * Quick score without full analysis (faster, less detailed)
      */
     async quickScore(title: string, description: string, category: IdeaCategory): Promise<number> {
-        const prompt = `Rate this project idea from 0-100 based on innovation, market need, and feasibility:
+        const prompt = `Rate this workspace idea from 0-100 based on innovation, market need, and feasibility:
 
 Title: ${title}
 Category: ${category}
@@ -289,8 +289,8 @@ Respond with ONLY a number between 0 and 100.`;
     /**
      * Build the detailed scoring prompt
      */
-    private buildScoringPrompt(idea: ProjectIdea): string {
-        let prompt = `Score this project idea comprehensively:
+    private buildScoringPrompt(idea: WorkspaceIdea): string {
+        let prompt = `Score this workspace idea comprehensively:
 
 BASIC INFO:
 - Title: ${idea.title}
@@ -303,7 +303,7 @@ BASIC INFO:
         return prompt;
     }
 
-    private buildOptionalSections(idea: ProjectIdea): string {
+    private buildOptionalSections(idea: WorkspaceIdea): string {
         let sections = '';
 
         if (idea.valueProposition) {
@@ -326,7 +326,7 @@ BASIC INFO:
         return sections;
     }
 
-    private buildTechStackSection(idea: ProjectIdea): string {
+    private buildTechStackSection(idea: WorkspaceIdea): string {
         if (!idea.techStack) { return ''; }
 
         const techs: string[] = [];
@@ -340,17 +340,17 @@ BASIC INFO:
         return techs.length ? `\nTECH STACK:\n${techs.join('\n')}\n` : '';
     }
 
-    private buildRoadmapSection(idea: ProjectIdea): string {
+    private buildRoadmapSection(idea: WorkspaceIdea): string {
         if (!idea.roadmap) { return ''; }
         return `\nROADMAP:\n- MVP: ${idea.roadmap.mvp.description}\n- Total Duration: ${idea.roadmap.totalDuration}\n`;
     }
 
-    private buildBusinessModelSection(idea: ProjectIdea): string {
+    private buildBusinessModelSection(idea: WorkspaceIdea): string {
         if (!idea.businessModel) { return ''; }
         return `\nBUSINESS MODEL:\n- Type: ${idea.businessModel.monetizationType}\n`;
     }
 
-    private buildSwotSection(idea: ProjectIdea): string {
+    private buildSwotSection(idea: WorkspaceIdea): string {
         if (!idea.swot) { return ''; }
         let swot = `\nSWOT ANALYSIS:\n`;
         swot += `Strengths: ${idea.swot.strengths.slice(0, 3).join(', ')}\n`;
@@ -398,7 +398,7 @@ Respond in JSON:
      * Get the system prompt for scoring
      */
     private getScoringSystemPrompt(): string {
-        return `You are an expert startup advisor and venture capital analyst. Your job is to objectively evaluate project ideas for their potential success.
+        return `You are an expert startup advisor and venture capital analyst. Your job is to objectively evaluate workspace ideas for their potential success.
 
 Scoring guidelines:
 - 0-20: Poor - Fundamental flaws, no clear value

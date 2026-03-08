@@ -10,17 +10,17 @@ import { appLogger } from '@/utils/renderer-logger';
 
 const getWorkspaceAgentBridge = () => window.electron.workspaceAgent;
 
-export function useProjectState() {
+export function useWorkspaceState() {
     const [selectedEntries, setSelectedEntries] = useState<WorkspaceEntry[]>([]);
     const [lastSelectedEntry, setLastSelectedEntry] = useState<WorkspaceEntry | null>(null);
-    const persistedProjectShell = useUiLayoutStore(snapshot => snapshot.workspaceShell);
+    const persistedWorkspaceShell = useUiLayoutStore(snapshot => snapshot.workspaceShell);
     const [sidebarCollapsed, setSidebarCollapsedState] = useState(
-        persistedProjectShell.sidebarCollapsed
+        persistedWorkspaceShell.sidebarCollapsed
     );
     const [showAgentPanel, setShowAgentPanel] = useState(false);
-    const [agentPanelWidth, setAgentPanelWidthState] = useState(persistedProjectShell.agentPanelWidth);
+    const [agentPanelWidth, setAgentPanelWidthState] = useState(persistedWorkspaceShell.agentPanelWidth);
     const [showTerminal, setShowTerminal] = useState(false);
-    const [terminalHeight, setTerminalHeightState] = useState(persistedProjectShell.terminalHeight);
+    const [terminalHeight, setTerminalHeightState] = useState(persistedWorkspaceShell.terminalHeight);
     const [showLogoModal, setShowLogoModal] = useState(false);
     const [agentChatMessage, setAgentChatMessage] = useState('');
 
@@ -44,10 +44,10 @@ export function useProjectState() {
     );
 
     useEffect(() => {
-        setSidebarCollapsedState(persistedProjectShell.sidebarCollapsed);
-        setAgentPanelWidthState(persistedProjectShell.agentPanelWidth);
-        setTerminalHeightState(persistedProjectShell.terminalHeight);
-    }, [persistedProjectShell]);
+        setSidebarCollapsedState(persistedWorkspaceShell.sidebarCollapsed);
+        setAgentPanelWidthState(persistedWorkspaceShell.agentPanelWidth);
+        setTerminalHeightState(persistedWorkspaceShell.terminalHeight);
+    }, [persistedWorkspaceShell]);
 
     useEffect(() => {
         const unsubscribe = getWorkspaceAgentBridge().onQuotaInterrupt(payload => {
@@ -77,7 +77,7 @@ export function useProjectState() {
                 type: payload.blockedByQuota ? 'error' : 'warning',
                 title: 'Model Quota Interrupt',
                 message: finalMessage,
-                source: 'project-agent',
+                source: 'workspace-agent',
             });
         });
 

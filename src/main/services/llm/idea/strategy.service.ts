@@ -4,9 +4,9 @@ import {
     IdeaSession,
     JourneyStep,
     MarketingPlan,
-    ProjectIdea,
     SWOTAnalysis,
     UserPersona,
+    WorkspaceIdea,
 } from '@shared/types/ideas';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -21,7 +21,7 @@ export class IdeaStrategyService extends IdeaBaseService {
     /**
      * Stage 9: User personas & journey maps
      */
-    async stageGeneratePersonas(session: IdeaSession, idea: ProjectIdea): Promise<{ personas: UserPersona[]; journey: JourneyStep[] }> {
+    async stageGeneratePersonas(session: IdeaSession, idea: WorkspaceIdea): Promise<{ personas: UserPersona[]; journey: JourneyStep[] }> {
         const prompt = IDEA_PROMPTS.PERSONAS(idea.title, idea.description, idea.longDescription?.slice(0, 1000));
 
         const response = await this.retryLLMCall(
@@ -37,7 +37,7 @@ export class IdeaStrategyService extends IdeaBaseService {
     /**
      * Stage 10: SWOT & monetization
      */
-    async stageGenerateBusinessStrategy(session: IdeaSession, idea: ProjectIdea): Promise<{ swot: SWOTAnalysis; businessModel: BusinessModel }> {
+    async stageGenerateBusinessStrategy(session: IdeaSession, idea: WorkspaceIdea): Promise<{ swot: SWOTAnalysis; businessModel: BusinessModel }> {
         const prompt = IDEA_PROMPTS.BUSINESS_STRATEGY(idea.title, idea.marketResearch?.targetAudience ?? idea.category);
 
         const response = await this.retryLLMCall(
@@ -56,7 +56,7 @@ export class IdeaStrategyService extends IdeaBaseService {
     /**
      * Stage 11: GTM & first 100 users
      */
-    async stageGenerateGTMPlan(session: IdeaSession, idea: ProjectIdea): Promise<MarketingPlan> {
+    async stageGenerateGTMPlan(session: IdeaSession, idea: WorkspaceIdea): Promise<MarketingPlan> {
         const prompt = IDEA_PROMPTS.GTM_PLAN(idea.title, idea.valueProposition);
 
         const response = await this.retryLLMCall(

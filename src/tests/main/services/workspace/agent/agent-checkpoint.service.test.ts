@@ -5,12 +5,12 @@ import {
     AgentCheckpointTelemetryEvent,
 } from '@main/services/workspace/agent/agent-checkpoint.service';
 import { AgentTaskState } from '@shared/types/agent-state';
-import { ProjectStep } from '@shared/types/project-agent';
+import { WorkspaceStep } from '@shared/types/workspace-agent';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const createMockTaskState = (): AgentTaskState => ({
     taskId: 'task-123',
-    projectId: 'project-123',
+        workspaceId: 'workspace-123',
     description: 'Checkpoint test task',
     state: 'executing',
     currentStep: 2,
@@ -24,10 +24,10 @@ const createMockTaskState = (): AgentTaskState => ({
         dependencies: []
     },
     context: {
-        workspacePath: 'C:/tmp/project',
-        workspaceName: 'project',
+        workspacePath: 'C:/tmp/workspace',
+        workspaceName: 'workspace',
         workspace: {
-            rootPath: 'C:/tmp/project',
+            rootPath: 'C:/tmp/workspace',
             hasGit: true,
             hasDependencies: true
         },
@@ -200,7 +200,7 @@ describe('AgentCheckpointService', () => {
     });
 
     it('creates monotonically increasing plan versions', async () => {
-        const plan: ProjectStep[] = [
+        const plan: WorkspaceStep[] = [
             { id: 's1', text: 'Analyze', status: 'pending' },
             { id: 's2', text: 'Implement', status: 'pending' }
         ];
@@ -227,7 +227,7 @@ describe('AgentCheckpointService', () => {
     });
 
     it('lists plan versions with parsed snapshots', async () => {
-        const plan: ProjectStep[] = [{ id: 's1', text: 'Plan', status: 'pending' }];
+        const plan: WorkspaceStep[] = [{ id: 's1', text: 'Plan', status: 'pending' }];
         mockUac.getPlanVersions.mockResolvedValue([
             {
                 id: 'pv-1',

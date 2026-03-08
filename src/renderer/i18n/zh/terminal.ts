@@ -85,13 +85,13 @@ const sectionData = {
     "copyStripAnsi": "复制（剥离 ANSI）",
     "pastePreview": "粘贴预览",
     "pasteTest": "测试膏",
-    "projectIssuesTabTitle": "项目问题",
-    "projectIssuesTitle": "项目警告和错误",
-    "projectIssuesDescription": "在当前项目中检测到的聚合警告和错误。",
-    "projectIssuesLoading": "正在刷新项目诊断...",
-    "projectIssuesNoProject": "打开一个项目来检查诊断。",
-    "projectIssuesNoIssues": "最新扫描中未检测到警告或错误。",
-    "projectIssuesLoadFailed": "无法加载项目诊断。"
+    "workspaceIssuesTabTitle": "项目问题",
+    "workspaceIssuesTitle": "项目警告和错误",
+    "workspaceIssuesDescription": "在当前项目中检测到的聚合警告和错误。",
+    "workspaceIssuesLoading": "正在刷新项目诊断...",
+    "workspaceIssuesNoWorkspace": "打开一个项目来检查诊断。",
+    "workspaceIssuesNoIssues": "最新扫描中未检测到警告或错误。",
+    "workspaceIssuesLoadFailed": "无法加载项目诊断。"
 };
 
 export default sectionData;

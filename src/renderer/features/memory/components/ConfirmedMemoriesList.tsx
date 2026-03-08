@@ -278,7 +278,7 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
               size="sm"
               onClick={onShare}
               className="h-7 w-7 p-0"
-              title={t('memory.shareToProject')}
+              title={t('memory.shareToWorkspace')}
             >
               <Share2 className="w-3.5 h-3.5" />
             </Button>

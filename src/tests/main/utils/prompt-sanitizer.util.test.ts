@@ -61,7 +61,7 @@ describe('Prompt Security Validation', () => {
     });
 
     it('should allow code examples that look like injections but aren\'t exactly', () => {
-        const safe = 'I am working on a React project.';
+        const safe = 'I am working in a React workspace.';
         expect(validatePromptSafety(safe).safe).toBe(true);
     });
 });

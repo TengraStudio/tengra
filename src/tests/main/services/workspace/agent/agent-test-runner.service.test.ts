@@ -1,5 +1,5 @@
 import { AgentTestRunnerService } from '@main/services/workspace/automation-workflow/agent-test-runner.service';
-import { StepTestConfig, TestCoverageResult, TestRunConfig } from '@shared/types/project-agent';
+import { StepTestConfig, TestCoverageResult, TestRunConfig } from '@shared/types/workspace-agent';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('child_process', () => ({
@@ -85,7 +85,7 @@ describe('AgentTestRunnerService', () => {
                 failOnTestFailure: false,
             };
 
-            const result = await service.runTestsForStep('/project', stepConfig);
+            const result = await service.runTestsForStep('/workspace', stepConfig);
 
             expect(result.success).toBe(true);
             expect(result.totalTests).toBe(0);
@@ -109,7 +109,7 @@ describe('AgentTestRunnerService', () => {
                 coverageEnabled: false,
             };
 
-            const result = await service.runTestsForStep('/project', stepConfig, planConfig);
+            const result = await service.runTestsForStep('/workspace', stepConfig, planConfig);
             expect(result).toBeDefined();
             expect(mockSpawn).toHaveBeenCalled();
         });
@@ -125,7 +125,7 @@ describe('AgentTestRunnerService', () => {
                 timeout: 30000,
             };
 
-            const result = await service.runTests('/project', config);
+            const result = await service.runTests('/workspace', config);
 
             expect(result.success).toBe(true);
             expect(mockSpawn).toHaveBeenCalled();
@@ -139,7 +139,7 @@ describe('AgentTestRunnerService', () => {
                 framework: 'vitest',
             };
 
-            const result = await service.runTests('/project', config);
+            const result = await service.runTests('/workspace', config);
 
             expect(result.success).toBe(false);
             expect(result.failed).toBe(1);
@@ -171,7 +171,7 @@ describe('AgentTestRunnerService', () => {
                 framework: 'jest',
             };
 
-            const result = await service.runTests('/project', config);
+            const result = await service.runTests('/workspace', config);
 
             expect(result.success).toBe(false);
             expect(result.totalTests).toBe(3);
@@ -189,7 +189,7 @@ describe('AgentTestRunnerService', () => {
                 coverageEnabled: true,
             };
 
-            await service.runTests('/project', config);
+            await service.runTests('/workspace', config);
 
             const spawnArgs = mockSpawn.mock.calls[0];
             expect(spawnArgs[1]).toContain('--coverage');
@@ -204,7 +204,7 @@ describe('AgentTestRunnerService', () => {
                 filter: 'myFilter',
             };
 
-            await service.runTests('/project', config);
+            await service.runTests('/workspace', config);
 
             const spawnArgs = mockSpawn.mock.calls[0];
             expect(spawnArgs[1]).toContain('--grep');

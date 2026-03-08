@@ -5,7 +5,7 @@
  * including task structure, node-based canvas types, and domain definitions.
  */
 
-export type UACDomain = 'project' | 'system' | 'web' | 'automation';
+export type UACDomain = 'workspace' | 'system' | 'web' | 'automation';
 
 export type UACStatus = 'idle' | 'scoping' | 'planning' | 'executing' | 'waiting_approval' | 'validating' | 'completed' | 'failed' | 'recovering';
 

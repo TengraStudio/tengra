@@ -24,7 +24,7 @@ interface WorkflowRunnerLike {
 
 const createWorkflowInput = (): Omit<Workflow, 'id' | 'createdAt' | 'updatedAt'> => ({
     name: 'Daily Build',
-    description: 'Run project checks',
+    description: 'Run workspace checks',
     enabled: true,
     triggers: [{ id: 'manual-trigger', type: 'manual', config: {} }],
     steps: [

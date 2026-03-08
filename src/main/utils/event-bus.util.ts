@@ -3,10 +3,10 @@ import { EventEmitter } from 'events';
 import { appLogger } from '@main/logging/logger';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import {
-    ProjectState,
-    ProjectStep,
-    ProjectStepStatus,
-} from '@shared/types/project-agent';
+    WorkspaceState,
+    WorkspaceStep,
+    WorkspaceStepStatus,
+} from '@shared/types/workspace-agent';
 
 export type EventHandler<T = JsonValue> = (data: T) => void | Promise<void>;
 
@@ -54,11 +54,11 @@ export interface AppEvents {
     'app:closing': Record<string, never>;
 
     // Agent events
-    'project:update': ProjectState;
-    'project:step-update': { taskId: string; index: number; status: ProjectStepStatus; message?: string };
-    'project:plan-proposed': { taskId: string; steps: Array<string | Partial<ProjectStep>> };
-    'project:plan-revised': { taskId: string; action: 'add' | 'remove' | 'modify' | 'insert'; index?: number; stepText?: string; reason: string };
-    'project:cost-estimated': { taskId: string; estimate: unknown }; // Replaced any with unknown
+    'workspace:update': WorkspaceState;
+    'workspace:step-update': { taskId: string; index: number; status: WorkspaceStepStatus; message?: string };
+    'workspace:plan-proposed': { taskId: string; steps: Array<string | Partial<WorkspaceStep>> };
+    'workspace:plan-revised': { taskId: string; action: 'add' | 'remove' | 'modify' | 'insert'; index?: number; stepText?: string; reason: string };
+    'workspace:cost-estimated': { taskId: string; estimate: unknown }; // Replaced any with unknown
 
     // Generic
     [key: string]: unknown; // Replaced any with unknown

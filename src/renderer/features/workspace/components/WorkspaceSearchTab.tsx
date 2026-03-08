@@ -2,27 +2,27 @@
 import { SearchResults } from '@renderer/features/workspace/components/SearchResults';
 import { FileSearchResult } from '@shared/types/common';
 
-interface ProjectSearchTabProps {
+interface WorkspaceSearchTabProps {
     searchQuery: string;
     setSearchQuery: (q: string) => void;
     handleSearch: () => Promise<void>;
     isSearching: boolean;
     searchResults: FileSearchResult[];
-    projectRoot: string;
+    workspaceRoot: string;
     handleFileSelect: (path: string, line?: number) => void;
     t: (key: string) => string;
 }
 
-export const ProjectSearchTab = ({
+export const WorkspaceSearchTab = ({
     searchQuery,
     setSearchQuery,
     handleSearch,
     isSearching,
     searchResults,
-    projectRoot,
+    workspaceRoot,
     handleFileSelect,
     t
-}: ProjectSearchTabProps) => {
+}: WorkspaceSearchTabProps) => {
     return (
         <div className="h-full flex flex-col space-y-4">
             <div className="flex gap-2 bg-card p-4 rounded-xl border border-border">
@@ -48,7 +48,7 @@ export const ProjectSearchTab = ({
                 </div>
                 <SearchResults
                     results={searchResults}
-                    projectRoot={projectRoot}
+                    workspaceRoot={workspaceRoot}
                     searchQuery={searchQuery}
                     onSelect={(path, line) => { void handleFileSelect(path, line); }}
                 />

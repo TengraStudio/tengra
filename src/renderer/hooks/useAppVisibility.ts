@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react';
 
 interface VisibilityAwareIntervalOptions {
     /** When true, fully pauses the interval when document is hidden. Defaults to true. */
@@ -22,49 +22,49 @@ export function useVisibilityAwareInterval(
     intervalMs: number,
     options?: VisibilityAwareIntervalOptions
 ): void {
-    const { pauseWhenHidden = true, slowFactor = 3 } = options ?? {}
+    const { pauseWhenHidden = true, slowFactor = 3 } = options ?? {};
 
-    const callbackRef = useRef(callback)
-    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+    const callbackRef = useRef(callback);
+    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     useEffect(() => {
-        callbackRef.current = callback
-    }, [callback])
+        callbackRef.current = callback;
+    }, [callback]);
 
     const clearTimer = useCallback(() => {
         if (timerRef.current !== null) {
-            clearInterval(timerRef.current)
-            timerRef.current = null
+            clearInterval(timerRef.current);
+            timerRef.current = null;
         }
-    }, [])
+    }, []);
 
     const startTimer = useCallback((ms: number) => {
-        clearTimer()
+        clearTimer();
         timerRef.current = setInterval(() => {
-            callbackRef.current()
-        }, ms)
-    }, [clearTimer])
+            callbackRef.current();
+        }, ms);
+    }, [clearTimer]);
 
     useEffect(() => {
-        startTimer(intervalMs)
+        startTimer(intervalMs);
 
         const handleVisibilityChange = () => {
             if (document.hidden) {
-                clearTimer()
+                clearTimer();
                 if (!pauseWhenHidden) {
-                    startTimer(intervalMs * slowFactor)
+                    startTimer(intervalMs * slowFactor);
                 }
             } else {
-                callbackRef.current()
-                startTimer(intervalMs)
+                callbackRef.current();
+                startTimer(intervalMs);
             }
-        }
+        };
 
-        document.addEventListener('visibilitychange', handleVisibilityChange)
+        document.addEventListener('visibilitychange', handleVisibilityChange);
 
         return () => {
-            clearTimer()
-            document.removeEventListener('visibilitychange', handleVisibilityChange)
-        }
-    }, [intervalMs, pauseWhenHidden, slowFactor, startTimer, clearTimer])
+            clearTimer();
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [intervalMs, pauseWhenHidden, slowFactor, startTimer, clearTimer]);
 }

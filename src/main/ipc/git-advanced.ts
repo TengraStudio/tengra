@@ -5,7 +5,7 @@ import { promisify } from 'util';
 
 import { SenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
-import { GitService } from '@main/services/project/git.service';
+import { GitService } from '@main/services/workspace/git.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
 import { getErrorMessage } from '@shared/utils/error.util';

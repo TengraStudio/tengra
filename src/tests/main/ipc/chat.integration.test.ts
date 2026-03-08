@@ -90,7 +90,7 @@ describe('Chat IPC Integration', () => {
         provider: 'openai',
         optionsJson: {},
         chatId: 'chat-1',
-        projectId: 'proj-1',
+        workspaceId: 'proj-1',
         systemMode: 'architect',
         ...(overrides ?? {})
     });
@@ -124,7 +124,7 @@ describe('Chat IPC Integration', () => {
             model: 'gpt-4o',
             tools: [],
             provider: 'openai',
-            projectId: 'proj-1'
+            workspaceId: 'proj-1'
         });
 
 
@@ -154,7 +154,7 @@ describe('Chat IPC Integration', () => {
             model: 'gpt-4o',
             tools: [],
             provider: 'openai',
-            projectId: 'proj-1',
+            workspaceId: 'proj-1',
             systemMode: 'thinking'
         });
 
@@ -192,7 +192,7 @@ describe('Chat IPC Integration', () => {
             model: 'gpt-4o',
             tools: [],
             provider: 'openai',
-            projectId: 'proj-1',
+            workspaceId: 'proj-1',
             systemMode: 'default'
         });
 
@@ -212,7 +212,7 @@ describe('Chat IPC Integration', () => {
             model: 'gpt-4o',
             tools: [],
             provider: 'copilot',
-            projectId: 'proj-1'
+            workspaceId: 'proj-1'
         });
 
 
@@ -237,7 +237,7 @@ describe('Chat IPC Integration', () => {
             model: 'gpt-4o',
             tools: [],
             provider: 'openai',
-            projectId: 'proj-1'
+            workspaceId: 'proj-1'
         });
 
 
@@ -533,7 +533,7 @@ describe('Chat IPC Integration', () => {
         const handler = ipcMainHandlers.get('chat:stream');
         mockLLMService.chatStream.mockReturnValue((async function* () { })());
 
-        await handler?.(mockEvent, createStreamRequest({ projectId: 'proj-1' }));
+        await handler?.(mockEvent, createStreamRequest({ workspaceId: 'proj-1' }));
 
         expect(mockLLMService.chatStream).toHaveBeenCalled();
         expect(mockLLMService.chatStream.mock.calls[0][4]).toEqual(
@@ -546,7 +546,7 @@ describe('Chat IPC Integration', () => {
         const handler = ipcMainHandlers.get('chat:stream');
         mockLLMService.chatStream.mockReturnValue((async function* () { })());
 
-        await handler?.(mockEvent, createStreamRequest({ projectId: undefined }));
+        await handler?.(mockEvent, createStreamRequest({ workspaceId: undefined }));
 
         expect(mockLLMService.chatStream).toHaveBeenCalled();
         expect(mockLLMService.chatStream.mock.calls[0][4]).toEqual(

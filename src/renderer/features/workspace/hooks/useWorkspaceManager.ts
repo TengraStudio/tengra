@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
     EditorTab,
-    Project,
     ServiceResponse,
+    Workspace,
     WorkspaceDashboardTab,
     WorkspaceEntry,
     WorkspaceMount,
@@ -12,7 +12,7 @@ import {
 import { useMountManagement } from './useMountManagement';
 
 interface UseWorkspaceManagerProps {
-    project: Project;
+    workspace: Workspace;
     notify: (type: 'success' | 'error' | 'info', message: string) => void;
     logActivity: (title: string, detail?: string) => void;
     t: (key: string) => string;
@@ -27,38 +27,38 @@ interface FileOpenEntry {
 }
 
 // Helper hook for mount state initialization and sync
-function useMountState(project: Project): [WorkspaceMount[], (mounts: WorkspaceMount[]) => void] {
+function useMountState(workspace: Workspace): [WorkspaceMount[], (mounts: WorkspaceMount[]) => void] {
     const [mounts, setMounts] = useState<WorkspaceMount[]>(() => {
-        if (Array.isArray(project.mounts) && project.mounts.length > 0) {
-            return project.mounts;
+        if (Array.isArray(workspace.mounts) && workspace.mounts.length > 0) {
+            return workspace.mounts;
         }
-        return project.path
-            ? [{ id: `local-${project.id}`, name: 'Local', type: 'local', rootPath: project.path }]
+        return workspace.path
+            ? [{ id: `local-${workspace.id}`, name: 'Local', type: 'local', rootPath: workspace.path }]
             : [];
     });
-    const [prevProjectData, setPrevProjectData] = useState({
-        id: project.id,
-        mounts: project.mounts,
-        path: project.path,
+    const [prevWorkspaceData, setPrevWorkspaceData] = useState({
+        id: workspace.id,
+        mounts: workspace.mounts,
+        path: workspace.path,
     });
 
     // Adjust state during render when props change (React recommended pattern)
     if (
-        project.id !== prevProjectData.id ||
-        project.mounts !== prevProjectData.mounts ||
-        project.path !== prevProjectData.path
+        workspace.id !== prevWorkspaceData.id ||
+        workspace.mounts !== prevWorkspaceData.mounts ||
+        workspace.path !== prevWorkspaceData.path
     ) {
-        setPrevProjectData({ id: project.id, mounts: project.mounts, path: project.path });
+        setPrevWorkspaceData({ id: workspace.id, mounts: workspace.mounts, path: workspace.path });
         const nextMounts: WorkspaceMount[] =
-            Array.isArray(project.mounts) && project.mounts.length > 0
-                ? project.mounts
-                : project.path
+            Array.isArray(workspace.mounts) && workspace.mounts.length > 0
+                ? workspace.mounts
+                : workspace.path
                     ? [
                         {
-                            id: `local-${project.id}`,
+                            id: `local-${workspace.id}`,
                             name: 'Local',
                             type: 'local',
-                            rootPath: project.path,
+                            rootPath: workspace.path,
                         },
                     ]
                     : [];
@@ -467,12 +467,12 @@ interface PersistedTabsState {
     activeTabId: string | null;
 }
 
-const getWorkspaceTabsStorageKey = (projectId: string): string =>
-    `workspace.tabs.state.v1:${projectId}`;
+const getWorkspaceTabsStorageKey = (workspaceId: string): string =>
+    `workspace.tabs.state.v1:${workspaceId}`;
 
-const loadPersistedTabsState = (projectId: string): PersistedTabsState => {
+const loadPersistedTabsState = (workspaceId: string): PersistedTabsState => {
     try {
-        const raw = localStorage.getItem(getWorkspaceTabsStorageKey(projectId));
+        const raw = localStorage.getItem(getWorkspaceTabsStorageKey(workspaceId));
         if (!raw) {
             return { openTabs: [], activeTabId: null };
         }
@@ -486,15 +486,15 @@ const loadPersistedTabsState = (projectId: string): PersistedTabsState => {
     }
 };
 
-function useTabManagement(projectId: string) {
-    const persistedTabsState = useMemo(() => loadPersistedTabsState(projectId), [projectId]);
+function useTabManagement(workspaceId: string) {
+    const persistedTabsState = useMemo(() => loadPersistedTabsState(workspaceId), [workspaceId]);
     const [openTabs, setOpenTabs] = useState<EditorTab[]>(persistedTabsState.openTabs);
     const [activeTabId, setActiveEditorTabId] = useState<string | null>(persistedTabsState.activeTabId);
     const [dashboardTab, setDashboardTab] = useState<WorkspaceDashboardTab>('overview');
-    const [activeProjectId, setActiveProjectId] = useState(projectId);
+    const [activeWorkspaceId, setActiveWorkspaceId] = useState(workspaceId);
 
-    if (activeProjectId !== projectId) {
-        setActiveProjectId(projectId);
+    if (activeWorkspaceId !== workspaceId) {
+        setActiveWorkspaceId(workspaceId);
         setOpenTabs(persistedTabsState.openTabs);
         setActiveEditorTabId(persistedTabsState.activeTabId);
         setDashboardTab(persistedTabsState.activeTabId ? 'editor' : 'overview');
@@ -601,13 +601,13 @@ function useTabManagement(projectId: string) {
 
     useEffect(() => {
         localStorage.setItem(
-            getWorkspaceTabsStorageKey(projectId),
+            getWorkspaceTabsStorageKey(workspaceId),
             JSON.stringify({
                 openTabs,
                 activeTabId,
             } satisfies PersistedTabsState)
         );
-    }, [activeTabId, openTabs, projectId]);
+    }, [activeTabId, openTabs, workspaceId]);
 
     return {
         openTabs,
@@ -635,8 +635,8 @@ function useTabManagement(projectId: string) {
  * - Tab management (open/close/save)
  * - Agent Council configuration
  */
-export function useWorkspaceManager({ project, notify, logActivity, t }: UseWorkspaceManagerProps) {
-    const [mounts, setMounts] = useMountState(project);
+export function useWorkspaceManager({ workspace, notify, logActivity, t }: UseWorkspaceManagerProps) {
+    const [mounts, setMounts] = useMountState(workspace);
     const mountStatus = useMountStatusSync(mounts);
     const { ensureMountReady } = useSSHOperations(notify, mountStatus, t);
     const {
@@ -662,8 +662,8 @@ export function useWorkspaceManager({ project, notify, logActivity, t }: UseWork
         dashboardTab,
         setDashboardTab,
         setOpenTabs,
-    } = useTabManagement(project.id);
-    const [councilEnabled, setCouncilEnabled] = useState(Boolean(project.councilConfig.enabled));
+    } = useTabManagement(workspace.id);
+    const [councilEnabled, setCouncilEnabled] = useState(Boolean(workspace.councilConfig.enabled));
     const {
         persistMounts,
         mountForm,
@@ -672,7 +672,7 @@ export function useWorkspaceManager({ project, notify, logActivity, t }: UseWork
         testConnection,
         pickLocalFolder,
     } = useMountManagement({
-        projectId: project.id,
+        workspaceId: workspace.id,
         mounts,
         setMounts,
         notify,

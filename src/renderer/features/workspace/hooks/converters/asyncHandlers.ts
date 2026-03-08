@@ -3,7 +3,7 @@
  */
 
 import { AgentEventRecord } from '@shared/types/agent-state';
-import { ProjectState } from '@shared/types/project-agent';
+import { WorkspaceState } from '@shared/types/workspace-agent';
 
 import { EventResponse, MessageResponse, StatusResponse, TelemetryResponse } from './taskDetailsProcessor';
 
@@ -14,7 +14,7 @@ export interface IpcInvokeResult {
     error?: string;
 }
 
-const mapProjectStepStatus = (
+const mapWorkspaceStepStatus = (
     status: string | undefined
 ): 'pending' | 'executing' | 'completed' | 'failed' => {
     if (status === 'running') {
@@ -29,7 +29,7 @@ const mapProjectStepStatus = (
     return 'pending';
 };
 
-const mapProjectStatusToUiState = (status: ProjectState['status']): string => {
+const mapWorkspaceStatusToUiState = (status: WorkspaceState['status']): string => {
     if (status === 'waiting_for_approval') {
         return 'waiting_approval';
     }
@@ -39,7 +39,7 @@ const mapProjectStatusToUiState = (status: ProjectState['status']): string => {
     return status;
 };
 
-const buildStatusResponse = (taskId: string, status: ProjectState): StatusResponse => {
+const buildStatusResponse = (taskId: string, status: WorkspaceState): StatusResponse => {
     const runningIndex = status.plan.findIndex(step => step.status === 'running');
     const currentStep = runningIndex >= 0 ? runningIndex : 0;
     const totalSteps = status.plan.length;
@@ -48,14 +48,14 @@ const buildStatusResponse = (taskId: string, status: ProjectState): StatusRespon
         success: true,
         status: {
             taskId: status.taskId ?? taskId,
-            state: mapProjectStatusToUiState(status.status),
+            state: mapWorkspaceStatusToUiState(status.status),
             currentStep,
             totalSteps,
             plan: {
                 steps: status.plan.map((step, index) => ({
                     index,
                     description: step.text,
-                    status: mapProjectStepStatus(step.status),
+                    status: mapWorkspaceStepStatus(step.status),
                 })),
             },
             error: status.lastError ?? null,
@@ -63,7 +63,7 @@ const buildStatusResponse = (taskId: string, status: ProjectState): StatusRespon
     };
 };
 
-const buildMessagesResponse = (status: ProjectState): MessageResponse => {
+const buildMessagesResponse = (status: WorkspaceState): MessageResponse => {
     return {
         success: true,
         messages: status.history.map(message => ({
@@ -128,7 +128,7 @@ export const resumeTaskHandler = async (taskId: string): Promise<IpcInvokeResult
  */
 export const resumeCheckpointHandler = async (checkpointId: string): Promise<IpcInvokeResult> => {
     try {
-        await window.electron.invoke('project:resume-checkpoint', checkpointId);
+        await window.electron.invoke('agent:resume-checkpoint', checkpointId);
         return { success: true };
     } catch (error) {
         window.electron.log.error('Failed to resume checkpoint:', error as Error);

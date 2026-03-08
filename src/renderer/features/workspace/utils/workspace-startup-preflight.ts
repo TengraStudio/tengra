@@ -1,4 +1,6 @@
-import { Project } from '@/types';
+import { WORKSPACE_COMPAT_FILE_VALUES } from '@shared/constants';
+
+import { Workspace } from '@/types';
 
 export type WorkspaceSystemSeverity = 'error' | 'warning' | 'info';
 export type WorkspaceSystemSource = 'mount' | 'git' | 'task' | 'analysis' | 'terminal' | 'policy' | 'security' | 'toolchain';
@@ -44,10 +46,15 @@ export interface WorkspaceStartupPreflightResult {
 interface ToolCheckDefinition {
     id: string;
     command: string;
-    requiredWhen: (projectPath: string) => Promise<boolean>;
+    requiredWhen: (workspacePath: string) => Promise<boolean>;
     missingMessage: string;
     fixAction: string;
 }
+
+const PYTHON_WORKSPACE_FILES = [
+    WORKSPACE_COMPAT_FILE_VALUES.REQUIREMENTS_TXT,
+    WORKSPACE_COMPAT_FILE_VALUES.PY_SINGULAR_TOML
+] as const;
 
 class WorkspaceOperationsOrchestrator {
     private running = 0;
@@ -92,8 +99,15 @@ async function canRunTool(command: string, cwd: string): Promise<boolean> {
     }
 }
 
-async function isToolRequiredForPath(projectPath: string, fileName: string): Promise<boolean> {
-    return window.electron.files.exists(`${projectPath}\\${fileName}`);
+async function isToolRequiredForPath(workspacePath: string, fileName: string): Promise<boolean> {
+    return window.electron.files.exists(`${workspacePath}\\${fileName}`);
+}
+
+async function hasPythonWorkspaceFiles(workspacePath: string): Promise<boolean> {
+    const requiredFiles = await Promise.all(
+        PYTHON_WORKSPACE_FILES.map(fileName => isToolRequiredForPath(workspacePath, fileName))
+    );
+    return requiredFiles.some(Boolean);
 }
 
 function getToolDefinitions(): ToolCheckDefinition[] {
@@ -101,48 +115,46 @@ function getToolDefinitions(): ToolCheckDefinition[] {
         {
             id: 'node',
             command: 'node',
-            requiredWhen: async (projectPath: string) => isToolRequiredForPath(projectPath, 'package.json'),
-            missingMessage: 'Node.js is required for this project.',
+            requiredWhen: async (workspacePath: string) => isToolRequiredForPath(workspacePath, 'package.json'),
+            missingMessage: 'Node.js is required for this workspace.',
             fixAction: 'Install Node.js and ensure "node --version" works in your terminal.',
         },
         {
             id: 'npm',
             command: 'npm',
-            requiredWhen: async (projectPath: string) => isToolRequiredForPath(projectPath, 'package.json'),
-            missingMessage: 'npm is required for this project.',
+            requiredWhen: async (workspacePath: string) => isToolRequiredForPath(workspacePath, 'package.json'),
+            missingMessage: 'npm is required for this workspace.',
             fixAction: 'Install npm (usually with Node.js) and ensure "npm --version" works.',
         },
         {
             id: 'python',
             command: 'python',
-            requiredWhen: async (projectPath: string) =>
-                (await isToolRequiredForPath(projectPath, 'requirements.txt'))
-                || (await isToolRequiredForPath(projectPath, 'pyproject.toml')),
-            missingMessage: 'Python is required for this project.',
+            requiredWhen: hasPythonWorkspaceFiles,
+            missingMessage: 'Python is required for this workspace.',
             fixAction: 'Install Python and ensure "python --version" works in your terminal.',
         },
         {
             id: 'go',
             command: 'go',
-            requiredWhen: async (projectPath: string) => isToolRequiredForPath(projectPath, 'go.mod'),
-            missingMessage: 'Go is required for this project.',
+            requiredWhen: async (workspacePath: string) => isToolRequiredForPath(workspacePath, 'go.mod'),
+            missingMessage: 'Go is required for this workspace.',
             fixAction: 'Install Go and ensure "go version" works in your terminal.',
         },
     ];
 }
 
-async function checkRequiredTools(projectPath: string): Promise<WorkspaceStartupPreflightIssue[]> {
+async function checkRequiredTools(workspacePath: string): Promise<WorkspaceStartupPreflightIssue[]> {
     const definitions = getToolDefinitions();
     const issues: WorkspaceStartupPreflightIssue[] = [];
-    const hasNvm = await isToolRequiredForPath(projectPath, '.nvmrc');
-    const hasPythonVersion = await isToolRequiredForPath(projectPath, '.python-version');
-    const hasToolVersions = await isToolRequiredForPath(projectPath, '.tool-versions');
+    const hasNvm = await isToolRequiredForPath(workspacePath, '.nvmrc');
+    const hasPythonVersion = await isToolRequiredForPath(workspacePath, '.python-version');
+    const hasToolVersions = await isToolRequiredForPath(workspacePath, '.tool-versions');
     for (const definition of definitions) {
-        const required = await definition.requiredWhen(projectPath);
+        const required = await definition.requiredWhen(workspacePath);
         if (!required) {
             continue;
         }
-        const installed = await canRunTool(definition.command, projectPath);
+        const installed = await canRunTool(definition.command, workspacePath);
         if (!installed) {
             issues.push({
                 id: `tool-${definition.id}`,
@@ -154,18 +166,18 @@ async function checkRequiredTools(projectPath: string): Promise<WorkspaceStartup
             });
         }
     }
-    if (await isToolRequiredForPath(projectPath, 'package.json') && !hasNvm && !hasToolVersions) {
+    if (await isToolRequiredForPath(workspacePath, 'package.json') && !hasNvm && !hasToolVersions) {
         issues.push({
             id: 'toolchain-node-unpinned',
             source: 'toolchain',
             severity: 'warning',
-            message: 'Node runtime is not pinned for this project.',
-            fixAction: 'Add .nvmrc or .tool-versions to lock Node version per project.',
+            message: 'Node runtime is not pinned for this workspace.',
+            fixAction: 'Add .nvmrc or .tool-versions to lock the Node version per workspace.',
             blocking: false,
         });
     }
     if (
-        ((await isToolRequiredForPath(projectPath, 'requirements.txt')) || (await isToolRequiredForPath(projectPath, 'pyproject.toml')))
+        await hasPythonWorkspaceFiles(workspacePath)
         && !hasPythonVersion
         && !hasToolVersions
     ) {
@@ -173,7 +185,7 @@ async function checkRequiredTools(projectPath: string): Promise<WorkspaceStartup
             id: 'toolchain-python-unpinned',
             source: 'toolchain',
             severity: 'warning',
-            message: 'Python runtime is not pinned for this project.',
+            message: 'Python runtime is not pinned for this workspace.',
             fixAction: 'Add .python-version or .tool-versions to avoid environment drift.',
             blocking: false,
         });
@@ -191,18 +203,18 @@ function toRisk(findings: string[]): 'low' | 'medium' | 'high' {
     return 'low';
 }
 
-async function deriveOpeningMode(projectPath: string): Promise<'fast' | 'full'> {
+async function deriveOpeningMode(workspacePath: string): Promise<'fast' | 'full'> {
     try {
-        const analysis = await window.electron.workspace.analyzeDirectory(projectPath);
+        const analysis = await window.electron.workspace.analyzeDirectory(workspacePath);
         return analysis.stats.fileCount > 3000 ? 'fast' : 'full';
     } catch {
         return 'fast';
     }
 }
 
-async function buildRunbooks(projectPath: string, project: Project): Promise<WorkspaceRunbook[]> {
+async function buildRunbooks(workspacePath: string, workspace: Workspace): Promise<WorkspaceRunbook[]> {
     const runbooks: WorkspaceRunbook[] = [];
-    const hasPackageJson = await isToolRequiredForPath(projectPath, 'package.json');
+    const hasPackageJson = await isToolRequiredForPath(workspacePath, 'package.json');
     const setupCommand = hasPackageJson ? 'npm install' : '';
     if (setupCommand) {
         runbooks.push({
@@ -212,26 +224,26 @@ async function buildRunbooks(projectPath: string, project: Project): Promise<Wor
             rollbackHint: 'Delete generated dependencies and lock updates if setup introduced regressions.',
         });
     }
-    if (project.buildConfig?.buildCommand) {
-        runbooks.push({ id: 'build', label: 'Build', command: project.buildConfig.buildCommand, rollbackHint: 'Revert build config or generated artifacts to the last known good commit.' });
+    if (workspace.buildConfig?.buildCommand) {
+        runbooks.push({ id: 'build', label: 'Build', command: workspace.buildConfig.buildCommand, rollbackHint: 'Revert build config or generated artifacts to the last known good commit.' });
     }
-    if (project.buildConfig?.testCommand) {
-        runbooks.push({ id: 'test', label: 'Test', command: project.buildConfig.testCommand, rollbackHint: 'Rollback recent source/config changes that introduced failing tests.' });
+    if (workspace.buildConfig?.testCommand) {
+        runbooks.push({ id: 'test', label: 'Test', command: workspace.buildConfig.testCommand, rollbackHint: 'Rollback recent source/config changes that introduced failing tests.' });
     }
-    if (project.devServer?.command) {
-        runbooks.push({ id: 'release', label: 'Release Prep', command: project.devServer.command, rollbackHint: 'Stop release workflow, restore previous deployment config, and rerun validation checks.' });
+    if (workspace.devServer?.command) {
+        runbooks.push({ id: 'release', label: 'Release Prep', command: workspace.devServer.command, rollbackHint: 'Stop release workflow, restore previous deployment config, and rerun validation checks.' });
     }
     return runbooks;
 }
 
-async function collectSecurityPosture(projectPath: string): Promise<WorkspaceSecurityPosture> {
+async function collectSecurityPosture(workspacePath: string): Promise<WorkspaceSecurityPosture> {
     const findings: string[] = [];
-    const hasEnv = await isToolRequiredForPath(projectPath, '.env');
-    const hasEnvLocal = await isToolRequiredForPath(projectPath, '.env.local');
-    const hasPackageJson = await isToolRequiredForPath(projectPath, 'package.json');
-    const hasLock = await isToolRequiredForPath(projectPath, 'package-lock.json')
-        || await isToolRequiredForPath(projectPath, 'pnpm-lock.yaml')
-        || await isToolRequiredForPath(projectPath, 'yarn.lock');
+    const hasEnv = await isToolRequiredForPath(workspacePath, '.env');
+    const hasEnvLocal = await isToolRequiredForPath(workspacePath, '.env.local');
+    const hasPackageJson = await isToolRequiredForPath(workspacePath, 'package.json');
+    const hasLock = await isToolRequiredForPath(workspacePath, 'package-lock.json')
+        || await isToolRequiredForPath(workspacePath, 'pnpm-lock.yaml')
+        || await isToolRequiredForPath(workspacePath, 'yarn.lock');
     if (hasEnv || hasEnvLocal) {
         findings.push('Environment files detected. Ensure sensitive keys are excluded from VCS.');
     }
@@ -245,16 +257,16 @@ async function collectSecurityPosture(projectPath: string): Promise<WorkspaceSec
     };
 }
 
-export async function runWorkspaceStartupPreflight(project: Project): Promise<WorkspaceStartupPreflightResult> {
+export async function runWorkspaceStartupPreflight(workspace: Workspace): Promise<WorkspaceStartupPreflightResult> {
     const issues: WorkspaceStartupPreflightIssue[] = [];
     const fallbackPosture: WorkspaceSecurityPosture = { risk: 'medium', findings: ['Security posture could not be fully evaluated.'], remediatedCount: 0 };
-    if (!project.path) {
+    if (!workspace.path) {
         issues.push({
             id: 'missing-path',
             source: 'mount',
             severity: 'error',
-            message: 'Project path is missing.',
-            fixAction: 'Update project settings and set a valid root path before opening.',
+            message: 'Workspace path is missing.',
+            fixAction: 'Update workspace settings and set a valid root path before opening.',
             blocking: true,
         });
         return {
@@ -267,18 +279,18 @@ export async function runWorkspaceStartupPreflight(project: Project): Promise<Wo
         };
     }
 
-    const pathExists = await window.electron.files.exists(project.path);
+    const pathExists = await window.electron.files.exists(workspace.path);
     if (!pathExists) {
         issues.push({
             id: 'path-not-found',
             source: 'mount',
             severity: 'error',
-            message: `Project path does not exist: ${project.path}`,
-            fixAction: 'Reconnect the drive or update the project path in project settings.',
+            message: `Workspace path does not exist: ${workspace.path}`,
+            fixAction: 'Reconnect the drive or update the workspace path in workspace settings.',
             blocking: true,
         });
     }
-    if (project.mounts.length > 1 && project.mounts.some(mount => mount.name.trim() === '')) {
+    if (workspace.mounts.length > 1 && workspace.mounts.some(mount => mount.name.trim() === '')) {
         issues.push({
             id: 'multi-root-label-missing',
             source: 'mount',
@@ -305,20 +317,20 @@ export async function runWorkspaceStartupPreflight(project: Project): Promise<Wo
     let runbooks: WorkspaceRunbook[] = [];
     let securityPosture = fallbackPosture;
     if (pathExists) {
-        openingMode = await deriveOpeningMode(project.path);
-        runbooks = await buildRunbooks(project.path, project);
-        securityPosture = await collectSecurityPosture(project.path);
-        if (project.advancedOptions?.indexingEnabled === false) {
+        openingMode = await deriveOpeningMode(workspace.path);
+        runbooks = await buildRunbooks(workspace.path, workspace);
+        securityPosture = await collectSecurityPosture(workspace.path);
+        if (workspace.advancedOptions?.indexingEnabled === false) {
             issues.push({
                 id: 'indexing-disabled',
                 source: 'analysis',
                 severity: 'warning',
                 message: 'Background indexing is disabled.',
-                fixAction: 'Enable indexing in project settings for workspace intelligence and navigation.',
+                fixAction: 'Enable indexing in workspace settings for workspace intelligence and navigation.',
                 blocking: false,
             });
         }
-        const gitRepository = await window.electron.git.isRepository(project.path);
+        const gitRepository = await window.electron.git.isRepository(workspace.path);
         if (!gitRepository.success || !gitRepository.isRepository) {
             issues.push({
                 id: 'git-repo-missing',
@@ -329,8 +341,8 @@ export async function runWorkspaceStartupPreflight(project: Project): Promise<Wo
                 blocking: false,
             });
         } else {
-            const branchInfo = await window.electron.git.getBranch(project.path);
-            const status = await window.electron.git.getStatus(project.path);
+            const branchInfo = await window.electron.git.getBranch(workspace.path);
+            const status = await window.electron.git.getStatus(workspace.path);
             if ((branchInfo.branch === 'main' || branchInfo.branch === 'master') && status.changes && status.changes > 0) {
                 issues.push({
                     id: 'policy-main-dirty',
@@ -342,7 +354,7 @@ export async function runWorkspaceStartupPreflight(project: Project): Promise<Wo
                 });
             }
         }
-        issues.push(...(await checkRequiredTools(project.path)));
+        issues.push(...(await checkRequiredTools(workspace.path)));
     }
 
     return {
@@ -364,22 +376,22 @@ function splitCommand(commandLine: string): { command: string; args: string[] } 
 }
 
 export async function executeWorkspaceRunbook(
-    project: Project,
+    workspace: Workspace,
     runbook: WorkspaceRunbook
 ): Promise<WorkspaceRunbookExecutionResult> {
     const timeline = [`Queued ${runbook.label} runbook`];
     const { command, args } = splitCommand(runbook.command);
-    if (!project.path || !command) {
+    if (!workspace.path || !command) {
         return {
             success: false,
             timeline: [...timeline, 'Failed before execution'],
-            output: 'Invalid project path or runbook command.',
+            output: 'Invalid workspace path or runbook command.',
             rollbackHint: runbook.rollbackHint,
         };
     }
     return workspaceOperationsOrchestrator.enqueue(async () => {
         timeline.push(`Started command: ${runbook.command}`);
-        const result = await window.electron.runCommand(command, args, project.path);
+        const result = await window.electron.runCommand(command, args, workspace.path);
         const success = result.code === 0;
         timeline.push(success ? 'Completed successfully' : `Failed with code ${result.code}`);
         return {
@@ -390,13 +402,3 @@ export async function executeWorkspaceRunbook(
         };
     });
 }
-
-export type ProjectSystemSeverity = WorkspaceSystemSeverity;
-export type ProjectSystemSource = WorkspaceSystemSource;
-export type ProjectStartupPreflightIssue = WorkspaceStartupPreflightIssue;
-export type ProjectRunbook = WorkspaceRunbook;
-export type ProjectRunbookExecutionResult = WorkspaceRunbookExecutionResult;
-export type ProjectSecurityPosture = WorkspaceSecurityPosture;
-export type ProjectStartupPreflightResult = WorkspaceStartupPreflightResult;
-export const runProjectStartupPreflight = runWorkspaceStartupPreflight;
-export const executeProjectRunbook = executeWorkspaceRunbook;

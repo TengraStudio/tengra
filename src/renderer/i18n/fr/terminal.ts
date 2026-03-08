@@ -85,13 +85,13 @@ const sectionData = {
     "copyStripAnsi": "Copie (Bande ANSI)",
     "pastePreview": "Coller l'aperçu",
     "pasteTest": "Test de pâte",
-    "projectIssuesTabTitle": "Problèmes du projet",
-    "projectIssuesTitle": "Avertissements et erreurs du projet",
-    "projectIssuesDescription": "Avertissements et erreurs agrégés détectés dans le projet en cours.",
-    "projectIssuesLoading": "Actualisation des diagnostics du projet...",
-    "projectIssuesNoProject": "Ouvrez un projet pour inspecter les diagnostics.",
-    "projectIssuesNoIssues": "Aucun avertissement ou erreur détecté lors de la dernière analyse.",
-    "projectIssuesLoadFailed": "Échec du chargement des diagnostics du projet."
+    "workspaceIssuesTabTitle": "Problèmes du projet",
+    "workspaceIssuesTitle": "Avertissements et erreurs du projet",
+    "workspaceIssuesDescription": "Avertissements et erreurs agrégés détectés dans le projet en cours.",
+    "workspaceIssuesLoading": "Actualisation des diagnostics du projet...",
+    "workspaceIssuesNoWorkspace": "Ouvrez un projet pour inspecter les diagnostics.",
+    "workspaceIssuesNoIssues": "Aucun avertissement ou erreur détecté lors de la dernière analyse.",
+    "workspaceIssuesLoadFailed": "Échec du chargement des diagnostics du projet."
 };
 
 export default sectionData;

@@ -85,13 +85,13 @@ const sectionData = {
     "copyStripAnsi": "نسخ (الشريط ANSI)",
     "pastePreview": "لصق المعاينة",
     "pasteTest": "اختبار لصق",
-    "projectIssuesTabTitle": "قضايا المشروع",
-    "projectIssuesTitle": "تحذيرات وأخطاء المشروع",
-    "projectIssuesDescription": "تم اكتشاف تحذيرات وأخطاء مجمعة عبر المشروع الحالي.",
-    "projectIssuesLoading": "جارٍ تحديث تشخيصات المشروع...",
-    "projectIssuesNoProject": "افتح مشروعًا لفحص التشخيص.",
-    "projectIssuesNoIssues": "لم يتم اكتشاف أي تحذيرات أو أخطاء في الفحص الأخير.",
-    "projectIssuesLoadFailed": "فشل تحميل تشخيصات المشروع."
+    "workspaceIssuesTabTitle": "قضايا المشروع",
+    "workspaceIssuesTitle": "تحذيرات وأخطاء المشروع",
+    "workspaceIssuesDescription": "تم اكتشاف تحذيرات وأخطاء مجمعة عبر المشروع الحالي.",
+    "workspaceIssuesLoading": "جارٍ تحديث تشخيصات المشروع...",
+    "workspaceIssuesNoWorkspace": "افتح مشروعًا لفحص التشخيص.",
+    "workspaceIssuesNoIssues": "لم يتم اكتشاف أي تحذيرات أو أخطاء في الفحص الأخير.",
+    "workspaceIssuesLoadFailed": "فشل تحميل تشخيصات المشروع."
 };
 
 export default sectionData;

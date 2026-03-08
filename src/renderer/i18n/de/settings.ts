@@ -189,6 +189,26 @@ const sectionData = {
         "editPrompt": "Eingabeaufforderung bearbeiten",
         "editMode": "Bearbeitungsmodus",
         "editRun": "Führen Sie Bearbeiten aus"
+    },
+    "storageDashboard": {
+        "title": "Speicherübersicht",
+        "subtitle": "Verfolgen Sie die Datenbanknutzung und die Gesamtzahl der Anwendungsdatensätze.",
+        "loadError": "Speicherstatistiken konnten nicht geladen werden.",
+        "dbSize": "Datenbank",
+        "totalChats": "Chats",
+        "totalMessages": "Nachrichten",
+        "totalWorkspaces": "Arbeitsbereiche"
+    },
+    "databaseSizeDashboard": {
+        "title": "Datenbankgröße",
+        "subtitle": "Schlüsseln Sie die Speichernutzung nach Datensatztyp auf.",
+        "loadError": "Datenbankstatistiken konnten nicht geladen werden.",
+        "dbSize": "Datenbank",
+        "chats": "Chats",
+        "messages": "Nachrichten",
+        "workspaces": "Arbeitsbereiche",
+        "folders": "Ordner",
+        "prompts": "Prompts"
     }
 };
 

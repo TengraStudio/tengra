@@ -1,6 +1,6 @@
 import { MessageBubble } from '@renderer/features/chat/components/MessageBubble';
 import { ChatErrorBanner } from '@renderer/features/workspace/components/workspace/ChatErrorBanner';
-import { AgentTaskHistoryItem } from '@shared/types/project-agent';
+import { AgentTaskHistoryItem } from '@shared/types/workspace-agent';
 import { ArrowLeft, Check, ClipboardList, Play, Users } from 'lucide-react';
 import React from 'react';
 
@@ -13,7 +13,7 @@ import { AppSettings, ChatError, CodexUsage, Message, QuotaResponse } from '@/ty
 const getWorkspaceAgentBridge = () => window.electron.workspaceAgent;
 
 interface AIAssistantSidebarProps {
-    projectId: string;
+    workspaceId: string;
     selectedProvider: string;
     selectedModel: string;
     onSelectModel: (provider: string, model: string) => void;
@@ -49,7 +49,7 @@ interface SessionSummary {
  * - Integrated Model Selection
  */
 export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
-    projectId,
+    workspaceId,
     selectedProvider,
     selectedModel,
     onSelectModel,
@@ -82,8 +82,8 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
         interrupt: '',
     });
 
-    const loadProjectSessions = React.useCallback(async () => {
-        const history = await getWorkspaceAgentBridge().getTaskHistory(projectId);
+    const loadWorkspaceSessions = React.useCallback(async () => {
+        const history = await getWorkspaceAgentBridge().getTaskHistory(workspaceId);
         const mapped = history
             .map(item => ({
                 id: item.id,
@@ -94,14 +94,14 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
             .sort((left, right) => right.updatedAt - left.updatedAt);
         setSessions(mapped);
         setSelectedSessionId(prev => prev || mapped[0]?.id || '');
-    }, [projectId]);
+    }, [workspaceId]);
 
     React.useEffect(() => {
-        void loadProjectSessions();
-    }, [loadProjectSessions]);
+        void loadWorkspaceSessions();
+    }, [loadWorkspaceSessions]);
 
     React.useEffect(() => {
-        const key = `workspace.council.reject.history:${projectId}`;
+        const key = `workspace.council.reject.history:${workspaceId}`;
         try {
             const stored = localStorage.getItem(key);
             if (stored) {
@@ -110,7 +110,7 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
         } catch {
             setRejectionHistory([]);
         }
-    }, [projectId]);
+    }, [workspaceId]);
 
     React.useEffect(() => {
         const loadModeData = async () => {
@@ -304,7 +304,7 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                                 ].slice(0, 30);
                                 setRejectionHistory(nextHistory);
                                 localStorage.setItem(
-                                    `workspace.council.reject.history:${projectId}`,
+                                    `workspace.council.reject.history:${workspaceId}`,
                                     JSON.stringify(nextHistory)
                                 );
                                 void getWorkspaceAgentBridge().council.rejectProposal(
@@ -458,7 +458,7 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                     <button
                         className="w-full rounded-md border border-white/10 px-2 py-1.5 text-xs text-left hover:bg-white/5"
                         onClick={() => {
-                            void loadProjectSessions();
+                            void loadWorkspaceSessions();
                         }}
                     >
                         <Check className="inline-block w-3 h-3 mr-1" />
@@ -470,7 +470,7 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                     </div>
                     <div className="space-y-1">
                         {sessions.length === 0 && (
-                            <div className="text-xs text-muted-foreground px-1">No project sessions yet.</div>
+                            <div className="text-xs text-muted-foreground px-1">No workspace sessions yet.</div>
                         )}
                         {sessions.map(session => (
                             <button

@@ -14,9 +14,6 @@ import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
 import { MemoryService } from '@main/services/llm/memory.service';
-import { DockerService } from '@main/services/project/docker.service';
-import { GitService } from '@main/services/project/git.service';
-import { SSHService } from '@main/services/project/ssh.service';
 import { SecurityService } from '@main/services/security/security.service';
 import { CommandService } from '@main/services/system/command.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
@@ -25,8 +22,11 @@ import { SystemService } from '@main/services/system/system.service';
 import { ClipboardService } from '@main/services/ui/clipboard.service';
 import { NotificationService } from '@main/services/ui/notification.service';
 import { ScreenshotService } from '@main/services/ui/screenshot.service';
+import { DockerService } from '@main/services/workspace/docker.service';
+import { GitService } from '@main/services/workspace/git.service';
+import { SSHService } from '@main/services/workspace/ssh.service';
 import { JsonObject, JsonValue } from '@shared/types/common';
-import { ProjectStep, ProjectStepStatus } from '@shared/types/project-agent';
+import { WorkspaceStep, WorkspaceStepStatus } from '@shared/types/workspace-agent';
 
 export interface InternalToolResult {
     success: boolean;
@@ -152,7 +152,7 @@ export class ToolExecutor {
     private async routeToolCall(name: string, args: JsonObject, context?: ToolExecutionContext): Promise<InternalToolResult> {
         try {
             if (name === 'update_plan_step' || name === 'propose_plan' || name === 'revise_plan') {
-                return await this.handleProjectTool(name, args, context);
+                return await this.handleWorkspaceTool(name, args, context);
             }
 
             const handlers: Partial<Record<string, (toolArgs: JsonObject) => Promise<InternalToolResult>>> = {
@@ -213,16 +213,16 @@ export class ToolExecutor {
         return 'unknown';
     }
 
-    private async handleProjectTool(name: string, args: JsonObject, context?: ToolExecutionContext): Promise<InternalToolResult> {
+    private async handleWorkspaceTool(name: string, args: JsonObject, context?: ToolExecutionContext): Promise<InternalToolResult> {
         const taskId = context?.taskId;
 
         switch (name) {
             case 'update_plan_step': {
                 const index = Number(args['index']);
-                const status = String(args['status']) as ProjectStepStatus;
+                const status = String(args['status']) as WorkspaceStepStatus;
                 const message = args['message'] ? String(args['message']) : undefined;
 
-                this.options.eventBus.emit('project:step-update', { index, status, message, taskId });
+                this.options.eventBus.emit('workspace:step-update', { index, status, message, taskId });
                 return { success: true };
             }
             case 'propose_plan': {
@@ -231,7 +231,7 @@ export class ToolExecutor {
                     return { success: false, error: 'Plan must have at least one step' };
                 }
 
-                this.options.eventBus.emit('project:plan-proposed', {
+                this.options.eventBus.emit('workspace:plan-proposed', {
                     steps: this.normalizeProposedSteps(steps),
                     taskId,
                 });
@@ -252,7 +252,7 @@ export class ToolExecutor {
                     return { success: false, error: `Action '${action}' requires 'index' argument` };
                 }
 
-                this.options.eventBus.emit('project:plan-revised', {
+                this.options.eventBus.emit('workspace:plan-revised', {
                     action,
                     index,
                     stepText,
@@ -262,12 +262,12 @@ export class ToolExecutor {
                 return { success: true, result: { message: `Plan revision '${action}' applied: ${reason}` } };
             }
             default:
-                return { success: false, error: `Unknown project tool: ${name}` };
+                return { success: false, error: `Unknown workspace tool: ${name}` };
         }
     }
 
-    private normalizeProposedSteps(steps: JsonValue[]): Array<string | ProjectStep> {
-        const normalized: Array<string | ProjectStep> = [];
+    private normalizeProposedSteps(steps: JsonValue[]): Array<string | WorkspaceStep> {
+        const normalized: Array<string | WorkspaceStep> = [];
         for (const step of steps) {
             if (typeof step === 'string') {
                 normalized.push(step);
@@ -279,7 +279,7 @@ export class ToolExecutor {
                 if (typeof textValue !== 'string' || textValue.trim().length === 0) {
                     continue;
                 }
-                const normalizedStep: ProjectStep = {
+                const normalizedStep: WorkspaceStep = {
                     id: randomUUID(),
                     text: textValue,
                     status: 'pending',

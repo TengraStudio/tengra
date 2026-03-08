@@ -10,7 +10,7 @@ import {
     DebateReplay,
     DebateSession,
     DebateSide,
-} from '@shared/types/project-agent';
+} from '@shared/types/workspace-agent';
 
 export interface DebateDependencies {
     telemetry?: TelemetryService;

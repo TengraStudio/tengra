@@ -1,7 +1,7 @@
 /**
  * Grid layout for displaying multiple ideas
  */
-import { ProjectIdea } from '@shared/types/ideas';
+import { WorkspaceIdea } from '@shared/types/ideas';
 import { Lightbulb } from 'lucide-react';
 import React from 'react';
 
@@ -10,8 +10,8 @@ import { useTranslation } from '@/i18n';
 import { IdeaCard } from './IdeaCard';
 
 interface IdeaGridProps {
-    ideas: ProjectIdea[]
-    onSelectIdea: (idea: ProjectIdea) => void
+    ideas: WorkspaceIdea[]
+    onSelectIdea: (idea: WorkspaceIdea) => void
 }
 
 export const IdeaGrid: React.FC<IdeaGridProps> = ({ ideas, onSelectIdea }) => {

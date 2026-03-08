@@ -292,7 +292,7 @@ describe('AdvancedMemoryService import/export', () => {
         expect(mocks.updateAdvancedMemory).not.toHaveBeenCalled();
     });
 
-    it('shares memory with another project', async () => {
+    it('shares memory with another workspace', async () => {
         const { service, mocks } = createService();
         const originalMemory = createMemory({
             id: 'm1',

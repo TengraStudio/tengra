@@ -1,11 +1,11 @@
 /**
  * Main Ideas Page component with workflow state machine
  */
-import type { IdeaSession, IdeaSessionConfig, ProjectIdea, ResearchData } from '@shared/types/ideas';
-import type { Project } from '@shared/types/project';
+import type { IdeaSession, IdeaSessionConfig, ResearchData,WorkspaceIdea } from '@shared/types/ideas';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
+import type { Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 import { DeleteConfirmation } from './components/DeleteConfirmation';
@@ -20,12 +20,12 @@ interface IdeasPageProps { language: string; onNavigateToWorkspace?: (workspaceI
 
 interface UseIdeasPageLogicOptions {
     currentSession: IdeaSession | null;
-    ideas: ProjectIdea[];
+    ideas: WorkspaceIdea[];
     createSession: (config: IdeaSessionConfig) => Promise<IdeaSession | null>;
     startResearch: (id: string) => Promise<ResearchData | null>;
     startGeneration: (id: string) => Promise<void>;
     loadIdeas: (id: string) => Promise<void>;
-    approveIdea: (id: string, path: string, name?: string) => Promise<Project | null>;
+    approveIdea: (id: string, path: string, name?: string) => Promise<Workspace | null>;
     rejectIdea: (id: string) => Promise<boolean>;
     archiveIdea: (id: string) => Promise<boolean>;
     onNavigateToWorkspace?: (id: string) => void;
@@ -34,7 +34,7 @@ interface UseIdeasPageLogicOptions {
 const useIdeasPageLogic = (options: UseIdeasPageLogicOptions) => {
     const { currentSession, ideas, createSession, startResearch, startGeneration, loadIdeas, approveIdea, rejectIdea, archiveIdea, onNavigateToWorkspace } = options;
     const [workflowStage, setWorkflowStage] = useWorkflowSync(currentSession);
-    const [selectedIdea, setSelectedIdea] = useState<ProjectIdea | null>(null);
+    const [selectedIdea, setSelectedIdea] = useState<WorkspaceIdea | null>(null);
     const [isRegenerating, setIsRegenerating] = useState(false);
 
     const handleCreateSession = useCallback(async (config: IdeaSessionConfig) => {
@@ -49,16 +49,16 @@ const useIdeasPageLogic = (options: UseIdeasPageLogicOptions) => {
         }
     }, [createSession, startResearch, startGeneration, setWorkflowStage]);
 
-    const handleApprove = useCallback(async (projectPath: string, selectedName?: string) => {
+    const handleApprove = useCallback(async (workspacePath: string, selectedName?: string) => {
         if (!selectedIdea || !currentSession?.id) {
             return;
         }
         try {
-            const project = await approveIdea(selectedIdea.id, projectPath, selectedName);
-            if (project) {
+            const workspace = await approveIdea(selectedIdea.id, workspacePath, selectedName);
+            if (workspace) {
                 setSelectedIdea(null);
                 if (onNavigateToWorkspace) {
-                    onNavigateToWorkspace(project.id);
+                    onNavigateToWorkspace(workspace.id);
                 } else {
                     void loadIdeas(currentSession.id);
                 }

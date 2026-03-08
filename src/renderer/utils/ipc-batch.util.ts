@@ -6,12 +6,11 @@
 import { LinkedAccountInfo } from '@renderer/electron.d';
 import { Folder } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
-import { Workspace } from '@shared/types/project';
 import { ClaudeQuota, CodexUsage, CopilotQuota, QuotaResponse } from '@shared/types/quota';
 import { AppSettings } from '@shared/types/settings';
 import { sanitizeObject } from '@shared/utils/sanitize.util';
 
-import { Chat, Message } from '@/types';
+import type { Chat, Message, Workspace } from '@/types';
 import { IpcValue } from '@/types/common';
 
 export interface BatchRequest {
@@ -153,14 +152,14 @@ export const CommonBatches = {
     async loadDashboardData() {
         const results = await createBatch()
             .add('db:getAllChats')
-            .add('db:getProjects')
+            .add('db:getWorkspaces')
             .add('db:getFolders')
             .add('db:getStats')
             .execute();
 
         return {
             chats: (results.get('db:getAllChats') as Chat[] | undefined) ?? [],
-            workspaces: (results.get('db:getProjects') as Workspace[] | undefined) ?? [],
+            workspaces: (results.get('db:getWorkspaces') as Workspace[] | undefined) ?? [],
             folders: (results.get('db:getFolders') as Folder[] | undefined) ?? [],
             stats: (results.get('db:getStats') as { chatCount: number; messageCount: number; dbSize: number } | undefined) ?? { chatCount: 0, messageCount: 0, dbSize: 0 }
         };

@@ -199,11 +199,8 @@ export interface Services {
     eventBusService: EventBusService;
     marketResearchService: MarketResearchService;
     workspaceScaffoldService: WorkspaceScaffoldService;
-    projectScaffoldService: WorkspaceScaffoldService;
     ideaGeneratorService: IdeaGeneratorService;
-    projectService: WorkspaceService;
     workspaceAgentService: WorkspaceAgentService;
-    projectAgentService: WorkspaceAgentService;
     multiAgentOrchestratorService: MultiAgentOrchestratorService;
     agentRegistryService: AgentRegistryService;
     agentPersistenceService: AgentPersistenceService;
@@ -657,7 +654,7 @@ function registerLazyServices() {
 
     lazyServiceRegistry.register('logoService', async () => {
         const llmService = container.resolve<LLMService>('llmService');
-        const projectService = container.resolve<WorkspaceService>('projectService');
+        const workspaceService = container.resolve<WorkspaceService>('workspaceService');
         const localImageService = container.resolve<LocalImageService>('localImageService');
         const imagePersistenceService =
             container.resolve<ImagePersistenceService>('imagePersistenceService');
@@ -667,7 +664,7 @@ function registerLazyServices() {
         const { LogoService } = await import('@main/services/external/logo.service');
         return new LogoService({
             llmService,
-            workspaceService: projectService,
+            workspaceService: workspaceService,
             localImageService,
             imagePersistenceService,
             authService,
@@ -699,7 +696,6 @@ function registerLazyServices() {
 
 function registerLazyProxies() {
     container.register('workspaceService', () => createLazyServiceProxy('workspaceService'));
-    container.register('projectService', ws => ws, ['workspaceService']); // just pass proxy
     container.register('advancedMemoryService', () => createLazyServiceProxy('advancedMemoryService'));
     container.register('memoryService', () => createLazyServiceProxy('memoryService'));
     container.register('brainService', () => createLazyServiceProxy('brainService'));
@@ -757,11 +753,6 @@ function registerWorkspaceServices() {
     );
     // Logo and Market Research services are now lazy-loaded
     container.register('workspaceScaffoldService', () => new WorkspaceScaffoldService());
-    container.register(
-        'projectScaffoldService',
-        wss => wss as WorkspaceScaffoldService,
-        ['workspaceScaffoldService']
-    );
     container.register('marketResearchService', ws => new MarketResearchService(ws as WebService), [
         'webService',
     ]);
@@ -773,7 +764,7 @@ function registerWorkspaceServices() {
                 databaseService: dbs as DatabaseService,
                 llmService: ls as LLMService,
                 marketResearchService: mrs as MarketResearchService,
-                projectScaffoldService: pss as WorkspaceScaffoldService,
+                workspaceScaffoldService: pss as WorkspaceScaffoldService,
                 authService: as as AuthService,
                 eventBus: ebs as EventBusService,
                 localImageService: lis as LocalImageService,
@@ -863,11 +854,6 @@ function registerWorkspaceServices() {
             'agentPerformanceService',
             'councilService',
         ]
-    );
-    container.register(
-        'projectAgentService',
-        was => was as WorkspaceAgentService,
-        ['workspaceAgentService']
     );
     container.register(
         'multiAgentOrchestratorService',
@@ -1085,7 +1071,6 @@ function buildServicesMap(
         llamaService: container.resolve<LlamaService>('llamaService'),
         huggingFaceService: container.resolve<HuggingFaceService>('huggingFaceService'),
         workspaceService: container.resolve<WorkspaceService>('workspaceService'),
-        projectService: container.resolve<WorkspaceService>('workspaceService'),
         terminalService: container.resolve<TerminalService>('terminalService'),
         inlineSuggestionService: container.resolve<InlineSuggestionService>(
             'inlineSuggestionService'
@@ -1134,7 +1119,6 @@ function buildServicesMap(
         eventBusService: container.resolve<EventBusService>('eventBusService'),
         marketResearchService: container.resolve<MarketResearchService>('marketResearchService'),
         workspaceScaffoldService: container.resolve<WorkspaceScaffoldService>('workspaceScaffoldService'),
-        projectScaffoldService: container.resolve<WorkspaceScaffoldService>('workspaceScaffoldService'),
         ideaGeneratorService: container.resolve<IdeaGeneratorService>('ideaGeneratorService'),
         agentRegistryService: container.resolve<AgentRegistryService>('agentRegistryService'),
         agentPersistenceService:
@@ -1143,7 +1127,6 @@ function buildServicesMap(
         agentPerformanceService:
             container.resolve<AgentPerformanceService>('agentPerformanceService'),
         workspaceAgentService: container.resolve<WorkspaceAgentService>('workspaceAgentService'),
-        projectAgentService: container.resolve<WorkspaceAgentService>('workspaceAgentService'),
         multiAgentOrchestratorService: container.resolve<MultiAgentOrchestratorService>(
             'multiAgentOrchestratorService'
         ),

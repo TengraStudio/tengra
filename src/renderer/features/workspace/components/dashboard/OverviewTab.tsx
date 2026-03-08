@@ -1,15 +1,15 @@
 import React from 'react';
 
 import { Language } from '@/i18n';
-import { Project, ProjectAnalysis, ProjectStats } from '@/types';
+import { Workspace, WorkspaceAnalysis, WorkspaceStats } from '@/types';
 
-import { ProjectOverviewHeader, ProjectStatsCards } from './WorkspaceOverview';
+import { WorkspaceOverviewHeader, WorkspaceStatsCards } from './WorkspaceOverview';
 
 interface OverviewTabProps {
-    project: Project;
-    projectRoot: string;
-    analysis: ProjectAnalysis;
-    stats: ProjectStats | null;
+    workspace: Workspace;
+    workspaceRoot: string;
+    analysis: WorkspaceAnalysis;
+    stats: WorkspaceStats | null;
     loading: boolean;
     t: (key: string) => string;
     language: Language;
@@ -23,14 +23,14 @@ interface OverviewTabProps {
     setEditDesc: (v: string) => void;
     handleSaveName: () => void | Promise<void>;
     handleSaveDesc: () => void | Promise<void>;
-    analyzeProject: () => void | Promise<void>;
+    analyzeWorkspace: () => void | Promise<void>;
     onOpenLogoGenerator?: () => void;
     formatBytes: (bytes: number) => string;
 }
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({
-    project,
-    projectRoot,
+    workspace,
+    workspaceRoot,
     analysis,
     stats,
     loading,
@@ -45,15 +45,15 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     setEditDesc,
     handleSaveName,
     handleSaveDesc,
-    analyzeProject,
+    analyzeWorkspace,
     onOpenLogoGenerator,
     formatBytes
 }) => {
     return (
         <div className="space-y-8 overflow-y-auto pr-2 pb-12 animate-in fade-in duration-500">
-            <ProjectOverviewHeader
-                project={project}
-                projectRoot={projectRoot}
+            <WorkspaceOverviewHeader
+                workspace={workspace}
+                workspaceRoot={workspaceRoot}
                 analysis={analysis}
                 loading={loading}
                 isEditingName={isEditingName}
@@ -66,12 +66,12 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 onSetDesc={setEditDesc}
                 onSaveName={() => { void handleSaveName(); }}
                 onSaveDesc={() => { void handleSaveDesc(); }}
-                onAnalyze={() => { void analyzeProject(); }}
+                onAnalyze={() => { void analyzeWorkspace(); }}
                 onOpenLogoGenerator={onOpenLogoGenerator}
                 t={t}
             />
 
-            <ProjectStatsCards
+            <WorkspaceStatsCards
                 stats={stats}
                 analysis={analysis}
                 t={t}

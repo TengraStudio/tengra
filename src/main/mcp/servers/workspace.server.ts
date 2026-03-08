@@ -51,5 +51,4 @@ export function buildWorkspaceServers(deps: McpDeps): McpService[] {
     ];
 }
 
-/** @deprecated Use buildWorkspaceServers instead */
-export const buildProjectServers = buildWorkspaceServers;
+/** @deprecated Use buildWorkspaceServers instead */

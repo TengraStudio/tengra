@@ -3,7 +3,7 @@ import path from 'path';
 import { registerGitAdvancedIpc } from '@main/ipc/git-advanced';
 import { createMainWindowSenderValidator, SenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
-import { GitService } from '@main/services/project/git.service';
+import { GitService } from '@main/services/workspace/git.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { withRateLimit } from '@main/utils/rate-limiter.util';

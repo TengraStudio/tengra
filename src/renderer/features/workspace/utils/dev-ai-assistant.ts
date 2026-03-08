@@ -73,7 +73,7 @@ function findMatches(content: string, checks: Array<{ rule: RegExp; message: str
 }
 
 export async function runCodeReviewAnalysis(
-    projectPath: string | undefined,
+    workspacePath: string | undefined,
     fileName: string,
     content: string,
     rules: ReviewRuleConfig
@@ -110,9 +110,9 @@ export async function runCodeReviewAnalysis(
     }
 
     const preCommit: string[] = [];
-    if (projectPath) {
+    if (workspacePath) {
         try {
-            const staged = await window.electron.runCommand('git', ['diff', '--cached', '--name-only'], projectPath);
+            const staged = await window.electron.runCommand('git', ['diff', '--cached', '--name-only'], workspacePath);
             const stagedFiles = `${staged.stdout}\n${staged.stderr}`
                 .split('\n')
                 .map(line => line.trim())

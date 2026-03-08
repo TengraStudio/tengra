@@ -52,7 +52,7 @@ interface ViewManagerProps {
 /**
  * Chat component wrapper to isolate hook consumption
  */
-const ChatSection: React.FC<Omit<ViewManagerProps, 'currentView' | 'onNavigateToProject'>> = (props) => (
+const ChatSection: React.FC<Omit<ViewManagerProps, 'currentView' | 'onNavigateToWorkspace'>> = (props) => (
     <ChatViewWrapper {...props} />
 );
 
@@ -61,7 +61,7 @@ const ChatSection: React.FC<Omit<ViewManagerProps, 'currentView' | 'onNavigateTo
  */
 const WorkspaceSection: React.FC<{ language: Language }> = ({ language }) => {
     const {
-        projects: workspaces, selectedProject: selectedWorkspace, setSelectedProject: setSelectedWorkspace,
+        workspaces: workspaces, selectedWorkspace: selectedWorkspace, setSelectedWorkspace: setSelectedWorkspace,
         terminalTabs, activeTerminalId, setTerminalTabs, setActiveTerminalId
     } = useWorkspace();
     const {

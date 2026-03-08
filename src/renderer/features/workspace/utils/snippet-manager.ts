@@ -2,7 +2,7 @@ export interface WorkspaceSnippet {
     id: string;
     name: string;
     language: string;
-    projectKey: string;
+    workspaceKey: string;
     content: string;
     createdAt: number;
 }
@@ -20,7 +20,7 @@ function parseWorkspaceSnippets(raw: string | null): WorkspaceSnippet[] {
                 typeof snippet.id === 'string'
                 && typeof snippet.name === 'string'
                 && typeof snippet.language === 'string'
-                && typeof snippet.projectKey === 'string'
+                && typeof snippet.workspaceKey === 'string'
                 && typeof snippet.content === 'string'
         );
     } catch {
@@ -39,12 +39,12 @@ export function saveWorkspaceSnippets(snippets: WorkspaceSnippet[]): void {
 export function filterWorkspaceSnippets(
     snippets: WorkspaceSnippet[],
     language: string,
-    projectKey: string
+    workspaceKey: string
 ): WorkspaceSnippet[] {
     return snippets.filter(
         snippet =>
             (snippet.language === language || snippet.language === 'all')
-            && (snippet.projectKey === projectKey || snippet.projectKey === 'global')
+            && (snippet.workspaceKey === workspaceKey || snippet.workspaceKey === 'global')
     );
 }
 
@@ -68,17 +68,13 @@ export function parseWorkspaceShareCode(shareCode: string): WorkspaceSnippet | n
             name: snippet.name,
             content: snippet.content,
             language: snippet.language,
-            projectKey: snippet.projectKey || 'global',
+            workspaceKey: snippet.workspaceKey || 'global',
             createdAt: Date.now(),
         };
     } catch {
         return null;
     }
 }
-
-export type ProjectSnippet = WorkspaceSnippet;
-export const loadProjectSnippets = loadWorkspaceSnippets;
-export const saveProjectSnippets = saveWorkspaceSnippets;
 export const filterSnippets = filterWorkspaceSnippets;
 export const createShareCode = createWorkspaceShareCode;
 export const parseShareCode = parseWorkspaceShareCode;

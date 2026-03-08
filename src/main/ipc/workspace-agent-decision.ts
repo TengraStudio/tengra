@@ -1,5 +1,5 @@
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
-import { ProjectAgentService } from '@main/services/project/project-agent.service';
+import { WorkspaceAgentService } from '@main/services/workspace/workspace-agent.service';
 import { createSafeIpcHandler, createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import {
     DebateCitationSchema,
@@ -7,7 +7,7 @@ import {
     DebateSideSchema,
     VotingConfigurationSchema,
     VotingSessionSchema,
-} from '@shared/schemas/project-agent-hardening.schema';
+} from '@shared/schemas/workspace-agent-hardening.schema';
 import type {
     AgentPerformanceMetrics,
     AgentTeamworkAnalytics,
@@ -20,13 +20,13 @@ import type {
     VotingConfiguration,
     VotingSession,
     VotingTemplate,
-} from '@shared/types/project-agent';
+} from '@shared/types/workspace-agent';
 import type { BrowserWindow } from 'electron';
 import { ipcMain } from 'electron';
 import { z } from 'zod';
 
 export function registerWorkspaceAgentDecisionHandlers(
-    projectAgentService: ProjectAgentService,
+    workspaceAgentService: WorkspaceAgentService,
     getMainWindow: () => BrowserWindow | null
 ): void {
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'workspace agent decision workflows');
@@ -40,7 +40,7 @@ export function registerWorkspaceAgentDecisionHandlers(
                 payload: { taskId: string; stepIndex: number; question: string; options: string[] }
             ): Promise<VotingSession | null> => {
                 validateSender(event);
-                return projectAgentService.createVotingSession(
+                return workspaceAgentService.createVotingSession(
                     payload.taskId,
                     payload.stepIndex,
                     payload.question,
@@ -83,7 +83,7 @@ export function registerWorkspaceAgentDecisionHandlers(
                 }
             ): Promise<VotingSession | null> => {
                 validateSender(event);
-                return await projectAgentService.submitVote({
+                return await workspaceAgentService.submitVote({
                     sessionId: payload.sessionId,
                     modelId: payload.modelId,
                     provider: payload.provider,
@@ -113,7 +113,7 @@ export function registerWorkspaceAgentDecisionHandlers(
             'agent:request-votes',
             async (event, payload: { sessionId: string; models: Array<{ provider: string; model: string }> }): Promise<VotingSession | null> => {
                 validateSender(event);
-                return await projectAgentService.requestVotes(payload.sessionId, payload.models);
+                return await workspaceAgentService.requestVotes(payload.sessionId, payload.models);
             },
             {
                 argsSchema: z.tuple([z.object({
@@ -132,7 +132,7 @@ export function registerWorkspaceAgentDecisionHandlers(
             'agent:resolve-voting',
             async (event, sessionId: string): Promise<VotingSession | null> => {
                 validateSender(event);
-                return projectAgentService.resolveVoting(sessionId);
+                return workspaceAgentService.resolveVoting(sessionId);
             },
             {
                 argsSchema: z.tuple([z.string().min(1)]),
@@ -148,7 +148,7 @@ export function registerWorkspaceAgentDecisionHandlers(
             'agent:get-voting-session',
             async (event, sessionId: string): Promise<VotingSession | null> => {
                 validateSender(event);
-                return projectAgentService.getVotingSession(sessionId);
+                return workspaceAgentService.getVotingSession(sessionId);
             },
             {
                 argsSchema: z.tuple([z.string().min(1)]),
@@ -164,7 +164,7 @@ export function registerWorkspaceAgentDecisionHandlers(
             'agent:list-voting-sessions',
             async (event, payload?: { taskId?: string }): Promise<VotingSession[]> => {
                 validateSender(event);
-                return projectAgentService.getVotingSessions(payload?.taskId);
+                return workspaceAgentService.getVotingSessions(payload?.taskId);
             },
             {
                 argsSchema: z.tuple([z.object({ taskId: z.string().optional() }).optional()]),
@@ -183,7 +183,7 @@ export function registerWorkspaceAgentDecisionHandlers(
                 payload: { sessionId: string; finalDecision: string; reason?: string }
             ): Promise<VotingSession | null> => {
                 validateSender(event);
-                return projectAgentService.overrideVotingDecision(
+                return workspaceAgentService.overrideVotingDecision(
                     payload.sessionId,
                     payload.finalDecision,
                     payload.reason
@@ -207,7 +207,7 @@ export function registerWorkspaceAgentDecisionHandlers(
             'agent:get-voting-analytics',
             async (event, payload?: { taskId?: string }): Promise<VotingAnalytics> => {
                 validateSender(event);
-                return projectAgentService.getVotingAnalytics(payload?.taskId);
+                return workspaceAgentService.getVotingAnalytics(payload?.taskId);
             },
             {
                 argsSchema: z.tuple([z.object({ taskId: z.string().optional() }).optional()]),
@@ -222,7 +222,7 @@ export function registerWorkspaceAgentDecisionHandlers(
             'agent:get-voting-config',
             async (event): Promise<VotingConfiguration> => {
                 validateSender(event);
-                return projectAgentService.getVotingConfiguration();
+                return workspaceAgentService.getVotingConfiguration();
             },
             {
                 responseSchema: VotingConfigurationSchema,
@@ -237,7 +237,7 @@ export function registerWorkspaceAgentDecisionHandlers(
             'agent:update-voting-config',
             async (event, patch: Partial<VotingConfiguration>): Promise<VotingConfiguration> => {
                 validateSender(event);
-                return projectAgentService.updateVotingConfiguration(patch);
+                return workspaceAgentService.updateVotingConfiguration(patch);
             },
             {
                 argsSchema: z.tuple([VotingConfigurationSchema.partial()]),
@@ -253,7 +253,7 @@ export function registerWorkspaceAgentDecisionHandlers(
             'agent:list-voting-templates',
             async (event): Promise<VotingTemplate[]> => {
                 validateSender(event);
-                return projectAgentService.getVotingTemplates();
+                return workspaceAgentService.getVotingTemplates();
             },
             {
                 wrapResponse: true
@@ -267,7 +267,7 @@ export function registerWorkspaceAgentDecisionHandlers(
             'agent:build-consensus',
             async (event, outputs: Array<{ modelId: string; provider: string; output: string }>): Promise<ConsensusResult | null> => {
                 validateSender(event);
-                return await projectAgentService.buildConsensus(outputs);
+                return await workspaceAgentService.buildConsensus(outputs);
             },
             {
                 argsSchema: z.tuple([z.array(z.object({ modelId: z.string(), provider: z.string(), output: z.string() }))]),
@@ -285,7 +285,7 @@ export function registerWorkspaceAgentDecisionHandlers(
                 payload: { taskId: string; stepIndex: number; topic: string }
             ): Promise<DebateSession | null> => {
                 validateSender(event);
-                return projectAgentService.createDebateSession(payload.taskId, payload.stepIndex, payload.topic);
+                return workspaceAgentService.createDebateSession(payload.taskId, payload.stepIndex, payload.topic);
             },
             {
                 argsSchema: z.tuple([z.object({
@@ -324,7 +324,7 @@ export function registerWorkspaceAgentDecisionHandlers(
                 }
             ): Promise<DebateSession | null> => {
                 validateSender(event);
-                return projectAgentService.submitDebateArgument(payload);
+                return workspaceAgentService.submitDebateArgument(payload);
             },
             {
                 argsSchema: z.tuple([z.object({
@@ -348,7 +348,7 @@ export function registerWorkspaceAgentDecisionHandlers(
             'agent:resolve-debate-session',
             async (event, sessionId: string): Promise<DebateSession | null> => {
                 validateSender(event);
-                return projectAgentService.resolveDebateSession(sessionId);
+                return workspaceAgentService.resolveDebateSession(sessionId);
             },
             {
                 argsSchema: z.tuple([z.string().min(1)]),
@@ -367,7 +367,7 @@ export function registerWorkspaceAgentDecisionHandlers(
                 payload: { sessionId: string; moderatorId: string; decision: DebateSide | 'balanced'; reason?: string }
             ): Promise<DebateSession | null> => {
                 validateSender(event);
-                return projectAgentService.overrideDebateSession(
+                return workspaceAgentService.overrideDebateSession(
                     payload.sessionId,
                     payload.moderatorId,
                     payload.decision,
@@ -394,7 +394,7 @@ export function registerWorkspaceAgentDecisionHandlers(
             async (event, sessionId: string): Promise<DebateSession | null> => {
                 createMainWindowSenderValidator(getMainWindow, 'debate-session')(event);
                 z.string().parse(sessionId);
-                return projectAgentService.getDebateSession(sessionId);
+                return workspaceAgentService.getDebateSession(sessionId);
             },
             null
         )
@@ -406,7 +406,7 @@ export function registerWorkspaceAgentDecisionHandlers(
             'agent:list-debate-history',
             async (event, payload?: { taskId?: string }): Promise<DebateSession[]> => {
                 validateSender(event);
-                return projectAgentService.getDebateHistory(payload?.taskId);
+                return workspaceAgentService.getDebateHistory(payload?.taskId);
             },
             {
                 argsSchema: z.tuple([z.object({ taskId: z.string().optional() }).optional()]),
@@ -422,7 +422,7 @@ export function registerWorkspaceAgentDecisionHandlers(
             'agent:get-debate-replay',
             async (event, sessionId: string): Promise<DebateReplay | null> => {
                 validateSender(event);
-                return projectAgentService.getDebateReplay(sessionId);
+                return workspaceAgentService.getDebateReplay(sessionId);
             },
             {
                 argsSchema: z.tuple([z.string().min(1)]),
@@ -437,7 +437,7 @@ export function registerWorkspaceAgentDecisionHandlers(
             'agent:generate-debate-summary',
             async (event, sessionId: string): Promise<string | null> => {
                 validateSender(event);
-                return projectAgentService.generateDebateSummary(sessionId);
+                return workspaceAgentService.generateDebateSummary(sessionId);
             },
             {
                 argsSchema: z.tuple([z.string().min(1)]),
@@ -453,7 +453,7 @@ export function registerWorkspaceAgentDecisionHandlers(
             'agent:get-teamwork-analytics',
             async (event): Promise<AgentTeamworkAnalytics | null> => {
                 validateSender(event);
-                return projectAgentService.getTeamworkAnalytics();
+                return workspaceAgentService.getTeamworkAnalytics();
             },
             {
                 argsSchema: z.tuple([z.object({ taskId: z.string().optional() }).optional()]),
@@ -468,7 +468,7 @@ export function registerWorkspaceAgentDecisionHandlers(
             'agent:get-performance-metrics',
             async (event, taskId: string): Promise<AgentPerformanceMetrics | null> => {
                 validateSender(event);
-                return projectAgentService.getPerformanceMetrics(taskId) ?? null;
+                return workspaceAgentService.getPerformanceMetrics(taskId) ?? null;
             },
             {
                 argsSchema: z.tuple([z.string().min(1)]),

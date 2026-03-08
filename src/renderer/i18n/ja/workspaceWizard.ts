@@ -1,12 +1,12 @@
 const sectionData = {
     "title": "プロジェクトウィザード",
-    "localProject": "ローカルプロジェクト",
-    "localProjectDesc": "お使いのコンピュータに新しいプロジェクトを作成します。",
+    "localWorkspace": "ローカルプロジェクト",
+    "localWorkspaceDesc": "お使いのコンピュータに新しいプロジェクトを作成します。",
     "remoteSSH": "リモートSSH",
     "remoteSSHDesc": "リモートサーバーに接続して開発します。",
     "import": "インポート",
     "importDesc": "既存のプロジェクトやフォルダをワークスペースに追加します。",
-    "projectName": "プロジェクト名",
+    "workspaceName": "プロジェクト名",
     "namePlaceholder": "例: CRMダッシュボード",
     "placeholder": {
         "example": "example.com"

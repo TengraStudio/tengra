@@ -1,10 +1,11 @@
-import { Project } from '@shared/types/project';
 import { useCallback, useState } from 'react';
+
+import type { Workspace } from '@/types';
 
 import { DiffStats, GitCommitInfo, GitData, GitFile, Remote, TrackingInfo } from '../components/git/types';
 import { emptyGitData, fetchFullGitData, GitSectionErrors } from '../utils/git-utils';
 
-const useGitOperations = (projectPath: string | undefined, fetchGitData: () => Promise<void>, selectedFile: GitFile | null, setSelectedFile: (file: GitFile | null) => void, loadFileDiff: (filePath: string, staged: boolean) => Promise<void>) => {
+const useGitOperations = (workspacePath: string | undefined, fetchGitData: () => Promise<void>, selectedFile: GitFile | null, setSelectedFile: (file: GitFile | null) => void, loadFileDiff: (filePath: string, staged: boolean) => Promise<void>) => {
     const [commitMessage, setCommitMessage] = useState('');
     const [isCommitting, setIsCommitting] = useState(false);
     const [isPushing, setIsPushing] = useState(false);
@@ -13,9 +14,9 @@ const useGitOperations = (projectPath: string | undefined, fetchGitData: () => P
     const [lastActionError, setLastActionError] = useState<string | null>(null);
 
     const handleStageFile = useCallback(async (filePath: string) => {
-        if (!projectPath) { return; }
+        if (!workspacePath) { return; }
         try {
-            const result = await window.electron.git.stageFile(projectPath, filePath);
+            const result = await window.electron.git.stageFile(workspacePath, filePath);
             if (result.success) {
                 setLastActionError(null);
                 await fetchGitData();
@@ -30,12 +31,12 @@ const useGitOperations = (projectPath: string | undefined, fetchGitData: () => P
             window.electron.log.error('Failed to stage file', e as Error);
             setLastActionError((e as Error).message);
         }
-    }, [projectPath, fetchGitData, selectedFile, loadFileDiff, setSelectedFile]);
+    }, [workspacePath, fetchGitData, selectedFile, loadFileDiff, setSelectedFile]);
 
     const handleUnstageFile = useCallback(async (filePath: string) => {
-        if (!projectPath) { return; }
+        if (!workspacePath) { return; }
         try {
-            const result = await window.electron.git.unstageFile(projectPath, filePath);
+            const result = await window.electron.git.unstageFile(workspacePath, filePath);
             if (result.success) {
                 setLastActionError(null);
                 await fetchGitData();
@@ -50,13 +51,13 @@ const useGitOperations = (projectPath: string | undefined, fetchGitData: () => P
             window.electron.log.error('Failed to unstage file', e as Error);
             setLastActionError((e as Error).message);
         }
-    }, [projectPath, fetchGitData, selectedFile, loadFileDiff, setSelectedFile]);
+    }, [workspacePath, fetchGitData, selectedFile, loadFileDiff, setSelectedFile]);
 
     const handleCheckout = useCallback(async (branch: string) => {
-        if (!projectPath) { return; }
+        if (!workspacePath) { return; }
         setIsCheckingOut(true);
         try {
-            const result = await window.electron.git.checkout(projectPath, branch);
+            const result = await window.electron.git.checkout(workspacePath, branch);
             if (result.success) {
                 setLastActionError(null);
                 await fetchGitData();
@@ -70,13 +71,13 @@ const useGitOperations = (projectPath: string | undefined, fetchGitData: () => P
         } finally {
             setIsCheckingOut(false);
         }
-    }, [projectPath, fetchGitData]);
+    }, [workspacePath, fetchGitData]);
 
     const handleCommit = useCallback(async () => {
-        if (!projectPath || !commitMessage.trim()) { return; }
+        if (!workspacePath || !commitMessage.trim()) { return; }
         setIsCommitting(true);
         try {
-            const result = await window.electron.git.commit(projectPath, commitMessage.trim());
+            const result = await window.electron.git.commit(workspacePath, commitMessage.trim());
             if (result.success) {
                 setLastActionError(null);
                 setCommitMessage('');
@@ -91,13 +92,13 @@ const useGitOperations = (projectPath: string | undefined, fetchGitData: () => P
         } finally {
             setIsCommitting(false);
         }
-    }, [projectPath, commitMessage, fetchGitData]);
+    }, [workspacePath, commitMessage, fetchGitData]);
 
     const handlePush = useCallback(async () => {
-        if (!projectPath) { return; }
+        if (!workspacePath) { return; }
         setIsPushing(true);
         try {
-            const result = await window.electron.git.push(projectPath, 'origin');
+            const result = await window.electron.git.push(workspacePath, 'origin');
             if (result.success) {
                 setLastActionError(null);
                 await fetchGitData();
@@ -111,13 +112,13 @@ const useGitOperations = (projectPath: string | undefined, fetchGitData: () => P
         } finally {
             setIsPushing(false);
         }
-    }, [projectPath, fetchGitData]);
+    }, [workspacePath, fetchGitData]);
 
     const handlePull = useCallback(async () => {
-        if (!projectPath) { return; }
+        if (!workspacePath) { return; }
         setIsPulling(true);
         try {
-            const result = await window.electron.git.pull(projectPath);
+            const result = await window.electron.git.pull(workspacePath);
             if (result.success) {
                 setLastActionError(null);
                 await fetchGitData();
@@ -131,7 +132,7 @@ const useGitOperations = (projectPath: string | undefined, fetchGitData: () => P
         } finally {
             setIsPulling(false);
         }
-    }, [projectPath, fetchGitData]);
+    }, [workspacePath, fetchGitData]);
 
     return {
         commitMessage,
@@ -174,7 +175,7 @@ const createGitSectionStates = (
     changes: { loading, error: errors?.changes ?? null },
 });
 
-export function useGitData(project: Project) {
+export function useGitData(workspace: Workspace) {
     const [gitData, setGitData] = useState<GitData>(emptyGitData);
     const [selectedFile, setSelectedFile] = useState<GitFile | null>(null);
     const [fileDiff, setFileDiff] = useState<{ original: string; modified: string } | null>(null);
@@ -189,11 +190,11 @@ export function useGitData(project: Project) {
     const [sectionStates, setSectionStates] = useState<GitSectionStates>(createGitSectionStates(false));
 
     const fetchGitData = useCallback(async () => {
-        if (!project.path) { return; }
+        if (!workspace.path) { return; }
         setGitData(prev => ({ ...prev, loading: true }));
         setSectionStates(createGitSectionStates(true));
         try {
-            const data = await fetchFullGitData(project.path);
+            const data = await fetchFullGitData(workspace.path);
             if (!data) {
                 setGitData(emptyGitData);
                 setSectionStates(createGitSectionStates(false));
@@ -217,13 +218,13 @@ export function useGitData(project: Project) {
                 changes: 'fetch-failed',
             }));
         }
-    }, [project.path]);
+    }, [workspace.path]);
 
     const loadFileDiff = useCallback(async (filePath: string, staged: boolean) => {
-        if (!project.path) { return; }
+        if (!workspace.path) { return; }
         setLoadingDiff(true);
         try {
-            const result = await window.electron.git.getFileDiff(project.path, filePath, staged);
+            const result = await window.electron.git.getFileDiff(workspace.path, filePath, staged);
             if (result.success) {
                 setFileDiff({ original: result.original, modified: result.modified });
             }
@@ -232,7 +233,7 @@ export function useGitData(project: Project) {
         } finally {
             setLoadingDiff(false);
         }
-    }, [project.path]);
+    }, [workspace.path]);
 
     const handleGitFileSelect = useCallback(async (file: GitFile) => {
         setSelectedFile(file);
@@ -253,13 +254,13 @@ export function useGitData(project: Project) {
         handlePush,
         handlePull,
         lastActionError,
-    } = useGitOperations(project.path, fetchGitData, selectedFile, setSelectedFile, loadFileDiff);
+    } = useGitOperations(workspace.path, fetchGitData, selectedFile, setSelectedFile, loadFileDiff);
 
     const [selectedCommit, setSelectedCommit] = useState<GitCommitInfo | null>(null);
     const [commitDiff, setCommitDiff] = useState<string | null>(null);
 
     const handleCommitSelect = useCallback(async (commit: GitCommitInfo | null) => {
-        if (!project.path) { return; }
+        if (!workspace.path) { return; }
         setSelectedCommit(commit);
         if (!commit) {
             setCommitDiff(null);
@@ -267,7 +268,7 @@ export function useGitData(project: Project) {
         }
         setLoadingDiff(true);
         try {
-            const result = await window.electron.git.getCommitDiff(project.path, commit.hash);
+            const result = await window.electron.git.getCommitDiff(workspace.path, commit.hash);
             if (result.success) {
                 setCommitDiff(result.diff);
             }
@@ -276,7 +277,7 @@ export function useGitData(project: Project) {
         } finally {
             setLoadingDiff(false);
         }
-    }, [project.path]);
+    }, [workspace.path]);
 
     return {
         gitData,

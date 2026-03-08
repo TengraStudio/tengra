@@ -3,17 +3,17 @@ import React from 'react';
 import { Modal } from '@/components/ui/modal';
 import { AnimatePresence } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
-import { Project } from '@/types';
+import { Workspace } from '@/types';
 
-import { isValidProjectDescription, isValidProjectTitle } from './modals/modalValidation';
+import { isValidWorkspaceDescription, isValidWorkspaceTitle } from './modals/modalValidation';
 
-interface ProjectModalsProps {
-    editingProject: Project | null;
-    setEditingProject: (p: Project | null) => void;
-    deletingProject: Project | null;
-    setDeletingProject: (p: Project | null) => void;
-    isArchiving: Project | null;
-    setIsArchiving: (p: Project | null) => void;
+interface WorkspaceModalsProps {
+    editingWorkspace: Workspace | null;
+    setEditingWorkspace: (p: Workspace | null) => void;
+    deletingWorkspace: Workspace | null;
+    setDeletingWorkspace: (p: Workspace | null) => void;
+    isArchiving: Workspace | null;
+    setIsArchiving: (p: Workspace | null) => void;
     isBulkDeleting: boolean;
     setIsBulkDeleting: (b: boolean) => void;
     isBulkArchiving: boolean;
@@ -28,17 +28,17 @@ interface ProjectModalsProps {
                 description: string;
             })
     ) => void;
-    handleUpdateProject: () => Promise<boolean>;
-    handleDeleteProject: (deleteFiles: boolean) => Promise<void>;
-    handleArchiveProject: () => Promise<void>;
+    handleUpdateWorkspace: () => Promise<boolean>;
+    handleDeleteWorkspace: (deleteFiles: boolean) => Promise<void>;
+    handleArchiveWorkspace: () => Promise<void>;
     handleBulkDelete: (deleteFiles: boolean) => Promise<void>;
     handleBulkArchive: (isArchived: boolean) => Promise<void>;
     bulkArchiveMode?: 'archive' | 'restore';
     t: (key: string) => string;
 }
 
-const EditProjectModal: React.FC<{
-    project: Project | null;
+const EditWorkspaceModal: React.FC<{
+    workspace: Workspace | null;
     onClose: () => void;
     form: { title: string; description: string };
     setForm: (
@@ -51,21 +51,21 @@ const EditProjectModal: React.FC<{
     ) => void;
     onSubmit: () => Promise<boolean>;
     t: (key: string) => string;
-}> = ({ project, onClose, form, setForm, onSubmit, t }) => {
-    const hasValidTitle = isValidProjectTitle(form.title);
-    const hasValidDescription = isValidProjectDescription(form.description);
+}> = ({ workspace, onClose, form, setForm, onSubmit, t }) => {
+    const hasValidTitle = isValidWorkspaceTitle(form.title);
+    const hasValidDescription = isValidWorkspaceDescription(form.description);
     const [isSaving, setIsSaving] = React.useState(false);
     const rollbackRef = React.useRef(form);
 
     React.useEffect(() => {
-        if (project) {
+        if (workspace) {
             rollbackRef.current = {
-                title: project.title,
-                description: project.description,
+                title: workspace.title,
+                description: workspace.description,
             };
             setIsSaving(false);
         }
-    }, [project]);
+    }, [workspace]);
 
     const handleSubmit = async () => {
         if (!hasValidTitle || isSaving) {
@@ -84,8 +84,8 @@ const EditProjectModal: React.FC<{
 
     return (
         <AnimatePresence>
-            {project && (
-                <Modal isOpen={!!project} onClose={onClose} title={t('workspaces.editWorkspace')}>
+            {workspace && (
+                <Modal isOpen={!!workspace} onClose={onClose} title={t('workspaces.editWorkspace')}>
                     <div className="space-y-4 pt-2">
                         <div className="space-y-2">
                             <label className="text-xs font-medium text-muted-foreground uppercase">
@@ -153,28 +153,28 @@ const EditProjectModal: React.FC<{
     );
 };
 
-const DeleteProjectModal: React.FC<{
-    project: Project | null;
+const DeleteWorkspaceModal: React.FC<{
+    workspace: Workspace | null;
     onClose: () => void;
     onSubmit: (deleteFiles: boolean) => Promise<void>;
     t: (key: string) => string;
-}> = ({ project, onClose, onSubmit, t }) => {
+}> = ({ workspace, onClose, onSubmit, t }) => {
     const [deleteFiles, setDeleteFiles] = React.useState(false);
     React.useEffect(() => {
-        if (!project) {
+        if (!workspace) {
             setDeleteFiles(false);
         }
-    }, [project]);
+    }, [workspace]);
 
     return (
         <AnimatePresence>
-            {project && (
-                <Modal isOpen={!!project} onClose={onClose} title={t('workspaces.deleteWorkspace')}>
+            {workspace && (
+                <Modal isOpen={!!workspace} onClose={onClose} title={t('workspaces.deleteWorkspace')}>
                     <div className="space-y-4 pt-2">
                         <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
                             <p className="text-sm text-destructive">
                                 {t('workspaces.deleteConfirmation')}{' '}
-                                <span className="font-bold text-foreground">{project.title}</span>?
+                                <span className="font-bold text-foreground">{workspace.title}</span>?
                                 <span className="block mt-1 text-xs text-destructive/70 font-medium italic">
                                     {t('workspaces.deleteWarning')}
                                 </span>
@@ -208,26 +208,26 @@ const DeleteProjectModal: React.FC<{
     );
 };
 
-const ArchiveProjectModal: React.FC<{
-    project: Project | null;
+const ArchiveWorkspaceModal: React.FC<{
+    workspace: Workspace | null;
     onClose: () => void;
     onSubmit: () => Promise<void>;
     t: (key: string) => string;
-}> = ({ project, onClose, onSubmit, t }) => (
+}> = ({ workspace, onClose, onSubmit, t }) => (
     <AnimatePresence>
-        {project && (
-            <Modal isOpen={!!project} onClose={onClose} title={t('workspaces.archiveWorkspace')}>
+        {workspace && (
+            <Modal isOpen={!!workspace} onClose={onClose} title={t('workspaces.archiveWorkspace')}>
                 <div className="space-y-4 pt-2">
                     <div className="p-3 rounded-lg bg-success/10 border border-success/20">
                         <p className="text-sm text-success/90 leading-relaxed font-light">
-                            {project.status === 'archived'
+                            {workspace.status === 'archived'
                                 ? t('workspaces.restoreConfirmation') || 'Restore'
                                 : t('workspaces.archiveConfirmation')}{' '}
-                            <span className="font-semibold text-foreground">{project.title}</span>?
+                            <span className="font-semibold text-foreground">{workspace.title}</span>?
                             <span className="block mt-1 text-xs text-success font-normal italic opacity-80">
-                                {project.status === 'archived'
+                                {workspace.status === 'archived'
                                     ? t('workspaces.restoreWarning') ||
-                                    'This will move the project back to active.'
+                                    'This will move the workspace back to active.'
                                     : t('workspaces.archiveWarning')}
                             </span>
                         </p>
@@ -245,7 +245,7 @@ const ArchiveProjectModal: React.FC<{
                             }}
                             className="px-6 py-2 rounded-lg text-sm font-medium bg-success text-foreground hover:bg-success active:scale-95 transition-all shadow-lg shadow-emerald-900/20"
                         >
-                            {project.status === 'archived'
+                            {workspace.status === 'archived'
                                 ? t('common.unarchive') || 'Unarchive'
                                 : t('workspaces.archiveWorkspace')}
                         </button>
@@ -274,13 +274,13 @@ const BulkArchiveModal: React.FC<{
                                 ? t('workspaces.restoreConfirmation') || 'Restore'
                                 : t('workspaces.archiveConfirmation')}{' '}
                             <span className="font-semibold text-foreground">
-                                {count} {t('sidebar.projects').toLowerCase()}
+                                {count} {t('sidebar.workspaces').toLowerCase()}
                             </span>
                             ?
                             <span className="block mt-1 text-xs text-success font-normal italic opacity-80">
                                 {mode === 'restore'
                                     ? t('workspaces.restoreWarning') ||
-                                    'This will move selected projects back to active.'
+                                    'This will move selected workspaces back to active.'
                                     : t('workspaces.archiveWarning')}
                             </span>
                         </p>
@@ -332,7 +332,7 @@ const BulkDeleteModal: React.FC<{
                             <p className="text-sm text-destructive/90 leading-relaxed font-light">
                                 {t('workspaces.deleteConfirmation')}{' '}
                                 <span className="font-semibold text-foreground">
-                                    {count} {t('sidebar.projects').toLowerCase()}
+                                    {count} {t('sidebar.workspaces').toLowerCase()}
                                 </span>
                                 ?
                                 <span className="block mt-1 text-xs text-destructive/70 font-normal italic opacity-80">
@@ -407,11 +407,11 @@ const DeleteFilesCheckbox: React.FC<{
     </label>
 );
 
-export const ProjectModals: React.FC<ProjectModalsProps> = ({
-    editingProject,
-    setEditingProject,
-    deletingProject,
-    setDeletingProject,
+export const WorkspaceModals: React.FC<WorkspaceModalsProps> = ({
+    editingWorkspace,
+    setEditingWorkspace,
+    deletingWorkspace,
+    setDeletingWorkspace,
     isArchiving,
     setIsArchiving,
     isBulkDeleting,
@@ -421,33 +421,33 @@ export const ProjectModals: React.FC<ProjectModalsProps> = ({
     selectedCount,
     editForm,
     setEditForm,
-    handleUpdateProject,
-    handleDeleteProject,
-    handleArchiveProject,
+    handleUpdateWorkspace,
+    handleDeleteWorkspace,
+    handleArchiveWorkspace,
     handleBulkDelete,
     handleBulkArchive,
     bulkArchiveMode = 'archive',
     t,
 }) => (
     <>
-        <EditProjectModal
-            project={editingProject}
-            onClose={() => setEditingProject(null)}
+        <EditWorkspaceModal
+            workspace={editingWorkspace}
+            onClose={() => setEditingWorkspace(null)}
             form={editForm}
             setForm={setEditForm}
-            onSubmit={handleUpdateProject}
+            onSubmit={handleUpdateWorkspace}
             t={t}
         />
-        <DeleteProjectModal
-            project={deletingProject}
-            onClose={() => setDeletingProject(null)}
-            onSubmit={handleDeleteProject}
+        <DeleteWorkspaceModal
+            workspace={deletingWorkspace}
+            onClose={() => setDeletingWorkspace(null)}
+            onSubmit={handleDeleteWorkspace}
             t={t}
         />
-        <ArchiveProjectModal
-            project={isArchiving}
+        <ArchiveWorkspaceModal
+            workspace={isArchiving}
             onClose={() => setIsArchiving(null)}
-            onSubmit={handleArchiveProject}
+            onSubmit={handleArchiveWorkspace}
             t={t}
         />
         <BulkArchiveModal
@@ -466,44 +466,4 @@ export const ProjectModals: React.FC<ProjectModalsProps> = ({
             t={t}
         />
     </>
-);
-
-// Workspace alias for the new naming convention
-export const WorkspaceModals: React.FC<{
-    editingProject: Project | null;
-    setEditingProject: (p: Project | null) => void;
-    deletingProject: Project | null;
-    setDeletingProject: (p: Project | null) => void;
-    isArchiving: Project | null;
-    setIsArchiving: (p: Project | null) => void;
-    isBulkDeleting: boolean;
-    setIsBulkDeleting: (b: boolean) => void;
-    isBulkArchiving: boolean;
-    setIsBulkArchiving: (b: boolean) => void;
-    selectedCount: number;
-    editForm: { title: string; description: string };
-    setEditForm: ProjectModalsProps['setEditForm'];
-    handleUpdateWorkspace: () => Promise<boolean>;
-    handleDeleteWorkspace: (deleteFiles: boolean) => Promise<void>;
-    handleArchiveWorkspace: () => Promise<void>;
-    handleBulkDelete: (deleteFiles: boolean) => Promise<void>;
-    handleBulkArchive: (isArchived: boolean) => Promise<void>;
-    bulkArchiveMode?: 'archive' | 'restore';
-    t: (key: string) => string;
-}> = ({
-    setEditingProject,
-    setDeletingProject,
-    handleUpdateWorkspace,
-    handleDeleteWorkspace,
-    handleArchiveWorkspace,
-    ...props
-}) => (
-    <ProjectModals
-        {...props}
-        setEditingProject={setEditingProject}
-        setDeletingProject={setDeletingProject}
-        handleUpdateProject={handleUpdateWorkspace}
-        handleDeleteProject={handleDeleteWorkspace}
-        handleArchiveProject={handleArchiveWorkspace}
-    />
 );

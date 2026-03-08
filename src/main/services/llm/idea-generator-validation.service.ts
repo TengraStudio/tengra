@@ -1,8 +1,8 @@
 import { CatchError } from '@shared/types/common';
-import { IdeaCategory, ProjectIdea } from '@shared/types/ideas';
+import { IdeaCategory, WorkspaceIdea } from '@shared/types/ideas';
 
 export class IdeaGeneratorValidationService {
-    isTitleTooSimilar(newTitle: string, existingIdeas: ProjectIdea[]): boolean {
+    isTitleTooSimilar(newTitle: string, existingIdeas: WorkspaceIdea[]): boolean {
         const normalizedNew = newTitle.toLowerCase().trim();
 
         for (const existing of existingIdeas) {
@@ -38,7 +38,7 @@ export class IdeaGeneratorValidationService {
 
     isIdeaTooSimilar(
         newIdea: { title: string; description: string },
-        existingIdeas: ProjectIdea[]
+        existingIdeas: WorkspaceIdea[]
     ): boolean {
         if (this.isTitleTooSimilar(newIdea.title, existingIdeas)) {
             return true;
@@ -81,7 +81,7 @@ export class IdeaGeneratorValidationService {
         return false;
     }
 
-    buildPreviousIdeasContext(ideas: ProjectIdea[], currentCategories: IdeaCategory[]): string {
+    buildPreviousIdeasContext(ideas: WorkspaceIdea[], currentCategories: IdeaCategory[]): string {
         if (ideas.length === 0) {
             return '';
         }

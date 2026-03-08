@@ -1,4 +1,5 @@
 import { appLogger } from '@main/logging/logger';
+import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { JsonObject } from '@shared/types/common';
 import { DatabaseAdapter, SqlValue } from '@shared/types/database';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -7,6 +8,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { Chat, SearchChatsOptions } from '../database.service';
 
 import { BaseRepository } from './base.repository';
+
+const WORKSPACE_COMPAT_ID_COLUMN = WORKSPACE_COMPAT_SCHEMA_VALUES.ID_COLUMN;
 
 export class ChatRepository extends BaseRepository {
     constructor(adapter: DatabaseAdapter) {
@@ -21,7 +24,7 @@ export class ChatRepository extends BaseRepository {
             await this.adapter.prepare(`
                 INSERT INTO chats(
                     id, title, is_Generating, backend, model,
-                    folder_id, project_id, is_pinned, is_favorite,
+                    folder_id, ${WORKSPACE_COMPAT_ID_COLUMN}, is_pinned, is_favorite,
                     metadata, created_at, updated_at
                 ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `).run(...chatData);
@@ -65,7 +68,7 @@ export class ChatRepository extends BaseRepository {
         const params: SqlValue[] = [];
 
         if (workspaceId) {
-            sql += ' WHERE project_id = ?';
+            sql += ` WHERE ${WORKSPACE_COMPAT_ID_COLUMN} = ?`;
             params.push(workspaceId);
         }
 
@@ -97,7 +100,7 @@ export class ChatRepository extends BaseRepository {
         this.addFieldUpdating(fields, values, 'backend', updates.backend);
         this.addFieldUpdating(fields, values, 'model', updates.model);
         this.addFieldUpdating(fields, values, 'folder_id', updates.folderId);
-        this.addFieldUpdating(fields, values, 'project_id', updates.workspaceId);
+        this.addFieldUpdating(fields, values, WORKSPACE_COMPAT_ID_COLUMN, updates.workspaceId);
 
         if (updates.isGenerating !== undefined) {
             fields.push('is_Generating = ?');
@@ -257,7 +260,7 @@ export class ChatRepository extends BaseRepository {
             isPinned: Boolean(row.is_pinned),
             isFavorite: Boolean(row.is_favorite),
             folderId: row.folder_id as string | undefined,
-            workspaceId: row.project_id as string | undefined,
+            workspaceId: row[WORKSPACE_COMPAT_ID_COLUMN] as string | undefined,
             isGenerating: Boolean(row.is_Generating),
             metadata: this.parseJsonField(row.metadata as string, {})
         };

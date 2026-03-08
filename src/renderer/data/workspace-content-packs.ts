@@ -74,7 +74,7 @@ export const troubleshootKnowledgeBase: TroubleshootEntry[] = [
         id: 'workspace-permission-denied',
         signature: 'Permission denied',
         fixCommand: 'sudo chown -R $USER:$USER <path>',
-        docsLink: 'docs/PROJECT_WORKSPACE_SHORTCUTS_EDITOR_FEATURES.md',
+        docsLink: 'docs/WORKSPACE_SHORTCUTS_EDITOR_FEATURES.md',
     },
 ];
 

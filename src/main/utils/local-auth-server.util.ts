@@ -35,15 +35,13 @@ export interface AuthTokenData {
 }
 
 /**
- * Represents the full callback data including user and workspace context.
+ * Represents the full callback data including user context.
  */
 export interface AuthCallbackData extends AuthTokenData {
     /** User's email address if available from id_token or profile */
     email?: string;
     /** Provider-specific account type */
     type?: string;
-    /** Associated workspace ID */
-    project_id?: string;
 }
 
 interface ClaudeCallbackParams {

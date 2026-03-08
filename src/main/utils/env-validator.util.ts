@@ -67,7 +67,7 @@ export function validateEnvironmentVariables(envExamplePath?: string): Validatio
         warnings: [],
     };
 
-    // Default to .env.example in project root
+    // Default to .env.example in the repository root
     const examplePath = envExamplePath ?? path.join(process.cwd(), '.env.example');
 
     // Check if .env.example exists

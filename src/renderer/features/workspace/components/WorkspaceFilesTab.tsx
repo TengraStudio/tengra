@@ -13,7 +13,7 @@ interface OpenFile {
     initialLine?: number;
 }
 
-interface ProjectFilesTabProps {
+interface WorkspaceFilesTabProps {
     openFiles: OpenFile[];
     activeFile: string | null;
     setActiveFile: (path: string | null) => void;
@@ -21,11 +21,11 @@ interface ProjectFilesTabProps {
     closeFile: (e: React.MouseEvent, path: string) => void;
     activeFileObj?: OpenFile;
     selectedFolder: string | null;
-    projectRoot: string;
+    workspaceRoot: string;
     t: (key: string) => string;
 }
 
-export const ProjectFilesTab = ({
+export const WorkspaceFilesTab = ({
     openFiles,
     activeFile,
     setActiveFile,
@@ -33,9 +33,9 @@ export const ProjectFilesTab = ({
     closeFile,
     activeFileObj,
     selectedFolder,
-    projectRoot,
+    workspaceRoot,
     t
-}: ProjectFilesTabProps) => {
+}: WorkspaceFilesTabProps) => {
     return (
         <div className="h-full flex gap-4 transition-all duration-300">
             <div className="flex-1 bg-card rounded-xl border border-border/50 flex flex-col overflow-hidden min-w-0">
@@ -79,7 +79,7 @@ export const ProjectFilesTab = ({
                 )}
             </div>
             <div className={cn("w-80 flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden border-l border-border/50", selectedFolder ? "opacity-100 mr-0" : "opacity-0 w-0 border-0 pointer-events-none")}>
-                <FolderInspector folderPath={selectedFolder} rootPath={projectRoot} />
+                <FolderInspector folderPath={selectedFolder} rootPath={workspaceRoot} />
             </div>
         </div>
     );

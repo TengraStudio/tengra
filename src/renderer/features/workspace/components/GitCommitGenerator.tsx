@@ -6,18 +6,18 @@ import { useTranslation } from '@/i18n';
 import { appLogger } from '@/utils/renderer-logger';
 
 interface GitCommitGeneratorProps {
-    projectPath?: string;
+    workspacePath?: string;
     onClose?: () => void;
 }
 
 interface HeaderProps {
     t: (key: string) => string;
     isLoading: boolean;
-    projectPath: string | undefined;
+    workspacePath: string | undefined;
     onFetch: () => void;
 }
 
-const GeneratorHeader = ({ t, isLoading, projectPath, onFetch }: HeaderProps) => (
+const GeneratorHeader = ({ t, isLoading, workspacePath, onFetch }: HeaderProps) => (
     <div className="flex items-center gap-3 p-4 border-b border-white/5 bg-gradient-to-r from-success/10 to-success-light/10">
         <div className="p-2 rounded-xl bg-success/20 border border-success/30">
             <GitCommit size={20} className="text-success" />
@@ -28,7 +28,7 @@ const GeneratorHeader = ({ t, isLoading, projectPath, onFetch }: HeaderProps) =>
         </div>
         <button
             onClick={onFetch}
-            disabled={isLoading || !projectPath}
+            disabled={isLoading || !workspacePath}
             className="flex items-center gap-2 px-3 py-2 rounded-lg bg-success/20 border border-success/30 text-success text-sm font-medium disabled:opacity-50"
         >
             {isLoading ? <RefreshCw size={16} className="animate-spin" /> : <Sparkles size={16} />}
@@ -72,7 +72,7 @@ const SuggestionArea = ({
     </div>
 );
 
-export function GitCommitGenerator({ projectPath, onClose }: GitCommitGeneratorProps) {
+export function GitCommitGenerator({ workspacePath, onClose }: GitCommitGeneratorProps) {
     const { t } = useTranslation();
     const [diff, setDiff] = useState<string>('');
     const [suggestion, setSuggestion] = useState<string>('');
@@ -81,7 +81,7 @@ export function GitCommitGenerator({ projectPath, onClose }: GitCommitGeneratorP
     const [error, setError] = useState<string | null>(null);
 
     const fetchStagedDiff = async () => {
-        if (!projectPath) {
+        if (!workspacePath) {
             return;
         }
         setIsLoading(true);
@@ -90,7 +90,7 @@ export function GitCommitGenerator({ projectPath, onClose }: GitCommitGeneratorP
             const result = await window.electron.runCommand(
                 'git',
                 ['diff', '--staged'],
-                projectPath
+                workspacePath
             );
             if (result.stderr && !result.stdout) {
                 setError(t('git.noStagedChanges'));
@@ -152,14 +152,14 @@ export function GitCommitGenerator({ projectPath, onClose }: GitCommitGeneratorP
     };
 
     const executeCommit = async () => {
-        if (!projectPath || !suggestion) {
+        if (!workspacePath || !suggestion) {
             return;
         }
         try {
             const result = await window.electron.runCommand(
                 'git',
                 ['commit', '-m', suggestion],
-                projectPath
+                workspacePath
             );
             if (result.stderr && !result.stdout) {
                 setError(result.stderr);
@@ -176,7 +176,7 @@ export function GitCommitGenerator({ projectPath, onClose }: GitCommitGeneratorP
             <GeneratorHeader
                 t={t}
                 isLoading={isLoading}
-                projectPath={projectPath}
+                workspacePath={workspacePath}
                 onFetch={() => {
                     void fetchStagedDiff();
                 }}
@@ -187,7 +187,7 @@ export function GitCommitGenerator({ projectPath, onClose }: GitCommitGeneratorP
                         {error}
                     </div>
                 )}
-                {!projectPath && (
+                {!workspacePath && (
                     <div className="text-center py-8 text-muted-foreground text-sm">
                         {t('git.selectWorkspace')}
                     </div>

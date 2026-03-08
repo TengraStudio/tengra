@@ -18,7 +18,7 @@ describe('SidebarNavigation', () => {
             />
         );
 
-        expect(screen.getByRole('navigation', { name: 'Sidebar navigation' })).toBeInTheDocument();
+        expect(screen.getByRole('navigation', { name: 'aria.sidebarNavigation' })).toBeInTheDocument();
     });
 
     it('triggers view change on item click', () => {
@@ -34,7 +34,7 @@ describe('SidebarNavigation', () => {
             />
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'sidebar.projects' }));
-        expect(onChangeView).toHaveBeenCalledWith('projects');
+        fireEvent.click(screen.getByRole('button', { name: 'sidebar.workspaces' }));
+        expect(onChangeView).toHaveBeenCalledWith('workspace');
     });
 });

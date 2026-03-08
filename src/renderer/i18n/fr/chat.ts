@@ -22,7 +22,7 @@ const sectionData = {
         "plaintext": "texte en clair",
         "running": "En cours d'exécution...",
         "execute": "Exécuter",
-        "addToProject": "Ajouter au projet",
+        "addToWorkspace": "Ajouter au projet",
         "openInEditor": "Ouvrir dans l'éditeur",
         "output": "Sortir",
         "executed": "Exécution réussie du bloc {{language}}."

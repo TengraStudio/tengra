@@ -1,6 +1,6 @@
 const sectionData = {
     "chats": "المحادثات",
-    "projects": "المشاريع",
+    "workspaces": "مساحات العمل",
     "mcp": "خوادم MCP",
     "mcpServices": "خدمات MCP",
     "mcpDescription": "Model Context Protocol",
@@ -38,7 +38,6 @@ const sectionData = {
     "copilotDescription": "إكمال التعليمات البرمجية",
     "copilotActive": "نشط",
     "councilReady": "جاهز",
-    "project": "مشروع",
     "moveTo": "نقل إلى...",
     "ideas": "أفكار",
     "expand": "قم بتوسيع الشريط الجانبي",

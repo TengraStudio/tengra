@@ -2,6 +2,11 @@ import { Observable } from 'lib0/observable';
 import { applyAwarenessUpdate, Awareness, encodeAwarenessUpdate } from 'y-protocols/awareness';
 import * as Y from 'yjs';
 
+import {
+    type CollaborationRoomType,
+    type CollaborationRoomTypeInput,
+    normalizeCollaborationRoomType,
+} from '@/features/collaboration/lib/collaboration-room-type';
 import { appLogger } from '@/utils/renderer-logger';
 
 /**
@@ -11,15 +16,15 @@ export class IpcProvider extends Observable<string> {
     private doc: Y.Doc;
     public awareness: Awareness;
     private roomId: string;
-    private type: 'chat' | 'project';
+    private type: CollaborationRoomType;
     private id: string;
     private unsubscribers: (() => void)[] = [];
 
-    constructor(type: 'chat' | 'project', id: string, doc: Y.Doc) {
+    constructor(type: CollaborationRoomTypeInput, id: string, doc: Y.Doc) {
         super();
-        this.type = type;
+        this.type = normalizeCollaborationRoomType(type);
         this.id = id;
-        this.roomId = `${type}:${id}`;
+        this.roomId = `${this.type}:${id}`;
         this.doc = doc;
         this.awareness = new Awareness(doc);
 

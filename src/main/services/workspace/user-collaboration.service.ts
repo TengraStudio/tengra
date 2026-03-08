@@ -9,7 +9,7 @@ import { WebSocket } from 'ws';
 /**
  * UserCollaborationService
  * 
- * Handles real-time synchronization for collaborative features (group chats, multi-user project editing).
+ * Handles real-time synchronization for collaborative features (group chats, multi-user workspace editing).
  * Connects to the Tengra C++ backend WebSocket endpoints.
  */
 export class UserCollaborationService extends BaseService {
@@ -25,10 +25,10 @@ export class UserCollaborationService extends BaseService {
 
     /**
      * Join a collaborative room.
-     * @param type - 'chat' or 'project'
-     * @param id - The unique identifier for the chat or project
+     * @param type - 'chat' or 'workspace'
+     * @param id - The unique identifier for the chat or workspace
      */
-    async joinRoom(type: 'chat' | 'project', id: string): Promise<void> {
+    async joinRoom(type: 'chat' | 'workspace', id: string): Promise<void> {
         const roomId = `${type}:${id}`;
         if (this.websockets.has(roomId)) {
             const ws = this.websockets.get(roomId);
@@ -84,7 +84,7 @@ export class UserCollaborationService extends BaseService {
 
     /**
      * Send a synchronization update to the room.
-     * @param roomId - The room identifier (e.g., 'project:123')
+     * @param roomId - The room identifier (e.g., 'workspace:123')
      * @param data - The update payload (JSON object or string)
      */
     async sendUpdate(roomId: string, data: JsonValue): Promise<void> {

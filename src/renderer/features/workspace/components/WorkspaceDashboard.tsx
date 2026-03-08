@@ -1,35 +1,34 @@
 import { TerminalComponent } from '@renderer/features/workspace/components/ide/Terminal';
-import { ProjectCodeTab } from '@renderer/features/workspace/components/ProjectCodeTab';
-import { ProjectEnvironmentTab } from '@renderer/features/workspace/components/ProjectEnvironmentTab';
-import { ProjectFilesTab } from '@renderer/features/workspace/components/ProjectFilesTab';
-import { ProjectGitTab } from '@renderer/features/workspace/components/ProjectGitTab';
-import { ProjectLogsTab } from '@renderer/features/workspace/components/ProjectLogsTab';
-import { ProjectOverviewTab } from '@renderer/features/workspace/components/ProjectOverviewTab';
-import { ProjectSearchTab } from '@renderer/features/workspace/components/ProjectSearchTab';
-import { ProjectSettingsPanel } from '@renderer/features/workspace/components/ProjectSettingsPanel';
-import { ProjectTodoTab } from '@renderer/features/workspace/components/ProjectTodoTab';
-import { useProjectDashboardLogic } from '@renderer/features/workspace/hooks/useProjectDashboardLogic';
-import { Project } from '@shared/types/project';
+import { WorkspaceCodeTab } from '@renderer/features/workspace/components/WorkspaceCodeTab';
+import { WorkspaceEnvironmentTab } from '@renderer/features/workspace/components/WorkspaceEnvironmentTab';
+import { WorkspaceFilesTab } from '@renderer/features/workspace/components/WorkspaceFilesTab';
+import { WorkspaceGitTab } from '@renderer/features/workspace/components/WorkspaceGitTab';
+import { WorkspaceLogsTab } from '@renderer/features/workspace/components/WorkspaceLogsTab';
+import { WorkspaceOverviewTab } from '@renderer/features/workspace/components/WorkspaceOverviewTab';
+import { WorkspaceSearchTab } from '@renderer/features/workspace/components/WorkspaceSearchTab';
+import { WorkspaceSettingsPanel } from '@renderer/features/workspace/components/WorkspaceSettingsPanel';
+import { WorkspaceTodoTab } from '@renderer/features/workspace/components/WorkspaceTodoTab';
+import { useWorkspaceDashboardLogic } from '@renderer/features/workspace/hooks/useWorkspaceDashboardLogic';
 import { RefreshCw } from 'lucide-react';
 
 import { Language } from '@/i18n';
-import { ProjectDashboardTab } from '@/types';
+import type { Workspace, WorkspaceDashboardTab } from '@/types';
 
-interface ProjectDashboardProps {
-    project: Project;
-    onUpdate?: (updates: Partial<Project>) => Promise<void>;
+interface WorkspaceDashboardProps {
+    workspace: Workspace;
+    onUpdate?: (updates: Partial<Workspace>) => Promise<void>;
     onAddMount?: () => void;
     onOpenLogoGenerator?: () => void;
     language?: Language;
-    activeTab?: ProjectDashboardTab;
-    onTabChange?: (tab: ProjectDashboardTab) => void;
+    activeTab?: WorkspaceDashboardTab;
+    onTabChange?: (tab: WorkspaceDashboardTab) => void;
     onDelete?: () => void;
     selectedEntry?: { path: string; isDirectory: boolean } | null;
     onOpenFile?: (path: string, line?: number) => void;
 }
 
-export const ProjectDashboard = ({
-    project,
+export const WorkspaceDashboard = ({
+    workspace,
     onUpdate,
     onAddMount,
     onOpenLogoGenerator,
@@ -39,9 +38,9 @@ export const ProjectDashboard = ({
     onDelete,
     selectedEntry,
     onOpenFile,
-}: ProjectDashboardProps) => {
-    const { t, state, actions, editing } = useProjectDashboardLogic({
-        project,
+}: WorkspaceDashboardProps) => {
+    const { t, state, actions, editing } = useWorkspaceDashboardLogic({
+        workspace,
         activeTab: externalTab,
         onTabChange,
         selectedEntry,
@@ -71,9 +70,9 @@ export const ProjectDashboard = ({
 
     const tabs: Record<string, JSX.Element> = {
         overview: (
-            <ProjectOverviewTab
-                project={project}
-                projectRoot={state.projectRoot}
+            <WorkspaceOverviewTab
+                workspace={workspace}
+                workspaceRoot={state.workspaceRoot}
                 analysis={analysis}
                 stats={state.stats}
                 loading={state.loading}
@@ -88,33 +87,33 @@ export const ProjectDashboard = ({
                 setEditDesc={editing.setEditDesc}
                 handleSaveDesc={editing.handleSaveDesc}
                 onOpenLogoGenerator={onOpenLogoGenerator}
-                analyzeProject={actions.analyzeProject}
+                analyzeWorkspace={actions.analyzeWorkspace}
                 onDelete={onDelete}
                 t={t}
             />
         ),
         terminal: (
             <div className="h-full bg-black/40 rounded-xl border border-border/50 overflow-hidden p-1">
-                <TerminalComponent cwd={state.projectRoot} />
+                <TerminalComponent cwd={state.workspaceRoot} />
             </div>
         ),
         tasks: (
             <div className="h-full overflow-hidden">
-                <ProjectTodoTab
-                    project={project}
+                <WorkspaceTodoTab
+                    workspace={workspace}
                     onUpdate={onUpdate}
                     t={t}
                 />
             </div>
         ),
         search: (
-            <ProjectSearchTab
+            <WorkspaceSearchTab
                 searchQuery={state.searchQuery}
                 setSearchQuery={actions.setSearchQuery}
                 handleSearch={actions.handleSearch}
                 isSearching={state.isSearching}
                 searchResults={state.searchResults}
-                projectRoot={state.projectRoot}
+                workspaceRoot={state.workspaceRoot}
                 handleFileSelect={(path, line) => {
                     void actions.handleFileSelect(path, line);
                 }}
@@ -122,8 +121,8 @@ export const ProjectDashboard = ({
             />
         ),
         code: (
-            <ProjectCodeTab
-                projectRoot={state.projectRoot}
+            <WorkspaceCodeTab
+                workspaceRoot={state.workspaceRoot}
                 onOpenFile={(path, line) => {
                     void actions.handleFileSelect(path, line);
                 }}
@@ -132,8 +131,8 @@ export const ProjectDashboard = ({
         ),
         settings: (
             <div className="h-full">
-                <ProjectSettingsPanel
-                    project={project}
+                <WorkspaceSettingsPanel
+                    workspace={workspace}
                     onUpdate={async updates => {
                         await onUpdate?.(updates);
                     }}
@@ -143,18 +142,18 @@ export const ProjectDashboard = ({
                         onAddMount?.();
                     }}
                     onRemoveMount={id => {
-                        const nextMounts = project.mounts.filter(m => m.id !== id);
+                        const nextMounts = workspace.mounts.filter(m => m.id !== id);
                         void onUpdate?.({ mounts: nextMounts });
                     }}
                 />
             </div>
         ),
-        git: <ProjectGitTab project={project} t={t} activeTab={state.activeTab} />,
-        env: <ProjectEnvironmentTab projectPath={state.projectRoot} language={language} />,
-        environment: <ProjectEnvironmentTab projectPath={state.projectRoot} language={language} />,
-        logs: <ProjectLogsTab projectPath={state.projectRoot} language={language} />,
+        git: <WorkspaceGitTab workspace={workspace} t={t} activeTab={state.activeTab} />,
+        env: <WorkspaceEnvironmentTab workspacePath={state.workspaceRoot} language={language} />,
+        environment: <WorkspaceEnvironmentTab workspacePath={state.workspaceRoot} language={language} />,
+        logs: <WorkspaceLogsTab workspacePath={state.workspaceRoot} language={language} />,
         files: (
-            <ProjectFilesTab
+            <WorkspaceFilesTab
                 openFiles={state.openFiles}
                 activeFile={state.activeFile}
                 setActiveFile={actions.setActiveFile}
@@ -162,7 +161,7 @@ export const ProjectDashboard = ({
                 closeFile={actions.closeFile}
                 activeFileObj={state.activeFileObj}
                 selectedFolder={state.selectedFolder}
-                projectRoot={state.projectRoot}
+                workspaceRoot={state.workspaceRoot}
                 t={t}
             />
         ),

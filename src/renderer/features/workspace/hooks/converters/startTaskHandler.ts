@@ -1,6 +1,6 @@
-import { AgentStartOptions } from '@shared/types/project-agent';
+import { AgentStartOptions } from '@shared/types/workspace-agent';
 
-import { Project } from '@/types';
+import { Workspace } from '@/types';
 
 import { AttachedFile, ModelOption } from '../../components/agent/TaskInputForm';
 
@@ -55,7 +55,7 @@ export const invokeStartTask = async (
     userPrompt: string,
     files: StartTaskFile[],
     selectedModel: ModelOption,
-    project: Project
+    workspace: Workspace
 ): Promise<StartTaskResult> => {
     try {
         window.electron.log.info('[useAgentTask] startTask called from UI', {
@@ -64,11 +64,11 @@ export const invokeStartTask = async (
             selectedModel: selectedModel.model
         });
 
-        window.electron.log.info('[useAgentTask] Invoking project:start');
+        window.electron.log.info('[useAgentTask] Invoking workspace task start');
 
         const options: AgentStartOptions = {
             task: userPrompt,
-            workspaceId: project.id,
+            workspaceId: workspace.id,
             model: {
                 provider: selectedModel.provider,
                 model: selectedModel.model

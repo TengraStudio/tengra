@@ -1,5 +1,5 @@
 import { AgentRegistryService } from '@main/services/workspace/agent/agent-registry.service';
-import { AgentProfile } from '@shared/types/project-agent';
+import { AgentProfile } from '@shared/types/workspace-agent';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@main/logging/logger', () => ({
@@ -11,8 +11,8 @@ vi.mock('@main/logging/logger', () => ({
     },
 }));
 
-vi.mock('@main/services/workspace/project-agent.prompts', () => ({
-    PROJECT_AGENT_SYSTEM_PROMPT: 'You are an AI agent.',
+vi.mock('@main/services/workspace/workspace-agent.prompts', () => ({
+    WORKSPACE_AGENT_SYSTEM_PROMPT: 'You are an AI agent.',
 }));
 
 interface MockDatabaseService {

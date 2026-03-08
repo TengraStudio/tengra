@@ -70,10 +70,10 @@ describe('ScannerService', () => {
             vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValueOnce('const x = 1;');
 
-            const results = await service.scanDirectory('/project');
+            const results = await service.scanDirectory('/workspace');
 
             expect(results).toHaveLength(1);
-            expect(results[0].path).toBe(path.join('/project', 'app.ts'));
+            expect(results[0].path).toBe(path.join('/workspace', 'app.ts'));
             expect(results[0].content).toBe('const x = 1;');
             expect(results[0].chunks).toEqual(['const x = 1;']);
         });
@@ -84,7 +84,7 @@ describe('ScannerService', () => {
             vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValue('content');
 
-            const results = await service.scanDirectory('/project');
+            const results = await service.scanDirectory('/workspace');
 
             expect(results).toHaveLength(extensions.length);
         });
@@ -99,10 +99,10 @@ describe('ScannerService', () => {
             vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValue('content');
 
-            const results = await service.scanDirectory('/project');
+            const results = await service.scanDirectory('/workspace');
 
             expect(results).toHaveLength(1);
-            expect(results[0].path).toBe(path.join('/project', 'valid.ts'));
+            expect(results[0].path).toBe(path.join('/workspace', 'valid.ts'));
         });
 
         it('should skip empty files', async () => {
@@ -112,10 +112,10 @@ describe('ScannerService', () => {
                 .mockResolvedValueOnce('')
                 .mockResolvedValueOnce('const x = 1;');
 
-            const results = await service.scanDirectory('/project');
+            const results = await service.scanDirectory('/workspace');
 
             expect(results).toHaveLength(1);
-            expect(results[0].path).toBe(path.join('/project', 'filled.ts'));
+            expect(results[0].path).toBe(path.join('/workspace', 'filled.ts'));
         });
 
         it('should recursively scan subdirectories', async () => {
@@ -132,11 +132,11 @@ describe('ScannerService', () => {
 
             vi.mocked(fs.readFile).mockResolvedValue('code');
 
-            const results = await service.scanDirectory('/project');
+            const results = await service.scanDirectory('/workspace');
 
             expect(results).toHaveLength(2);
-            expect(results[0].path).toBe(path.join('/project', 'src', 'main.ts'));
-            expect(results[1].path).toBe(path.join('/project', 'index.ts'));
+            expect(results[0].path).toBe(path.join('/workspace', 'src', 'main.ts'));
+            expect(results[1].path).toBe(path.join('/workspace', 'index.ts'));
         });
 
         it('should skip ignored directories', async () => {
@@ -148,7 +148,7 @@ describe('ScannerService', () => {
             vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValue('content');
 
-            const results = await service.scanDirectory('/project');
+            const results = await service.scanDirectory('/workspace');
 
             // Only the file should be scanned, none of the ignored directories
             expect(results).toHaveLength(1);
@@ -165,7 +165,7 @@ describe('ScannerService', () => {
             vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValue('content');
 
-            const results = await service.scanDirectory('/project');
+            const results = await service.scanDirectory('/workspace');
 
             // package-lock.json is .json (allowed ext) but should be read; yarn.lock and .DS_Store have disallowed extensions
             // package-lock.json IS an allowed extension (.json), so it gets scanned
@@ -179,7 +179,7 @@ describe('ScannerService', () => {
             vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValue('# README');
 
-            const results = await service.scanDirectory('/project');
+            const results = await service.scanDirectory('/workspace');
 
             expect(results).toHaveLength(1);
         });
@@ -196,10 +196,10 @@ describe('ScannerService', () => {
                 .mockRejectedValueOnce(new Error('Permission denied'))
                 .mockResolvedValueOnce('valid content');
 
-            const results = await service.scanDirectory('/project');
+            const results = await service.scanDirectory('/workspace');
 
             expect(results).toHaveLength(1);
-            expect(results[0].path).toBe(path.join('/project', 'good.ts'));
+            expect(results[0].path).toBe(path.join('/workspace', 'good.ts'));
             expect(appLogger.error).toHaveBeenCalledWith(
                 'ScannerService',
                 expect.stringContaining('Permission denied')
@@ -217,7 +217,7 @@ describe('ScannerService', () => {
             vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockRejectedValueOnce('string error');
 
-            const results = await service.scanDirectory('/project');
+            const results = await service.scanDirectory('/workspace');
 
             expect(results).toEqual([]);
             expect(appLogger.error).toHaveBeenCalledOnce();
@@ -231,7 +231,7 @@ describe('ScannerService', () => {
             vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValueOnce(shortContent);
 
-            const results = await service.scanDirectory('/project');
+            const results = await service.scanDirectory('/workspace');
 
             expect(results[0].chunks).toHaveLength(1);
             expect(results[0].chunks[0]).toBe(shortContent);
@@ -243,7 +243,7 @@ describe('ScannerService', () => {
             vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValueOnce(exactContent);
 
-            const results = await service.scanDirectory('/project');
+            const results = await service.scanDirectory('/workspace');
 
             expect(results[0].chunks).toHaveLength(1);
             expect(results[0].chunks[0]).toBe(exactContent);
@@ -257,7 +257,7 @@ describe('ScannerService', () => {
             vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValueOnce(longContent);
 
-            const results = await service.scanDirectory('/project');
+            const results = await service.scanDirectory('/workspace');
             const chunks = results[0].chunks;
 
             expect(chunks.length).toBeGreaterThan(1);
@@ -273,7 +273,7 @@ describe('ScannerService', () => {
             vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValueOnce(content);
 
-            const results = await service.scanDirectory('/project');
+            const results = await service.scanDirectory('/workspace');
             const chunks = results[0].chunks;
 
             // Last chunk should contain the end of the content
@@ -288,7 +288,7 @@ describe('ScannerService', () => {
             vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValueOnce(content);
 
-            const results = await service.scanDirectory('/project');
+            const results = await service.scanDirectory('/workspace');
 
             expect(results[0].chunks).toHaveLength(2);
             expect(results[0].chunks[0]).toHaveLength(1000);
@@ -302,7 +302,7 @@ describe('ScannerService', () => {
             vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValueOnce('const hello = "world";');
 
-            const results = await service.scanDirectory('/project');
+            const results = await service.scanDirectory('/workspace');
             const result = results[0];
 
             expect(result).toHaveProperty('path');
@@ -318,9 +318,9 @@ describe('ScannerService', () => {
             vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValue('export default () => null;');
 
-            const results = await service.scanDirectory('/project/src');
+            const results = await service.scanDirectory('/workspace/src');
 
-            expect(results[0].path).toBe(path.join('/project/src', 'component.tsx'));
+            expect(results[0].path).toBe(path.join('/workspace/src', 'component.tsx'));
         });
     });
 

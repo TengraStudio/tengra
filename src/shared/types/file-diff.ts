@@ -7,7 +7,7 @@ import { JsonObject } from './common';
 export interface FileDiff {
     id: string
     chatSessionId?: string
-    aiSystem: 'chat' | 'project' | 'council'
+    aiSystem: AISystemType
     filePath: string
     beforeContent: string
     afterContent: string
@@ -43,4 +43,4 @@ export interface DiffStats {
     changes: number
 }
 
-export type AISystemType = 'chat' | 'project' | 'council'
+export type AISystemType = 'chat' | 'workspace' | 'council'

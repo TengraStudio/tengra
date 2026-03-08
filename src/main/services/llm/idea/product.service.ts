@@ -3,9 +3,9 @@ import { LLMService } from '@main/services/llm/llm.service';
 import {
     IdeaCategory,
     IdeaSession,
-    ProjectIdea,
-    ProjectRoadmap,
     TechStack,
+    WorkspaceIdea,
+    WorkspaceRoadmap,
 } from '@shared/types/ideas';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { v4 as uuidv4 } from 'uuid';
@@ -30,9 +30,9 @@ export class IdeaProductService extends IdeaBaseService {
         categoryResearch: string
         previousIdeasContext: string
         ideaIndex: number
-        allExisting: ProjectIdea[]
+        allExisting: WorkspaceIdea[]
         customPrompt?: string
-    }): Promise<ProjectIdea> {
+    }): Promise<WorkspaceIdea> {
         const { session, category, categoryResearch, previousIdeasContext, ideaIndex, customPrompt } = params;
 
         // Add brain context about the user
@@ -85,9 +85,9 @@ export class IdeaProductService extends IdeaBaseService {
         return {
             id: uuidv4(),
             sessionId: session.id,
-            title: parsed.title ?? 'Generated Project Idea',
+            title: parsed.title ?? 'Generated Workspace Idea',
             category,
-            description: parsed.description ?? 'A new project concept.',
+            description: parsed.description ?? 'A new workspace concept.',
             status: 'pending',
             generationStage: 'seed-generation',
             createdAt: Date.now(),
@@ -96,9 +96,9 @@ export class IdeaProductService extends IdeaBaseService {
     }
 
     /**
-     * Stage 4: Generate project names
+     * Stage 4: Generate workspace names
      */
-    async stageGenerateNames(session: IdeaSession, idea: ProjectIdea, research: string): Promise<string[]> {
+    async stageGenerateNames(session: IdeaSession, idea: WorkspaceIdea, research: string): Promise<string[]> {
         const prompt = `Generate 10 creative, memorable, and available-sounding names for:
 Title: ${idea.title}
 Description: ${idea.description}
@@ -120,7 +120,7 @@ Respond in JSON: { "names": ["...", "..."] }`;
     /**
      * Stage 5: Long-form description
      */
-    async stageLongDescription(session: IdeaSession, idea: ProjectIdea, research: string): Promise<{
+    async stageLongDescription(session: IdeaSession, idea: WorkspaceIdea, research: string): Promise<{
         longDescription: string
         valueProposition: string
         explanation: string
@@ -152,9 +152,9 @@ Respond in JSON:
     }
 
     /**
-     * Stage 6: Generate project roadmap
+     * Stage 6: Generate workspace roadmap
      */
-    async stageGenerateRoadmap(session: IdeaSession, idea: ProjectIdea): Promise<ProjectRoadmap> {
+    async stageGenerateRoadmap(session: IdeaSession, idea: WorkspaceIdea): Promise<WorkspaceRoadmap> {
         const prompt = `Create a 3-phase development roadmap for:
 Title: ${idea.title}
 Target: MVP in 2-3 months
@@ -170,7 +170,7 @@ Respond in JSON:
 
         const response = await this.retryLLMCall(
             async () => await this.llmService.chat([
-                { id: uuidv4(), role: 'system', content: 'You are a project manager.', timestamp: new Date() },
+                { id: uuidv4(), role: 'system', content: 'You are a product strategist for new workspaces.', timestamp: new Date() },
                 { id: uuidv4(), role: 'user', content: prompt, timestamp: new Date() }
             ], session.model, undefined, session.provider),
             'Generate roadmap'
@@ -185,7 +185,7 @@ Respond in JSON:
     /**
      * Stage 7: Select technology stack
      */
-    async stageSelectTechStack(session: IdeaSession, idea: ProjectIdea): Promise<TechStack> {
+    async stageSelectTechStack(session: IdeaSession, idea: WorkspaceIdea): Promise<TechStack> {
         const prompt = `Recommend a modern, scalable tech stack for:
 Title: ${idea.title}
 Category: ${idea.category}

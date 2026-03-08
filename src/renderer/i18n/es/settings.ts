@@ -189,6 +189,26 @@ const sectionData = {
         "editPrompt": "Editar mensaje",
         "editMode": "Modo de edición",
         "editRun": "Ejecutar Editar"
+    },
+    "storageDashboard": {
+        "title": "Panel de almacenamiento",
+        "subtitle": "Supervisa el uso de la base de datos y el total de registros de la aplicación.",
+        "loadError": "No se pudieron cargar las estadísticas de almacenamiento.",
+        "dbSize": "Base de datos",
+        "totalChats": "Chats",
+        "totalMessages": "Mensajes",
+        "totalWorkspaces": "Espacios de trabajo"
+    },
+    "databaseSizeDashboard": {
+        "title": "Tamaño de la base de datos",
+        "subtitle": "Desglosa el uso de almacenamiento por tipo de registro.",
+        "loadError": "No se pudieron cargar las estadísticas de la base de datos.",
+        "dbSize": "Base de datos",
+        "chats": "Chats",
+        "messages": "Mensajes",
+        "workspaces": "Espacios de trabajo",
+        "folders": "Carpetas",
+        "prompts": "Prompts"
     }
 };
 

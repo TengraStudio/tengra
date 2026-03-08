@@ -8,7 +8,7 @@ const sectionData = {
     "commandPalette": "لوحة الأوامر",
     "toggleSidebar": "تبديل الشريط الجانبي",
     "goToChat": "الذهاب إلى المحادثة",
-    "goToProjects": "الذهاب إلى المشاريع",
+    "goToWorkspaces": "الذهاب إلى المشاريع",
     "goToCouncil": "الذهاب إلى المجلس",
     "goToSettings": "الذهاب إلى الإعدادات",
     "sendMessage": "إرسال رسالة",

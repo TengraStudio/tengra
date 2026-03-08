@@ -6,7 +6,7 @@ export const AdvancedSection: React.FC<SettingsSectionProps> = ({ formData, setF
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div>
             <h3 className="text-lg font-semibold text-foreground mb-1">{t('workspaces.advanced') || 'Advanced Settings'}</h3>
-            <p className="text-sm text-muted-foreground">{t('workspaces.advancedDesc') || 'Fine-tune your project configuration.'}</p>
+            <p className="text-sm text-muted-foreground">{t('workspaces.advancedDesc') || 'Fine-tune your workspace configuration.'}</p>
         </div>
 
         <div className="space-y-4">

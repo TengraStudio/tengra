@@ -29,8 +29,8 @@ const sectionData = {
     "exportList": "Export list",
     "gridView": "Grid view",
     "listView": "List view",
-    "projectSettingsPanel": "Project settings panel",
-    "projectSettingsContent": "Project settings content",
+    "workspaceSettingsPanel": "Workspace settings panel",
+    "workspaceSettingsContent": "Workspace settings content",
     "findPrevious": "Find previous",
     "findNext": "Find next"
 };

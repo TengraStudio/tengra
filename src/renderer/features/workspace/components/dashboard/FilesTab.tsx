@@ -5,7 +5,7 @@ import { CodeMirrorEditor } from '@/components/ui/CodeMirrorEditor';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-import { OpenFile } from '../../hooks/useProjectDashboard';
+import { OpenFile } from '../../hooks/useWorkspaceDashboard';
 import { FolderInspector } from '../ide/FolderInspector';
 
 interface FilesTabProps {
@@ -15,7 +15,7 @@ interface FilesTabProps {
     closeFile: (e: React.MouseEvent, path: string) => void;
     setOpenFiles: (files: OpenFile[]) => void;
     selectedFolder: string | null;
-    projectRoot: string;
+    workspaceRoot: string;
 }
 
 export const FilesTab: React.FC<FilesTabProps> = ({
@@ -25,7 +25,7 @@ export const FilesTab: React.FC<FilesTabProps> = ({
     closeFile,
     setOpenFiles,
     selectedFolder,
-    projectRoot,
+    workspaceRoot,
 }) => {
     const { t } = useTranslation();
     const activeFileObj = openFiles.find(f => f.path === activeFile);
@@ -147,7 +147,7 @@ export const FilesTab: React.FC<FilesTabProps> = ({
                     )}
                 >
                     {selectedFolder && (
-                        <FolderInspector folderPath={selectedFolder} rootPath={projectRoot} />
+                        <FolderInspector folderPath={selectedFolder} rootPath={workspaceRoot} />
                     )}
                 </div>
             </div>

@@ -1,11 +1,11 @@
 /**
- * Database Schema for Agent Persistence
- * SQL migrations for SQLite (via Tengra DB Service)
+ * Canonical database schema for agent persistence.
+ * Runtime migrations preserve legacy persisted identifiers separately.
  */
 
 CREATE TABLE IF NOT EXISTS agent_tasks (
     id TEXT PRIMARY KEY,
-    project_id TEXT NOT NULL,
+    workspace_id TEXT NOT NULL,
     description TEXT NOT NULL,
     state TEXT NOT NULL,
     current_step INTEGER DEFAULT 0,

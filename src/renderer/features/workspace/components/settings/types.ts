@@ -1,9 +1,9 @@
-import { Project } from '@/types/project';
+import type { Workspace } from '@/types';
 
-export interface ProjectSettingsFormData {
+export interface WorkspaceSettingsFormData {
     title: string
     description: string
-    status: Project['status']
+    status: Workspace['status']
     councilEnabled: boolean
     councilMembers: string[]
     consensusThreshold: number
@@ -23,10 +23,10 @@ export interface ProjectSettingsFormData {
     autoSave: boolean
 }
 
-export type ProjectSettingsSection = 'general' | 'council' | 'workspace' | 'build' | 'dev' | 'advanced'
+export type WorkspaceSettingsSection = 'general' | 'council' | 'workspace' | 'build' | 'dev' | 'advanced'
 
 export interface SettingsSectionProps {
-    formData: ProjectSettingsFormData
-    setFormData: React.Dispatch<React.SetStateAction<ProjectSettingsFormData>>
+    formData: WorkspaceSettingsFormData
+    setFormData: React.Dispatch<React.SetStateAction<WorkspaceSettingsFormData>>
     t: (key: string) => string
 }

@@ -1,7 +1,7 @@
 /**
  * Card component for displaying a generated idea
  */
-import { ProjectIdea } from '@shared/types/ideas';
+import { WorkspaceIdea } from '@shared/types/ideas';
 import { ChevronRight, Sparkles } from 'lucide-react';
 import React, { memo } from 'react';
 
@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { getCategoryMeta } from '../utils/categories';
 
 interface IdeaCardProps {
-    idea: ProjectIdea;
+    idea: WorkspaceIdea;
     onClick: () => void;
 }
 

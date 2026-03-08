@@ -1,19 +1,19 @@
-import { ProjectState } from '@shared/types/project-agent';
+import { WorkspaceState } from '@shared/types/workspace-agent';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
 
 interface StateHistoryEntry {
-    status: ProjectState['status'];
+    status: WorkspaceState['status'];
     timestamp: number;
 }
 
 interface AgentStateMachinePanelProps {
-    currentStatus: ProjectState['status'];
+    currentStatus: WorkspaceState['status'];
     stateHistory: StateHistoryEntry[];
 }
 
-const STATE_ORDER: ProjectState['status'][] = [
+const STATE_ORDER: WorkspaceState['status'][] = [
     'idle',
     'planning',
     'waiting_for_approval',
@@ -24,7 +24,7 @@ const STATE_ORDER: ProjectState['status'][] = [
     'error'
 ];
 
-const TRANSITIONS: Record<ProjectState['status'], ProjectState['status'][]> = {
+const TRANSITIONS: Record<WorkspaceState['status'], WorkspaceState['status'][]> = {
     idle: ['planning'],
     planning: ['waiting_for_approval', 'running', 'failed', 'error'],
     waiting_for_approval: ['running', 'paused', 'failed'],

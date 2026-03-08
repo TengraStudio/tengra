@@ -25,7 +25,7 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
                     <Bot className="w-4 h-4 text-primary" />
                     {t('workspaces.councilAI') || 'Council AI Configuration'}
                 </h3>
-                <p className="text-xs text-muted-foreground">{t('workspaces.councilAIDesc') || 'Configure how agents collaborate on this project.'}</p>
+                <p className="text-xs text-muted-foreground">{t('workspaces.councilAIDesc') || 'Configure how agents collaborate on this workspace.'}</p>
             </div>
             <div className="flex items-center gap-3 bg-white/5 p-1 rounded-full border border-white/10 px-3 py-1">
                 <span className="text-xs font-medium text-muted-foreground">{t('workspaces.councilEnabledLabel')}</span>

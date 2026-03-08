@@ -190,6 +190,26 @@ const sectionData = {
         "editPrompt": "İstemi Düzenle",
         "editMode": "Düzenleme Modu",
         "editRun": "Düzenlemeyi Çalıştır"
+    },
+    "storageDashboard": {
+        "title": "Depolama Panosu",
+        "subtitle": "Veritabanı kullanımını ve toplam uygulama kayıtlarını izleyin.",
+        "loadError": "Depolama istatistikleri yüklenemedi.",
+        "dbSize": "Veritabanı",
+        "totalChats": "Sohbetler",
+        "totalMessages": "Mesajlar",
+        "totalWorkspaces": "Çalışma Alanları"
+    },
+    "databaseSizeDashboard": {
+        "title": "Veritabanı Boyutu",
+        "subtitle": "Depolama kullanımını kayıt türüne göre inceleyin.",
+        "loadError": "Veritabanı istatistikleri yüklenemedi.",
+        "dbSize": "Veritabanı",
+        "chats": "Sohbetler",
+        "messages": "Mesajlar",
+        "workspaces": "Çalışma Alanları",
+        "folders": "Klasörler",
+        "prompts": "Şablonlar"
     }
 };
 

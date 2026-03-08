@@ -34,7 +34,7 @@ const sectionData = {
     "thinkingOff": "思考オフ",
     "selectAction": "アクションを選択",
     "noDescription": "説明が提供されていません",
-    "selectProject": "プロジェクトを選択",
+    "selectWorkspace": "プロジェクトを選択",
     "unnamedGroup": "名前のないグループ",
     "votingPanel": {
         "title": "投票セッション",

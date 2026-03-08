@@ -34,7 +34,7 @@ const sectionData = {
     "thinkingOff": "التفكير معطّل",
     "selectAction": "حدد إجراء",
     "noDescription": "لا يوجد وصف",
-    "selectProject": "حدد مشروعاً",
+    "selectWorkspace": "حدد مشروعاً",
     "unnamedGroup": "مجموعة غير محددة",
     "votingPanel": {
         "title": "جلسات التصويت",

@@ -114,7 +114,7 @@ describe('shell-command-policy.util', () => {
         });
 
         it('should allow absolute paths without traversal', () => {
-            const result = validateCommandArgs('node', ['C:/projects/app/index.js']);
+            const result = validateCommandArgs('node', ['C:/workspaces/app/index.js']);
             expect(result.allowed).toBe(true);
         });
     });

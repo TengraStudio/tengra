@@ -87,6 +87,7 @@ const sectionData = {
     "userVerified": "Benutzer verifiziert",
     "accessed": "Zugriff",
     "restore": "Wiederherstellen",
+    "shareToWorkspace": "Mit Arbeitsbereich teilen",
     "tabs": {
         "pending": "Ausstehend",
         "confirmed": "Bestätigt",
@@ -96,7 +97,7 @@ const sectionData = {
     "categories": {
         "preference": "Präferenz",
         "personal": "Persönlich",
-        "project": "Projekt",
+        "workspace": "Arbeitsbereich",
         "technical": "Technisch",
         "workflow": "Arbeitsablauf",
         "relationship": "Beziehung",

@@ -1,5 +1,5 @@
 /**
- * Category metadata for project ideas
+ * Category metadata for workspace ideas
  */
 import { IdeaCategory } from '@shared/types/ideas';
 import {

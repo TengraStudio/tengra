@@ -1,8 +1,8 @@
 
-import { AgentProviderRotationService } from '@main/services/workspace/automation-workflow/agent-provider-rotation.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { AgentProviderRotationService } from '@main/services/workspace/automation-workflow/agent-provider-rotation.service';
 import { ProviderConfig } from '@shared/types/agent-state';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -135,7 +135,7 @@ describe('AgentProviderRotationService', () => {
     });
 
     describe('rotation settings persistence', () => {
-        it('should persist fallback chain per project', async () => {
+        it('should persist fallback chain per workspace', async () => {
             const settingsService = new SettingsService();
             const saveSettings = vi
                 .spyOn(settingsService, 'saveSettings')
@@ -153,12 +153,12 @@ describe('AgentProviderRotationService', () => {
 
             await service.updateFallbackChain(
                 { cloud: ['anthropic', 'openai'], local: ['ollama'] },
-                'project-alpha',
+                'workspace-alpha',
                 'balanced'
             );
 
             expect(saveSettings).toHaveBeenCalledTimes(1);
-            expect(service.getFallbackChain('project-alpha').cloud).toEqual(['anthropic', 'openai']);
+            expect(service.getFallbackChain('workspace-alpha').cloud).toEqual(['anthropic', 'openai']);
         });
     });
 

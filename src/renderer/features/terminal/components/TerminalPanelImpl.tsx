@@ -11,8 +11,8 @@ import { useTerminalPanelEffects } from '../hooks/useTerminalPanelEffects';
 import type { TerminalPanelProps } from './TerminalPanel';
 import { TerminalPanelOverlaysConnector } from './TerminalPanelOverlaysConnector';
 import { TerminalPanelToolbarConnector } from './TerminalPanelToolbarConnector';
-import { TerminalWorkspaceIssuesTab } from './TerminalWorkspaceIssuesTab';
 import { TerminalSplitView } from './TerminalSplitView';
+import { TerminalWorkspaceIssuesTab } from './TerminalWorkspaceIssuesTab';
 
 /**
  * Terminal panel content orchestrator.

@@ -7,7 +7,7 @@ import { AppSettings, ChatError, CodexUsage, Message, QuotaResponse } from '@/ty
 import { AIAssistantSidebar } from './AIAssistantSidebar';
 
 interface WorkspaceSidebarProps {
-    projectId: string;
+    workspaceId: string;
     showAgentPanel: boolean;
     agentPanelWidth: number;
     setAgentPanelWidth: (_w: number) => void;
@@ -30,7 +30,7 @@ interface WorkspaceSidebarProps {
 }
 
 export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
-    projectId,
+    workspaceId,
     showAgentPanel,
     agentPanelWidth: _agentPanelWidth,
     setAgentPanelWidth: _setAgentPanelWidth,
@@ -59,7 +59,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
         >
             <div className="h-full flex flex-col">
                 <AIAssistantSidebar
-                    projectId={projectId}
+                    workspaceId={workspaceId}
                     selectedProvider={selectedProvider}
                     selectedModel={selectedModel}
                     onSelectModel={onSelectModel}

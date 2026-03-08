@@ -1,6 +1,6 @@
 const sectionData = {
     "chats": "聊天",
-    "projects": "项目",
+    "workspaces": "工作区",
     "mcp": "MCP 服务器",
     "mcpServices": "MCP 服务",
     "mcpDescription": "Model Context Protocol",
@@ -38,7 +38,6 @@ const sectionData = {
     "copilotDescription": "代码补全",
     "copilotActive": "激活",
     "councilReady": "就绪",
-    "project": "项目",
     "moveTo": "移动到...",
     "ideas": "想法",
     "expand": "展开侧边栏",

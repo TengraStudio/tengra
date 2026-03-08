@@ -34,7 +34,7 @@ export function registerDbStatsIpc(
         async (event: IpcMainInvokeEvent): Promise<DatabaseSizeStats> => {
             validateSender(event);
             const stats = await databaseService.getStats();
-            const workspaces = await databaseService.projects.getProjects();
+            const workspaces = await databaseService.workspaces.getWorkspaces();
             const folders = await databaseService.system.getFolders();
             const prompts = await databaseService.system.getPrompts();
 

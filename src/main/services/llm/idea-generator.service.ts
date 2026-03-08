@@ -9,10 +9,11 @@ import { IdeaGeneratorValidationService } from '@main/services/llm/idea-generato
 import { IdeaRepository } from '@main/services/llm/idea-repository';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
-import { ProjectScaffoldService } from '@main/services/project/project-scaffold.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
+import { WorkspaceScaffoldService } from '@main/services/workspace/workspace-scaffold.service';
 import { withRetry } from '@main/utils/retry.util';
+import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { Message } from '@shared/types/chat';
 import { CatchError } from '@shared/types/common';
 import {
@@ -27,22 +28,23 @@ import {
     IdeaStatus,
     JourneyStep,
     MarketingPlan,
-    ProjectIdea,
-    ProjectRoadmap,
     ResearchData,
     RoadmapPhase,
     SWOTAnalysis,
     TechChoice,
     TechStack,
     UserPersona,
+    WorkspaceIdea,
+    WorkspaceRoadmap,
 } from '@shared/types/ideas';
-import { Project } from '@shared/types/project';
+import type { Workspace } from '@shared/types/workspace';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { v4 as uuidv4 } from 'uuid';
 
 /** Current year for prompts */
 const CURRENT_YEAR = new Date().getFullYear();
+const WORKSPACE_COMPAT_IDEAS_TABLE = WORKSPACE_COMPAT_SCHEMA_VALUES.IDEAS_TABLE;
 
 /** Artificial delay multiplier for UX pacing (0 = disabled, 1 = full delays) */
 const DELAY_MULTIPLIER = Number.parseInt(process.env.IDEA_DELAY_MULTIPLIER ?? '0.1', 10);
@@ -63,7 +65,7 @@ export class IdeaGeneratorService extends BaseService {
             databaseService: DatabaseService;
             llmService: LLMService;
             marketResearchService: MarketResearchService;
-            projectScaffoldService: ProjectScaffoldService;
+            workspaceScaffoldService: WorkspaceScaffoldService;
             authService: AuthService;
             eventBus: EventBusService;
             localImageService: LocalImageService;
@@ -76,7 +78,7 @@ export class IdeaGeneratorService extends BaseService {
             this.deps.eventBus
         );
         this.exportOrchestration = new IdeaExportOrchestrationService(
-            this.deps.projectScaffoldService,
+            this.deps.workspaceScaffoldService,
             this.deps.databaseService
         );
     }
@@ -290,7 +292,7 @@ Respond in JSON:
     /**
      * Get all previously generated ideas (for deduplication)
      */
-    private async getAllPreviousIdeas(): Promise<ProjectIdea[]> {
+    private async getAllPreviousIdeas(): Promise<WorkspaceIdea[]> {
         const repository = await this.getRepository();
         const ideas = await repository.getIdeas();
         return ideas.slice(0, 200);
@@ -301,7 +303,7 @@ Respond in JSON:
      */
     private isIdeaTooSimilar(
         newIdea: { title: string; description: string },
-        existingIdeas: ProjectIdea[]
+        existingIdeas: WorkspaceIdea[]
     ): boolean {
         return this.validation.isIdeaTooSimilar(newIdea, existingIdeas);
     }
@@ -310,7 +312,7 @@ Respond in JSON:
      * Build context about previously generated ideas to avoid repetition
      */
     private buildPreviousIdeasContext(
-        ideas: ProjectIdea[],
+        ideas: WorkspaceIdea[],
         currentCategories: IdeaCategory[]
     ): string {
         return this.validation.buildPreviousIdeasContext(ideas, currentCategories);
@@ -394,7 +396,7 @@ Respond in JSON:
             const allPreviousIdeas = await this.getAllPreviousIdeas();
 
             // Track ideas generated in this session
-            const sessionIdeas: ProjectIdea[] = [];
+            const sessionIdeas: WorkspaceIdea[] = [];
 
             for (let i = 0; i < remainingIdeas; i++) {
                 const ideaIndex = session.ideasGenerated + i + 1;
@@ -455,12 +457,12 @@ Respond in JSON:
     /**
      * Regenerate a single idea (replace existing idea with new generation)
      */
-    async regenerateIdea(ideaId: string): Promise<ProjectIdea> {
+    async regenerateIdea(ideaId: string): Promise<WorkspaceIdea> {
         // Get the original idea to find session and category
         const db = await this.getDb();
         const original = (await db
-            .prepare('SELECT * FROM project_ideas WHERE id = ?')
-            .get(ideaId)) as ProjectIdea | undefined;
+            .prepare(`SELECT * FROM ${WORKSPACE_COMPAT_IDEAS_TABLE} WHERE id = ?`)
+            .get(ideaId)) as WorkspaceIdea | undefined;
 
         if (!original) {
             throw new Error(`Idea not found: ${ideaId}`);
@@ -507,7 +509,7 @@ Respond in JSON:
         await db
             .prepare(
                 `
-            UPDATE project_ideas 
+            UPDATE ${WORKSPACE_COMPAT_IDEAS_TABLE}
             SET title = ?, description = ?, category = ?, market_analysis = ?, 
                 tech_stack = ?, estimated_effort = ?, status = ?, roadmap = ?, 
                 competitors = ?, updated_at = ?
@@ -543,10 +545,10 @@ Respond in JSON:
         session: IdeaSession;
         categoryResearch: string;
         previousIdeasContext: string;
-        sessionIdeas: ProjectIdea[];
+        sessionIdeas: WorkspaceIdea[];
         ideaIndex: number;
-        allExisting: ProjectIdea[];
-    }): Promise<ProjectIdea> {
+        allExisting: WorkspaceIdea[];
+    }): Promise<WorkspaceIdea> {
         const {
             session,
             categoryResearch,
@@ -597,7 +599,7 @@ Respond in JSON:
         seedIdea.researchContext = researchContext;
         await this.delay(2000);
 
-        // Stage 4: Generate 10 project names
+        // Stage 4: Generate 10 workspace names
         this.emitIdeaProgress({
             sessionId,
             ideaIndex,
@@ -605,7 +607,7 @@ Respond in JSON:
             currentIdea: seedIdea,
             stage: 'naming',
             stageProgress: 30,
-            stageMessage: 'Generating project name suggestions...',
+            stageMessage: 'Generating workspace name suggestions...',
         });
 
         const nameSuggestions = await this.stageGenerateNames(session, seedIdea, researchContext);
@@ -620,7 +622,7 @@ Respond in JSON:
             currentIdea: seedIdea,
             stage: 'long-description',
             stageProgress: 45,
-            stageMessage: 'Writing detailed project description...',
+            stageMessage: 'Writing detailed workspace description...',
         });
 
         const { longDescription, valueProposition, explanation } = await this.stageLongDescription(
@@ -641,13 +643,13 @@ Respond in JSON:
      */
     private async runIdeaRefinement(
         session: IdeaSession,
-        seedIdea: ProjectIdea,
+        seedIdea: WorkspaceIdea,
         researchContext: string,
         ideaIndex: number
-    ): Promise<ProjectIdea> {
+    ): Promise<WorkspaceIdea> {
         const sessionId = session.id;
 
-        // Stage 6: Project roadmap
+        // Stage 6: Workspace roadmap
         this.emitIdeaProgress({
             sessionId,
             ideaIndex,
@@ -655,7 +657,7 @@ Respond in JSON:
             currentIdea: seedIdea,
             stage: 'roadmap',
             stageProgress: 60,
-            stageMessage: 'Creating project roadmap...',
+            stageMessage: 'Creating workspace roadmap...',
         });
 
         const roadmap = await this.stageGenerateRoadmap(session, seedIdea);
@@ -755,7 +757,7 @@ Respond in JSON:
             currentIdea: seedIdea,
             stage: 'finalizing',
             stageProgress: 98,
-            stageMessage: 'Finalizing project idea...',
+            stageMessage: 'Finalizing workspace idea...',
         });
 
         seedIdea.generationStage = 'complete';
@@ -774,10 +776,10 @@ Respond in JSON:
         category: IdeaCategory;
         categoryResearch: string;
         previousIdeasContext: string;
-        sessionIdeas: ProjectIdea[];
+        sessionIdeas: WorkspaceIdea[];
         ideaIndex: number;
-        allExisting: ProjectIdea[];
-    }): Promise<ProjectIdea> {
+        allExisting: WorkspaceIdea[];
+    }): Promise<WorkspaceIdea> {
         const {
             session,
             category,
@@ -883,8 +885,8 @@ Respond in JSON:
     /**
      * Stage 3: Targeted idea-specific research
      */
-    private async stageIdeaResearch(session: IdeaSession, idea: ProjectIdea): Promise<string> {
-        const prompt = `Research the market specifically for this project idea:
+    private async stageIdeaResearch(session: IdeaSession, idea: WorkspaceIdea): Promise<string> {
+        const prompt = `Research the market specifically for this workspace idea:
 
 Title: ${idea.title}
 Category: ${idea.category}
@@ -924,14 +926,14 @@ Format as a comprehensive research brief that will guide product development.`;
     }
 
     /**
-     * Stage 4: Generate 10 project names
+     * Stage 4: Generate 10 workspace names
      */
     private async stageGenerateNames(
         session: IdeaSession,
-        idea: ProjectIdea,
+        idea: WorkspaceIdea,
         research: string
     ): Promise<string[]> {
-        const prompt = `Generate exactly 10 unique, memorable project names for:
+        const prompt = `Generate exactly 10 unique, memorable workspace names for:
 
 Title: ${idea.title}
 Category: ${idea.category}
@@ -957,7 +959,7 @@ Respond in JSON:
                 id: uuidv4(),
                 role: 'system',
                 content:
-                    'You are a branding expert. Generate creative, memorable project names. Always respond in valid JSON.',
+                    'You are a branding expert. Generate creative, memorable workspace names. Always respond in valid JSON.',
                 timestamp: new Date(),
             },
             { id: uuidv4(), role: 'user', content: prompt, timestamp: new Date() },
@@ -981,14 +983,14 @@ Respond in JSON:
      */
     private async stageLongDescription(
         session: IdeaSession,
-        idea: ProjectIdea,
+        idea: WorkspaceIdea,
         research: string
     ): Promise<{
         longDescription: string;
         valueProposition: string;
         explanation: string;
     }> {
-        const prompt = `Write a comprehensive, professional description for this project:
+        const prompt = `Write a comprehensive, professional description for this workspace idea:
 
 Title: ${idea.title}
 Category: ${idea.category}
@@ -1007,7 +1009,7 @@ Create:
 
 2. A compelling value proposition (2-3 sentences)
 
-3. A technical explanation (2 paragraphs) of what the project does and how
+3. A technical explanation (2 paragraphs) of what the workspace does and how
 
 Requirements:
 - Professional, polished writing
@@ -1047,12 +1049,12 @@ Respond in JSON:
     }
 
     /**
-     * Stage 6: Generate project roadmap
+     * Stage 6: Generate workspace roadmap
      */
     private async stageGenerateRoadmap(
         session: IdeaSession,
-        idea: ProjectIdea
-    ): Promise<ProjectRoadmap> {
+        idea: WorkspaceIdea
+    ): Promise<WorkspaceRoadmap> {
         const prompt = `Create a realistic development roadmap for:
 
 Title: ${idea.title}
@@ -1116,7 +1118,7 @@ Respond in JSON:
      */
     private async stageSelectTechStack(
         session: IdeaSession,
-        idea: ProjectIdea
+        idea: WorkspaceIdea
     ): Promise<TechStack> {
         const categoryTechContext: Record<IdeaCategory, string> = {
             website: 'web technologies, frameworks like React/Vue/Angular, Node.js, databases',
@@ -1135,7 +1137,7 @@ Category: ${idea.category}
 Description: ${idea.description}
 ${idea.roadmap ? `\nMVP Features: ${idea.roadmap.mvp.deliverables.join(', ')}` : ''}
 
-Context: This is a ${idea.category} project requiring ${categoryTechContext[idea.category]}.
+Context: This is a ${idea.category} workspace requiring ${categoryTechContext[idea.category]}.
 
 Provide justified recommendations for:
 1. Frontend (if applicable)
@@ -1183,13 +1185,13 @@ Respond in JSON:
      */
     private async stageCompetitorAnalysis(
         session: IdeaSession,
-        idea: ProjectIdea,
+        idea: WorkspaceIdea,
         research: string
     ): Promise<{
         competitors: IdeaCompetitor[];
         advantages: string[];
     }> {
-        const prompt = `Analyze competitors for this specific project idea:
+        const prompt = `Analyze competitors for this specific workspace idea:
 
 Title: ${idea.title}
 Category: ${idea.category}
@@ -1201,11 +1203,11 @@ ${research.slice(0, 1500)}
 
 Identify 3-5 direct or indirect competitors and analyze:
 1. Each competitor's strengths and weaknesses
-2. Features they're missing that this project could offer
+2. Features they're missing that this workspace could offer
 3. Their market position
-4. How this project can differentiate
+4. How this workspace can differentiate
 
-Also provide 5 competitive advantages this project would have.
+Also provide 5 competitive advantages this workspace would have.
 
 Respond in JSON:
 {
@@ -1251,7 +1253,7 @@ Respond in JSON:
      * Enrich an existing idea with additional details (simple enrichment)
      * For full multi-stage enrichment, use the generation pipeline
      */
-    async enrichIdea(ideaId: string): Promise<ProjectIdea> {
+    async enrichIdea(ideaId: string): Promise<WorkspaceIdea> {
         const idea = await this.getIdea(ideaId);
         if (!idea) {
             throw new Error(`Idea not found: ${ideaId}`);
@@ -1264,16 +1266,16 @@ Respond in JSON:
 
         this.logInfo(`Enriching idea: ${ideaId}`);
 
-        const prompt = `Given this project idea:
+        const prompt = `Given this workspace idea:
 Title: ${idea.title}
 Category: ${idea.category}
 Description: ${idea.description}
 
 Please provide:
-1. A detailed explanation of what the project does and how it works (2-3 paragraphs)
+1. A detailed explanation of what the workspace does and how it works (2-3 paragraphs)
 2. A compelling value proposition (1-2 sentences)
-3. Exactly 10 creative name suggestions for this project
-4. 5 competitive advantages this project would have
+3. Exactly 10 creative name suggestions for this workspace
+4. 5 competitive advantages this workspace would have
 
 Respond in JSON format:
 {
@@ -1288,7 +1290,7 @@ Respond in JSON format:
                 id: uuidv4(),
                 role: 'system',
                 content:
-                    'You are a product strategist. Provide detailed enrichment for project ideas. Always respond in valid JSON format.',
+                    'You are a product strategist. Provide detailed enrichment for workspace ideas. Always respond in valid JSON format.',
                 timestamp: new Date(),
             },
             {
@@ -1318,7 +1320,7 @@ Respond in JSON format:
         await db
             .prepare(
                 `
-            UPDATE project_ideas
+            UPDATE ${WORKSPACE_COMPAT_IDEAS_TABLE}
             SET explanation = ?, value_proposition = ?, name_suggestions = ?, competitive_advantages = ?, updated_at = ?
             WHERE id = ?
         `
@@ -1346,7 +1348,7 @@ Respond in JSON format:
     /**
      * Get an idea by ID
      */
-    async getIdea(id: string): Promise<ProjectIdea | null> {
+    async getIdea(id: string): Promise<WorkspaceIdea | null> {
         const repository = await this.getRepository();
         return repository.getIdea(id);
     }
@@ -1354,7 +1356,7 @@ Respond in JSON format:
     /**
      * Get ideas for a session
      */
-    async getIdeas(sessionId?: string): Promise<ProjectIdea[]> {
+    async getIdeas(sessionId?: string): Promise<WorkspaceIdea[]> {
         const repository = await this.getRepository();
         return repository.getIdeas(sessionId);
     }
@@ -1362,7 +1364,7 @@ Respond in JSON format:
     /**
      * Save a new idea with all pipeline-generated fields
      */
-    private async saveIdea(idea: ProjectIdea): Promise<void> {
+    private async saveIdea(idea: WorkspaceIdea): Promise<void> {
         const repository = await this.getRepository();
         await repository.saveIdea(idea);
     }
@@ -1384,7 +1386,7 @@ Respond in JSON format:
         ideaId: string,
         workspacePath: string,
         selectedName?: string
-    ): Promise<Project> {
+    ): Promise<Workspace> {
         const idea = await this.getIdea(ideaId);
         if (!idea) {
             throw new Error(`Idea not found: ${ideaId}`);
@@ -1472,7 +1474,7 @@ The logo should be simple, memorable, and work well at small sizes.`;
                     const db = await this.getDb();
                     await db
                         .prepare(
-                            'UPDATE project_ideas SET logo_path = ?, updated_at = ? WHERE id = ?'
+                            `UPDATE ${WORKSPACE_COMPAT_IDEAS_TABLE} SET logo_path = ?, updated_at = ? WHERE id = ?`
                         )
                         .run(localLogoPath, Date.now(), ideaId);
 
@@ -1509,7 +1511,7 @@ The logo should be simple, memorable, and work well at small sizes.`;
                 // Update the idea with the first generated logo path
                 const db = await this.getDb();
                 await db
-                    .prepare('UPDATE project_ideas SET logo_path = ?, updated_at = ? WHERE id = ?')
+                    .prepare(`UPDATE ${WORKSPACE_COMPAT_IDEAS_TABLE} SET logo_path = ?, updated_at = ? WHERE id = ?`)
                     .run(logoPaths[0], Date.now(), ideaId);
 
                 this.logInfo(`${logoPaths.length} logo(s) generated for idea: ${ideaId}`);
@@ -1544,7 +1546,7 @@ The logo should be simple, memorable, and work well at small sizes.`;
         sessionId: string;
         ideaIndex: number;
         totalIdeas: number;
-        currentIdea?: Partial<ProjectIdea>;
+        currentIdea?: Partial<WorkspaceIdea>;
         stage: IdeaGenerationStage;
         stageProgress?: number;
         stageMessage?: string;
@@ -1671,7 +1673,7 @@ Before responding, carefully consider:
 
 Respond ONLY with valid JSON:
 {
-    "title": "Unique, Memorable Project Name",
+    "title": "Unique, Memorable Workspace Name",
     "description": "2-3 sentences: the specific problem, target users, and key differentiator"
 }`;
     }
@@ -1680,18 +1682,18 @@ Respond ONLY with valid JSON:
         content: string,
         category: IdeaCategory,
         sessionId: string
-    ): ProjectIdea {
+    ): WorkspaceIdea {
         const now = Date.now();
         try {
             const parsed = this.parseJsonResponse<{
                 title?: string;
                 description?: string;
-            }>(content, { title: 'Generated Project Idea', description: content.slice(0, 500) });
+            }>(content, { title: 'Generated Workspace Idea', description: content.slice(0, 500) });
 
             return {
                 id: uuidv4(),
                 sessionId,
-                title: parsed.title ?? 'Generated Project Idea',
+                title: parsed.title ?? 'Generated Workspace Idea',
                 category,
                 description: parsed.description ?? content.slice(0, 500),
                 status: 'pending',
@@ -1705,7 +1707,7 @@ Respond ONLY with valid JSON:
             return {
                 id: uuidv4(),
                 sessionId,
-                title: 'Generated Project Idea',
+                title: 'Generated Workspace Idea',
                 category,
                 description: content.slice(0, 500),
                 status: 'pending',
@@ -1812,7 +1814,7 @@ Respond ONLY with valid JSON:
         };
     }
 
-    private getDefaultRoadmap(): ProjectRoadmap {
+    private getDefaultRoadmap(): WorkspaceRoadmap {
         return {
             mvp: {
                 name: 'MVP',
@@ -1826,9 +1828,9 @@ Respond ONLY with valid JSON:
         };
     }
 
-    private parseRoadmapResponse(content: string): ProjectRoadmap {
+    private parseRoadmapResponse(content: string): WorkspaceRoadmap {
         try {
-            const parsed = this.parseJsonResponse<ProjectRoadmap>(content);
+            const parsed = this.parseJsonResponse<WorkspaceRoadmap>(content);
             const phases = Array.isArray(parsed.phases) ? parsed.phases : [];
 
             return {
@@ -1888,7 +1890,7 @@ Respond ONLY with valid JSON:
                 const safeArr = Array.isArray(arr) ? arr : [];
                 return safeArr.map(t => ({
                     name: t.name ?? 'Unknown',
-                    reason: t.reason ?? 'Recommended for this project',
+                    reason: t.reason ?? 'Recommended for this workspace',
                     alternatives: t.alternatives ?? [],
                 }));
             };
@@ -1977,7 +1979,7 @@ Respond ONLY with valid JSON:
      */
     private async stageGeneratePersonas(
         session: IdeaSession,
-        idea: ProjectIdea
+        idea: WorkspaceIdea
     ): Promise<{ personas: UserPersona[]; journey: JourneyStep[] }> {
         const prompt = `Create 3 detailed user personas and a 4-step journey map for:
 Title: ${idea.title}
@@ -2027,7 +2029,7 @@ Respond in JSON:
      */
     private async stageGenerateBusinessStrategy(
         session: IdeaSession,
-        idea: ProjectIdea
+        idea: WorkspaceIdea
     ): Promise<{ swot: SWOTAnalysis; businessModel: BusinessModel }> {
         const prompt = `Develop a SWOT analysis and business model for:
 Title: ${idea.title}
@@ -2077,7 +2079,7 @@ Respond in JSON:
      */
     private async stageGenerateGTMPlan(
         session: IdeaSession,
-        idea: ProjectIdea
+        idea: WorkspaceIdea
     ): Promise<MarketingPlan> {
         const prompt = `Create a Go-To-Market plan for:
 Title: ${idea.title}
@@ -2184,7 +2186,7 @@ Competitive Landscape: ${JSON.stringify(idea.ideaCompetitors)}
             };
 
             return {
-                explanation: parsed.explanation ?? 'A innovative project idea.',
+                explanation: parsed.explanation ?? 'A innovative workspace idea.',
                 valueProposition: parsed.valueProposition ?? 'Solves real problems for users.',
                 nameSuggestions: Array.isArray(parsed.nameSuggestions)
                     ? parsed.nameSuggestions.slice(0, 10)
@@ -2195,7 +2197,7 @@ Competitive Landscape: ${JSON.stringify(idea.ideaCompetitors)}
             };
         } catch {
             return {
-                explanation: 'A innovative project idea.',
+                explanation: 'A innovative workspace idea.',
                 valueProposition: 'Solves real problems for users.',
                 nameSuggestions: [],
                 competitiveAdvantages: [],
@@ -2334,7 +2336,7 @@ Competitive Landscape: ${JSON.stringify(idea.ideaCompetitors)}
     /**
      * Get archived ideas, optionally filtered by session
      */
-    async getArchivedIdeas(sessionId?: string): Promise<ProjectIdea[]> {
+    async getArchivedIdeas(sessionId?: string): Promise<WorkspaceIdea[]> {
         const repository = await this.getRepository();
         return repository.getArchivedIdeas(sessionId);
     }

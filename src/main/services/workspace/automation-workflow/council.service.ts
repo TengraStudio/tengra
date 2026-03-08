@@ -2,7 +2,7 @@ import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { QuotaService } from '@main/services/proxy/quota.service';
-import { ProjectStep, StepModelConfig } from '@shared/types/project-agent';
+import { StepModelConfig,WorkspaceStep } from '@shared/types/workspace-agent';
 
 import { AgentCollaborationService } from './agent-collaboration.service';
 
@@ -31,7 +31,7 @@ export class CouncilService extends BaseService {
     /**
      * MARCH1-COUNCIL-001: Prepare a plan according to Council rules
      */
-    async prepareCouncilPlan(taskId: string, steps: ProjectStep[]): Promise<ProjectStep[]> {
+    async prepareCouncilPlan(taskId: string, steps: WorkspaceStep[]): Promise<WorkspaceStep[]> {
         this.logInfo(`Preparing plan for task ${taskId} with ${steps.length} steps with Council oversight`);
 
         // 1. Quota-aware model assignment
@@ -42,7 +42,7 @@ export class CouncilService extends BaseService {
                 modelConfig: bestModel,
                 // MARCH1-COUNCIL-001: Mark steps as requiring approval if they are high impact
                 requiresApproval: step.priority === 'high' || step.priority === 'critical'
-            } as ProjectStep;
+            } as WorkspaceStep;
         }));
 
         this.logInfo(`Council plan prepared for task ${taskId} with quota-aware routing`);
@@ -52,7 +52,7 @@ export class CouncilService extends BaseService {
     /**
      * MARCH1-COUNCIL-002: Intelligent routing based on available quota
      */
-    private async routeWithQuotaAwareness(step: ProjectStep): Promise<StepModelConfig> {
+    private async routeWithQuotaAwareness(step: WorkspaceStep): Promise<StepModelConfig> {
         const availableProviders = await this.deps.llm.getAvailableProviders();
 
         // 1. Get default routing config from collaboration service
@@ -99,7 +99,7 @@ export class CouncilService extends BaseService {
     /**
      * MARCH1-COUNCIL-003: Reassign tasks dynamically if a model hits limits
      */
-    async handleDynamicReassignment(step: ProjectStep): Promise<ProjectStep> {
+    async handleDynamicReassignment(step: WorkspaceStep): Promise<WorkspaceStep> {
         this.logWarn(`Dynamic reassignment triggered for step: ${step.id}`);
         // Implementation for dynamic reassignment during execution
         return step;

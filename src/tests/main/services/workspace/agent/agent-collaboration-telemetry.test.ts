@@ -5,7 +5,7 @@ import {
 } from '@main/services/workspace/agent/agent-collaboration.service';
 import {
     AgentCollaborationTelemetryEvent
-} from '@shared/types/project-agent';
+} from '@shared/types/workspace-agent';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@main/logging/logger', () => ({

@@ -16,18 +16,18 @@ export const sortNodes = (nodes: FileNode[]) => (
 );
 
 export const getWorkspaceExplorerStorageKey = (
-    projectId: string,
+    workspaceId: string,
     mounts: WorkspaceMount[]
 ): string => {
-    const projectSignature = mounts
+    const workspaceSignature = mounts
         .map(mount => `${mount.type}:${mount.rootPath}`)
         .sort()
         .join('|');
-    return `workspace.explorer.expanded.v1:${projectId}:${projectSignature}`;
+    return `workspace.explorer.expanded.v1:${workspaceId}:${workspaceSignature}`;
 };
 
-export const getWorkspaceTreeStorageKey = (projectId: string): string =>
-    `workspace.explorer.tree.v1:${projectId}`;
+export const getWorkspaceTreeStorageKey = (workspaceId: string): string =>
+    `workspace.explorer.tree.v1:${workspaceId}`;
 
 export const loadExpandedMountState = (storageKey: string): Record<string, boolean> => {
     try {

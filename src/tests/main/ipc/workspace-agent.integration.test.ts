@@ -1,7 +1,8 @@
 import { registerWorkspaceAgentIpc } from '@main/ipc/workspace-agent';
 import { DatabaseService } from '@main/services/data/database.service';
-import { WorkspaceAgentService } from '@main/services/workspace/workspace-agent.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
+import { WorkspaceAgentService } from '@main/services/workspace/workspace-agent.service';
+import { WORKSPACE_COMPAT_CHANNEL_VALUES } from '@shared/constants';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
@@ -49,7 +50,7 @@ interface MockWorkspaceAgentService extends Partial<WorkspaceAgentService> {
 
 type IpcHandler = (event: IpcMainInvokeEvent, ...args: unknown[]) => unknown | Promise<unknown>;
 
-describe('Project Agent IPC Handlers', () => {
+describe('Workspace Agent IPC Handlers', () => {
     let mockWorkspaceAgentService: MockWorkspaceAgentService;
     let mockDatabaseService: Partial<DatabaseService>;
     let registeredHandlers: Map<string, IpcHandler>;
@@ -172,7 +173,7 @@ describe('Project Agent IPC Handlers', () => {
     };
 
     describe('Core Handlers', () => {
-        it('should start a project agent task', async () => {
+        it('should start a workspace agent task', async () => {
             const handler = getRequiredHandler('workspace:start');
             const options = { task: 'Fix bugs' };
             await handler({} as IpcMainInvokeEvent, options);
@@ -187,14 +188,14 @@ describe('Project Agent IPC Handlers', () => {
             expect(result).toEqual({ success: true, data: { taskId: undefined } });
         });
 
-        it('should stop a project agent task', async () => {
+        it('should stop a workspace agent task', async () => {
             const handler = getRequiredHandler('workspace:stop');
             await handler({} as IpcMainInvokeEvent, { taskId: 'task-123' });
 
             expect(mockWorkspaceAgentService.stop).toHaveBeenCalledWith('task-123');
         });
 
-        it('should get project agent status', async () => {
+        it('should get workspace agent status', async () => {
             const handler = getRequiredHandler('workspace:get-status');
             const result = await handler({} as IpcMainInvokeEvent, { taskId: 'task-123' });
 
@@ -214,7 +215,7 @@ describe('Project Agent IPC Handlers', () => {
 
     describe('Checkpoint Handlers', () => {
         it('should resume from a checkpoint', async () => {
-            const handler = getRequiredHandler('workspace:resume-checkpoint');
+            const handler = getRequiredHandler('agent:resume-checkpoint');
             await handler({} as IpcMainInvokeEvent, 'cp-123');
 
             expect(mockWorkspaceAgentService.resumeFromCheckpoint).toHaveBeenCalledWith('cp-123');
@@ -222,9 +223,9 @@ describe('Project Agent IPC Handlers', () => {
     });
 
     describe('Legacy Compatibility', () => {
-        it('should keep old project-agent channels unregistered', () => {
-            expect(registeredHandlers.has('project-agent:start-task')).toBe(false);
-            expect(registeredHandlers.has('project-agent:health')).toBe(false);
+        it('should keep old legacy agent channels unregistered', () => {
+            expect(registeredHandlers.has(WORKSPACE_COMPAT_CHANNEL_VALUES.AGENT_START_TASK)).toBe(false);
+            expect(registeredHandlers.has(WORKSPACE_COMPAT_CHANNEL_VALUES.AGENT_HEALTH)).toBe(false);
         });
     });
 

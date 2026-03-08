@@ -7,7 +7,7 @@ export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setForm
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div>
             <h3 className="text-lg font-semibold text-foreground mb-1">{t('workspaces.buildAndTest') || 'Build & Test'}</h3>
-            <p className="text-sm text-muted-foreground">{t('workspaces.buildDesc') || 'Configure how your project is built and tested.'}</p>
+            <p className="text-sm text-muted-foreground">{t('workspaces.buildDesc') || 'Configure how your workspace is built and tested.'}</p>
         </div>
 
         <div className="grid grid-cols-1 gap-6">

@@ -34,7 +34,7 @@ const sectionData = {
     "thinkingOff": "Düşünme kapalı",
     "selectAction": "Eylem seç",
     "noDescription": "Açıklama yok",
-    "selectProject": "Proje seç",
+    "selectWorkspace": "Proje seç",
     "votingPanel": {
         "title": "Oylama Oturumları",
         "sessionCount": "{{count}} oturum",

@@ -1,7 +1,7 @@
 export type Brand<T, B extends string> = T & { readonly __brand: B };
 
 export type ChatId = Brand<string, 'ChatId'>;
-export type ProjectId = Brand<string, 'ProjectId'>;
+export type WorkspaceId = Brand<string, 'WorkspaceId'>;
 export type MessageId = Brand<string, 'MessageId'>;
 export type TerminalSessionId = Brand<string, 'TerminalSessionId'>;
 
@@ -17,11 +17,11 @@ export function isChatId(value: unknown): value is ChatId {
     return typeof value === 'string' && value.length > 0 && (isUuidLike(value) || value.startsWith('chat-'));
 }
 
-export function toProjectId(value: string): ProjectId {
-    return value as ProjectId;
+export function toWorkspaceId(value: string): WorkspaceId {
+    return value as WorkspaceId;
 }
 
-export function isProjectId(value: unknown): value is ProjectId {
+export function isWorkspaceId(value: unknown): value is WorkspaceId {
     return typeof value === 'string' && value.length > 0 && (isUuidLike(value) || value.startsWith('proj-'));
 }
 

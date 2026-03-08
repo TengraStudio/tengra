@@ -607,7 +607,7 @@ Respond in JSON:
         );
 
         // Use LLM to analyze fit
-        const prompt = `Evaluate this project idea based on market research:
+        const prompt = `Evaluate this workspace idea based on market research:
 
 IDEA:
 Title: ${ideaTitle}

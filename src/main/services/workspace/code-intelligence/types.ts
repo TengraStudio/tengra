@@ -12,7 +12,6 @@ export interface CodeSymbol {
 }
 
 export interface IndexingProgress {
-    projectId?: string;
     workspaceId?: string;
     current: number;
     total: number;
