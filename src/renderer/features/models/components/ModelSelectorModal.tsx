@@ -43,7 +43,7 @@ interface ModelSelectorModalProps {
     chatMode?: SelectorChatMode;
     onChatModeChange?: (mode: SelectorChatMode) => void;
     thinkingLevel?: string;
-    onThinkingLevelChange?: (level: string) => void;
+    onThinkingLevelChange?: (modelId: string, level: string) => void;
     onConfirmSelection?: () => void;
 }
 
@@ -55,6 +55,19 @@ const THINKING_LEVEL_LABELS: Record<ThinkingLevel, string> = {
     high: 'High',
     xhigh: 'Max',
 };
+
+function resolvePreferredThinkingLevel(levels: string[], currentLevel?: string): string | null {
+    if (levels.length === 0) {
+        return null;
+    }
+    if (currentLevel && levels.includes(currentLevel)) {
+        return currentLevel;
+    }
+    if (levels.includes('low')) {
+        return 'low';
+    }
+    return levels[0] ?? null;
+}
 
 export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
     isOpen,
@@ -69,7 +82,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
     t,
     chatMode = 'instant',
     onChatModeChange,
-    thinkingLevel = 'medium',
+    thinkingLevel = 'low',
     onThinkingLevelChange,
     onConfirmSelection,
 }) => {
@@ -77,7 +90,6 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
     const searchInputRef = useRef<HTMLInputElement>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilters, setActiveFilters] = useState<Array<'local' | 'cloud' | 'free' | 'reasoning' | 'deprecated'>>([]);
-    const [compactRows, setCompactRows] = useState(false);
     const [internalChatMode, setInternalChatMode] = useState<SelectorChatMode>(chatMode);
     const [activeTab, setActiveTab] = useState<'models' | 'reasoning'>('models');
     const [pendingModel, setPendingModel] = useState<{ provider: string; id: string } | null>(null);
@@ -230,29 +242,34 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
     const currentModelThinkingLevels = useMemo(() => {
         for (const cat of categories) {
             if (!Array.isArray(cat.models)) { continue; }
-            const found = cat.models.find(m => m.id === selectedModel);
+            const found = cat.models.find(m =>
+                m.id === selectedModel && (selectedProvider === '' || m.provider === selectedProvider)
+            );
             if (found?.thinkingLevels) {
                 return found.thinkingLevels;
             }
         }
         return null;
-    }, [categories, selectedModel]);
+    }, [categories, selectedModel, selectedProvider]);
 
     const currentModelInfo = useMemo(() => {
         for (const cat of categories) {
             if (!Array.isArray(cat.models)) { continue; }
-            const found = cat.models.find(m => m.id === selectedModel);
+            const found = cat.models.find(m =>
+                m.id === selectedModel && (selectedProvider === '' || m.provider === selectedProvider)
+            );
             if (found) {
                 return found;
             }
         }
         return null;
-    }, [categories, selectedModel]);
+    }, [categories, selectedModel, selectedProvider]);
 
     useEffect(() => {
         let timer: NodeJS.Timeout | undefined;
         if (
             activeTab === 'reasoning' &&
+            (!pendingModelThinkingLevels || pendingModelThinkingLevels.length === 0) &&
             (!currentModelThinkingLevels || currentModelThinkingLevels.length === 0)
         ) {
             // Use setTimeout to avoid synchronous setState in effect body
@@ -263,17 +280,17 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                 clearTimeout(timer);
             }
         };
-    }, [activeTab, currentModelThinkingLevels]);
+    }, [activeTab, currentModelThinkingLevels, pendingModelThinkingLevels]);
 
-    const supportsReasoning = useCallback(
+    const getThinkingLevels = useCallback(
         (provider: string, id: string) => {
             for (const cat of categories) {
                 const found = cat.models.find(m => m.id === id && m.provider === provider);
                 if (found?.thinkingLevels && found.thinkingLevels.length > 0) {
-                    return true;
+                    return found.thinkingLevels;
                 }
             }
-            return false;
+            return [];
         },
         [categories]
     );
@@ -310,10 +327,10 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                 return;
             }
 
-            const hasReasoning = supportsReasoning(provider, id);
-            if (hasReasoning) {
+            const thinkingLevels = getThinkingLevels(provider, id);
+            if (thinkingLevels.length > 0) {
                 setPendingModel({ provider, id });
-                setPendingThinkingLevel(null);
+                setPendingThinkingLevel(resolvePreferredThinkingLevel(thinkingLevels));
                 setActiveTab('reasoning');
                 return;
             }
@@ -321,25 +338,30 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
             onSelect(provider, id, isMulti, false);
             handleClose();
         },
-        [handleClose, onSelect, supportsReasoning]
+        [getThinkingLevels, handleClose, onSelect]
     );
 
     const handlePendingThinkingLevelChange = useCallback(
         (level: string) => {
             setPendingThinkingLevel(level);
-            onThinkingLevelChange?.(level);
+            if (pendingModel) {
+                onThinkingLevelChange?.(pendingModel.id, level);
+            }
         },
-        [onThinkingLevelChange]
+        [onThinkingLevelChange, pendingModel]
     );
 
     const handleConfirmSelection = useCallback(() => {
         if (!pendingModel || !canConfirm) {
             return;
         }
+        if (pendingThinkingLevel) {
+            onThinkingLevelChange?.(pendingModel.id, pendingThinkingLevel);
+        }
         onSelect(pendingModel.provider, pendingModel.id, false, false);
         onConfirmSelection?.();
         handleClose();
-    }, [pendingModel, canConfirm, onSelect, onConfirmSelection, handleClose]);
+    }, [pendingModel, canConfirm, pendingThinkingLevel, onThinkingLevelChange, onSelect, onConfirmSelection, handleClose]);
 
     const handleBackdropClick = useCallback(
         (e: React.MouseEvent) => {
@@ -399,6 +421,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                     activeTab={activeTab}
                     onTabChange={setActiveTab}
                     showReasoningTab={
+                        !!pendingModelThinkingLevels?.length ||
                         !!currentModelThinkingLevels && currentModelThinkingLevels.length > 0
                     }
                 />
@@ -441,17 +464,6 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                     </button>
                                 );
                             })}
-                            <button
-                                onClick={() => setCompactRows(prev => !prev)}
-                                className={cn(
-                                    'px-2.5 py-1 rounded-full text-xs border transition-colors ml-auto',
-                                    compactRows
-                                        ? 'bg-primary/15 text-primary border-primary/30'
-                                        : 'bg-muted/30 text-muted-foreground border-border/40 hover:bg-muted/50'
-                                )}
-                            >
-                                {compactRows ? 'Detailed' : 'Compact'}
-                            </button>
                         </div>
                     </>
                 )}
@@ -544,7 +556,12 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                         return (
                                             <button
                                                 key={level}
-                                                onClick={() => onThinkingLevelChange?.(level)}
+                                                onClick={() =>
+                                                    onThinkingLevelChange?.(
+                                                        currentModelInfo?.id ?? selectedModel,
+                                                        level
+                                                    )
+                                                }
                                                 className={cn(
                                                     'px-3 py-1.5 rounded-md text-xs font-medium transition-all border border-border/50',
                                                     isActive
@@ -574,7 +591,6 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                             onSelect={handleSelect}
                             toggleFavorite={toggleFavorite}
                             t={t}
-                            compactRows={compactRows}
                         />
                     ) : null}
                 </div>

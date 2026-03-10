@@ -1,4 +1,5 @@
-import { CatchError, JsonObject, JsonValue } from '@shared/types/common';
+import { CatchError, JsonObject } from '@shared/types/common';
+import { SessionConversationStreamChunk } from '@shared/types/session-conversation';
 
 import { ChatStreamRequest, ToolCall } from '@/types';
 
@@ -53,8 +54,17 @@ export async function* chatStream(
         streamError: null as CatchError
     };
 
-    const listener = (chunk: JsonValue) => {
-        const typedChunk = chunk as ChatStreamChunk;
+    const listener = (chunk: SessionConversationStreamChunk) => {
+        const typedChunk: ChatStreamChunk = {
+            chatId: chunk.chatId,
+            content: chunk.content,
+            reasoning: chunk.reasoning,
+            done: chunk.done,
+            type: chunk.type,
+            sources: chunk.sources,
+            tool_calls: chunk.toolCalls,
+            error: chunk.error,
+        };
         if (state.isDone) {
             return;
         }
@@ -78,9 +88,10 @@ export async function* chatStream(
         }
     };
 
-    const unsubscribe = window.electron.onStreamChunk(listener);
+    const sessionConversationBridge = window.electron.session.conversation;
+    const unsubscribe = sessionConversationBridge.onStreamChunk(listener);
 
-    void window.electron.chatStream({ messages, model, tools, provider, options, chatId, workspaceId })
+    void sessionConversationBridge.stream({ messages, model, tools, provider, options, chatId, workspaceId })
         .catch(err => {
             state.streamError = err;
             state.isDone = true;

@@ -19,7 +19,6 @@ import { WorkspaceMountItem } from './workspace/WorkspaceMountItem';
 interface WorkspaceExplorerProps {
     workspaceId: string;
     mounts: WorkspaceMount[];
-    mountStatus: Record<string, 'connected' | 'disconnected' | 'connecting'>;
     refreshSignal: number;
     onOpenFile: (entry: WorkspaceEntry) => void;
     onSelectEntry: (entry: WorkspaceEntry, e?: React.MouseEvent) => void;
@@ -36,7 +35,6 @@ interface WorkspaceExplorerProps {
 export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
     workspaceId,
     mounts,
-    mountStatus,
     refreshSignal,
     onOpenFile,
     onSelectEntry,
@@ -162,13 +160,17 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                 </div>
             )}
 
-            <div className="flex-1 overflow-y-auto py-1 space-y-0.5 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent px-0">
+            <div
+                className={cn(
+                    'flex-1 py-1 space-y-0.5 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent px-0',
+                    mounts.length > 1 ? 'overflow-y-auto' : 'overflow-hidden flex flex-col'
+                )}
+            >
                 {mounts.map(mount => (
                     <WorkspaceMountItem
                         key={mount.id}
                         mount={mount}
                         mountsCount={mounts.length}
-                        mountStatus={mountStatus}
                         isExpanded={!!expandedMounts[mount.id]}
                         onToggle={toggleMount}
                         onRemove={onRemoveMount}

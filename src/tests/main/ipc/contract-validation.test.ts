@@ -18,6 +18,8 @@ vi.unmock('path');
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { SESSION_CONVERSATION_CHANNELS } from '@shared/constants/ipc-channels';
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -27,6 +29,12 @@ const SRC = path.join(WORKSPACE_ROOT, 'src');
 const IPC_DIR = path.join(SRC, 'main', 'ipc');
 const ELECTRON_DTS = path.join(SRC, 'renderer', 'electron.d.ts');
 const PRELOAD_TS = path.join(SRC, 'main', 'preload.ts');
+const REGISTERED_CONSTANT_CHANNELS = new Map<string, string>([
+    ['SESSION_CONVERSATION_CHANNELS.COMPLETE', SESSION_CONVERSATION_CHANNELS.COMPLETE],
+    ['SESSION_CONVERSATION_CHANNELS.STREAM', SESSION_CONVERSATION_CHANNELS.STREAM],
+    ['SESSION_CONVERSATION_CHANNELS.RETRY_WITH_MODEL', SESSION_CONVERSATION_CHANNELS.RETRY_WITH_MODEL],
+    ['SESSION_CONVERSATION_CHANNELS.CANCEL', SESSION_CONVERSATION_CHANNELS.CANCEL],
+]);
 
 /**
  * Reads all `.ts` files inside `src/main/ipc/` and extracts channel names
@@ -50,6 +58,8 @@ function extractHandlerChannels(): { handleChannels: Set<string>; onChannels: Se
     // secureHandle may have the channel on the next line with indentation
     const secureHandleRe = /secureHandle\(\s*\n?\s*['"]([^'"]+)['"]/g;
     const onRe = /ipcMain\.on\(\s*['"]([^'"]+)['"]/g;
+    const handleConstantRe = /ipcMain\.handle\(\s*([A-Z_]+_CHANNELS\.[A-Z_]+)/g;
+    const onConstantRe = /ipcMain\.on\(\s*([A-Z_]+_CHANNELS\.[A-Z_]+)/g;
 
     for (const file of ipcFiles) {
         const content = fs.readFileSync(path.join(IPC_DIR, file), 'utf-8');
@@ -66,6 +76,18 @@ function extractHandlerChannels(): { handleChannels: Set<string>; onChannels: Se
         }
         for (const m of content.matchAll(onRe)) {
             onChannels.add(m[1]);
+        }
+        for (const m of content.matchAll(handleConstantRe)) {
+            const resolvedChannel = REGISTERED_CONSTANT_CHANNELS.get(m[1]);
+            if (resolvedChannel) {
+                handleChannels.add(resolvedChannel);
+            }
+        }
+        for (const m of content.matchAll(onConstantRe)) {
+            const resolvedChannel = REGISTERED_CONSTANT_CHANNELS.get(m[1]);
+            if (resolvedChannel) {
+                onChannels.add(resolvedChannel);
+            }
         }
     }
 
@@ -173,10 +195,10 @@ describe('IPC Contract Validation (IDEA-025)', () => {
                 'auth:unlink-account',
                 'auth:set-active-linked-account',
             ],
-            chat: [
-                'chat:stream',
-                'chat:copilot',
-                'chat:openai',
+            conversation: [
+                SESSION_CONVERSATION_CHANNELS.STREAM,
+                SESSION_CONVERSATION_CHANNELS.COMPLETE,
+                SESSION_CONVERSATION_CHANNELS.RETRY_WITH_MODEL,
             ],
             settings: [
                 'settings:get',
@@ -333,7 +355,7 @@ describe('IPC Contract Validation (IDEA-025)', () => {
 
         it('electron.d.ts declares chatStream accepting ChatStreamRequest', () => {
             const dtsContent = fs.readFileSync(ELECTRON_DTS, 'utf-8');
-            expect(dtsContent).toContain('chatStream: (request: ChatStreamRequest) => Promise<void>');
+            expect(dtsContent).toContain("session: ElectronApiIntegrationsDomain['session'];");
         });
 
         it('settings handler file returns AppSettings-compatible shape', () => {

@@ -59,7 +59,10 @@ describe('ModelRegistryService', () => {
             getProxyKey: vi.fn().mockResolvedValue('proxy-key'),
         };
         mockEventBus = { emit: vi.fn() };
-        mockAuthService = { getActiveToken: vi.fn().mockResolvedValue('test-token') };
+        mockAuthService = {
+            getActiveToken: vi.fn().mockResolvedValue('test-token'),
+            getActiveAccountFull: vi.fn().mockResolvedValue(null)
+        };
         mockTokenService = { ensureFreshToken: vi.fn().mockResolvedValue(undefined) };
         mockLocalImageService = { getSDCppStatus: vi.fn().mockResolvedValue('ready') };
         mockHuggingFaceService = {
@@ -95,8 +98,9 @@ describe('ModelRegistryService', () => {
     describe('getRemoteModels', () => {
         it('should fetch and cache remote models', async () => {
             const models = await service.getRemoteModels();
-            expect(models.some(m => m.provider === 'huggingface')).toBe(true);
-            expect(mockHuggingFaceService.searchModels).toHaveBeenCalled();
+            // HF automatic fetch removed per user request
+            expect(models.some(m => m.provider === 'huggingface')).toBe(false);
+            expect(mockHuggingFaceService.searchModels).not.toHaveBeenCalled();
             expect(service.getHealthMetrics().cacheUpdates).toBe(1);
             expect(mockEventBus.emit).toHaveBeenCalledWith(
                 'telemetry:model-registry',
@@ -106,19 +110,19 @@ describe('ModelRegistryService', () => {
 
         it('should return cached models on subsequent calls', async () => {
             await service.getRemoteModels();
+            // HF automatic fetch removed per user request
             vi.mocked(mockHuggingFaceService.searchModels!).mockClear();
 
             const models = await service.getRemoteModels();
-            expect(models.some(m => m.provider === 'huggingface')).toBe(true);
+            expect(models.some(m => m.provider === 'huggingface')).toBe(false);
             expect(mockHuggingFaceService.searchModels).not.toHaveBeenCalled();
         });
 
-        it('should include models with correct provider tags', async () => {
+        it('should NOT include HF models by default', async () => {
             const models = await service.getRemoteModels();
 
             const hfModel = models.find(m => m.provider === 'huggingface');
-            expect(hfModel).toBeDefined();
-            expect(hfModel?.id).toBe('TheBloke/Llama-7B-GGUF');
+            expect(hfModel).toBeUndefined();
         });
 
         it('should keep sd-cpp fallback model available in aggregated model list', async () => {

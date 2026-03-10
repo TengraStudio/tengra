@@ -43,7 +43,7 @@ const sectionData = {
     "runTask": "Exécuter la tâche",
     "taskRunner": "Exécuteur de tâches",
     "tasksSearchPlaceholder": "Rechercher des tâches...",
-    "noTasksFound": "Aucune tâche trouvée pour ce projet",
+    "noTasksFound": "Aucune tâche trouvée pour ce espace de travail",
     "closeSplit": "Fermer la division",
     "toggleSplitOrientation": "Activer/Désactiver l'orientation divisée",
     "searchRegex": "Recherche d'expressions régulières",
@@ -85,13 +85,13 @@ const sectionData = {
     "copyStripAnsi": "Copie (Bande ANSI)",
     "pastePreview": "Coller l'aperçu",
     "pasteTest": "Test de pâte",
-    "workspaceIssuesTabTitle": "Problèmes du projet",
-    "workspaceIssuesTitle": "Avertissements et erreurs du projet",
-    "workspaceIssuesDescription": "Avertissements et erreurs agrégés détectés dans le projet en cours.",
-    "workspaceIssuesLoading": "Actualisation des diagnostics du projet...",
-    "workspaceIssuesNoWorkspace": "Ouvrez un projet pour inspecter les diagnostics.",
+    "workspaceIssuesTabTitle": "Problèmes de l'espace de travail",
+    "workspaceIssuesTitle": "Avertissements et erreurs de l'espace de travail",
+    "workspaceIssuesDescription": "Avertissements et erreurs agrégés détectés dans l'espace de travail en cours.",
+    "workspaceIssuesLoading": "Actualisation des diagnostics de l'espace de travail...",
+    "workspaceIssuesNoWorkspace": "Ouvrez un espace de travail pour inspecter les diagnostics.",
     "workspaceIssuesNoIssues": "Aucun avertissement ou erreur détecté lors de la dernière analyse.",
-    "workspaceIssuesLoadFailed": "Échec du chargement des diagnostics du projet."
+    "workspaceIssuesLoadFailed": "Échec du chargement des diagnostics de l'espace de travail."
 };
 
 export default sectionData;

@@ -2,6 +2,8 @@
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { LLMService } from '@main/services/llm/llm.service';
+import { AutomationSessionRegistryService } from '@main/services/session/automation-session-registry.service';
+import { CouncilCapabilityService } from '@main/services/session/capabilities/council-capability.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { AgentCollaborationService } from '@main/services/workspace/automation-workflow/agent-collaboration.service';
 import { AgentPerformanceService } from '@main/services/workspace/automation-workflow/agent-performance.service';
@@ -45,7 +47,6 @@ import { AutomationWorkflowCouncilManager } from './automation-workflow/automati
 import { AutomationWorkflowProfileManager } from './automation-workflow/automation-workflow-profile-manager';
 import { AutomationWorkflowTaskManager } from './automation-workflow/automation-workflow-task-manager';
 import { AutomationWorkflowTemplateManager } from './automation-workflow/automation-workflow-template-manager';
-import { CouncilService } from './automation-workflow/council.service';
 
 type WorkspaceState = AutomationWorkflowState;
 type WorkspaceStep = AutomationWorkflowStep;
@@ -60,7 +61,8 @@ interface AutomationWorkflowServiceDependencies {
     agentCollaborationService: AgentCollaborationService;
     agentTemplateService: AgentTemplateService;
     agentPerformanceService: AgentPerformanceService;
-    councilService: CouncilService;
+    councilCapabilityService: CouncilCapabilityService;
+    automationSessionRegistryService?: AutomationSessionRegistryService;
 }
 
 export class AutomationWorkflowService extends BaseService {
@@ -70,10 +72,12 @@ export class AutomationWorkflowService extends BaseService {
     private readonly templateManager: AutomationWorkflowTemplateManager;
     private readonly taskManager: AutomationWorkflowTaskManager;
     private readonly councilManager: AutomationWorkflowCouncilManager;
+    private readonly automationSessionRegistryService?: AutomationSessionRegistryService;
 
     constructor(deps: AutomationWorkflowServiceDependencies) {
         super('AutomationWorkflowService');
         this.eventBus = deps.eventBus;
+        this.automationSessionRegistryService = deps.automationSessionRegistryService;
 
         this.profileManager = new AutomationWorkflowProfileManager({
             registryService: deps.agentRegistryService
@@ -97,7 +101,7 @@ export class AutomationWorkflowService extends BaseService {
             gitService: deps.gitService,
             agentCollaborationService: deps.agentCollaborationService,
             agentPerformanceService: deps.agentPerformanceService,
-            councilService: deps.councilService,
+            councilCapabilityService: deps.councilCapabilityService,
             collaborationManager
         });
 
@@ -115,6 +119,7 @@ export class AutomationWorkflowService extends BaseService {
     override async initialize(): Promise<void> {
         this.logInfo('Initializing AutomationWorkflowService...');
         await this.taskManager.initialize();
+        await this.restoreAutomationSessions();
         this.logInfo('AutomationWorkflowService initialized');
     }
 
@@ -133,35 +138,66 @@ export class AutomationWorkflowService extends BaseService {
     }
 
     async start(options: AgentStartOptions): Promise<string> {
-        return await this.taskManager.start(options);
+        const taskId = await this.taskManager.start(options);
+        await this.automationSessionRegistryService?.startTaskSession(taskId, options, 'planning');
+        return taskId;
     }
 
-    async generatePlan(options: AgentStartOptions): Promise<void> {
-        await this.taskManager.generatePlan(options);
+    async generatePlan(options: AgentStartOptions): Promise<string> {
+        const taskId = await this.taskManager.generatePlan(options);
+        await this.automationSessionRegistryService?.startTaskSession(taskId, options, 'planning');
+        return taskId;
     }
 
     async stop(taskId?: string): Promise<void> {
+        const targetId = taskId || this.taskManager.getCurrentTaskId();
         await this.taskManager.stop(taskId);
+        if (targetId) {
+            await this.automationSessionRegistryService?.markInterrupted(targetId, 'stopped');
+        }
     }
 
     async pauseTask(taskId?: string): Promise<void> {
+        const targetId = taskId || this.taskManager.getCurrentTaskId();
         await this.taskManager.pauseTask(taskId);
+        if (targetId) {
+            await this.automationSessionRegistryService?.markPaused(targetId);
+        }
     }
 
     async resumeTask(taskId: string): Promise<boolean> {
-        return await this.taskManager.resumeTask(taskId);
+        const resumed = await this.taskManager.resumeTask(taskId);
+        if (resumed) {
+            await this.automationSessionRegistryService?.markRunning(taskId);
+        }
+        return resumed;
     }
 
     async approvePlan(plan: WorkspaceStep[] | string[], taskId?: string): Promise<void> {
         await this.taskManager.approvePlan(plan, taskId);
+        const targetId = taskId || this.taskManager.getCurrentTaskId();
+        if (targetId) {
+            await this.automationSessionRegistryService?.markRunning(targetId);
+        }
     }
 
     async approveCurrentPlan(taskId: string): Promise<boolean> {
-        return await this.taskManager.approveCurrentPlan(taskId);
+        const approved = await this.taskManager.approveCurrentPlan(taskId);
+        if (approved) {
+            await this.automationSessionRegistryService?.markRunning(taskId);
+        }
+        return approved;
     }
 
     async rejectCurrentPlan(taskId: string, reason?: string): Promise<boolean> {
-        return await this.taskManager.rejectCurrentPlan(taskId, reason);
+        const rejected = await this.taskManager.rejectCurrentPlan(taskId, reason);
+        if (rejected) {
+            await this.automationSessionRegistryService?.markInterrupted(
+                taskId,
+                reason ?? 'plan_rejected'
+            );
+        }
+        return rejected;
     }
 
     async getStatus(taskId?: string): Promise<WorkspaceState> {
@@ -195,7 +231,11 @@ export class AutomationWorkflowService extends BaseService {
     }
 
     async resetState(taskId?: string): Promise<void> {
+        const targetId = taskId || this.taskManager.getCurrentTaskId();
         await this.taskManager.resetState(taskId);
+        if (targetId) {
+            this.automationSessionRegistryService?.removeSession(targetId);
+        }
     }
 
     // --- History & Checkpoints wrappers ---
@@ -214,10 +254,13 @@ export class AutomationWorkflowService extends BaseService {
 
     async resumeFromCheckpoint(checkpointId: string): Promise<void> {
         await this.taskManager.resumeFromCheckpoint(checkpointId);
+        await this.restoreAutomationSessions();
     }
 
     async rollbackCheckpoint(checkpointId: string): Promise<RollbackCheckpointResult> {
-        return await this.taskManager.rollbackCheckpoint(checkpointId);
+        const result = await this.taskManager.rollbackCheckpoint(checkpointId);
+        await this.restoreAutomationSessions();
+        return result;
     }
 
     async saveSnapshot(taskId: string): Promise<string> {
@@ -259,15 +302,28 @@ export class AutomationWorkflowService extends BaseService {
     }
 
     async deleteTask(taskId: string): Promise<boolean> {
-        return await this.taskManager.deleteTask(taskId);
+        const deleted = await this.taskManager.deleteTask(taskId);
+        if (deleted) {
+            this.automationSessionRegistryService?.removeSession(taskId);
+        }
+        return deleted;
     }
 
     async deleteTaskByNodeId(nodeId: string): Promise<boolean> {
-        return await this.taskManager.deleteTaskByNodeId(nodeId);
+        const deletedTaskId = await this.taskManager.deleteTaskByNodeId(nodeId);
+        if (deletedTaskId) {
+            this.automationSessionRegistryService?.removeSession(deletedTaskId);
+            return true;
+        }
+        return false;
     }
 
     async selectModel(taskId: string, provider: string, model: string): Promise<boolean> {
-        return await this.taskManager.selectModel(taskId, provider, model);
+        const selected = await this.taskManager.selectModel(taskId, provider, model);
+        if (selected) {
+            await this.automationSessionRegistryService?.updateModel(taskId, provider, model);
+        }
+        return selected;
     }
 
     // Stub methods for legacy compatibility that returns data
@@ -293,6 +349,21 @@ export class AutomationWorkflowService extends BaseService {
 
     async createPullRequest(taskId?: string): Promise<{ success: boolean; url?: string; error?: string }> {
         return await this.taskManager.createPullRequest(taskId);
+    }
+
+    private async restoreAutomationSessions(): Promise<void> {
+        if (!this.automationSessionRegistryService) {
+            return;
+        }
+
+        const taskIds = this.taskManager.getKnownTaskIds();
+        for (const taskId of taskIds) {
+            const status = await this.taskManager.getStatus(taskId);
+            await this.automationSessionRegistryService.ensureSessionForTask(taskId, {
+                workflowState: status,
+                sourceSurface: 'automation-workflow',
+            });
+        }
     }
 
     // ===== AGT-COL: Collaboration Methods =====
@@ -502,6 +573,10 @@ export class AutomationWorkflowService extends BaseService {
 
     getTemplatesByCategory(category: AgentTemplateCategory): AgentTemplate[] {
         return this.templateManager.getTemplatesByCategory(category);
+    }
+
+    getTemplate(id: string): AgentTemplate | null {
+        return this.templateManager.getTemplate(id);
     }
 
     async saveTemplate(template: AgentTemplate): Promise<{ success: boolean; template: AgentTemplate }> {

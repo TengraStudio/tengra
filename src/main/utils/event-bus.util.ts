@@ -1,12 +1,12 @@
 import { EventEmitter } from 'events';
 
 import { appLogger } from '@main/logging/logger';
-import { JsonObject, JsonValue } from '@shared/types/common';
+import { SESSION_RUNTIME_EVENTS } from '@shared/constants/session-runtime-events';
 import {
-    WorkspaceState,
     WorkspaceStep,
     WorkspaceStepStatus,
-} from '@shared/types/workspace-agent';
+} from '@shared/types/automation-workflow';
+import { JsonObject, JsonValue } from '@shared/types/common';
 
 export type EventHandler<T = JsonValue> = (data: T) => void | Promise<void>;
 
@@ -53,12 +53,28 @@ export interface AppEvents {
     'app:ready': Record<string, never>;
     'app:closing': Record<string, never>;
 
-    // Agent events
-    'workspace:update': WorkspaceState;
-    'workspace:step-update': { taskId: string; index: number; status: WorkspaceStepStatus; message?: string };
-    'workspace:plan-proposed': { taskId: string; steps: Array<string | Partial<WorkspaceStep>> };
-    'workspace:plan-revised': { taskId: string; action: 'add' | 'remove' | 'modify' | 'insert'; index?: number; stepText?: string; reason: string };
-    'workspace:cost-estimated': { taskId: string; estimate: unknown }; // Replaced any with unknown
+    // Automation session events
+    [SESSION_RUNTIME_EVENTS.AUTOMATION_STEP_UPDATE]: {
+        taskId: string;
+        index: number;
+        status: WorkspaceStepStatus;
+        message?: string;
+    };
+    [SESSION_RUNTIME_EVENTS.AUTOMATION_PLAN_PROPOSED]: {
+        taskId: string;
+        steps: Array<string | Partial<WorkspaceStep>>;
+    };
+    [SESSION_RUNTIME_EVENTS.AUTOMATION_PLAN_REVISED]: {
+        taskId: string;
+        action: 'add' | 'remove' | 'modify' | 'insert';
+        index?: number;
+        stepText?: string;
+        reason: string;
+    };
+    [SESSION_RUNTIME_EVENTS.AUTOMATION_COST_ESTIMATED]: {
+        taskId: string;
+        estimate: unknown;
+    };
 
     // Generic
     [key: string]: unknown; // Replaced any with unknown
@@ -238,3 +254,4 @@ export const eventBus = new EventBus();
 
 // Re-export for convenience
 export default eventBus;
+

@@ -1,9 +1,9 @@
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
-import { AgentProfile } from '@shared/types/workspace-agent';
+import { AgentProfile } from '@shared/types/automation-workflow';
 
-import { WORKSPACE_AGENT_SYSTEM_PROMPT } from '../workspace-agent.prompts';
+import { AUTOMATION_WORKFLOW_SYSTEM_PROMPT } from '../automation-workflow.prompts';
 
 export class AgentRegistryService extends BaseService {
     private profiles: Map<string, AgentProfile> = new Map();
@@ -24,7 +24,7 @@ export class AgentRegistryService extends BaseService {
             name: 'Standard Agent',
             role: 'Senior Full-Stack Engineer',
             persona: 'Professional, focused, relentless.',
-            systemPrompt: WORKSPACE_AGENT_SYSTEM_PROMPT,
+            systemPrompt: AUTOMATION_WORKFLOW_SYSTEM_PROMPT,
             skills: ['full-stack', 'problem-solving']
         };
 
@@ -33,7 +33,7 @@ export class AgentRegistryService extends BaseService {
             name: 'System Architect',
             role: 'Chief Software Architect',
             persona: 'Visionary, structured, detail-oriented.',
-            systemPrompt: `${WORKSPACE_AGENT_SYSTEM_PROMPT}\n\nAdditional Directive: Prioritize long-term maintainability and system architecture.`,
+            systemPrompt: `${AUTOMATION_WORKFLOW_SYSTEM_PROMPT}\n\nAdditional Directive: Prioritize long-term maintainability and system architecture.`,
             skills: ['architecture', 'design-patterns', 'scalability']
         };
 
@@ -128,3 +128,4 @@ export class AgentRegistryService extends BaseService {
         return Array.from(this.profiles.values());
     }
 }
+

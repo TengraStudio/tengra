@@ -43,7 +43,7 @@ const sectionData = {
     "runTask": "运行任务",
     "taskRunner": "任务执行器",
     "tasksSearchPlaceholder": "搜索任务...",
-    "noTasksFound": "没有找到该项目的任务",
+    "noTasksFound": "没有找到该工作区的任务",
     "closeSplit": "关闭分割",
     "toggleSplitOrientation": "切换分割方向",
     "searchRegex": "正则表达式搜索",
@@ -85,13 +85,13 @@ const sectionData = {
     "copyStripAnsi": "复制（剥离 ANSI）",
     "pastePreview": "粘贴预览",
     "pasteTest": "测试膏",
-    "workspaceIssuesTabTitle": "项目问题",
-    "workspaceIssuesTitle": "项目警告和错误",
-    "workspaceIssuesDescription": "在当前项目中检测到的聚合警告和错误。",
-    "workspaceIssuesLoading": "正在刷新项目诊断...",
-    "workspaceIssuesNoWorkspace": "打开一个项目来检查诊断。",
+    "workspaceIssuesTabTitle": "工作区问题",
+    "workspaceIssuesTitle": "工作区警告和错误",
+    "workspaceIssuesDescription": "在当前工作区中检测到的聚合警告和错误。",
+    "workspaceIssuesLoading": "正在刷新工作区诊断...",
+    "workspaceIssuesNoWorkspace": "打开一个工作区来检查诊断。",
     "workspaceIssuesNoIssues": "最新扫描中未检测到警告或错误。",
-    "workspaceIssuesLoadFailed": "无法加载项目诊断。"
+    "workspaceIssuesLoadFailed": "无法加载工作区诊断。"
 };
 
 export default sectionData;

@@ -127,12 +127,27 @@ describe('AuthService - Account Management', () => {
 
     it('should get active token decrypted', async () => {
         const account = makeAccount({ accessToken: 'enc:secret-token' });
-        vi.mocked(mockDatabaseService.getActiveLinkedAccount).mockResolvedValue(account);
+        vi.mocked(mockDatabaseService.getLinkedAccounts).mockResolvedValue([account]);
+        await authService.initialize();
 
         const token = await authService.getActiveToken('github');
 
         expect(token).toBe('secret-token');
         expect(mockSecurityService.decryptSync).toHaveBeenCalledWith('enc:secret-token');
+    });
+
+    it('warms linked account cache on initialize and serves provider reads without hitting the DB again', async () => {
+        const account = makeAccount();
+        vi.mocked(mockDatabaseService.getLinkedAccounts).mockResolvedValue([account]);
+
+        await authService.initialize();
+        vi.mocked(mockDatabaseService.getLinkedAccounts).mockClear();
+
+        const accounts = await authService.getAccountsByProvider('github');
+
+        expect(accounts).toHaveLength(1);
+        expect(accounts[0]?.id).toBe(account.id);
+        expect(mockDatabaseService.getLinkedAccounts).not.toHaveBeenCalled();
     });
 
     it('should return undefined when no active account', async () => {

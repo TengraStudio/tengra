@@ -1,7 +1,14 @@
-import { fetchModels, groupModels } from '@renderer/features/models/utils/model-fetcher';
+import { fetchModels, getSelectableProviderId, groupModels } from '@renderer/features/models/utils/model-fetcher';
 import { describe, expect, it, vi } from 'vitest';
 
 describe('groupModels', () => {
+    it('prefers providerCategory for selectable provider IDs', () => {
+        expect(getSelectableProviderId({
+            provider: 'openai',
+            providerCategory: 'codex'
+        })).toBe('codex');
+    });
+
     it('groups by providerCategory when present', () => {
         const grouped = groupModels([
             {

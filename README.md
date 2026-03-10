@@ -22,7 +22,7 @@ Tengra is a powerful, open-source AI assistant designed to streamline your devel
 |----------|-------------|
 | [AI_RULES.md](./AI_RULES.md) | **MANDATORY**: Coding standards and AI agent guidelines. |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | System design, project structure, and database schema. |
-| [API.md](./API.md) | IPC channels, internal REST API, and marketplace contracts. |
+| [API.md](./API.md) | IPC channels and internal REST API. |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | Development guide, setup instructions, and contribution rules. |
 | [SECURITY.md](./SECURITY.md) | Security policy, encryption standards, and vulnerability reporting. |
 | [GUIDE.md](./GUIDE.md) | User guide, model connection, and troubleshooting. |

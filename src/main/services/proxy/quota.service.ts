@@ -156,7 +156,7 @@ export class QuotaService {
                     results.push({ ...quota, accountId: account.id, email: account.email });
                 }
             }
-            appLogger.info('QuotaService', `${QuotaTelemetryEvent.QUOTA_FETCHED}: ${results.length} accounts`);
+            appLogger.debug('QuotaService', `${QuotaTelemetryEvent.QUOTA_FETCHED}: ${results.length} accounts`);
             this.warnIfOverBudget('getQuota', start, QUOTA_PERFORMANCE_BUDGETS.FETCH_QUOTA_MS);
             return { accounts: results };
         } catch (e) {
@@ -291,7 +291,7 @@ export class QuotaService {
                 results.push({ ...quota, accountId: account.id, email: account.email });
             }
         }
-        appLogger.info('QuotaService', `${QuotaTelemetryEvent.CLAUDE_QUOTA_FETCHED}: ${results.length} accounts`);
+        appLogger.debug('QuotaService', `${QuotaTelemetryEvent.CLAUDE_QUOTA_FETCHED}: ${results.length} accounts`);
         this.warnIfOverBudget('getClaudeQuota', start, QUOTA_PERFORMANCE_BUDGETS.FETCH_CLAUDE_QUOTA_MS);
         return { accounts: results };
     }

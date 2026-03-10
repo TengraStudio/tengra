@@ -1,12 +1,8 @@
 const sectionData = {
     "management": "MCP-Verwaltung",
     "myServers": "Meine Server",
-    "marketplace": "Marktplatz",
     "addServer": "Server hinzufügen",
     "systemServers": "Systemserver",
-    "installedServers": "Marktplatz / Installiert",
-    "discoverMarket": "Markt entdecken",
-    "marketplaceSubtitle": "Entdecken Sie tausende Server für Ihre Plattform.",
     "searchPlaceholder": "Server oder Tools suchen...",
     "searchTools": "Tools suchen...",
     "storeTitle": "MCP Tool Store",

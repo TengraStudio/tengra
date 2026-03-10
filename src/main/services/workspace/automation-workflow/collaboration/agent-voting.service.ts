@@ -12,7 +12,7 @@ import {
     VotingConfiguration,
     VotingSession,
     VotingTemplate,
-} from '@shared/types/workspace-agent';
+} from '@shared/types/automation-workflow';
 
 export interface VotingDependencies {
     llm: LLMService;
@@ -408,3 +408,4 @@ Respond with a JSON object:
         this.sessions.clear();
     }
 }
+

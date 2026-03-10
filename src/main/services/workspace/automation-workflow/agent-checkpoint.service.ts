@@ -15,7 +15,7 @@ import {
     AgentCheckpointTrigger,
     PlanVersionItem,
     WorkspaceStep
-} from '@shared/types/workspace-agent';
+} from '@shared/types/automation-workflow';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 /** Standardized error for agent checkpointing */
@@ -480,3 +480,4 @@ export class AgentCheckpointService extends BaseService {
         return createHash('sha256').update(serialized).digest('hex');
     }
 }
+

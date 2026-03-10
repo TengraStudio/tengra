@@ -33,7 +33,7 @@ const sectionData = {
         "rootPath": "C:\\\\Users\\\\Workspace",
         "name": "الاسم..."
     },
-    "run": "تشغيل المشروع",
+    "run": "تشغيل المساحة عمل",
     "toggleSidebar": "تبديل الشريط الجانبي",
     "aiAssistant": "مساعد الذكاء الاصطناعي",
     "online": "متصل",

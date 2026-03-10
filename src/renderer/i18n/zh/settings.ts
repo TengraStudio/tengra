@@ -32,7 +32,6 @@ const sectionData = {
         "images": "图片",
         "mcpServers": "MCP 服务器",
         "accessibility": "无障碍",
-        "mcpMarketplace": "MCP 市场"
     },
     "accessibility": {
         "title": "无障碍",
@@ -123,15 +122,13 @@ const sectionData = {
         "title": "模型上下文协议",
         "subtitle": "管理您的 MCP 服务器并安装新工具",
         "tabs": {
-            "servers": "服务器",
-            "marketplace": "市场"
+            "servers": "服务器"
         },
         "servers": {
             "title": "配置的服务器",
             "subtitle": "管理您的模型上下文协议服务器连接",
             "connect": "连接服务器",
             "empty": "没有连接服务器",
-            "emptyHint": "从 Marketplace 选项卡安装服务器",
             "enabled": "已启用",
             "note": "笔记",
             "noteText": "AI 助手只能访问已启用的服务器。切换电源按钮以启用/禁用每个服务器。",

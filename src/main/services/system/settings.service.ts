@@ -124,6 +124,8 @@ const DEFAULT_SETTINGS: AppSettings = {
         y: 0,
         startOnStartup: true,
         workAtBackground: true,
+        lowPowerMode: true,
+        autoHibernation: true,
     },
     terminal: {
         fontSize: 13,

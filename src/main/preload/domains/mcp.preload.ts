@@ -19,8 +19,8 @@ export function createMcpBridge(ipc: IpcRenderer): McpBridge {
     return {
         list: () => ipc.invoke('mcp:list'),
         dispatch: (service, action, args) =>
-            ipc.invoke('mcp:dispatch', { service, action, args }),
-        toggle: (service, enabled) => ipc.invoke('mcp:toggle', { service, enabled }),
+            ipc.invoke('mcp:dispatch', service, action, args),
+        toggle: (service, enabled) => ipc.invoke('mcp:toggle', service, enabled),
         install: config => ipc.invoke('mcp:install', config),
         uninstall: name => ipc.invoke('mcp:uninstall', name),
         getDebugMetrics: () => ipc.invoke('mcp:debug-metrics'),

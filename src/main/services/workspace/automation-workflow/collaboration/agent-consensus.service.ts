@@ -5,7 +5,7 @@ import {
     AGENT_COLLABORATION_PERFORMANCE_BUDGETS,
     AgentCollaborationTelemetryEvent,
     ConsensusResult,
-} from '@shared/types/workspace-agent';
+} from '@shared/types/automation-workflow';
 
 export interface ConsensusDependencies {
     llm: LLMService;
@@ -192,3 +192,4 @@ export class AgentConsensusService extends BaseService {
         // No persistent state
     }
 }
+

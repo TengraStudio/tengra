@@ -1,6 +1,7 @@
 import { appLogger } from '@main/logging/logger';
 import { DatabaseService } from '@main/services/data/database.service';
 import { LLMService } from '@main/services/llm/llm.service';
+import { CouncilCapabilityService } from '@main/services/session/capabilities/council-capability.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { AgentCheckpointService } from '@main/services/workspace/automation-workflow/agent-checkpoint.service';
 import { AgentCollaborationService } from '@main/services/workspace/automation-workflow/agent-collaboration.service';
@@ -8,10 +9,10 @@ import { AgentPerformanceService } from '@main/services/workspace/automation-wor
 import { AgentRegistryService } from '@main/services/workspace/automation-workflow/agent-registry.service';
 import { AgentTaskExecutor } from '@main/services/workspace/automation-workflow/agent-task-executor';
 import { AutomationWorkflowCollaborationManager } from '@main/services/workspace/automation-workflow/automation-workflow-collaboration-manager';
-import { CouncilService } from '@main/services/workspace/automation-workflow/council.service';
 import { GitService } from '@main/services/workspace/git.service';
 import { ToolExecutor } from '@main/tools/tool-executor';
 import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
+import { SESSION_RUNTIME_EVENTS } from '@shared/constants/session-runtime-events';
 import { AgentEventRecord, TaskMetrics } from '@shared/types/agent-state';
 import {
     AgentStartOptions,
@@ -47,7 +48,7 @@ export interface AutomationWorkflowTaskManagerDependencies {
     gitService: GitService;
     agentCollaborationService: AgentCollaborationService;
     agentPerformanceService: AgentPerformanceService;
-    councilService: CouncilService;
+    councilCapabilityService: CouncilCapabilityService;
     collaborationManager: AutomationWorkflowCollaborationManager;
 }
 
@@ -64,14 +65,14 @@ export class AutomationWorkflowTaskManager {
     private readonly gitService: GitService;
     private readonly agentCollaborationService: AgentCollaborationService;
     private readonly agentPerformanceService: AgentPerformanceService;
-    private readonly councilService: CouncilService;
+    private readonly councilCapabilityService: CouncilCapabilityService;
     private readonly collaborationManager: AutomationWorkflowCollaborationManager;
 
     private readonly activeExecutionTaskIds = new Set<string>();
     private readonly queuedExecutionTasks: QueuedExecutionTask[] = [];
     private readonly taskAgentAssignments = new Map<string, string>();
     private readonly maxConcurrentExecutionTasks = 3;
-    private unsubscribeExecutionObserver?: () => void;
+    private executionObserverSubscriptionId?: string;
 
     constructor(deps: AutomationWorkflowTaskManagerDependencies) {
         this.databaseService = deps.databaseService;
@@ -82,7 +83,7 @@ export class AutomationWorkflowTaskManager {
         this.gitService = deps.gitService;
         this.agentCollaborationService = deps.agentCollaborationService;
         this.agentPerformanceService = deps.agentPerformanceService;
-        this.councilService = deps.councilService;
+        this.councilCapabilityService = deps.councilCapabilityService;
         this.collaborationManager = deps.collaborationManager;
     }
 
@@ -99,8 +100,10 @@ export class AutomationWorkflowTaskManager {
     }
 
     async cleanup(): Promise<void> {
-        this.unsubscribeExecutionObserver?.();
-        this.unsubscribeExecutionObserver = undefined;
+        if (this.executionObserverSubscriptionId) {
+            this.eventBus.unsubscribe(this.executionObserverSubscriptionId);
+            this.executionObserverSubscriptionId = undefined;
+        }
         for (const executor of this.executors.values()) {
             await executor.cleanup();
         }
@@ -158,7 +161,7 @@ export class AutomationWorkflowTaskManager {
                     checkpoint: this.agentCheckpointService,
                     git: this.gitService,
                     collaboration: this.agentCollaborationService,
-                    council: this.councilService,
+                    councilCapability: this.councilCapabilityService,
                 }
             );
             if (this.toolExecutor) {
@@ -170,43 +173,51 @@ export class AutomationWorkflowTaskManager {
     }
 
     private observeExecutionState(): void {
-        this.unsubscribeExecutionObserver?.();
-        this.unsubscribeExecutionObserver = this.eventBus.on('workspace:update', payload => {
-            const taskId = payload.taskId;
-            if (!taskId) {
-                return;
-            }
-            if (payload.status === 'running') {
-                this.activeExecutionTaskIds.add(taskId);
-                const agentId = this.taskAgentAssignments.get(taskId);
-                if (agentId) {
-                    this.agentCollaborationService.recordAgentTaskProgress({
-                        agentId,
-                        status: 'in_progress',
-                        taskId
-                    });
+        if (this.executionObserverSubscriptionId) {
+            this.eventBus.unsubscribe(this.executionObserverSubscriptionId);
+        }
+        this.executionObserverSubscriptionId = this.eventBus.onCustom(
+            SESSION_RUNTIME_EVENTS.AUTOMATION_STATE_SYNC,
+            rawPayload => {
+                const payload = rawPayload as AutomationWorkflowState;
+                const taskId = payload.taskId;
+                if (!taskId) {
+                    return;
                 }
-                return;
-            }
-            const isTerminalState = ['idle', 'failed', 'completed', 'error', 'paused'].includes(
-                payload.status
-            );
-            if (isTerminalState && this.activeExecutionTaskIds.delete(taskId)) {
-                const agentId = this.taskAgentAssignments.get(taskId);
-                if (agentId && (payload.status === 'completed' || payload.status === 'failed' || payload.status === 'error')) {
-                    const durationMs = payload.timing?.startedAt
-                        ? Date.now() - payload.timing.startedAt
-                        : undefined;
-                    this.agentCollaborationService.recordAgentTaskProgress({
-                        agentId,
-                        status: payload.status === 'completed' ? 'completed' : 'failed',
-                        durationMs,
-                        taskId
-                    });
+
+                if (payload.status === 'running') {
+                    this.activeExecutionTaskIds.add(taskId);
+                    const agentId = this.taskAgentAssignments.get(taskId);
+                    if (agentId) {
+                        this.agentCollaborationService.recordAgentTaskProgress({
+                            agentId,
+                            status: 'in_progress',
+                            taskId
+                        });
+                    }
+                    return;
                 }
-                void this.drainExecutionQueue();
+
+                const isTerminalState = ['idle', 'failed', 'completed', 'error', 'paused'].includes(
+                    payload.status
+                );
+                if (isTerminalState && this.activeExecutionTaskIds.delete(taskId)) {
+                    const agentId = this.taskAgentAssignments.get(taskId);
+                    if (agentId && (payload.status === 'completed' || payload.status === 'failed' || payload.status === 'error')) {
+                        const durationMs = payload.timing?.startedAt
+                            ? Date.now() - payload.timing.startedAt
+                            : undefined;
+                        this.agentCollaborationService.recordAgentTaskProgress({
+                            agentId,
+                            status: payload.status === 'completed' ? 'completed' : 'failed',
+                            durationMs,
+                            taskId
+                        });
+                    }
+                    void this.drainExecutionQueue();
+                }
             }
-        });
+        );
     }
 
     private getPriority(priority?: AgentStartOptions['priority']): TaskPriority {
@@ -273,6 +284,10 @@ export class AutomationWorkflowTaskManager {
         return this.currentTaskId;
     }
 
+    public getKnownTaskIds(): string[] {
+        return Array.from(this.executors.keys());
+    }
+
     async start(options: AgentStartOptions): Promise<string> {
         const taskId = await this.databaseService.uac.createTask({
             description: options.task,
@@ -313,7 +328,7 @@ export class AutomationWorkflowTaskManager {
         return taskId;
     }
 
-    async generatePlan(options: AgentStartOptions): Promise<void> {
+    async generatePlan(options: AgentStartOptions): Promise<string> {
         const taskId = await this.databaseService.uac.createTask({
             description: options.task,
             status: 'idle',
@@ -337,6 +352,7 @@ export class AutomationWorkflowTaskManager {
         });
         const executor = await this.getOrCreateExecutor(taskId, options);
         await executor.generatePlan();
+        return taskId;
     }
 
     async stop(taskId?: string): Promise<void> {
@@ -574,13 +590,14 @@ export class AutomationWorkflowTaskManager {
         return true;
     }
 
-    async deleteTaskByNodeId(nodeId: string): Promise<boolean> {
+    async deleteTaskByNodeId(nodeId: string): Promise<string | null> {
         const tasks = await this.databaseService.uac.getTasks('');
         const task = tasks.find(t => t.node_id === nodeId);
         if (task) {
-            return this.deleteTask(task.id);
+            await this.deleteTask(task.id);
+            return task.id;
         }
-        return false;
+        return null;
     }
 
     async selectModel(taskId: string, provider: string, model: string): Promise<boolean> {

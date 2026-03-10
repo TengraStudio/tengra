@@ -32,7 +32,6 @@ const sectionData = {
         "images": "画像",
         "mcpServers": "MCP サーバー",
         "accessibility": "アクセシビリティ",
-        "mcpMarketplace": "MCP マーケットプレイス"
     },
     "accessibility": {
         "title": "アクセシビリティ",
@@ -123,15 +122,13 @@ const sectionData = {
         "title": "モデルコンテキストプロトコル",
         "subtitle": "MCP サーバーを管理し、新しいツールをインストールする",
         "tabs": {
-            "servers": "サーバー",
-            "marketplace": "市場"
+            "servers": "サーバー"
         },
         "servers": {
             "title": "構成されたサーバー",
             "subtitle": "Model Context Protocol サーバー接続を管理する",
             "connect": "サーバーに接続する",
             "empty": "サーバーが接続されていません",
-            "emptyHint": "「マーケットプレイス」タブからサーバーをインストールする",
             "enabled": "有効",
             "note": "注記",
             "noteText": "AI アシスタントは、有効なサーバーのみにアクセスできます。電源ボタンを切り替えて、各サーバーを有効または無効にします。",

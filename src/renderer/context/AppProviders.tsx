@@ -3,6 +3,7 @@ import { Component, ErrorInfo, ReactNode } from 'react';
 
 import { AuthProvider } from '@/context/AuthContext';
 import { ChatProvider } from '@/context/ChatContext';
+import { LowPowerProvider } from '@/context/low-power.context';
 import { ModelProvider } from '@/context/ModelContext';
 import { SettingsProvider } from '@/context/SettingsContext';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -65,30 +66,34 @@ export function AppProviders({ children }: { children: ReactNode }) {
     return (
         <ProviderBoundary providerName="SettingsProvider">
             <SettingsProvider>
-                <ProviderBoundary providerName="LanguageProvider">
-                    <LanguageProvider>
-                        <ProviderBoundary providerName="AuthProvider">
-                            <AuthProvider>
-                                <ProviderBoundary providerName="ThemeProvider">
-                                    <ThemeProvider>
-                                        <ProviderBoundary providerName="ModelProvider">
-                                            <ModelProvider>
-                                                <ProviderBoundary providerName="WorkspaceProvider">
-                                                    <WorkspaceProvider>
-                                                        <ProviderBoundary providerName="ChatProvider">
-                                                            <ChatProvider>
-                                                                {children}
-                                                            </ChatProvider>
+                <ProviderBoundary providerName="LowPowerProvider">
+                    <LowPowerProvider>
+                        <ProviderBoundary providerName="LanguageProvider">
+                            <LanguageProvider>
+                                <ProviderBoundary providerName="AuthProvider">
+                                    <AuthProvider>
+                                        <ProviderBoundary providerName="ThemeProvider">
+                                            <ThemeProvider>
+                                                <ProviderBoundary providerName="ModelProvider">
+                                                    <ModelProvider>
+                                                        <ProviderBoundary providerName="WorkspaceProvider">
+                                                            <WorkspaceProvider>
+                                                                <ProviderBoundary providerName="ChatProvider">
+                                                                    <ChatProvider>
+                                                                        {children}
+                                                                    </ChatProvider>
+                                                                </ProviderBoundary>
+                                                            </WorkspaceProvider>
                                                         </ProviderBoundary>
-                                                    </WorkspaceProvider>
+                                                    </ModelProvider>
                                                 </ProviderBoundary>
-                                            </ModelProvider>
+                                            </ThemeProvider>
                                         </ProviderBoundary>
-                                    </ThemeProvider>
+                                    </AuthProvider>
                                 </ProviderBoundary>
-                            </AuthProvider>
+                            </LanguageProvider>
                         </ProviderBoundary>
-                    </LanguageProvider>
+                    </LowPowerProvider>
                 </ProviderBoundary>
             </SettingsProvider>
         </ProviderBoundary>

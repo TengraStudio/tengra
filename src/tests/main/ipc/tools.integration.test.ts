@@ -68,7 +68,7 @@ describe('Tools IPC Integration', () => {
     it('should register expected handlers', () => {
         expect(mockIpcMainHandlers.has('tools:execute')).toBe(true);
         expect(mockIpcMainHandlers.has('tools:kill')).toBe(true);
-        expect(mockIpcMainHandlers.has('tools:getDefinitions')).toBe(true);
+        expect(mockIpcMainHandlers.has('tools:get-definitions')).toBe(true);
         expect(mockIpcMainHandlers.size).toBe(3);
     });
 
@@ -80,7 +80,11 @@ describe('Tools IPC Integration', () => {
             const handler = mockIpcMainHandlers.get('tools:execute');
             expect(handler).toBeDefined();
 
-            const result = await handler!({}, 'test-tool', { param: 'value' });
+            const result = await handler!({}, {
+                toolName: 'test-tool',
+                args: { param: 'value' },
+                toolCallId: 'tool-1',
+            });
 
             expect(withRateLimit).toHaveBeenCalledWith('tools', expect.any(Function));
             expect(mockToolExecutor.execute).toHaveBeenCalledWith('test-tool', { param: 'value' });
@@ -92,13 +96,13 @@ describe('Tools IPC Integration', () => {
 
             vi.mocked(mockToolExecutor.execute).mockResolvedValue({ success: true });
 
-            await handler!({}, 'bash', { command: 'ls' });
+            await handler!({}, { toolName: 'bash', args: { command: 'ls' } });
             expect(mockToolExecutor.execute).toHaveBeenCalledWith('bash', { command: 'ls' });
 
-            await handler!({}, 'read_file', { path: '/test.txt' });
+            await handler!({}, { toolName: 'read_file', args: { path: '/test.txt' } });
             expect(mockToolExecutor.execute).toHaveBeenCalledWith('read_file', { path: '/test.txt' });
 
-            await handler!({}, 'write_file', { path: '/test.txt', content: 'data' });
+            await handler!({}, { toolName: 'write_file', args: { path: '/test.txt', content: 'data' } });
             expect(mockToolExecutor.execute).toHaveBeenCalledWith('write_file', { path: '/test.txt', content: 'data' });
         });
 
@@ -107,14 +111,14 @@ describe('Tools IPC Integration', () => {
 
             const handler = mockIpcMainHandlers.get('tools:execute');
 
-            await expect(handler!({}, 'failing-tool', {})).rejects.toThrow('Tool execution failed');
+            await expect(handler!({}, { toolName: 'failing-tool', args: {} })).rejects.toThrow('Tool execution failed');
         });
 
         it('should apply rate limiting', async () => {
             const handler = mockIpcMainHandlers.get('tools:execute');
             vi.mocked(mockToolExecutor.execute).mockResolvedValue({ success: true });
 
-            await handler!({}, 'test-tool', {});
+            await handler!({}, { toolName: 'test-tool', args: {} });
 
             expect(withRateLimit).toHaveBeenCalledWith('tools', expect.any(Function));
         });
@@ -154,7 +158,7 @@ describe('Tools IPC Integration', () => {
         });
     });
 
-    describe('tools:getDefinitions', () => {
+    describe('tools:get-definitions', () => {
         it('should return tool definitions', async () => {
             const mockDefinitions = [
                 { name: 'bash', description: 'Run bash commands', parameters: {} },
@@ -162,7 +166,7 @@ describe('Tools IPC Integration', () => {
             ];
             vi.mocked(mockToolExecutor.getToolDefinitions).mockResolvedValue(mockDefinitions);
 
-            const handler = mockIpcMainHandlers.get('tools:getDefinitions');
+            const handler = mockIpcMainHandlers.get('tools:get-definitions');
             expect(handler).toBeDefined();
 
             const result = await handler!({});
@@ -174,7 +178,7 @@ describe('Tools IPC Integration', () => {
         it('should return empty array on error', async () => {
             vi.mocked(mockToolExecutor.getToolDefinitions).mockRejectedValue(new Error('Failed to get definitions'));
 
-            const handler = mockIpcMainHandlers.get('tools:getDefinitions');
+            const handler = mockIpcMainHandlers.get('tools:get-definitions');
             const result = await handler!({});
 
             expect(result).toEqual([]);
@@ -186,7 +190,7 @@ describe('Tools IPC Integration', () => {
             ];
             vi.mocked(mockToolExecutor.getToolDefinitions).mockResolvedValue(mockDefinitions);
 
-            const handler = mockIpcMainHandlers.get('tools:getDefinitions');
+            const handler = mockIpcMainHandlers.get('tools:get-definitions');
             const result = await handler!({});
 
             // Result should be plain JSON (serializable)
@@ -197,7 +201,7 @@ describe('Tools IPC Integration', () => {
         it('should handle empty tool list', async () => {
             vi.mocked(mockToolExecutor.getToolDefinitions).mockResolvedValue([]);
 
-            const handler = mockIpcMainHandlers.get('tools:getDefinitions');
+            const handler = mockIpcMainHandlers.get('tools:get-definitions');
             const result = await handler!({});
 
             expect(result).toEqual([]);

@@ -20,6 +20,62 @@ export class KnowledgeRepository extends BaseRepository {
         super(adapter);
     }
 
+    async ensureMemoryTables(): Promise<void> {
+        await this.adapter.exec(`
+            CREATE TABLE IF NOT EXISTS advanced_memories (
+                id TEXT PRIMARY KEY,
+                content TEXT NOT NULL,
+                embedding TEXT,
+                source TEXT NOT NULL,
+                source_id TEXT NOT NULL,
+                source_context TEXT,
+                category TEXT NOT NULL,
+                tags TEXT NOT NULL DEFAULT '[]',
+                confidence REAL NOT NULL DEFAULT 0,
+                importance REAL NOT NULL DEFAULT 0,
+                initial_importance REAL NOT NULL DEFAULT 0,
+                status TEXT NOT NULL DEFAULT 'pending',
+                validated_at BIGINT,
+                validated_by TEXT,
+                access_count INTEGER NOT NULL DEFAULT 0,
+                last_accessed_at BIGINT NOT NULL,
+                related_memory_ids TEXT NOT NULL DEFAULT '[]',
+                contradicts_ids TEXT NOT NULL DEFAULT '[]',
+                merged_into_id TEXT,
+                workspace_id TEXT,
+                context_tags TEXT NOT NULL DEFAULT '[]',
+                created_at BIGINT NOT NULL,
+                updated_at BIGINT NOT NULL,
+                expires_at BIGINT,
+                metadata TEXT NOT NULL DEFAULT '{}'
+            );
+            CREATE INDEX IF NOT EXISTS idx_advanced_memories_workspace_id ON advanced_memories(workspace_id);
+            CREATE INDEX IF NOT EXISTS idx_advanced_memories_status ON advanced_memories(status);
+            CREATE INDEX IF NOT EXISTS idx_advanced_memories_updated_at ON advanced_memories(updated_at DESC);
+            CREATE TABLE IF NOT EXISTS pending_memories (
+                id TEXT PRIMARY KEY,
+                content TEXT NOT NULL,
+                embedding TEXT,
+                source TEXT NOT NULL,
+                source_id TEXT NOT NULL,
+                source_context TEXT,
+                extracted_at BIGINT NOT NULL,
+                suggested_category TEXT NOT NULL,
+                suggested_tags TEXT NOT NULL DEFAULT '[]',
+                extraction_confidence REAL NOT NULL DEFAULT 0,
+                relevance_score REAL NOT NULL DEFAULT 0,
+                novelty_score REAL NOT NULL DEFAULT 0,
+                requires_user_validation INTEGER NOT NULL DEFAULT 1,
+                auto_confirm_reason TEXT,
+                potential_contradictions TEXT NOT NULL DEFAULT '[]',
+                similar_memories TEXT NOT NULL DEFAULT '[]',
+                workspace_id TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_pending_memories_extracted_at ON pending_memories(extracted_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_pending_memories_workspace_id ON pending_memories(workspace_id);
+        `);
+    }
+
     // --- Code Symbols ---
     async findCodeSymbolsByName(workspacePath: string, name: string): Promise<CodeSymbolSearchResult[]> {
         // Sanitize LIKE pattern to prevent wildcard injection

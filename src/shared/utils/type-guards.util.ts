@@ -3,8 +3,8 @@
  * Used to safely validate IPC data before casting to typed interfaces
  */
 
+import { AgentStartOptions, WorkspaceState, WorkspaceStep } from '../types/automation-workflow';
 import { Message } from '../types/chat';
-import { AgentStartOptions, WorkspaceState, WorkspaceStep } from '../types/workspace-agent';
 
 /**
  * Valid status values for agent state

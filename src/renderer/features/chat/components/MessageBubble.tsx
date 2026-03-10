@@ -392,6 +392,46 @@ const RatingButtons = memo(
 );
 RatingButtons.displayName = 'RatingButtons';
 
+const ToolRecoveryNotice = memo(
+    ({
+        interruptedToolNames,
+        onRegenerate,
+        t,
+    }: {
+        interruptedToolNames: string[];
+        onRegenerate?: () => void;
+        t: TranslationFn;
+    }) => {
+        if (interruptedToolNames.length === 0) {
+            return null;
+        }
+
+        return (
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
+                <div className="flex min-w-0 items-center gap-2">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">
+                        {t('tools.failed')}: {interruptedToolNames.join(', ')}
+                    </span>
+                </div>
+                {onRegenerate && (
+                    <button
+                        type="button"
+                        onClick={onRegenerate}
+                        className="inline-flex shrink-0 items-center gap-1 rounded-md border border-warning/30 px-2 py-1 font-semibold hover:bg-warning/10 transition-colors"
+                        aria-label={t('messageBubble.regenerate')}
+                        title={t('messageBubble.regenerate')}
+                    >
+                        <RotateCcw className="w-3 h-3" />
+                        <span>{t('messageBubble.regenerate')}</span>
+                    </button>
+                )}
+            </div>
+        );
+    }
+);
+ToolRecoveryNotice.displayName = 'ToolRecoveryNotice';
+
 // --- Markdown Specifics ---
 
 const MermaidDiagram = memo(({ code, t }: { code: string; t: TranslationFn }) => {
@@ -1534,6 +1574,7 @@ const MessageVariantCard = memo(
             [displayContent]
         );
         const quota = useQuotaDetails(is429, displayContent, t);
+        const variantInterrupted = variant.status === 'interrupted' || typeof variant.error === 'string';
 
         return (
             <div
@@ -1561,11 +1602,18 @@ const MessageVariantCard = memo(
                             </span>
                         </div>
                     </div>
-                    {isSelected && (
-                        <div className="bg-primary/10 text-primary p-1 rounded-full">
-                            <Check className="w-3 h-3" />
-                        </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                        {variantInterrupted && (
+                            <span className="rounded-full bg-destructive/10 px-2 py-1 text-xxs font-semibold text-destructive">
+                                {t('tools.failed')}
+                            </span>
+                        )}
+                        {isSelected && (
+                            <div className="bg-primary/10 text-primary p-1 rounded-full">
+                                <Check className="w-3 h-3" />
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <div className="flex-1 min-h-[100px]">
@@ -1814,6 +1862,7 @@ const SingleMessageViewContent = memo(
         backend,
         isUser,
         isStreaming,
+        interruptedToolNames,
         isThoughtExpanded,
         setIsThoughtExpanded,
         plan,
@@ -1836,6 +1885,7 @@ const SingleMessageViewContent = memo(
         backend?: string;
         isUser: boolean;
         isStreaming?: boolean;
+        interruptedToolNames: string[];
         isThoughtExpanded: boolean;
         setIsThoughtExpanded: (v: boolean) => void;
         plan: string | null;
@@ -1878,6 +1928,11 @@ const SingleMessageViewContent = memo(
                             onApprovePlan={onApprovePlan}
                             isThoughtExpanded={isThoughtExpanded}
                             setIsThoughtExpanded={setIsThoughtExpanded}
+                            t={t}
+                        />
+                        <ToolRecoveryNotice
+                            interruptedToolNames={interruptedToolNames}
+                            onRegenerate={actionsContextProps.onRegenerate}
                             t={t}
                         />
                         <MessageBubbleInner
@@ -1961,6 +2016,19 @@ const SingleMessageView = memo(
             message.reasoning,
             streamingReasoning
         );
+        const interruptedToolNames = useMemo(() => {
+            const recovery = message.metadata?.recovery;
+            if (!recovery || typeof recovery !== 'object' || Array.isArray(recovery)) {
+                return [];
+            }
+            const recoveryRecord = recovery as Record<string, unknown>;
+            if (!Array.isArray(recoveryRecord.interruptedToolNames)) {
+                return [];
+            }
+            return recoveryRecord.interruptedToolNames.filter(
+                (toolName: unknown): toolName is string => typeof toolName === 'string'
+            );
+        }, [message.metadata]);
 
         const autoExpandDone = useRef(false);
         useEffect(() => {
@@ -2026,6 +2094,7 @@ const SingleMessageView = memo(
                 backend={backend}
                 isUser={isUser}
                 isStreaming={isStreaming}
+                interruptedToolNames={interruptedToolNames}
                 isThoughtExpanded={isThoughtExpanded}
                 setIsThoughtExpanded={setIsThoughtExpanded}
                 plan={plan}
@@ -2146,6 +2215,10 @@ const areMessagePropsEqual = (prev: MessageProps, next: MessageProps) => {
         return false;
     }
 
+    if (JSON.stringify(pm.metadata ?? {}) !== JSON.stringify(nm.metadata ?? {})) {
+        return false;
+    }
+
     if (pm.variants === nm.variants) {
         return true;
     }
@@ -2164,6 +2237,8 @@ const areMessagePropsEqual = (prev: MessageProps, next: MessageProps) => {
             left.model !== right.model ||
             left.provider !== right.provider ||
             left.label !== right.label ||
+            left.status !== right.status ||
+            left.error !== right.error ||
             left.isSelected !== right.isSelected ||
             left.timestamp.getTime() !== right.timestamp.getTime()
         ) {

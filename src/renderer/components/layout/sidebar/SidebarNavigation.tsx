@@ -1,4 +1,4 @@
-import { Bot, Boxes, Brain, Lightbulb, MessageSquare, Rocket, Zap } from 'lucide-react';
+import { Bot, Brain, Lightbulb, MessageSquare, Rocket } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 
 import { AppView } from '@/hooks/useAppState';
@@ -23,11 +23,9 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
     const navItems = useMemo(() => ([
         { view: 'chat' as const, icon: MessageSquare, label: t('sidebar.chats'), badge: chatsCount > 0 ? chatsCount : undefined },
         { view: 'workspace' as const, icon: Rocket, label: t('sidebar.workspaces') },
-        { view: 'models' as const, icon: Boxes, label: t('sidebar.models') },
         { view: 'memory' as const, icon: Brain, label: t('sidebar.memory') },
         { view: 'ideas' as const, icon: Lightbulb, label: t('sidebar.ideas') },
-        { view: 'automation-workflow' as const, icon: Bot, label: t('sidebar.automationWorkflow') },
-        { view: 'workflows' as const, icon: Zap, label: t('sidebar.workflows') }
+        { view: 'automation-workflow' as const, icon: Bot, label: t('sidebar.automationWorkflow') }
     ]), [chatsCount, t]);
     const [focusedIndex, setFocusedIndex] = useState(0);
 

@@ -37,8 +37,8 @@ export const ModelSelectorWrapper = memo(({ ctrl }: { ctrl: ControllerType }) =>
                 ctrl.setSystemMode(mode === 'instant' ? 'fast' : mode);
             }}
             thinkingLevel={ctrl.getModelReasoningLevel?.(ctrl.selectedModel)}
-            onThinkingLevelChange={level =>
-                ctrl.setModelReasoningLevel?.(ctrl.selectedModel, level)
+            onThinkingLevelChange={(modelId, level) =>
+                ctrl.setModelReasoningLevel?.(modelId, level)
             }
         />
     </div>

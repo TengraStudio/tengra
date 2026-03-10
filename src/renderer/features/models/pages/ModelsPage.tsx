@@ -9,14 +9,11 @@ import type { ClaudeQuota, CodexUsage, CopilotQuota, QuotaResponse } from '@/typ
 import type { AppSettings } from '@/types/settings';
 
 import { InstalledModelsGrid } from '../components/InstalledModelsGrid';
-import { MarketplaceGrid } from '../components/MarketplaceGrid';
 import { fetchModels, groupModels } from '../utils/model-fetcher';
 
 interface ModelsPageProps {
     language?: Language;
 }
-
-type TabType = 'installed' | 'marketplace';
 
 export interface ProviderAccounts {
     [provider: string]: LinkedAccountInfo[];
@@ -31,7 +28,6 @@ export interface ProviderQuotas {
 
 export function ModelsPage({ language = 'en' }: ModelsPageProps): React.ReactElement {
     const { t } = useTranslation(language);
-    const [activeTab, setActiveTab] = useState<TabType>('installed');
     const [, setModels] = useState<ModelInfo[]>([]);
     const [groupedModels, setGroupedModels] = useState<GroupedModels>({});
     const [loading, setLoading] = useState(true);
@@ -208,51 +204,30 @@ export function ModelsPage({ language = 'en' }: ModelsPageProps): React.ReactEle
 
                     {/* Tabs */}
                     <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setActiveTab('installed')}
-                            className={cn(
-                                "px-5 py-2.5 rounded-full text-xs font-bold border transition-all duration-200",
-                                activeTab === 'installed'
-                                    ? "bg-primary/20 text-primary border-primary/30 shadow-sm"
-                                    : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/50 hover:border-border"
-                            )}
-                        >
+                        <div className={cn(
+                            'rounded-full border border-primary/30 bg-primary/20 px-5 py-2.5 text-xs font-bold text-primary shadow-sm'
+                        )}>
                             {t('modelsPage.installedModels')}
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('marketplace')}
-                            className={cn(
-                                "px-5 py-2.5 rounded-full text-xs font-bold border transition-all duration-200",
-                                activeTab === 'marketplace'
-                                    ? "bg-primary/20 text-primary border-primary/30 shadow-sm"
-                                    : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/50 hover:border-border"
-                            )}
-                        >
-                            {t('modelsPage.marketplace')}
-                        </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto">
-                {activeTab === 'installed' ? (
-                    <InstalledModelsGrid
-                        groupedModels={groupedModels}
-                        loading={loading}
-                        onRefresh={handleRefresh}
-                        accounts={accounts}
-                        quotas={quotas}
-                        settings={settings}
-                        onToggleHidden={handleToggleHidden}
-                        onSetDefault={handleSetDefault}
-                        onToggleFavorite={handleToggleFavorite}
-                        onSetActiveAccount={handleSetActiveAccount}
-                        t={t}
-                    />
-                ) : (
-                    <MarketplaceGrid t={t} />
-                )}
+                <InstalledModelsGrid
+                    groupedModels={groupedModels}
+                    loading={loading}
+                    onRefresh={handleRefresh}
+                    accounts={accounts}
+                    quotas={quotas}
+                    settings={settings}
+                    onToggleHidden={handleToggleHidden}
+                    onSetDefault={handleSetDefault}
+                    onToggleFavorite={handleToggleFavorite}
+                    onSetActiveAccount={handleSetActiveAccount}
+                    t={t}
+                />
             </div>
         </div>
     );

@@ -1,6 +1,6 @@
 import { LLMService } from '@main/services/llm/llm.service';
-import { AgentCollaborationService } from '@main/services/workspace/agent/agent-collaboration.service';
-import { WorkspaceStep } from '@shared/types/workspace-agent';
+import { AgentCollaborationService } from '@main/services/workspace/automation-workflow/agent-collaboration.service';
+import { WorkspaceStep } from '@shared/types/automation-workflow';
 import { beforeEach,describe, expect, it, vi } from 'vitest';
 
 describe('AgentCollaborationService', () => {
@@ -181,3 +181,4 @@ describe('AgentCollaborationService', () => {
         });
     });
 });
+

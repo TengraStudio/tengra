@@ -88,41 +88,39 @@ import type { WorkspaceEditorProps } from '@/features/workspace/components/works
  * The implementations below use explicit typing for safety while avoiding `any`.
  */
 
-// Pre-configured lazy components with explicit prop types
-export const LazyCodeEditor: React.FC<CodeEditorProps> = props => {
-    const Component = lazy(() =>
-        import('@/components/ui/CodeEditor').then(m => ({ default: m.CodeEditor }))
-    );
-    return (
-        <Suspense fallback={<CodeEditorSkeleton />}>
-            <Component {...props} />
-        </Suspense>
-    );
-};
+// Lazy-loaded module references created at module scope to prevent remounting on re-render
+const CodeEditorLazy = lazy(() =>
+    import('@/components/ui/CodeEditor').then(m => ({ default: m.CodeEditor }))
+);
 
-export const LazyWorkspaceEditor: React.FC<WorkspaceEditorProps> = props => {
-    const Component = lazy(() =>
-        import('@/features/workspace/components/workspace/WorkspaceEditor').then(m => ({
-            default: m.WorkspaceEditor,
-        }))
-    );
-    return (
-        <Suspense fallback={<CodeEditorSkeleton />}>
-            <Component {...props} />
-        </Suspense>
-    );
-};
+const WorkspaceEditorLazy = lazy(() =>
+    import('@/features/workspace/components/workspace/WorkspaceEditor').then(m => ({
+        default: m.WorkspaceEditor,
+    }))
+);
+
+const SettingsPageLazy = lazy(() =>
+    import('@/features/settings/SettingsPage').then(m => ({ default: m.SettingsPage }))
+);
+
+// Pre-configured lazy components with explicit prop types
+export const LazyCodeEditor: React.FC<CodeEditorProps> = props => (
+    <Suspense fallback={<CodeEditorSkeleton />}>
+        <CodeEditorLazy {...props} />
+    </Suspense>
+);
+
+export const LazyWorkspaceEditor: React.FC<WorkspaceEditorProps> = props => (
+    <Suspense fallback={<CodeEditorSkeleton />}>
+        <WorkspaceEditorLazy {...props} />
+    </Suspense>
+);
 
 // Settings page lazy loaded
-export const LazySettingsPage: React.FC<SettingsPageProps> = props => {
-    const Component = lazy(() =>
-        import('@/features/settings/SettingsPage').then(m => ({ default: m.SettingsPage }))
-    );
-    return (
-        <Suspense fallback={<LoadingSpinner />}>
-            <Component {...props} />
-        </Suspense>
-    );
-};
+export const LazySettingsPage: React.FC<SettingsPageProps> = props => (
+    <Suspense fallback={<LoadingSpinner />}>
+        <SettingsPageLazy {...props} />
+    </Suspense>
+);
 
 export { LoadingSpinner };

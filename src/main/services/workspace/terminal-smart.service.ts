@@ -60,6 +60,22 @@ export class TerminalSmartService extends BaseService {
         super('TerminalSmartService');
     }
 
+    private async raceWithTimeout<T>(operation: Promise<T>, timeoutMs: number): Promise<T> {
+        let timer: ReturnType<typeof setTimeout> | null = null;
+        const timeoutPromise = new Promise<never>((_, reject) => {
+            timer = setTimeout(() => reject(new Error('Request timed out')), timeoutMs);
+            if (timer?.unref) { timer.unref(); }
+        });
+
+        try {
+            return await Promise.race([operation, timeoutPromise]);
+        } finally {
+            if (timer !== null) {
+                clearTimeout(timer);
+            }
+        }
+    }
+
     /**
      * Get AI-powered command suggestions based on current input and history
      */
@@ -177,11 +193,7 @@ Return ONLY valid JSON, no markdown or other text.
                 content: prompt
             }], 'gpt-4o');
 
-            const timeoutPromise = new Promise<never>((_, reject) => {
-                setTimeout(() => reject(new Error('Request timed out')), TIMEOUT_MS);
-            });
-
-            const response = await Promise.race([responsePromise, timeoutPromise]);
+            const response = await this.raceWithTimeout(responsePromise, TIMEOUT_MS);
             const content = response.content || '{}';
 
             return this.parseExplainCommandResult(content);
@@ -247,11 +259,7 @@ Return ONLY valid JSON, no markdown or other text.
                 content: prompt
             }], 'gpt-4o');
 
-            const timeoutPromise = new Promise<never>((_, reject) => {
-                setTimeout(() => reject(new Error('Request timed out')), TIMEOUT_MS);
-            });
-
-            const response = await Promise.race([responsePromise, timeoutPromise]);
+            const response = await this.raceWithTimeout(responsePromise, TIMEOUT_MS);
             const content = response.content || '{}';
 
             return this.parseExplainErrorResult(content);
@@ -325,11 +333,7 @@ Return ONLY valid JSON, no markdown or other text.
                 content: prompt
             }], 'gpt-4o');
 
-            const timeoutPromise = new Promise<never>((_, reject) => {
-                setTimeout(() => reject(new Error('Request timed out')), TIMEOUT_MS);
-            });
-
-            const response = await Promise.race([responsePromise, timeoutPromise]);
+            const response = await this.raceWithTimeout(responsePromise, TIMEOUT_MS);
             const content = response.content || '{}';
 
             return this.parseFixErrorResult(content);

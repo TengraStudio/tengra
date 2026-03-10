@@ -1,6 +1,6 @@
 const sectionData = {
-    "title": "Projektideen",
-    "subtitle": "KI-gestützte Projektideengenerierung mit Marktforschung",
+    "title": "Arbeitsbereichideen",
+    "subtitle": "KI-gestützte Arbeitsbereichideengenerierung mit Marktforschung",
     "newSession": "Neue Sitzung",
     "selectModel": "KI-Modell auswählen",
     "selectCategories": "Kategorien auswählen",
@@ -33,7 +33,7 @@ const sectionData = {
     },
     "idea": {
         "viewDetails": "Details anzeigen",
-        "approve": "Genehmigen & Projekt erstellen",
+        "approve": "Genehmigen & Arbeitsbereich erstellen",
         "reject": "Ablehnen",
         "archive": "Archivieren",
         "archiving": "Wird archiviert...",
@@ -42,11 +42,11 @@ const sectionData = {
         "competitiveAdvantages": "Wettbewerbsvorteile",
         "marketTrends": "Markttrends",
         "competitors": "Wettbewerber",
-        "selectPath": "Projektpfad auswählen",
+        "selectPath": "Arbeitsbereichpfad auswählen",
         "pathPlaceholder": "C:\\\\Workspaces\\\\my-workspace",
-        "creating": "Projekt wird erstellt...",
+        "creating": "Arbeitsbereich wird erstellt...",
         "detailedDescription": "Detaillierte Beschreibung",
-        "roadmap": "Projekt-Roadmap",
+        "roadmap": "Arbeitsbereich-Roadmap",
         "techStack": "Technologie-Stack",
         "competitorAnalysis": "Wettbewerbsanalyse",
         "technicalDetails": "Technische Details",
@@ -54,7 +54,7 @@ const sectionData = {
         "impactHigh": "Hoch (geschätzt)",
         "effort": "Bemühung",
         "effortMedium": "Medium",
-        "openFullWorkspace": "Vollständiges Projekt öffnen"
+        "openFullWorkspace": "Vollständiges Arbeitsbereich öffnen"
     },
     "techStack": {
         "frontend": "Frontend",
@@ -74,7 +74,7 @@ const sectionData = {
         "ideaResearch": "Markt für diese Idee wird recherchiert...",
         "naming": "Namensvorschläge werden erstellt...",
         "longDescription": "Detaillierte Beschreibung wird geschrieben...",
-        "roadmap": "Projekt-Roadmap wird erstellt...",
+        "roadmap": "Arbeitsbereich-Roadmap wird erstellt...",
         "techStack": "Technologie-Stack wird ausgewählt...",
         "competitorAnalysis": "Wettbewerber werden analysiert...",
         "finalizing": "Idee wird finalisiert...",
@@ -103,12 +103,12 @@ const sectionData = {
         "categoriesRequired": "Bitte wählen Sie mindestens eine Kategorie",
         "researchFailed": "Recherche fehlgeschlagen. Bitte versuchen Sie es erneut.",
         "generationFailed": "Ideengenerierung fehlgeschlagen. Bitte versuchen Sie es erneut.",
-        "approvalFailed": "Projekt konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+        "approvalFailed": "Arbeitsbereich konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
         "logoFailed": "Logo-Generierung fehlgeschlagen. Bitte versuchen Sie es erneut."
     },
     "empty": {
         "noSessions": "Noch keine Ideensitzungen",
-        "noSessionsDesc": "Starten Sie eine neue Sitzung um Projektideen zu generieren",
+        "noSessionsDesc": "Starten Sie eine neue Sitzung um Arbeitsbereichideen zu generieren",
         "noIdeas": "Noch keine Ideen generiert",
         "noIdeasDesc": "Schließen Sie die Recherchephase ab um Ideen zu generieren"
     },
@@ -171,8 +171,8 @@ const sectionData = {
         },
         "statusLabel": "Status",
         "readyForPilot": "Bereit für Pilot",
-        "workspaceCreated": "Projekt erstellt",
-        "workspaceNamePlaceholder": "Projektname",
+        "workspaceCreated": "Arbeitsbereich erstellt",
+        "workspaceNamePlaceholder": "Arbeitsbereichsname",
         "regenerateTitle": "Diese Idee neu generieren",
         "regenerate": "Neu generieren",
         "regenerating": "Wird neu generiert...",

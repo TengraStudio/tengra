@@ -104,7 +104,7 @@ export interface ElectronApiIntegrationsDomain {
             name: string,
             path: string,
             description: string,
-            mounts?: string
+            mounts?: WorkspaceMount[]
         ) => Promise<Workspace>;
         updateWorkspace: (id: string, updates: Partial<Workspace>) => Promise<void>;
         deleteWorkspace: (id: string, deleteFiles?: boolean) => Promise<void>;
@@ -114,6 +114,7 @@ export interface ElectronApiIntegrationsDomain {
         createFolder: (name: string, color?: string) => Promise<Folder>;
         deleteFolder: (id: string) => Promise<void>;
         updateFolder: (id: string, updates: Partial<Folder>) => Promise<void>;
+        onWorkspaceUpdated: (callback: (payload: { id?: string }) => void) => () => void;
 
         // Prompts
         createPrompt: (title: string, content: string, tags?: string[]) => Promise<{ id: string }>;
@@ -618,53 +619,6 @@ export interface ElectronApiIntegrationsDomain {
         removeResultListener: () => void;
     };
 
-    // MCP Marketplace
-    mcpMarketplace: {
-        list: () => Promise<{ success: boolean; servers?: IpcValue[]; error?: string }>;
-        search: (
-            query: string
-        ) => Promise<{ success: boolean; servers?: IpcValue[]; error?: string }>;
-        filter: (
-            category: string
-        ) => Promise<{ success: boolean; servers?: IpcValue[]; error?: string }>;
-        categories: () => Promise<{ success: boolean; categories?: string[]; error?: string }>;
-        install: (serverId: string) => Promise<{ success: boolean; error?: string }>;
-        uninstall: (serverId: string) => Promise<{ success: boolean; error?: string }>;
-        installed: () => Promise<{ success: boolean; servers?: IpcValue[]; error?: string }>;
-        toggle: (
-            serverId: string,
-            enabled: boolean
-        ) => Promise<{ success: boolean; error?: string }>;
-        updateConfig: (
-            serverId: string,
-            patch: Record<string, IpcValue>
-        ) => Promise<{ success: boolean; error?: string }>;
-        versionHistory: (
-            serverId: string
-        ) => Promise<{ success: boolean; history?: string[]; error?: string }>;
-        rollbackVersion: (
-            serverId: string,
-            targetVersion: string
-        ) => Promise<{ success: boolean; error?: string }>;
-        debug: () => Promise<{ success: boolean; metrics?: IpcValue; error?: string }>;
-        refresh: () => Promise<{ success: boolean; error?: string }>;
-        health: () => Promise<{
-            success: boolean;
-            data?: {
-                status: 'healthy' | 'degraded';
-                uiState: 'ready' | 'failure';
-                budgets: { fastMs: number; standardMs: number; heavyMs: number };
-                metrics: Record<string, IpcValue>;
-            };
-            error?: string;
-            errorCode?: string;
-            messageKey?: string;
-            retryable?: boolean;
-            uiState?: 'ready' | 'failure';
-            fallbackUsed?: boolean;
-        }>;
-    };
-
     proxyEmbed: {
         start: (options?: {
             configPath?: string;
@@ -724,6 +678,7 @@ export interface ElectronApiIntegrationsDomain {
             config: { concurrencyLimit?: number; rateLimit?: number }
         ) => Promise<void>;
     };
+    modelCollaboration: ElectronApiIntegrationsDomain['collaboration'];
 
     audit: {
         getLogs: (
@@ -802,343 +757,24 @@ export interface ElectronApiIntegrationsDomain {
         invoke: (channel: string, ...args: IpcValue[]) => Promise<IpcValue>;
         removeAllListeners: (channel: string) => void;
     };
-    // Backward compatibility for components using window.electron.on
-    workspaceAgent: {
-        start: (options: AgentStartOptions) => Promise<{ taskId: string }>;
-        generatePlan: (options: AgentStartOptions) => Promise<void>;
-        approvePlan: (plan: string[] | WorkspaceStep[], taskId?: string) => Promise<void>;
-        stop: (taskId?: string) => Promise<void>;
-        pauseTask: (taskId: string) => Promise<{ success: boolean }>;
-        resumeTask: (taskId: string) => Promise<{ success: boolean; error?: string }>;
-        saveSnapshot: (taskId: string) => Promise<{ success: boolean; checkpointId?: string }>;
-        approveCurrentPlan: (taskId: string) => Promise<{ success: boolean; error?: string }>;
-        rejectCurrentPlan: (
-            taskId: string,
-            reason?: string
-        ) => Promise<{ success: boolean; error?: string }>;
-        createPullRequest: (
-            taskId?: string
-        ) => Promise<{ success: boolean; url?: string; error?: string }>;
-        resetState: () => Promise<void>;
-        getStatus: (taskId?: string) => Promise<WorkspaceState>;
-        getTaskMessages: (
-            taskId: string
-        ) => Promise<{ success: boolean; messages?: Message[] }>;
-        getTaskEvents: (
-            taskId: string
-        ) => Promise<{ success: boolean; events?: import('@shared/types/agent-state').AgentEventRecord[] }>;
-        getTaskTelemetry: (
-            taskId: string
-        ) => Promise<{ success: boolean; telemetry?: import('@shared/types/agent-state').TaskMetrics[] }>;
-        getTaskHistory: (
-            workspaceId?: string
-        ) => Promise<import('@shared/types/workspace-agent').AgentTaskHistoryItem[]>;
-        deleteTask: (taskId: string) => Promise<{ success: boolean; error?: string }>;
-        getAvailableModels: () => Promise<{
-            success: boolean;
-            models: Array<{ id: string; name: string; provider: string }>;
-        }>;
-        retryStep: (index: number, taskId?: string) => Promise<void>;
-        selectModel: (payload: {
-            taskId: string;
-            provider: string;
-            model: string;
-        }) => Promise<{ success: boolean; error?: string }>;
-        // AGT-HIL: Human-in-the-Loop step actions
-        approveStep: (taskId: string, stepId: string) => Promise<void>;
-        skipStep: (taskId: string, stepId: string) => Promise<void>;
-        editStep: (taskId: string, stepId: string, text: string) => Promise<void>;
-        addStepComment: (taskId: string, stepId: string, comment: string) => Promise<void>;
-        insertInterventionPoint: (taskId: string, afterStepId: string) => Promise<void>;
-        getCheckpoints: (
-            taskId: string
-        ) => Promise<Array<{ id: string; stepIndex: number; trigger: string; createdAt: number }>>;
-        rollbackCheckpoint: (checkpointId: string) => Promise<{
-            success: boolean;
-            taskId: string;
-            resumedCheckpointId: string;
-            preRollbackCheckpointId: string;
-            planVersionId?: string;
-        }>;
-        getPlanVersions: (taskId: string) => Promise<
-            Array<{
-                id: string;
-                taskId: string;
-                versionNumber: number;
-                reason: string;
-                plan: WorkspaceStep[];
-                createdAt: number;
-            }>
-        >;
-        deleteTaskByNodeId: (nodeId: string) => Promise<boolean>;
-        getProfiles: () => Promise<import('@shared/types/workspace-agent').AgentProfile[]>;
-        getRoutingRules: () => Promise<import('@shared/types/workspace-agent').ModelRoutingRule[]>;
-        setRoutingRules: (
-            rules: import('@shared/types/workspace-agent').ModelRoutingRule[]
-        ) => Promise<{ success: boolean }>;
-        createVotingSession: (payload: {
-            taskId: string;
-            stepIndex: number;
-            question: string;
-            options: string[];
-        }) => Promise<import('@shared/types/workspace-agent').VotingSession>;
-        submitVote: (payload: {
-            sessionId: string;
-            modelId: string;
-            provider: string;
-            decision: string;
-            confidence: number;
-            reasoning?: string;
-        }) => Promise<import('@shared/types/workspace-agent').VotingSession | null>;
-        requestVotes: (payload: {
-            sessionId: string;
-            models: Array<{ provider: string; model: string }>;
-        }) => Promise<import('@shared/types/workspace-agent').VotingSession | null>;
-        resolveVoting: (
-            sessionId: string
-        ) => Promise<import('@shared/types/workspace-agent').VotingSession | null>;
-        getVotingSession: (
-            sessionId: string
-        ) => Promise<import('@shared/types/workspace-agent').VotingSession | null>;
-        listVotingSessions: (
-            taskId?: string
-        ) => Promise<import('@shared/types/workspace-agent').VotingSession[]>;
-        overrideVotingDecision: (payload: {
-            sessionId: string;
-            finalDecision: string;
-            reason?: string;
-        }) => Promise<import('@shared/types/workspace-agent').VotingSession | null>;
-        getVotingAnalytics: (
-            taskId?: string
-        ) => Promise<import('@shared/types/workspace-agent').VotingAnalytics>;
-        getVotingConfiguration: () => Promise<import('@shared/types/workspace-agent').VotingConfiguration>;
-        updateVotingConfiguration: (
-            patch: Partial<import('@shared/types/workspace-agent').VotingConfiguration>
-        ) => Promise<import('@shared/types/workspace-agent').VotingConfiguration>;
-        listVotingTemplates: () => Promise<import('@shared/types/workspace-agent').VotingTemplate[]>;
-        buildConsensus: (
-            outputs: Array<{ modelId: string; provider: string; output: string }>
-        ) => Promise<import('@shared/types/workspace-agent').ConsensusResult>;
-        createDebateSession: (payload: {
-            taskId: string;
-            stepIndex: number;
-            topic: string;
-        }) => Promise<import('@shared/types/workspace-agent').DebateSession | null>;
-        submitDebateArgument: (payload: {
-            sessionId: string;
-            agentId: string;
-            provider: string;
-            side: import('@shared/types/workspace-agent').DebateSide;
-            content: string;
-            confidence: number;
-            citations?: import('@shared/types/workspace-agent').DebateCitation[];
-        }) => Promise<import('@shared/types/workspace-agent').DebateSession | null>;
-        resolveDebateSession: (
-            sessionId: string
-        ) => Promise<import('@shared/types/workspace-agent').DebateSession | null>;
-        overrideDebateSession: (payload: {
-            sessionId: string;
-            moderatorId: string;
-            decision: import('@shared/types/workspace-agent').DebateSide | 'balanced';
-            reason?: string;
-        }) => Promise<import('@shared/types/workspace-agent').DebateSession | null>;
-        getDebateSession: (
-            sessionId: string
-        ) => Promise<import('@shared/types/workspace-agent').DebateSession | null>;
-        listDebateHistory: (
-            taskId?: string
-        ) => Promise<import('@shared/types/workspace-agent').DebateSession[]>;
-        getDebateReplay: (
-            sessionId: string
-        ) => Promise<import('@shared/types/workspace-agent').DebateReplay | null>;
-        generateDebateSummary: (sessionId: string) => Promise<string | null>;
-        getTeamworkAnalytics: () => Promise<import('@shared/types/workspace-agent').AgentTeamworkAnalytics | null>;
-        councilSendMessage: (payload: {
-            taskId: string;
-            stageId: string;
-            fromAgentId: string;
-            toAgentId?: string;
-            intent: import('@shared/types/workspace-agent').AgentCollaborationIntent;
-            priority?: import('@shared/types/workspace-agent').AgentCollaborationPriority;
-            payload: Record<string, string | number | boolean | null>;
-            expiresAt?: number;
-        }) => Promise<import('@shared/types/workspace-agent').AgentCollaborationMessage | null>;
-        councilGetMessages: (payload: {
-            taskId: string;
-            stageId?: string;
-            agentId?: string;
-            includeExpired?: boolean;
-        }) => Promise<import('@shared/types/workspace-agent').AgentCollaborationMessage[]>;
-        councilCleanupExpiredMessages: (taskId?: string) => Promise<{ success: boolean; removed: number }>;
-        councilHandleQuotaInterrupt: (payload: {
-            taskId: string;
-            stageId?: string;
-            provider: string;
-            model: string;
-            reason?: string;
-            autoSwitch?: boolean;
-        }) => Promise<{
-            success: boolean;
-            interruptId: string;
-            checkpointId?: string;
-            blockedByQuota: boolean;
-            switched: boolean;
-            selectedFallback?: { provider: string; model: string };
-            availableFallbacks: Array<{ provider: string; model: string }>;
-            message: string;
-        } | null>;
-        councilRegisterWorkerAvailability: (payload: {
-            taskId: string;
-            agentId: string;
-            status: 'available' | 'busy' | 'offline';
-            reason?: string;
-            skills?: string[];
-            contextReadiness?: number;
-        }) => Promise<import('@shared/types/workspace-agent').WorkerAvailabilityRecord | null>;
-        councilListAvailableWorkers: (payload: {
-            taskId: string;
-        }) => Promise<import('@shared/types/workspace-agent').WorkerAvailabilityRecord[]>;
-        councilScoreHelperCandidates: (payload: {
-            taskId: string;
-            stageId: string;
-            requiredSkills: string[];
-            blockedAgentIds?: string[];
-            contextReadinessOverrides?: Record<string, number>;
-        }) => Promise<import('@shared/types/workspace-agent').HelperCandidateScore[]>;
-        councilGenerateHelperHandoff: (payload: {
-            taskId: string;
-            stageId: string;
-            ownerAgentId: string;
-            helperAgentId: string;
-            stageGoal: string;
-            acceptanceCriteria: string[];
-            constraints: string[];
-            contextNotes?: string;
-        }) => Promise<import('@shared/types/workspace-agent').HelperHandoffPackage | null>;
-        councilReviewHelperMerge: (payload: {
-            acceptanceCriteria: string[];
-            constraints: string[];
-            helperOutput: string;
-            reviewerNotes?: string;
-        }) => Promise<import('@shared/types/workspace-agent').HelperMergeGateDecision>;
-        getTemplates: (
-            category?: import('@shared/types/workspace-agent').AgentTemplateCategory
-        ) => Promise<import('@shared/types/workspace-agent').AgentTemplate[]>;
-        getTemplate: (
-            id: string
-        ) => Promise<import('@shared/types/workspace-agent').AgentTemplate | null>;
-        saveTemplate: (
-            template: import('@shared/types/workspace-agent').AgentTemplate
-        ) => Promise<{
-            success: boolean;
-            template: import('@shared/types/workspace-agent').AgentTemplate;
-        }>;
-        deleteTemplate: (id: string) => Promise<{ success: boolean }>;
-        exportTemplate: (
-            id: string
-        ) => Promise<import('@shared/types/workspace-agent').AgentTemplateExport | null>;
-        importTemplate: (
-            exported: import('@shared/types/workspace-agent').AgentTemplateExport
-        ) => Promise<{
-            success: boolean;
-            template?: import('@shared/types/workspace-agent').AgentTemplate;
-            error?: string;
-        }>;
-        applyTemplate: (payload: {
-            templateId: string;
-            values: Record<string, string | number | boolean>;
-        }) => Promise<{
-            success: boolean;
-            template?: import('@shared/types/workspace-agent').AgentTemplate;
-            task?: string;
-            steps?: string[];
-            error?: string;
-        }>;
-        onUpdate: (callback: (state: WorkspaceState) => void) => () => void;
-        onQuotaInterrupt: (callback: (payload: {
-            success: boolean;
-            interruptId: string;
-            checkpointId?: string;
-            blockedByQuota: boolean;
-            switched: boolean;
-            selectedFallback?: { provider: string; model: string };
-            availableFallbacks: Array<{ provider: string; model: string }>;
-            message: string;
-            v?: 'v1';
-            dedupeKey?: string;
-            emittedAt?: number;
-        }) => void) => () => void;
-        // ===== MARCH1-IPC-001: Council Protocol =====
-        council: {
-            generatePlan: (taskId: string, task: string) => Promise<{ success: boolean; error?: string }>;
-            getProposal: (taskId: string) => Promise<{ success: boolean; plan?: WorkspaceStep[]; error?: string }>;
-            approveProposal: (taskId: string) => Promise<{ success: boolean; error?: string }>;
-            rejectProposal: (taskId: string, reason?: string) => Promise<{ success: boolean; error?: string }>;
-            startExecution: (taskId: string) => Promise<{ success: boolean; error?: string }>;
-            pauseExecution: (taskId: string) => Promise<{ success: boolean; error?: string }>;
-            resumeExecution: (taskId: string) => Promise<{ success: boolean; error?: string }>;
-            getTimeline: (taskId: string) => Promise<{ success: boolean; events?: Array<Record<string, unknown>>; error?: string }>;
-        };
-        // ============================================
-        // Canvas persistence
-        saveCanvasNodes: (
-            nodes: Array<{
-                id: string;
-                type: string;
-                position: { x: number; y: number };
-                data: Record<string, IpcValue>;
-            }>
-        ) => Promise<void>;
-        getCanvasNodes: () => Promise<
-            Array<{
-                id: string;
-                type: string;
-                position: { x: number; y: number };
-                data: Record<string, IpcValue>;
-            }>
-        >;
-        deleteCanvasNode: (id: string) => Promise<void>;
-        saveCanvasEdges: (
-            edges: Array<{
-                id: string;
-                source: string;
-                target: string;
-                sourceHandle?: string;
-                targetHandle?: string;
-            }>
-        ) => Promise<void>;
-        getCanvasEdges: () => Promise<
-            Array<{
-                id: string;
-                source: string;
-                target: string;
-                sourceHandle?: string;
-                targetHandle?: string;
-            }>
-        >;
-        deleteCanvasEdge: (id: string) => Promise<void>;
-        health: () => Promise<{
-            success: boolean;
-            data?: {
-                status: 'healthy' | 'degraded';
-                uiState: 'ready' | 'failure';
-                budgets: { fastMs: number; standardMs: number; heavyMs: number };
-                metrics: Record<string, IpcValue>;
-            };
-            error?: string;
-            errorCode?: string;
-            messageKey?: string;
-            retryable?: boolean;
-            uiState?: 'ready' | 'failure';
-            fallbackUsed?: boolean;
-        }>;
-    };
     orchestrator: {
         start: (task: string, workspaceId?: string) => Promise<void>;
         approve: (plan: WorkspaceStep[]) => Promise<void>;
         getState: () => Promise<OrchestratorStateView>;
         stop: () => Promise<void>;
         onUpdate: (callback: (state: OrchestratorStateView) => void) => () => void;
+    };
+
+    session: {
+        conversation: import('@shared/types/session-conversation').SessionConversationApi;
+        automation: import('@shared/types/session-domain-apis').SessionAutomationApi;
+        workspace: import('@shared/types/session-domain-apis').SessionWorkspaceApi;
+        council: import('@shared/types/session-domain-apis').SessionCouncilApi;
+        getState: (sessionId: string) => Promise<import('@shared/types/session-engine').SessionState | null>;
+        list: () => Promise<import('@shared/types/session-engine').SessionRecoverySnapshot[]>;
+        listCapabilities: () => Promise<import('@shared/types/session-engine').SessionCapabilityDescriptor[]>;
+        health: () => Promise<{ status: 'ready'; activeSessions: number }>;
+        onEvent: (callback: (event: import('@shared/types/session-engine').SessionEventEnvelope) => void) => () => void;
     };
 
     metrics: {
@@ -1161,16 +797,6 @@ export interface ElectronApiIntegrationsDomain {
         checkLimit: (provider: string, model: string) => Promise<{ allowed: boolean; reason?: string }>;
         getUsageCount: (period: 'hourly' | 'daily' | 'weekly', provider?: string, model?: string) => Promise<number>;
         recordUsage: (provider: string, model: string) => Promise<{ success: boolean }>;
-    };
-
-    workflow: {
-        getAll: () => Promise<import('@shared/types/workflow.types').Workflow[]>;
-        get: (id: string) => Promise<import('@shared/types/workflow.types').Workflow | null>;
-        create: (workflow: Omit<import('@shared/types/workflow.types').Workflow, 'id' | 'createdAt' | 'updatedAt'>) => Promise<import('@shared/types/workflow.types').Workflow>;
-        update: (id: string, updates: Partial<import('@shared/types/workflow.types').Workflow>) => Promise<import('@shared/types/workflow.types').Workflow>;
-        delete: (id: string) => Promise<void>;
-        execute: (id: string, context?: Record<string, unknown>) => Promise<import('@shared/types/workflow.types').WorkflowExecutionResult>;
-        triggerManual: (triggerId: string, context?: Record<string, unknown>) => Promise<void>;
     };
 
     voice: {
@@ -1272,6 +898,60 @@ export interface ElectronApiIntegrationsDomain {
         delete: (id: string) => Promise<void>;
     };
 
+    sharedPrompts: {
+        list: (filter?: {
+            query?: string;
+            category?: string;
+            tags?: string[];
+            limit?: number;
+            offset?: number;
+        }) => Promise<Array<{
+            id: string;
+            title: string;
+            content: string;
+            category: string;
+            tags: string[];
+            author: string;
+            createdAt: number;
+            updatedAt: number;
+        }>>;
+        create: (input: {
+            title: string;
+            content: string;
+            category?: string;
+            tags?: string[];
+            author?: string;
+        }) => Promise<{
+            id: string;
+            title: string;
+            content: string;
+            category: string;
+            tags: string[];
+            author: string;
+            createdAt: number;
+            updatedAt: number;
+        }>;
+        update: (id: string, input: {
+            title?: string;
+            content?: string;
+            category?: string;
+            tags?: string[];
+            author?: string;
+        }) => Promise<{
+            id: string;
+            title: string;
+            content: string;
+            category: string;
+            tags: string[];
+            author: string;
+            createdAt: number;
+            updatedAt: number;
+        } | undefined>;
+        delete: (id: string) => Promise<boolean>;
+        export: (filePath?: string) => Promise<{ success: boolean; path?: string; data?: string }>;
+        import: (filePathOrJson: string, isFilePath?: boolean) => Promise<{ success: boolean; imported: number }>;
+    };
+
     userCollaboration: {
         joinRoom: (params: JoinCollaborationRoom) => Promise<CollaborationResponse>;
         leaveRoom: (roomId: string) => Promise<CollaborationResponse>;
@@ -1279,4 +959,5 @@ export interface ElectronApiIntegrationsDomain {
         onSyncUpdate: (callback: (payload: { roomId: string; data: string }) => void) => () => void;
         onError: (callback: (payload: { roomId: string; error: string }) => void) => () => void;
     };
+    liveCollaboration: ElectronApiIntegrationsDomain['userCollaboration'];
 }

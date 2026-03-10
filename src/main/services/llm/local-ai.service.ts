@@ -3,6 +3,7 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 
 import { appLogger } from '@main/logging/logger';
+import { getManagedRuntimeBinaryPath } from '@main/services/system/runtime-path.service';
 import { SettingsService } from '@main/services/system/settings.service';
 
 export interface LocalAIModel {
@@ -99,7 +100,7 @@ export class LocalAIService {
 
     async startLlamaServer(modelPath: string): Promise<boolean> {
         if (this.llamaProcess) { this.stopLlamaServer(); }
-        const binPath = join(process.cwd(), 'vendor', 'llama-bin', 'llama-server.exe');
+        const binPath = getManagedRuntimeBinaryPath('llama-server');
         if (!existsSync(binPath)) { return false; }
 
         this.llamaProcess = spawn(binPath, ['-m', modelPath, '--port', this.llamaPort.toString()], {

@@ -1,5 +1,5 @@
-import { AgentTemplateService } from '@main/services/workspace/agent/agent-template.service';
-import { AgentTemplate, AgentTemplateExport } from '@shared/types/workspace-agent';
+import { AgentTemplateService } from '@main/services/workspace/automation-workflow/agent-template.service';
+import { AgentTemplate, AgentTemplateExport } from '@shared/types/automation-workflow';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@main/logging/logger', () => ({
@@ -340,3 +340,4 @@ describe('AgentTemplateService', () => {
         });
     });
 });
+

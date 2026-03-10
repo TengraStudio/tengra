@@ -56,6 +56,21 @@ const ERROR_CODES = {
     OPENAI_STREAM_FAILURE: 'LLM_OPENAI_STREAM_FAILURE',
 } as const;
 
+const normalizeToolCalls = (toolCalls: OpenAIMessage['tool_calls']): ToolCall[] | undefined => {
+    if (!toolCalls) {
+        return undefined;
+    }
+
+    return toolCalls.map((toolCall) => ({
+        id: toolCall.id,
+        type: 'function',
+        function: {
+            name: toolCall.function.name,
+            arguments: toolCall.function.arguments,
+        },
+    }));
+};
+
 /** Stream chunk yield type for OpenAI streaming. */
 export interface OpenAIStreamYield {
     content?: string;
@@ -216,7 +231,7 @@ export class LLMOpenAIChatService {
                 variants: variants.length > 1 ? variants : undefined
             };
 
-            if (message.tool_calls) { result.tool_calls = message.tool_calls; }
+            if (message.tool_calls) { result.tool_calls = normalizeToolCalls(message.tool_calls); }
             if (json.usage) {
                 result.promptTokens = json.usage.prompt_tokens;
                 result.completionTokens = json.usage.completion_tokens;

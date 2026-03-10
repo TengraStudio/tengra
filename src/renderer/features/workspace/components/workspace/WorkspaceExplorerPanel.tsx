@@ -59,7 +59,6 @@ export function WorkspaceExplorerPanel({ workspaceId, ps, wm, language, onMove }
                     <WorkspaceExplorer
                         workspaceId={workspaceId}
                         mounts={wm.mounts}
-                        mountStatus={wm.mountStatus}
                         refreshSignal={wm.refreshSignal}
                         onOpenFile={(...args) => {
                             void wm.openFile(...args);

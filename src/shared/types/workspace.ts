@@ -8,7 +8,6 @@ export type WorkspaceDashboardTab =
     | 'explorer'
     | 'tasks'
     | 'search'
-    | 'code'
     | 'git'
     | 'env'
     | 'environment'

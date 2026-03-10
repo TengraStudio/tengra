@@ -9,10 +9,10 @@ import * as path from 'path';
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
+import { getManagedRuntimeBinDir, getManagedRuntimeModelsDir } from '@main/services/system/runtime-path.service';
 import { OPERATION_TIMEOUTS } from '@shared/constants/timeouts';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import { app } from 'electron';
 
 interface LlamaConfig {
     gpuLayers?: number          // -1 = auto, 0 = CPU only
@@ -67,21 +67,16 @@ export class LlamaService extends BaseService {
             if (dataService) {
                 this.modelsDir = path.join(dataService.getPath('models'));
             } else {
-                this.modelsDir = path.join(app.getPath('userData'), 'models');
+                this.modelsDir = getManagedRuntimeModelsDir();
             }
 
             fs.mkdirSync(this.modelsDir, { recursive: true });
         } catch (e) {
             this.logWarn(`Failed to setup models directory: ${getErrorMessage(e as Error)}`);
-            this.modelsDir = path.join(process.cwd(), 'models');
+            this.modelsDir = getManagedRuntimeModelsDir();
         }
 
-        // Llama binary location: resources/bin/llama-server.exe
-        if (!app.isPackaged) {
-            this.binDir = path.join(process.cwd(), 'resources', 'bin');
-        } else {
-            this.binDir = path.join(process.resourcesPath, 'bin');
-        }
+        this.binDir = getManagedRuntimeBinDir();
     }
 
     override async initialize(): Promise<void> {
@@ -103,7 +98,8 @@ export class LlamaService extends BaseService {
     }
 
     private getServerPath(): string {
-        return path.join(this.binDir, 'llama-server.exe');
+        const binaryName = process.platform === 'win32' ? 'llama-server.exe' : 'llama-server';
+        return path.join(this.binDir, binaryName);
     }
 
     async isServerRunning(): Promise<boolean> {

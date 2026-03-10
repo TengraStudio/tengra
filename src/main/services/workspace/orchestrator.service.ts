@@ -2,9 +2,9 @@ import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
-import { AgentRegistryService } from '@main/services/workspace/agent/agent-registry.service';
+import { AgentRegistryService } from '@main/services/workspace/automation-workflow/agent-registry.service';
+import { OrchestratorState, WorkspaceStep } from '@shared/types/automation-workflow';
 import { Message } from '@shared/types/chat';
-import { OrchestratorState, WorkspaceStep } from '@shared/types/workspace-agent';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -218,3 +218,4 @@ export class MultiAgentOrchestratorService extends BaseService {
         return this.state;
     }
 }
+

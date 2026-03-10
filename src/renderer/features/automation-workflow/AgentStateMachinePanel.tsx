@@ -1,4 +1,4 @@
-import { WorkspaceState } from '@shared/types/workspace-agent';
+import { WorkspaceState } from '@shared/types/automation-workflow';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -115,3 +115,4 @@ export const AgentStateMachinePanel: React.FC<AgentStateMachinePanelProps> = ({
         </div>
     );
 };
+

@@ -34,11 +34,11 @@ export class IpcProvider extends Observable<string> {
     private async init() {
         try {
             // 1. Join room
-            await window.electron.userCollaboration.joinRoom({ type: this.type, id: this.id });
+            await window.electron.liveCollaboration.joinRoom({ type: this.type, id: this.id });
 
             // 2. Listen for remote sync / awareness updates
             this.unsubscribers.push(
-                window.electron.userCollaboration.onSyncUpdate((payload) => {
+                window.electron.liveCollaboration.onSyncUpdate((payload) => {
                     if (payload.roomId !== this.roomId) { return; }
 
                     try {
@@ -60,7 +60,7 @@ export class IpcProvider extends Observable<string> {
             // 3. Local Doc Updates
             this.doc.on('update', (update, origin) => {
                 if (origin !== this) {
-                    void window.electron.userCollaboration.sendUpdate({
+                    void window.electron.liveCollaboration.sendUpdate({
                         roomId: this.roomId,
                         data: JSON.stringify(Array.from(update))
                     });
@@ -72,7 +72,7 @@ export class IpcProvider extends Observable<string> {
                 if (origin !== this) {
                     const changedClients = added.concat(updated).concat(removed);
                     const update = encodeAwarenessUpdate(this.awareness, changedClients);
-                    void window.electron.userCollaboration.sendUpdate({
+                    void window.electron.liveCollaboration.sendUpdate({
                         roomId: this.roomId,
                         data: JSON.stringify({ type: 'aw', data: Array.from(update) })
                     });
@@ -81,7 +81,7 @@ export class IpcProvider extends Observable<string> {
 
             // 4. Handle errors
             this.unsubscribers.push(
-                window.electron.userCollaboration.onError((payload) => {
+                window.electron.liveCollaboration.onError((payload) => {
                     if (payload.roomId === this.roomId) {
                         appLogger.error('IpcProvider', `Collaboration error in ${this.roomId}`, payload.error);
                         this.emit('error', [payload.error]);
@@ -102,7 +102,7 @@ export class IpcProvider extends Observable<string> {
      */
     destroy() {
         this.unsubscribers.forEach(unsub => unsub());
-        void window.electron.userCollaboration.leaveRoom(this.roomId);
+        void window.electron.liveCollaboration.leaveRoom(this.roomId);
         super.destroy();
     }
 }

@@ -106,11 +106,14 @@ export const WorkspaceWizardModal: React.FC<WorkspaceWizardModalProps> = ({ isOp
         try {
             const result = await window.electron.selectDirectory();
             if (result.success && result.path) {
-                const dirName = result.path.split(/[/\\]/).pop() ?? 'Workspace';
+                const normalizedPath = result.path.replace(/[/\\]+$/, '');
+                const dirName = normalizedPath.split(/[/\\]/).pop() || 'Workspace';
                 setFormData(p => ({ ...p, name: p.name || dirName }));
                 setSshConnectionId(null);
                 setSshPath(result.path); // Use as local path
                 setStep('details');
+            } else {
+                setError('Failed to select directory');
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to select directory');
@@ -129,17 +132,27 @@ export const WorkspaceWizardModal: React.FC<WorkspaceWizardModalProps> = ({ isOp
     });
 
     const handleImportFinal = useCallback(async () => {
-        const mounts: WorkspaceMount[] = [{
-            id: `local-${Date.now()}`,
-            name: formData.name,
-            type: 'local',
-            rootPath: sshPath
-        }];
-        const success = await onWorkspaceCreated(sshPath, formData.name, formData.description, mounts);
-        if (success) {
-            onClose();
+        setIsLoading(true);
+        setError(null);
+        try {
+            const mounts: WorkspaceMount[] = [{
+                id: `local-${Date.now()}`,
+                name: formData.name,
+                type: 'local',
+                rootPath: sshPath
+            }];
+            const success = await onWorkspaceCreated(sshPath, formData.name, formData.description, mounts);
+            if (success) {
+                onClose();
+                return;
+            }
+            setError('Failed to create workspace');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to create workspace');
+        } finally {
+            setIsLoading(false);
         }
-    }, [formData, sshPath, onWorkspaceCreated, onClose]);
+    }, [formData, sshPath, onWorkspaceCreated, onClose, setError, setIsLoading]);
 
     const handleCreateNewSelection = useCallback(() => {
         setSshConnectionId(null);
@@ -152,6 +165,8 @@ export const WorkspaceWizardModal: React.FC<WorkspaceWizardModalProps> = ({ isOp
         formData,
         sshForm,
         sshPath,
+        setError,
+        setIsLoading,
         onWorkspaceCreated,
         onClose
     });

@@ -56,6 +56,14 @@ function resolveDisplayName(model: ModelInfo): string {
     return name || label || id;
 }
 
+export function getSelectableProviderId(model: Pick<ModelInfo, 'provider' | 'providerCategory'>): string {
+    const categoryProvider = normalizeProviderId(model.providerCategory);
+    if (categoryProvider !== 'custom' || (model.providerCategory ?? '').trim() !== '') {
+        return categoryProvider;
+    }
+    return normalizeProviderId(model.provider);
+}
+
 export async function fetchModels(bypassCache = false): Promise<ModelInfo[]> {
     try {
         // PERF-005-1: Return cached models if still fresh

@@ -1,5 +1,6 @@
+import { DB_CHANNELS } from '@shared/constants/ipc-channels';
 import { Chat, Folder, Message, Workspace } from '@shared/types';
-import { IpcRenderer } from 'electron';
+import { IpcRenderer, IpcRendererEvent } from 'electron';
 
 export interface DbBridge {
     createChat: (chat: Chat) => Promise<{ success: boolean }>;
@@ -70,38 +71,39 @@ export interface DbBridge {
         name: string,
         path: string,
         description: string,
-        mounts?: string
+        mounts?: import('@shared/types').WorkspaceMount[]
     ) => Promise<Workspace>;
     updateWorkspace: (id: string, updates: Partial<Workspace>) => Promise<void>;
     deleteWorkspace: (id: string, deleteFiles?: boolean) => Promise<void>;
     archiveWorkspace: (id: string, isArchived: boolean) => Promise<void>;
     bulkDeleteWorkspaces: (ids: string[], deleteFiles?: boolean) => Promise<void>;
     bulkArchiveWorkspaces: (ids: string[], isArchived: boolean) => Promise<void>;
-    createFolder:(name: string, color?: string) => Promise<Folder>;
+    createFolder: (name: string, color?: string) => Promise<Folder>;
     deleteFolder: (id: string) => Promise<void>;
     updateFolder: (id: string, updates: Partial<Folder>) => Promise<void>;
     getFolders: () => Promise<Folder[]>;
+    onWorkspaceUpdated: (callback: (payload: { id?: string }) => void) => () => void;
 }
 
 export function createDbBridge(ipc: IpcRenderer): DbBridge {
     return {
         createChat: chat => ipc.invoke('db:createChat', chat),
-        updateChat: (id, updates) => ipc.invoke('db:updateChat', { id, updates }),
+        updateChat: (id, updates) => ipc.invoke('db:updateChat', id, updates),
         deleteChat: id => ipc.invoke('db:deleteChat', id),
         duplicateChat: id => ipc.invoke('db:duplicateChat', id),
-        archiveChat: (id, isArchived) => ipc.invoke('db:archiveChat', { id, isArchived }),
+        archiveChat: (id, isArchived) => ipc.invoke('db:archiveChat', id, isArchived),
         bulkDeleteChats: ids => ipc.invoke('db:bulkDeleteChats', ids),
-        bulkArchiveChats: (ids, isArchived) => ipc.invoke('db:bulkArchiveChats', { ids, isArchived }),
+        bulkArchiveChats: (ids, isArchived) => ipc.invoke('db:bulkArchiveChats', ids, isArchived),
         getChat: id => ipc.invoke('db:getChat', id),
         getAllChats: () => ipc.invoke('db:getAllChats'),
         getPrompts: () => ipc.invoke('db:getPrompts'),
-        createPrompt: (title, content, tags) => ipc.invoke('db:createPrompt', { title, content, tags }),
-        updatePrompt: (id, updates) => ipc.invoke('db:updatePrompt', { id, updates }),
+        createPrompt: (title, content, tags) => ipc.invoke('db:createPrompt', title, content, tags),
+        updatePrompt: (id, updates) => ipc.invoke('db:updatePrompt', id, updates),
         deletePrompt: id => ipc.invoke('db:deletePrompt', id),
         searchChats: query => ipc.invoke('db:searchChats', query),
         addMessage: message => ipc.invoke('db:addMessage', message),
         deleteMessage: id => ipc.invoke('db:deleteMessage', id),
-        updateMessage: (id, updates) => ipc.invoke('db:updateMessage', { id, updates }),
+        updateMessage: (id, updates) => ipc.invoke('db:updateMessage', id, updates),
         deleteAllChats: () => ipc.invoke('db:deleteAllChats'),
         deleteChatsByTitle: title => ipc.invoke('db:deleteChatsByTitle', title),
         deleteMessages: chatId => ipc.invoke('db:deleteMessages', chatId),
@@ -113,15 +115,28 @@ export function createDbBridge(ipc: IpcRenderer): DbBridge {
         addTokenUsage: record => ipc.invoke('db:addTokenUsage', record),
         getWorkspaces: () => ipc.invoke('db:getWorkspaces'),
         createWorkspace: (name, path, description, mounts) =>
-            ipc.invoke('db:createWorkspace', { name, path, description, mounts }),
-        updateWorkspace: (id, updates) => ipc.invoke('db:updateWorkspace', { id, updates }),
-        deleteWorkspace: (id, deleteFiles) => ipc.invoke('db:deleteWorkspace', { id, deleteFiles }),
-        archiveWorkspace: (id, isArchived) => ipc.invoke('db:archiveWorkspace', { id, isArchived }),
-        bulkDeleteWorkspaces: (ids, deleteFiles) => ipc.invoke('db:bulkDeleteWorkspaces', { ids, deleteFiles }),
-        bulkArchiveWorkspaces: (ids, isArchived) => ipc.invoke('db:bulkArchiveWorkspaces', { ids, isArchived }),
-        createFolder:(name, color) => ipc.invoke('db:createFolder', { name, color }),
+            ipc.invoke('db:createWorkspace', {
+                title: name,
+                path,
+                description,
+                mounts
+            }),
+        updateWorkspace: (id, updates) => ipc.invoke('db:updateWorkspace', id, updates),
+        deleteWorkspace: (id, _deleteFiles) => ipc.invoke('db:deleteWorkspace', id),
+        archiveWorkspace: (id, isArchived) => ipc.invoke('db:archiveWorkspace', id, isArchived),
+        bulkDeleteWorkspaces: (ids, deleteFiles) => ipc.invoke('db:bulkDeleteWorkspaces', ids, deleteFiles),
+        bulkArchiveWorkspaces: (ids, isArchived) => ipc.invoke('db:bulkArchiveWorkspaces', ids, isArchived),
+        createFolder: (name, color) => ipc.invoke('db:createFolder', { name, color }),
         deleteFolder: id => ipc.invoke('db:deleteFolder', id),
-        updateFolder: (id, updates) => ipc.invoke('db:updateFolder', { id, updates }),
+        updateFolder: (id, updates) => ipc.invoke('db:updateFolder', id, updates),
         getFolders: () => ipc.invoke('db:getFolders'),
+        onWorkspaceUpdated: callback => {
+            const listener = (
+                _event: IpcRendererEvent,
+                payload: { id?: string }
+            ) => callback(payload);
+            ipc.on(DB_CHANNELS.WORKSPACE_UPDATED_EVENT, listener);
+            return () => ipc.removeListener(DB_CHANNELS.WORKSPACE_UPDATED_EVENT, listener);
+        },
     };
 }

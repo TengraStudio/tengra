@@ -6,6 +6,7 @@ import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
 import { serializeToIpc, validatedAs, validatedToJsonObject } from '@main/utils/ipc-serializer.util';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
+import { DB_CHANNELS } from '@shared/constants/ipc-channels';
 import { Chat, Folder, Message, Prompt } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
 import { DbTokenStats } from '@shared/types/db-api';
@@ -87,12 +88,16 @@ const TokenUsageRecordSchema = z.object({
 });
 
 const WorkspaceSchema = z.object({
+    id: z.string().optional(),
     title: z.string().min(1),
     path: z.string().min(1),
-    description: z.string().optional(),
-    mounts: z.unknown().optional(),
+    description: z.string().optional().nullable(),
+    mounts: z.union([z.string(), z.array(z.unknown())]).optional(),
     councilConfig: z.unknown().optional(),
-}).passthrough();
+    createdAt: z.number().optional(),
+    updatedAt: z.number().optional(),
+    status: z.enum(['active', 'archived', 'draft']).optional(),
+});
 
 type SenderValidator = (event: IpcMainEvent | IpcMainInvokeEvent) => void;
 
@@ -178,6 +183,14 @@ function registerBatchHandlers(databaseService: DatabaseService, validateSender:
         defaultValue: { success: false, id: '' },
         argsSchema: z.tuple([MessageSchema])
     }) as never);
+
+    registerBatchableHandler('db:updateMessage', createValidatedIpcHandler('db:updateMessage', async (event, messageId: string, updates: Partial<Message>) => {
+        validateSender(event);
+        return await withRateLimit('db', () => databaseService.chats.updateMessage(messageId, validatedToJsonObject({ ...updates })));
+    }, {
+        defaultValue: { success: false },
+        argsSchema: z.tuple([IdSchema, z.record(z.string(), z.unknown())])
+    }) as never);
 }
 
 /**
@@ -228,16 +241,12 @@ function registerChatHandlers(databaseService: DatabaseService, validateSender: 
         argsSchema: z.tuple([IdSchema, z.string().min(1)])
     }));
 
-    ipcMain.handle('db:deleteMessages', createValidatedIpcHandler('db:deleteMessages', async (event, ids: string[]) => {
+    ipcMain.handle('db:deleteMessages', createValidatedIpcHandler('db:deleteMessages', async (event, chatId: string) => {
         validateSender(event);
-        // Process in a loop with fixed bounds (NASA Rule 2)
-        for (let i = 0; i < ids.length; i++) {
-            await withRateLimit('db', () => databaseService.chats.deleteMessage(ids[i]));
-        }
-        return { success: true };
+        return await withRateLimit('db', () => databaseService.deleteMessagesByChatId(chatId));
     }, {
         defaultValue: { success: false },
-        argsSchema: z.tuple([IdsSchema])
+        argsSchema: z.tuple([IdSchema])
     }));
 
     ipcMain.handle('db:searchChats', createValidatedIpcHandler('db:searchChats', async (event, options?: z.infer<typeof SearchChatsOptionsSchema>) => {
@@ -253,6 +262,38 @@ function registerChatHandlers(databaseService: DatabaseService, validateSender: 
         await withRateLimit('db', () => databaseService.chats.deleteAllChats());
         return { success: true };
     }, { defaultValue: { success: false } }));
+
+    ipcMain.handle('db:deleteAllChats', createValidatedIpcHandler('db:deleteAllChats', async (event) => {
+        validateSender(event);
+        await withRateLimit('db', () => databaseService.deleteAllChats());
+        return { success: true };
+    }, { defaultValue: { success: false } }));
+
+    ipcMain.handle('db:deleteChatsByTitle', createValidatedIpcHandler('db:deleteChatsByTitle', async (event, title: string) => {
+        validateSender(event);
+        return await withRateLimit('db', () => databaseService.deleteChatsByTitle(title));
+    }, {
+        defaultValue: { success: false },
+        argsSchema: z.tuple([z.string().min(1)])
+    }));
+
+    ipcMain.handle('db:bulkDeleteChats', createValidatedIpcHandler('db:bulkDeleteChats', async (event, ids: string[]) => {
+        validateSender(event);
+        await withRateLimit('db', () => databaseService.bulkDeleteChats(ids));
+        return { success: true };
+    }, {
+        defaultValue: { success: false },
+        argsSchema: z.tuple([IdsSchema])
+    }));
+
+    ipcMain.handle('db:bulkArchiveChats', createValidatedIpcHandler('db:bulkArchiveChats', async (event, ids: string[], isArchived: boolean) => {
+        validateSender(event);
+        await withRateLimit('db', () => databaseService.bulkArchiveChats(ids, isArchived));
+        return { success: true };
+    }, {
+        defaultValue: { success: false },
+        argsSchema: z.tuple([IdsSchema, z.boolean()])
+    }));
 }
 
 /**
@@ -261,7 +302,7 @@ function registerChatHandlers(databaseService: DatabaseService, validateSender: 
 function registerWorkspaceHandlers(databaseService: DatabaseService, validateSender: (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => void) {
     const normalizePathKey = (value: string): string => value.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
 
-    const extractMountKeys = (workspace: Workspace): string[] => {
+    const extractMountDescriptors = (workspace: Workspace): Array<{ key: string; type: 'local' | 'ssh' }> => {
         if (Array.isArray(workspace.mounts) && workspace.mounts.length > 0) {
             return workspace.mounts
                 .map(mount => {
@@ -269,55 +310,74 @@ function registerWorkspaceHandlers(databaseService: DatabaseService, validateSen
                         const host = mount.ssh?.host?.toLowerCase() ?? '';
                         const user = mount.ssh?.username?.toLowerCase() ?? '';
                         const port = mount.ssh?.port ?? 22;
-                        return `ssh:${user}@${host}:${port}:${normalizePathKey(mount.rootPath)}`;
+                        return {
+                            key: `ssh:${user}@${host}:${port}:${normalizePathKey(mount.rootPath)}`,
+                            type: 'ssh' as const
+                        };
                     }
-                    return `local:${normalizePathKey(mount.rootPath)}`;
+                    return {
+                        key: `local:${normalizePathKey(mount.rootPath)}`,
+                        type: 'local' as const
+                    };
                 });
         }
-        return [`local:${normalizePathKey(workspace.path)}`];
+        return [{
+            key: `local:${normalizePathKey(workspace.path)}`,
+            type: 'local'
+        }];
     };
+
+    const getDuplicateWorkspaceMessage = (type: 'local' | 'ssh'): string =>
+        type === 'ssh'
+            ? 'A workspace already exists for this remote path.'
+            : 'A workspace already exists for this local directory.';
 
     ipcMain.handle('db:createWorkspace', createValidatedIpcHandler('db:createWorkspace', async (event, workspace: Workspace) => {
         validateSender(event);
-        const existingWorkspaces = await databaseService.workspaces.getWorkspaces();
+        const existingWorkspaces = await databaseService.getWorkspaces();
         const existingMountKeys = new Set<string>();
         for (const existingWorkspace of existingWorkspaces) {
-            for (const key of extractMountKeys(existingWorkspace)) {
-                existingMountKeys.add(key);
+            for (const descriptor of extractMountDescriptors(existingWorkspace)) {
+                existingMountKeys.add(descriptor.key);
             }
         }
 
-        for (const key of extractMountKeys(workspace)) {
-            if (existingMountKeys.has(key)) {
-                throw new Error('Invalid input');
+        for (const descriptor of extractMountDescriptors(workspace)) {
+            if (existingMountKeys.has(descriptor.key)) {
+                throw new Error(getDuplicateWorkspaceMessage(descriptor.type));
             }
         }
 
-        const createdWorkspace = await withRateLimit('db', () => databaseService.workspaces.createWorkspace(
+        const createdWorkspace = await withRateLimit('db', () => databaseService.createWorkspace(
             workspace.title,
             workspace.path,
             workspace.description,
             workspace.mounts ? JSON.stringify(workspace.mounts) : undefined,
             workspace.councilConfig ? JSON.stringify(workspace.councilConfig) : undefined
         ));
-        event.sender.send('workspace:updated', { id: createdWorkspace.id });
+        event.sender.send(DB_CHANNELS.WORKSPACE_UPDATED_EVENT, { id: createdWorkspace.id });
         return createdWorkspace;
     }, {
-        defaultValue: null,
-        argsSchema: z.tuple([WorkspaceSchema])
+        argsSchema: z.tuple([WorkspaceSchema]),
+        responseSchema: WorkspaceSchema
     }));
 
     ipcMain.handle('db:getWorkspaces', createValidatedIpcHandler('db:getWorkspaces', async (event) => {
         validateSender(event);
-        return await databaseService.workspaces.getWorkspaces();
-    }, { defaultValue: [] }));
+        return await databaseService.getWorkspaces();
+    }, {
+        defaultValue: [],
+        argsSchema: z.tuple([]),
+        responseSchema: z.array(WorkspaceSchema)
+    }));
 
     ipcMain.handle('db:getWorkspaceById', createValidatedIpcHandler('db:getWorkspaceById', async (event, id: string) => {
         validateSender(event);
-        return await databaseService.workspaces.getWorkspace(id);
+        return await databaseService.getWorkspace(id);
     }, {
         defaultValue: null,
-        argsSchema: z.tuple([IdSchema])
+        argsSchema: z.tuple([IdSchema]),
+        responseSchema: WorkspaceSchema.nullable()
     }));
 
     ipcMain.handle('db:updateWorkspace', createValidatedIpcHandler('db:updateWorkspace', async (event, id: string, updates: Partial<Workspace>) => {
@@ -325,7 +385,8 @@ function registerWorkspaceHandlers(databaseService: DatabaseService, validateSen
         return await withRateLimit('db', () => databaseService.workspaces.updateWorkspace(id, updates as JsonObject));
     }, {
         defaultValue: null,
-        argsSchema: z.tuple([IdSchema, z.record(z.string(), z.unknown())])
+        argsSchema: z.tuple([IdSchema, z.record(z.string(), z.unknown())]),
+        responseSchema: WorkspaceSchema.nullable()
     }));
 
     ipcMain.handle('db:deleteWorkspace', createValidatedIpcHandler('db:deleteWorkspace', async (event, id: string) => {
@@ -335,6 +396,33 @@ function registerWorkspaceHandlers(databaseService: DatabaseService, validateSen
     }, {
         defaultValue: { success: false },
         argsSchema: z.tuple([IdSchema])
+    }));
+
+    ipcMain.handle('db:archiveWorkspace', createValidatedIpcHandler('db:archiveWorkspace', async (event, id: string, isArchived: boolean) => {
+        validateSender(event);
+        await withRateLimit('db', () => databaseService.archiveWorkspace(id, isArchived));
+        return { success: true };
+    }, {
+        defaultValue: { success: false },
+        argsSchema: z.tuple([IdSchema, z.boolean()])
+    }));
+
+    ipcMain.handle('db:bulkDeleteWorkspaces', createValidatedIpcHandler('db:bulkDeleteWorkspaces', async (event, ids: string[], deleteFiles: boolean = false) => {
+        validateSender(event);
+        await withRateLimit('db', () => databaseService.bulkDeleteWorkspaces(ids, deleteFiles));
+        return { success: true };
+    }, {
+        defaultValue: { success: false },
+        argsSchema: z.tuple([IdsSchema, z.boolean().optional()])
+    }));
+
+    ipcMain.handle('db:bulkArchiveWorkspaces', createValidatedIpcHandler('db:bulkArchiveWorkspaces', async (event, ids: string[], isArchived: boolean) => {
+        validateSender(event);
+        await withRateLimit('db', () => databaseService.bulkArchiveWorkspaces(ids, isArchived));
+        return { success: true };
+    }, {
+        defaultValue: { success: false },
+        argsSchema: z.tuple([IdsSchema, z.boolean()])
     }));
 }
 

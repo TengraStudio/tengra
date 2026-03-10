@@ -1,9 +1,4 @@
 import type {
-    DbMarketplaceModel,
-    MarketplaceModelDetails,
-} from '@renderer/electron.d';
-
-import type {
     EntityKnowledge,
     EpisodicMemory,
     IdeaProgress,
@@ -33,25 +28,6 @@ export interface ElectronApiModelsMemoryDomain {
         pause: (downloadId: string) => Promise<unknown>;
         resume: (downloadId: string) => Promise<unknown>;
         cancel: (downloadId: string) => Promise<unknown>;
-    };
-
-    // Marketplace API (models from database)
-    marketplace: {
-        getModels: (
-            provider?: 'ollama' | 'huggingface',
-            limit?: number,
-            offset?: number
-        ) => Promise<DbMarketplaceModel[]>;
-        searchModels: (
-            query: string,
-            provider?: 'ollama' | 'huggingface',
-            limit?: number
-        ) => Promise<DbMarketplaceModel[]>;
-        getModelDetails: (
-            modelName: string,
-            provider?: 'ollama' | 'huggingface'
-        ) => Promise<MarketplaceModelDetails | null>;
-        getStatus: () => Promise<{ lastScrapeTime: number; isScraping: boolean }>;
     };
 
     // llama.cpp

@@ -10,10 +10,11 @@ import type {
 import { getContextWindowService } from '@main/services/llm/context-window.service';
 import { getCostEstimationService } from '@main/services/llm/cost-estimation.service';
 import { LLMService } from '@main/services/llm/llm.service';
+import { CouncilCapabilityService } from '@main/services/session/capabilities/council-capability.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
-import { AgentCheckpointService } from '@main/services/workspace/agent/agent-checkpoint.service';
-import { AgentCollaborationService } from '@main/services/workspace/agent/agent-collaboration.service';
-import { AgentRegistryService } from '@main/services/workspace/agent/agent-registry.service';
+import { AgentCheckpointService } from '@main/services/workspace/automation-workflow/agent-checkpoint.service';
+import { AgentCollaborationService } from '@main/services/workspace/automation-workflow/agent-collaboration.service';
+import { AgentRegistryService } from '@main/services/workspace/automation-workflow/agent-registry.service';
 import { createInitialAgentState } from '@main/services/workspace/automation-workflow/agent-state-machine';
 import { AgentTaskPlanCompiler } from '@main/services/workspace/automation-workflow/agent-task-plan-compiler';
 import { AgentTestRunnerService, getAgentTestRunnerService } from '@main/services/workspace/automation-workflow/agent-test-runner.service';
@@ -23,8 +24,8 @@ import { GitService } from '@main/services/workspace/git.service';
 import { ToolExecutor } from '@main/tools/tool-executor';
 import { StateMachine } from '@main/utils/state-machine.util';
 import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
+import { SESSION_RUNTIME_EVENTS } from '@shared/constants/session-runtime-events';
 import { AgentTaskState } from '@shared/types/agent-state';
-import { Message, ToolCall, ToolDefinition } from '@shared/types/chat';
 import {
     AgentStartOptions,
     PlanVersionItem,
@@ -35,7 +36,8 @@ import {
     WorkspaceState,
     WorkspaceStep,
     WorkspaceStepStatus,
-} from '@shared/types/workspace-agent';
+} from '@shared/types/automation-workflow';
+import { Message, ToolCall, ToolDefinition } from '@shared/types/chat';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 const WORKSPACE_COMPAT_PATH_COLUMN = WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN;
@@ -48,7 +50,7 @@ export interface AgentServices {
     checkpoint: AgentCheckpointService;
     git: GitService;
     collaboration: AgentCollaborationService;
-    council: import('./council.service').CouncilService;
+    councilCapability: CouncilCapabilityService;
     testRunner?: AgentTestRunnerService;
 }
 
@@ -182,18 +184,18 @@ export class AgentTaskExecutor {
     }
 
     private emitUpdate() {
-        this.services.eventBus.emit('workspace:update', {
+        this.services.eventBus.emitCustom(SESSION_RUNTIME_EVENTS.AUTOMATION_STATE_SYNC, {
             ...this.state,
         });
     }
 
     private setupEventListeners() {
-        this.unsubscribeStepUpdate = this.services.eventBus.on('workspace:step-update', payload => {
+        this.unsubscribeStepUpdate = this.services.eventBus.on(SESSION_RUNTIME_EVENTS.AUTOMATION_STEP_UPDATE, payload => {
             if (payload.taskId && payload.taskId !== this.taskId) { return; } // Filtering
 
             void (async () => {
                 try {
-                    this.logInfo(`Received workspace:step-update: ${JSON.stringify(payload)}`);
+                    this.logInfo(`Received ${SESSION_RUNTIME_EVENTS.AUTOMATION_STEP_UPDATE}: ${JSON.stringify(payload)}`);
                     const { index, status, message } = payload;
                     if (index >= 0 && index < this.state.plan.length) {
                         this.handleStepStatusUpdate(index, status);
@@ -216,10 +218,10 @@ export class AgentTaskExecutor {
             })();
         });
 
-        this.unsubscribePlanProposed = this.services.eventBus.on('workspace:plan-proposed', payload => {
+        this.unsubscribePlanProposed = this.services.eventBus.on(SESSION_RUNTIME_EVENTS.AUTOMATION_PLAN_PROPOSED, payload => {
             if (payload.taskId && payload.taskId !== this.taskId) { return; }
 
-            this.logInfo(`Received workspace:plan-proposed event with ${payload.steps.length} steps`);
+            this.logInfo(`Received ${SESSION_RUNTIME_EVENTS.AUTOMATION_PLAN_PROPOSED} event with ${payload.steps.length} steps`);
             if (this.state.status !== 'planning') {
                 this.logWarn(`Ignoring proposed plan while state is ${this.state.status}`);
                 return;
@@ -284,7 +286,7 @@ export class AgentTaskExecutor {
         });
 
         // AGT-PLN-02: Listen for plan revision events
-        this.unsubscribePlanRevised = this.services.eventBus.on('workspace:plan-revised', payload => {
+        this.unsubscribePlanRevised = this.services.eventBus.on(SESSION_RUNTIME_EVENTS.AUTOMATION_PLAN_REVISED, payload => {
             if (payload.taskId && payload.taskId !== this.taskId) { return; }
 
             this.logInfo(`Received plan revision: ${payload.action} - ${payload.reason}`);
@@ -380,7 +382,7 @@ export class AgentTaskExecutor {
             );
 
             // Emit cost estimation event for UI updates
-            this.services.eventBus.emit('workspace:cost-estimated', {
+            this.services.eventBus.emit(SESSION_RUNTIME_EVENTS.AUTOMATION_COST_ESTIMATED, {
                 taskId: this.taskId,
                 estimate: costBreakdown,
             });
@@ -1091,15 +1093,20 @@ export class AgentTaskExecutor {
         }
 
         try {
-            // MARCH1-COUNCIL-001: Use CouncilService to prepare the plan with quota-aware routing
-            this.state.plan = await this.services.council.prepareCouncilPlan(this.taskId, this.state.plan);
+            // MARCH1-COUNCIL-001: Use the council capability for quota-aware routing.
+            this.state.plan = await this.services.councilCapability.prepareCouncilPlan(
+                this.taskId,
+                this.state.plan
+            );
 
             // Record that this plan was prepared via Council flow
             this.logInfo(`Council plan prepared with ${this.state.plan.length} steps`);
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            this.logWarn(`Failed to apply collaborative routing via CouncilService: ${message}`);
-            // Fallback to basic collaboration analysis if council service fails
+            this.logWarn(
+                `Failed to apply collaborative routing via council capability: ${message}`
+            );
+            // Fallback to basic collaboration analysis if the capability path fails.
             const analyzed = this.services.collaboration.analyzeSteps(this.state.plan);
             const providers = await this.getAvailableModelProviders();
             this.state.plan = analyzed.map(step => {
@@ -1663,7 +1670,7 @@ ${content}`;
 
         if (currentCost.costUsd >= budgetLimit) {
             // Emit budget exceeded event for UI notification
-            this.services.eventBus.emit('workspace:budget-exceeded', {
+            this.services.eventBus.emit(SESSION_RUNTIME_EVENTS.AUTOMATION_BUDGET_EXCEEDED, {
                 taskId: this.taskId,
                 budgetLimitUsd: budgetLimit,
                 currentCostUsd: currentCost.costUsd,
@@ -1893,7 +1900,10 @@ ${content}`;
     private async autoProposeTextPlan(content: string): Promise<boolean> {
         const jsonSteps = this.planCompiler.parseJsonPlan(content);
         if (jsonSteps && jsonSteps.length > 0) {
-            this.services.eventBus.emit('workspace:plan-proposed', { steps: jsonSteps, taskId: this.taskId });
+            this.services.eventBus.emit(SESSION_RUNTIME_EVENTS.AUTOMATION_PLAN_PROPOSED, {
+                steps: jsonSteps,
+                taskId: this.taskId,
+            });
             this.shouldStop = true;
             return true;
         }
@@ -2326,3 +2336,4 @@ ${content}`;
         );
     }
 }
+

@@ -1,4 +1,6 @@
-import { afterEach,beforeEach, describe, expect, it, vi } from 'vitest';
+import { SESSION_CONVERSATION_CHANNELS } from '@shared/constants/ipc-channels';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 vi.mock('@main/logging/logger', () => ({ appLogger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() } }));
 import { RateLimitErrorCode, RateLimitService } from '@main/services/security/rate-limit.service';
 
@@ -77,7 +79,7 @@ describe('RateLimitService Integration - Multi-Provider Flows', () => {
     it('should handle all default IPC provider names', () => {
         const ipcProviders = [
             'openai', 'anthropic', 'gemini', 'ssh:execute',
-            'chat:stream', 'files:search', 'files:read', 'files:write',
+            SESSION_CONVERSATION_CHANNELS.STREAM, 'files:search', 'files:read', 'files:write',
             'ollama:chat', 'ollama:operation', 'model-registry',
             'mcp:filesystem', 'mcp:git', 'mcp:database'
         ];
@@ -206,3 +208,4 @@ describe('RateLimitService Integration - Regression Guards', () => {
         expect(status.msUntilNextToken).toBe(0);
     });
 });
+

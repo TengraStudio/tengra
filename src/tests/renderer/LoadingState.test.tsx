@@ -37,7 +37,7 @@ describe('LoadingState', () => {
         expect(screen.getByText('Loading data')).toBeInTheDocument();
         expect(screen.getByText('Fetching records')).toBeInTheDocument();
         expect(screen.getByText('Stop')).toBeInTheDocument();
-        expect(screen.getByText(/remaining|Finalizing/)).toBeInTheDocument();
+        expect(screen.getByText(/timeRemaining|remaining|Finalizing/)).toBeInTheDocument();
         expect(container.querySelector('[style*="width: 50%"]')).not.toBeNull();
 
         fireEvent.click(screen.getByText('Stop'));

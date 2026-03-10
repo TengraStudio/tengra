@@ -11,7 +11,11 @@ app.setName('Tengra');
 import { ApiServerService } from '@main/api/api-server.service';
 import { appLogger, LogLevel } from '@main/logging/logger';
 import { McpDispatcher } from '@main/mcp/dispatcher';
+import type { PageSpeedService } from '@main/services/analysis/pagespeed.service';
+import type { ScannerService } from '@main/services/analysis/scanner.service';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
+import type { DockerService } from '@main/services/workspace/docker.service';
+import type { SSHService } from '@main/services/workspace/ssh.service';
 import { registerIpcHandlers } from '@main/startup/ipc';
 import { container, createServices, startDeferredServices } from '@main/startup/services';
 import { ToolExecutor } from '@main/tools/tool-executor';
@@ -34,8 +38,12 @@ app.on('certificate-error', (...args) => {
     (callback as (allow: boolean) => void)(false);
 });
 
-app.commandLine.appendSwitch('js-flags', '--max-old-space-size=8192');
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=2048'); // Reduced from 8192 to be more reasonable
 app.commandLine.appendSwitch('disable-site-isolation-trials');
+app.commandLine.appendSwitch('disable-background-timer-throttling', 'false'); // Allow throttling
+app.commandLine.appendSwitch('disable-renderer-backgrounding', 'false'); // Allow renderer backgrounding
+app.commandLine.appendSwitch('enable-low-end-device-mode'); // Forces more aggressive GC
+app.commandLine.appendSwitch('process-per-site'); // Reduces parallel processes
 
 if (process.platform === 'win32') {
     app.setAppUserModelId('com.tengra.app');
@@ -45,7 +53,7 @@ if (process.platform === 'win32') {
 preRegisterProtocols();
 
 app.whenReady().then(async () => {
-    appLogger.setLevel(LogLevel.DEBUG);
+    appLogger.setLevel(app.isPackaged ? LogLevel.INFO : LogLevel.DEBUG);
     appLogger.installConsoleRedirect();
 
     appLogger.info('Startup', 'Validating environment variables...');
@@ -73,15 +81,9 @@ app.whenReady().then(async () => {
     void services.localImageService.initialize().catch(e => appLogger.error('Main', `LocalImage Init Failed: ${e}`));
 
     // Hardened Tool Executor
+    // mcpPluginService.initialize() is intentionally deferred to after window creation;
+    // McpDispatcher holds the reference and will find plugins populated once deferred init runs.
     const mcpDispatcher = new McpDispatcher(new Set<string>(), services.settingsService, services.mcpPluginService);
-    await services.mcpPluginService.initialize();
-    await services.mcpMarketplaceService.initialize();
-    const [dockerService, sshService, scannerService, pageSpeedService] = await Promise.all([
-        services.dockerService.resolve(),
-        services.sshService.resolve(),
-        services.scannerService.resolve(),
-        services.pageSpeedService.resolve(),
-    ]);
 
     const toolExecutor = new ToolExecutor({
         fileSystem: services.fileSystemService,
@@ -92,9 +94,9 @@ app.whenReady().then(async () => {
         system: services.systemService,
         network: services.networkService,
         notification: services.notificationService,
-        docker: dockerService,
-        ssh: sshService,
-        scanner: scannerService,
+        docker: container.resolve<DockerService>('dockerService'),
+        ssh: container.resolve<SSHService>('sshService'),
+        scanner: container.resolve<ScannerService>('scannerService'),
         embedding: services.embeddingService,
         utility: services.utilityService,
         content: services.contentService,
@@ -106,7 +108,7 @@ app.whenReady().then(async () => {
         mcp: mcpDispatcher,
         llm: services.llmService,
         memory: services.memoryService,
-        pageSpeed: pageSpeedService,
+        pageSpeed: container.resolve<PageSpeedService>('pageSpeedService'),
         localImage: services.localImageService
     });
 
@@ -168,6 +170,7 @@ app.whenReady().then(async () => {
         deferredTasksStarted = true;
         void Promise.resolve().then(async () => {
             // Initialize deferred (non-critical) services first
+            await services.mcpPluginService.initialize();
             await startDeferredServices();
 
             const { startOllama } = await import('@main/startup/ollama');

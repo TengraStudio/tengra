@@ -4,6 +4,7 @@ import { appLogger } from '@main/logging/logger';
 import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { JsonObject } from '@shared/types/common';
 import { DatabaseAdapter, SqlValue } from '@shared/types/database';
+import { DbWorkspace } from '@shared/types/db-api';
 import { Workspace } from '@shared/types/workspace';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -17,13 +18,13 @@ export class WorkspaceRepository extends BaseRepository {
     }
 
     async getWorkspaces(): Promise<Workspace[]> {
-        const rows = await this.selectAllPaginated<JsonObject>('SELECT * FROM workspaces ORDER BY updated_at DESC');
+        const rows = await this.selectAllPaginated<JsonObject>(`SELECT * FROM ${WORKSPACE_COMPAT_SCHEMA_VALUES.TABLE} ORDER BY updated_at DESC`);
         return rows.map(r => this.mapRowToWorkspace(r));
     }
 
     async getWorkspace(id: string): Promise<Workspace | undefined> {
         const row = await this.adapter
-            .prepare('SELECT * FROM workspaces WHERE id = ?')
+            .prepare(`SELECT * FROM ${WORKSPACE_COMPAT_SCHEMA_VALUES.TABLE} WHERE id = ?`)
             .get<JsonObject>(id);
         return row ? this.mapRowToWorkspace(row) : undefined;
     }
@@ -52,10 +53,10 @@ export class WorkspaceRepository extends BaseRepository {
         const status = 'active';
         const metadata = '{}';
 
-        await this.adapter
+        const insertResult = await this.adapter
             .prepare(
                 `
-            INSERT INTO workspaces(id, title, description, path, mounts, chat_ids, council_config, status, metadata, created_at, updated_at) 
+            INSERT INTO ${WORKSPACE_COMPAT_SCHEMA_VALUES.TABLE}(id, title, description, path, mounts, chat_ids, council_config, status, metadata, created_at, updated_at) 
             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `
             )
@@ -72,6 +73,9 @@ export class WorkspaceRepository extends BaseRepository {
                 now,
                 now
             );
+        if ((insertResult.rowsAffected ?? 0) < 1) {
+            throw new Error('Workspace insert did not persist.');
+        }
 
         return this.mapRowToWorkspace({
             id,
@@ -104,7 +108,7 @@ export class WorkspaceRepository extends BaseRepository {
         values.push(id);
 
         await this.adapter
-            .prepare(`UPDATE workspaces SET ${fields.join(', ')} WHERE id = ? `)
+            .prepare(`UPDATE ${WORKSPACE_COMPAT_SCHEMA_VALUES.TABLE} SET ${fields.join(', ')} WHERE id = ? `)
             .run(...(values as SqlValue[]));
         return this.getWorkspace(id);
     }
@@ -174,7 +178,23 @@ export class WorkspaceRepository extends BaseRepository {
                 }
             }
         }
-        await this.adapter.prepare('DELETE FROM workspaces WHERE id = ?').run(id);
+        await this.adapter.prepare(`DELETE FROM ${WORKSPACE_COMPAT_SCHEMA_VALUES.TABLE} WHERE id = ?`).run(id);
+    }
+
+    mapDbWorkspace(workspace: DbWorkspace): Workspace {
+        return this.mapRowToWorkspace({
+            id: workspace.id,
+            title: workspace.title,
+            description: workspace.description ?? '',
+            path: workspace.path,
+            mounts: workspace.mounts,
+            chat_ids: workspace.chat_ids,
+            council_config: workspace.council_config,
+            status: workspace.status,
+            metadata: workspace.metadata,
+            created_at: workspace.created_at,
+            updated_at: workspace.updated_at,
+        });
     }
 
     private mapRowToWorkspace(row: JsonObject): Workspace {

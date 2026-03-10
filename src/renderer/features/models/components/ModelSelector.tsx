@@ -29,7 +29,7 @@ interface ModelSelectorProps {
     toggleFavorite?: (modelId: string) => void;
     isIconOnly?: boolean;
     thinkingLevel?: string;
-    onThinkingLevelChange?: (level: string) => void;
+    onThinkingLevelChange?: (modelId: string, level: string) => void;
     chatMode?: 'instant' | 'thinking' | 'agent';
     onChatModeChange?: (mode: 'instant' | 'thinking' | 'agent') => void;
 }
@@ -68,7 +68,6 @@ export const ModelSelector = memo(({
 
     const normalizeProvider = useCallback((provider?: string) => {
         const p = (provider ?? '').toLowerCase();
-        if (p === 'codex') { return 'openai'; }
         if (p === 'github') { return 'copilot'; }
         if (p === 'anthropic') { return 'claude'; }
         return p;
@@ -111,7 +110,7 @@ export const ModelSelector = memo(({
         const levels = currentModelInfo?.thinkingLevels;
         if (!levels || levels.length === 0) { return undefined; }
         if (thinkingLevel && levels.includes(thinkingLevel)) { return thinkingLevel; }
-        if (levels.includes('medium')) { return 'medium'; }
+        if (levels.includes('low')) { return 'low'; }
         return levels[0];
     }, [currentModelInfo, thinkingLevel]);
 
@@ -163,9 +162,9 @@ export const ModelSelector = memo(({
                 t={t}
                 chatMode={chatMode}
                 onChatModeChange={onChatModeChange}
-                thinkingLevel={effectiveThinkingLevel}
-                onThinkingLevelChange={onThinkingLevelChange}
-            />
+            thinkingLevel={effectiveThinkingLevel}
+            onThinkingLevelChange={onThinkingLevelChange}
+        />
         </div>
     );
 });

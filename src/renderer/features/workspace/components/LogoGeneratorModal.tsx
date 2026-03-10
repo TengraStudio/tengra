@@ -246,7 +246,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                                         )
                                                     }
                                                 >
-                                                    {t('workspaces.openImageMarketplace')}
+                                                    {t('workspaces.openImageModels')}
                                                 </Button>
                                                 <Button
                                                     variant="outline"

@@ -25,8 +25,9 @@ import { ScreenshotService } from '@main/services/ui/screenshot.service';
 import { DockerService } from '@main/services/workspace/docker.service';
 import { GitService } from '@main/services/workspace/git.service';
 import { SSHService } from '@main/services/workspace/ssh.service';
+import { SESSION_RUNTIME_EVENTS } from '@shared/constants/session-runtime-events';
+import { WorkspaceStep, WorkspaceStepStatus } from '@shared/types/automation-workflow';
 import { JsonObject, JsonValue } from '@shared/types/common';
-import { WorkspaceStep, WorkspaceStepStatus } from '@shared/types/workspace-agent';
 
 export interface InternalToolResult {
     success: boolean;
@@ -84,6 +85,26 @@ export class ToolExecutor {
 
     constructor(private options: ToolExecutorOptions) { }
 
+    private async raceWithTimeout<T>(
+        operation: Promise<T>,
+        timeoutMs: number,
+        timeoutMessage: string
+    ): Promise<T> {
+        let timer: ReturnType<typeof setTimeout> | null = null;
+        const timeoutPromise = new Promise<never>((_, reject) => {
+            timer = setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
+            if (timer?.unref) { timer.unref(); }
+        });
+
+        try {
+            return await Promise.race([operation, timeoutPromise]);
+        } finally {
+            if (timer !== null) {
+                clearTimeout(timer);
+            }
+        }
+    }
+
     async getToolDefinitions() {
         const { toolDefinitions } = await import('./tool-definitions');
 
@@ -118,15 +139,11 @@ export class ToolExecutor {
                 return await executionPromise;
             }
 
-            const timeoutPromise = new Promise<never>((_, reject) => {
-                const timer = setTimeout(() => {
-                    reject(new Error(`Tool execution timed out after ${timeoutMs}ms`));
-                }, timeoutMs);
-                // Unref the timer to allow the process to exit if needed
-                if (timer.unref) { timer.unref(); }
-            });
-
-            const result = await Promise.race([executionPromise, timeoutPromise]) as InternalToolResult;
+            const result = await this.raceWithTimeout(
+                executionPromise,
+                timeoutMs,
+                `Tool execution timed out after ${timeoutMs}ms`
+            ) as InternalToolResult;
 
             // AGT-10: Update cache for idempotent tools
             if (result.success && this.idempotentTools.has(name)) {
@@ -168,7 +185,8 @@ export class ToolExecutor {
                 move_file: (toolArgs) => this.handleMoveFile(toolArgs),
                 execute_command: (toolArgs) => this.handleCommand(toolArgs),
                 search_web: (toolArgs) => this.handleWebSearch(toolArgs),
-                get_system_info: () => this.handleSystemInfo()
+                get_system_info: () => this.handleSystemInfo(),
+                generate_image: (toolArgs) => this.handleGenerateImage(toolArgs),
             };
 
             const handler = handlers[name];
@@ -222,7 +240,12 @@ export class ToolExecutor {
                 const status = String(args['status']) as WorkspaceStepStatus;
                 const message = args['message'] ? String(args['message']) : undefined;
 
-                this.options.eventBus.emit('workspace:step-update', { index, status, message, taskId });
+                this.options.eventBus.emit(SESSION_RUNTIME_EVENTS.AUTOMATION_STEP_UPDATE, {
+                    index,
+                    status,
+                    message,
+                    taskId,
+                });
                 return { success: true };
             }
             case 'propose_plan': {
@@ -231,7 +254,7 @@ export class ToolExecutor {
                     return { success: false, error: 'Plan must have at least one step' };
                 }
 
-                this.options.eventBus.emit('workspace:plan-proposed', {
+                this.options.eventBus.emit(SESSION_RUNTIME_EVENTS.AUTOMATION_PLAN_PROPOSED, {
                     steps: this.normalizeProposedSteps(steps),
                     taskId,
                 });
@@ -252,7 +275,7 @@ export class ToolExecutor {
                     return { success: false, error: `Action '${action}' requires 'index' argument` };
                 }
 
-                this.options.eventBus.emit('workspace:plan-revised', {
+                this.options.eventBus.emit(SESSION_RUNTIME_EVENTS.AUTOMATION_PLAN_REVISED, {
                     action,
                     index,
                     stepText,
@@ -470,6 +493,30 @@ export class ToolExecutor {
         }
     }
 
+    private async handleGenerateImage(args: JsonObject): Promise<InternalToolResult> {
+        if (typeof args['prompt'] !== 'string' || args['prompt'].trim().length === 0) {
+            return { success: false, error: "Missing 'prompt' argument" };
+        }
+
+        const requestedCount = typeof args['count'] === 'number' && Number.isFinite(args['count'])
+            ? Math.floor(args['count'])
+            : 1;
+        const imageCount = Math.max(1, Math.min(requestedCount, 5));
+        const images: string[] = [];
+
+        try {
+            for (let index = 0; index < imageCount; index += 1) {
+                const imagePath = await this.options.localImage.generateImage({
+                    prompt: args['prompt'],
+                });
+                images.push(imagePath);
+            }
+            return { success: true, result: { images } };
+        } catch (e) {
+            return { success: false, error: String(e) };
+        }
+    }
+
     private async handleMcpTool(name: string, args: JsonObject): Promise<InternalToolResult> {
         try {
             let server = 'default';
@@ -492,3 +539,4 @@ export class ToolExecutor {
         }
     }
 }
+

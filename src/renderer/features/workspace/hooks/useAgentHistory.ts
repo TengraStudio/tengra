@@ -5,7 +5,7 @@ import { Workspace } from '@/types';
 import { ModelOption } from '../components/agent/TaskInputForm';
 import { TaskHistoryItem } from '../components/agent/TaskSidebar';
 
-const getWorkspaceAgentBridge = () => window.electron.workspaceAgent;
+const getAutomationBridge = () => window.electron.session.automation;
 
 export interface CheckpointItem {
     id: string;
@@ -37,7 +37,7 @@ export const useAgentHistory = (workspace: Workspace) => {
 
     const loadTaskHistory = useCallback(async () => {
         try {
-            const tasks = await getWorkspaceAgentBridge().getTaskHistory(workspace.path);
+            const tasks = await getAutomationBridge().getTaskHistory(workspace.path);
 
             if (Array.isArray(tasks)) {
                 const history: TaskHistoryItem[] = tasks.map(task => ({
@@ -67,7 +67,7 @@ export const useAgentHistory = (workspace: Workspace) => {
     const deleteTask = useCallback(
         async (taskId: string) => {
             try {
-                const result = await getWorkspaceAgentBridge().deleteTask(taskId);
+                const result = await getAutomationBridge().deleteTask(taskId);
                 if (result.success) {
                     await loadTaskHistory();
                     return true;
@@ -83,7 +83,7 @@ export const useAgentHistory = (workspace: Workspace) => {
 
     const getCheckpoints = useCallback(async (taskId: string): Promise<CheckpointItem[]> => {
         try {
-            const result = await getWorkspaceAgentBridge().getCheckpoints(taskId);
+            const result = await getAutomationBridge().getCheckpoints(taskId);
             return result.map(cp => ({
                 ...cp,
                 createdAt: new Date(cp.createdAt),

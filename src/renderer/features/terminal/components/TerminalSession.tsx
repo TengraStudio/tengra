@@ -24,6 +24,8 @@ import {
 
 import 'xterm/css/xterm.css';
 
+const TERMINAL_SCROLLBACK_LINES = 10000;
+
 const initializedTerminals = new Set<string>();
 const initializingTerminals = new Set<string>();
 
@@ -219,7 +221,7 @@ export const TerminalSession = memo(
                 fontFamily: "'JetBrains Mono', 'Cascadia Code', Consolas, monospace",
                 theme: getTerminalTheme(),
                 allowProposedApi: true,
-                scrollback: 50000,
+                scrollback: TERMINAL_SCROLLBACK_LINES,
                 cols: 80,
                 rows: 24,
             });

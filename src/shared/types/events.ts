@@ -1,6 +1,7 @@
+import { SESSION_RUNTIME_EVENTS } from '@shared/constants/session-runtime-events';
+import { OrchestratorState, PlanCostBreakdown, WorkspaceStep, WorkspaceStepStatus } from '@shared/types/automation-workflow';
 import { JsonValue } from '@shared/types/common';
 import { IdeaProgress, ResearchProgress } from '@shared/types/ideas';
-import { OrchestratorState, PlanCostBreakdown, WorkspaceState, WorkspaceStep, WorkspaceStepStatus } from '@shared/types/workspace-agent';
 
 export interface ModelUpdateEvent {
     provider: string
@@ -40,13 +41,33 @@ export interface SystemEvents {
     'ideas:idea-progress': IdeaProgress
     'idea:regenerated': { ideaId: string }
     'file-changed': { path: string; type: 'create' | 'update' | 'delete' }
-    // Workspace Agent
-    'workspace:update': WorkspaceState
-    'workspace:step-update': { index: number; status: WorkspaceStepStatus; message?: string; taskId?: string }
-    'workspace:plan-proposed': { steps: Array<string | WorkspaceStep>; taskId?: string }
-    'workspace:cost-estimated': { taskId: string; estimate: PlanCostBreakdown }
-    'workspace:budget-exceeded': { taskId: string; budgetLimitUsd: number; currentCostUsd: number }
-    'workspace:plan-revised': { action: 'add' | 'remove' | 'modify' | 'insert'; index?: number; stepText?: string; reason: string; taskId?: string }
+    // Automation session runtime events
+    [SESSION_RUNTIME_EVENTS.AUTOMATION_STEP_UPDATE]: {
+        index: number;
+        status: WorkspaceStepStatus;
+        message?: string;
+        taskId?: string;
+    }
+    [SESSION_RUNTIME_EVENTS.AUTOMATION_PLAN_PROPOSED]: {
+        steps: Array<string | WorkspaceStep>;
+        taskId?: string;
+    }
+    [SESSION_RUNTIME_EVENTS.AUTOMATION_COST_ESTIMATED]: {
+        taskId: string;
+        estimate: PlanCostBreakdown;
+    }
+    [SESSION_RUNTIME_EVENTS.AUTOMATION_BUDGET_EXCEEDED]: {
+        taskId: string;
+        budgetLimitUsd: number;
+        currentCostUsd: number;
+    }
+    [SESSION_RUNTIME_EVENTS.AUTOMATION_PLAN_REVISED]: {
+        action: 'add' | 'remove' | 'modify' | 'insert';
+        index?: number;
+        stepText?: string;
+        reason: string;
+        taskId?: string;
+    }
     'orchestrator:update': OrchestratorState
     'sd-cpp:progress': { downloaded: number; total: number; filename: string }
     'sd-cpp:status': { state: 'installing' | 'ready' | 'failed'; error?: string }
@@ -70,3 +91,4 @@ export interface SystemEvents {
 }
 
 export type SystemEventKey = keyof SystemEvents
+

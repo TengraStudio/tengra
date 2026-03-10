@@ -124,7 +124,7 @@ export class AuditLogService extends BaseService {
 
             // Also log to console in development
             if (process.env.NODE_ENV === 'development') {
-                this.logInfo('AuditLog', `${entry.category.toUpperCase()}: ${entry.action} - ${entry.success ? 'SUCCESS' : 'FAILED'}`);
+                this.logDebug('AuditLog', `${entry.category.toUpperCase()}: ${entry.action} - ${entry.success ? 'SUCCESS' : 'FAILED'}`);
             }
 
             if (Math.random() < 0.02) {

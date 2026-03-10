@@ -1,12 +1,8 @@
 const sectionData = {
     "management": "MCP管理",
     "myServers": "マイサーバー",
-    "marketplace": "マーケットプレイス",
     "addServer": "サーバーを追加",
     "systemServers": "システムサーバー",
-    "installedServers": "マーケットプレイス / インストール済み",
-    "discoverMarket": "マーケットプレイスを見る",
-    "marketplaceSubtitle": "お使いのプラットフォームに最適な数千のサーバーを見つけましょう。",
     "searchPlaceholder": "サーバーやツールを検索...",
     "searchTools": "ツールを検索...",
     "storeTitle": "MCPツールストア",

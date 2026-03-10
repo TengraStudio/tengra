@@ -1,6 +1,6 @@
 import { appLogger } from '@main/logging/logger';
 import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
-import { JsonObject } from '@shared/types/common';
+import { JsonObject, JsonValue } from '@shared/types/common';
 import { DatabaseAdapter, SqlValue } from '@shared/types/database';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { v4 as uuidv4 } from 'uuid';
@@ -147,13 +147,14 @@ export class ChatRepository extends BaseRepository {
         try {
             const msgId = (msg.id as string | undefined) ?? uuidv4();
             const vec = Array.isArray(msg.vector) && msg.vector.length > 0 ? `[${msg.vector.join(',')}]` : null;
+            const metadata = this.buildMessageMetadata(msg);
 
             await this.adapter.prepare(`
                 INSERT INTO messages(id, chat_id, role, content, timestamp, provider, model, metadata, vector)
                 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
             `).run(
                 msgId, msg.chatId as string, msg.role as string, msg.content as string, (msg.timestamp as number | undefined) ?? Date.now(),
-                (msg.provider as string | undefined) ?? null, (msg.model as string | undefined) ?? null, JSON.stringify(msg.metadata ?? {}), vec
+                (msg.provider as string | undefined) ?? null, (msg.model as string | undefined) ?? null, JSON.stringify(metadata), vec
             );
 
             await this.adapter.prepare('UPDATE chats SET updated_at = ? WHERE id = ?').run(Date.now(), msg.chatId as string);
@@ -169,16 +170,7 @@ export class ChatRepository extends BaseRepository {
             'SELECT * FROM messages WHERE chat_id = ? ORDER BY timestamp ASC',
             [chatId]
         );
-        return rows.map((row) => ({
-            id: String(row.id),
-            chatId: String(row.chat_id),
-            role: String(row.role),
-            content: String(row.content),
-            timestamp: Number(row.timestamp),
-            provider: row.provider as string | undefined,
-            model: row.model as string | undefined,
-            metadata: this.parseJsonField(row.metadata as string | null, {})
-        }));
+        return rows.map((row) => this.mapRowToMessage(row));
     }
 
     async getAllMessages() {
@@ -272,12 +264,7 @@ export class ChatRepository extends BaseRepository {
             if (!row) { return { success: false }; }
 
             const currentMetadata = this.parseJsonField<JsonObject>(row.metadata as string | null, {});
-            const newMetadata: JsonObject = { ...currentMetadata };
-
-            if ('isBookmarked' in updates) { newMetadata.isBookmarked = updates.isBookmarked as boolean; }
-            if ('isPinned' in updates) { newMetadata.isPinned = updates.isPinned as boolean; }
-            if ('rating' in updates) { newMetadata.rating = updates.rating as number; }
-            if ('reactions' in updates) { newMetadata.reactions = updates.reactions as string[]; }
+            const newMetadata = this.mergeMessageMetadata(currentMetadata, updates);
 
             const fields: string[] = ['metadata = ?'];
             const values: SqlValue[] = [JSON.stringify(newMetadata)];
@@ -294,6 +281,313 @@ export class ChatRepository extends BaseRepository {
             appLogger.error('ChatRepository', `Failed to update message: ${getErrorMessage(error)} `);
             return { success: false, error: getErrorMessage(error as Error) };
         }
+    }
+
+    async recoverInterruptedChats(): Promise<{
+        recoveredChats: number;
+        clearedGeneratingFlags: number;
+        deletedMessages: number;
+        interruptedVariants: number;
+        interruptedToolMessages: number;
+    }> {
+        const chats = await this.getAllChats();
+        const generatingChats = chats.filter(chat => chat.isGenerating);
+        let deletedMessages = 0;
+        let interruptedVariants = 0;
+        let interruptedToolMessages = 0;
+
+        for (const chat of generatingChats) {
+            const messages = await this.getMessages(chat.id);
+            const recovery = this.recoverInterruptedMessages(messages);
+            deletedMessages += recovery.deletedMessageIds.length;
+            interruptedVariants += recovery.interruptedVariants;
+            interruptedToolMessages += recovery.interruptedToolMessages;
+
+            for (const messageId of recovery.deletedMessageIds) {
+                await this.deleteMessage(messageId);
+            }
+
+            for (const update of recovery.updatedMessages) {
+                await this.updateMessage(update.id, update.updates);
+            }
+
+            await this.updateChat(chat.id, { isGenerating: false });
+        }
+
+        return {
+            recoveredChats: generatingChats.length,
+            clearedGeneratingFlags: generatingChats.length,
+            deletedMessages,
+            interruptedVariants,
+            interruptedToolMessages,
+        };
+    }
+
+    private mapRowToMessage(row: JsonObject): JsonObject {
+        const metadata = this.parseJsonField<JsonObject>(row.metadata as string | null, {});
+        const reasoning = typeof metadata.reasoning === 'string' ? metadata.reasoning : undefined;
+        const toolCalls = Array.isArray(metadata.toolCalls) ? metadata.toolCalls : undefined;
+        const toolResults = Array.isArray(metadata.toolResults) || typeof metadata.toolResults === 'string'
+            ? metadata.toolResults
+            : undefined;
+        const responseTime = typeof metadata.responseTime === 'number' ? metadata.responseTime : undefined;
+        const sources = this.readStringArray(metadata.sources);
+        const images = this.readStringArray(metadata.images);
+        const reactions = this.readStringArray(metadata.reactions);
+        const attachments = Array.isArray(metadata.attachments) ? metadata.attachments : undefined;
+        const variants = this.readVariants(metadata.variants);
+        const ratingValue = metadata.rating;
+        const rating = ratingValue === 1 || ratingValue === -1 || ratingValue === 0 ? ratingValue : undefined;
+
+        return {
+            id: String(row.id),
+            chatId: String(row.chat_id),
+            role: String(row.role),
+            content: String(row.content),
+            timestamp: Number(row.timestamp),
+            provider: row.provider as string | undefined,
+            model: row.model as string | undefined,
+            metadata,
+            reasoning,
+            toolCalls,
+            toolResults,
+            responseTime,
+            ...(sources.length > 0 ? { sources } : {}),
+            ...(images.length > 0 ? { images } : {}),
+            ...(attachments ? { attachments } : {}),
+            ...(variants ? { variants } : {}),
+            ...(typeof metadata.isBookmarked === 'boolean' ? { isBookmarked: metadata.isBookmarked } : {}),
+            ...(rating !== undefined ? { rating } : {}),
+            ...(reactions.length > 0 ? { reactions } : {}),
+        };
+    }
+
+    private buildMessageMetadata(source: JsonObject): JsonObject {
+        const seedMetadata = this.extractJsonObject(source.metadata);
+        return this.mergeMessageMetadata(seedMetadata, source);
+    }
+
+    private mergeMessageMetadata(currentMetadata: JsonObject, updates: JsonObject): JsonObject {
+        const explicitMetadata = this.extractJsonObject(updates.metadata);
+        const nextMetadata: JsonObject = { ...currentMetadata, ...explicitMetadata };
+
+        this.assignMessageMetadataField(nextMetadata, 'reasoning', updates.reasoning);
+        this.assignMessageMetadataField(nextMetadata, 'toolCalls', updates.toolCalls);
+        this.assignMessageMetadataField(nextMetadata, 'toolResults', updates.toolResults);
+        this.assignMessageMetadataField(nextMetadata, 'responseTime', updates.responseTime);
+        this.assignMessageMetadataField(nextMetadata, 'sources', updates.sources);
+        this.assignMessageMetadataField(nextMetadata, 'images', updates.images);
+        this.assignMessageMetadataField(nextMetadata, 'variants', updates.variants);
+        this.assignMessageMetadataField(nextMetadata, 'attachments', updates.attachments);
+        this.assignMessageMetadataField(nextMetadata, 'recovery', updates.recovery);
+
+        if ('isBookmarked' in updates) { nextMetadata.isBookmarked = updates.isBookmarked as JsonValue; }
+        if ('isPinned' in updates) { nextMetadata.isPinned = updates.isPinned as JsonValue; }
+        if ('rating' in updates) { nextMetadata.rating = updates.rating as JsonValue; }
+        if ('reactions' in updates) { nextMetadata.reactions = updates.reactions as JsonValue; }
+
+        return nextMetadata;
+    }
+
+    private assignMessageMetadataField(target: JsonObject, field: string, value: JsonValue | undefined): void {
+        if (value !== undefined) {
+            target[field] = value;
+        }
+    }
+
+    private extractJsonObject(value: JsonValue | undefined): JsonObject {
+        return value && typeof value === 'object' && !Array.isArray(value)
+            ? value as JsonObject
+            : {};
+    }
+
+    private readStringArray(value: JsonValue | undefined): string[] {
+        if (!Array.isArray(value)) {
+            return [];
+        }
+        return value.filter((entry): entry is string => typeof entry === 'string');
+    }
+
+    private readVariants(value: JsonValue | undefined): JsonObject[] | undefined {
+        if (!Array.isArray(value)) {
+            return undefined;
+        }
+        const variants = value.filter((entry): entry is JsonObject => Boolean(entry) && typeof entry === 'object' && !Array.isArray(entry));
+        return variants.length > 0 ? variants : undefined;
+    }
+
+    private recoverInterruptedMessages(messages: JsonObject[]): {
+        deletedMessageIds: string[];
+        updatedMessages: Array<{ id: string; updates: JsonObject }>;
+        interruptedVariants: number;
+        interruptedToolMessages: number;
+    } {
+        if (messages.length === 0) {
+            return { deletedMessageIds: [], updatedMessages: [], interruptedVariants: 0, interruptedToolMessages: 0 };
+        }
+
+        const updatedMessages: Array<{ id: string; updates: JsonObject }> = [];
+        const deletedMessageIds: string[] = [];
+        let interruptedVariants = 0;
+        let interruptedToolMessages = 0;
+        const lastMessage = messages[messages.length - 1];
+        const lastRole = typeof lastMessage.role === 'string' ? lastMessage.role : '';
+
+        if (lastRole === 'assistant') {
+            const assistantRecovery = this.recoverAssistantMessage(lastMessage);
+            deletedMessageIds.push(...assistantRecovery.deletedMessageIds);
+            updatedMessages.push(...assistantRecovery.updatedMessages);
+            interruptedVariants += assistantRecovery.interruptedVariants;
+            interruptedToolMessages += assistantRecovery.interruptedToolMessages;
+        } else if (lastRole === 'tool') {
+            const toolRecovery = this.recoverInterruptedToolTurn(messages);
+            deletedMessageIds.push(...toolRecovery.deletedMessageIds);
+            updatedMessages.push(...toolRecovery.updatedMessages);
+            interruptedToolMessages += toolRecovery.interruptedToolMessages;
+        }
+
+        return { deletedMessageIds, updatedMessages, interruptedVariants, interruptedToolMessages };
+    }
+
+    private recoverAssistantMessage(message: JsonObject): {
+        deletedMessageIds: string[];
+        updatedMessages: Array<{ id: string; updates: JsonObject }>;
+        interruptedVariants: number;
+        interruptedToolMessages: number;
+    } {
+        const deletedMessageIds: string[] = [];
+        const updatedMessages: Array<{ id: string; updates: JsonObject }> = [];
+        const messageId = String(message.id);
+        const content = typeof message.content === 'string' ? message.content.trim() : '';
+        const metadata = this.extractJsonObject(message.metadata as JsonValue | undefined);
+        const reasoning = typeof metadata.reasoning === 'string' ? metadata.reasoning.trim() : '';
+        const variants = this.readVariants(metadata.variants) ?? [];
+        const hasMeaningfulVariant = variants.some(variant => typeof variant.content === 'string' && variant.content.trim().length > 0);
+        const images = this.readStringArray(metadata.images);
+
+        if (content.length === 0 && reasoning.length === 0 && !hasMeaningfulVariant && images.length === 0) {
+            deletedMessageIds.push(messageId);
+            return { deletedMessageIds, updatedMessages, interruptedVariants: 0, interruptedToolMessages: 0 };
+        }
+
+        const normalizedVariants = variants.map(variant => {
+            const nextVariant = { ...variant };
+            const variantContent = typeof nextVariant.content === 'string' ? nextVariant.content.trim() : '';
+            if (variantContent.length === 0) {
+                nextVariant.status = 'interrupted';
+                nextVariant.error = 'interrupted';
+            }
+            return nextVariant;
+        });
+        const interruptedVariants = normalizedVariants.filter(variant => variant.status === 'interrupted').length;
+
+        const toolCalls = Array.isArray(metadata.toolCalls)
+            ? metadata.toolCalls.filter((toolCall): toolCall is JsonObject => Boolean(toolCall) && typeof toolCall === 'object' && !Array.isArray(toolCall))
+            : [];
+        const interruptedToolCallIds = toolCalls
+            .map(toolCall => toolCall.id)
+            .filter((id): id is string => typeof id === 'string');
+        const interruptedToolNames = toolCalls
+            .map(toolCall => {
+                const fn = toolCall.function;
+                return fn && typeof fn === 'object' && !Array.isArray(fn) && typeof fn.name === 'string'
+                    ? fn.name
+                    : null;
+            })
+            .filter((name): name is string => typeof name === 'string');
+        const hasInterruptedTools = interruptedToolCallIds.length > 0;
+
+        if (interruptedVariants > 0 || hasInterruptedTools) {
+            const recoveryMetadata: JsonObject = hasInterruptedTools
+                ? {
+                    interruptedToolCallIds,
+                    interruptedToolNames,
+                }
+                : this.extractJsonObject(metadata.recovery);
+
+            updatedMessages.push({
+                id: messageId,
+                updates: {
+                    metadata: {
+                        ...metadata,
+                        ...(interruptedVariants > 0 ? { variants: normalizedVariants } : {}),
+                        recovery: recoveryMetadata,
+                    },
+                },
+            });
+        }
+
+        return {
+            deletedMessageIds,
+            updatedMessages,
+            interruptedVariants,
+            interruptedToolMessages: hasInterruptedTools ? interruptedToolCallIds.length : 0,
+        };
+    }
+
+    private recoverInterruptedToolTurn(messages: JsonObject[]): {
+        deletedMessageIds: string[];
+        updatedMessages: Array<{ id: string; updates: JsonObject }>;
+        interruptedToolMessages: number;
+    } {
+        const deletedMessageIds: string[] = [];
+        const updatedMessages: Array<{ id: string; updates: JsonObject }> = [];
+        const lastMessage = messages[messages.length - 1];
+        const lastContent = typeof lastMessage.content === 'string' ? lastMessage.content.trim() : '';
+
+        if (lastContent.length === 0) {
+            deletedMessageIds.push(String(lastMessage.id));
+        }
+
+        let assistantMessage: JsonObject | null = null;
+        for (let index = messages.length - 2; index >= 0; index -= 1) {
+            const candidate = messages[index];
+            if (candidate.role === 'assistant') {
+                assistantMessage = candidate;
+                break;
+            }
+        }
+
+        if (!assistantMessage) {
+            return { deletedMessageIds, updatedMessages, interruptedToolMessages: 0 };
+        }
+
+        const metadata = this.extractJsonObject(assistantMessage.metadata as JsonValue | undefined);
+        const toolCalls = Array.isArray(metadata.toolCalls)
+            ? metadata.toolCalls.filter((toolCall): toolCall is JsonObject => Boolean(toolCall) && typeof toolCall === 'object' && !Array.isArray(toolCall))
+            : [];
+        const interruptedToolCallIds = toolCalls
+            .map(toolCall => toolCall.id)
+            .filter((id): id is string => typeof id === 'string');
+        const interruptedToolNames = toolCalls
+            .map(toolCall => {
+                const fn = toolCall.function;
+                return fn && typeof fn === 'object' && !Array.isArray(fn) && typeof fn.name === 'string'
+                    ? fn.name
+                    : null;
+            })
+            .filter((name): name is string => typeof name === 'string');
+
+        if (interruptedToolCallIds.length > 0) {
+            updatedMessages.push({
+                id: String(assistantMessage.id),
+                updates: {
+                    metadata: {
+                        ...metadata,
+                        recovery: {
+                            interruptedToolCallIds,
+                            interruptedToolNames,
+                        },
+                    },
+                },
+            });
+        }
+
+        return {
+            deletedMessageIds,
+            updatedMessages,
+            interruptedToolMessages: interruptedToolCallIds.length,
+        };
     }
 
     async getBookmarkedMessages(): Promise<Array<{ id: string; chatId: string; content: string; timestamp: number; chatTitle?: string | undefined }>> {

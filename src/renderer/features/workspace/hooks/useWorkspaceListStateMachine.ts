@@ -347,15 +347,19 @@ const useWorkspaceListOperations = (
                 }
             }
 
-            await window.electron.db.createWorkspace(name, path, description, JSON.stringify(mounts));
+            const createdWorkspace = await window.electron.db.createWorkspace(name, path, description, mounts);
+            if (!createdWorkspace || typeof createdWorkspace.id !== 'string' || createdWorkspace.id.trim().length === 0) {
+                throw new Error('Workspace creation did not return a saved workspace.');
+            }
             dispatch({ type: 'OPERATION_SUCCESS' });
             return true;
         } catch (error) {
             const msg = error instanceof Error ? error.message : 'Failed to create workspace';
+            const errorToReport = error instanceof Error ? error : new Error(msg);
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
-            appLogger.error('useWorkspaceListStateMachine', 'executeCreate failed', error as Error);
-            return false;
+            appLogger.error('useWorkspaceListStateMachine', 'executeCreate failed', errorToReport);
+            throw errorToReport;
         }
     }, [buildMountKey, dispatch, onError]);
 

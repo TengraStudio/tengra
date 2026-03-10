@@ -1,7 +1,7 @@
 import { Message } from '@shared/types';
 import { IpcRenderer } from 'electron';
 
-export interface CollaborationBridge {
+export interface ModelCollaborationBridge {
     run: (request: {
         messages: Message[];
         models: Array<{ provider: string; model: string }>;
@@ -35,7 +35,7 @@ export interface CollaborationBridge {
     ) => Promise<{ success: boolean }>;
 }
 
-export function createCollaborationBridge(ipc: IpcRenderer): CollaborationBridge {
+export function createModelCollaborationBridge(ipc: IpcRenderer): ModelCollaborationBridge {
     return {
         run: request => ipc.invoke('collaboration:run', request),
         getProviderStats: provider => ipc.invoke('collaboration:provider-stats', provider),
@@ -44,3 +44,5 @@ export function createCollaborationBridge(ipc: IpcRenderer): CollaborationBridge
             ipc.invoke('collaboration:set-provider-config', { provider, config }),
     };
 }
+
+export const createCollaborationBridge = createModelCollaborationBridge;

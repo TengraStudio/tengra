@@ -1,7 +1,6 @@
-import { WorkspaceTreeItem } from '@renderer/features/workspace/components/WorkspaceTreeItem';
-import { FileNode } from '@renderer/features/workspace/components/WorkspaceTreeItem';
+import { FileNode, WorkspaceTreeItem } from '@renderer/features/workspace/components/WorkspaceTreeItem';
 import { ChevronDown, ChevronRight, Folder, Server, X } from 'lucide-react';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { List, RowComponentProps } from 'react-window';
 
 import { cn } from '@/lib/utils';
@@ -10,12 +9,11 @@ import { WorkspaceEntry, WorkspaceMount } from '@/types';
 // PERF-001-3: Virtualization threshold and constants
 const VIRTUALIZATION_THRESHOLD = 50;
 const ITEM_HEIGHT = 28; // Height of each tree item in pixels
-const MAX_VISIBLE_HEIGHT = 400; // Maximum height for virtualized list
+const MULTI_MOUNT_MAX_HEIGHT = 500; // Height cap when multiple mounts exist
 
 interface WorkspaceMountItemProps {
     mount: WorkspaceMount;
     mountsCount: number;
-    mountStatus: Record<string, string>;
     isExpanded: boolean;
     onToggle: (mount: WorkspaceMount) => void;
     onRemove: (id: string) => void;
@@ -34,12 +32,6 @@ interface WorkspaceMountItemProps {
     t: (key: string) => string;
 }
 
-// Status color lookup table to reduce complexity
-const STATUS_COLOR_MAP: Record<string, string> = {
-    connected: 'bg-success',
-    connecting: 'bg-warning animate-pulse',
-};
-
 interface MountIconProps {
     mountType: WorkspaceMount['type'];
 }
@@ -52,26 +44,10 @@ const MountIcon: React.FC<MountIconProps> = ({ mountType }) => {
     );
 };
 
-interface MountStatusIndicatorProps {
-    mountId: string;
-    mountType: WorkspaceMount['type'];
-    status: string;
-}
-
-const MountStatusIndicator: React.FC<MountStatusIndicatorProps> = ({ mountType, status }) => {
-    if (mountType === 'local') {
-        return null;
-    }
-
-    const statusColor = STATUS_COLOR_MAP[status] || 'bg-destructive/50';
-
-    return <div className={cn('w-1.5 h-1.5 rounded-full', statusColor)} title={status} />;
-};
 
 interface MountHeaderProps {
     mount: WorkspaceMount;
     isExpanded: boolean;
-    status: string;
     onToggle: (mount: WorkspaceMount) => void;
     onRemove: (id: string) => void;
     onContextMenu: (e: React.MouseEvent, mountId: string) => void;
@@ -81,7 +57,6 @@ interface MountHeaderProps {
 const MountHeader: React.FC<MountHeaderProps> = ({
     mount,
     isExpanded,
-    status,
     onToggle,
     onRemove,
     onContextMenu,
@@ -114,7 +89,6 @@ const MountHeader: React.FC<MountHeaderProps> = ({
                         SSH
                     </span>
                 )}
-                <MountStatusIndicator mountId={mount.id} mountType={mount.type} status={status} />
             </div>
 
             <button
@@ -192,7 +166,6 @@ const VirtualizedTreeRow: React.FC<RowComponentProps<VirtualizedRowProps>> = ({
 export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
     mount,
     mountsCount,
-    mountStatus,
     isExpanded,
     onToggle,
     onRemove,
@@ -253,10 +226,28 @@ export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
         []
     );
 
-    // PERF-001-3: Calculate list height based on item count
+    // Viewport height tracking for dynamic "auto" height responsiveness
+    const [vh, setVh] = useState(window.innerHeight);
+    useEffect(() => {
+        const handleResize = () => setVh(window.innerHeight);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     const listHeight = useMemo(() => {
-        return Math.min(rootNodes.length * ITEM_HEIGHT, MAX_VISIBLE_HEIGHT);
-    }, [rootNodes.length]);
+        const contentHeight = rootNodes.length * ITEM_HEIGHT;
+
+        /**
+         * Dynamic height logic (Tengra Auto-Height System):
+         * - Single mount: Fill available screen space (dynamic based on viewport)
+         * - Multiple mounts: Cap at MULTI_MOUNT_MAX_HEIGHT to ensure shared visibility
+         */
+        const maxHeight = mountsCount <= 1
+            ? Math.max(800, vh - 220)
+            : MULTI_MOUNT_MAX_HEIGHT;
+
+        return Math.min(contentHeight, maxHeight);
+    }, [rootNodes.length, mountsCount, vh]);
 
     return (
         <div className="group/mount">
@@ -264,7 +255,6 @@ export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
                 <MountHeader
                     mount={mount}
                     isExpanded={isExpanded}
-                    status={mountStatus[mount.id]}
                     onToggle={onToggle}
                     onRemove={onRemove}
                     onContextMenu={onContextMenu}

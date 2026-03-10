@@ -74,7 +74,7 @@ describe('advanced memory workspace compatibility', () => {
         const sharedStatistics = StatisticsSchema.parse({
             ...baseStatistics,
             byCategory: {
-                [WORKSPACE_COMPAT_ALIAS_VALUES.SINGULAR]: 2,
+                'project': 2,
                 [WORKSPACE_COMPAT_TARGET_VALUES.WORKSPACE]: 1,
                 fact: 4
             }
@@ -82,7 +82,7 @@ describe('advanced memory workspace compatibility', () => {
         const hardenedStatistics = MemoryStatisticsSchema.parse({
             ...baseStatistics,
             byCategory: {
-                [WORKSPACE_COMPAT_ALIAS_VALUES.SINGULAR]: 2,
+                'project': 2,
                 [WORKSPACE_COMPAT_TARGET_VALUES.WORKSPACE]: 1,
                 fact: 4
             }

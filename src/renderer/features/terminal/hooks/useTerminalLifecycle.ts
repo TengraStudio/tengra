@@ -1,4 +1,4 @@
-import { type MutableRefObject,useEffect } from 'react';
+import { type MutableRefObject, useEffect, useRef } from 'react';
 
 interface RecordingEvent {
     at: number;
@@ -25,9 +25,24 @@ export function useTerminalLifecycle({
     completeRecording,
     createDefaultTerminal,
 }: UseTerminalLifecycleOptions) {
+    const bufferRef = useRef<Record<string, string>>({});
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
     useEffect(() => {
+        const flush = () => {
+            const buffer = bufferRef.current;
+            bufferRef.current = {};
+            timeoutRef.current = null;
+
+            Object.entries(buffer).forEach(([id, data]) => {
+                parseSemanticChunk(id, data);
+                window.dispatchEvent(new CustomEvent('terminal-data-multiplex', { detail: { id, data } }));
+            });
+        };
+
         const c1 = window.electron.terminal.onData(p => {
-            parseSemanticChunk(p.id, p.data);
+            bufferRef.current[p.id] = (bufferRef.current[p.id] ?? '') + p.data;
+
             const activeRecording = recordingCaptureRef.current;
             if (activeRecording?.tabId === p.id && p.data) {
                 activeRecording.events.push({
@@ -39,9 +54,19 @@ export function useTerminalLifecycle({
                     activeRecording.events = activeRecording.events.slice(-12000);
                 }
             }
-            window.dispatchEvent(new CustomEvent('terminal-data-multiplex', { detail: p }));
+
+            if (!timeoutRef.current) {
+                timeoutRef.current = setTimeout(flush, 16);
+            }
         });
+
         const c2 = window.electron.terminal.onExit(p => {
+            // Flush any remaining data before exit
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+                flush();
+            }
+
             parseSemanticChunk(p.id, '', true);
             const activeRecording = recordingCaptureRef.current;
             if (activeRecording?.tabId === p.id) {
@@ -54,9 +79,13 @@ export function useTerminalLifecycle({
             }
             window.dispatchEvent(new CustomEvent('terminal-exit-multiplex', { detail: p }));
         });
+
         return () => {
             c1();
             c2();
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
         };
     }, [completeRecording, parseSemanticChunk, recordingCaptureRef]);
 

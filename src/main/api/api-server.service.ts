@@ -7,6 +7,10 @@ import { LLMService } from '@main/services/llm/llm.service';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { ToolExecutor } from '@main/tools/tool-executor';
+import {
+    sessionConversationMessageContentPartSchema,
+    sessionConversationMessageSchema,
+} from '@shared/schemas/session-conversation-ipc.schema';
 import { Message, MessageContentPart } from '@shared/types/chat';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -19,12 +23,13 @@ const ToolExecuteSchema = z.object({
     args: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null(), z.array(z.union([z.string(), z.number(), z.boolean(), z.null()])), z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]))])).optional()
 });
 
-const ChatMessageSchema = z.object({
-    role: z.enum(['user', 'assistant', 'system', 'tool']),
-    content: z.union([z.string(), z.array(z.unknown())]).optional(),
-    id: z.string().optional(),
-    timestamp: z.union([z.string(), z.number()]).optional(),
-    images: z.array(z.string()).optional()
+const ChatMessageSchema = sessionConversationMessageSchema.extend({
+    content: z.union([
+        z.string(),
+        z.array(sessionConversationMessageContentPartSchema),
+    ]).optional(),
+    timestamp: z.union([z.string(), z.number(), z.date()]).optional(),
+    images: z.array(z.string()).optional(),
 });
 
 const ChatRequestSchema = z.object({
@@ -310,7 +315,7 @@ export class ApiServerService extends BaseService {
         if (pathname === '/health' && method === 'GET') {
             this.sendJson(res, 200, {
                 status: 'ok',
-                timestamp: new Date().toISOString(),
+                timestamp: Date.now(),
                 version: '1.0.0'
             });
             return true;

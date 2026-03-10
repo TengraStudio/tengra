@@ -14,13 +14,7 @@ export default defineConfig(({ mode }) => {
             // reactGlobalPlugin(), // Removed
             react({
                 jsxRuntime: 'automatic',
-                jsxImportSource: 'react',
-                // Enable babel to handle .mjs files
-                babel: {
-                    parserOpts: {
-                        plugins: ['importMeta', 'topLevelAwait']
-                    }
-                }
+                jsxImportSource: 'react'
             }),
             electron([
                 {
@@ -198,8 +192,8 @@ export default defineConfig(({ mode }) => {
             // Electron desktop dağıtımında bazı vendor/chunk'lar doğal olarak büyük.
             // 500k uyarı eşiği yerine gerçekçi bir eşik kullanıyoruz.
             chunkSizeWarningLimit: 5000,
-            // AGRESIF MİNİFİCATION: terser kullan (esbuild'den daha iyi sıkıştırma)
-            minify: 'terser',
+            // AGRESIF MİNİFİCATION: esbuild kullan (terser'den 10-20 kat daha hızlı)
+            minify: 'esbuild',
             terserOptions: {
                 compress: {
                     drop_console: true, // console.log'ları production'da kaldır
@@ -236,7 +230,12 @@ export default defineConfig(({ mode }) => {
                 'react',
                 'react-dom',
                 'react/jsx-runtime',
-                '@floating-ui/react'
+                '@floating-ui/react',
+                'lucide-react',
+                'clsx',
+                'tailwind-merge',
+                'date-fns',
+                'zod'
             ],
             // Exclude large deps that don't need pre-bundling
             exclude: ['@lancedb/lancedb', 'apache-arrow'],

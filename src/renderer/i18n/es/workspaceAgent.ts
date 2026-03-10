@@ -23,7 +23,7 @@ const sectionData = {
     "selectAgentProfile": "Seleccionar perfil de agente",
     "agentSelected": "Agente seleccionado",
     "defaultAgent": "Agente predeterminado",
-    "defaultAgentDesc": "Agente de proyecto de propósito general",
+    "defaultAgentDesc": "Agente de espacio de trabajo de propósito general",
     "approveAndRun": "Aprobar y ejecutar",
     "planning": "Planificando",
     "running": "Ejecutando",
@@ -34,7 +34,7 @@ const sectionData = {
     "thinkingOff": "Pensamiento desactivado",
     "selectAction": "Seleccionar acción",
     "noDescription": "Sin descripción proporcionada",
-    "selectWorkspace": "Seleccionar proyecto",
+    "selectWorkspace": "Seleccionar espacio de trabajo",
     "unnamedGroup": "Grupo sin nombre",
     "votingPanel": {
         "title": "Sesiones de votación",

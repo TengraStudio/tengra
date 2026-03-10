@@ -1,10 +1,10 @@
 import { appLogger } from '@main/logging/logger';
 import { PromptTemplate } from '@main/utils/prompt-templates.util';
 import { WORKSPACE_COMPAT_INDEX_VALUES, WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
+import { AgentProfile, AgentTemplate } from '@shared/types/automation-workflow';
 import { JsonObject } from '@shared/types/common';
 import { DatabaseAdapter, SqlValue } from '@shared/types/database';
 import { DbDetailedStats, DbStats, DbTokenStats } from '@shared/types/db-api';
-import { AgentProfile, AgentTemplate } from '@shared/types/workspace-agent';
 import { v4 as uuidv4 } from 'uuid';
 
 import { AuditLogEntry, Folder, JobState, LinkedAccount, Prompt, TokenUsageRecord } from '../database.service';
@@ -334,12 +334,11 @@ export class SystemRepository extends BaseRepository {
     }
 
     async addTokenUsage(record: TokenUsageRecord): Promise<void> {
-        const id = uuidv4();
         const timestamp = record.timestamp ?? Date.now();
         await this.adapter.prepare(`
-            INSERT INTO token_usage(id, chat_id, ${WORKSPACE_COMPAT_PATH_COLUMN}, message_id, provider, model, tokens_sent, tokens_received, cost_estimate, timestamp)
-            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(id, record.chatId, record.workspaceId ?? null, record.messageId ?? null, record.provider, record.model, record.tokensSent, record.tokensReceived, record.costEstimate ?? 0, timestamp);
+            INSERT INTO token_usage(chat_id, ${WORKSPACE_COMPAT_PATH_COLUMN}, message_id, provider, model, tokens_sent, tokens_received, cost_estimate, timestamp)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(record.chatId, record.workspaceId ?? null, record.messageId ?? null, record.provider, record.model, record.tokensSent, record.tokensReceived, record.costEstimate ?? 0, timestamp);
     }
 
     async getTokenUsageStats(period: 'daily' | 'weekly' | 'monthly'): Promise<DbTokenStats> {
@@ -691,3 +690,4 @@ export class SystemRepository extends BaseRepository {
         await this.adapter.prepare('DELETE FROM agent_templates WHERE id = ?').run(id);
     }
 }
+

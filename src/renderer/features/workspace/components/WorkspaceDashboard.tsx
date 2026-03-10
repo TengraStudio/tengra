@@ -1,5 +1,4 @@
 import { TerminalComponent } from '@renderer/features/workspace/components/ide/Terminal';
-import { WorkspaceCodeTab } from '@renderer/features/workspace/components/WorkspaceCodeTab';
 import { WorkspaceEnvironmentTab } from '@renderer/features/workspace/components/WorkspaceEnvironmentTab';
 import { WorkspaceFilesTab } from '@renderer/features/workspace/components/WorkspaceFilesTab';
 import { WorkspaceGitTab } from '@renderer/features/workspace/components/WorkspaceGitTab';
@@ -115,15 +114,6 @@ export const WorkspaceDashboard = ({
                 searchResults={state.searchResults}
                 workspaceRoot={state.workspaceRoot}
                 handleFileSelect={(path, line) => {
-                    void actions.handleFileSelect(path, line);
-                }}
-                t={t}
-            />
-        ),
-        code: (
-            <WorkspaceCodeTab
-                workspaceRoot={state.workspaceRoot}
-                onOpenFile={(path, line) => {
                     void actions.handleFileSelect(path, line);
                 }}
                 t={t}

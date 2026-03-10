@@ -10,6 +10,8 @@ import { getErrorMessage } from '@shared/utils/error.util';
 import { WebSocketServer } from 'ws';
 
 export class NetworkService implements INetworkService {
+    private readonly wssInstances: WebSocketServer[] = [];
+
     /**
      * Internal helper for safe process execution via spawn
      */
@@ -111,10 +113,24 @@ export class NetworkService implements INetworkService {
                     appLogger.info('network.service', '[WS] Received:', message);
                 });
             });
+            this.wssInstances.push(wsServer);
             return { success: true, message: `WebSocket server started on port ${port}` };
         } catch (e) {
             return { success: false, error: getErrorMessage(e as Error) };
         }
+    }
+
+    /**
+     * Terminates all connected clients and closes every tracked WebSocket server.
+     */
+    public cleanup(): void {
+        for (const wss of this.wssInstances) {
+            for (const client of wss.clients) {
+                client.terminate();
+            }
+            wss.close();
+        }
+        this.wssInstances.length = 0;
     }
     async getNetworkInterfaces(): Promise<ServiceResponse<JsonObject>> {
         try {

@@ -53,10 +53,20 @@ export class TokenService extends BaseService {
     async initialize(): Promise<void> {
         this.logInfo('TokenService initializing...');
 
+        void this.options.processManager.startService({
+            name: 'token-service',
+            executable: 'tengra-token-service',
+            persistent: true
+        }).catch(error => {
+            appLogger.error('TokenService', `Failed to start token-service: ${getErrorMessage(error)}`);
+        });
+
         if (this.options.jobScheduler) {
             this.options.jobScheduler.registerRecurringJob(
                 'token-refresh-oauth',
-                () => this.refreshAllTokens(),
+                async () => {
+                    await this.refreshAllTokens();
+                },
                 () => this.getOAuthRefreshInterval()
             );
 
@@ -232,12 +242,42 @@ export class TokenService extends BaseService {
             email: account.email
         };
 
-        const response = await this.options.processManager.sendRequest<{ success: boolean; token?: { access_token?: string; refresh_token?: string; session_token?: string; expires_at?: number }; error?: string }>('token-service', {
-            type: 'Refresh',
-            token: nativeToken,
-            client_id: clientId,
-            client_secret: clientSecret
-        });
+        let response: {
+            success: boolean;
+            token?: {
+                access_token?: string;
+                refresh_token?: string;
+                session_token?: string;
+                expires_at?: number;
+            };
+            error?: string;
+        };
+        try {
+            response = await this.options.processManager.sendRequest<{
+                success: boolean;
+                token?: {
+                    access_token?: string;
+                    refresh_token?: string;
+                    session_token?: string;
+                    expires_at?: number;
+                };
+                error?: string;
+            }>('token-service', {
+                type: 'Refresh',
+                token: nativeToken,
+                client_id: clientId,
+                client_secret: clientSecret
+            });
+        } catch (error) {
+            const message = getErrorMessage(error);
+            if (message.includes('Service token-service port not discovered')) {
+                appLogger.warn(
+                    'TokenService',
+                    `Skipping native token refresh for ${account.provider}:${account.id} because token-service is unavailable`
+                );
+            }
+            throw error;
+        }
 
         if (!response.success) {
             throw new Error(response.error ?? 'Unknown error refreshing token');
@@ -297,7 +337,14 @@ export class TokenService extends BaseService {
         const accounts = await this.authService.getAllAccountsFull();
         for (const account of accounts) {
             if (this.isNativeProvider(account)) {
-                await this.refreshSingleToken(account);
+                try {
+                    await this.refreshSingleToken(account);
+                } catch (error) {
+                    appLogger.warn(
+                        'TokenService',
+                        `Background refresh skipped for ${account.provider}:${account.id}: ${getErrorMessage(error)}`
+                    );
+                }
             }
         }
     }

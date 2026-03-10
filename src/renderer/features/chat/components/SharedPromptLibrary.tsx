@@ -47,13 +47,12 @@ export const SharedPromptLibrary: React.FC<SharedPromptLibraryProps> = React.mem
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [form, setForm] = useState<PromptFormData>(EMPTY_FORM);
+    const sharedPromptsApi = window.electron.sharedPrompts;
 
     const loadPrompts = useCallback(async () => {
-        const result = await window.electron.ipcRenderer.invoke(
-            'prompts:shared-list', { query: searchQuery || undefined }
-        ) as SharedPrompt[];
+        const result = await sharedPromptsApi.list({ query: searchQuery || undefined }) as SharedPrompt[];
         setPrompts(Array.isArray(result) ? result : []);
-    }, [searchQuery]);
+    }, [searchQuery, sharedPromptsApi]);
 
     useEffect(() => { requestAnimationFrame(() => { void loadPrompts(); }); }, [loadPrompts]);
 
@@ -66,20 +65,20 @@ export const SharedPromptLibrary: React.FC<SharedPromptLibraryProps> = React.mem
             author: form.author,
         };
         if (editingId) {
-            await window.electron.ipcRenderer.invoke('prompts:shared-update', editingId, input);
+            await sharedPromptsApi.update(editingId, input);
         } else {
-            await window.electron.ipcRenderer.invoke('prompts:shared-create', input);
+            await sharedPromptsApi.create(input);
         }
         setShowForm(false);
         setEditingId(null);
         setForm(EMPTY_FORM);
         await loadPrompts();
-    }, [form, editingId, loadPrompts]);
+    }, [editingId, form, loadPrompts, sharedPromptsApi]);
 
     const handleDelete = useCallback(async (id: string) => {
-        await window.electron.ipcRenderer.invoke('prompts:shared-delete', id);
+        await sharedPromptsApi.delete(id);
         await loadPrompts();
-    }, [loadPrompts]);
+    }, [loadPrompts, sharedPromptsApi]);
 
     const handleEdit = useCallback((prompt: SharedPrompt) => {
         setForm({
@@ -94,7 +93,7 @@ export const SharedPromptLibrary: React.FC<SharedPromptLibraryProps> = React.mem
     }, []);
 
     const handleExport = useCallback(async () => {
-        const result = await window.electron.ipcRenderer.invoke('prompts:shared-export') as { data?: string };
+        const result = await sharedPromptsApi.export();
         if (result?.data) {
             const blob = new Blob([result.data], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -104,7 +103,7 @@ export const SharedPromptLibrary: React.FC<SharedPromptLibraryProps> = React.mem
             a.click();
             URL.revokeObjectURL(url);
         }
-    }, []);
+    }, [sharedPromptsApi]);
 
     const handleImport = useCallback(async () => {
         const input = document.createElement('input');
@@ -114,11 +113,11 @@ export const SharedPromptLibrary: React.FC<SharedPromptLibraryProps> = React.mem
             const file = input.files?.[0];
             if (!file) {return;}
             const text = await file.text();
-            await window.electron.ipcRenderer.invoke('prompts:shared-import', text, false);
+            await sharedPromptsApi.import(text, false);
             await loadPrompts();
         };
         input.click();
-    }, [loadPrompts]);
+    }, [loadPrompts, sharedPromptsApi]);
 
     return (
         <div className="flex flex-col h-full bg-[var(--bg-primary)] text-[var(--text-primary)]">

@@ -83,15 +83,13 @@ const sectionData = {
         "title": "Protocole de contexte modèle",
         "subtitle": "Gérez vos serveurs MCP et installez de nouveaux outils",
         "tabs": {
-            "servers": "Serveurs",
-            "marketplace": "Marketplace"
+            "servers": "Serveurs"
         },
         "servers": {
             "title": "Serveurs configurés",
             "subtitle": "Gérez vos connexions de serveurs MCP",
             "connect": "Connecter un serveur",
             "empty": "Aucun serveur connecté",
-            "emptyHint": "Installer les serveurs depuis l'onglet Marketplace",
             "enabled": "activé",
             "note": "Note",
             "noteText": "Seuls les serveurs activés sont accessibles aux assistants IA. Basculez le bouton d'alimentation pour activer/désactiver chaque serveur.",
@@ -121,7 +119,6 @@ const sectionData = {
         "images": "Images",
         "mcpServers": "MCP Serveurs",
         "accessibility": "Accessibilité",
-        "mcpMarketplace": "MCP Marché"
     },
     "accessibility": {
         "title": "Accessibilité",

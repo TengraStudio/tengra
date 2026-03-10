@@ -5,7 +5,7 @@ import {
     AgentCollaborationIntent,
     AgentCollaborationMessage,
     AgentCollaborationPriority,
-} from '@shared/types/workspace-agent';
+} from '@shared/types/automation-workflow';
 
 const MAX_COLLABORATION_PAYLOAD_KEYS = 32;
 const MAX_COLLABORATION_STRING_LENGTH = 4000;
@@ -194,3 +194,4 @@ export class AgentMessagingService extends BaseService {
         this.messages.clear();
     }
 }
+

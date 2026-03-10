@@ -8,7 +8,8 @@ import { McpDeps } from '@main/mcp/server-utils';
 import { McpDispatchResult } from '@main/mcp/types';
 import { BaseService } from '@main/services/base.service';
 import { SettingsService } from '@main/services/system/settings.service';
-import { JsonObject } from '@shared/types/common';
+import { JsonObject, JsonValue } from '@shared/types/common';
+import { McpPermissionProfile } from '@shared/types/settings';
 
 /**
  * McpPluginService manages the lifecycle and dispatching of MCP tool plugins.
@@ -102,14 +103,19 @@ export class McpPluginService extends BaseService {
      * Get all registered plugins
      */
     async listPlugins() {
+        const settings = this.settingsService.getSettings();
+        const userServers = settings.mcpUserServers ?? [];
         const result = [];
         for (const [name, plugin] of this.plugins.entries()) {
             const actions = await plugin.getActions();
+            const config = userServers.find(s => s.name === name || s.id === name);
             result.push({
                 name,
+                id: config?.id ?? name,
                 description: plugin.description,
                 source: plugin.source,
                 isAlive: plugin.isAlive(),
+                permissionProfile: config?.permissionProfile ?? settings.mcpPermissionProfile ?? 'read-only',
                 actions
             });
         }
@@ -157,15 +163,119 @@ export class McpPluginService extends BaseService {
     }
 
     private isSensitiveAction(actionName: string): boolean {
+        const category = this.getActionCategory(actionName);
+        return category === 'write' || category === 'destructive' || category === 'network';
+    }
+
+    private getActionCategory(actionName: string): 'read' | 'write' | 'network' | 'destructive' {
         const normalized = actionName.toLowerCase();
-        return (
+
+        if (
             normalized.includes('delete') ||
             normalized.includes('remove') ||
-            normalized.includes('write') ||
-            normalized.includes('install') ||
             normalized.includes('uninstall') ||
-            normalized.includes('exec')
-        );
+            normalized.includes('purge') ||
+            normalized.includes('format') ||
+            normalized.includes('drop') ||
+            normalized.includes('terminate')
+        ) {
+            return 'destructive';
+        }
+
+        if (
+            normalized.includes('write') ||
+            normalized.includes('create') ||
+            normalized.includes('update') ||
+            normalized.includes('edit') ||
+            normalized.includes('patch') ||
+            normalized.includes('save') ||
+            normalized.includes('exec') ||
+            normalized.includes('run') ||
+            normalized.includes('shell') ||
+            normalized.includes('install') ||
+            normalized.includes('append')
+        ) {
+            return 'write';
+        }
+
+        if (
+            normalized.includes('http') ||
+            normalized.includes('fetch') ||
+            normalized.includes('curl') ||
+            normalized.includes('search') ||
+            normalized.includes('lookup') ||
+            normalized.includes('network') ||
+            normalized.includes('cloud') ||
+            (normalized.includes('api') && !normalized.includes('local'))
+        ) {
+            return 'network';
+        }
+
+        return 'read';
+    }
+
+    private isActionAllowed(profile: McpPermissionProfile, actionName: string): boolean {
+        if (profile === 'full-access') {
+            return true;
+        }
+
+        const category = this.getActionCategory(actionName);
+
+        switch (profile) {
+            case 'read-only':
+                return category === 'read';
+
+            case 'workspace-only':
+                // Workspace only allows read and write, but NOT network or destructive
+                return category === 'read' || category === 'write';
+
+            case 'network-enabled':
+                // Network enabled allows read and network, but NOT write or destructive
+                return category === 'read' || category === 'network';
+
+            case 'destructive':
+                // Destructive allows everything EXCEPT network? 
+                // Let's assume it allows read, write, and destructive.
+                return category !== 'network';
+
+            default:
+                return category === 'read';
+        }
+    }
+
+    private validateArgsForWorkspaceOnly(args: JsonObject): void {
+        const openWorkspaces = this.mcpDeps.workspace.getOpenWorkspaces();
+
+        const checkPath = (p: string) => {
+            if (!path.isAbsolute(p)) {
+                return;
+            }
+
+            const isInside = openWorkspaces.some(ws => {
+                const relative = path.relative(ws, p);
+                return !relative.startsWith('..') && !path.isAbsolute(relative);
+            });
+
+            if (!isInside && openWorkspaces.length > 0) {
+                throw new Error(
+                    `Access denied: Path '${p}' is outside of open workspaces. This server is restricted to 'workspace-only' access.`
+                );
+            }
+        };
+
+        const traverse = (obj: JsonValue | JsonObject | string | undefined): void => {
+            if (typeof obj === 'string') {
+                if (obj.includes('/') || obj.includes('\\')) {
+                    checkPath(obj);
+                }
+            } else if (obj && typeof obj === 'object') {
+                for (const val of Object.values(obj)) {
+                    traverse(val);
+                }
+            }
+        };
+
+        traverse(args);
     }
 
     private calculateDirectorySizeBytes(directoryPath: string): number {
@@ -269,6 +379,24 @@ export class McpPluginService extends BaseService {
                 },
                 actionName
             );
+        }
+
+        // Profile-based gating
+        const profile = serverConfig?.permissionProfile ?? settings.mcpPermissionProfile ?? 'read-only';
+        if (!this.isActionAllowed(profile, actionName)) {
+            return {
+                success: false,
+                error: `Action '${actionName}' is forbidden for profile '${profile}'. Change the server's permission profile in Settings.`
+            };
+        }
+
+        // Workspace-only additional check
+        if (profile === 'workspace-only') {
+            try {
+                this.validateArgsForWorkspaceOnly(args);
+            } catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : String(error) };
+            }
         }
 
         const permissionKey = this.permissionKey(pluginName, actionName);

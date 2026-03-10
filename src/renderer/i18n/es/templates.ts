@@ -7,7 +7,7 @@ const sectionData = {
     "analyze": {
         "title": "Analizar",
         "description": "Inspeccionar archivos y datos.",
-        "prompt": "¿Puedes analizar la arquitectura de este proyecto y proporcionar sugerencias de mejora?"
+        "prompt": "¿Puedes analizar la arquitectura de este espacio de trabajo y proporcionar sugerencias de mejora?"
     },
     "creative": {
         "title": "Escritura creativa",

@@ -50,7 +50,7 @@ const sectionData = {
         "rootPath": "Kök dizin",
         "name": "İsim..."
     },
-    "run": "Projeyi Çalıştır",
+    "run": "Çalışma Alanını Çalıştır",
     "toggleSidebar": "Kenar Çubuğunu Aç/Kapat",
     "aiAssistant": "AI Asistan",
     "aiLabel": "YZ",

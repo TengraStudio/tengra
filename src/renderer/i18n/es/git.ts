@@ -2,7 +2,7 @@ const sectionData = {
     "commitGenerator": "Generador de commits Git",
     "generatorSubtitle": "Sugerencias de mensajes de commit por IA",
     "generate": "Generar",
-    "selectWorkspace": "Selecciona un proyecto para generar mensajes de commit",
+    "selectWorkspace": "Selecciona un espacio de trabajo para generar mensajes de commit",
     "suggestedMessage": "Mensaje de commit sugerido",
     "stagedChanges": "Vista previa de cambios indexados",
     "noStagedChanges": "No se encontraron cambios indexados. Usa `git add` para indexar los cambios primero.",

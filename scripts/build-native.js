@@ -2,9 +2,11 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+const { getExecutableName, getManagedRuntimeBinDir } = require('./runtime-paths');
+
 const SERVICES_DIR = path.join(__dirname, '../src/native');
 const TARGET_DIR = path.join(SERVICES_DIR, 'target/release');
-const BIN_DIR = path.join(__dirname, '../resources/bin');
+const BIN_DIR = getManagedRuntimeBinDir();
 const GO_PROXY_DIR = path.join(__dirname, '../vendor/cliproxyapi');
 const SERVICE_BASENAMES = ['db-service', 'token-service', 'model-service', 'quota-service', 'memory-service'];
 
@@ -57,7 +59,7 @@ function ensureBinDir() {
 
 function getNativeBinaryMappings() {
     return SERVICE_BASENAMES.map(base => {
-        const output = `tengra-${base}.exe`;
+        const output = getExecutableName(`tengra-${base}`);
         return { output };
     });
 }
@@ -77,7 +79,7 @@ function copyNativeBinariesFromTarget() {
         }
 
         copyWithRetry(src, dest);
-        console.log(`Copied ${mapping.output} to resources/bin`);
+        console.log(`Copied ${mapping.output} to managed runtime bin`);
     }
 
     if (missingBinaries.length > 0) {
@@ -101,7 +103,11 @@ function buildGoProxy() {
     try {
         // Kill existing proxy process
         try {
-            execSync('taskkill /F /IM cliproxy-embed.exe 2>NUL', { stdio: 'ignore' });
+            if (process.platform === 'win32') {
+                execSync(`taskkill /F /IM ${getExecutableName('cliproxy-embed')} 2>NUL`, { stdio: 'ignore' });
+            } else {
+                execSync('pkill -9 -f cliproxy-embed', { stdio: 'ignore' });
+            }
         } catch {
             // Process not running, ignore
         }
@@ -109,8 +115,9 @@ function buildGoProxy() {
         // Build cliproxy-embed
         console.log('Compiling Go proxy binary...');
         const embedDir = path.join(GO_PROXY_DIR, 'cmd/cliproxy-embed');
+        const proxyBinaryName = getExecutableName('cliproxy-embed');
 
-        execSync('go build -o cliproxy-embed.exe', {
+        execSync(`go build -o ${proxyBinaryName}`, {
             cwd: embedDir,
             stdio: 'inherit'
         });
@@ -118,13 +125,13 @@ function buildGoProxy() {
         // Create output dir if needed
         ensureBinDir();
 
-        // Copy binary to resources/bin
-        const src = path.join(embedDir, 'cliproxy-embed.exe');
-        const dest = path.join(BIN_DIR, 'cliproxy-embed.exe');
+        // Copy binary to the managed runtime directory
+        const src = path.join(embedDir, proxyBinaryName);
+        const dest = path.join(BIN_DIR, proxyBinaryName);
 
         if (fs.existsSync(src)) {
             copyWithRetry(src, dest);
-            console.log('Copied cliproxy-embed.exe to resources/bin');
+            console.log(`Copied ${proxyBinaryName} to managed runtime bin`);
         } else {
             console.error(`Go binary not found: ${src}`);
         }
@@ -154,8 +161,12 @@ function buildNative() {
         console.log('Stopping running services...');
         for (const mapping of mappings) {
             try {
-                // /F = force, /IM = image name, 2>NUL to hide stderr
-                execSync(`taskkill /F /IM ${mapping.output} 2>NUL`, { stdio: 'ignore' });
+                if (process.platform === 'win32') {
+                    execSync(`taskkill /F /IM ${mapping.output} 2>NUL`, { stdio: 'ignore' });
+                } else {
+                    const processName = mapping.output.replace(/\.exe$/i, '');
+                    execSync(`pkill -9 -f ${processName}`, { stdio: 'ignore' });
+                }
             } catch {
                 // Process not running, ignore
             }

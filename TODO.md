@@ -1,6 +1,94 @@
 # TENGRA PROJECT TODO LIST
 
 ## 🆕 Next Backlog
+- [x] **ARCH-SESSION-001**: Define the canonical Session Engine architecture so `chat`, `workspace conversation`, `automation workflow`, and future `council-enabled` experiences share one runtime model.
+  Scope: establish shared terminology (`session`, `mode`, `capability`, `module`, `state`, `event`), decide canonical namespaces, and document how current `chat`, `workspaceAgent`, `workflow`, `orchestrator`, and `collaboration` map into the new model.
+  Targets: `TODO.md`, `docs/architecture/**`, `src/shared/types/**`, `src/shared/schemas/**`.
+  Deliverables: domain glossary, canonical ownership map, migration constraints, and a freeze on introducing new legacy namespaces.
+- [x] **ARCH-SESSION-002**: Introduce shared session contracts in `src/shared` for modes, capabilities, metadata, event envelopes, transport payloads, lifecycle state, and recovery semantics.
+  Scope: create the single source of truth for the new engine before moving any runtime implementation.
+  Targets: `src/shared/types/**`, `src/shared/schemas/**`, `src/shared/constants/**`.
+  Deliverables: `SessionMode`, `SessionCapability`, `SessionState`, `SessionMessageEnvelope`, `SessionLifecycleEvent`, and capability-gated configuration schemas.
+- [x] **ARCH-SESSION-003**: Build a main-process `BaseSessionEngine` abstraction that owns the common runtime lifecycle.
+  Scope: move shared behavior into one engine surface: initialization, message submission, streaming orchestration, event emission, interruption, recovery hooks, persistence hooks, tool dispatch hooks, and capability checks.
+  Targets: `src/main/services/**`, `src/main/ipc/**`, `src/main/startup/**`.
+  Deliverables: base engine contract, dependency bundle, module registration model, and event emitter strategy with cleanup/disposal rules.
+- [x] **ARCH-SESSION-004**: Extract session capabilities/modules so feature differences are composable instead of being encoded as parallel services or hardcoded branches.
+  Scope: separate optional behavior such as `council`, `workspace context`, `task planning`, `task execution`, `tools`, `rag`, `image generation`, `checkpoints`, and `recovery`.
+  Targets: `src/main/services/**`, `src/shared/types/**`, `src/shared/schemas/**`.
+  Deliverables: capability interfaces, module lifecycle hooks, compatibility rules, and enable/disable policies per session mode.
+- [x] **ARCH-SESSION-005**: Implement `ChatSessionEngine` as the first concrete subclass on top of the base session engine.
+  Scope: migrate plain chat orchestration to the shared engine without changing end-user behavior.
+  Targets: `src/main/ipc/session-conversation.ts`, `src/main/services/session/chat-session-engine.service.ts`, `src/main/services/llm/**`, `src/main/services/data/**`, `src/renderer/features/chat/**`.
+  Deliverables: shared chat runtime, stable streaming lifecycle, retained DB persistence, and parity coverage for tools, retry, and interruption.
+- [x] **ARCH-SESSION-006**: Implement `WorkspaceSessionEngine` for workspace-side conversational usage that can behave as a normal chat session plus workspace-aware capabilities.
+  Scope: support ordinary conversation, workspace context retrieval, and optional council/tool behavior from the workspace UI without forcing automation mode.
+  Targets: `src/main/services/session/workspace-session-engine.service.ts`, `src/main/services/workspace/**`, `src/main/ipc/session-workspace.ts`, `src/renderer/features/workspace/**`.
+  Deliverables: workspace session mode, shared stream client integration, context gating, and feature parity with current sidebar chat behavior.
+- [x] **ARCH-SESSION-007**: Implement `AutomationSessionEngine` for plan/execution-oriented workflows on top of the same base engine.
+  Scope: isolate workflow-specific behaviors such as planning, step state, approvals, checkpoints, execution policies, and automation telemetry while still sharing the base message/council/tool runtime.
+  Targets: `src/main/services/session/automation-session-engine.service.ts`, `src/main/services/workspace/automation-workflow/**`, `src/main/ipc/session-automation.ts`, `src/renderer/features/automation-workflow/**`, `src/shared/types/automation-workflow.ts`.
+  Deliverables: automation session subclass, workflow-only capability set, stable checkpoint/retry behavior, and a clean separation from plain chat/workspace conversation.
+- [x] **ARCH-SESSION-008**: Make `Council` a reusable session capability instead of a workflow-bound subsystem.
+  Scope: detach council behavior from workspace/workflow naming and make it attachable to plain chat, workspace chat, and automation sessions.
+  Targets: `src/main/services/workspace/automation-workflow/collaboration/**`, `src/main/services/**`, `src/shared/types/**`, `src/shared/schemas/**`, `src/renderer/features/chat/**`, `src/renderer/features/workspace/**`.
+  Deliverables: council module contract, attach/detach flow, session-agnostic vote/debate/message APIs, and feature flags for future UI enablement.
+  Progress 2026-03-10: council planning ownership moved into `src/main/services/session/capabilities/council-capability.service.ts`; session module registry and automation workflow now depend on the session capability service instead of the old workspace council shim.
+- [x] **ARCH-SESSION-009**: Collapse duplicate renderer stream/state clients into a single session client.
+  Scope: remove the split between chat and workspace stream clients so all renderer surfaces consume the same event model, abort flow, retry flow, and recovery flow.
+  Targets: `src/renderer/features/chat/**`, `src/renderer/features/workspace/**`, `src/renderer/lib/**`, `src/shared/types/**`.
+  Deliverables: one session stream client, one state reducer/store model, one event parsing path, and compatibility adapters for legacy UI props.
+  Progress 2026-03-10: automation step, plan, budget, and cost signals now use the canonical `session:automation:*` event-bus family instead of legacy `workspace:*` runtime event names.
+  Progress 2026-03-10: the dead sidebar `chat-started / chat-generation-updated / chat-generation-status` compat hook was removed; workspace sidebar chat remains a thin adapter over the shared session conversation runtime.
+- [x] **ARCH-SESSION-010**: Replace legacy IPC namespace drift with a single session-centric IPC surface plus thin compatibility adapters.
+  Scope: define canonical `session:*` transport channels and keep old `chat:*`, `workspace-agent:*`, and other legacy channels only as temporary adapters until migration completes.
+  Targets: `src/main/ipc/**`, `src/main/preload/**`, `src/shared/constants/ipc-channels.ts`, `src/shared/types/electron-api.types.ts`, `src/renderer/electron.d.ts`.
+  Deliverables: canonical session IPC map, temporary compatibility wrappers, parity tests, and a clear deprecation list.
+  Progress 2026-03-10: `session:conversation:*` is now the canonical conversation surface, `session:automation:resume-checkpoint` was added, the legacy `workspace-agent` / `workflow-execution` preload bridges were removed, the top-level chat preload facade was deleted, and the old `chat:*` IPC registrations plus `CHAT_CHANNELS` constants were removed in favor of the canonical `session` surface.
+  Progress 2026-03-10: the remaining `ollama:streamChunk` compat emission was removed; conversation stream chunks now flow only through `session:conversation:stream-chunk`.
+- [x] **ARCH-SESSION-011**: Unify preload exposure so only active runtime domains are exposed and all exposed domains are actually registered.
+  Scope: remove drift between preload bridge files, runtime IPC registration, shared typings, and renderer usage.
+  Targets: `src/main/preload.ts`, `src/main/preload/domains/**`, `src/main/startup/ipc.ts`, `src/shared/types/electron-api.types.ts`, `src/renderer/electron.d.ts`.
+  Deliverables: one authoritative preload surface, dead bridge inventory, compatibility notes, and tests that fail on exposure/registration drift.
+  Progress 2026-03-10: the canonical `session` preload surface now owns conversation, workspace, automation, and council APIs; `workspaceAgent`, `workflowExecution`, and the old top-level `chat` preload exposure were removed.
+  Progress 2026-03-10: `promptTemplates`, `userCollaboration`, and `sharedPrompts` preload/runtime drift was fixed; `extension` handlers are now also registered in startup instead of being exposed without a live IPC backend.
+- [x] **ARCH-SESSION-012**: Split ambiguous naming around `collaboration` into precise domains while preserving future extensibility.
+  Scope: untangle `model collaboration`, `council collaboration`, `user live collaboration`, and any websocket/session sync features so future work does not overload one name.
+  Targets: `src/main/services/**`, `src/main/ipc/**`, `src/main/preload/**`, `src/shared/types/**`, `src/renderer/features/**`.
+  Deliverables: final naming map, refactor plan for each collaboration family, and compatibility aliases where unavoidable.
+  Progress 2026-03-10: canonical renderer surfaces are now `window.electron.modelCollaboration` and `window.electron.liveCollaboration`; the old `collaboration` and `userCollaboration` names remain only as compatibility aliases, and the naming map is documented in `docs/architecture/SESSION_ENGINE.md`.
+- [x] **ARCH-SESSION-013**: Audit and classify legacy/duplicate systems as `canonical`, `compatibility shim`, `unused`, or `broken/half-integrated`.
+  Scope: explicitly classify `workflow-execution`, unused preload bridges, duplicate IPC register entrypoints, old `project/*` re-export trees, and half-integrated collaboration paths.
+  Targets: `src/main/ipc/**`, `src/main/preload/**`, `src/main/services/**`, `src/renderer/**`, `docs/architecture/**`.
+  Deliverables: classification matrix, kill list for post-launch cleanup, short-term keep list, and risk notes for each legacy surface.
+  Progress 2026-03-10: the duplicate `src/main/ipc/index.ts` registration entrypoint was removed; `src/main/startup/ipc.ts` is now the only aggregate IPC registration path.
+  Progress 2026-03-10: `src/main/services/workspace/agent/*.service.ts` re-export shims were removed; main code and tests now import the canonical `workspace/automation-workflow/*` implementations directly.
+  Progress 2026-03-10: the dead `src/main/ipc/debug.ts` IPC surface was removed; `backup-scheduler.ts` and `backup.preload.ts` remain intentionally unintegrated because the backup family is being preserved for later product work.
+  Progress 2026-03-10: additional unregistered/unused IPC handlers were removed: `chat-export.ts`, `chat-import.ts`, `chat-share.ts`, `db-stats.ts`, `file-diff.ts`, and `user-behavior.ts`.
+- [x] **ARCH-SESSION-014**: Remove raw renderer IPC calls from session-related features and route them through typed domain bridges only.
+  Scope: enforce that session/chat/workspace/automation surfaces use the same typed bridge and shared payload contracts.
+  Targets: `src/renderer/features/chat/**`, `src/renderer/features/workspace/**`, `src/renderer/lib/**`, `src/main/preload/**`, `src/shared/types/electron-api.types.ts`.
+  Deliverables: typed session bridge, eliminated raw `ipcRenderer.invoke` usage in touched session paths, and stricter tests for bridge contract usage.
+  Progress 2026-03-10: workspace automation hooks/components now call `window.electron.session.automation` directly, and the old raw `agent:resume-checkpoint` invoke path was replaced with `session.automation.resumeCheckpoint`.
+  Progress 2026-03-10: workspace list invalidation no longer subscribes via raw `window.electron.ipcRenderer.on('workspace:updated')`; it now uses the typed `window.electron.db.onWorkspaceUpdated(...)` bridge.
+  Progress 2026-03-10: the canonical `session.conversation` API was narrowed by removing the unused `removeStreamChunkListener` compat method.
+  Progress 2026-03-10: `SharedPromptLibrary` no longer calls `prompts:shared-*` via raw `ipcRenderer.invoke`; it now uses the typed `window.electron.sharedPrompts` bridge.
+  Progress 2026-03-10: duplicate `files` and `update` bridge spreads were removed from `src/main/preload.ts`, leaving a single authoritative preload shape for those domains.
+- [x] **ARCH-SESSION-015**: Harden persistence and restart recovery so every session mode can resume safely without fake in-flight states.
+  Scope: standardize persisted session metadata, incomplete turn cleanup, checkpoint restoration, interrupted tool/council recovery, and restart-time normalization across all modes.
+  Targets: `src/main/services/data/**`, `src/main/ipc/session-conversation.ts`, `src/main/services/workspace/automation-workflow/**`, `src/shared/types/chat.ts`, `src/shared/types/automation-workflow.ts`.
+  Deliverables: unified recovery contract, persistent session metadata model, interrupted state handling, and regression tests for restart scenarios.
+  Progress 2026-03-10: `SessionState` and `SessionRecoverySnapshot` now carry a shared recovery contract (`canResume`, `requiresReview`, `action`, `lastTransitionAt`, `hint`, `lastMessagePreview`) and all session registries expose normalized recovery snapshots.
+- [x] **ARCH-SESSION-016**: Build an end-to-end test matrix for chat, workspace conversation, automation, and council-enabled flows on the shared engine.
+  Scope: lock down the migration with regression coverage before removing compatibility layers.
+  Targets: `src/tests/main/**`, `src/tests/renderer/**`, `src/tests/integration/**`.
+  Deliverables: parity tests per session mode, capability coverage, preload/IPC parity checks, and launch-blocking regression scenarios.
+  Progress 2026-03-10: session recovery parity is covered for chat, workspace, and automation via `src/tests/main/services/session/session-recovery.test.ts`; canonical collaboration aliases are covered in `src/tests/renderer/session-collaboration-aliases.test.ts`, alongside the broader build/lint/type-check/full test suite validation.
+- [x] **ARCH-SESSION-017**: Finalize launch-time cleanup by shrinking legacy paths to explicit adapters and documenting the post-launch removal plan.
+  Scope: keep only the minimum compatibility surface needed for release while ensuring the codebase communicates the new canonical structure clearly.
+  Targets: `src/main/ipc/**`, `src/main/preload/**`, `src/main/services/**`, `docs/architecture/**`, `TODO.md`.
+  Deliverables: compatibility layer inventory, marked deprecation boundaries, post-launch cleanup checklist, and updated architecture docs for contributors.
+  Progress 2026-03-10: `docs/architecture/SESSION_ENGINE.md` and `.codex/SESSION_ENGINE.md` now document the canonical session runtime, compatibility aliases, deferred backup cleanup, and contributor rules for post-launch removal work.
 - [x] **REF-011**: Split `src/renderer/electron.d.ts` (2633 lines) into domain-specific declaration modules.
 - [x] **REF-012**: Continue decomposing `src/main/services/llm/idea-generator.service.ts` (2448 lines) by extracting research and export orchestration.
 - [x] **REF-013**: Continue shrinking `src/main/services/llm/advanced-memory.service.ts` (1937 lines) by extracting persistence/normalization adapters.
@@ -10,32 +98,79 @@
 - [x] **REF-014**: Invert workspace compatibility shims so canonical implementations live in `Workspace*` files and `Project*` files are pure re-export shims only.
 - [x] **REF-015**: Rename remaining internal `Project*` local variables and prop names in workspace features (`projectSearchIndex`, `selectedProjectIds`, `onProjectCreated`, etc.) to `Workspace*`.
 - [x] **TEST-006**: Add renderer tests for the `WorkspaceHeader`, `WorkspaceModals`, and `VirtualizedWorkspaceGrid` compatibility wrappers.
+- [x] **FIX-CHAT-CRASH-001**: Resolve 'Cannot read properties of undefined (reading \'error\')' crash in ChatProvider by adding defensive guards.
 - [x] **PERF-001**: Split `src/renderer/features/workspace/WorkspacePage.tsx` into smaller sections/hooks to reduce complexity and isolate state.
 - [x] **DOC-001**: Update project workflow/rules docs that still reference the removed structured changelog file path.
 - [x] **TEST-007**: Add direct renderer tests for `src/renderer/features/workspace/utils/workspace-startup-preflight.ts` runbook and issue-filtering behavior.
 - [x] **REF-016**: Standardize remaining `Project Agent` bridge naming in renderer hooks/components to `workspaceAgent` or `automationWorkflow` to match the UI rename.
 - [x] **SAFE-006**: Fix "Maximum call stack size exceeded" errors by removing recursive `workspaceScaffoldService` and `workspaceAgentService` registrations in `src/main/startup/services.ts`.
+- [x] **FIX-WS-IMPORT-001**: Stop silent workspace creation failures from closing the folder-import wizard and propagate duplicate-path errors from `db:createWorkspace`.
+- [x] **FIX-WS-IMPORT-002**: Route workspace create/list through strict db-service responses so folder imports cannot succeed on swallowed query failures.
+- [x] **FIX-DB-SCHEMA-001**: Repair legacy runtime DB bootstrap so missing `workspaces`/`agents`/memory tables and missing `agent_tasks.state` or `uac_tasks.workspace_path` columns are recreated during startup.
+- [x] **SAFE-007**: Remove automatic Hugging Face model fetching and display from `ModelRegistryService` to simplify Model Selector.
+- [x] **OPT-WS-OPEN-001**: Make workspace opening latency-bounded by skipping non-blocking preflight checks on click and returning partial analysis immediately while full scans finish in the background.
+- [x] **UX-WS-SEARCH-001**: Collapse duplicate workspace search surfaces into a single Search tab and remove the separate Code search tab.
 - Rename-tail note: Exclude `src/native/Cargo.lock` from `project|Project|projects|Projects` tail expectations because every remaining hit in that autogenerated lockfile is the third-party crate name `pin-project-lite`, not workspace rename debt.
 
 ## 🎯 March 2026 Priority Plan (Target: complete before 2026-03-31)
 
-### P0 - Must Finish This Month
-- [ ] **PRD-001**: Create a concise product strategy document that defines Tengra's primary user, primary job-to-be-done, key differentiators, and what the product is explicitly not.
-  Scope: define target personas (`solo developer`, `indie team`, `local-first power user`), core workflows, non-goals, and product positioning.
-  Targets: `docs/product/PRODUCT_STRATEGY.md` (new), `README.md`, `docs/README.md`, `docs/guides/DEVELOPMENT.md`.
-  Deliverables: product positioning doc, updated README summary, aligned terminology guidance for future feature work.
-- [ ] **UX-001**: Audit and unify product terminology across renderer flows so `Project`, `Workspace`, `Workflow`, and `Agent` language is no longer mixed in user-facing UI.
-  Scope: audit visible labels, button text, headings, empty states, modal titles, and status messages for inconsistent terms.
-  Targets: `src/renderer/features/workspace/**`, `src/renderer/features/automation-workflow/**`, `src/renderer/i18n/en/**`, `src/renderer/i18n/tr/**`, `src/renderer/components/layout/**`.
-  Deliverables: terminology map, updated user-facing strings, regression checklist for renamed UI terms.
-- [x] **TEST-008**: Add offline-first smoke coverage for the critical path: local model available, no network, workspace operations, chat, and memory still usable.
-  Scope: simulate disconnected network state and validate local providers, local DB, workspace actions, and memory retrieval continue working.
-  Targets: `src/tests/main/**`, `src/tests/renderer/**`, `src/main/services/analysis/health*`, `src/main/services/llm/ollama*`, `src/renderer/features/chat/**`, `src/renderer/features/workspace/**`.
-  Deliverables: smoke tests for offline startup, local chat flow, workspace open, and memory access with cloud providers degraded.
-- [ ] **HEALTH-001**: Build a centralized system health dashboard covering local models, proxy, token service, database, SSH, extension connectivity, and degraded/offline states.
-  Scope: collect service health from main-process services and expose a single health surface in the renderer with actionable statuses.
-  Targets: `src/main/ipc/health.ts`, `src/main/services/analysis/**`, `src/main/services/system/**`, `src/main/services/llm/**`, `src/renderer/features/settings/**` or `src/renderer/features/showcase/**`, `src/shared/types/system.ts`.
-  Deliverables: aggregate health IPC contract, dashboard UI, status badges, degraded mode explanations, refresh action.
+### P0 - Must Finish This Month  
+- [ ] **RUNTIME-BOOT-001**: Audit and classify every runtime binary, external dependency, and startup assumption used by packaged and development builds.
+  Scope: produce the canonical inventory of native services, bundled binaries, external prerequisites, path-resolution assumptions, startup ordering, and per-OS gaps before any refactor begins.
+  Targets: `TODO.md`, `docs/architecture/**`, `src/main/services/system/**`, `src/main/services/**`, `scripts/**`, `package.json`.
+  Deliverables: runtime dependency matrix, binary ownership map, dev-vs-packaged path matrix, external dependency list (`Ollama`, VC++/system libs if applicable), and an explicit list of code paths that currently assume `resources/bin`.
+  Progress 2026-03-11: the initial runtime inventory and path policy are now documented in `docs/architecture/MANAGED_RUNTIME.md`, including current managed components, external dependencies, and remaining bootstrap gaps.
+- [ ] **RUNTIME-BOOT-002**: Define the canonical managed runtime directory strategy for Windows, macOS, and Linux while preserving the current development workflow.
+  Scope: standardize where downloaded runtimes, extracted binaries, manifests, checksums, temp downloads, logs, and state files live on each OS; require one managed runtime root for both development and packaged builds.
+  Targets: `docs/architecture/**`, `src/main/services/system/**`, `src/shared/constants/**`.
+  Deliverables: OS path policy, managed runtime root contract, cache/temp directory policy, cleanup rules, and a clear rule for how local build outputs seed the managed runtime without restoring `resources/bin` as a runtime source.
+  Progress 2026-03-11: the canonical managed runtime root is now documented as `%APPDATA%/Tengra/runtime` on Windows and the Electron `appData/Tengra/runtime` equivalent on macOS/Linux; packaged builds no longer bundle `resources/bin`.
+- [ ] **RUNTIME-BOOT-003**: Introduce a central runtime path resolution layer so no service resolves executable paths ad hoc.
+  Scope: create one authoritative service/helper for runtime path resolution across all native services and model runtimes, with the same managed runtime contract in development and packaged modes.
+  Targets: `src/main/services/system/**`, `src/main/services/llm/**`, `src/main/services/data/**`, `src/main/services/security/**`, `src/main/services/proxy/**`.
+  Deliverables: `RuntimePathService` or equivalent contract, binary name normalization per OS, one runtime-root policy across dev/prod, and a migration plan for current direct `resources/bin`/`process.cwd()` assumptions.
+  Progress 2026-03-11: a central runtime path layer now resolves managed runtime locations under `%APPDATA%/Tengra/runtime`; `ProcessManagerService`, proxy launch, llama launch, and local image temp/runtime paths no longer resolve primary binaries from `resources/bin`, `process.resourcesPath`, or repo-relative temp folders.
+- [ ] **RUNTIME-BOOT-004**: Define the runtime artifact and release manifest specification used to download binaries from GitHub releases.
+  Scope: standardize naming, versioning, hashing, archive formats, platform/arch selectors, and compatibility metadata for all downloadable runtime components.
+  Targets: `docs/architecture/**`, `scripts/**`, `.github/**`, `src/shared/types/**`, `src/shared/schemas/**`.
+  Deliverables: artifact naming convention, manifest schema, checksum/signature policy, GitHub release structure, compatibility metadata for `win32/darwin/linux` and `x64/arm64`, and upgrade/downgrade rules.
+  Progress 2026-03-11: shared runtime manifest constants, types, and Zod schema now exist, and `docs/architecture/MANAGED_RUNTIME.md` documents the initial artifact naming convention plus required manifest fields.
+- [ ] **RUNTIME-BOOT-005**: Build a runtime bootstrap orchestration service that detects, downloads, verifies, installs, and repairs managed runtime components.
+  Scope: centralize first-run preparation and repair/update flows instead of letting feature services perform their own installation or runtime fetching logic.
+  Targets: `src/main/services/system/**`, `src/main/startup/**`, `src/main/ipc/**`, `src/shared/types/**`, `src/shared/schemas/**`.
+  Deliverables: bootstrap state machine, runtime install plan builder, download/extract/verify pipeline, checksum enforcement, partial-failure recovery, and stable result objects for UI and logs.
+  Progress 2026-03-11: `RuntimeBootstrapService` now covers the install-plan phase by classifying manifest components as `ready`, `install`, `external`, or `unsupported` for the current platform/arch; download/extract/repair execution remains next.
+- [ ] **RUNTIME-BOOT-006**: Add a runtime health and readiness layer that can validate binaries before dependent services attempt to launch.
+  Scope: formalize file existence, version, executable permission, process startability, service port readiness, and repairability checks for each managed component.
+  Targets: `src/main/services/system/**`, `src/main/services/data/**`, `src/main/services/llm/**`, `src/main/services/security/**`, `src/main/services/proxy/**`.
+  Deliverables: health probe contracts per component, readiness result types, port/process verification helpers, stale runtime detection, and repair recommendations surfaced to startup and UI.
+- [ ] **RUNTIME-BOOT-007**: Refactor native service launch flows to depend on the runtime manager instead of directly assuming bundled binaries already exist.
+  Scope: update database, token, model, quota, memory, llama, and related service launchers so they request resolved executable paths from the central runtime layer.
+  Targets: `src/main/services/system/process-manager.service.ts`, `src/main/services/data/**`, `src/main/services/security/**`, `src/main/services/proxy/**`, `src/main/services/llm/**`.
+  Deliverables: runtime-aware start contracts, removed hardcoded path resolution from feature services, stable persistent-service behavior, and migration notes for remaining legacy launchers.
+  Progress 2026-03-11: native build output and Windows helper scripts now seed/read the managed runtime bin directory instead of `resources/bin`; remaining work is to route download/bootstrap/update flows through the same contract and remove remaining repo-relative temp/runtime assumptions.
+- [ ] **RUNTIME-BOOT-008**: Design and implement first-run bootstrap UX in the Electron app instead of relying on an external installer.
+  Scope: provide a clean user-facing flow for prerequisite scanning, permission requests, progress reporting, retry/repair, optional component skipping, and launch gating.
+  Targets: `src/renderer/features/**`, `src/main/ipc/**`, `src/main/preload/**`, `src/shared/types/**`, `src/shared/schemas/**`.
+  Deliverables: first-run bootstrap screen(s), progress/state model, permission prompts, retry/repair actions, localized user-facing copy, and a safe transition into the main app after readiness succeeds.
+- [ ] **RUNTIME-BOOT-009**: Standardize handling of external prerequisites such as Ollama so detection, consent, install guidance, and startup are explicit and cross-platform aware.
+  Scope: separate bundled Tengra-managed runtimes from truly external dependencies and give each a clear detection and remediation policy per OS.
+  Targets: `src/main/startup/ollama.ts`, `src/main/services/llm/**`, `src/main/ipc/**`, `src/renderer/features/**`, `docs/architecture/**`.
+  Deliverables: external dependency policy, OS-specific detection strategy, explicit consent flow, install/open/download strategy, and a clear distinction between `required`, `optional`, and `user-managed` components.
+- [ ] **RUNTIME-BOOT-010**: Build runtime update and repair workflows for already-installed applications.
+  Scope: support version checks, runtime replacement, cache invalidation, rollback boundaries, and user-invoked repair without reinstalling the whole app package.
+  Targets: `src/main/services/system/**`, `src/main/ipc/**`, `src/renderer/features/settings/**`, `src/shared/types/**`.
+  Deliverables: runtime version registry, update policy, repair action flow, stale archive cleanup, rollback safety rules, and settings/debug surfaces for runtime maintenance.
+- [ ] **RUNTIME-BOOT-011**: Add automated test coverage for runtime path resolution, manifest parsing, bootstrap orchestration, and service launch compatibility.
+  Scope: prevent regressions across dev, packaged, and cross-platform behaviors by testing the orchestration layer independently from the UI.
+  Targets: `src/tests/main/**`, `src/tests/renderer/**`, `src/tests/integration/**`, `scripts/**`.
+  Deliverables: resolver unit tests, manifest/schema tests, bootstrap state machine tests, service-launch compatibility tests, and packaged-vs-dev scenario coverage.
+  Progress 2026-03-11: `src/tests/main/services/system/runtime-path.service.test.ts` now covers the managed runtime root/bin/models/temp contract and executable-name normalization.
+- [ ] **RUNTIME-BOOT-012**: Document the final runtime architecture, contributor workflow, and release responsibilities for shipping managed runtimes safely.
+  Scope: make runtime packaging, release generation, bootstrap behavior, fallback policy, and troubleshooting explicit for future contributors and release engineering.
+  Targets: `docs/architecture/**`, `.codex/**`, `TODO.md`, release documentation.
+  Deliverables: architecture doc, release runbook, troubleshooting guide, contributor rules for adding new binaries, and a post-launch cleanup checklist for legacy path assumptions.
+  Progress 2026-03-11: `docs/architecture/MANAGED_RUNTIME.md` now captures the current managed runtime contract, binary ownership map, and contributor rules for new runtime binaries.
 - [ ] **AI-TRAIN-001**: Design and implement a system that lets users create their own AI agents/models/personas, configure them, and iteratively train/tune them with local project context, memory, and reusable prompts.
   Scope: support custom persona definition, prompt packs, memory-backed specialization, local fine-tune metadata, and reusable profile selection.
   Targets: `src/main/services/llm/**`, `src/main/services/data/**`, `src/main/ipc/model-registry.ts`, `src/main/ipc/prompt-templates.ts`, `src/renderer/features/models/**`, `src/renderer/features/prompts/**`, `src/shared/types/model.types.ts`, `src/shared/types/automation-workflow.ts`.
@@ -53,15 +188,7 @@
   Targets: `src/main/services/workspace/automation-workflow/**`, `src/main/services/workflow/**`, `src/main/ipc/workflow.ts`, `src/main/ipc/workspace-agent*.ts`, `src/renderer/features/automation-workflow/**`, `src/renderer/features/workflows/**`, `src/shared/types/automation-workflow.ts`.
   Deliverables: stable execution state machine, recovery path, approval UX, checkpoint tooling, end-to-end tests, and finalized user-facing naming.
 
-### P1 - High Value Follow-Through
-- [ ] **ONB-001**: Build a guided first-run setup flow for local models, provider keys, workspace creation, and recommended defaults.
-  Scope: create a first-run wizard that detects available runtimes and leads users through the minimum viable setup.
-  Targets: `src/renderer/features/onboarding/**`, `src/renderer/context/AppProviders.tsx`, `src/renderer/features/models/**`, `src/renderer/features/workspace/**`, `src/main/ipc/health.ts`, `src/main/ipc/settings.ts`.
-  Deliverables: onboarding flow, setup checkpoints, skip/resume support, and default recommendations.
-- [x] **SAFE-005**: Add IPC contract parity checks that verify preload exposure, shared schemas, and handler registration stay in sync.
-  Scope: detect drift between preload bridges, IPC handlers, and shared Zod schemas before runtime regressions reach users.
-  Targets: `src/main/preload/**`, `src/main/ipc/**`, `src/shared/schemas/**`, `src/tests/main/**`, `scripts/**`.
-  Deliverables: parity test suite or validation script, mismatch reporting, and CI-safe failure output.
+### P1 - High Value Follow-Through 
 - [ ] **PERF-002**: Introduce startup and bundle budgets for renderer chunks, preload bundle size, and main-process initialization time.
   Scope: establish measurable performance budgets and fail fast when builds or startup regress beyond set thresholds.
   Targets: `package.json`, `scripts/tool.js`, `scripts/**`, `vite.config.ts`, `vitest.config*.ts`, `src/main/startup/**`.
@@ -70,29 +197,7 @@
   Scope: make domain ownership explicit so future refactors do not cross-contaminate data responsibilities.
   Targets: `docs/architecture/DATA_MODEL.md`, `src/shared/types/**`, `src/main/services/data/**`, `src/tests/main/**`.
   Deliverables: boundary matrix, updated data model docs, and contract tests for key domain edges.
-- [ ] **EXT-001**: Harden browser extension to desktop integration with connection diagnostics, reconnection UX, and clearer failure handling.
-  Scope: improve extension-to-app handshake reliability, user feedback, and recovery when desktop or extension state changes.
-  Targets: `src/main/services/extension/**`, `src/main/ipc/extension.ts`, `src/renderer/features/extensions/**`, `website/**` docs if needed.
-  Deliverables: connection state model, diagnostics UI, reconnect flow, and failure-state handling tests.
-- [ ] **MCP-001**: Add permission profiles for MCP/plugin capabilities (`read-only`, `workspace-only`, `network-enabled`, `destructive`) with explicit gating in UI and runtime.
-  Scope: establish a permission model for plugin/server capabilities and enforce it across registration, execution, and UI.
-  Targets: `src/main/services/mcp/**`, `src/main/ipc/mcp*.ts`, `src/renderer/features/mcp/**`, `src/shared/types/**`, `docs/guides/MCP_PLUGIN_DEVELOPMENT.md`.
-  Deliverables: permission schema, enforcement layer, consent UI, and audit logging hooks for sensitive actions.
-
-### P2 - Quality And Maintainability
-- [x] **LINT-002**: Reduce residual lint and test warning noise beyond import sorting, including recurring renderer warnings that hide real regressions.
-  Scope: clear noisy warnings so future signal is meaningful and CI output remains usable.
-  Targets: `eslint.config.mjs`, `src/renderer/**`, `src/main/**`, `src/tests/**`.
-  Deliverables: reduced warning count, triage list for remaining intentional exceptions, and cleaner CI output.
-- [x] **DOC-002**: Reconcile product, architecture, and workflow documentation with the current post-migration codebase and remove stale references.
-  Scope: bring docs back in sync with the real architecture after Workspace and Workflow migrations.
-  Targets: `docs/README.md`, `docs/architecture/**`, `docs/api/**`, `docs/guides/**`, `README.md`.
-  Deliverables: updated docs index, corrected architecture references, and removed stale paths/instructions.
-- [x] **TEST-009**: Add regression suites for compatibility shims and renamed Workspace/Workflow entry points so migration debt does not reappear.
-  Scope: lock down renamed entry points and compatibility wrappers with explicit regression coverage.
-  Targets: `src/tests/main/**`, `src/tests/renderer/**`, `src/renderer/features/workspace/**`, `src/main/ipc/workspace*.ts`, `src/main/ipc/workflow.ts`.
-  Deliverables: regression tests covering canonical imports, compatibility shims, and renamed IPC/bridge paths.
-
+  
 ## ⚡ Performance Optimization Program
 
 ### P0 - High ROI Optimization Pass
@@ -101,17 +206,18 @@
   Targets: `src/main/services/analysis/**`, `src/main/ipc/performance.ts`, `src/main/ipc/metrics.ts`, `src/renderer/features/showcase/**` or a new diagnostics panel, `scripts/tool.js`.
   Deliverables: baseline metrics dashboard/report, startup timing capture, idle CPU checklist, memory snapshots, and a repeatable profiling workflow.
 - [x] **OPT-002**: Make startup service initialization aggressively lazy so only core services initialize on app launch and heavy domains load on first use.
-  Scope: reduce startup CPU/RAM by deferring non-essential services such as `workspace`, `ssh`, `docker`, `memory`, `extension`, `marketplace`, and heavy workflow services.
+  Scope: reduce startup CPU/RAM by deferring non-essential services such as `workspace`, `ssh`, `docker`, `memory`, `extension`, and heavy workflow services.
   Targets: `src/main/startup/**`, `src/main/services/**`, `src/main/ipc/lazy-services.ts`, `src/main/startup/services.ts`.
   Deliverables: startup service classification (`core`, `deferred`, `on-demand`), lazy initialization paths, and reduced cold-start resource usage.
 - [x] **OPT-003**: Expand renderer-side code splitting and lazy loading so heavy feature bundles are only loaded when their screens/tabs are opened.
   Scope: defer loading of large UI modules such as `WorkspacePage`, `AutomationWorkflow`, `Models`, `Memory`, editors, graph views, markdown/math tooling, and terminal-heavy surfaces.
   Targets: `src/renderer/components/lazy/**`, `src/renderer/features/**`, `vite.config.ts`, `src/renderer/views/**`.
   Deliverables: new lazy boundaries, smaller initial renderer payload, and documented chunk ownership by feature.
-- [ ] **OPT-004**: Reduce idle CPU usage by throttling or suspending watchers, timers, health polling, telemetry loops, and background jobs when the app or feature is inactive.
+- [/] **OPT-004**: Reduce idle CPU usage by throttling or suspending watchers, timers, health polling, telemetry loops, and background jobs when the app or feature is inactive.
   Scope: audit all recurring work and make it adaptive to visibility, focus, active workspace state, and idle/minimized conditions.
   Targets: `src/main/services/system/**`, `src/main/services/analysis/**`, `src/main/services/workspace/**`, `src/main/services/llm/**`, `src/renderer/hooks/**`.
   Deliverables: reduced idle polling cadence, pause/resume logic for background jobs, and measurable idle CPU improvements.
+  Progress 2026-03-12: implemented `PowerManagerService` for window-focus based throttling and service hibernation (e.g. Ollama GPU monitoring) after inactivity. Added `LowPowerContext` for adaptive renderer intervals.
 - [ ] **OPT-005**: Batch and throttle high-frequency IPC streams (logs, file-watch events, progress updates, terminal output, workflow events) to reduce UI thread pressure.
   Scope: eliminate IPC event storms that cause renderer jank and unnecessary main/renderer churn.
   Targets: `src/main/ipc/**`, `src/main/services/terminal/**`, `src/main/services/workspace/**`, `src/main/services/workflow/**`, `src/main/services/analysis/**`.

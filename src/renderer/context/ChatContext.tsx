@@ -37,8 +37,9 @@ function formatRateLimitError(message: string, t: (key: string) => string): stri
     try {
         const jsonMatch = message.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-            const errData = safeJsonParse<{ error?: { message?: string }; message?: string }>(jsonMatch[0], {});
-            const errorMsg = errData.error?.message ?? errData.message ?? message;
+            interface ChatErrorData { error?: { message?: string }; message?: string }
+            const errData = safeJsonParse<ChatErrorData>(jsonMatch[0], {});
+            const errorMsg = errData?.error?.message ?? errData?.message ?? message;
             if (errorMsg.includes('Resource has been exhausted') || errorMsg.includes('quota')) {
                 return t('chat.quotaExceeded');
             }

@@ -168,27 +168,53 @@ export function useTerminalSemanticAnalysis({ tabs }: UseTerminalSemanticAnalysi
      * @param chunk - Output chunk to parse
      * @param flushRemainder - Whether to flush incomplete line
      */
+    const analysisBufferByTabRef = useRef<Record<string, string>>({});
+    const lastAnalysisTimeRef = useRef<number>(0);
+    const analysisTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    /**
+     * Parse terminal output chunk for semantic issues
+     * 
+     * @param tabId - Terminal tab ID
+     * @param chunk - Output chunk to parse
+     * @param flushRemainder - Whether to flush incomplete line
+     */
     const parseSemanticChunk = useCallback(
         (tabId: string, chunk: string, flushRemainder = false) => {
-            const stripped = stripAnsiControlSequences(chunk);
-            const carried = semanticCarryByTabRef.current[tabId] ?? '';
-            const combined = `${carried}${stripped}`;
-            const lines = combined.split('\n');
-            semanticCarryByTabRef.current[tabId] = lines.pop() ?? '';
-
-            for (const line of lines) {
-                const normalized = line.trim();
-                if (!normalized) {
-                    continue;
-                }
-                const severity = detectSemanticSeverity(normalized);
-                if (!severity) {
-                    continue;
-                }
-                pushSemanticIssue(tabId, severity, normalized);
+            if (chunk) {
+                analysisBufferByTabRef.current[tabId] = (analysisBufferByTabRef.current[tabId] ?? '') + chunk;
             }
 
+            const runAnalysis = () => {
+                if (analysisTimeoutRef.current) {
+                    clearTimeout(analysisTimeoutRef.current);
+                    analysisTimeoutRef.current = null;
+                }
+
+                Object.entries(analysisBufferByTabRef.current).forEach(([id, buffer]) => {
+                    if (!buffer) { return; }
+
+                    const stripped = stripAnsiControlSequences(buffer);
+                    const carried = semanticCarryByTabRef.current[id] ?? '';
+                    const combined = `${carried}${stripped}`;
+                    const lines = combined.split('\n');
+                    semanticCarryByTabRef.current[id] = lines.pop() ?? '';
+
+                    for (const line of lines) {
+                        const normalized = line.trim();
+                        if (!normalized) { continue; }
+                        const severity = detectSemanticSeverity(normalized);
+                        if (severity) {
+                            pushSemanticIssue(id, severity, normalized);
+                        }
+                    }
+                    analysisBufferByTabRef.current[id] = '';
+                });
+                lastAnalysisTimeRef.current = Date.now();
+            };
+
             if (flushRemainder) {
+                runAnalysis();
                 const remainder = semanticCarryByTabRef.current[tabId]?.trim();
                 if (remainder) {
                     const severity = detectSemanticSeverity(remainder);
@@ -197,10 +223,27 @@ export function useTerminalSemanticAnalysis({ tabs }: UseTerminalSemanticAnalysi
                     }
                 }
                 semanticCarryByTabRef.current[tabId] = '';
+                return;
+            }
+
+            const now = Date.now();
+            if (now - lastAnalysisTimeRef.current > 200) {
+                runAnalysis();
+            } else if (!analysisTimeoutRef.current) {
+                analysisTimeoutRef.current = setTimeout(runAnalysis, 200);
             }
         },
         [pushSemanticIssue]
     );
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (analysisTimeoutRef.current) {
+                clearTimeout(analysisTimeoutRef.current);
+            }
+        };
+    }, []);
 
     /**
      * Clear all semantic issues for a tab

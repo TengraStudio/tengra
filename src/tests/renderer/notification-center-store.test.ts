@@ -115,26 +115,26 @@ describe('notification center store', () => {
         expect(snapshot.active[7]?.message).toBe('Notification 5');
     });
 
-    it('normalizes legacy agent sources to workspace-agent', () => {
+    it('normalizes legacy agent sources to automation-workflow', () => {
         pushNotification({
             type: 'warning',
             message: 'Quota interrupt',
-            source: WORKSPACE_COMPAT_SOURCE_VALUES.AGENT,
+            source: WORKSPACE_COMPAT_SOURCE_VALUES.AUTOMATION_WORKFLOW,
             durationMs: null,
         });
         scheduleNotification(
             {
                 type: 'info',
                 message: 'Try again later',
-                source: WORKSPACE_COMPAT_SOURCE_VALUES.AGENT,
+                source: WORKSPACE_COMPAT_SOURCE_VALUES.AUTOMATION_WORKFLOW,
                 durationMs: null,
             },
             Date.now() + 30_000
         );
 
         const snapshot = getNotificationCenterSnapshot();
-        expect(snapshot.active[0]?.source).toBe(WORKSPACE_COMPAT_TARGET_VALUES.WORKSPACE_AGENT);
-        expect(snapshot.history[0]?.source).toBe(WORKSPACE_COMPAT_TARGET_VALUES.WORKSPACE_AGENT);
-        expect(snapshot.scheduled[0]?.payload.source).toBe(WORKSPACE_COMPAT_TARGET_VALUES.WORKSPACE_AGENT);
+        expect(snapshot.active[0]?.source).toBe(WORKSPACE_COMPAT_TARGET_VALUES.AUTOMATION_WORKFLOW);
+        expect(snapshot.history[0]?.source).toBe(WORKSPACE_COMPAT_TARGET_VALUES.AUTOMATION_WORKFLOW);
+        expect(snapshot.scheduled[0]?.payload.source).toBe(WORKSPACE_COMPAT_TARGET_VALUES.AUTOMATION_WORKFLOW);
     });
 });

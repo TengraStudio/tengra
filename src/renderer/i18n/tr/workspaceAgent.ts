@@ -23,7 +23,7 @@ const sectionData = {
     "selectAgentProfile": "Ajan profili seç",
     "agentSelected": "Ajan seçildi",
     "defaultAgent": "Varsayılan Ajan",
-    "defaultAgentDesc": "Genel amaçlı proje ajanı",
+    "defaultAgentDesc": "Genel amaçlı çalışma alanı ajanı",
     "approveAndRun": "Onayla ve Çalıştır",
     "planning": "Planlama",
     "running": "Çalışıyor",
@@ -34,7 +34,7 @@ const sectionData = {
     "thinkingOff": "Düşünme kapalı",
     "selectAction": "Eylem seç",
     "noDescription": "Açıklama yok",
-    "selectWorkspace": "Proje seç",
+    "selectWorkspace": "Çalışma Alanı seç",
     "votingPanel": {
         "title": "Oylama Oturumları",
         "sessionCount": "{{count}} oturum",

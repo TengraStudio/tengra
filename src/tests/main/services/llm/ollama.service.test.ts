@@ -4,6 +4,7 @@ import * as http from 'http';
 
 import { OllamaService } from '@main/services/llm/ollama.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { EventBusService } from '@main/services/system/event-bus.service';
 import { beforeEach,describe, expect, it, vi } from 'vitest';
 
 // Mock http
@@ -23,7 +24,16 @@ describe('OllamaService', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        service = new OllamaService(mockSettingsService as unknown as SettingsService);
+        const mockEventBusService = {
+            onCustom: vi.fn(),
+            subscribe: vi.fn(),
+            emit: vi.fn(),
+            emitCustom: vi.fn()
+        };
+        service = new OllamaService(
+            mockSettingsService as unknown as SettingsService,
+            mockEventBusService as unknown as EventBusService
+        );
     });
 
     it('should initialize with default host and port', () => {

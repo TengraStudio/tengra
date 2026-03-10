@@ -102,13 +102,6 @@ export const registerWorkspaceIpc = (
                     `Analyze requested for ${rootPath} (ID: ${workspaceId})`
                 );
                 const results = await resolvedWorkspaceService.analyzeWorkspace(rootPath);
-
-                // Trigger background indexing
-                if (workspaceId) {
-                    codeIntelligenceService.indexWorkspace(rootPath, workspaceId).catch((err: unknown) => {
-                        appLogger.error('WorkspaceIPC', `Failed to auto-index workspace: ${err}`);
-                    });
-                }
                 return results;
             },
             {

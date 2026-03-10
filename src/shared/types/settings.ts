@@ -2,6 +2,8 @@ import { InlineSuggestionSource } from '@shared/schemas/inline-suggestions.schem
 
 import { JsonValue } from '@/types/common';
 
+export type McpPermissionProfile = 'read-only' | 'workspace-only' | 'network-enabled' | 'destructive' | 'full-access';
+
 export type ModelGovernanceSettings = {
     mode: 'allowlist' | 'blocklist';
     allowedModels: string[];
@@ -154,6 +156,8 @@ export type AppSettings = {
         fullscreen?: boolean;
         startOnStartup?: boolean;
         workAtBackground?: boolean; // Minimize to tray instead of closing
+        lowPowerMode?: boolean; // Use lower resources in background
+        autoHibernation?: boolean; // Hibernate heavy services after inactivity
     };
     modelSettings?: Record<
         string,
@@ -178,6 +182,7 @@ export type AppSettings = {
     mcpReviewPolicy?: 'elevated' | 'trusted';
     mcpAutoExecuteSafe?: boolean;
     mcpActionPermissions?: Record<string, 'allow' | 'deny' | 'ask'>;
+    mcpPermissionProfile?: McpPermissionProfile; // Global default profile
     mcpPermissionRequests?: Array<{
         id: string;
         service: string;
@@ -298,6 +303,7 @@ export type MCPServerConfig = {
     description?: string;
     env?: Record<string, string>;
     enabled?: boolean; // Default: false (user must explicitly enable)
+    permissionProfile?: McpPermissionProfile;
     tools?: { name: string; description: string }[];
     category?: string;
     publisher?: string;

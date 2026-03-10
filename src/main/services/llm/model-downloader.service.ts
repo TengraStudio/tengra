@@ -674,7 +674,7 @@ export class ModelDownloaderService extends BaseService {
             await this.deps.huggingFaceService.registerModelVersion(
                 modelId,
                 outputPath,
-                'Installed via marketplace downloader'
+                'Installed via model downloader'
             );
 
             return { success: true };

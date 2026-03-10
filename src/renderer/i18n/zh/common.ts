@@ -73,7 +73,7 @@ const sectionData = {
     "select": "选择",
     "more": "更多的",
     "kb_one": "知识库",
-    "itemsSelected_one": "已选择 {{count}} 项目",
+    "itemsSelected_one": "已选择 {{count}} 工作区",
     "generate": "产生",
     "upload": "上传",
     "auto": "汽车",

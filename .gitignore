@@ -183,3 +183,5 @@ reports/**
 
 website/appendonlydir
 scripts/testScripts
+IPC_CHANNELS.md
+.codex/SESSION_ENGINE.md

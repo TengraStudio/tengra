@@ -1,12 +1,8 @@
 const sectionData = {
     "management": "إدارة MCP",
     "myServers": "خوادمي",
-    "marketplace": "السوق",
     "addServer": "إضافة خادم",
     "systemServers": "خوادم النظام",
-    "installedServers": "السوق / المثبتة",
-    "discoverMarket": "اكتشف السوق",
-    "marketplaceSubtitle": "اكتشف آلاف الخوادم لمنصتك.",
     "searchPlaceholder": "البحث عن خوادم أو أدوات...",
     "searchTools": "البحث عن أدوات...",
     "storeTitle": "متجر أدوات MCP",

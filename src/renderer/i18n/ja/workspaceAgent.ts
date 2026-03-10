@@ -23,7 +23,7 @@ const sectionData = {
     "selectAgentProfile": "エージェントプロファイルを選択",
     "agentSelected": "エージェントが選択されました",
     "defaultAgent": "デフォルトエージェント",
-    "defaultAgentDesc": "汎用プロジェクトエージェント",
+    "defaultAgentDesc": "汎用ワークスペースエージェント",
     "approveAndRun": "承認して実行",
     "planning": "計画中",
     "running": "実行中",
@@ -34,7 +34,7 @@ const sectionData = {
     "thinkingOff": "思考オフ",
     "selectAction": "アクションを選択",
     "noDescription": "説明が提供されていません",
-    "selectWorkspace": "プロジェクトを選択",
+    "selectWorkspace": "ワークスペースを選択",
     "unnamedGroup": "名前のないグループ",
     "votingPanel": {
         "title": "投票セッション",

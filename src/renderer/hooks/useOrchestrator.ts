@@ -1,4 +1,4 @@
-import { WorkspaceStep } from '@shared/types/workspace-agent';
+import { WorkspaceStep } from '@shared/types/automation-workflow';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { OrchestratorStateView } from '../electron';
@@ -85,3 +85,4 @@ export function useOrchestrator() {
 
     return { state, loading, error, start, approve, stop, refresh };
 }
+

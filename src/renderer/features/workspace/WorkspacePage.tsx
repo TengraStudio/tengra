@@ -205,7 +205,9 @@ export const WorkspacesPage: React.FC<WorkspacesPageProps> = ({
     }, [sm.state.selectedWorkspaceIds, sortedWorkspaces]);
 
     const handleSelectWorkspace = React.useCallback(async (workspace: Workspace) => {
-        const preflight = await runWorkspaceStartupPreflight(workspace);
+        const preflight = await runWorkspaceStartupPreflight(workspace, {
+            includeNonBlockingChecks: false,
+        });
         setPreflightWorkspace(workspace);
         setPreflightWorkspaceTitle(workspace.title);
         setPreflightResult(preflight);

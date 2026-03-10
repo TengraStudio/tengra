@@ -43,7 +43,7 @@ const sectionData = {
     "runTask": "تشغيل المهمة",
     "taskRunner": "عداء المهمة",
     "tasksSearchPlaceholder": "مهام البحث...",
-    "noTasksFound": "لم يتم العثور على مهام لهذا المشروع",
+    "noTasksFound": "لم يتم العثور على مهام لهذا المساحة عمل",
     "closeSplit": "إغلاق سبليت",
     "toggleSplitOrientation": "تبديل اتجاه الانقسام",
     "searchRegex": "بحث ريجكس",
@@ -85,13 +85,13 @@ const sectionData = {
     "copyStripAnsi": "نسخ (الشريط ANSI)",
     "pastePreview": "لصق المعاينة",
     "pasteTest": "اختبار لصق",
-    "workspaceIssuesTabTitle": "قضايا المشروع",
-    "workspaceIssuesTitle": "تحذيرات وأخطاء المشروع",
-    "workspaceIssuesDescription": "تم اكتشاف تحذيرات وأخطاء مجمعة عبر المشروع الحالي.",
-    "workspaceIssuesLoading": "جارٍ تحديث تشخيصات المشروع...",
-    "workspaceIssuesNoWorkspace": "افتح مشروعًا لفحص التشخيص.",
+    "workspaceIssuesTabTitle": "قضايا المساحة عمل",
+    "workspaceIssuesTitle": "تحذيرات وأخطاء المساحة عمل",
+    "workspaceIssuesDescription": "تم اكتشاف تحذيرات وأخطاء مجمعة عبر المساحة عمل الحالي.",
+    "workspaceIssuesLoading": "جارٍ تحديث تشخيصات المساحة عمل...",
+    "workspaceIssuesNoWorkspace": "افتح مساحة عملًا لفحص التشخيص.",
     "workspaceIssuesNoIssues": "لم يتم اكتشاف أي تحذيرات أو أخطاء في الفحص الأخير.",
-    "workspaceIssuesLoadFailed": "فشل تحميل تشخيصات المشروع."
+    "workspaceIssuesLoadFailed": "فشل تحميل تشخيصات المساحة عمل."
 };
 
 export default sectionData;

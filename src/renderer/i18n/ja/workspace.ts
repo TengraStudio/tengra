@@ -33,7 +33,7 @@ const sectionData = {
         "rootPath": "C:\\\\Users\\\\Workspace",
         "name": "名前..."
     },
-    "run": "プロジェクトを実行",
+    "run": "ワークスペースを実行",
     "toggleSidebar": "サイドバーを切り替え",
     "aiAssistant": "AIアシスタント",
     "online": "オンライン",

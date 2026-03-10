@@ -3,9 +3,9 @@ import { gzipSync } from 'zlib';
 import {
     AgentCheckpointService,
     AgentCheckpointTelemetryEvent,
-} from '@main/services/workspace/agent/agent-checkpoint.service';
+} from '@main/services/workspace/automation-workflow/agent-checkpoint.service';
 import { AgentTaskState } from '@shared/types/agent-state';
-import { WorkspaceStep } from '@shared/types/workspace-agent';
+import { WorkspaceStep } from '@shared/types/automation-workflow';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const createMockTaskState = (): AgentTaskState => ({
@@ -361,3 +361,4 @@ describe('AgentCheckpointService', () => {
         });
     });
 });
+

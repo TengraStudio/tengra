@@ -863,17 +863,12 @@ export class AgentPersistenceService extends BaseService {
             `SELECT name FROM sqlite_master WHERE type='table' AND name='agent_tasks'`
         ).all();
 
-        if (tableExists.length > 0) {
-            this.logInfo('Agent tables already exist, skipping migration');
-            return;
-        }
-
-        // Create tables
         await db.exec(`
             CREATE TABLE IF NOT EXISTS agent_tasks (
                 id TEXT PRIMARY KEY,
                 ${WORKSPACE_COMPAT_ID_COLUMN} TEXT NOT NULL,
                 description TEXT NOT NULL,
+                state TEXT NOT NULL DEFAULT 'idle',
                 current_step INTEGER DEFAULT 0,
                 total_steps INTEGER DEFAULT 0,
                 execution_plan TEXT,
@@ -994,10 +989,20 @@ export class AgentPersistenceService extends BaseService {
             `CREATE INDEX IF NOT EXISTS idx_agent_tools_task ON agent_tool_executions(task_id)`
         );
 
+        await this.tryAddColumn(
+            db,
+            'agent_tasks',
+            'state',
+            "ALTER TABLE agent_tasks ADD COLUMN state TEXT NOT NULL DEFAULT 'idle'"
+        );
         await this.tryAddColumn(db, 'agent_tasks', 'estimated_cost', 'ALTER TABLE agent_tasks ADD COLUMN estimated_cost REAL DEFAULT 0');
         await this.tryAddColumn(db, 'agent_messages', 'images', 'ALTER TABLE agent_messages ADD COLUMN images TEXT');
 
-        this.logInfo('Agent schema migrations completed');
+        this.logInfo(
+            tableExists.length > 0
+                ? 'Agent schema migrations completed with legacy repair checks'
+                : 'Agent schema migrations completed'
+        );
     }
 
     private async tryAddColumn(

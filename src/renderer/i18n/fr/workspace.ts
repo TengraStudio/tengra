@@ -30,10 +30,10 @@ const sectionData = {
     "previewArea": "Zone de prévisualisation",
     "convertToCode": "Convertir en code",
     "placeholders": {
-        "rootPath": "C:\\\\Utilisateurs\\\\Projet",
+        "rootPath": "C:\\\\Utilisateurs\\\\Espace de travail",
         "name": "Nom..."
     },
-    "run": "Exécuter le projet",
+    "run": "Exécuter l'espace de travail",
     "toggleSidebar": "Basculer la barre latérale",
     "aiAssistant": "Assistant IA",
     "aiLabel": "IA",

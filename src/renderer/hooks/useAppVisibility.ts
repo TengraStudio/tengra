@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 
+import { useLowPowerMode } from '@/context/low-power.context';
+
 interface VisibilityAwareIntervalOptions {
     /** When true, fully pauses the interval when document is hidden. Defaults to true. */
     pauseWhenHidden?: boolean
@@ -23,6 +25,7 @@ export function useVisibilityAwareInterval(
     options?: VisibilityAwareIntervalOptions
 ): void {
     const { pauseWhenHidden = true, slowFactor = 3 } = options ?? {};
+    const { isLowPowerMode } = useLowPowerMode();
 
     const callbackRef = useRef(callback);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -46,10 +49,21 @@ export function useVisibilityAwareInterval(
     }, [clearTimer]);
 
     useEffect(() => {
-        startTimer(intervalMs);
+        const isBackgrounded = document.hidden || isLowPowerMode;
+        
+        if (isBackgrounded) {
+            clearTimer();
+            if (!pauseWhenHidden) {
+                startTimer(intervalMs * slowFactor);
+            }
+        } else {
+            callbackRef.current();
+            startTimer(intervalMs);
+        }
 
         const handleVisibilityChange = () => {
-            if (document.hidden) {
+            const backgrounded = document.hidden || isLowPowerMode;
+            if (backgrounded) {
                 clearTimer();
                 if (!pauseWhenHidden) {
                     startTimer(intervalMs * slowFactor);
@@ -66,5 +80,6 @@ export function useVisibilityAwareInterval(
             clearTimer();
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [intervalMs, pauseWhenHidden, slowFactor, startTimer, clearTimer]);
+    }, [intervalMs, pauseWhenHidden, slowFactor, startTimer, clearTimer, isLowPowerMode]);
 }
+

@@ -15,13 +15,14 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Message } from '@shared/types/chat';
+import { useSessionState } from '@renderer/hooks/useSessionState';
 import {
     AgentProfile,
     AgentStartOptions,
     WorkspaceState,
     WorkspaceStep,
-} from '@shared/types/workspace-agent';
+} from '@shared/types/automation-workflow';
+import { Message } from '@shared/types/chat';
 import { Handle, Node, NodeProps, Position, useReactFlow } from '@xyflow/react';
 import {
     AlertCircle,
@@ -102,6 +103,31 @@ interface TaskNodeActionProps {
     selectedWorkspaceId?: string;
 }
 
+const mapSessionStatusToTaskNodeStatus = (
+    sessionStatus: 'idle' | 'preparing' | 'streaming' | 'waiting_for_input' | 'paused' | 'interrupted' | 'failed' | 'completed',
+    previousStatus: NonNullable<TaskNodeData['status']>
+): NonNullable<TaskNodeData['status']> => {
+    switch (sessionStatus) {
+        case 'preparing':
+            return 'planning';
+        case 'streaming':
+            return previousStatus === 'planning' ? 'planning' : 'running';
+        case 'waiting_for_input':
+            return 'waiting_for_approval';
+        case 'paused':
+            return 'waiting';
+        case 'interrupted':
+            return previousStatus === 'completed' ? 'completed' : 'error';
+        case 'failed':
+            return 'failed';
+        case 'completed':
+            return 'completed';
+        case 'idle':
+        default:
+            return previousStatus;
+    }
+};
+
 const useTaskNodeActions = ({
     id,
     data,
@@ -139,7 +165,8 @@ const useTaskNodeActions = ({
                 agentProfileId: data.agentProfileId,
                 locale: language,
             };
-            await window.electron.workspaceAgent.generatePlan(options);
+            const { taskId } = await window.electron.session.automation.generatePlan(options);
+            updateNodeData(id, { taskId, status: 'planning', isExpanded: true });
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             if (message.includes('Cannot start planning from current state: planning')) {
@@ -177,7 +204,7 @@ const useTaskNodeActions = ({
         }
         try {
             updateNodeData(id, { status: 'running' });
-            await window.electron.workspaceAgent.approvePlan(data.plan, data.taskId);
+            await window.electron.session.automation.approvePlan(data.plan, data.taskId);
         } catch (error) {
             appLogger.error('TaskNode', 'Failed to approve plan', error as Error);
             updateNodeData(id, { status: 'failed' });
@@ -199,9 +226,10 @@ const useTaskNodeActions = ({
         try {
             if (data.taskType === 'create-pr') {
                 updateNodeData(id, { status: 'running', activeTab: 'logs' });
-                const result = await window.electron.workspaceAgent.createPullRequest(data.taskId);
-                if (!result.success || !result.url) {
-                    throw new Error(result.error ?? 'Failed to generate PR URL');
+                const result = await window.electron.session.automation.createPullRequest(data.taskId);
+                if (!result || !result.success || !result.url) {
+                    const errorMessage = result?.error ?? 'Failed to generate PR URL';
+                    throw new Error(errorMessage);
                 }
                 window.electron.openExternal(result.url);
                 updateNodeData(id, {
@@ -222,7 +250,8 @@ const useTaskNodeActions = ({
                 agentProfileId: data.agentProfileId,
                 locale: language,
             };
-            await window.electron.workspaceAgent.start(options);
+            const { taskId } = await window.electron.session.automation.start(options);
+            updateNodeData(id, { taskId, status: 'running', activeTab: 'logs' });
         } catch (error) {
             updateNodeData(id, { status: 'failed' });
             appLogger.error('TaskNode', 'Failed to execute task', error as Error);
@@ -250,7 +279,7 @@ const useTaskNodeActions = ({
     const handleStop = useCallback(async () => {
         try {
             updateNodeData(id, { status: 'waiting' });
-            await window.electron.workspaceAgent.stop(data.taskId);
+            await window.electron.session.automation.stop(data.taskId);
         } catch (error) {
             appLogger.error('TaskNode', 'Failed to stop task', error as Error);
         }
@@ -260,7 +289,7 @@ const useTaskNodeActions = ({
         async (index: number) => {
             try {
                 updateNodeData(id, { status: 'running', activeTab: 'logs' });
-                await window.electron.workspaceAgent.retryStep(index, data.taskId);
+                await window.electron.session.automation.retryStep(index, data.taskId);
             } catch (error) {
                 appLogger.error('TaskNode', 'Failed to retry step', error as Error);
                 updateNodeData(id, { status: 'failed' });
@@ -1512,15 +1541,11 @@ export const TaskNode = ({ id, data, selected }: NodeProps<Node<TaskNodeData>>) 
     useEffect(() => {
         const fetchProfiles = async () => {
             try {
-                const getProfilesFn = (
-                    window.electron.workspaceAgent as
-                    | { getProfiles?: () => Promise<AgentProfile[]> }
-                    | undefined
-                )?.getProfiles;
+                const getProfilesFn = window.electron.session.automation?.getProfiles;
                 if (typeof getProfilesFn !== 'function') {
                     appLogger.warn(
                         'TaskNode',
-                        'workspaceAgent.getProfiles is unavailable in current preload bridge'
+                        'session.automation.getProfiles is unavailable in current preload bridge'
                     );
                     setProfiles([]);
                     return;
@@ -1568,6 +1593,7 @@ export const TaskNode = ({ id, data, selected }: NodeProps<Node<TaskNodeData>>) 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const planContainerRef = useRef<HTMLDivElement>(null);
     const activeStepRef = useRef<HTMLDivElement>(null);
+    const sessionState = useSessionState(data.taskId ?? null);
 
     useEffect(() => {
         const runningStepId = data.plan?.find(s => s.status === 'running')?.id;
@@ -1588,6 +1614,24 @@ export const TaskNode = ({ id, data, selected }: NodeProps<Node<TaskNodeData>>) 
             updateNodeData(id, updates);
         }
     }, [data.status, id, updateNodeData]);
+
+    useEffect(() => {
+        if (!sessionState) {
+            return;
+        }
+
+        const currentStatus = data.status ?? 'idle';
+        const nextStatus = mapSessionStatusToTaskNodeStatus(
+            sessionState.status,
+            currentStatus
+        );
+
+        if (nextStatus === currentStatus) {
+            return;
+        }
+
+        updateNodeData(id, { status: nextStatus });
+    }, [data.status, id, sessionState, updateNodeData]);
 
     const onFileChange = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1692,3 +1736,4 @@ export const TaskNode = ({ id, data, selected }: NodeProps<Node<TaskNodeData>>) 
         </div>
     );
 };
+

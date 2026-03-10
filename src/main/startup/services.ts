@@ -4,11 +4,11 @@ import { createLazyServiceDependency, createLazyServiceProxy, type LazyServiceDe
 import { McpDeps } from '@main/mcp/server-utils';
 import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import { MonitoringService } from '@main/services/analysis/monitoring.service';
-import { PageSpeedService } from '@main/services/analysis/pagespeed.service';
-import { PerformanceService } from '@main/services/analysis/performance.service';
-import { ScannerService } from '@main/services/analysis/scanner.service';
+import type { PageSpeedService } from '@main/services/analysis/pagespeed.service';
+import type { PerformanceService } from '@main/services/analysis/performance.service';
+import type { ScannerService } from '@main/services/analysis/scanner.service';
 import { SentryService } from '@main/services/analysis/sentry.service';
-import { TelemetryService } from '@main/services/analysis/telemetry.service';
+import type { TelemetryService } from '@main/services/analysis/telemetry.service';
 import { TimeTrackingService } from '@main/services/analysis/time-tracking.service';
 import { UsageTrackingService } from '@main/services/analysis/usage-tracking.service';
 import { BackupService } from '@main/services/data/backup.service';
@@ -25,14 +25,14 @@ import { CollaborationService } from '@main/services/external/collaboration.serv
 import { ContentService } from '@main/services/external/content.service';
 import { FeatureFlagService } from '@main/services/external/feature-flag.service';
 import { HttpService } from '@main/services/external/http.service';
-import { LogoService } from '@main/services/external/logo.service';
+import type { LogoService } from '@main/services/external/logo.service';
 import { MarketResearchService } from '@main/services/external/market-research.service';
 import { RuleService } from '@main/services/external/rule.service';
 import { UtilityService } from '@main/services/external/utility.service';
 import { WebService } from '@main/services/external/web.service';
-import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
+import type { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { AgentService } from '@main/services/llm/agent.service';
-import { BrainService } from '@main/services/llm/brain.service';
+import type { BrainService } from '@main/services/llm/brain.service';
 import { ContextRetrievalService } from '@main/services/llm/context-retrieval.service';
 import { CopilotService } from '@main/services/llm/copilot.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
@@ -43,8 +43,7 @@ import { LlamaService } from '@main/services/llm/llama.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalAIService } from '@main/services/llm/local-ai.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
-import { MarketplaceService } from '@main/services/llm/marketplace.service';
-import { MemoryService } from '@main/services/llm/memory.service';
+import type { MemoryService } from '@main/services/llm/memory.service';
 import { ModelCollaborationService } from '@main/services/llm/model-collaboration.service';
 import { ModelDownloaderService } from '@main/services/llm/model-downloader.service';
 import { ModelFallbackService, modelFallbackService } from '@main/services/llm/model-fallback.service';
@@ -61,8 +60,7 @@ import {
 } from '@main/services/llm/ollama-health.service';
 import { PromptTemplatesService } from '@main/services/llm/prompt-templates.service';
 import { ResponseCacheService } from '@main/services/llm/response-cache.service';
-import { McpMarketplaceService } from '@main/services/mcp/mcp-marketplace.service';
-import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
+import type { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { QuotaService } from '@main/services/proxy/quota.service';
@@ -73,6 +71,11 @@ import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { SecurityService } from '@main/services/security/security.service';
 import { SecurityScanService } from '@main/services/security/security-scan.service';
 import { TokenService } from '@main/services/security/token.service';
+import { AutomationSessionRegistryService } from '@main/services/session/automation-session-registry.service';
+import { CouncilCapabilityService } from '@main/services/session/capabilities/council-capability.service';
+import { ChatSessionRegistryService } from '@main/services/session/chat-session-registry.service';
+import { SessionDirectoryService } from '@main/services/session/session-directory.service';
+import { SessionModuleRegistryService } from '@main/services/session/session-module-registry.service';
 import { CommandService } from '@main/services/system/command.service';
 import { ConfigService } from '@main/services/system/config.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
@@ -82,11 +85,12 @@ import {
 } from '@main/services/system/health-check.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
 import { NetworkService } from '@main/services/system/network.service';
+import { PowerManagerService } from '@main/services/system/power-manager.service';
 import { ProcessService } from '@main/services/system/process.service';
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { SystemService } from '@main/services/system/system.service';
-import { UpdateService } from '@main/services/system/update.service';
+import type { UpdateService } from '@main/services/system/update.service';
 import { DockerBackend } from '@main/services/terminal/backends/docker.backend';
 import { SSHBackend } from '@main/services/terminal/backends/ssh.backend';
 import { TerminalProfileService } from '@main/services/terminal/terminal-profile.service';
@@ -94,23 +98,21 @@ import { ThemeService } from '@main/services/theme/theme.service';
 import { ClipboardService } from '@main/services/ui/clipboard.service';
 import { NotificationService } from '@main/services/ui/notification.service';
 import { ScreenshotService } from '@main/services/ui/screenshot.service';
-import { WorkflowService } from '@main/services/workflow/workflow.service';
-import { AgentCheckpointService } from '@main/services/workspace/agent/agent-checkpoint.service';
-import { AgentCollaborationService } from '@main/services/workspace/agent/agent-collaboration.service';
-import { AgentPerformanceService } from '@main/services/workspace/agent/agent-performance.service';
-import { AgentPersistenceService } from '@main/services/workspace/agent/agent-persistence.service';
-import { AgentRegistryService } from '@main/services/workspace/agent/agent-registry.service';
-import { AgentTemplateService } from '@main/services/workspace/agent/agent-template.service';
-import { CouncilService } from '@main/services/workspace/agent/council.service';
+import { AutomationWorkflowService } from '@main/services/workspace/automation-workflow.service';
+import { AgentCheckpointService } from '@main/services/workspace/automation-workflow/agent-checkpoint.service';
+import { AgentCollaborationService } from '@main/services/workspace/automation-workflow/agent-collaboration.service';
+import { AgentPerformanceService } from '@main/services/workspace/automation-workflow/agent-performance.service';
+import { AgentPersistenceService } from '@main/services/workspace/automation-workflow/agent-persistence.service';
+import { AgentRegistryService } from '@main/services/workspace/automation-workflow/agent-registry.service';
+import { AgentTemplateService } from '@main/services/workspace/automation-workflow/agent-template.service';
 import { CodeIntelligenceService } from '@main/services/workspace/code-intelligence.service';
-import { DockerService } from '@main/services/workspace/docker.service';
+import type { DockerService } from '@main/services/workspace/docker.service';
 import { GitService } from '@main/services/workspace/git.service';
 import { MultiAgentOrchestratorService } from '@main/services/workspace/orchestrator.service';
-import { SSHService } from '@main/services/workspace/ssh.service';
+import type { SSHService } from '@main/services/workspace/ssh.service';
 import { TerminalService } from '@main/services/workspace/terminal.service';
 import { TerminalSmartService } from '@main/services/workspace/terminal-smart.service';
-import { WorkspaceService } from '@main/services/workspace/workspace.service';
-import { WorkspaceAgentService } from '@main/services/workspace/workspace-agent.service';
+import type { WorkspaceService } from '@main/services/workspace/workspace.service';
 import { WorkspaceScaffoldService } from '@main/services/workspace/workspace-scaffold.service';
 import {
     bootstrapCoreData,
@@ -180,6 +182,10 @@ export interface Services {
     fileManagementService: FileManagementService;
     featureFlagService: FeatureFlagService;
     chatEventService: ChatEventService;
+    chatSessionRegistryService: ChatSessionRegistryService;
+    automationSessionRegistryService: AutomationSessionRegistryService;
+    sessionDirectoryService: SessionDirectoryService;
+    sessionModuleRegistryService: SessionModuleRegistryService;
     telemetryService: TelemetryService;
     httpService: HttpService;
     configService: ConfigService;
@@ -197,10 +203,11 @@ export interface Services {
     backupService: BackupService;
     modelRegistryService: ModelRegistryService;
     eventBusService: EventBusService;
+    powerManagerService: PowerManagerService;
     marketResearchService: MarketResearchService;
     workspaceScaffoldService: WorkspaceScaffoldService;
     ideaGeneratorService: IdeaGeneratorService;
-    workspaceAgentService: WorkspaceAgentService;
+    automationWorkflowService: AutomationWorkflowService;
     multiAgentOrchestratorService: MultiAgentOrchestratorService;
     agentRegistryService: AgentRegistryService;
     agentPersistenceService: AgentPersistenceService;
@@ -208,16 +215,13 @@ export interface Services {
     agentPerformanceService: AgentPerformanceService;
     exportService: ExportService;
     mcpPluginService: McpPluginService;
-    mcpMarketplaceService: McpMarketplaceService;
     apiServerService: ApiServerService;
     timeTrackingService: TimeTrackingService;
     themeService: ThemeService;
     terminalProfileService: TerminalProfileService;
     terminalSmartService: TerminalSmartService;
-    marketplaceService: LazyServiceDependency<MarketplaceService>;
     modelDownloaderService: ModelDownloaderService;
-    councilService: CouncilService;
-    workflowService: WorkflowService;
+    councilCapabilityService: CouncilCapabilityService;
 }
 
 /**
@@ -271,6 +275,40 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
     container.register('systemService', () => new SystemService());
     container.register('networkService', () => new NetworkService());
     container.register('eventBusService', () => new EventBusService());
+    container.register(
+        'chatSessionRegistryService',
+        (ebs, modules) =>
+            new ChatSessionRegistryService(
+                ebs as EventBusService,
+                modules as SessionModuleRegistryService
+            ),
+        ['eventBusService', 'sessionModuleRegistryService']
+    );
+    container.register(
+        'automationSessionRegistryService',
+        (ebs, modules) =>
+            new AutomationSessionRegistryService(
+                ebs as EventBusService,
+                modules as SessionModuleRegistryService
+            ),
+        ['eventBusService', 'sessionModuleRegistryService']
+    );
+    container.register(
+        'sessionDirectoryService',
+        (chatRegistry, automationRegistry) => {
+            const directory = new SessionDirectoryService();
+            directory.registerRegistry(
+                'chat',
+                chatRegistry as ChatSessionRegistryService
+            );
+            directory.registerRegistry(
+                'automation',
+                automationRegistry as AutomationSessionRegistryService
+            );
+            return directory;
+        },
+        ['chatSessionRegistryService', 'automationSessionRegistryService']
+    );
     container.register('notificationService', () => new NotificationService());
     container.register('clipboardService', () => new ClipboardService());
     container.register('gitService', () => new GitService());
@@ -285,11 +323,7 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
         }
         return ws;
     });
-    container.register(
-        'updateService',
-        (ss, ds) => new UpdateService(ss as SettingsService, ds as DataService),
-        ['settingsService', 'dataService']
-    );
+    // updateService is now lazy-loaded
     container.register('configService', ss => new ConfigService(ss as SettingsService), [
         'settingsService',
     ]);
@@ -336,6 +370,11 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
         'timeTrackingService',
         dbcs => new TimeTrackingService(dbcs as DatabaseClientService),
         ['databaseClientService']
+    );
+    container.register(
+        'powerManagerService',
+        (ss, eb) => new PowerManagerService(ss as SettingsService, eb as EventBusService),
+        ['settingsService', 'eventBusService']
     );
 }
 
@@ -449,8 +488,9 @@ function registerLLMServices() {
         (ds, lis) => new LlamaService(ds as DataService, lis as LocalImageService),
         ['dataService', 'localImageService']
     );
-    container.register('ollamaService', ss => new OllamaService(ss as SettingsService), [
+    container.register('ollamaService', (ss, ebs) => new OllamaService(ss as SettingsService, ebs as EventBusService), [
         'settingsService',
+        'eventBusService',
     ]);
     container.register('modelFallbackService', () => modelFallbackService);
     container.register('responseCacheService', () => new ResponseCacheService());
@@ -493,31 +533,6 @@ function registerLLMServices() {
                 ss as SettingsService
             ),
         ['ollamaService', 'llmService', 'llamaService', 'settingsService']
-    );
-    container.register(
-        'advancedMemoryService',
-        (dbs, es, ls, ss) =>
-            new AdvancedMemoryService(
-                dbs as DatabaseService,
-                es as EmbeddingService,
-                ls as LLMService,
-                ss as SettingsService
-            ),
-        ['databaseService', 'embeddingService', 'llmService', 'settingsService']
-    );
-    container.register('memoryService', ams => new MemoryService(ams as AdvancedMemoryService), [
-        'advancedMemoryService',
-    ]);
-    container.register(
-        'brainService',
-        (dbs, es, ls, pm) =>
-            new BrainService(
-                dbs as DatabaseService,
-                es as EmbeddingService,
-                ls as LLMService,
-                pm as ProcessManagerService
-            ),
-        ['databaseService', 'embeddingService', 'llmService', 'processManagerService']
     );
     container.register('agentService', dbs => new AgentService(dbs as DatabaseService), [
         'databaseService',
@@ -632,11 +647,6 @@ function registerLazyServices() {
         return new BrainService(dbs, es, ls, pm);
     });
 
-    lazyServiceRegistry.register('workflowService', async () => {
-        const { WorkflowService } = await import('@main/services/workflow/workflow.service');
-        return new WorkflowService();
-    });
-
     // Register services that are only needed conditionally
     lazyServiceRegistry.register('dockerService', async () => {
         const commandService = container.resolve<CommandService>('commandService');
@@ -683,14 +693,29 @@ function registerLazyServices() {
         return new PageSpeedService();
     });
 
-    lazyServiceRegistry.register('marketplaceService', async () => {
-        const databaseClient = container.resolve<DatabaseClientService>('databaseClientService');
-        const jobScheduler = container.resolve<JobSchedulerService>('jobSchedulerService');
-        const { MarketplaceService } = await import('@main/services/llm/marketplace.service');
-        return new MarketplaceService({
-            databaseClient,
-            jobScheduler,
-        });
+    lazyServiceRegistry.register('performanceService', async () => {
+        const { PerformanceService } = await import('@main/services/analysis/performance.service');
+        return new PerformanceService();
+    });
+
+    lazyServiceRegistry.register('telemetryService', async () => {
+        const settingsService = container.resolve<SettingsService>('settingsService');
+        const { TelemetryService } = await import('@main/services/analysis/telemetry.service');
+        return new TelemetryService(settingsService);
+    });
+
+    lazyServiceRegistry.register('updateService', async () => {
+        const settingsService = container.resolve<SettingsService>('settingsService');
+        const dataService = container.resolve<DataService>('dataService');
+        const { UpdateService } = await import('@main/services/system/update.service');
+        return new UpdateService(settingsService, dataService);
+    });
+
+    lazyServiceRegistry.register('mcpPluginService', async () => {
+        const settingsService = container.resolve<SettingsService>('settingsService');
+        const mcpDeps = container.resolve<McpDeps>('mcpDeps');
+        const { McpPluginService } = await import('@main/services/mcp/mcp-plugin.service');
+        return new McpPluginService(settingsService, mcpDeps);
     });
 }
 
@@ -699,7 +724,6 @@ function registerLazyProxies() {
     container.register('advancedMemoryService', () => createLazyServiceProxy('advancedMemoryService'));
     container.register('memoryService', () => createLazyServiceProxy('memoryService'));
     container.register('brainService', () => createLazyServiceProxy('brainService'));
-    container.register('workflowService', () => createLazyServiceProxy('workflowService'));
 
     container.register('dockerService', () =>
         createLazyServiceProxy<DockerService>('dockerService')
@@ -712,9 +736,10 @@ function registerLazyProxies() {
     container.register('pageSpeedService', () =>
         createLazyServiceProxy<PageSpeedService>('pageSpeedService')
     );
-    container.register('marketplaceService', () =>
-        createLazyServiceProxy<MarketplaceService>('marketplaceService')
-    );
+    container.register('performanceService', () => createLazyServiceProxy<PerformanceService>('performanceService'));
+    container.register('telemetryService', () => createLazyServiceProxy<TelemetryService>('telemetryService'));
+    container.register('updateService', () => createLazyServiceProxy<UpdateService>('updateService'));
+    container.register('mcpPluginService', () => createLazyServiceProxy<McpPluginService>('mcpPluginService'));
 }
 
 function registerWorkspaceServices() {
@@ -783,7 +808,7 @@ function registerWorkspaceServices() {
         ]
     );
 
-    // Workspace Agent Service
+    // Automation and session capability services
     container.register(
         'agentRegistryService',
         dbs => new AgentRegistryService(dbs as DatabaseService),
@@ -805,15 +830,24 @@ function registerWorkspaceServices() {
         ['llmService']
     );
     container.register(
-        'councilService',
-        (dbs, ls, qs, col) =>
-            new CouncilService({
-                database: dbs as DatabaseService,
+        'councilCapabilityService',
+        (ls, qs, col) =>
+            new CouncilCapabilityService({
                 llm: ls as LLMService,
                 quota: qs as QuotaService,
-                collaboration: col as AgentCollaborationService
+                collaboration: col as AgentCollaborationService,
             }),
-        ['databaseService', 'llmService', 'quotaService', 'agentCollaborationService']
+        ['llmService', 'quotaService', 'agentCollaborationService']
+    );
+    container.register(
+        'sessionModuleRegistryService',
+        (ebs, collaboration, council) =>
+            new SessionModuleRegistryService(
+                ebs as EventBusService,
+                collaboration as AgentCollaborationService,
+                council as CouncilCapabilityService
+            ),
+        ['eventBusService', 'agentCollaborationService', 'councilCapabilityService']
     );
     container.register(
         'agentTemplateService',
@@ -826,10 +860,10 @@ function registerWorkspaceServices() {
         ['databaseService']
     );
     container.register(
-        'workspaceAgentService',
+        'automationWorkflowService',
         (...deps) => {
-            const [dbs, ls, ebs, ars, acs, gs, col, tpl, perf, council] = deps;
-            return new WorkspaceAgentService({
+            const [dbs, ls, ebs, ars, acs, gs, col, tpl, perf, council, automationSessions] = deps;
+            return new AutomationWorkflowService({
                 databaseService: dbs as DatabaseService,
                 llmService: ls as LLMService,
                 eventBus: ebs as EventBusService,
@@ -839,7 +873,9 @@ function registerWorkspaceServices() {
                 agentCollaborationService: col as AgentCollaborationService,
                 agentTemplateService: tpl as AgentTemplateService,
                 agentPerformanceService: perf as AgentPerformanceService,
-                councilService: council as CouncilService,
+                councilCapabilityService: council as CouncilCapabilityService,
+                automationSessionRegistryService:
+                    automationSessions as AutomationSessionRegistryService,
             });
         },
         [
@@ -852,7 +888,8 @@ function registerWorkspaceServices() {
             'agentCollaborationService',
             'agentTemplateService',
             'agentPerformanceService',
-            'councilService',
+            'councilCapabilityService',
+            'automationSessionRegistryService',
         ]
     );
     container.register(
@@ -932,9 +969,7 @@ function registerAnalysisServices() {
     container.register('sentryService', ss => new SentryService(ss as SettingsService), [
         'settingsService',
     ]);
-    container.register('telemetryService', ss => new TelemetryService(ss as SettingsService), [
-        'settingsService',
-    ]);
+    // telemetryService is now lazy-loaded
     container.register(
         'usageTrackingService',
         dbs => new UsageTrackingService(dbs as DatabaseService),
@@ -943,22 +978,13 @@ function registerAnalysisServices() {
     container.register('auditLogService', dbs => new AuditLogService(dbs as DatabaseService), [
         'databaseService',
     ]);
-    container.register('performanceService', () => new PerformanceService());
+    // performanceService is now lazy-loaded
     container.register('ruleService', () => new RuleService());
     container.register('featureFlagService', ds => new FeatureFlagService(ds as DataService), [
         'dataService',
     ]);
     container.register('collaborationService', () => new CollaborationService());
     container.register('exportService', () => new ExportService());
-    container.register(
-        'workflowService',
-        (llmService, workspaceAgentService) =>
-            new WorkflowService({
-                llmService: llmService as LLMService,
-                workspaceAgentService: workspaceAgentService as WorkspaceAgentService,
-            }),
-        ['llmService', 'workspaceAgentService']
-    );
 }
 
 function registerMcpServices() {
@@ -993,6 +1019,7 @@ function registerMcpServices() {
                 modelCollaboration: services[23] as ModelCollaborationService,
                 rateLimit: services[24] as RateLimitService,
                 auditLog: services[25] as AuditLogService,
+                workspace: services[26] as WorkspaceService,
             };
         },
         [
@@ -1022,15 +1049,9 @@ function registerMcpServices() {
             'modelCollaborationService',
             'rateLimitService',
             'auditLogService',
+            'workspaceService',
         ]
     );
-
-    container.register(
-        'mcpPluginService',
-        (ss, deps) => new McpPluginService(ss as SettingsService, deps as McpDeps),
-        ['settingsService', 'mcpDeps']
-    );
-    container.register('mcpMarketplaceService', () => new McpMarketplaceService());
 }
 
 function buildServicesMap(
@@ -1097,6 +1118,17 @@ function buildServicesMap(
         fileManagementService: container.resolve<FileManagementService>('fileManagementService'),
         featureFlagService: container.resolve<FeatureFlagService>('featureFlagService'),
         chatEventService: container.resolve<ChatEventService>('chatEventService'),
+        chatSessionRegistryService:
+            container.resolve<ChatSessionRegistryService>('chatSessionRegistryService'),
+        automationSessionRegistryService: container.resolve<AutomationSessionRegistryService>(
+            'automationSessionRegistryService'
+        ),
+        sessionDirectoryService: container.resolve<SessionDirectoryService>(
+            'sessionDirectoryService'
+        ),
+        sessionModuleRegistryService: container.resolve<SessionModuleRegistryService>(
+            'sessionModuleRegistryService'
+        ),
         telemetryService: container.resolve<TelemetryService>('telemetryService'),
         httpService: container.resolve<HttpService>('httpService'),
         configService: container.resolve<ConfigService>('configService'),
@@ -1117,6 +1149,7 @@ function buildServicesMap(
         backupService: container.resolve<BackupService>('backupService'),
         modelRegistryService: container.resolve<ModelRegistryService>('modelRegistryService'),
         eventBusService: container.resolve<EventBusService>('eventBusService'),
+        powerManagerService: container.resolve<PowerManagerService>('powerManagerService'),
         marketResearchService: container.resolve<MarketResearchService>('marketResearchService'),
         workspaceScaffoldService: container.resolve<WorkspaceScaffoldService>('workspaceScaffoldService'),
         ideaGeneratorService: container.resolve<IdeaGeneratorService>('ideaGeneratorService'),
@@ -1126,22 +1159,21 @@ function buildServicesMap(
         agentCheckpointService: container.resolve<AgentCheckpointService>('agentCheckpointService'),
         agentPerformanceService:
             container.resolve<AgentPerformanceService>('agentPerformanceService'),
-        workspaceAgentService: container.resolve<WorkspaceAgentService>('workspaceAgentService'),
+        automationWorkflowService: container.resolve<AutomationWorkflowService>('automationWorkflowService'),
         multiAgentOrchestratorService: container.resolve<MultiAgentOrchestratorService>(
             'multiAgentOrchestratorService'
         ),
         exportService: container.resolve<ExportService>('exportService'),
         mcpPluginService: container.resolve<McpPluginService>('mcpPluginService'),
-        mcpMarketplaceService: container.resolve<McpMarketplaceService>('mcpMarketplaceService'),
         localImageService: container.resolve<LocalImageService>('localImageService'),
         timeTrackingService: container.resolve<TimeTrackingService>('timeTrackingService'),
         themeService: container.resolve<ThemeService>('themeService'),
         terminalProfileService: container.resolve<TerminalProfileService>('terminalProfileService'),
         terminalSmartService: container.resolve<TerminalSmartService>('terminalSmartService'),
-        marketplaceService: createLazyServiceDependency<MarketplaceService>('marketplaceService'),
         modelDownloaderService: container.resolve<ModelDownloaderService>('modelDownloaderService'),
-        councilService: container.resolve<CouncilService>('councilService'),
-        workflowService: container.resolve<WorkflowService>('workflowService'),
+        councilCapabilityService: container.resolve<CouncilCapabilityService>(
+            'councilCapabilityService'
+        ),
         apiServerService: null as unknown as ApiServerService, // Will be created in main.ts after ToolExecutor
     };
 }

@@ -1,16 +1,18 @@
 import { MessageBubble } from '@renderer/features/chat/components/MessageBubble';
 import { ChatErrorBanner } from '@renderer/features/workspace/components/workspace/ChatErrorBanner';
-import { AgentTaskHistoryItem } from '@shared/types/workspace-agent';
+import { useSessionCapabilities } from '@renderer/hooks/useSessionCapabilities';
+import { useSessionRecoverySnapshots } from '@renderer/hooks/useSessionRecoverySnapshots';
+import { AgentTaskHistoryItem } from '@shared/types/automation-workflow';
+import { IpcValue } from '@shared/types/common';
 import { ArrowLeft, Check, ClipboardList, Play, Users } from 'lucide-react';
 import React from 'react';
 
 import { ModelSelector } from '@/components/shared/ModelSelector';
 import { Language } from '@/i18n';
 import { motion } from '@/lib/framer-motion-compat';
+import { refreshSessionRecoverySnapshots } from '@/store/session-runtime.store';
 import type { GroupedModels } from '@/types';
 import { AppSettings, ChatError, CodexUsage, Message, QuotaResponse } from '@/types';
-
-const getWorkspaceAgentBridge = () => window.electron.workspaceAgent;
 
 interface AIAssistantSidebarProps {
     workspaceId: string;
@@ -41,6 +43,30 @@ interface SessionSummary {
     updatedAt: number;
 }
 
+const mapSessionStatusToHistoryStatus = (
+    status: 'idle' | 'preparing' | 'streaming' | 'waiting_for_input' | 'paused' | 'interrupted' | 'failed' | 'completed'
+): AgentTaskHistoryItem['status'] => {
+    switch (status) {
+        case 'preparing':
+            return 'planning';
+        case 'streaming':
+            return 'running';
+        case 'waiting_for_input':
+            return 'waiting_for_approval';
+        case 'paused':
+            return 'paused';
+        case 'failed':
+            return 'failed';
+        case 'completed':
+            return 'completed';
+        case 'interrupted':
+            return 'error';
+        case 'idle':
+        default:
+            return 'idle';
+    }
+};
+
 /**
  * AIAssistantSidebar Component
  *
@@ -67,11 +93,12 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
     language,
     onSourceClick,
 }) => {
+    const sessionCapabilities = useSessionCapabilities();
+    const recoverySnapshots = useSessionRecoverySnapshots();
     const [assistantMode, setAssistantMode] = React.useState<AssistantMode>('agent');
-    const [sessions, setSessions] = React.useState<SessionSummary[]>([]);
     const [selectedSessionId, setSelectedSessionId] = React.useState<string>('');
     const [proposalSteps, setProposalSteps] = React.useState<Array<{ id: string; text: string; status?: string }>>([]);
-    const [timelineEvents, setTimelineEvents] = React.useState<Array<Record<string, unknown>>>([]);
+    const [timelineEvents, setTimelineEvents] = React.useState<Array<Record<string, IpcValue>>>([]);
     const [approvalChecked, setApprovalChecked] = React.useState(false);
     const [rejectReason, setRejectReason] = React.useState('');
     const [rejectionHistory, setRejectionHistory] = React.useState<string[]>([]);
@@ -82,23 +109,46 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
         interrupt: '',
     });
 
-    const loadWorkspaceSessions = React.useCallback(async () => {
-        const history = await getWorkspaceAgentBridge().getTaskHistory(workspaceId);
-        const mapped = history
-            .map(item => ({
-                id: item.id,
-                title: item.description || item.id,
-                status: item.status,
-                updatedAt: item.updatedAt,
+    const sessions = React.useMemo(() => {
+        return recoverySnapshots
+            .filter(snapshot => {
+                if (snapshot.metadata.workspaceId !== workspaceId) {
+                    return false;
+                }
+                return snapshot.mode === 'automation' || snapshot.capabilities.includes('council');
+            })
+            .map<SessionSummary>(snapshot => ({
+                id: snapshot.sessionId,
+                title: snapshot.metadata.title ?? snapshot.metadata.taskId ?? snapshot.sessionId,
+                status: mapSessionStatusToHistoryStatus(snapshot.status),
+                updatedAt: snapshot.updatedAt,
             }))
             .sort((left, right) => right.updatedAt - left.updatedAt);
-        setSessions(mapped);
-        setSelectedSessionId(prev => prev || mapped[0]?.id || '');
-    }, [workspaceId]);
+    }, [recoverySnapshots, workspaceId]);
+
+    const availableAssistantModes = React.useMemo(() => {
+        const supportsCouncil = sessionCapabilities.some(capability => {
+            if (capability.id !== 'council') {
+                return false;
+            }
+            return capability.compatibleModes.includes('workspace')
+                || capability.compatibleModes.includes('automation');
+        });
+
+        return supportsCouncil
+            ? (['agent', 'plan', 'council'] as AssistantMode[])
+            : (['agent'] as AssistantMode[]);
+    }, [sessionCapabilities]);
 
     React.useEffect(() => {
-        void loadWorkspaceSessions();
-    }, [loadWorkspaceSessions]);
+        setSelectedSessionId(previous => previous || sessions[0]?.id || '');
+    }, [sessions]);
+
+    React.useEffect(() => {
+        if (!availableAssistantModes.includes(assistantMode)) {
+            setAssistantMode('agent');
+        }
+    }, [assistantMode, availableAssistantModes]);
 
     React.useEffect(() => {
         const key = `workspace.council.reject.history:${workspaceId}`;
@@ -120,7 +170,7 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                 return;
             }
             if (assistantMode === 'plan') {
-                const proposal = await getWorkspaceAgentBridge().council.getProposal(selectedSessionId);
+                const proposal = await window.electron.session.council.getProposal(selectedSessionId);
                 const steps = (proposal.plan ?? []).map((step, index) => ({
                     id: step.id ?? `step-${index + 1}`,
                     text: step.text ?? '',
@@ -129,7 +179,7 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                 setProposalSteps(steps);
             }
             if (assistantMode === 'council') {
-                const timeline = await getWorkspaceAgentBridge().council.getTimeline(selectedSessionId);
+                const timeline = await window.electron.session.council.getTimeline(selectedSessionId);
                 setTimelineEvents(timeline.events ?? []);
             }
         };
@@ -286,8 +336,8 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                             className="flex-1 rounded-lg bg-primary text-primary-foreground px-3 py-2 text-xs font-semibold disabled:opacity-50"
                             disabled={!selectedSessionId || !approvalChecked}
                             onClick={() => {
-                                void getWorkspaceAgentBridge().council.approveProposal(selectedSessionId);
-                                void getWorkspaceAgentBridge().council.startExecution(selectedSessionId);
+                                void window.electron.session.council.approveProposal(selectedSessionId);
+                                void window.electron.session.council.startExecution(selectedSessionId);
                             }}
                         >
                             <Play className="inline-block w-3 h-3 mr-1" />
@@ -307,7 +357,7 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                                     `workspace.council.reject.history:${workspaceId}`,
                                     JSON.stringify(nextHistory)
                                 );
-                                void getWorkspaceAgentBridge().council.rejectProposal(
+                                void window.electron.session.council.rejectProposal(
                                     selectedSessionId,
                                     reason
                                 );
@@ -402,7 +452,7 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                     className="w-full rounded-lg border border-warning/50 text-warning px-3 py-2 text-xs font-semibold"
                     disabled={!selectedSessionId}
                     onClick={() => {
-                        void getWorkspaceAgentBridge().council.pauseExecution(selectedSessionId);
+                        void window.electron.session.council.pauseExecution(selectedSessionId);
                     }}
                 >
                     Manual Intervention
@@ -439,7 +489,7 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
             </div>
 
             <div className="h-10 border-b border-white/5 grid grid-cols-3 gap-1 p-1">
-                {(['agent', 'plan', 'council'] as AssistantMode[]).map(mode => (
+                {availableAssistantModes.map(mode => (
                     <button
                         key={mode}
                         className={`rounded-md text-xs font-medium capitalize transition-colors ${assistantMode === mode
@@ -458,7 +508,7 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                     <button
                         className="w-full rounded-md border border-white/10 px-2 py-1.5 text-xs text-left hover:bg-white/5"
                         onClick={() => {
-                            void loadWorkspaceSessions();
+                            void refreshSessionRecoverySnapshots();
                         }}
                     >
                         <Check className="inline-block w-3 h-3 mr-1" />
@@ -502,3 +552,4 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
         </motion.div>
     );
 };
+

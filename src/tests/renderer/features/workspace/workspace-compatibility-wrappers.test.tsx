@@ -54,10 +54,6 @@ const workspaceCardSpy = vi.fn(
     )
 );
 
-vi.mock('@/features/workspace/components/WorkspacesPageHealthIndicator', () => ({
-    WorkspacesPageHealthIndicator: () => <div data-testid="workspaces-health-indicator" />,
-}));
-
 vi.mock('@/components/ui/modal', () => ({
     Modal: ({
         isOpen,
@@ -172,8 +168,7 @@ describe('workspace compatibility wrappers', () => {
 
         expect(onNewWorkspace).toHaveBeenCalledTimes(1);
         expect(setSearchQuery).toHaveBeenCalledWith('alpha');
-        expect(onViewModeChange).toHaveBeenCalledWith('list');
-        expect(screen.getByTestId('workspaces-health-indicator')).toBeInTheDocument();
+        expect(onViewModeChange).toHaveBeenCalledWith('list'); 
     });
 
     it('maps WorkspaceModals save and delete actions to the legacy handlers', async () => {

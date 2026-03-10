@@ -47,8 +47,7 @@ const sectionData = {
     "automationWorkflow": "Automation Workflow",
     "moveTo": "Move to...",
     "ideas": "Ideas",
-    "models": "Models",
-    "workflows": "Workflows"
+    "models": "Models"
 };
 
 export default sectionData;

@@ -6,7 +6,7 @@ import { Modal } from '@/components/ui/modal';
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-const getWorkspaceAgentBridge = () => window.electron.workspaceAgent;
+const getAutomationBridge = () => window.electron.session.automation;
 
 interface ModelSelectionModalProps {
     isOpen: boolean;
@@ -95,7 +95,7 @@ export const ModelSelectionModal: React.FC<ModelSelectionModalProps> = ({
         setIsLoading(true);
         setError(null);
         try {
-            const data = await getWorkspaceAgentBridge().getAvailableModels();
+            const data = await getAutomationBridge().getAvailableModels();
             if (data.success && data.models) {
                 const mappedModels: ProviderConfig[] = data.models.map(model => ({
                     provider: model.provider,

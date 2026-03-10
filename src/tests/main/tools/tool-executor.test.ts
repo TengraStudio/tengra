@@ -24,6 +24,7 @@ describe('ToolExecutor', () => {
     };
 
     const command = { executeCommand: vi.fn() };
+    const localImage = { generateImage: vi.fn() };
     const web = { searchWeb: vi.fn() };
     const system = { getSystemInfo: vi.fn() };
     const eventBus = { emit: vi.fn() };
@@ -34,6 +35,7 @@ describe('ToolExecutor', () => {
             fileSystem,
             eventBus,
             command,
+            localImage,
             web,
             system,
             mcp
@@ -111,5 +113,22 @@ describe('ToolExecutor', () => {
             error: undefined
         });
         expect(mcp.dispatch).toHaveBeenCalledWith('default', 'my_custom_tool', { value: 1 });
+    });
+
+    it('routes generate_image to LocalImageService with bounded count', async () => {
+        localImage.generateImage
+            .mockResolvedValueOnce('safe-file://image-1.png')
+            .mockResolvedValueOnce('safe-file://image-2.png');
+
+        const executor = createExecutor();
+        const result = await executor.execute('generate_image', { prompt: 'Draw a cat', count: 2 });
+
+        expect(result).toEqual({
+            success: true,
+            result: { images: ['safe-file://image-1.png', 'safe-file://image-2.png'] },
+        });
+        expect(localImage.generateImage).toHaveBeenCalledTimes(2);
+        expect(localImage.generateImage).toHaveBeenNthCalledWith(1, { prompt: 'Draw a cat' });
+        expect(localImage.generateImage).toHaveBeenNthCalledWith(2, { prompt: 'Draw a cat' });
     });
 });

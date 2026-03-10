@@ -48,6 +48,16 @@ describe('Database IPC Handlers', () => {
     let mockAuditLogService: MockAuditLogService;
     let registeredHandlers: Map<string, (...args: unknown[]) => Promise<unknown>>;
     const mockEvent = { sender: { id: 1, send: vi.fn() } } as never;
+    const createdWorkspace = {
+        id: 'proj-1',
+        title: 'My Workspace',
+        path: '/path',
+        description: 'desc',
+        mounts: [],
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        status: 'active' as const
+    };
 
 
     beforeEach(() => {
@@ -60,6 +70,9 @@ describe('Database IPC Handlers', () => {
         });
 
         mockDatabaseService = {
+            getWorkspaces: vi.fn().mockResolvedValue([]),
+            createWorkspace: vi.fn().mockResolvedValue(createdWorkspace),
+            getWorkspace: vi.fn().mockResolvedValue({ id: 'proj-1', title: 'Test Workspace' }),
             chats: {
                 getAllChats: vi.fn().mockResolvedValue([]),
                 getChat: vi.fn().mockResolvedValue({ id: 'chat-1', title: 'Test Chat' }),
@@ -75,7 +88,7 @@ describe('Database IPC Handlers', () => {
             },
             workspaces: {
                 getWorkspaces: vi.fn().mockResolvedValue([]),
-                createWorkspace: vi.fn().mockResolvedValue({ success: true, id: 'proj-1' }),
+                createWorkspace: vi.fn().mockResolvedValue(createdWorkspace),
                 getWorkspace: vi.fn().mockResolvedValue({ id: 'proj-1', title: 'Test Workspace' }),
                 updateWorkspace: vi.fn().mockResolvedValue({ success: true }),
                 deleteWorkspace: vi.fn().mockResolvedValue({ success: true }),
@@ -154,6 +167,27 @@ describe('Database IPC Handlers', () => {
             expect(result.success).toBe(true);
         });
 
+        it('should update a message through the registered db:updateMessage handler', async () => {
+            const handler = registeredHandlers.get('db:updateMessage')!;
+            const updates = { content: 'updated', reasoning: 'because' };
+            const result = await handler(mockEvent, 'msg-1', updates) as Record<string, unknown>;
+
+            expect((mockDatabaseService as unknown as Record<string, Record<string, Mock>>).chats.updateMessage)
+                .toHaveBeenCalledWith('msg-1', updates);
+            expect(result.success).toBe(true);
+        });
+
+        it('should delete messages by chat id through db:deleteMessages', async () => {
+            const deleteMessagesByChatId = vi.fn().mockResolvedValue({ success: true });
+            (mockDatabaseService as unknown as Record<string, Mock>).deleteMessagesByChatId = deleteMessagesByChatId;
+
+            const handler = registeredHandlers.get('db:deleteMessages')!;
+            const result = await handler(mockEvent, 'chat-1') as Record<string, unknown>;
+
+            expect(deleteMessagesByChatId).toHaveBeenCalledWith('chat-1');
+            expect(result.success).toBe(true);
+        });
+
     });
 
     describe('Workspace Handlers', () => {
@@ -163,9 +197,38 @@ describe('Database IPC Handlers', () => {
 
 
 
-            expect((mockDatabaseService as unknown as Record<string, Record<string, Mock>>).workspaces.createWorkspace).toHaveBeenCalledWith('My Workspace', '/path', 'desc', undefined, undefined);
+            expect((mockDatabaseService as unknown as Record<string, Mock>).createWorkspace).toHaveBeenCalledWith('My Workspace', '/path', 'desc', undefined, undefined);
 
-            expect(result.success).toBe(true);
+            expect(result.id).toBe('proj-1');
+            expect(result.title).toBe('My Workspace');
+        });
+
+        it('should reject duplicate local workspace mounts instead of returning a null fallback', async () => {
+            const handler = registeredHandlers.get('db:createWorkspace')!;
+            (mockDatabaseService as unknown as Record<string, Mock>).getWorkspaces.mockResolvedValue([
+                {
+                    ...createdWorkspace,
+                    path: 'C:\\repos\\demo',
+                    mounts: [{
+                        id: 'local-proj-1',
+                        name: 'Demo',
+                        type: 'local',
+                        rootPath: 'C:\\repos\\demo'
+                    }]
+                }
+            ]);
+
+            await expect(handler(mockEvent, {
+                title: 'Duplicate Workspace',
+                path: 'C:\\repos\\demo',
+                description: '',
+                mounts: [{
+                    id: 'local-new',
+                    name: 'Demo',
+                    type: 'local',
+                    rootPath: 'C:\\repos\\demo'
+                }]
+            })).rejects.toThrow('A workspace already exists for this local directory.');
         });
     });
 

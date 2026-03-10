@@ -121,6 +121,22 @@ export class HealthCheckService extends BaseService {
         appLogger.info('health-check.service', '[HealthCheck] Stopped monitoring');
     }
 
+    private async runCheckWithTimeout(check: ServiceCheck): Promise<boolean> {
+        let timer: ReturnType<typeof setTimeout> | null = null;
+        const timeoutPromise = new Promise<never>((_, reject) => {
+            timer = setTimeout(() => reject(new Error('Timeout')), check.timeoutMs);
+            if (timer?.unref) { timer.unref(); }
+        });
+
+        try {
+            return await Promise.race([check.check(), timeoutPromise]);
+        } finally {
+            if (timer !== null) {
+                clearTimeout(timer);
+            }
+        }
+    }
+
     /**
      * Run a specific check
      */
@@ -131,12 +147,7 @@ export class HealthCheckService extends BaseService {
         const startTime = Date.now();
 
         try {
-            const result = await Promise.race([
-                check.check(),
-                new Promise<boolean>((_, reject) =>
-                    setTimeout(() => reject(new Error('Timeout')), check.timeoutMs)
-                )
-            ]);
+            const result = await this.runCheckWithTimeout(check);
 
             const latencyMs = Date.now() - startTime;
 

@@ -28,7 +28,10 @@ interface PreflightMockOptions {
 
 function mountPreflightElectronMock(options: PreflightMockOptions) {
     const base = window.electron ?? webElectronMock;
-    const exists = vi.fn(async (path: string) => options.existingPaths.has(path));
+    const exists = vi.fn(async (path: string) => ({
+        success: true,
+        data: options.existingPaths.has(path),
+    }));
     const runCommand = vi.fn(async (command: string) => ({
         code: options.commandExitCodes?.[command] ?? 0,
         stdout: '',
@@ -130,10 +133,31 @@ describe('workspace-startup-preflight runbook and issue filtering', () => {
             .filter(issueId => issueId.startsWith('tool-'));
 
         expect(toolIssueIds).toEqual(['tool-node']);
-        expect(result.canOpen).toBe(false);
+        expect(result.canOpen).toBe(true);
         expect(runCommand).toHaveBeenCalledWith('node', ['--version'], baseWorkspace.path);
         expect(runCommand).toHaveBeenCalledWith('npm', ['--version'], baseWorkspace.path);
         expect(runCommand).not.toHaveBeenCalledWith('python', ['--version'], baseWorkspace.path);
         expect(runCommand).not.toHaveBeenCalledWith('go', ['--version'], baseWorkspace.path);
+    });
+
+    it('skips non-blocking diagnostics during fast open preflight', async () => {
+        const { runCommand } = mountPreflightElectronMock({
+            existingPaths: new Set([
+                baseWorkspace.path,
+                `${baseWorkspace.path}\\package.json`,
+            ]),
+            commandExitCodes: {
+                node: 1,
+                npm: 1,
+            },
+        });
+
+        const result = await runWorkspaceStartupPreflight(baseWorkspace, {
+            includeNonBlockingChecks: false,
+        });
+
+        expect(result.canOpen).toBe(true);
+        expect(result.issues).toEqual([]);
+        expect(runCommand).not.toHaveBeenCalled();
     });
 });

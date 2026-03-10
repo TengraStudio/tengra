@@ -12,6 +12,8 @@ import { getErrorMessage } from '@shared/utils/error.util';
 import axios from 'axios';
 import { app } from 'electron';
 
+import { getManagedRuntimeBinaryPath } from './runtime-path.service';
+
 const execAsync = promisify(exec);
 
 interface ProcessOptions {
@@ -25,11 +27,9 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
     private processes: Map<string, ChildProcess> = new Map();
     private persistentServices: Set<string> = new Set();
     private servicePorts: Map<string, number> = new Map();
-    private isDev: boolean;
 
     constructor() {
         super();
-        this.isDev = !app.isPackaged;
     }
 
     async initialize(): Promise<void> {
@@ -487,32 +487,15 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
     }
 
     private getBinaryPath(executable: string): string {
-        const normalizedExecutable = executable.endsWith('.exe') ? executable.slice(0, -4) : executable;
-        const binName = `${normalizedExecutable}.exe`;
-        const crateName = executable
-            .replace(/\.exe$/i, '')
-            .replace(/^tengra-/, '');
-        const candidates = this.isDev
-            ? [
-                  path.join(process.cwd(), 'resources', 'bin', binName),
-                  path.join(process.cwd(), 'resources', 'resources', 'bin', binName),
-                  path.join(process.cwd(), 'src', 'native', 'target', 'release', binName),
-                  path.join(process.cwd(), 'src', 'native', crateName, 'target', 'release', binName),
-              ]
-            : [
-                  path.join(process.resourcesPath, 'bin', binName),
-                  path.join(process.resourcesPath, 'resources', 'bin', binName),
-              ];
-
-        const existing = candidates.find(candidate => fs.existsSync(candidate));
-        if (existing) {
-            return existing;
+        const binaryPath = getManagedRuntimeBinaryPath(executable);
+        if (fs.existsSync(binaryPath)) {
+            return binaryPath;
         }
 
         appLogger.warn(
             'ProcessManager',
-            `Binary not found in expected locations for ${binName}. Tried: ${candidates.join(', ')}`
+            `Managed runtime binary not found for ${executable}: ${binaryPath}`
         );
-        return candidates[0];
+        return binaryPath;
     }
 }

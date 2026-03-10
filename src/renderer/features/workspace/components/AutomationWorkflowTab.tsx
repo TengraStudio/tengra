@@ -17,7 +17,7 @@ import { TaskExecutionView } from './agent/TaskExecutionView';
 import { TaskInputForm } from './agent/TaskInputForm';
 import { TaskSidebar } from './agent/TaskSidebar';
 
-const getWorkspaceAgentBridge = () => window.electron.workspaceAgent;
+const getAutomationBridge = () => window.electron.session.automation;
 
 interface WorkspaceAgentTabProps {
     workspace: Workspace;
@@ -182,8 +182,8 @@ export const WorkspaceAgentTab: React.FC<WorkspaceAgentTabProps> = ({
                 try {
                     setIsLoading(true);
                     const result =
-                        await getWorkspaceAgentBridge().rollbackCheckpoint(checkpointId);
-                    if (result.success) {
+                        await getAutomationBridge().rollbackCheckpoint(checkpointId);
+                    if (result?.success) {
                         setSelectedTaskId(result.taskId);
                         await loadTaskHistory();
                     }

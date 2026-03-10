@@ -5,7 +5,7 @@ import {
 import { IpcRenderer } from 'electron';
 import { z } from 'zod';
 
-export interface UserCollaborationBridge {
+export interface LiveCollaborationBridge {
     joinRoom: (request: z.infer<typeof JoinCollaborationRoomSchema>) => Promise<z.infer<typeof CollaborationResponseSchema>>;
     sendUpdate: (request: z.infer<typeof CollaborationSyncUpdateSchema>) => Promise<z.infer<typeof CollaborationResponseSchema>>;
     leaveRoom: (roomId: string) => Promise<z.infer<typeof CollaborationResponseSchema>>;
@@ -17,7 +17,7 @@ export interface UserCollaborationBridge {
     onError: (callback: (payload: { roomId: string, error: string }) => void) => () => void;
 }
 
-export function createUserCollaborationBridge(ipc: IpcRenderer): UserCollaborationBridge {
+export function createLiveCollaborationBridge(ipc: IpcRenderer): LiveCollaborationBridge {
     return {
         joinRoom: request => ipc.invoke('collaboration:sync:join', request),
         sendUpdate: request => ipc.invoke('collaboration:sync:send', request),
@@ -45,3 +45,5 @@ export function createUserCollaborationBridge(ipc: IpcRenderer): UserCollaborati
         }
     };
 }
+
+export const createUserCollaborationBridge = createLiveCollaborationBridge;

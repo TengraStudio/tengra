@@ -4,6 +4,8 @@ import { useChatGenerator } from '@renderer/features/chat/hooks/useChatGenerator
 import { useFolderManager } from '@renderer/features/chat/hooks/useFolderManager';
 import { usePromptManager } from '@renderer/features/chat/hooks/usePromptManager';
 import { useSpeechRecognition } from '@renderer/features/chat/hooks/useSpeechRecognition';
+import { useSessionState } from '@renderer/hooks/useSessionState';
+import type { SessionConversationGenerationStatus } from '@shared/types/session-conversation';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 
 import { generateId } from '@/lib/utils';
@@ -107,7 +109,7 @@ function useChatInitialization(loadFolders: () => Promise<void>, setChats: React
         };
         void load();
 
-        const removeStatusListener = window.electron.onChatGenerationStatus((data: { chatId?: string; isGenerating?: boolean }) => {
+        const removeStatusListener = window.electron.session.conversation.onGenerationStatus((data: SessionConversationGenerationStatus) => {
             setChats(prev => prev.map(c => c.id === data.chatId ? { ...c, isGenerating: data.isGenerating } : c));
         });
         return () => { removeStatusListener(); };
@@ -176,11 +178,21 @@ export function useChatManager(options: UseChatManagerOptions) {
     }, [currentChatId, setChats]);
 
     const currentChat = chats.find(c => c.id === currentChatId);
+    const currentSessionState = useSessionState(currentChatId);
     const currentStreamState = currentChatId ? streamingStates[currentChatId] : undefined;
     const streamingReasoning = useMemo(() => currentStreamState?.reasoning ?? '', [currentStreamState]);
     const streamingSpeed = useMemo(() => currentStreamState?.speed ?? null, [currentStreamState]);
-    const chatError = useMemo(() => currentStreamState?.error ?? lastChatError, [currentStreamState, lastChatError]);
-    const isLoading = useMemo(() => currentChatId ? Boolean(currentChat?.isGenerating) || Boolean(currentStreamState) : false, [currentChatId, currentChat?.isGenerating, currentStreamState]);
+    const chatError = useMemo(() => {
+        if (!currentChatId) { return lastChatError; }
+        return currentStreamState?.error ?? lastChatError;
+    }, [currentStreamState, lastChatError, currentChatId]);
+    const isLoading = useMemo(() => {
+        const sessionStatus = currentSessionState?.status;
+        const sessionLoading = sessionStatus === 'preparing' || sessionStatus === 'streaming';
+        return currentChatId
+            ? Boolean(currentChat?.isGenerating) || Boolean(currentStreamState) || sessionLoading
+            : false;
+    }, [currentChatId, currentChat?.isGenerating, currentSessionState?.status, currentStreamState]);
     const messages = useMemo(() => currentChat?.messages ?? [], [currentChat]);
     const deferredSearchTerm = useDeferredValue(searchTerm);
     const normalizedSearchTerm = useMemo(() => deferredSearchTerm.trim().toLowerCase(), [deferredSearchTerm]);

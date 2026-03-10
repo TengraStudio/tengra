@@ -34,9 +34,9 @@ vi.mock('os', () => ({
 }));
 
 vi.mock('ws', () => ({
-    WebSocketServer: vi.fn().mockImplementation(() => ({
-        on: vi.fn()
-    }))
+    WebSocketServer: vi.fn(class MockWebSocketServer {
+        public on = vi.fn();
+    })
 }));
 
 describe('NetworkService', () => {

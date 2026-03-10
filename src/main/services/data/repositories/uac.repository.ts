@@ -1,6 +1,6 @@
 import { WORKSPACE_COMPAT_INDEX_VALUES, WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
+import { AgentCollaborationMessage, WorkspaceStep } from '@shared/types/automation-workflow';
 import { DatabaseAdapter, SqlValue } from '@shared/types/database';
-import { AgentCollaborationMessage, WorkspaceStep } from '@shared/types/workspace-agent';
 import { v4 as uuidv4 } from 'uuid';
 
 const LEGACY_UAC_TASKS_STATUS_INDEX = WORKSPACE_COMPAT_INDEX_VALUES.UAC_TASKS_BY_SINGULAR_STATUS;
@@ -172,6 +172,18 @@ export interface CreateUacTaskInput {
 export class UacRepository {
     constructor(private db: DatabaseAdapter) { }
 
+    private async tryAddColumn(tableName: string, columnName: string, sql: string): Promise<void> {
+        try {
+            await this.db.exec(sql);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            if (message.includes('duplicate column') || message.includes('already exists')) {
+                return;
+            }
+            throw new Error(`Failed to add column ${tableName}.${columnName}: ${message}`);
+        }
+    }
+
     async ensureTables(): Promise<void> {
         // Enable foreign key constraints for CASCADE deletes
         await this.db.exec(`PRAGMA foreign_keys = ON;`);
@@ -189,19 +201,10 @@ export class UacRepository {
             );
         `);
 
-        // Migration: Add node_id column if it doesn't exist (for existing databases)
-        try {
-            await this.db.exec(`ALTER TABLE uac_tasks ADD COLUMN node_id TEXT;`);
-        } catch {
-            // Column already exists, ignore error
-        }
-
-        // Migration: Add parent_task_id to track plan lineage
-        try {
-            await this.db.exec(`ALTER TABLE uac_tasks ADD COLUMN parent_task_id TEXT;`);
-        } catch {
-            // Column already exists, ignore error
-        }
+        await this.tryAddColumn('uac_tasks', WORKSPACE_COMPAT_PATH_COLUMN, `ALTER TABLE uac_tasks ADD COLUMN ${WORKSPACE_COMPAT_PATH_COLUMN} TEXT;`);
+        await this.tryAddColumn('uac_tasks', 'status', 'ALTER TABLE uac_tasks ADD COLUMN status TEXT NOT NULL DEFAULT \'idle\';');
+        await this.tryAddColumn('uac_tasks', 'node_id', 'ALTER TABLE uac_tasks ADD COLUMN node_id TEXT;');
+        await this.tryAddColumn('uac_tasks', 'parent_task_id', 'ALTER TABLE uac_tasks ADD COLUMN parent_task_id TEXT;');
 
         await this.db.exec(`
             CREATE TABLE IF NOT EXISTS uac_steps (
@@ -1028,3 +1031,4 @@ export class UacRepository {
         return before?.count ?? 0;
     }
 }
+

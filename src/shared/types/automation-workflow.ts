@@ -1,5 +1,6 @@
 import type { AgentTaskState } from './agent-state';
 import { Message } from './chat';
+import type { JsonValue } from './common';
 export * from '../schemas/council.schema';
 
 export interface AgentProfile {
@@ -21,6 +22,7 @@ export type AutomationWorkflowStepStatus =
     | 'awaiting_step_approval';
 
 export interface AutomationWorkflowStep {
+    [key: string]: JsonValue | undefined;
     id: string;
     text: string;
     status: AutomationWorkflowStepStatus;
@@ -67,6 +69,7 @@ export interface AutomationWorkflowStep {
 
 /** AGT-HIL-05: A user comment attached to a step */
 export interface StepComment {
+    [key: string]: JsonValue | undefined;
     id: string;
     text: string;
     createdAt: number;
@@ -74,8 +77,10 @@ export interface StepComment {
 
 /** AGT-PLN-05: Confidence scoring for a step */
 export interface StepConfidence {
+    [key: string]: JsonValue | undefined;
     score: number; // 0-100
     factors: {
+        [key: string]: JsonValue | undefined;
         complexity: number; // Lower is better (simpler steps are more confident)
         specificity: number; // Higher is better (specific steps are more confident)
         toolAvailability: number; // Higher is better (tools exist for this step)
@@ -86,23 +91,28 @@ export interface StepConfidence {
 
 /** Cost estimate for a step or plan */
 export interface CostEstimate {
+    [key: string]: JsonValue | undefined;
     inputTokens: number;
     outputTokens: number;
     totalTokens: number;
     costUsd: number;
 }
 
+export interface PlanCostBreakdownItem {
+    [key: string]: JsonValue | undefined;
+    stepId: string;
+    stepText: string;
+    estimatedTokens: number;
+    estimatedCostUsd: number;
+}
+
 /** Full cost breakdown for a plan */
 export interface PlanCostBreakdown {
+    [key: string]: JsonValue | undefined;
     totalEstimatedCost: number;
     inputCost: number;
     outputCost: number;
-    stepBreakdown: Array<{
-        stepId: string;
-        stepText: string;
-        estimatedTokens: number;
-        estimatedCostUsd: number;
-    }>;
+    stepBreakdown: PlanCostBreakdownItem[];
     modelId: string;
     provider: string;
 }
@@ -111,20 +121,25 @@ export interface PlanCostBreakdown {
 
 /** AGENT-08.3: Error rate monitoring */
 export interface AgentErrorMetrics {
+    [key: string]: JsonValue | undefined;
     totalErrors: number;
     errorRate: number; // Percentage (0-100)
     errorsByType: Record<string, number>;
-    recentErrors: Array<{
-        timestamp: number;
-        type: string;
-        message: string;
-        stepId?: string;
-    }>;
+    recentErrors: AgentRecentError[];
     lastErrorAt?: number;
+}
+
+export interface AgentRecentError {
+    [key: string]: JsonValue | undefined;
+    timestamp: number;
+    type: string;
+    message: string;
+    stepId?: string;
 }
 
 /** AGENT-08.4: Resource usage tracking */
 export interface AgentResourceMetrics {
+    [key: string]: JsonValue | undefined;
     /** Memory usage in MB */
     memoryUsageMb: number;
     /** Peak memory usage in MB */
@@ -143,6 +158,7 @@ export interface AgentResourceMetrics {
 
 /** AGENT-08: Complete performance metrics */
 export interface AgentPerformanceMetrics {
+    [key: string]: JsonValue | undefined;
     taskId: string;
     /** Task completion rate (0-100) */
     completionRate: number;
@@ -157,12 +173,7 @@ export interface AgentPerformanceMetrics {
     /** Resource usage metrics */
     resources: AgentResourceMetrics;
     /** Performance alerts */
-    alerts: Array<{
-        type: 'error_rate' | 'resource_usage' | 'slow_execution' | 'cost_threshold';
-        severity: 'low' | 'medium' | 'high' | 'critical';
-        message: string;
-        timestamp: number;
-    }>;
+    alerts: AgentPerformanceAlert[];
     /** Last updated timestamp */
     lastUpdatedAt: number;
 }
@@ -201,6 +212,18 @@ export interface AutomationWorkflowState {
     /** AGENT-08: Performance metrics */
     performanceMetrics?: AgentPerformanceMetrics;
 }
+
+export interface AgentPerformanceAlert {
+    [key: string]: JsonValue | undefined;
+    type: 'error_rate' | 'resource_usage' | 'slow_execution' | 'cost_threshold';
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    message: string;
+    timestamp: number;
+}
+
+export type WorkspaceStepStatus = AutomationWorkflowStepStatus;
+export type WorkspaceStep = AutomationWorkflowStep;
+export type WorkspaceState = AutomationWorkflowState;
 
 export interface AgentStartOptions {
     task: string;
@@ -290,6 +313,7 @@ export interface RollbackCheckpointResult {
 
 /** AGT-COL-01: Model configuration for a specific step */
 export interface StepModelConfig {
+    [key: string]: JsonValue | undefined;
     provider: string;
     model: string;
     /** Reason for using this model (e.g., "code generation", "research") */
@@ -672,6 +696,7 @@ export interface AgentTemplateExport {
 
 /** AGT-TST-01: Test run configuration */
 export interface TestRunConfig {
+    [key: string]: JsonValue | undefined;
     command: string;
     framework: 'vitest' | 'jest' | 'mocha' | 'playwright' | 'custom';
     timeout?: number;
@@ -683,11 +708,13 @@ export interface TestRunConfig {
 
 /** AGT-TST-02: Individual test case result */
 export interface TestCaseResult {
+    [key: string]: JsonValue | undefined;
     name: string;
     suite: string;
     status: 'passed' | 'failed' | 'skipped' | 'pending';
     duration: number;
     error?: {
+        [key: string]: JsonValue | undefined;
         message: string;
         stack?: string;
         expected?: string;
@@ -697,6 +724,7 @@ export interface TestCaseResult {
 
 /** AGT-TST-02: Test run result */
 export interface TestRunResult {
+    [key: string]: JsonValue | undefined;
     success: boolean;
     totalTests: number;
     passed: number;
@@ -712,11 +740,13 @@ export interface TestRunResult {
 
 /** AGT-TST-04: Coverage result */
 export interface TestCoverageResult {
+    [key: string]: JsonValue | undefined;
     lines: { covered: number; total: number; percentage: number };
     branches: { covered: number; total: number; percentage: number };
     functions: { covered: number; total: number; percentage: number };
     statements: { covered: number; total: number; percentage: number };
     files: Array<{
+        [key: string]: JsonValue | undefined;
         path: string;
         lines: number;
         branches: number;
@@ -727,6 +757,7 @@ export interface TestCoverageResult {
 
 /** AGT-TST: Step test configuration */
 export interface StepTestConfig {
+    [key: string]: JsonValue | undefined;
     enabled: boolean;
     runAfterStep: boolean;
     failOnTestFailure: boolean;

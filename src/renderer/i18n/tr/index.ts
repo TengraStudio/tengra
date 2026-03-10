@@ -54,7 +54,6 @@ import languagesSection from '@renderer/i18n/tr/languages';
 import loadingSection from '@renderer/i18n/tr/loading';
 import loggingSection from '@renderer/i18n/tr/logging';
 import markdownSection from '@renderer/i18n/tr/markdown';
-import marketplaceSection from '@renderer/i18n/tr/marketplace';
 import mcpSection from '@renderer/i18n/tr/mcp';
 import memorySection from '@renderer/i18n/tr/memory';
 import messageBubbleSection from '@renderer/i18n/tr/messageBubble';
@@ -94,7 +93,6 @@ import toolsSection from '@renderer/i18n/tr/tools';
 import updateNotificationSection from '@renderer/i18n/tr/updateNotification';
 import voiceSection from '@renderer/i18n/tr/voice';
 import welcomeSection from '@renderer/i18n/tr/welcome';
-import workflowsSection from '@renderer/i18n/tr/workflows';
 import workspaceSection from '@renderer/i18n/tr/workspace';
 import workspaceAgentSection from '@renderer/i18n/tr/workspaceAgent';
 import workspaceDashboardSection from '@renderer/i18n/tr/workspaceDashboard';
@@ -159,7 +157,6 @@ export const tr = {
     "loading": loadingSection,
     "logging": loggingSection,
     "markdown": markdownSection,
-    "marketplace": marketplaceSection,
     "mcp": mcpSection,
     "memory": memorySection,
     "messageBubble": messageBubbleSection,
@@ -203,7 +200,6 @@ export const tr = {
     "updateNotification": updateNotificationSection,
     "voice": voiceSection,
     "welcome": welcomeSection,
-    "workflows": workflowsSection,
     "workspace": workspaceSection,
     "workspaceModals": workspaceModalsSection
 };

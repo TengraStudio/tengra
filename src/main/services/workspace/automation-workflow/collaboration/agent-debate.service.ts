@@ -10,7 +10,7 @@ import {
     DebateReplay,
     DebateSession,
     DebateSide,
-} from '@shared/types/workspace-agent';
+} from '@shared/types/automation-workflow';
 
 export interface DebateDependencies {
     telemetry?: TelemetryService;
@@ -50,6 +50,7 @@ export class AgentDebateService extends BaseService {
     ): DebateSession {
         const startMs = Date.now();
         if (!taskId) { throw new Error('taskId is required'); }
+        if (!topic?.trim()) { throw new Error('topic is required'); }
 
         const session: DebateSession = {
             id: randomUUID(),
@@ -281,3 +282,4 @@ export class AgentDebateService extends BaseService {
         this.sessions.clear();
     }
 }
+

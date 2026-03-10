@@ -138,7 +138,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
         try {
             const result =
                 mount.type === 'local'
-                    ? await window.electron.listDirectory(node.path)
+                    ? await window.electron.files.listDirectory(node.path)
                     : await window.electron.ssh.listDir(mount.id, node.path);
 
             if (result.success) {

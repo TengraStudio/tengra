@@ -918,9 +918,20 @@ export class BackupService {
         }
     }
 
-    /** Stop the service and clean up resources (timers). */
-    dispose(): void {
+    /**
+     * Stop the service and clean up resources (timers).
+     * Called automatically by the DI container on shutdown.
+     */
+    async cleanup(): Promise<void> {
         this.stopAutoBackup();
+    }
+
+    /**
+     * Legacy entry point — delegates to {@link cleanup} for backwards compatibility.
+     * @deprecated Prefer calling `cleanup()` directly.
+     */
+    dispose(): void {
+        void this.cleanup();
     }
 }
 

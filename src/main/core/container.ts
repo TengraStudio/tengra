@@ -160,18 +160,29 @@ export class Container {
             // Cast to LifecycleAware to check for optional cleanup() method
             const instance = def.instance as LifecycleAware;
             if (typeof instance.cleanup === 'function') {
+                let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
                 try {
                     appLogger.info('Container', `Cleaning up ${def.name}...`);
                     const start = Date.now();
 
                     await Promise.race([
                         instance.cleanup(),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('Cleanup timed out')), OPERATION_TIMEOUTS.SERVICE_CLEANUP))
+                        new Promise((_, reject) => {
+                            timeoutHandle = setTimeout(
+                                () => reject(new Error('Cleanup timed out')),
+                                OPERATION_TIMEOUTS.SERVICE_CLEANUP
+                            );
+                            if (timeoutHandle?.unref) { timeoutHandle.unref(); }
+                        })
                     ]);
 
                     appLogger.info('Container', `Cleaned up ${def.name} in ${Date.now() - start}ms`);
                 } catch (error) {
                     appLogger.error('Container', `Failed to cleanup ${def.name}`, error as Error);
+                } finally {
+                    if (timeoutHandle !== null) {
+                        clearTimeout(timeoutHandle);
+                    }
                 }
             }
         }

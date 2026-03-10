@@ -3,6 +3,8 @@
  * @description Provides metrics collection, health dashboards, and observability
  */
 
+import { appLogger } from "@main/logging/logger";
+
 /**
  * Telemetry event names for model selector
  */
@@ -166,8 +168,7 @@ export class ModelSelectorTelemetry {
      */
     private logEvent(event: TelemetryEvent): void {
         if (process.env.NODE_ENV === 'development') {
-            // eslint-disable-next-line no-console
-            console.log('[Telemetry]', event.name, event.payload ?? '');
+            appLogger.debug(`[Telemetry] ${event.name}`, JSON.stringify(event.payload ?? ''));
         }
     }
 

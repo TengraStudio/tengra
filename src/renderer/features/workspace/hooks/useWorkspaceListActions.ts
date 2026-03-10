@@ -106,7 +106,7 @@ export const useWorkspaceListActions = ({ filteredWorkspaces }: WorkspaceListAct
                 type: 'local' as const,
                 rootPath: path
             }];
-            await window.electron.db.createWorkspace(name, path, description, JSON.stringify(mounts));
+            await window.electron.db.createWorkspace(name, path, description, mounts);
             return true;
         } catch (error) {
             appLogger.error('WorkspaceListActions', 'Failed to register workspace', error as Error);

@@ -27,14 +27,11 @@ import {
     DbCreatePromptRequest,
     DbCreateWorkspaceRequest,
     DbFolder,
-    DbGetMarketplaceModelsRequest,
     DbHealthResponse,
-    DbMarketplaceModel,
     DbMessage,
     DbPrompt,
     DbQueryRequest,
     DbQueryResponse,
-    DbSearchMarketplaceModelsRequest,
     DbSemanticFragment,
     DbStats,
     DbStoreCodeSymbolRequest,
@@ -44,7 +41,6 @@ import {
     DbUpdateMessageRequest,
     DbUpdatePromptRequest,
     DbUpdateWorkspaceRequest,
-    DbUpsertMarketplaceModelsRequest,
     DbVectorSearchRequest,
     DbWorkspace,
 } from '@shared/types/db-api';
@@ -376,6 +372,21 @@ export class DatabaseClientService extends BaseService {
         }
     }
 
+    private requireResponseData<T>(
+        response: DbApiResponse<T>,
+        operation: string
+    ): T {
+        if (!response.success) {
+            throw new Error(response.error ?? `${operation} failed`);
+        }
+
+        if (response.data === undefined) {
+            throw new Error(`${operation} completed without response data`);
+        }
+
+        return response.data;
+    }
+
     setPoolLimits(config: { maxSockets?: number; maxFreeSockets?: number; maxPendingRequests?: number }): void {
         if (typeof config.maxPendingRequests === 'number') {
             this.maxPendingRequests = Math.max(1, config.maxPendingRequests);
@@ -401,12 +412,20 @@ export class DatabaseClientService extends BaseService {
     async testConnection(timeoutMs = 5_000): Promise<{ healthy: boolean; latencyMs: number }> {
         const startedAt = Date.now();
         const healthPromise = this.getHealth();
+        let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
         const timeoutPromise = new Promise<DbApiResponse<DbHealthResponse>>((resolve) => {
-            setTimeout(() => resolve({ success: false, error: 'timeout' }), timeoutMs);
+            timeoutHandle = setTimeout(() => resolve({ success: false, error: 'timeout' }), timeoutMs);
+            if (timeoutHandle?.unref) { timeoutHandle.unref(); }
         });
-        const health = await Promise.race([healthPromise, timeoutPromise]);
-        const latencyMs = Date.now() - startedAt;
-        return { healthy: health.success, latencyMs };
+        try {
+            const health = await Promise.race([healthPromise, timeoutPromise]);
+            const latencyMs = Date.now() - startedAt;
+            return { healthy: health.success, latencyMs };
+        } finally {
+            if (timeoutHandle !== null) {
+                clearTimeout(timeoutHandle);
+            }
+        }
     }
 
     getConnectionPoolMetrics(): {
@@ -520,26 +539,20 @@ export class DatabaseClientService extends BaseService {
 
     async getWorkspaces(): Promise<DbWorkspace[]> {
         const response = await this.apiCall<DbWorkspace[]>('GET', '/api/v1/workspaces');
-        return response.data ?? [];
+        return this.requireResponseData(response, 'List workspaces');
     }
 
     async getWorkspace(id: string): Promise<DbWorkspace | null> {
         this.validatePathId(id, 'workspaceId');
         const response = await this.apiCall<DbWorkspace | null>('GET', `/api/v1/workspaces/${id}`);
-        return response.data ?? null;
+        return this.requireResponseData(response, 'Get workspace');
     }
 
-    async createWorkspace(
-        req: DbCreateWorkspaceRequest
-    ): Promise<{ success: boolean; workspace?: DbWorkspace; error?: string }> {
+    async createWorkspace(req: DbCreateWorkspaceRequest): Promise<DbWorkspace> {
         this.validateRequiredString(req.title, 'title');
         this.validateRequiredString(req.path, 'path');
         const response = await this.apiCall<DbWorkspace>('POST', '/api/v1/workspaces', req);
-        return {
-            success: response.success,
-            workspace: response.data,
-            error: response.error,
-        };
+        return this.requireResponseData(response, 'Create workspace');
     }
 
     async updateWorkspace(id: string, updates: DbUpdateWorkspaceRequest): Promise<boolean> {
@@ -663,6 +676,16 @@ export class DatabaseClientService extends BaseService {
         return response.data ?? [];
     }
 
+    async executeQuery(req: DbQueryRequest): Promise<DbQueryResponse> {
+        this.validateRequiredString(req.sql, 'sql');
+        if (req.params !== undefined) {
+            this.validateArray(req.params, 'params');
+        }
+
+        const response = await this.apiCall<DbQueryResponse>('POST', '/api/v1/query', req);
+        return this.requireResponseData(response, 'Execute query');
+    }
+
     // ========================================================================
     // Stats Operations
     // ========================================================================
@@ -677,79 +700,6 @@ export class DatabaseClientService extends BaseService {
             }
         );
     }
-
-    // ========================================================================
-    // Raw Query Operations
-    // ========================================================================
-
-    async executeQuery(req: DbQueryRequest): Promise<DbQueryResponse> {
-        this.validateRequiredString(req.sql, 'sql');
-        if (req.params !== undefined) {
-            this.validateArray(req.params, 'params');
-        }
-        const response = await this.apiCall<DbQueryResponse>('POST', '/api/v1/query', req);
-        return response.data ?? { rows: [], affected_rows: 0 };
-    }
-
-    // ========================================================================
-    // Marketplace Model Operations
-    // ========================================================================
-
-    async getMarketplaceModels(
-        req?: DbGetMarketplaceModelsRequest
-    ): Promise<DbMarketplaceModel[]> {
-        const params = new URLSearchParams();
-        if (req?.provider) {params.append('provider', req.provider);}
-        if (req?.limit) {params.append('limit', String(req.limit));}
-        if (req?.offset) {params.append('offset', String(req.offset));}
-
-        const queryString = params.toString();
-        const path = `/api/v1/marketplace/models${queryString ? `?${queryString}` : ''}`;
-        const response = await this.apiCall<{ models: DbMarketplaceModel[]; total: number }>('GET', path);
-        return response.data?.models ?? [];
-    }
-
-    async upsertMarketplaceModels(
-        req: DbUpsertMarketplaceModelsRequest
-    ): Promise<{ success: boolean; count: number; error?: string }> {
-        this.validateArray(req.models, 'models');
-        const response = await this.apiCall<{ count: number }>(
-            'POST',
-            '/api/v1/marketplace/models',
-            req
-        );
-        return {
-            success: response.success,
-            count: response.data?.count ?? 0,
-            error: response.error,
-        };
-    }
-
-    async searchMarketplaceModels(
-        req: DbSearchMarketplaceModelsRequest
-    ): Promise<DbMarketplaceModel[]> {
-        this.validateRequiredString(req.query, 'query');
-        const response = await this.apiCall<{ models: DbMarketplaceModel[]; total: number }>(
-            'POST',
-            '/api/v1/marketplace/models/search',
-            req
-        );
-        return response.data?.models ?? [];
-    }
-
-    async clearMarketplaceModels(provider?: 'ollama' | 'huggingface'): Promise<boolean> {
-        const params = provider ? `?provider=${provider}` : '';
-        const response = await this.apiCall<boolean>(
-            'DELETE',
-            `/api/v1/marketplace/models${params}`
-        );
-        return response.data ?? false;
-    }
-
-    // ========================================================================
-    // Lifecycle
-    // ========================================================================
-
     /**
      * Check if the service is ready
      */

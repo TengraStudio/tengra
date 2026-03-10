@@ -1,6 +1,5 @@
 import { registerFilesIpc } from '@main/ipc/files';
-import { WORKSPACE_COMPAT_ALIAS_VALUES } from '@shared/constants';
-import { ipcMain,IpcMainInvokeEvent } from 'electron';
+import { ipcMain, IpcMainInvokeEvent } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type IpcPayload = object | string | number | boolean | null | undefined;
@@ -87,7 +86,7 @@ describe('Files IPC Handlers', () => {
             mockEvent,
             'C:/workspace/src/app.ts',
             'export const value = 1;',
-            { aiSystem: WORKSPACE_COMPAT_ALIAS_VALUES.SINGULAR, chatSessionId: 'chat-1' }
+            { aiSystem: 'workspace', chatSessionId: 'chat-1' }
         ) as { success?: boolean };
 
         expect(result.success).toBe(true);
@@ -95,7 +94,7 @@ describe('Files IPC Handlers', () => {
             'C:/workspace/src/app.ts',
             'export const value = 1;',
             {
-                aiSystem: WORKSPACE_COMPAT_ALIAS_VALUES.SINGULAR,
+                aiSystem: 'workspace',
                 chatSessionId: 'chat-1',
                 changeReason: 'AI file modification'
             }

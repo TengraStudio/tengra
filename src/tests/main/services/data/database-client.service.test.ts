@@ -138,6 +138,14 @@ describe('DatabaseClientService input validation', () => {
         it('rejects empty path', async () => {
             await expect(svc.createWorkspace({ title: 'ok', path: '' })).rejects.toThrow('path must be a non-empty string');
         });
+        it('throws when the workspace API reports a failure', async () => {
+            Reflect.set(svc, 'apiCall', vi.fn().mockResolvedValue({
+                success: false,
+                error: 'workspace create failed',
+            }));
+
+            await expect(svc.createWorkspace({ title: 'ok', path: '/p' })).rejects.toThrow('workspace create failed');
+        });
     });
 
     describe('createFolder', () => {
@@ -192,7 +200,7 @@ describe('DatabaseClientService input validation', () => {
         });
     });
 
-    // ── Query / marketplace ─────────────────────────────────────────
+    // ── Query validation ─────────────────────────────────────────
 
     describe('executeQuery', () => {
         it('rejects empty sql', async () => {
@@ -205,19 +213,13 @@ describe('DatabaseClientService input validation', () => {
             await expect(svc.executeQuery({ sql: 'SELECT 1', params: 'bad' as unknown as (string | number | boolean | null)[] }))
                 .rejects.toThrow('params must be an array');
         });
-    });
+        it('throws when the db-service query endpoint reports a failure', async () => {
+            Reflect.set(svc, 'apiCall', vi.fn().mockResolvedValue({
+                success: false,
+                error: 'query endpoint unavailable',
+            }));
 
-    describe('upsertMarketplaceModels', () => {
-        it('rejects non-array models', async () => {
-            await expect(svc.upsertMarketplaceModels({ models: 'bad' as unknown as [] }))
-                .rejects.toThrow('models must be an array');
-        });
-    });
-
-    describe('searchMarketplaceModels', () => {
-        it('rejects empty query', async () => {
-            await expect(svc.searchMarketplaceModels({ query: '' }))
-                .rejects.toThrow('query must be a non-empty string');
+            await expect(svc.executeQuery({ sql: 'SELECT 1' })).rejects.toThrow('query endpoint unavailable');
         });
     });
 

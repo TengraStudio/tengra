@@ -12,7 +12,6 @@ const sectionData = {
         "about": "About",
         "images": "Images",
         "mcpServers": "MCP Servers",
-        "mcpMarketplace": "MCP Marketplace",
         "accessibility": "Accessibility"
     },
     "searchPlaceholder": "Search settings...",
@@ -124,15 +123,13 @@ const sectionData = {
         "title": "Model Context Protocol",
         "subtitle": "Manage your MCP servers and install new tools",
         "tabs": {
-            "servers": "Servers",
-            "marketplace": "Marketplace"
+            "servers": "Servers"
         },
         "servers": {
             "title": "Configured Servers",
             "subtitle": "Manage your Model Context Protocol server connections",
             "connect": "Connect Server",
             "empty": "No servers connected",
-            "emptyHint": "Install servers from the Marketplace tab",
             "enabled": "enabled",
             "note": "Note",
             "noteText": "Only enabled servers are accessible to AI assistants. Toggle the power button to enable/disable each server.",
@@ -146,6 +143,17 @@ const sectionData = {
             "disabled": "Disabled",
             "active": "Active",
             "inactive": "Inactive"
+        },
+        "permissions": {
+            "title": "Permissions",
+            "profile": "Permission Profile"
+        },
+        "profiles": {
+            "read-only": "Read Only",
+            "workspace-only": "Workspace Only",
+            "network-enabled": "Network Enabled",
+            "destructive": "Destructive",
+            "full-access": "Full Access"
         }
     },
     "images": {

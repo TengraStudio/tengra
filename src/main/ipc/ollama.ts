@@ -8,6 +8,7 @@ import { ProxyService } from '@main/services/proxy/proxy.service';
 import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { createSafeIpcHandler, createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { SESSION_CONVERSATION_CHANNELS } from '@shared/constants/ipc-channels';
 import { JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
@@ -192,7 +193,7 @@ export function registerOllamaIpc(options: {
                         model,
                         undefined, // tools
                         (chunk) => {
-                            event.sender.send('ollama:streamChunk', { content: chunk, reasoning: '' });
+                            event.sender.send(SESSION_CONVERSATION_CHANNELS.STREAM_CHUNK, { content: chunk, reasoning: '' });
                         }
                     );
                     return { content: response.content, role: 'assistant' };
@@ -200,7 +201,7 @@ export function registerOllamaIpc(options: {
                     // Fallback to LocalAIService (fake streaming)
                     const res = await localAIService.ollamaChat(model, messages);
                     if (res.message.content) {
-                        event.sender.send('ollama:streamChunk', { content: res.message.content, reasoning: '' });
+                        event.sender.send(SESSION_CONVERSATION_CHANNELS.STREAM_CHUNK, { content: res.message.content, reasoning: '' });
                     }
                     return { content: res.message.content, role: 'assistant' };
                 }

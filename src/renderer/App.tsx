@@ -1,4 +1,4 @@
-import { AppHeader } from '@renderer/components/layout/AppHeader';
+import { MemoizedAppHeader as AppHeader } from '@renderer/components/layout/AppHeader';
 import { AppModals } from '@renderer/components/layout/AppModals';
 import { DragDropWrapper } from '@renderer/components/layout/DragDropWrapper';
 import { LayoutManager } from '@renderer/components/layout/LayoutManager';

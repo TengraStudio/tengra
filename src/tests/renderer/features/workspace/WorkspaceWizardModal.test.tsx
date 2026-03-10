@@ -120,4 +120,25 @@ describe('WorkspaceWizardModal', () => {
             );
         });
     });
+
+    it('keeps the modal open and shows an error when registering the imported folder fails', async () => {
+        const onWorkspaceCreated = vi.fn().mockRejectedValue(
+            new Error('A workspace already exists for this local directory.')
+        );
+        const { onClose } = renderWizard(onWorkspaceCreated);
+
+        fireEvent.click(screen.getByText('workspaceWizard.alreadyExists'));
+
+        await waitFor(() => {
+            expect(screen.getByDisplayValue('Demo Workspace')).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+
+        await waitFor(() => {
+            expect(screen.getByText('A workspace already exists for this local directory.')).toBeInTheDocument();
+        });
+
+        expect(onClose).not.toHaveBeenCalled();
+    });
 });

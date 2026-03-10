@@ -17,7 +17,7 @@ import {
     TestCoverageResult,
     TestRunConfig,
     TestRunResult,
-} from '@shared/types/workspace-agent';
+} from '@shared/types/automation-workflow';
 
 /** Default test configurations by framework */
 const FRAMEWORK_CONFIGS: Record<
@@ -562,3 +562,4 @@ export function getAgentTestRunnerService(): AgentTestRunnerService {
     instance ??= new AgentTestRunnerService();
     return instance;
 }
+

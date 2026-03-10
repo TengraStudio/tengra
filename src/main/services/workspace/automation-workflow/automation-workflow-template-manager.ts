@@ -20,6 +20,10 @@ export class AutomationWorkflowTemplateManager {
         return this.deps.templateService.getTemplatesByCategory(category);
     }
 
+    getTemplate(id: string): AgentTemplate | null {
+        return this.deps.templateService.getTemplate(id) ?? null;
+    }
+
     async saveTemplate(template: AgentTemplate): Promise<{ success: boolean; template: AgentTemplate }> {
         const existing = this.deps.templateService.getTemplate(template.id);
         const saved = existing

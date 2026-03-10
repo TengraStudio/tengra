@@ -141,18 +141,214 @@ export const AUDIT_CHANNELS = {
 // Chat & LLM
 // ---------------------------------------------------------------------------
 
-/** Chat channels */
-export const CHAT_CHANNELS = {
-  /** Cancel an in-progress chat stream */
-  CANCEL: 'chat:cancel',
-  /** Send a message via GitHub Copilot */
-  COPILOT: 'chat:copilot',
-  /** Send a message via OpenAI */
-  OPENAI: 'chat:openai',
-  /** Retry the last message with a different model */
-  RETRY_WITH_MODEL: 'chat:retry-with-model',
-  /** Stream a chat response */
-  STREAM: 'chat:stream',
+/** Session channels */
+export const SESSION_CHANNELS = {
+  /** Get a single session state snapshot */
+  GET_STATE: 'session:get-state',
+  /** List active session recovery snapshots */
+  LIST: 'session:list',
+  /** List capability descriptors known to the session runtime */
+  LIST_CAPABILITIES: 'session:list-capabilities',
+  /** Basic health/status for the session runtime */
+  HEALTH: 'session:health',
+  /** Renderer event channel for session lifecycle updates */
+  EVENT: 'session:event',
+} as const;
+
+/** Session conversation channels */
+export const SESSION_CONVERSATION_CHANNELS = {
+  /** Execute a non-streaming conversation request */
+  COMPLETE: 'session:conversation:complete',
+  /** Stream a conversation response */
+  STREAM: 'session:conversation:stream',
+  /** Renderer event channel for streamed conversation chunks */
+  STREAM_CHUNK: 'session:conversation:stream-chunk',
+  /** Cancel an in-flight conversation */
+  CANCEL: 'session:conversation:cancel',
+  /** Retry a previous response with a different model */
+  RETRY_WITH_MODEL: 'session:conversation:retry-with-model',
+} as const;
+
+/** Session automation channels */
+export const SESSION_AUTOMATION_CHANNELS = {
+  /** Start an automation execution session */
+  START: 'session:automation:start',
+  /** Generate a plan for an automation session */
+  PLAN: 'session:automation:plan',
+  /** Approve a plan for execution */
+  APPROVE_PLAN: 'session:automation:approve-plan',
+  /** Stop an automation execution */
+  STOP: 'session:automation:stop',
+  /** Pause a running automation task */
+  PAUSE_TASK: 'session:automation:pause-task',
+  /** Resume a paused automation task */
+  RESUME_TASK: 'session:automation:resume-task',
+  /** Create a checkpoint snapshot for an automation task */
+  SAVE_SNAPSHOT: 'session:automation:save-snapshot',
+  /** Approve the currently pending plan */
+  APPROVE_CURRENT_PLAN: 'session:automation:approve-current-plan',
+  /** Reject the currently pending plan */
+  REJECT_CURRENT_PLAN: 'session:automation:reject-current-plan',
+  /** Reset runtime state for the active task */
+  RESET_STATE: 'session:automation:reset-state',
+  /** Read the current automation workflow state */
+  GET_STATUS: 'session:automation:get-status',
+  /** Read persisted task messages */
+  GET_TASK_MESSAGES: 'session:automation:get-task-messages',
+  /** Read persisted task events */
+  GET_TASK_EVENTS: 'session:automation:get-task-events',
+  /** Read task telemetry points */
+  GET_TASK_TELEMETRY: 'session:automation:get-task-telemetry',
+  /** Read task history for a workspace */
+  GET_TASK_HISTORY: 'session:automation:get-task-history',
+  /** Delete an automation task */
+  DELETE_TASK: 'session:automation:delete-task',
+  /** List available models for automation routing */
+  GET_AVAILABLE_MODELS: 'session:automation:get-available-models',
+  /** Retry a failed step */
+  RETRY_STEP: 'session:automation:retry-step',
+  /** Select a new model for a task */
+  SELECT_MODEL: 'session:automation:select-model',
+  /** Approve a specific step */
+  APPROVE_STEP: 'session:automation:approve-step',
+  /** Skip a specific step */
+  SKIP_STEP: 'session:automation:skip-step',
+  /** Edit a step's text */
+  EDIT_STEP: 'session:automation:edit-step',
+  /** Add a comment to a step */
+  ADD_STEP_COMMENT: 'session:automation:add-step-comment',
+  /** Insert a manual intervention point */
+  INSERT_INTERVENTION_POINT: 'session:automation:insert-intervention-point',
+  /** List available checkpoints */
+  GET_CHECKPOINTS: 'session:automation:get-checkpoints',
+  /** Resume execution from a checkpoint */
+  RESUME_CHECKPOINT: 'session:automation:resume-checkpoint',
+  /** Roll back to a checkpoint */
+  ROLLBACK_CHECKPOINT: 'session:automation:rollback-checkpoint',
+  /** List plan versions for a task */
+  GET_PLAN_VERSIONS: 'session:automation:get-plan-versions',
+  /** Delete a task by canvas node id */
+  DELETE_TASK_BY_NODE_ID: 'session:automation:delete-task-by-node-id',
+  /** Create a pull request for a task */
+  CREATE_PULL_REQUEST: 'session:automation:create-pull-request',
+  /** List agent profiles available to automation sessions */
+  GET_PROFILES: 'session:automation:get-profiles',
+  /** Read model routing rules */
+  GET_ROUTING_RULES: 'session:automation:get-routing-rules',
+  /** Replace model routing rules */
+  SET_ROUTING_RULES: 'session:automation:set-routing-rules',
+  /** List stored automation templates */
+  GET_TEMPLATES: 'session:automation:get-templates',
+  /** Get a single automation template */
+  GET_TEMPLATE: 'session:automation:get-template',
+  /** Save an automation template */
+  SAVE_TEMPLATE: 'session:automation:save-template',
+  /** Delete an automation template */
+  DELETE_TEMPLATE: 'session:automation:delete-template',
+  /** Export an automation template */
+  EXPORT_TEMPLATE: 'session:automation:export-template',
+  /** Import an automation template */
+  IMPORT_TEMPLATE: 'session:automation:import-template',
+  /** Apply an automation template */
+  APPLY_TEMPLATE: 'session:automation:apply-template',
+} as const;
+
+/** Session workspace channels */
+export const SESSION_WORKSPACE_CHANNELS = {
+  /** Save automation canvas nodes */
+  SAVE_CANVAS_NODES: 'session:workspace:save-canvas-nodes',
+  /** Load automation canvas nodes */
+  GET_CANVAS_NODES: 'session:workspace:get-canvas-nodes',
+  /** Delete one automation canvas node */
+  DELETE_CANVAS_NODE: 'session:workspace:delete-canvas-node',
+  /** Save automation canvas edges */
+  SAVE_CANVAS_EDGES: 'session:workspace:save-canvas-edges',
+  /** Load automation canvas edges */
+  GET_CANVAS_EDGES: 'session:workspace:get-canvas-edges',
+  /** Delete one automation canvas edge */
+  DELETE_CANVAS_EDGE: 'session:workspace:delete-canvas-edge',
+} as const;
+
+/** Session council channels */
+export const SESSION_COUNCIL_CHANNELS = {
+  /** Ask the council runtime to generate a proposal for a task */
+  GENERATE_PLAN: 'session:council:generate-plan',
+  /** Get the current proposal steps for a council-managed task */
+  GET_PROPOSAL: 'session:council:get-proposal',
+  /** Approve a council proposal */
+  APPROVE_PROPOSAL: 'session:council:approve-proposal',
+  /** Reject a council proposal */
+  REJECT_PROPOSAL: 'session:council:reject-proposal',
+  /** Start execution for an approved council proposal */
+  START_EXECUTION: 'session:council:start-execution',
+  /** Pause a council-managed execution */
+  PAUSE_EXECUTION: 'session:council:pause-execution',
+  /** Resume a paused council-managed execution */
+  RESUME_EXECUTION: 'session:council:resume-execution',
+  /** Retrieve council execution timeline events */
+  GET_TIMELINE: 'session:council:get-timeline',
+  /** Create a voting session for a council decision */
+  CREATE_VOTING_SESSION: 'session:council:create-voting-session',
+  /** Submit a vote into an existing council voting session */
+  SUBMIT_VOTE: 'session:council:submit-vote',
+  /** Request multiple models to vote for a session */
+  REQUEST_VOTES: 'session:council:request-votes',
+  /** Resolve a council voting session */
+  RESOLVE_VOTING: 'session:council:resolve-voting',
+  /** Get one council voting session */
+  GET_VOTING_SESSION: 'session:council:get-voting-session',
+  /** List voting sessions for a task or for all council-enabled sessions */
+  LIST_VOTING_SESSIONS: 'session:council:list-voting-sessions',
+  /** Get aggregate voting analytics for council-enabled sessions */
+  GET_VOTING_ANALYTICS: 'session:council:get-voting-analytics',
+  /** Read the active voting configuration */
+  GET_VOTING_CONFIGURATION: 'session:council:get-voting-configuration',
+  /** Update the active voting configuration */
+  UPDATE_VOTING_CONFIGURATION: 'session:council:update-voting-configuration',
+  /** List built-in and custom voting templates */
+  LIST_VOTING_TEMPLATES: 'session:council:list-voting-templates',
+  /** Build consensus from multiple council outputs */
+  BUILD_CONSENSUS: 'session:council:build-consensus',
+  /** Override the final decision of a voting session */
+  OVERRIDE_VOTING_DECISION: 'session:council:override-voting-decision',
+  /** Create a debate session */
+  CREATE_DEBATE_SESSION: 'session:council:create-debate-session',
+  /** Submit a debate argument */
+  SUBMIT_DEBATE_ARGUMENT: 'session:council:submit-debate-argument',
+  /** Resolve a debate session */
+  RESOLVE_DEBATE_SESSION: 'session:council:resolve-debate-session',
+  /** Override a debate session */
+  OVERRIDE_DEBATE_SESSION: 'session:council:override-debate-session',
+  /** Get a debate session */
+  GET_DEBATE_SESSION: 'session:council:get-debate-session',
+  /** List debate history */
+  LIST_DEBATE_HISTORY: 'session:council:list-debate-history',
+  /** Get debate replay */
+  GET_DEBATE_REPLAY: 'session:council:get-debate-replay',
+  /** Generate a debate summary */
+  GENERATE_DEBATE_SUMMARY: 'session:council:generate-debate-summary',
+  /** Send a collaboration message */
+  SEND_MESSAGE: 'session:council:send-message',
+  /** Get collaboration messages */
+  GET_MESSAGES: 'session:council:get-messages',
+  /** Cleanup expired collaboration messages */
+  CLEANUP_EXPIRED_MESSAGES: 'session:council:cleanup-expired-messages',
+  /** Handle quota interrupt through council routing */
+  HANDLE_QUOTA_INTERRUPT: 'session:council:handle-quota-interrupt',
+  /** Stream quota interrupt events for council-enabled sessions */
+  QUOTA_INTERRUPT_EVENT: 'session:council:quota-interrupt:event',
+  /** Register worker availability */
+  REGISTER_WORKER_AVAILABILITY: 'session:council:register-worker-availability',
+  /** List available workers */
+  LIST_AVAILABLE_WORKERS: 'session:council:list-available-workers',
+  /** Score helper candidates */
+  SCORE_HELPER_CANDIDATES: 'session:council:score-helper-candidates',
+  /** Generate helper handoff package */
+  GENERATE_HELPER_HANDOFF: 'session:council:generate-helper-handoff',
+  /** Review helper merge gate */
+  REVIEW_HELPER_MERGE: 'session:council:review-helper-merge',
+  /** Get teamwork analytics */
+  GET_TEAMWORK_ANALYTICS: 'session:council:get-teamwork-analytics',
 } as const;
 
 /** Ollama local LLM channels */
@@ -397,6 +593,8 @@ export const DB_CHANNELS = {
   GET_WORKSPACE_BY_ID: 'db:getWorkspaceById',
   /** Get all workspaces */
   GET_WORKSPACES: 'db:getWorkspaces',
+  /** Event emitted when workspaces change */
+  WORKSPACE_UPDATED_EVENT: 'db:workspace-updated',
   /** Get all prompts */
   GET_PROMPTS: 'db:getPrompts',
   /** Get provider statistics */
@@ -606,192 +804,6 @@ export const GIT_CHANNELS = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// Workspace & Workflow
-// ---------------------------------------------------------------------------
-
-/** Workspace agent orchestration channels */
-export const WORKSPACE_AGENT_CHANNELS = {
-  /** Add a comment to a plan step */
-  ADD_STEP_COMMENT: 'agent:add-step-comment',
-  /** Approve the current plan */
-  APPROVE_CURRENT_PLAN: 'agent:approve-current-plan',
-  /** Approve a specific step */
-  APPROVE_STEP: 'agent:approve-step',
-  /** Council: approve a proposal */
-  COUNCIL_APPROVE_PROPOSAL: 'agent:council-approve-proposal',
-  /** Council: clean up expired messages */
-  COUNCIL_CLEANUP_EXPIRED_MESSAGES: 'agent:council-cleanup-expired-messages',
-  /** Council: generate helper handoff */
-  COUNCIL_GENERATE_HELPER_HANDOFF: 'agent:council-generate-helper-handoff',
-  /** Council: generate a plan */
-  COUNCIL_GENERATE_PLAN: 'agent:council-generate-plan',
-  /** Council: get messages */
-  COUNCIL_GET_MESSAGES: 'agent:council-get-messages',
-  /** Council: get a proposal */
-  COUNCIL_GET_PROPOSAL: 'agent:council-get-proposal',
-  /** Council: get execution timeline */
-  COUNCIL_GET_TIMELINE: 'agent:council-get-timeline',
-  /** Council: handle quota interrupt */
-  COUNCIL_HANDLE_QUOTA_INTERRUPT: 'agent:council-handle-quota-interrupt',
-  /** Council: list available workers */
-  COUNCIL_LIST_AVAILABLE_WORKERS: 'agent:council-list-available-workers',
-  /** Council: pause execution */
-  COUNCIL_PAUSE_EXECUTION: 'agent:council-pause-execution',
-  /** Council: register worker availability */
-  COUNCIL_REGISTER_WORKER_AVAILABILITY: 'agent:council-register-worker-availability',
-  /** Council: reject a proposal */
-  COUNCIL_REJECT_PROPOSAL: 'agent:council-reject-proposal',
-  /** Council: resume execution */
-  COUNCIL_RESUME_EXECUTION: 'agent:council-resume-execution',
-  /** Council: review helper merge */
-  COUNCIL_REVIEW_HELPER_MERGE: 'agent:council-review-helper-merge',
-  /** Council: score helper candidates */
-  COUNCIL_SCORE_HELPER_CANDIDATES: 'agent:council-score-helper-candidates',
-  /** Council: send a message */
-  COUNCIL_SEND_MESSAGE: 'agent:council-send-message',
-  /** Council: start execution */
-  COUNCIL_START_EXECUTION: 'agent:council-start-execution',
-  /** Create a pull request */
-  CREATE_PR: 'agent:create-pr',
-  /** Delete a canvas edge */
-  DELETE_CANVAS_EDGE: 'agent:delete-canvas-edge',
-  /** Delete a canvas node */
-  DELETE_CANVAS_NODE: 'agent:delete-canvas-node',
-  /** Delete an agent profile */
-  DELETE_PROFILE: 'agent:delete-profile',
-  /** Delete a task */
-  DELETE_TASK: 'agent:delete-task',
-  /** Delete a task by canvas node */
-  DELETE_TASK_BY_NODE: 'agent:delete-task-by-node',
-  /** Delete a template */
-  DELETE_TEMPLATE: 'agent:delete-template',
-  /** Edit a plan step */
-  EDIT_STEP: 'agent:edit-step',
-  /** Export a template */
-  EXPORT_TEMPLATE: 'agent:export-template',
-  /** Generate a debate summary */
-  GENERATE_DEBATE_SUMMARY: 'agent:generate-debate-summary',
-  /** Get available models for agent */
-  GET_AVAILABLE_MODELS: 'agent:get-available-models',
-  /** Get canvas edges */
-  GET_CANVAS_EDGES: 'agent:get-canvas-edges',
-  /** Get canvas nodes */
-  GET_CANVAS_NODES: 'agent:get-canvas-nodes',
-  /** Get agent checkpoints */
-  GET_CHECKPOINTS: 'agent:get-checkpoints',
-  /** Get debate replay data */
-  GET_DEBATE_REPLAY: 'agent:get-debate-replay',
-  /** Get a debate session */
-  GET_DEBATE_SESSION: 'agent:get-debate-session',
-  /** Get agent events */
-  GET_EVENTS: 'agent:get-events',
-  /** Get agent messages */
-  GET_MESSAGES: 'agent:get-messages',
-  /** Get performance metrics */
-  GET_PERFORMANCE_METRICS: 'agent:get-performance-metrics',
-  /** Get plan version history */
-  GET_PLAN_VERSIONS: 'agent:get-plan-versions',
-  /** Get registered profiles */
-  GET_PROFILES: 'agent:get-profiles',
-  /** Get routing rules */
-  GET_ROUTING_RULES: 'agent:get-routing-rules',
-  /** Get agent status */
-  GET_STATUS: 'agent:get-status',
-  /** Get task history */
-  GET_TASK_HISTORY: 'agent:get-task-history',
-  /** Get teamwork analytics */
-  GET_TEAMWORK_ANALYTICS: 'agent:get-teamwork-analytics',
-  /** Get telemetry data */
-  GET_TELEMETRY: 'agent:get-telemetry',
-  /** Get a specific template */
-  GET_TEMPLATE: 'agent:get-template',
-  /** Get all templates */
-  GET_TEMPLATES: 'agent:get-templates',
-  /** Get voting analytics */
-  GET_VOTING_ANALYTICS: 'agent:get-voting-analytics',
-  /** Get voting configuration */
-  GET_VOTING_CONFIG: 'agent:get-voting-config',
-  /** Get a voting session */
-  GET_VOTING_SESSION: 'agent:get-voting-session',
-  /** Health check for agent system */
-  HEALTH: 'agent:health',
-  /** Import a template */
-  IMPORT_TEMPLATE: 'agent:import-template',
-  /** Insert a human intervention */
-  INSERT_INTERVENTION: 'agent:insert-intervention',
-  /** List debate history */
-  LIST_DEBATE_HISTORY: 'agent:list-debate-history',
-  /** List voting sessions */
-  LIST_VOTING_SESSIONS: 'agent:list-voting-sessions',
-  /** List voting templates */
-  LIST_VOTING_TEMPLATES: 'agent:list-voting-templates',
-  /** Override a debate session */
-  OVERRIDE_DEBATE_SESSION: 'agent:override-debate-session',
-  /** Override voting outcome */
-  OVERRIDE_VOTING: 'agent:override-voting',
-  /** Pause a running task */
-  PAUSE_TASK: 'agent:pause-task',
-  /** Generate an agent plan */
-  PLAN: 'agent:plan',
-  /** Register a new profile */
-  REGISTER_PROFILE: 'agent:register-profile',
-  /** Reject the current plan */
-  REJECT_CURRENT_PLAN: 'agent:reject-current-plan',
-  /** Reset agent state */
-  RESET_STATE: 'agent:reset-state',
-  /** Resolve a debate session */
-  RESOLVE_DEBATE_SESSION: 'agent:resolve-debate-session',
-  /** Resolve voting */
-  RESOLVE_VOTING: 'agent:resolve-voting',
-  /** Resume from a checkpoint */
-  RESUME_CHECKPOINT: 'agent:resume-checkpoint',
-  /** Resume a paused task */
-  RESUME_TASK: 'agent:resume-task',
-  /** Retry a failed step */
-  RETRY_STEP: 'agent:retry-step',
-  /** Rollback to a checkpoint */
-  ROLLBACK_CHECKPOINT: 'agent:rollback-checkpoint',
-  /** Save canvas edges */
-  SAVE_CANVAS_EDGES: 'agent:save-canvas-edges',
-  /** Save canvas nodes */
-  SAVE_CANVAS_NODES: 'agent:save-canvas-nodes',
-  /** Save an agent snapshot */
-  SAVE_SNAPSHOT: 'agent:save-snapshot',
-  /** Save a template */
-  SAVE_TEMPLATE: 'agent:save-template',
-  /** Select a model for the agent */
-  SELECT_MODEL: 'agent:select-model',
-  /** Set routing rules */
-  SET_ROUTING_RULES: 'agent:set-routing-rules',
-  /** Skip a plan step */
-  SKIP_STEP: 'agent:skip-step',
-  /** Start agent execution */
-  START: 'agent:start',
-  /** Stop agent execution */
-  STOP: 'agent:stop',
-  /** Update voting configuration */
-  UPDATE_VOTING_CONFIG: 'agent:update-voting-config',
-} as const;
-
-/** Workflow automation channels */
-export const WORKFLOW_CHANNELS = {
-  /** Create a workflow */
-  CREATE: 'workflow:create',
-  /** Delete a workflow */
-  DELETE: 'workflow:delete',
-  /** Execute a workflow */
-  EXECUTE: 'workflow:execute',
-  /** Get a workflow by ID */
-  GET: 'workflow:get',
-  /** Get all workflows */
-  GET_ALL: 'workflow:getAll',
-  /** Trigger a manual workflow run */
-  TRIGGER_MANUAL: 'workflow:triggerManual',
-  /** Update a workflow */
-  UPDATE: 'workflow:update',
-} as const;
-
-// ---------------------------------------------------------------------------
 // Agent
 // ---------------------------------------------------------------------------
 
@@ -973,58 +985,6 @@ export const MCP_CHANNELS = {
   TOGGLE: 'mcp:toggle',
   /** Uninstall an MCP server */
   UNINSTALL: 'mcp:uninstall',
-} as const;
-
-/** MCP marketplace channels */
-export const MCP_MARKETPLACE_CHANNELS = {
-  /** Get marketplace categories */
-  CATEGORIES: 'mcp:marketplace:categories',
-  /** Debug marketplace state */
-  DEBUG: 'mcp:marketplace:debug',
-  /** Draft a new extension */
-  DRAFT_EXTENSION: 'mcp:marketplace:draft-extension',
-  /** Get extension templates */
-  EXTENSION_TEMPLATES: 'mcp:marketplace:extension-templates',
-  /** Filter marketplace listings */
-  FILTER: 'mcp:marketplace:filter',
-  /** Marketplace health check */
-  HEALTH: 'mcp:marketplace:health',
-  /** Install from marketplace */
-  INSTALL: 'mcp:marketplace:install',
-  /** List installed marketplace extensions */
-  INSTALLED: 'mcp:marketplace:installed',
-  /** List marketplace extensions */
-  LIST: 'mcp:marketplace:list',
-  /** Refresh marketplace data */
-  REFRESH: 'mcp:marketplace:refresh',
-  /** List reviews for an extension */
-  REVIEWS_LIST: 'mcp:marketplace:reviews:list',
-  /** Moderate a review */
-  REVIEWS_MODERATE: 'mcp:marketplace:reviews:moderate',
-  /** Submit a review */
-  REVIEWS_SUBMIT: 'mcp:marketplace:reviews:submit',
-  /** Vote on a review */
-  REVIEWS_VOTE: 'mcp:marketplace:reviews:vote',
-  /** Rollback to a previous version */
-  ROLLBACK_VERSION: 'mcp:marketplace:rollback-version',
-  /** Search the marketplace */
-  SEARCH: 'mcp:marketplace:search',
-  /** Run a security scan on an extension */
-  SECURITY_SCAN: 'mcp:marketplace:security-scan',
-  /** Report a crash event */
-  TELEMETRY_CRASH: 'mcp:marketplace:telemetry:crash',
-  /** Get telemetry summary */
-  TELEMETRY_SUMMARY: 'mcp:marketplace:telemetry:summary',
-  /** Track a telemetry event */
-  TELEMETRY_TRACK: 'mcp:marketplace:telemetry:track',
-  /** Toggle a marketplace extension */
-  TOGGLE: 'mcp:marketplace:toggle',
-  /** Uninstall a marketplace extension */
-  UNINSTALL: 'mcp:marketplace:uninstall',
-  /** Update extension config */
-  UPDATE_CONFIG: 'mcp:marketplace:update-config',
-  /** View version history */
-  VERSION_HISTORY: 'mcp:marketplace:version-history',
 } as const;
 
 /** MCP permissions channels */
@@ -1280,7 +1240,7 @@ export const TOOLS_CHANNELS = {
   /** Execute a tool */
   EXECUTE: 'tools:execute',
   /** Get tool definitions */
-  GET_DEFINITIONS: 'tools:getDefinitions',
+  GET_DEFINITIONS: 'tools:get-definitions',
   /** Kill a running tool */
   KILL: 'tools:kill',
 } as const;
@@ -1326,7 +1286,6 @@ export const IPC_CHANNELS = {
   AUTH: AUTH_CHANNELS,
   BACKUP: BACKUP_CHANNELS,
   BRAIN: BRAIN_CHANNELS,
-  CHAT: CHAT_CHANNELS,
   CODE: CODE_CHANNELS,
   COLLABORATION: COLLABORATION_CHANNELS,
   CONTEXT_WINDOW: CONTEXT_WINDOW_CHANNELS,
@@ -1343,13 +1302,16 @@ export const IPC_CHANNELS = {
   LAZY: LAZY_CHANNELS,
   LOG: LOG_CHANNELS,
   MCP: MCP_CHANNELS,
-  MCP_MARKETPLACE: MCP_MARKETPLACE_CHANNELS,
   MCP_PERMISSIONS: MCP_PERMISSIONS_CHANNELS,
   MIGRATION: MIGRATION_CHANNELS,
   MODEL_REGISTRY: MODEL_REGISTRY_CHANNELS,
   OLLAMA: OLLAMA_CHANNELS,
   PROCESS: PROCESS_CHANNELS,
-  WORKSPACE_AGENT: WORKSPACE_AGENT_CHANNELS,
+  SESSION: SESSION_CHANNELS,
+  SESSION_CONVERSATION: SESSION_CONVERSATION_CHANNELS,
+  SESSION_AUTOMATION: SESSION_AUTOMATION_CHANNELS,
+  SESSION_COUNCIL: SESSION_COUNCIL_CHANNELS,
+  SESSION_WORKSPACE: SESSION_WORKSPACE_CHANNELS,
   PROMPT_TEMPLATES: PROMPT_TEMPLATES_CHANNELS,
   PROXY: PROXY_CHANNELS,
   SD_CPP: SD_CPP_CHANNELS,
@@ -1360,7 +1322,6 @@ export const IPC_CHANNELS = {
   TOOLS: TOOLS_CHANNELS,
   USAGE: USAGE_CHANNELS,
   WINDOW: WINDOW_CHANNELS,
-  WORKFLOW: WORKFLOW_CHANNELS,
 } as const;
 
 /** Union type of all IPC channel name strings */

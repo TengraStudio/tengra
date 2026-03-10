@@ -3,6 +3,21 @@ import { afterEach, beforeEach, vi } from 'vitest';
 
 import '@testing-library/jest-dom';
 
+// Polyfill window.matchMedia for jsdom (required by accessibility.tsx at import time)
+Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+    })),
+});
+
 // Mock Electron IPC
 declare global {
     interface Window {

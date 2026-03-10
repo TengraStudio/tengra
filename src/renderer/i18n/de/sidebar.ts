@@ -47,8 +47,7 @@ const sectionData = {
     "active": "Aktiv",
     "memory": "Erinnerung",
     "agent": "Agent",
-    "models": "Modelle",
-    "workflows": "Arbeitsabläufe"
+    "models": "Modelle"
 };
 
 export default sectionData;

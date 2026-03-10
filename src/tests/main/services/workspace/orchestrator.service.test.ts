@@ -15,7 +15,7 @@ vi.mock('uuid', () => ({
 import { DatabaseService } from '@main/services/data/database.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
-import { AgentRegistryService } from '@main/services/workspace/agent/agent-registry.service';
+import { AgentRegistryService } from '@main/services/workspace/automation-workflow/agent-registry.service';
 import { MultiAgentOrchestratorService } from '@main/services/workspace/orchestrator.service';
 
 interface MockEventBus {

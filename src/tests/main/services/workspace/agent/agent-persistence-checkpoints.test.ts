@@ -1,4 +1,4 @@
-import { AgentPersistenceService } from '@main/services/workspace/agent/agent-persistence.service';
+import { AgentPersistenceService } from '@main/services/workspace/automation-workflow/agent-persistence.service';
 import { AgentTaskState } from '@shared/types/agent-state';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

@@ -9,11 +9,10 @@ import type {
 } from '@shared/schemas/inline-suggestions.schema';
 import type { Workspace, WorkspaceAnalysis } from '@shared/types';
 import type { AdvancedSemanticFragment, PendingMemory } from '@shared/types/advanced-memory';
-import type { Chat, Folder, Message, ToolCall, ToolResult } from '@shared/types/chat';
+import type { Chat, Folder, Message, ToolResult } from '@shared/types/chat';
 import type { IpcValue } from '@shared/types/common';
 import type { ClaudeQuota, CodexUsage } from '@shared/types/quota';
 import type { AppSettings } from '@shared/types/settings';
-import type { Workflow, WorkflowExecutionResult } from '@shared/types/workflow.types';
 import type { IpcRendererEvent } from 'electron';
 
 import type {
@@ -335,26 +334,6 @@ export const webElectronMock: ElectronAPI = {
     },
 
     getModels: async () => [],
-    chat: async (_messages: Message[], _model: string) => ({ content: 'Mock response' }),
-    chatOpenAI: async (_request: unknown) => ({ content: 'Mock response' }),
-    chatStream: async (_request: unknown) => { },
-    abortChat: () => { },
-    onStreamChunk:
-        (
-            _callback: (chunk: {
-                content?: string;
-                toolCalls?: ToolCall[];
-                reasoning?: string;
-            }) => void
-        ) =>
-            () => { },
-    removeStreamChunkListener: (
-        _callback?: (chunk: {
-            content?: string;
-            toolCalls?: ToolCall[];
-            reasoning?: string;
-        }) => void
-    ) => { },
 
     isOllamaRunning: async () => true,
     startOllama: async () => ({ success: true, message: 'Ollama is starting' }),
@@ -470,7 +449,6 @@ export const webElectronMock: ElectronAPI = {
     checkCuda: async () => ({ hasCuda: true }),
     onOllamaStatusChange: (_callback: (status: { status: string }) => void) => { },
     onAgentEvent: (_callback: (payload: unknown) => void) => () => { },
-    onChatGenerationStatus: (_callback: (data: { chatId?: string; isGenerating?: boolean }) => void) => () => { },
     onSdCppStatus: (_callback: (data: unknown) => void) => () => { },
     onSdCppProgress: (_callback: (data: unknown) => void) => () => { },
     modelDownloader: {
@@ -478,22 +456,6 @@ export const webElectronMock: ElectronAPI = {
         pause: async (_downloadId: string) => ({}),
         resume: async (_downloadId: string) => ({}),
         cancel: async (_downloadId: string) => ({}),
-    },
-
-    // Marketplace API stubs
-    marketplace: {
-        getModels: async (
-            _provider?: 'ollama' | 'huggingface',
-            _limit?: number,
-            _offset?: number
-        ) => [],
-        searchModels: async (
-            _query: string,
-            _provider?: 'ollama' | 'huggingface',
-            _limit?: number
-        ) => [],
-        getModelDetails: async (_modelName: string) => null,
-        getStatus: async () => ({ lastScrapeTime: 0, isScraping: false }),
     },
 
     llama: {
@@ -596,6 +558,7 @@ export const webElectronMock: ElectronAPI = {
         archiveWorkspace: async (_id: string, _isArchived: boolean) => { },
         bulkDeleteWorkspaces: async (_ids: string[], _deleteFiles?: boolean) => { },
         bulkArchiveWorkspaces: async (_ids: string[], _isArchived: boolean) => { },
+        onWorkspaceUpdated: (_callback: (payload: { id?: string }) => void) => () => { },
         createFolder: async (_name: string, _color?: string) =>
             ({
                 id: '1',
@@ -1128,31 +1091,6 @@ export const webElectronMock: ElectronAPI = {
         removeResultListener: () => { },
     },
 
-    mcpMarketplace: {
-        list: async () => ({ success: true, servers: [] }),
-        search: async (_query: string) => ({ success: true, servers: [] }),
-        filter: async (_category: string) => ({ success: true, servers: [] }),
-        categories: async () => ({ success: true, categories: [] }),
-        install: async (_serverId: string) => ({ success: true }),
-        uninstall: async (_serverId: string) => ({ success: true }),
-        installed: async () => ({ success: true, servers: [] }),
-        toggle: async (_serverId: string, _enabled: boolean) => ({ success: true }),
-        updateConfig: async (_serverId: string, _patch: Record<string, IpcValue>) => ({ success: true }),
-        versionHistory: async (_serverId: string) => ({ success: true, history: [] }),
-        rollbackVersion: async (_serverId: string, _targetVersion: string) => ({ success: true }),
-        debug: async () => ({ success: true, metrics: {} }),
-        refresh: async () => ({ success: true }),
-        health: async () => ({
-            success: true,
-            data: {
-                status: 'healthy' as const,
-                uiState: 'ready' as const,
-                budgets: { fastMs: 40, standardMs: 130, heavyMs: 280 },
-                metrics: {}
-            }
-        }),
-    },
-
     proxyEmbed: {
         start: async (_options?: Record<string, IpcValue>) => ({}),
         stop: async () => ({}),
@@ -1298,6 +1236,23 @@ export const webElectronMock: ElectronAPI = {
     },
 
     collaboration: {
+        run: async (_request: {
+            messages: Message[];
+            models: Array<{ provider: string; model: string }>;
+            strategy?: string;
+        }) => ({
+            response: 'Mock collaboration response',
+            modelContributions: [],
+            responses: [],
+        }),
+        getProviderStats: async () => [],
+        getActiveTaskCount: async () => 0,
+        setProviderConfig: async (
+            _provider: string,
+            _config: { concurrencyLimit?: number; rateLimit?: number }
+        ) => { },
+    },
+    modelCollaboration: {
         run: async (_request: {
             messages: Message[];
             models: Array<{ provider: string; model: string }>;
@@ -1567,340 +1522,6 @@ export const webElectronMock: ElectronAPI = {
     on:
         (_channel: string, _listener: (event: IpcRendererEvent, ..._args: IpcValue[]) => void) =>
             () => { },
-    workspaceAgent: {
-        start: async (_options: unknown) => ({ taskId: 'mock-task-id' }),
-        generatePlan: async (_options: unknown) => { },
-        approvePlan: async (_plan: string[] | unknown[], _taskId?: string) => { },
-        stop: async (_taskId?: string) => { },
-        pauseTask: async (_taskId: string) => ({ success: true }),
-        resumeTask: async (_taskId: string) => ({ success: true }),
-        saveSnapshot: async (_taskId: string) => ({ success: true, checkpointId: 'mock-checkpoint' }),
-        approveCurrentPlan: async (_taskId: string) => ({ success: true }),
-        rejectCurrentPlan: async (_taskId: string, _reason?: string) => ({ success: true }),
-        createPullRequest: async (_taskId?: string) => ({ success: false, error: 'Not available in web mode' }),
-        resetState: async () => { },
-        getStatus: async (_taskId?: string) => null,
-        getTaskMessages: async (_taskId: string) => ({ success: true, messages: [] }),
-        getTaskEvents: async (_taskId: string) => ({ success: true, events: [] }),
-        getTaskTelemetry: async (_taskId: string) => ({ success: true, telemetry: [] }),
-        getTaskHistory: async (_workspaceId?: string) => [],
-        deleteTask: async (_taskId: string) => ({ success: true }),
-        getAvailableModels: async () => ({ success: true, models: [] }),
-        retryStep: async (_index: number, _taskId?: string) => { },
-        selectModel: async (_payload: { taskId: string; provider: string; model: string }) => ({
-            success: true
-        }),
-        // AGT-HIL: Human-in-the-Loop step actions
-        approveStep: async (_taskId: string, _stepId: string) => { },
-        skipStep: async (_taskId: string, _stepId: string) => { },
-        editStep: async (_taskId: string, _stepId: string, _text: string) => { },
-        addStepComment: async (_taskId: string, _stepId: string, _comment: string) => { },
-        insertInterventionPoint: async (_taskId: string, _afterStepId: string) => { },
-        getCheckpoints: async (_taskId: string) => [],
-        rollbackCheckpoint: async (_checkpointId: string) => ({
-            success: true,
-            taskId: '',
-            resumedCheckpointId: '',
-            preRollbackCheckpointId: '',
-        }),
-        getPlanVersions: async (_taskId: string) => [],
-        deleteTaskByNodeId: async (_nodeId: string) => true,
-        getProfiles: async () => [],
-        getRoutingRules: async () => [],
-        setRoutingRules: async (_rules: unknown[]) => ({ success: true }),
-        createVotingSession: async (_payload: {
-            taskId: string;
-            stepIndex: number;
-            question: string;
-            options: string[];
-        }) => ({
-            id: 'mock-voting-session',
-            taskId: _payload.taskId,
-            stepIndex: _payload.stepIndex,
-            question: _payload.question,
-            options: _payload.options,
-            votes: [],
-            status: 'pending' as const,
-            createdAt: Date.now(),
-        }),
-        submitVote: async (_payload: {
-            sessionId: string;
-            modelId: string;
-            provider: string;
-            decision: string;
-            confidence: number;
-            reasoning?: string;
-        }) => null,
-        requestVotes: async (_payload: {
-            sessionId: string;
-            models: Array<{ provider: string; model: string }>;
-        }) => null,
-        resolveVoting: async (_sessionId: string) => null,
-        getVotingSession: async (_sessionId: string) => null,
-        listVotingSessions: async (_taskId?: string) => [],
-        overrideVotingDecision: async (_payload: {
-            sessionId: string;
-            finalDecision: string;
-            reason?: string;
-        }) => null,
-        getVotingAnalytics: async (_taskId?: string) => ({
-            totalSessions: 0,
-            pendingSessions: 0,
-            resolvedSessions: 0,
-            deadlockedSessions: 0,
-            averageVotesPerSession: 0,
-            averageConfidence: 0,
-            disagreementIndex: 0,
-            updatedAt: Date.now(),
-        }),
-        getVotingConfiguration: async () => ({
-            minimumVotes: 2,
-            deadlockThreshold: 0.9,
-            autoResolve: true,
-            autoResolveTimeoutMs: 60_000,
-        }),
-        updateVotingConfiguration: async (patch: {
-            minimumVotes?: number;
-            deadlockThreshold?: number;
-            autoResolve?: boolean;
-            autoResolveTimeoutMs?: number;
-        }) => ({
-            minimumVotes: patch.minimumVotes ?? 2,
-            deadlockThreshold: patch.deadlockThreshold ?? 0.9,
-            autoResolve: patch.autoResolve ?? true,
-            autoResolveTimeoutMs: patch.autoResolveTimeoutMs ?? 60_000,
-        }),
-        listVotingTemplates: async () => [],
-        buildConsensus: async (_outputs: Array<{ modelId: string; provider: string; output: string }>) => ({
-            agreed: false,
-            resolutionMethod: 'manual' as const,
-        }),
-        createDebateSession: async (_payload: { taskId: string; stepIndex: number; topic: string }) => ({
-            id: 'mock-debate-session',
-            taskId: _payload.taskId,
-            stepIndex: _payload.stepIndex,
-            topic: _payload.topic,
-            status: 'open' as const,
-            arguments: [],
-            consensus: {
-                detected: false,
-                confidence: 0,
-                rationale: 'Awaiting arguments'
-            },
-            createdAt: Date.now()
-        }),
-        submitDebateArgument: async (_payload: {
-            sessionId: string;
-            agentId: string;
-            provider: string;
-            side: 'pro' | 'con';
-            content: string;
-            confidence: number;
-            citations?: Array<{ sourceId: string; title?: string; url?: string; excerpt?: string }>;
-        }) => ({
-            id: _payload.sessionId,
-            taskId: '',
-            stepIndex: 0,
-            topic: '',
-            status: 'open' as const,
-            arguments: [{
-                id: 'mock-argument',
-                agentId: _payload.agentId,
-                provider: _payload.provider,
-                side: _payload.side,
-                content: _payload.content,
-                confidence: _payload.confidence,
-                qualityScore: 0.5,
-                citations: _payload.citations ?? [],
-                timestamp: Date.now()
-            }],
-            consensus: {
-                detected: false,
-                confidence: 0,
-                rationale: 'Awaiting more arguments'
-            },
-            createdAt: Date.now()
-        }),
-        resolveDebateSession: async (_sessionId: string) => null,
-        overrideDebateSession: async (_payload: {
-            sessionId: string;
-            moderatorId: string;
-            decision: 'pro' | 'con' | 'balanced';
-            reason?: string;
-        }) => null,
-        getDebateSession: async (_sessionId: string) => null,
-        listDebateHistory: async (_taskId?: string) => [],
-        getDebateReplay: async (_sessionId: string) => null,
-        generateDebateSummary: async (_sessionId: string) => null,
-        getTeamworkAnalytics: async () => ({
-            perAgentMetrics: [],
-            collaborationPatterns: {
-                votingParticipationRate: 0,
-                debateParticipationRate: 0,
-                consensusAlignmentRate: 0
-            },
-            efficiencyScores: {},
-            resourceAllocationInsights: [],
-            healthSignals: [],
-            comparisonReport: 'No agent teamwork data available yet.',
-            productivityRecommendations: [],
-            updatedAt: Date.now()
-        }),
-        councilSendMessage: async (payload: {
-            taskId: string;
-            stageId: string;
-            fromAgentId: string;
-            toAgentId?: string;
-            intent: 'REQUEST_HELP' | 'SHARE_CONTEXT' | 'PROPOSE_CHANGE' | 'BLOCKER_REPORT';
-            priority?: 'low' | 'normal' | 'high' | 'urgent';
-            payload: Record<string, string | number | boolean | null>;
-            expiresAt?: number;
-        }) => ({
-            id: 'mock-collab-message',
-            taskId: payload.taskId,
-            stageId: payload.stageId,
-            fromAgentId: payload.fromAgentId,
-            toAgentId: payload.toAgentId,
-            channel: payload.toAgentId ? 'private' as const : 'group' as const,
-            intent: payload.intent,
-            priority: payload.priority ?? 'normal',
-            payload: payload.payload,
-            createdAt: Date.now(),
-            expiresAt: payload.expiresAt
-        }),
-        councilGetMessages: async (_payload: {
-            taskId: string;
-            stageId?: string;
-            agentId?: string;
-            includeExpired?: boolean;
-        }) => [],
-        councilCleanupExpiredMessages: async (_taskId?: string) => ({ success: true, removed: 0 }),
-        councilHandleQuotaInterrupt: async (payload: {
-            taskId: string;
-            stageId?: string;
-            provider: string;
-            model: string;
-            reason?: string;
-            autoSwitch?: boolean;
-        }) => ({
-            success: true,
-            interruptId: `mock-interrupt-${Date.now()}`,
-            checkpointId: 'mock-checkpoint',
-            blockedByQuota: false,
-            switched: Boolean(payload.autoSwitch ?? true),
-            selectedFallback: { provider: 'openai', model: 'gpt-4o' },
-            availableFallbacks: [{ provider: 'openai', model: 'gpt-4o' }],
-            message: 'Mock quota interrupt handled.'
-        }),
-        councilRegisterWorkerAvailability: async (payload: {
-            taskId: string;
-            agentId: string;
-            status: 'available' | 'busy' | 'offline';
-            reason?: string;
-            skills?: string[];
-            contextReadiness?: number;
-        }) => ({
-            taskId: payload.taskId,
-            agentId: payload.agentId,
-            status: payload.status,
-            availableAt: payload.status === 'available' ? Date.now() : undefined,
-            lastActiveAt: Date.now(),
-            reason: payload.reason,
-            skills: payload.skills ?? [],
-            contextReadiness: payload.contextReadiness ?? 0.5,
-            completedStages: 0,
-            failedStages: 0,
-        }),
-        councilListAvailableWorkers: async (_payload: { taskId: string }) => [],
-        councilScoreHelperCandidates: async (_payload: {
-            taskId: string;
-            stageId: string;
-            requiredSkills: string[];
-            blockedAgentIds?: string[];
-            contextReadinessOverrides?: Record<string, number>;
-        }) => [],
-        councilGenerateHelperHandoff: async (payload: {
-            taskId: string;
-            stageId: string;
-            ownerAgentId: string;
-            helperAgentId: string;
-            stageGoal: string;
-            acceptanceCriteria: string[];
-            constraints: string[];
-            contextNotes?: string;
-        }) => ({
-            taskId: payload.taskId,
-            stageId: payload.stageId,
-            ownerAgentId: payload.ownerAgentId,
-            helperAgentId: payload.helperAgentId,
-            contextSummary: payload.contextNotes ?? payload.stageGoal,
-            acceptanceCriteria: payload.acceptanceCriteria,
-            constraints: payload.constraints,
-            generatedAt: Date.now()
-        }),
-        councilReviewHelperMerge: async (_payload: {
-            acceptanceCriteria: string[];
-            constraints: string[];
-            helperOutput: string;
-            reviewerNotes?: string;
-        }) => ({
-            accepted: true,
-            verdict: 'ACCEPT' as const,
-            reasons: ['Mock gate accepted helper output.'],
-            requiredFixes: [],
-            reviewedAt: Date.now()
-        }),
-        getTemplates: async (_category?: unknown) => [],
-        getTemplate: async (_id: string) => null,
-        saveTemplate: async (_template: unknown) => ({ success: true, template: _template }),
-        deleteTemplate: async (_id: string) => ({ success: true }),
-        exportTemplate: async (_id: string) => null,
-        importTemplate: async (_exported: unknown) => ({ success: false, error: 'Not available in web mode' }),
-        applyTemplate: async (_payload: {
-            templateId: string;
-            values: Record<string, string | number | boolean>;
-        }) => ({ success: false, error: 'Not available in web mode' }),
-        onUpdate: (_callback: (state: unknown) => void) => () => { },
-        onQuotaInterrupt: (_callback: (payload: {
-            success: boolean;
-            interruptId: string;
-            checkpointId?: string;
-            blockedByQuota: boolean;
-            switched: boolean;
-            selectedFallback?: { provider: string; model: string };
-            availableFallbacks: Array<{ provider: string; model: string }>;
-            message: string;
-            v?: 'v1';
-            dedupeKey?: string;
-            emittedAt?: number;
-        }) => void) => () => { },
-        council: {
-            generatePlan: async (_taskId: string, _task: string) => ({ success: true }),
-            getProposal: async (_taskId: string) => ({ success: true, plan: [] }),
-            approveProposal: async (_taskId: string) => ({ success: true }),
-            rejectProposal: async (_taskId: string, _reason?: string) => ({ success: true }),
-            startExecution: async (_taskId: string) => ({ success: true }),
-            pauseExecution: async (_taskId: string) => ({ success: true }),
-            resumeExecution: async (_taskId: string) => ({ success: true }),
-            getTimeline: async (_taskId: string) => ({ success: true, events: [] }),
-        },
-        // Canvas persistence stubs
-        saveCanvasNodes: async (_nodes: unknown[]) => { },
-        getCanvasNodes: async () => [],
-        deleteCanvasNode: async (_id: string) => { },
-        saveCanvasEdges: async (_edges: unknown[]) => { },
-        getCanvasEdges: async () => [],
-        deleteCanvasEdge: async (_id: string) => { },
-        health: async () => ({
-            success: true,
-            data: {
-                status: 'healthy' as const,
-                uiState: 'ready' as const,
-                budgets: { fastMs: 45, standardMs: 140, heavyMs: 320 },
-                metrics: {}
-            }
-        }),
-    },
     orchestrator: {
         start: async (_task: unknown, _workspaceId: unknown) => { },
         approve: async (_plan: unknown) => { },
@@ -1914,6 +1535,269 @@ export const webElectronMock: ElectronAPI = {
         stop: async () => { },
         onUpdate: (_callback: unknown) => () => { },
     },
+    session: {
+        conversation: {
+            complete: async (_request: import('@shared/types').ChatRequest) => ({
+                content: 'Mock response',
+            }),
+            stream: async (_request: import('@shared/types').ChatStreamRequest) => ({ success: true }),
+            abort: (_chatId: string) => { },
+            onStreamChunk: (
+                _callback: (
+                    chunk: import('@shared/types/session-conversation').SessionConversationStreamChunk
+                ) => void
+            ) => () => { },
+            onGenerationStatus: (
+                _callback: (
+                    data: import('@shared/types/session-conversation').SessionConversationGenerationStatus
+                ) => void
+            ) => () => { },
+        },
+        automation: {
+            start: async (_options: import('@shared/types/automation-workflow').AgentStartOptions) => ({
+                taskId: '',
+            }),
+            generatePlan: async (_options: import('@shared/types/automation-workflow').AgentStartOptions) => ({
+                taskId: '',
+            }),
+            approvePlan: async (
+                _plan: string[] | import('@shared/types/automation-workflow').WorkspaceStep[],
+                _taskId?: string
+            ) => undefined,
+            stop: async (_taskId?: string) => undefined,
+            pauseTask: async (_taskId: string) => ({ success: true as const }),
+            resumeTask: async (_taskId: string) => ({ success: true }),
+            saveSnapshot: async (_taskId: string) => ({ success: true, checkpointId: '' }),
+            approveCurrentPlan: async (_taskId: string) => ({ success: true }),
+            rejectCurrentPlan: async (_taskId: string, _reason?: string) => ({ success: true }),
+            resetState: async (_taskId?: string) => undefined,
+            getStatus: async (_taskId?: string) => ({
+                status: 'idle' as const,
+                currentTask: '',
+                plan: [],
+                history: [],
+            }),
+            getTaskMessages: async (_taskId: string) => ({ success: true, messages: [] }),
+            getTaskEvents: async (_taskId: string) => ({ success: true, events: [] }),
+            getTaskTelemetry: async (_taskId: string) => ({ success: true, telemetry: [] }),
+            getTaskHistory: async (_workspaceId?: string) => [],
+            deleteTask: async (_taskId: string) => ({ success: true }),
+            getAvailableModels: async () => ({ success: true, models: [] }),
+            retryStep: async (_index: number, _taskId?: string) => undefined,
+            selectModel: async (_payload: {
+                taskId: string;
+                provider: string;
+                model: string;
+            }) => ({ success: true }),
+            approveStep: async (_taskId: string, _stepId: string) => undefined,
+            skipStep: async (_taskId: string, _stepId: string) => undefined,
+            editStep: async (_taskId: string, _stepId: string, _text: string) => undefined,
+            addStepComment: async (_taskId: string, _stepId: string, _comment: string) => undefined,
+            insertInterventionPoint: async (_taskId: string, _afterStepId: string) => undefined,
+            getCheckpoints: async (_taskId: string) => [],
+            resumeCheckpoint: async (_checkpointId: string) => undefined,
+            rollbackCheckpoint: async (_checkpointId: string) => null,
+            getPlanVersions: async (_taskId: string) => [],
+            deleteTaskByNodeId: async (_nodeId: string) => false,
+            createPullRequest: async (_taskId?: string) => null,
+            getProfiles: async () => [],
+            getRoutingRules: async () => [],
+            setRoutingRules: async (_rules: import('@shared/types/automation-workflow').ModelRoutingRule[]) => ({
+                success: true as const,
+            }),
+            getTemplates: async (_category?: import('@shared/types/automation-workflow').AgentTemplateCategory) => [],
+            getTemplate: async (_id: string) => null,
+            saveTemplate: async (template: import('@shared/types/automation-workflow').AgentTemplate) => ({
+                success: true,
+                template,
+            }),
+            deleteTemplate: async (_id: string) => ({ success: true }),
+            exportTemplate: async (_id: string) => null,
+            importTemplate: async (_exported: import('@shared/types/automation-workflow').AgentTemplateExport) => ({
+                success: false,
+                error: 'Not available in web bridge',
+            }),
+            applyTemplate: async (_payload: {
+                templateId: string;
+                values: Record<string, string | number | boolean>;
+            }) => ({
+                success: false,
+                error: 'Not available in web bridge',
+            }),
+        },
+        workspace: {
+            saveCanvasNodes: async (
+                _nodes: import('@shared/types/session-workspace').SessionCanvasNodeRecord[]
+            ) => undefined,
+            getCanvasNodes: async () => [],
+            deleteCanvasNode: async (_id: string) => undefined,
+            saveCanvasEdges: async (
+                _edges: import('@shared/types/session-workspace').SessionCanvasEdgeRecord[]
+            ) => undefined,
+            getCanvasEdges: async () => [],
+            deleteCanvasEdge: async (_id: string) => undefined,
+        },
+        council: {
+            generatePlan: async (_taskId: string, _task: string) => ({ success: true }),
+            getProposal: async (_taskId: string) => ({ success: true, plan: [] }),
+            approveProposal: async (_taskId: string) => ({ success: true }),
+            rejectProposal: async (_taskId: string, _reason?: string) => ({ success: true }),
+            startExecution: async (_taskId: string) => ({ success: true }),
+            pauseExecution: async (_taskId: string) => ({ success: true }),
+            resumeExecution: async (_taskId: string) => ({ success: true }),
+            getTimeline: async (_taskId: string) => ({ success: true, events: [] }),
+            createVotingSession: async (_payload: {
+                taskId: string;
+                stepIndex: number;
+                question: string;
+                options: string[];
+            }) => null,
+            submitVote: async (_payload: {
+                sessionId: string;
+                modelId: string;
+                provider: string;
+                decision: string;
+                confidence: number;
+                reasoning?: string;
+            }) => null,
+            requestVotes: async (_payload: {
+                sessionId: string;
+                models: Array<{ provider: string; model: string }>;
+            }) => null,
+            resolveVoting: async (_sessionId: string) => null,
+            getVotingSession: async (_sessionId: string) => null,
+            listVotingSessions: async (_taskId?: string) => [],
+            getVotingAnalytics: async (_taskId?: string) => ({
+                totalSessions: 0,
+                pendingSessions: 0,
+                resolvedSessions: 0,
+                deadlockedSessions: 0,
+                averageVotesPerSession: 0,
+                averageConfidence: 0,
+                disagreementIndex: 0,
+                updatedAt: Date.now(),
+            }),
+            getVotingConfiguration: async () => ({
+                minimumVotes: 2,
+                deadlockThreshold: 0.5,
+                autoResolve: true,
+                autoResolveTimeoutMs: 30000,
+            }),
+            updateVotingConfiguration: async (patch: Partial<import('@shared/types/automation-workflow').VotingConfiguration>) => ({
+                minimumVotes: patch.minimumVotes ?? 2,
+                deadlockThreshold: patch.deadlockThreshold ?? 0.5,
+                autoResolve: patch.autoResolve ?? true,
+                autoResolveTimeoutMs: patch.autoResolveTimeoutMs ?? 30000,
+            }),
+            listVotingTemplates: async () => [],
+            buildConsensus: async (_outputs: Array<{ modelId: string; provider: string; output: string }>) => null,
+            overrideVotingDecision: async (_payload: {
+                sessionId: string;
+                finalDecision: string;
+                reason?: string;
+            }) => null,
+            createDebateSession: async (_payload: {
+                taskId: string;
+                stepIndex: number;
+                topic: string;
+            }) => null,
+            submitDebateArgument: async (_payload: {
+                sessionId: string;
+                agentId: string;
+                provider: string;
+                side: import('@shared/types/automation-workflow').DebateSide;
+                content: string;
+                confidence: number;
+                citations?: import('@shared/types/automation-workflow').DebateCitation[];
+            }) => null,
+            resolveDebateSession: async (_sessionId: string) => null,
+            overrideDebateSession: async (_payload: {
+                sessionId: string;
+                moderatorId: string;
+                decision: import('@shared/types/automation-workflow').DebateSide | 'balanced';
+                reason?: string;
+            }) => null,
+            getDebateSession: async (_sessionId: string) => null,
+            listDebateHistory: async (_taskId?: string) => [],
+            getDebateReplay: async (_sessionId: string) => null,
+            generateDebateSummary: async (_sessionId: string) => null,
+            getTeamworkAnalytics: async () => null,
+            sendMessage: async (_payload: {
+                taskId: string;
+                stageId: string;
+                fromAgentId: string;
+                toAgentId?: string;
+                intent: import('@shared/types/automation-workflow').AgentCollaborationIntent;
+                priority?: import('@shared/types/automation-workflow').AgentCollaborationPriority;
+                payload: Record<string, string | number | boolean | null>;
+                expiresAt?: number;
+            }) => null,
+            getMessages: async (_payload: {
+                taskId: string;
+                stageId?: string;
+                agentId?: string;
+                includeExpired?: boolean;
+            }) => [],
+            cleanupExpiredMessages: async (_taskId?: string) => ({ success: true, removed: 0 }),
+            handleQuotaInterrupt: async (_payload: {
+                taskId: string;
+                stageId?: string;
+                provider: string;
+                model: string;
+                reason?: string;
+                autoSwitch?: boolean;
+            }) => null,
+            registerWorkerAvailability: async (_payload: {
+                taskId: string;
+                agentId: string;
+                status: 'available' | 'busy' | 'offline';
+                reason?: string;
+                skills?: string[];
+                contextReadiness?: number;
+            }) => null,
+            listAvailableWorkers: async (_payload: { taskId: string }) => [],
+            scoreHelperCandidates: async (_payload: {
+                taskId: string;
+                stageId: string;
+                requiredSkills: string[];
+                blockedAgentIds?: string[];
+                contextReadinessOverrides?: Record<string, number>;
+            }) => [],
+            generateHelperHandoff: async (_payload: {
+                taskId: string;
+                stageId: string;
+                ownerAgentId: string;
+                helperAgentId: string;
+                stageGoal: string;
+                acceptanceCriteria: string[];
+                constraints: string[];
+                contextNotes?: string;
+            }) => null,
+            reviewHelperMerge: async (_payload: {
+                acceptanceCriteria: string[];
+                constraints: string[];
+                helperOutput: string;
+                reviewerNotes?: string;
+            }) => ({
+                accepted: false,
+                verdict: 'REVISE' as const,
+                reasons: [],
+                requiredFixes: [],
+                reviewedAt: Date.now(),
+            }),
+            onQuotaInterrupt: (
+                _callback: (payload: import('@shared/types/session-engine').SessionCouncilQuotaInterruptEvent) => void
+            ) => () => { },
+        },
+        getState: async (_sessionId: string) => null,
+        list: async () => [],
+        listCapabilities: async () => [],
+        health: async () => ({
+            status: 'ready' as const,
+            activeSessions: 0,
+        }),
+        onEvent: (_callback: (event: import('@shared/types/session-engine').SessionEventEnvelope) => void) => () => { },
+    },
     metrics: {
         getProviderStats: async () => ({}),
         getSummary: async () => ({ totalRequests: 0, successRate: 0, avgLatencyMs: 0, providers: [] }),
@@ -1923,35 +1807,6 @@ export const webElectronMock: ElectronAPI = {
         checkLimit: async () => ({ allowed: true }),
         getUsageCount: async () => 0,
         recordUsage: async () => ({ success: true }),
-    },
-    workflow: {
-        getAll: async () => [],
-        get: async (_id: string) => null,
-        create: async (workflow: Omit<Workflow, 'id' | 'createdAt' | 'updatedAt'>) => ({
-            ...workflow,
-            id: 'mock-workflow-id',
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-        } as Workflow),
-        update: async (id: string, updates: Partial<Workflow>) => ({
-            id,
-            name: 'Mock Workflow',
-            enabled: true,
-            triggers: [],
-            steps: [],
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-            ...updates,
-        } as Workflow),
-        delete: async (_id: string) => { },
-        execute: async (id: string, _context?: Record<string, unknown>) => ({
-            workflowId: id,
-            status: 'success',
-            startTime: Date.now(),
-            endTime: Date.now(),
-            logs: ['Mock execution started', 'Mock step 1 completed', 'Workflow finished successfully'],
-        } as WorkflowExecutionResult),
-        triggerManual: async (_triggerId: string, _context?: Record<string, unknown>) => { },
     },
     voice: {
         getSettings: async () => ({
@@ -2116,7 +1971,50 @@ export const webElectronMock: ElectronAPI = {
         delete: async (_id: string) => { /* noop */ },
     },
 
+    sharedPrompts: {
+        list: async (_filter?: {
+            query?: string;
+            category?: string;
+            tags?: string[];
+            limit?: number;
+            offset?: number;
+        }) => [],
+        create: async (_input: {
+            title: string;
+            content: string;
+            category?: string;
+            tags?: string[];
+            author?: string;
+        }) => ({
+            id: '',
+            title: '',
+            content: '',
+            category: '',
+            tags: [],
+            author: '',
+            createdAt: 0,
+            updatedAt: 0,
+        }),
+        update: async (_id: string, _input: {
+            title?: string;
+            content?: string;
+            category?: string;
+            tags?: string[];
+            author?: string;
+        }) => undefined,
+        delete: async (_id: string) => true,
+        export: async (_filePath?: string) => ({ success: true, data: '[]' }),
+        import: async (_filePathOrJson: string, _isFilePath?: boolean) => ({ success: true, imported: 0 }),
+    },
+
     userCollaboration: {
+        joinRoom: async (_params: JoinCollaborationRoom): Promise<CollaborationResponse> => ({ success: true }),
+        leaveRoom: async (_roomId: string): Promise<CollaborationResponse> => ({ success: true }),
+        sendUpdate: async (_params: CollaborationSyncUpdate): Promise<CollaborationResponse> => ({ success: true }),
+        onSyncUpdate: (_callback: (payload: { roomId: string; data: string }) => void) => () => { /* noop */ },
+        onError: (_callback: (payload: { roomId: string; error: string }) => void) => () => { /* noop */ },
+    },
+    liveCollaboration: {
         joinRoom: async (_params: JoinCollaborationRoom): Promise<CollaborationResponse> => ({ success: true }),
         leaveRoom: async (_roomId: string): Promise<CollaborationResponse> => ({ success: true }),
         sendUpdate: async (_params: CollaborationSyncUpdate): Promise<CollaborationResponse> => ({ success: true }),
@@ -2130,4 +2028,5 @@ if (typeof window !== 'undefined' && !window.electron) {
 }
 
 export default webElectronMock;
+
 

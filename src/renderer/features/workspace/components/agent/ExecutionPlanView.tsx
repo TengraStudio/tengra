@@ -1,4 +1,4 @@
-import type { PlanCostBreakdown, StepComment, StepConfidence } from '@shared/types/workspace-agent';
+import type { PlanCostBreakdown, StepComment, StepConfidence } from '@shared/types/automation-workflow';
 import {
     CheckCircle2,
     Coins,
@@ -479,3 +479,4 @@ export const ExecutionPlanView: React.FC<ExecutionPlanViewProps> = ({
         </div>
     );
 };
+

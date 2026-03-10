@@ -30,6 +30,18 @@ export {
     useResponsiveAnalyticsStore
 } from './responsive-analytics.store';
 export {
+    ensureSessionCapabilityCatalog,
+    ensureSessionRecoverySnapshots,
+    ensureSessionState,
+    getSessionCapabilityCatalogSnapshot,
+    getSessionRecoverySnapshotList,
+    getSessionStateSnapshot,
+    refreshSessionCapabilityCatalog,
+    refreshSessionRecoverySnapshots,
+    refreshSessionState,
+    subscribeSessionRuntime
+} from './session-runtime.store';
+export {
     loadSettings,
     updateSettings as updateSettingsInStore,
     useSettingsStore

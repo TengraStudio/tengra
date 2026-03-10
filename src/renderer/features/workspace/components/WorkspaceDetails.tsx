@@ -148,8 +148,7 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                     sidebarCollapsed={ps.sidebarCollapsed}
                     toggleSidebar={() => ps.setSidebarCollapsed(!ps.sidebarCollapsed)}
                     showAgentPanel={ps.showAgentPanel}
-                    toggleAgentPanel={() => ps.setShowAgentPanel(!ps.showAgentPanel)}
-                    mountStatus={wm.mountStatus}
+                    toggleAgentPanel={() => ps.setShowAgentPanel(!ps.showAgentPanel)} 
                 />
             </React.Profiler>
 

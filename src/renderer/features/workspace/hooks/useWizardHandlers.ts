@@ -41,6 +41,8 @@ interface SSHBrowserNextOptions {
     formData: FormData;
     sshForm: SSHForm;
     sshPath: string;
+    setError: (error: string | null) => void;
+    setIsLoading: (loading: boolean) => void;
     onWorkspaceCreated: (path: string, name: string, description: string, mounts?: WorkspaceMount[]) => Promise<boolean>;
     onClose: () => void;
 }
@@ -113,21 +115,25 @@ export const useCreateWorkspaceHandler = (options: CreateWorkspaceOptions) => {
             const safeWorkspaceName = formData.name.replace(/[^a-zA-Z0-9-_]/g, '-');
             const workspacePath = `${workspacesDir}\\${safeWorkspaceName}`;
 
-            await window.electron.createDirectory(workspacesDir);
-            await window.electron.createDirectory(workspacePath);
+            await window.electron.files.createDirectory(workspacesDir);
+            await window.electron.files.createDirectory(workspacePath);
 
             const readmeContent = `# ${formData.name}\n\n${formData.description}\n`;
-            await window.electron.writeFile(`${workspacePath}\\README.md`, readmeContent);
+            await window.electron.files.writeFile(`${workspacePath}\\README.md`, readmeContent);
 
             const success = await onWorkspaceCreated(workspacePath, formData.name, formData.description);
             if (success) {
                 onClose();
+                return;
             }
+            setError('Failed to create workspace');
+            setStep('details');
 
         } catch (err) {
-            window.electron.log.error('Workspace Creation Failed:', err);
-            setError(err instanceof Error ? err.message : 'Failed to create workspace');
-            setStep('selection');
+            const errorToReport = err instanceof Error ? err : new Error('Failed to create workspace');
+            window.electron.log.error('Workspace Creation Failed:', errorToReport);
+            setError(errorToReport.message);
+            setStep('details');
         } finally {
             setIsLoading(false);
         }
@@ -149,7 +155,8 @@ export const useImportLocalHandler = (
         try {
             const result = await window.electron.selectDirectory();
             if (result.success && result.path) {
-                const dirName = result.path.split(/[/\\]/).pop() ?? 'Workspace';
+                const normalizedPath = result.path.replace(/[/\\]+$/, '');
+                const dirName = normalizedPath.split(/[/\\]/).pop() || 'Workspace';
                 const mounts: WorkspaceMount[] = [{
                     id: `local-${Date.now()}`,
                     name: formData.name || dirName,
@@ -172,27 +179,37 @@ export const useImportLocalHandler = (
 };
 
 export const useSSHBrowserNextHandler = (options: SSHBrowserNextOptions) => {
-    const { sshConnectionId, formData, sshForm, sshPath, onWorkspaceCreated, onClose } = options;
+    const { sshConnectionId, formData, sshForm, sshPath, setError, setIsLoading, onWorkspaceCreated, onClose } = options;
     const handleSSHBrowserNext = async () => {
-        const sshMount: WorkspaceMount = {
-            id: sshConnectionId ?? `ssh-${Date.now()}`,
-            name: formData.name || `${sshForm.username}@${sshForm.host}`,
-            type: 'ssh',
-            rootPath: sshPath,
-            ssh: {
-                host: sshForm.host,
-                port: parseInt(sshForm.port) || 22,
-                username: sshForm.username,
-                authType: sshForm.authType,
-                password: sshForm.authType === 'password' ? sshForm.password : undefined,
-                privateKey: sshForm.authType === 'key' ? sshForm.privateKey : undefined,
-                passphrase: sshForm.authType === 'key' ? sshForm.passphrase : undefined
+        setIsLoading(true);
+        setError(null);
+        try {
+            const sshMount: WorkspaceMount = {
+                id: sshConnectionId ?? `ssh-${Date.now()}`,
+                name: formData.name || `${sshForm.username}@${sshForm.host}`,
+                type: 'ssh',
+                rootPath: sshPath,
+                ssh: {
+                    host: sshForm.host,
+                    port: parseInt(sshForm.port) || 22,
+                    username: sshForm.username,
+                    authType: sshForm.authType,
+                    password: sshForm.authType === 'password' ? sshForm.password : undefined,
+                    privateKey: sshForm.authType === 'key' ? sshForm.privateKey : undefined,
+                    passphrase: sshForm.authType === 'key' ? sshForm.passphrase : undefined
+                }
+            };
+            const remoteWorkspacePath = `ssh://${sshForm.username}@${sshForm.host}:${parseInt(sshForm.port, 10) || 22}${sshPath}`;
+            const success = await onWorkspaceCreated(remoteWorkspacePath, formData.name || sshMount.name, formData.description, [sshMount]);
+            if (success) {
+                onClose();
+                return;
             }
-        };
-        const remoteWorkspacePath = `ssh://${sshForm.username}@${sshForm.host}:${parseInt(sshForm.port, 10) || 22}${sshPath}`;
-        const success = await onWorkspaceCreated(remoteWorkspacePath, formData.name || sshMount.name, formData.description, [sshMount]);
-        if (success) {
-            onClose();
+            setError('Failed to create workspace');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to create workspace');
+        } finally {
+            setIsLoading(false);
         }
     };
 

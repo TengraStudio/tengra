@@ -47,8 +47,7 @@ const sectionData = {
     "active": "Activo",
     "memory": "Memoria",
     "agent": "Agente",
-    "models": "Modelos",
-    "workflows": "Flujos de trabajo"
+    "models": "Modelos"
 };
 
 export default sectionData;

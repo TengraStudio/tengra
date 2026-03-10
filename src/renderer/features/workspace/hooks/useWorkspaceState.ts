@@ -8,8 +8,6 @@ import { setWorkspaceShellState, useUiLayoutStore } from '@/store/ui-layout.stor
 import { WorkspaceEntry } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
-const getWorkspaceAgentBridge = () => window.electron.workspaceAgent;
-
 export function useWorkspaceState() {
     const [selectedEntries, setSelectedEntries] = useState<WorkspaceEntry[]>([]);
     const [lastSelectedEntry, setLastSelectedEntry] = useState<WorkspaceEntry | null>(null);
@@ -50,7 +48,7 @@ export function useWorkspaceState() {
     }, [persistedWorkspaceShell]);
 
     useEffect(() => {
-        const unsubscribe = getWorkspaceAgentBridge().onQuotaInterrupt(payload => {
+        const unsubscribe = window.electron.session.council.onQuotaInterrupt(payload => {
             const dedupeKey = payload.dedupeKey ?? payload.interruptId;
             if (recentQuotaInterruptKeysRef.current.has(dedupeKey)) {
                 return;
@@ -77,7 +75,7 @@ export function useWorkspaceState() {
                 type: payload.blockedByQuota ? 'error' : 'warning',
                 title: 'Model Quota Interrupt',
                 message: finalMessage,
-                source: 'workspace-agent',
+                source: 'session-council',
             });
         });
 

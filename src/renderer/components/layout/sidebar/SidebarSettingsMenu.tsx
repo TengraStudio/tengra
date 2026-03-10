@@ -1,4 +1,4 @@
-import { BarChart, Code, Image, LucideIcon, Mic, Palette, Rocket,Server, Settings, Shield, Sparkles, User, Users } from 'lucide-react';
+import { BarChart, Code, Image, LucideIcon, Mic, Palette, Rocket, Settings, Shield, Sparkles, User, Users } from 'lucide-react';
 import React from 'react';
 
 import { SettingsCategory } from '@/features/settings/types';
@@ -20,7 +20,6 @@ const SETTINGS_ITEMS: SettingsMenuItem[] = [
     { id: 'speech', labelKey: 'settings.speech', fallback: 'Speech', icon: Mic },
     { id: 'statistics', labelKey: 'settings.statistics', fallback: 'Statistics', icon: BarChart },
     { id: 'gallery', labelKey: 'settings.gallery', fallback: 'Gallery', icon: Image },
-    { id: 'mcp-servers', labelKey: 'settings.mcpServers', fallback: 'MCP', icon: Server },
     { id: 'developer', labelKey: 'settings.developer', fallback: 'Developer', icon: Code },
     { id: 'advanced', labelKey: 'settings.advanced', fallback: 'Advanced', icon: Shield },
     { id: 'about', labelKey: 'settings.about', fallback: 'About', icon: Rocket }

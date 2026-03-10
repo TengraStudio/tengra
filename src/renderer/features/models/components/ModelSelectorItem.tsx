@@ -30,22 +30,6 @@ const ModelLabelSection: React.FC<{ model: ModelListItem }> = ({ model }) => (
 const ModelInfoBadges: React.FC<{ model: ModelListItem, t: (k: string) => string }> = ({ model, t }) => (
     <>
         <ModelLifecycleBadge model={model} />
-        {model.isLocal ? (
-            <span className="text-xxxs font-black text-info bg-info/10 px-1.5 py-0.5 rounded leading-none mr-1">{t('modelSelector.local')}</span>
-        ) : (
-            <span className="text-xxxs font-black text-muted-foreground bg-muted/30 px-1.5 py-0.5 rounded leading-none mr-1">{t('modelSelector.cloud')}</span>
-        )}
-        {model.supportsReasoning && (
-            <span className="text-xxxs font-black text-accent bg-accent/10 px-1.5 py-0.5 rounded leading-none mr-1">{t('modelSelector.reasoningBadge')}</span>
-        )}
-        {model.isFree && (
-            <span className="text-xxxs font-black text-success bg-success/10 px-1.5 py-0.5 rounded leading-none mr-1">{t('modelSelector.free')}</span>
-        )}
-        {model.type === 'image' && (
-            <span className="text-xxxs font-black text-success bg-success/10 px-1.5 py-0.5 rounded leading-none mr-1">
-                {t('modelSelector.image')}
-            </span>
-        )}
         {model.disabled && (
             <span className="text-xxxs font-black text-destructive flex items-center gap-1 bg-destructive/10 px-1.5 py-0.5 rounded leading-none" title={model.disabledReason ?? t('modelSelector.limit')}>
                 <Info className="w-2.5 h-2.5" />

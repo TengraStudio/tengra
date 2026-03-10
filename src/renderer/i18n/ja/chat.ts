@@ -22,7 +22,7 @@ const sectionData = {
         "plaintext": "平文",
         "running": "走っています...",
         "execute": "実行する",
-        "addToWorkspace": "プロジェクトに追加",
+        "addToWorkspace": "ワークスペースに追加",
         "openInEditor": "エディタで開く",
         "output": "出力",
         "executed": "{{language}} ブロックが正常に実行されました。"

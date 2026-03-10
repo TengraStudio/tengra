@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 
+import { WorkspaceStep } from '@shared/types/automation-workflow';
 import { JsonValue } from '@shared/types/common';
-import { WorkspaceStep } from '@shared/types/workspace-agent';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 type StepType = 'task' | 'fork' | 'join';
@@ -179,3 +179,4 @@ export class AgentTaskPlanCompiler {
         return normalizedSteps;
     }
 }
+

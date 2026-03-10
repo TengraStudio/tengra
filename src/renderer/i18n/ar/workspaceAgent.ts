@@ -23,7 +23,7 @@ const sectionData = {
     "selectAgentProfile": "حدد ملف تعريف الوكيل",
     "agentSelected": "تم تحديد الوكيل",
     "defaultAgent": "الوكيل الافتراضي",
-    "defaultAgentDesc": "وكيل المشروع متعدد الأغراض",
+    "defaultAgentDesc": "وكيل المساحة عمل متعدد الأغراض",
     "approveAndRun": "الموافقة والتشغيل",
     "planning": "جارٍ التخطيط",
     "running": "جارٍ التشغيل",
@@ -34,7 +34,7 @@ const sectionData = {
     "thinkingOff": "التفكير معطّل",
     "selectAction": "حدد إجراء",
     "noDescription": "لا يوجد وصف",
-    "selectWorkspace": "حدد مشروعاً",
+    "selectWorkspace": "حدد مساحة عملاً",
     "unnamedGroup": "مجموعة غير محددة",
     "votingPanel": {
         "title": "جلسات التصويت",

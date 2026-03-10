@@ -5,8 +5,11 @@
 
 export * from '@shared/constants/app-config';
 export * from '@shared/constants/defaults';
+export * from '@shared/constants/ipc-channels';
 export * from '@shared/constants/ipc-contract';
 export * from '@shared/constants/limits';
+export * from '@shared/constants/runtime-manifest';
+export * from '@shared/constants/session-capabilities';
 export * from '@shared/constants/timeouts';
 export * from '@shared/constants/ui';
 export * from '@shared/constants/workspace-compat';

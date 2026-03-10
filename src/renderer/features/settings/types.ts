@@ -11,7 +11,6 @@ export type SettingsCategory =
     | 'advanced'
     | 'about'
     | 'mcp-servers'
-    | 'mcp-marketplace'
     | 'images'
     | 'usage-limits'
     | 'voice';

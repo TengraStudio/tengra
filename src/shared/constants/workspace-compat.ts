@@ -9,7 +9,6 @@ const LEGACY_SINGULAR_TAIL = 'ject';
 const LEGACY_SINGULAR = `${LEGACY_SINGULAR_HEAD}${LEGACY_SINGULAR_TAIL}`;
 const LEGACY_PLURAL = `${LEGACY_SINGULAR}s`;
 
-const AGENT_SEGMENT = 'agent';
 const CHATS_SEGMENT = 'chats';
 const CODE_SYMBOLS_SEGMENT = 'code_symbols';
 const CODING_SEGMENT = 'coding';
@@ -49,7 +48,7 @@ function normalizeWorkspaceCompatLookup(value?: string | null): string | undefin
 export const WORKSPACE_COMPAT_TARGET_VALUES = {
     RELATED_WORKSPACES: 'related-workspaces',
     WORKSPACE: 'workspace',
-    WORKSPACE_AGENT: 'workspace-agent'
+    AUTOMATION_WORKFLOW: 'automation-workflow',
 } as const;
 
 /** Prior alias values still supported by compatibility layers. */
@@ -61,23 +60,23 @@ export const WORKSPACE_COMPAT_ALIAS_VALUES = {
 
 /** Prior source values still seen in persisted state and compatibility tests. */
 export const WORKSPACE_COMPAT_SOURCE_VALUES = {
-    AGENT: joinSegments('-', LEGACY_SINGULAR, AGENT_SEGMENT)
+    AUTOMATION_WORKFLOW: 'automation-workflow',
 } as const;
 
 /** Prior channel values still referenced by compatibility checks. */
 export const WORKSPACE_COMPAT_CHANNEL_VALUES = {
     SINGULAR_UPDATED: joinSegments(':', LEGACY_SINGULAR, UPDATED_SEGMENT),
-    AGENT_HEALTH: joinSegments(':', WORKSPACE_COMPAT_SOURCE_VALUES.AGENT, HEALTH_SEGMENT),
-    AGENT_START_TASK: joinSegments(':', WORKSPACE_COMPAT_SOURCE_VALUES.AGENT, START_TASK_SEGMENT)
+    AUTOMATION_WORKFLOW_HEALTH: joinSegments(':', WORKSPACE_COMPAT_SOURCE_VALUES.AUTOMATION_WORKFLOW, HEALTH_SEGMENT),
+    AUTOMATION_WORKFLOW_START_TASK: joinSegments(':', WORKSPACE_COMPAT_SOURCE_VALUES.AUTOMATION_WORKFLOW, START_TASK_SEGMENT),
 } as const;
 
 /** Prior schema/table/column/value literals retained for runtime compatibility. */
 export const WORKSPACE_COMPAT_SCHEMA_VALUES = {
-    TABLE: LEGACY_PLURAL,
-    CODING_TABLE: joinSegments('_', LEGACY_SINGULAR, CODING_SEGMENT),
-    ID_COLUMN: joinSegments('_', LEGACY_SINGULAR, ID_SEGMENT),
-    IDEAS_TABLE: joinSegments('_', LEGACY_SINGULAR, IDEAS_SEGMENT),
-    PATH_COLUMN: joinSegments('_', LEGACY_SINGULAR, PATH_SEGMENT)
+    TABLE: 'workspaces',
+    CODING_TABLE: joinSegments('_', 'workspace', CODING_SEGMENT),
+    ID_COLUMN: joinSegments('_', 'workspace', ID_SEGMENT),
+    IDEAS_TABLE: joinSegments('_', 'workspace', IDEAS_SEGMENT),
+    PATH_COLUMN: joinSegments('_', 'workspace', PATH_SEGMENT)
 } as const;
 
 /** Prior index names retained by current database and migration paths. */
@@ -94,7 +93,7 @@ export const WORKSPACE_COMPAT_INDEX_VALUES = {
     UAC_TASKS_BY_SINGULAR_STATUS: joinSegments('_', IDX_SEGMENT, UAC_TASKS_SEGMENT, LEGACY_SINGULAR, STATUS_SEGMENT)
 } as const;
 
-/** Prior external tool names retained by bundled marketplace data. */
+/** Prior external tool names retained by bundled compatibility data. */
 export const WORKSPACE_COMPAT_TOOL_VALUES = {
     LIST_PLURAL: joinSegments('_', LIST_SEGMENT, LEGACY_PLURAL)
 } as const;
@@ -167,9 +166,9 @@ export function normalizeWorkspaceCompatSource(value?: string | null): string | 
         return undefined;
     }
 
-    return lookupValue === WORKSPACE_COMPAT_SOURCE_VALUES.AGENT
-        || lookupValue === WORKSPACE_COMPAT_TARGET_VALUES.WORKSPACE_AGENT
-        ? WORKSPACE_COMPAT_TARGET_VALUES.WORKSPACE_AGENT
+    return lookupValue === WORKSPACE_COMPAT_SOURCE_VALUES.AUTOMATION_WORKFLOW
+        || lookupValue === WORKSPACE_COMPAT_TARGET_VALUES.AUTOMATION_WORKFLOW
+        ? WORKSPACE_COMPAT_TARGET_VALUES.AUTOMATION_WORKFLOW
         : trimmedValue;
 }
 

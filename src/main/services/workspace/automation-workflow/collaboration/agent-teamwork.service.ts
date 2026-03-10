@@ -5,7 +5,7 @@ import {
     AgentTeamworkAnalytics,
     HelperCandidateScore,
     WorkerAvailabilityRecord,
-} from '@shared/types/workspace-agent';
+} from '@shared/types/automation-workflow';
 
 export interface TeamworkDependencies {
     telemetry?: TelemetryService;
@@ -279,3 +279,4 @@ export class AgentTeamworkService extends BaseService {
         this.workerAvailability.clear();
     }
 }
+

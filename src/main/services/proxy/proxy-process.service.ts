@@ -11,6 +11,7 @@ import { DataService } from '@main/services/data/data.service';
 import { validatePort } from '@main/services/proxy/proxy-validation.util';
 import { AuthService } from '@main/services/security/auth.service';
 import { AuthAPIService } from '@main/services/security/auth-api.service';
+import { getManagedRuntimeBinaryPath } from '@main/services/system/runtime-path.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { OPERATION_TIMEOUTS } from '@shared/constants/timeouts';
 import { JsonObject } from '@shared/types/common';
@@ -272,8 +273,7 @@ export class ProxyProcessManager {
     }
 
     private getBinaryPath(): string {
-        const binName = process.platform === 'win32' ? 'cliproxy-embed.exe' : 'cliproxy-embed';
-        return path.join(process.cwd(), 'resources', 'bin', binName);
+        return getManagedRuntimeBinaryPath('cliproxy-embed');
     }
 
     private getSourceDir(): string {
@@ -316,14 +316,14 @@ export class ProxyProcessManager {
             appLogger.warn('Proxy:Build', stderr.trim());
         }
 
-        // Ensure resources/bin exists
+        // Ensure the managed runtime bin directory exists
         const binDir = path.dirname(binaryPath);
         const binDirExists = await fs.promises.access(binDir, fs.constants.F_OK).then(() => true).catch(() => false);
         if (!binDirExists) {
             await fs.promises.mkdir(binDir, { recursive: true });
         }
 
-        // Move/Copy binary from source dir to resources/bin
+        // Move/Copy binary from source dir to the managed runtime directory
         const builtBinary = path.join(sourceDir, path.basename(binaryPath));
         const builtExists = await fs.promises.access(builtBinary, fs.constants.F_OK).then(() => true).catch(() => false);
         if (builtExists) {

@@ -3,9 +3,9 @@
  * Provides intelligent caching layer for frequently accessed database queries
  */
 
-import { Chat, Folder, Message, Workspace } from '@/types';
+import { Chat, Folder, Message, Workspace, WorkspaceMount } from '@/types';
 
-import { chatCache, dbQueryCache, invalidateCache, withCache,workspaceCache } from './lru-cache.util';
+import { chatCache, dbQueryCache, invalidateCache, withCache, workspaceCache } from './lru-cache.util';
 
 export class CachedDatabase {
     /**
@@ -164,7 +164,7 @@ export class CachedDatabase {
     /**
      * Create workspace and invalidate cache
      */
-    static async createWorkspace(name: string, path: string, description: string, mounts?: string): Promise<Workspace> {
+    static async createWorkspace(name: string, path: string, description: string, mounts?: WorkspaceMount[]): Promise<Workspace> {
         const result = await window.electron.db.createWorkspace(name, path, description, mounts);
 
         // Invalidate workspace cache

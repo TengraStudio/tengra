@@ -8,7 +8,7 @@ const sectionData = {
     "commandPalette": "命令面板",
     "toggleSidebar": "切换侧边栏",
     "goToChat": "前往聊天",
-    "goToWorkspaces": "前往项目",
+    "goToWorkspaces": "前往工作区",
     "goToCouncil": "前往评议会",
     "goToSettings": "前往设置",
     "sendMessage": "发送消息",

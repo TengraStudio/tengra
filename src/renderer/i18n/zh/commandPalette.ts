@@ -28,7 +28,7 @@ const sectionData = {
     "select": "选择",
     "close": "关闭",
     "engineLabel": "Tengra 命令引擎",
-    "previewEmpty": "选择一个项目以查看详情",
+    "previewEmpty": "选择一个工作区以查看详情",
     "noResultsHint": "试着搜索聊天、模型或设置"
 };
 

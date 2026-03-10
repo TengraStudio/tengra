@@ -29,6 +29,7 @@ import { ScreenshotService } from '@main/services/ui/screenshot.service';
 import { DockerService } from '@main/services/workspace/docker.service';
 import { GitService } from '@main/services/workspace/git.service';
 import { SSHService } from '@main/services/workspace/ssh.service';
+import { WorkspaceService } from '@main/services/workspace/workspace.service';
 import { ServiceResponse } from '@shared/types';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -60,6 +61,7 @@ export interface McpDeps {
     modelCollaboration: ModelCollaborationService;
     rateLimit: RateLimitService;
     auditLog: AuditLogService;
+    workspace: WorkspaceService;
 }
 
 export type McpHandlerResult = JsonValue | ServiceResponse<JsonValue | void> | void | unknown;
@@ -227,12 +229,20 @@ export const validatePath = (basePath: string, inputPath: string): string => {
  * @returns Wrapped handler with timeout
  */
 export const withTimeout = <T>(handler: () => Promise<T>, timeoutMs = 30000): Promise<T> => {
-    return Promise.race([
-        handler(),
-        new Promise<T>((_, reject) =>
-            setTimeout(() => reject(new Error(`Operation timeout after ${timeoutMs}ms`)), timeoutMs)
-        ),
-    ]);
+    let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+    const timeoutPromise = new Promise<T>((_, reject) => {
+        timeoutHandle = setTimeout(
+            () => reject(new Error(`Operation timeout after ${timeoutMs}ms`)),
+            timeoutMs
+        );
+        if (timeoutHandle?.unref) { timeoutHandle.unref(); }
+    });
+
+    return Promise.race([handler(), timeoutPromise]).finally(() => {
+        if (timeoutHandle !== null) {
+            clearTimeout(timeoutHandle);
+        }
+    });
 };
 
 /**

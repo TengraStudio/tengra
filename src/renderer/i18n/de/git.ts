@@ -2,7 +2,7 @@ const sectionData = {
     "commitGenerator": "Git Commit Generator",
     "generatorSubtitle": "KI-gestützte Commit-Nachrichtenvorschläge",
     "generate": "Generieren",
-    "selectWorkspace": "Wählen Sie ein Projekt aus, um Commit-Nachrichten zu generieren",
+    "selectWorkspace": "Wählen Sie ein Arbeitsbereich aus, um Commit-Nachrichten zu generieren",
     "suggestedMessage": "Vorgeschlagene Commit-Nachricht",
     "stagedChanges": "Vorschau der indexierten Änderungen",
     "noStagedChanges": "Keine indexierten Änderungen gefunden. Verwenden Sie zuerst `git add`, um Änderungen zu indexieren.",

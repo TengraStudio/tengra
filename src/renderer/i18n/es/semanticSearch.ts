@@ -1,7 +1,7 @@
 const sectionData = {
     "title": "Búsqueda semántica",
     "placeholder": "Pregunta sobre el código...",
-    "indexing": "Indexando proyecto...",
+    "indexing": "Indexando espacio de trabajo...",
     "results": "Resultados de búsqueda",
     "noResults": "No se encontraron coincidencias semánticas.",
     "relevance": "Relevancia",

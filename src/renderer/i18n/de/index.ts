@@ -54,7 +54,6 @@ import languagesSection from '@renderer/i18n/de/languages';
 import loadingSection from '@renderer/i18n/de/loading';
 import loggingSection from '@renderer/i18n/de/logging';
 import markdownSection from '@renderer/i18n/de/markdown';
-import marketplaceSection from '@renderer/i18n/de/marketplace';
 import mcpSection from '@renderer/i18n/de/mcp';
 import memorySection from '@renderer/i18n/de/memory';
 import messageBubbleSection from '@renderer/i18n/de/messageBubble';
@@ -94,7 +93,6 @@ import toolsSection from '@renderer/i18n/de/tools';
 import updateNotificationSection from '@renderer/i18n/de/updateNotification';
 import voiceSection from '@renderer/i18n/de/voice';
 import welcomeSection from '@renderer/i18n/de/welcome';
-import workflowsSection from '@renderer/i18n/de/workflows';
 import workspaceSection from '@renderer/i18n/de/workspace';
 import workspaceAgentSection from '@renderer/i18n/de/workspaceAgent';
 import workspaceDashboardSection from '@renderer/i18n/de/workspaceDashboard';
@@ -159,7 +157,6 @@ export const de = {
     "loading": loadingSection,
     "logging": loggingSection,
     "markdown": markdownSection,
-    "marketplace": marketplaceSection,
     "mcp": mcpSection,
     "memory": memorySection,
     "messageBubble": messageBubbleSection,
@@ -203,7 +200,6 @@ export const de = {
     "updateNotification": updateNotificationSection,
     "voice": voiceSection,
     "welcome": welcomeSection,
-    "workflows": workflowsSection,
     "workspace": workspaceSection,
     "workspaceModals": workspaceModalsSection
 };

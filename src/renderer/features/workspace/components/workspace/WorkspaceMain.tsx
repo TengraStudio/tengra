@@ -5,8 +5,7 @@ import { Language } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { EditorTab, Workspace, WorkspaceDashboardTab } from '@/types';
 
-import { EditorTabs } from './EditorTabs';
-import { WorkspaceContentHub } from './WorkspaceContentHub';
+import { EditorTabs } from './EditorTabs'; 
 import { WorkspaceEditor } from './WorkspaceEditor';
 
 interface WorkspaceMainProps {
@@ -150,7 +149,6 @@ export const WorkspaceMain: React.FC<WorkspaceMainProps> = ({
                             selectedEntry={selectedEntry}
                             onOpenFile={onOpenFile}
                         />
-                        <WorkspaceContentHub workspace={workspace} onApplyTemplate={handleUpdateWorkspace} />
                     </div>
                 )}
             </div>

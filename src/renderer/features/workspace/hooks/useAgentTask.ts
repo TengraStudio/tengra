@@ -1,3 +1,4 @@
+import { useSessionState } from '@renderer/hooks/useSessionState';
 import { useCallback, useEffect, useState } from 'react';
 
 import { Workspace } from '@/types';
@@ -45,6 +46,31 @@ export interface AgentTaskStatus {
     };
 }
 
+const mapSessionStatusToAgentState = (
+    sessionStatus: 'idle' | 'preparing' | 'streaming' | 'waiting_for_input' | 'paused' | 'interrupted' | 'failed' | 'completed',
+    previousState: string
+): string => {
+    switch (sessionStatus) {
+        case 'preparing':
+            return previousState === 'waiting_approval' ? 'waiting_approval' : 'planning';
+        case 'streaming':
+            return previousState === 'planning' ? 'planning' : 'executing';
+        case 'waiting_for_input':
+            return 'waiting_approval';
+        case 'paused':
+            return 'paused';
+        case 'interrupted':
+            return 'stopped';
+        case 'failed':
+            return 'failed';
+        case 'completed':
+            return 'completed';
+        case 'idle':
+        default:
+            return previousState;
+    }
+};
+
 /**
  * Hook for managing agent task execution and state
  *
@@ -64,6 +90,7 @@ export const useAgentTask = (workspace: Workspace) => {
     const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
     const [toolExecutions, setToolExecutions] = useState<ToolExecution[]>([]);
     const [currentPlan, setCurrentPlan] = useState<ExecutionPlan | null>(null);
+    const sessionState = useSessionState(selectedTaskId ?? status.taskId);
 
     const startTask = useCallback(async (userPrompt: string, attachedFiles: AttachedFile[], selectedModel: ModelOption | null) => {
         // Validate input
@@ -175,6 +202,23 @@ export const useAgentTask = (workspace: Workspace) => {
             void loadTaskDetails(selectedTaskId);
         }
     }, [selectedTaskId, loadTaskDetails]);
+
+    useEffect(() => {
+        if (!sessionState) {
+            return;
+        }
+
+        setStatus(prev => ({
+            ...prev,
+            taskId: sessionState.metadata.taskId ?? sessionState.id,
+            state: mapSessionStatusToAgentState(sessionState.status, prev.state),
+            error: sessionState.lastError ?? prev.error,
+        }));
+        setIsLoading(
+            sessionState.status === 'preparing'
+            || sessionState.status === 'streaming'
+        );
+    }, [sessionState, setIsLoading]);
 
     const resumeTask = useCallback(async (taskId: string) => {
         setIsLoading(true);

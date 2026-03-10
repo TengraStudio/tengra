@@ -1,5 +1,8 @@
-import { IpcValue } from '@shared/types';
-import { WorkspaceState } from '@shared/types/workspace-agent';
+import { useSessionCapabilities } from '@renderer/hooks/useSessionCapabilities';
+import { useSessionRecoverySnapshots } from '@renderer/hooks/useSessionRecoverySnapshots';
+import { useSessionStates } from '@renderer/hooks/useSessionStates';
+import { IpcValue, SessionCanvasEdgeRecord, SessionCanvasNodeRecord } from '@shared/types';
+import { WorkspaceState } from '@shared/types/automation-workflow';
 import {
     addEdge,
     Background,
@@ -14,27 +17,6 @@ import {
     useNodesState,
     useReactFlow,
 } from '@xyflow/react';
-
-import { AnimatedEdge } from './components/AnimatedEdge';
-import { AgentStateMachinePanel } from './AgentStateMachinePanel';
-import { AgentVotingPanel } from './AgentVotingPanel';
-
-/** Canvas node shape from database */
-interface CanvasNodeRecord {
-    id: string;
-    type: string;
-    position: { x: number; y: number };
-    data: Record<string, IpcValue>;
-}
-
-/** Canvas edge shape from database */
-interface CanvasEdgeRecord {
-    id: string;
-    source: string;
-    target: string;
-    sourceHandle?: string;
-    targetHandle?: string;
-}
 import {
     ChevronRight,
     Maximize,
@@ -55,8 +37,17 @@ import { appLogger } from '@/utils/renderer-logger';
 
 import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
 
+import { AnimatedEdge } from './components/AnimatedEdge';
 import { PlanNode } from './nodes/PlanNode';
 import { TaskNode } from './nodes/TaskNode';
+import {
+    pickPrimaryAutomationSnapshot,
+    pickPrimaryAutomationState,
+    toWorkspaceStateFromSession,
+    toWorkspaceStateFromSnapshot,
+} from './utils/automation-session-state';
+import { AgentStateMachinePanel } from './AgentStateMachinePanel';
+import { AgentVotingPanel } from './AgentVotingPanel';
 
 import '@xyflow/react/dist/style.css';
 
@@ -77,6 +68,91 @@ const isAutoPlanNodeForTask = (node: Node, taskNodeId: string): boolean =>
 const isAutoPlanEdgeForTask = (edge: Edge, taskNodeId: string): boolean =>
     (edge.data as Record<string, unknown>)?.autoPlanEdge === true &&
     (edge.data as Record<string, unknown>)?.planParentId === taskNodeId;
+
+const findFirstPlannerNodeId = (nodes: Node[]): string | null => {
+    const plannerNode = nodes.find(node => {
+        return (node.data as Record<string, unknown>).taskType === 'planner';
+    });
+
+    return plannerNode?.id ?? null;
+};
+
+const resolveTaskNodeId = (
+    nodes: Node[],
+    workspaceState: WorkspaceState
+): string | null => {
+    if (workspaceState.nodeId) {
+        const byNodeId = nodes.find(node => node.id === workspaceState.nodeId);
+        if (byNodeId) {
+            return byNodeId.id;
+        }
+    }
+
+    if (workspaceState.taskId) {
+        const byTaskId = nodes.find(node => {
+            return (node.data as Record<string, unknown>).taskId === workspaceState.taskId;
+        });
+        if (byTaskId) {
+            return byTaskId.id;
+        }
+    }
+
+    return findFirstPlannerNodeId(nodes);
+};
+
+const buildNodeDataFromWorkspaceState = (
+    node: Node,
+    workspaceState: WorkspaceState
+): Record<string, unknown> => {
+    return {
+        ...node.data,
+        status: workspaceState.status,
+        plan: workspaceState.plan,
+        history: workspaceState.history,
+        currentTask: workspaceState.currentTask,
+        taskId: workspaceState.taskId,
+        totalTokens: workspaceState.totalTokens,
+        timing: workspaceState.timing,
+        model:
+            (node.data as Record<string, unknown>).model
+            ?? workspaceState.config?.model,
+        systemMode:
+            (node.data as Record<string, unknown>).systemMode
+            ?? workspaceState.config?.systemMode,
+        agentProfileId:
+            (node.data as Record<string, unknown>).agentProfileId
+            ?? workspaceState.config?.agentProfileId,
+        isExpanded: true,
+    };
+};
+
+const createRestoredTaskNode = (workspaceState: WorkspaceState): Node | null => {
+    if (!workspaceState.nodeId) {
+        return null;
+    }
+
+    return {
+        id: workspaceState.nodeId,
+        type: 'task',
+        position: { x: 100, y: 100 },
+        data: {
+            label: 'Restored Task',
+            taskType: 'planner',
+            status: workspaceState.status,
+            title: workspaceState.currentTask,
+            plan: workspaceState.plan,
+            history: workspaceState.history,
+            totalTokens: workspaceState.totalTokens,
+            timing: workspaceState.timing,
+            taskId: workspaceState.taskId,
+            isExpanded: workspaceState.status === 'waiting_for_approval',
+            activeTab: 'plan',
+            model: workspaceState.config?.model,
+            systemMode: workspaceState.config?.systemMode,
+            agentProfileId: workspaceState.config?.agentProfileId,
+        },
+    };
+};
 
 /**
  * CommandCenter - A floating dock for centralizing canvas controls
@@ -301,221 +377,6 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, onAddNode }) =
     );
 };
 
-const useWorkspaceAgentState = (
-    setNodes: React.Dispatch<React.SetStateAction<Node[]>>,
-    isLoaded: boolean,
-    updateNodeData: (id: string, data: Record<string, unknown>) => void,
-    getNodes: () => Node[],
-    syncPlanNodesForTask: (taskNodeId: string, plan?: WorkspaceState['plan']) => void
-) => {
-    useEffect(() => {
-        // Don't fetch initial state until canvas is loaded
-        if (!isLoaded) {
-            return;
-        }
-
-        // Fetch initial state after canvas is loaded
-        const fetchInitialState = async () => {
-            try {
-                const workspaceState = await window.electron.workspaceAgent.getStatus();
-                appLogger.info(
-                    'WorkspaceAgentView',
-                    `Fetched initial state - status: ${workspaceState.status}, plan: ${workspaceState.plan?.length ?? 0}, nodeId: ${workspaceState.nodeId ?? 'none'}`
-                );
-
-                if (workspaceState.nodeId || workspaceState.status !== 'idle') {
-                    let resolvedTaskNodeId: string | undefined;
-
-                    setNodes(nds => {
-                        const targetNodeId = workspaceState.nodeId;
-
-                        appLogger.debug(
-                            'WorkspaceAgentView',
-                            `Initial state: nodes count=${nds.length}, targetNodeId=${targetNodeId}`
-                        );
-
-                        // Check if node already exists
-                        const existingNode = nds.find(n => n.id === targetNodeId);
-                        if (existingNode) {
-                            appLogger.info(
-                                'WorkspaceAgentView',
-                                `Found existing node ${targetNodeId}, applying initial state`
-                            );
-                            resolvedTaskNodeId = targetNodeId;
-                            return nds.map(node => {
-                                if (node.id === targetNodeId) {
-                                    return {
-                                        ...node,
-                                        data: {
-                                            ...node.data,
-                                            status: workspaceState.status,
-                                            plan: workspaceState.plan,
-                                            history: workspaceState.history,
-                                            currentTask: workspaceState.currentTask,
-                                            taskId: workspaceState.taskId,
-                                            totalTokens: workspaceState.totalTokens,
-                                            timing: workspaceState.timing,
-                                            // Restore model config if node doesn't have it
-                                            model:
-                                                (node.data as Record<string, unknown>).model ??
-                                                workspaceState.config?.model,
-                                            systemMode:
-                                                (node.data as Record<string, unknown>).systemMode ??
-                                                workspaceState.config?.systemMode,
-                                            agentProfileId:
-                                                (node.data as Record<string, unknown>)
-                                                    .agentProfileId ??
-                                                workspaceState.config?.agentProfileId,
-                                            isExpanded: true,
-                                        },
-                                    };
-                                }
-                                return node;
-                            });
-                        }
-
-                        // If node doesn't exist but we have state, apply to first planner node
-                        if (!targetNodeId) {
-                            const plannerNode = nds.find(
-                                n => (n.data as Record<string, unknown>).taskType === 'planner'
-                            );
-                            if (plannerNode) {
-                                appLogger.info(
-                                    'WorkspaceAgentView',
-                                    `No targetNodeId, applying to first planner node ${plannerNode.id}`
-                                );
-                                resolvedTaskNodeId = plannerNode.id;
-                            }
-                            return nds.map(node => {
-                                if ((node.data as Record<string, unknown>).taskType === 'planner') {
-                                    return {
-                                        ...node,
-                                        data: {
-                                            ...node.data,
-                                            status: workspaceState.status,
-                                            plan: workspaceState.plan,
-                                            history: workspaceState.history,
-                                            currentTask: workspaceState.currentTask,
-                                            taskId: workspaceState.taskId,
-                                            totalTokens: workspaceState.totalTokens,
-                                            timing: workspaceState.timing,
-                                            // Restore model config
-                                            model:
-                                                (node.data as Record<string, unknown>).model ??
-                                                workspaceState.config?.model,
-                                            systemMode:
-                                                (node.data as Record<string, unknown>).systemMode ??
-                                                workspaceState.config?.systemMode,
-                                            agentProfileId:
-                                                (node.data as Record<string, unknown>)
-                                                    .agentProfileId ??
-                                                workspaceState.config?.agentProfileId,
-                                            isExpanded: true,
-                                        },
-                                    };
-                                }
-                                return node;
-                            });
-                        }
-
-                        appLogger.warn(
-                            'WorkspaceAgentView',
-                            `Target node ${targetNodeId} not found during initial state load`
-                        );
-                        return nds;
-                    });
-
-                    if (resolvedTaskNodeId) {
-                        window.requestAnimationFrame(() => {
-                            syncPlanNodesForTask(resolvedTaskNodeId as string, workspaceState.plan);
-                        });
-                    }
-                }
-            } catch (error) {
-                appLogger.error(
-                    'WorkspaceAgentView',
-                    'Failed to fetch initial state',
-                    error as Error
-                );
-            }
-        };
-
-        void fetchInitialState();
-    }, [setNodes, isLoaded, syncPlanNodesForTask]);
-
-    useEffect(() => {
-        if (!isLoaded) {
-            appLogger.debug('WorkspaceAgentView', 'Event listener waiting for canvas to load...');
-            return;
-        }
-
-        appLogger.info('WorkspaceAgentView', 'Setting up workspace:update event listener');
-
-        const unsubscribe = window.electron.workspaceAgent.onUpdate((workspaceState: WorkspaceState) => {
-            appLogger.info(
-                'WorkspaceAgentView',
-                `Received workspace:update - status: ${workspaceState.status}, plan steps: ${workspaceState.plan?.length ?? 0}, nodeId: ${workspaceState.nodeId ?? 'none'}`
-            );
-
-            const nodes = getNodes();
-            let targetNodeId = workspaceState.nodeId;
-
-            // If no target node ID, try to find the first planner node
-            if (!targetNodeId) {
-                const plannerNode = nodes.find(
-                    n => (n.data as Record<string, unknown>).taskType === 'planner'
-                );
-                if (plannerNode) {
-                    targetNodeId = plannerNode.id;
-                    appLogger.debug(
-                        'WorkspaceAgentView',
-                        `No targetNodeId, using first planner node: ${targetNodeId}`
-                    );
-                } else {
-                    appLogger.warn(
-                        'WorkspaceAgentView',
-                        'No targetNodeId and no planner node found to update'
-                    );
-                    return;
-                }
-            }
-
-            // Check if node exists
-            const targetNode = nodes.find(n => n.id === targetNodeId);
-            if (!targetNode) {
-                appLogger.warn(
-                    'WorkspaceAgentView',
-                    `Target node ${targetNodeId} not found in canvas! Available nodes: ${nodes.map(n => n.id).join(', ')}`
-                );
-                return;
-            }
-
-            appLogger.info(
-                'WorkspaceAgentView',
-                `Updating node ${targetNodeId} with status=${workspaceState.status}, plan=${workspaceState.plan?.length ?? 0} steps`
-            );
-
-            // Use updateNodeData for reliable React Flow updates
-            updateNodeData(targetNodeId, {
-                status: workspaceState.status,
-                plan: workspaceState.plan,
-                history: workspaceState.history,
-                currentTask: workspaceState.currentTask,
-                taskId: workspaceState.taskId,
-                totalTokens: workspaceState.totalTokens,
-                timing: workspaceState.timing,
-                isExpanded: true,
-            });
-
-            syncPlanNodesForTask(targetNodeId, workspaceState.plan);
-        });
-
-        return () => {
-            unsubscribe();
-        };
-    }, [setNodes, isLoaded, updateNodeData, getNodes, syncPlanNodesForTask]);
-};
-
 const InternalAutomationWorkflowView: React.FC = () => {
     const { appSettings } = useAuth();
     const theme = appSettings?.general.theme ?? 'black';
@@ -527,11 +388,62 @@ const InternalAutomationWorkflowView: React.FC = () => {
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
     const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
-    const [latestWorkspaceState, setLatestWorkspaceState] = useState<WorkspaceState | null>(null);
+    const sessionRecoverySnapshots = useSessionRecoverySnapshots();
+    const automationSessionSnapshots = React.useMemo(() => {
+        return sessionRecoverySnapshots.filter(snapshot => snapshot.mode === 'automation');
+    }, [sessionRecoverySnapshots]);
+    const automationSessionIds = React.useMemo(() => {
+        return automationSessionSnapshots.map(snapshot => snapshot.sessionId);
+    }, [automationSessionSnapshots]);
+    const automationSessionStates = useSessionStates(automationSessionIds);
+    const automationWorkspaceStates = React.useMemo(() => {
+        const sessionStateMap = new Map<string, WorkspaceState>();
+        for (const sessionState of automationSessionStates) {
+            const workspaceState = toWorkspaceStateFromSession(sessionState);
+            if (workspaceState) {
+                sessionStateMap.set(sessionState.id, workspaceState);
+            }
+        }
+
+        return automationSessionSnapshots
+            .map(snapshot => {
+                return sessionStateMap.get(snapshot.sessionId)
+                    ?? toWorkspaceStateFromSnapshot(snapshot);
+            })
+            .filter((state): state is WorkspaceState => state !== null);
+    }, [automationSessionSnapshots, automationSessionStates]);
+    const primaryAutomationSnapshot = React.useMemo(() => {
+        return pickPrimaryAutomationSnapshot(automationSessionSnapshots);
+    }, [automationSessionSnapshots]);
+    const latestWorkspaceState = React.useMemo(() => {
+        return pickPrimaryAutomationState(automationWorkspaceStates);
+    }, [automationWorkspaceStates]);
+    const primaryAutomationSession = React.useMemo(() => {
+        const primarySessionId = primaryAutomationSnapshot?.sessionId ?? latestWorkspaceState?.taskId;
+        if (!primarySessionId) {
+            return null;
+        }
+
+        return (
+            automationSessionStates.find(sessionState => {
+                return (
+                    sessionState.id === primarySessionId
+                    || sessionState.metadata.taskId === primarySessionId
+                );
+            }) ?? null
+        );
+    }, [automationSessionStates, latestWorkspaceState?.taskId, primaryAutomationSnapshot?.sessionId]);
+    const sessionCapabilities = useSessionCapabilities();
+    const supportsAutomationCouncil = sessionCapabilities.some(capability => {
+        return capability.id === 'council' && capability.compatibleModes.includes('automation');
+    });
+    const shouldShowVotingPanel = Boolean(latestWorkspaceState?.taskId) && (
+        primaryAutomationSession?.capabilities.includes('council') ?? supportsAutomationCouncil
+    );
     const [stateHistory, setStateHistory] = useState<
         Array<{ status: WorkspaceState['status']; timestamp: number }>
     >([]);
-    const { screenToFlowPosition, updateNodeData, getNodes } = useReactFlow();
+    const { screenToFlowPosition, getNodes } = useReactFlow();
     const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
     const pushStateHistory = useCallback((status: WorkspaceState['status']) => {
         setStateHistory(previous => {
@@ -666,71 +578,20 @@ const InternalAutomationWorkflowView: React.FC = () => {
     useEffect(() => {
         const loadCanvas = async () => {
             try {
-                const [savedNodes, savedEdges, workspaceState] = await Promise.all([
-                    window.electron.workspaceAgent.getCanvasNodes(),
-                    window.electron.workspaceAgent.getCanvasEdges(),
-                    window.electron.workspaceAgent.getStatus(),
+                const [savedNodes, savedEdges] = await Promise.all([
+                    window.electron.session.workspace.getCanvasNodes(),
+                    window.electron.session.workspace.getCanvasEdges(),
                 ]);
-                setLatestWorkspaceState(workspaceState);
-                pushStateHistory(workspaceState.status);
 
                 let nodesToSet: Node[] = [];
 
                 if (savedNodes.length > 0) {
-                    nodesToSet = savedNodes.map((n: CanvasNodeRecord) => ({
+                    nodesToSet = savedNodes.map((n: SessionCanvasNodeRecord) => ({
                         id: n.id,
                         type: n.type,
                         position: n.position,
                         data: n.data,
                     }));
-                }
-
-                // Check if there's an active task with a nodeId that doesn't exist in saved nodes
-                if (workspaceState.nodeId && workspaceState.status !== 'idle') {
-                    const nodeExists = nodesToSet.some(n => n.id === workspaceState.nodeId);
-
-                    if (!nodeExists) {
-                        appLogger.info(
-                            'WorkspaceAgentView',
-                            `Active task found with nodeId ${workspaceState.nodeId} but node doesn't exist in canvas. Creating node.`
-                        );
-
-                        // Create a new node for the orphaned task
-                        const newNode: Node = {
-                            id: workspaceState.nodeId,
-                            type: 'task',
-                            position: { x: 100, y: 100 },
-                            data: {
-                                label: 'Restored Task',
-                                taskType: 'planner',
-                                status: workspaceState.status,
-                                title: workspaceState.currentTask,
-                                plan: workspaceState.plan,
-                                history: workspaceState.history,
-                                totalTokens: workspaceState.totalTokens,
-                                timing: workspaceState.timing,
-                                taskId: workspaceState.taskId,
-                                isExpanded: workspaceState.status === 'waiting_for_approval',
-                                activeTab: 'plan',
-                                // Restore model config from task state
-                                model: workspaceState.config?.model,
-                                systemMode: workspaceState.config?.systemMode,
-                                agentProfileId: workspaceState.config?.agentProfileId,
-                            },
-                        };
-
-                        nodesToSet.push(newNode);
-
-                        // Save this new node to the database
-                        void window.electron.workspaceAgent.saveCanvasNodes([
-                            {
-                                id: newNode.id,
-                                type: 'task',
-                                position: newNode.position,
-                                data: newNode.data as Record<string, unknown>,
-                            },
-                        ]);
-                    }
                 }
 
                 if (nodesToSet.length > 0) {
@@ -739,7 +600,7 @@ const InternalAutomationWorkflowView: React.FC = () => {
 
                 if (savedEdges.length > 0) {
                     setEdges(
-                        savedEdges.map((e: CanvasEdgeRecord) => ({
+                        savedEdges.map((e: SessionCanvasEdgeRecord) => ({
                             id: e.id,
                             source: e.source,
                             target: e.target,
@@ -761,7 +622,96 @@ const InternalAutomationWorkflowView: React.FC = () => {
         };
 
         void loadCanvas();
-    }, [setNodes, setEdges, pushStateHistory]);
+    }, [setNodes, setEdges]);
+
+    useEffect(() => {
+        if (!latestWorkspaceState) {
+            return;
+        }
+
+        pushStateHistory(latestWorkspaceState.status);
+    }, [latestWorkspaceState, pushStateHistory]);
+
+    useEffect(() => {
+        if (!isLoaded || automationWorkspaceStates.length === 0) {
+            return;
+        }
+
+        const currentNodes = getNodes();
+        const createdNodes: Node[] = [];
+        const targetMappings: Array<{ nodeId: string; workspaceState: WorkspaceState }> = [];
+
+        for (const workspaceState of automationWorkspaceStates) {
+            const visibleNodes = [...currentNodes, ...createdNodes];
+            const missingExplicitNode =
+                typeof workspaceState.nodeId === 'string'
+                && !visibleNodes.some(node => node.id === workspaceState.nodeId);
+
+            if (missingExplicitNode) {
+                const restoredNode = createRestoredTaskNode(workspaceState);
+                if (restoredNode) {
+                    createdNodes.push(restoredNode);
+                    targetMappings.push({
+                        nodeId: restoredNode.id,
+                        workspaceState,
+                    });
+                }
+                continue;
+            }
+
+            const resolvedNodeId = resolveTaskNodeId(visibleNodes, workspaceState);
+            if (!resolvedNodeId) {
+                continue;
+            }
+
+            targetMappings.push({
+                nodeId: resolvedNodeId,
+                workspaceState,
+            });
+        }
+
+        if (createdNodes.length === 0 && targetMappings.length === 0) {
+            return;
+        }
+
+        setNodes(previousNodes => {
+            const existingNodeIds = new Set(previousNodes.map(node => node.id));
+            const nextNodes = [
+                ...previousNodes,
+                ...createdNodes.filter(node => !existingNodeIds.has(node.id)),
+            ];
+            const targetNodeMap = new Map(targetMappings.map(item => [item.nodeId, item.workspaceState]));
+
+            return nextNodes.map(node => {
+                const workspaceState = targetNodeMap.get(node.id);
+                if (!workspaceState) {
+                    return node;
+                }
+
+                return {
+                    ...node,
+                    data: buildNodeDataFromWorkspaceState(node, workspaceState),
+                };
+            });
+        });
+
+        if (createdNodes.length > 0) {
+            void window.electron.session.workspace.saveCanvasNodes(
+                createdNodes.map(node => ({
+                    id: node.id,
+                    type: node.type ?? 'task',
+                    position: node.position,
+                    data: node.data as Record<string, IpcValue>,
+                }))
+            );
+        }
+
+        window.requestAnimationFrame(() => {
+            for (const { nodeId, workspaceState } of targetMappings) {
+                syncPlanNodesForTask(nodeId, workspaceState.plan);
+            }
+        });
+    }, [automationWorkspaceStates, getNodes, isLoaded, setNodes, syncPlanNodesForTask]);
 
     // Save nodes and edges when they change (debounced)
     useEffect(() => {
@@ -784,7 +734,12 @@ const InternalAutomationWorkflowView: React.FC = () => {
                         position: n.position,
                         data: n.data as Record<string, unknown>,
                     }));
-                    await window.electron.workspaceAgent.saveCanvasNodes(nodesToSave);
+                    await window.electron.session.workspace.saveCanvasNodes(
+                        nodesToSave.map(node => ({
+                            ...node,
+                            data: node.data as Record<string, IpcValue>,
+                        }))
+                    );
 
                     // Save edges
                     const edgesToSave = edges.map(e => ({
@@ -794,7 +749,7 @@ const InternalAutomationWorkflowView: React.FC = () => {
                         sourceHandle: e.sourceHandle ?? undefined,
                         targetHandle: e.targetHandle ?? undefined,
                     }));
-                    await window.electron.workspaceAgent.saveCanvasEdges(edgesToSave);
+                    await window.electron.session.workspace.saveCanvasEdges(edgesToSave);
 
                     appLogger.debug(
                         'WorkspaceAgentView',
@@ -818,18 +773,6 @@ const InternalAutomationWorkflowView: React.FC = () => {
             }
         };
     }, [nodes, edges, isLoaded]);
-
-    useWorkspaceAgentState(setNodes, isLoaded, updateNodeData, getNodes, syncPlanNodesForTask);
-
-    useEffect(() => {
-        const unsubscribe = window.electron.workspaceAgent.onUpdate((workspaceState: WorkspaceState) => {
-            setLatestWorkspaceState(workspaceState);
-            pushStateHistory(workspaceState.status);
-        });
-        return () => {
-            unsubscribe();
-        };
-    }, [pushStateHistory]);
 
     const onConnect = useCallback(
         (params: Connection) =>
@@ -943,7 +886,7 @@ const InternalAutomationWorkflowView: React.FC = () => {
                     currentStatus={latestWorkspaceState?.status ?? 'idle'}
                     stateHistory={stateHistory}
                 />
-                <AgentVotingPanel taskId={latestWorkspaceState?.taskId} />
+                {shouldShowVotingPanel ? <AgentVotingPanel taskId={latestWorkspaceState?.taskId} /> : null}
             </div>
 
             <AnimatePresence>
@@ -972,4 +915,5 @@ export const AutomationWorkflowView: React.FC = () => {
         </ReactFlowProvider>
     );
 };
+
 

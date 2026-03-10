@@ -1,5 +1,5 @@
 import { registerOrchestratorIpc } from '@main/ipc/orchestrator';
-import { OrchestratorState, WorkspaceStep } from '@shared/types/workspace-agent';
+import { OrchestratorState, WorkspaceStep } from '@shared/types/automation-workflow';
 import { IpcMainInvokeEvent } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -280,3 +280,4 @@ describe('Orchestrator IPC Integration', () => {
         ).rejects.toThrow('Cannot stop');
     });
 });
+

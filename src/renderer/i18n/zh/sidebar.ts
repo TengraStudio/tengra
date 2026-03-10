@@ -47,8 +47,7 @@ const sectionData = {
     "active": "积极的",
     "memory": "记忆",
     "agent": "代理人",
-    "models": "型号",
-    "workflows": "工作流程"
+    "models": "型号"
 };
 
 export default sectionData;

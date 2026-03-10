@@ -10,8 +10,8 @@ import { AuthService } from '@main/services/security/auth.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { ModelOption, ProviderConfig } from '@shared/types/agent-state';
+import { ModelGovernanceConfig } from '@shared/types/automation-workflow';
 import { AppSettings } from '@shared/types/settings';
-import { ModelGovernanceConfig } from '@shared/types/workspace-agent';
 
 /**
  * Provider fallback chain configuration
@@ -752,3 +752,4 @@ export class AgentProviderRotationService extends BaseService {
         });
     }
 }
+

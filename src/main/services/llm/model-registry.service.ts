@@ -1,6 +1,7 @@
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { HuggingFaceService } from '@main/services/llm/huggingface.service';
+import { LocalImageService } from '@main/services/llm/local-image.service';
 import { resolveContextWindowForModel } from '@main/services/llm/model-context-window.data';
 import { RegionalPreferenceService } from '@main/services/llm/regional-preference.service';
 import { getTokenEstimationService } from '@main/services/llm/token-estimation.service';
@@ -9,6 +10,7 @@ import { AuthService } from '@main/services/security/auth.service';
 import { TokenService } from '@main/services/security/token.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
+import { ProcessManagerService } from '@main/services/system/process-manager.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { JsonValue } from '@shared/types/common';
 import { SystemEventKey } from '@shared/types/events';
@@ -28,7 +30,7 @@ export type ModelProviderId =
     | 'sd-cpp';
 
 /**
- * UI-facing normalized model metadata used across model list, picker, and marketplace views.
+ * UI-facing normalized model metadata used across model list and picker views.
  */
 export interface ModelProviderInfo {
     id: string;
@@ -51,14 +53,14 @@ export interface ModelProviderInfo {
 }
 
 export interface ModelRegistryDependencies {
-    processManager: import('@main/services/system/process-manager.service').ProcessManagerService;
+    processManager: ProcessManagerService;
     jobScheduler: JobSchedulerService;
     settingsService: SettingsService;
     proxyService: ProxyService;
     eventBus: EventBusService;
     authService: AuthService;
     tokenService: TokenService;
-    localImageService: import('@main/services/llm/local-image.service').LocalImageService;
+    localImageService: LocalImageService;
     huggingFaceService: HuggingFaceService;
 }
 
@@ -549,8 +551,6 @@ export class ModelRegistryService extends BaseService {
         return embeddingSignals.some(regex => regex.test(searchable));
     }
 
-    // Removed fetchProxyModels and fetchLlamaModels
-
     /** Clears the model cache and resets telemetry counters. */
     override async cleanup(): Promise<void> {
         this.cachedModels = [];
@@ -583,26 +583,6 @@ export class ModelRegistryService extends BaseService {
             this.fetchModelProvider('ollama', proxyPort, proxyKey),
             this.fetchModelProvider('opencode', proxyPort, proxyKey),
         ];
-
-        // Fetch from HuggingFace (as expected by tests and as a fallback)
-        promises.push((async () => {
-            try {
-                const results = await this.deps.huggingFaceService.searchModels('GGUF', 50, 0, 'downloads');
-                return results.models.map(m => ({
-                    id: m.id,
-                    name: m.name,
-                    provider: 'huggingface' as ModelProviderId,
-                    description: m.description,
-                    tags: m.tags,
-                    downloads: m.downloads,
-                    likes: m.likes,
-                    capabilities: { text_generation: true }
-                }));
-            } catch (err) {
-                appLogger.warn('ModelRegistry', `Failed to fetch HuggingFace models: ${getErrorMessage(err)}`);
-                return [];
-            }
-        })());
 
         const cloudProviders: ModelProviderId[] = [
             'antigravity',
@@ -769,4 +749,3 @@ export class ModelRegistryService extends BaseService {
         ];
     }
 }
-

@@ -29,8 +29,8 @@ const sectionData = {
     "exportList": "Listeyi dışa aktar",
     "gridView": "Izgara görünümü",
     "listView": "Liste görünümü",
-    "workspaceSettingsPanel": "Proje ayarları paneli",
-    "workspaceSettingsContent": "Proje ayarları içeriği",
+    "workspaceSettingsPanel": "Çalışma Alanı ayarları paneli",
+    "workspaceSettingsContent": "Çalışma Alanı ayarları içeriği",
     "findPrevious": "Öncekini bul",
     "findNext": "Sonrakini bul"
 };

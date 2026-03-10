@@ -47,8 +47,7 @@ const sectionData = {
     "active": "アクティブ",
     "memory": "メモリ",
     "agent": "エージェント",
-    "models": "モデル",
-    "workflows": "ワークフロー"
+    "models": "モデル"
 };
 
 export default sectionData;

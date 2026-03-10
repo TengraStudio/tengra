@@ -1,6 +1,6 @@
 const sectionData = {
-    "title": "Idées de projet",
-    "subtitle": "Génération d'idées de projet assistée par IA avec étude de marché",
+    "title": "Idées de l'espace de travail",
+    "subtitle": "Génération d'idées de l'espace de travail assistée par IA avec étude de marché",
     "newSession": "Nouvelle session",
     "selectModel": "Sélectionner un modèle IA",
     "selectCategories": "Sélectionner des catégories",
@@ -33,7 +33,7 @@ const sectionData = {
     },
     "idea": {
         "viewDetails": "Voir les détails",
-        "approve": "Approuver et créer le projet",
+        "approve": "Approuver et créer l'espace de travail",
         "reject": "Rejeter",
         "archive": "Archiver",
         "archiving": "Archivage...",
@@ -42,9 +42,9 @@ const sectionData = {
         "competitiveAdvantages": "Avantages concurrentiels",
         "marketTrends": "Tendances du marché",
         "competitors": "Concurrents",
-        "selectPath": "Sélectionner le chemin du projet",
+        "selectPath": "Sélectionner le chemin de l'espace de travail",
         "pathPlaceholder": "C:\\\\Workspaces\\\\my-workspace",
-        "creating": "Création du projet...",
+        "creating": "Création de l'espace de travail...",
         "detailedDescription": "Description détaillée",
         "roadmap": "Feuille de route",
         "techStack": "Stack technologique",
@@ -54,7 +54,7 @@ const sectionData = {
         "impactHigh": "Élevé (estimé)",
         "effort": "Effort",
         "effortMedium": "Moyen",
-        "openFullWorkspace": "Ouvrir le projet complet"
+        "openFullWorkspace": "Ouvrir l'espace de travail complet"
     },
     "techStack": {
         "frontend": "Frontend",
@@ -79,7 +79,7 @@ const sectionData = {
         "categoriesRequired": "Veuillez sélectionner au moins une catégorie",
         "researchFailed": "La recherche a échoué. Veuillez réessayer.",
         "generationFailed": "La génération d'idées a échoué. Veuillez réessayer.",
-        "approvalFailed": "Échec de la création du projet. Veuillez réessayer.",
+        "approvalFailed": "Échec de la création de l'espace de travail. Veuillez réessayer.",
         "logoFailed": "La génération du logo a échoué. Veuillez réessayer."
     },
     "empty": {
@@ -147,8 +147,8 @@ const sectionData = {
         },
         "statusLabel": "Statut",
         "readyForPilot": "Prêt pour le pilote",
-        "workspaceCreated": "Projet créé",
-        "workspaceNamePlaceholder": "Nom du projet",
+        "workspaceCreated": "Espace de travail créé",
+        "workspaceNamePlaceholder": "Nom de l'espace de travail",
         "regenerateTitle": "Régénérer cette idée",
         "regenerate": "Régénérer",
         "regenerating": "Régénération...",

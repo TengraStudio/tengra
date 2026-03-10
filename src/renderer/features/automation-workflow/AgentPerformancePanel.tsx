@@ -1,4 +1,4 @@
-import { AgentPerformanceMetrics } from '@shared/types/workspace-agent';
+import { AgentPerformanceMetrics } from '@shared/types/automation-workflow';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -156,3 +156,4 @@ export const AgentPerformancePanel: React.FC<AgentPerformancePanelProps> = ({ me
         </div>
     );
 };
+

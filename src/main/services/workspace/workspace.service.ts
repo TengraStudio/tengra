@@ -39,7 +39,7 @@ export interface WorkspaceFilesPageResult extends WorkspaceFilesPageMeta {
 }
 
 export interface WorkspaceAnalysis {
-    type: 'node' | 'python' | 'rust' | 'go' | 'cpp' | 'java' | 'php' | 'csharp' | 'unknown' | string
+    type: 'node' | 'python' | 'rust' | 'go' | 'cpp' | 'java' | 'php' | 'csharp' | 'unknown' | string //TODO: add more types
     frameworks: string[]
     dependencies: Record<string, string>
     devDependencies: Record<string, string>
@@ -60,10 +60,14 @@ const LOG_CONTEXT = 'WorkspaceService';
 export class WorkspaceService extends BaseService {
     private watchers: Map<string, import('fs').FSWatcher> = new Map();
     private analysisCache: Map<string, { data: WorkspaceAnalysis; timestamp: number }> = new Map();
-    private fileListCache: Map<string, { files: string[]; timestamp: number }> = new Map();
+    private fileListCache: Map<string, { files: string[]; timestamp: number; complete: boolean }> = new Map();
     private changedPathSets: Map<string, Set<string>> = new Map();
+    private backgroundScansInProgress: Set<string> = new Set();
     private readonly ANALYSIS_CACHE_TTL_MS = 300000;
     private readonly WORKSPACE_FILES_PAGE_SIZE = 1000;
+    private readonly INITIAL_SCAN_BUDGET_MS = 1200;
+    private readonly INITIAL_SCAN_FILE_LIMIT = 5000;//TODO: Make it configurable
+    private readonly INITIAL_STATS_SAMPLE_LIMIT = 400;
 
     constructor() {
         super('WorkspaceService');
@@ -158,6 +162,13 @@ export class WorkspaceService extends BaseService {
         };
     }
 
+    /**
+     * Gets all currently open (watched) workspace root paths.
+     */
+    getOpenWorkspaces(): string[] {
+        return Array.from(this.watchers.keys());
+    }
+
     private trackChangedPath(rootPath: string, changedPath: string): void {
         const normalizedRootPath = this.resolveAndValidateRootPath(rootPath);
         const normalizedChangedPath = path.resolve(changedPath);
@@ -195,7 +206,7 @@ export class WorkspaceService extends BaseService {
 
         const updatedFiles = Array.from(nextFiles).sort();
         const timestamp = Date.now();
-        this.fileListCache.set(rootPath, { files: updatedFiles, timestamp });
+        this.fileListCache.set(rootPath, { files: updatedFiles, timestamp, complete: cachedFileList.complete });
         const cachedAnalysis = this.analysisCache.get(rootPath);
         if (!cachedAnalysis) {
             return;
@@ -240,19 +251,33 @@ export class WorkspaceService extends BaseService {
         this.logInfo('Analyzing workspace at (normalized):', { rootPath });
         const runStart = Date.now();
 
-        const files = await this.scanFiles(rootPath, rootPath);
-        this.logInfo(`Found ${files.length} files`);
+        const scanResult = await this.scanFiles(rootPath, {
+            budgetMs: this.INITIAL_SCAN_BUDGET_MS,
+            maxFiles: this.INITIAL_SCAN_FILE_LIMIT,
+        });
+        const files = scanResult.files;
+        this.logDebug(`Found ${files.length} files`);
         const type = await this.detectType(files);
         const { frameworks, dependencies, devDependencies } = await this.analyzeDependencies(rootPath, type, files);
-        const stats = await this.calculateStats(files, runStart);
-        this.logInfo(`Stats calculated:`, stats as unknown as JsonObject);
+        const stats = await this.calculateStats(
+            files,
+            runStart,
+            scanResult.complete ? files.length : this.INITIAL_STATS_SAMPLE_LIMIT
+        );
+        this.logDebug('Stats calculated', {
+            fileCount: stats.fileCount,
+            totalSize: stats.totalSize,
+            loc: stats.loc,
+            lastModified: stats.lastModified,
+            partialScan: !scanResult.complete,
+        });
         const languages = this.calculateLanguages(files);
         const monorepo = await this.detectMonorepo(rootPath, files);
         const todos: string[] = [];
         const issues = await this.findIssues(rootPath, files);
         const initialFilePage = this.paginateFiles(files, 0, this.WORKSPACE_FILES_PAGE_SIZE);
 
-        this.logInfo(`Analysis complete in ${Date.now() - runStart}ms`);
+        this.logDebug(`Analysis complete in ${Date.now() - runStart}ms`);
 
         const analysis: WorkspaceAnalysis = {
             type,
@@ -275,7 +300,10 @@ export class WorkspaceService extends BaseService {
 
         const timestamp = Date.now();
         this.analysisCache.set(rootPath, { data: analysis, timestamp });
-        this.fileListCache.set(rootPath, { files, timestamp });
+        this.fileListCache.set(rootPath, { files, timestamp, complete: scanResult.complete });
+        if (!scanResult.complete) {
+            this.startBackgroundWorkspaceScan(rootPath);
+        }
         return analysis;
     }
 
@@ -295,11 +323,77 @@ export class WorkspaceService extends BaseService {
         let files = cachedFiles?.files;
 
         if (!files || !isCacheValid) {
-            files = await this.scanFiles(rootPath, rootPath);
-            this.fileListCache.set(rootPath, { files, timestamp: Date.now() });
+            const scanResult = await this.scanFiles(rootPath);
+            files = scanResult.files;
+            this.fileListCache.set(rootPath, { files, timestamp: Date.now(), complete: scanResult.complete });
+        } else if (!cachedFiles.complete) {
+            this.startBackgroundWorkspaceScan(rootPath);
         }
 
         return this.paginateFiles(files, offset, limit);
+    }
+
+    private startBackgroundWorkspaceScan(rootPath: string): void {
+        if (this.backgroundScansInProgress.has(rootPath)) {
+            return;
+        }
+
+        this.backgroundScansInProgress.add(rootPath);
+        void (async () => {
+            try {
+                const fullScan = await this.scanFiles(rootPath);
+                const timestamp = Date.now();
+                const type = await this.detectType(fullScan.files);
+                const { frameworks, dependencies, devDependencies } = await this.analyzeDependencies(
+                    rootPath,
+                    type,
+                    fullScan.files
+                );
+                const stats = await this.calculateStats(fullScan.files, timestamp);
+                const languages = this.calculateLanguages(fullScan.files);
+                const monorepo = await this.detectMonorepo(rootPath, fullScan.files);
+                const issues = await this.findIssues(rootPath, fullScan.files);
+                this.fileListCache.set(rootPath, {
+                    files: fullScan.files,
+                    timestamp,
+                    complete: fullScan.complete,
+                });
+
+                const cachedAnalysis = this.analysisCache.get(rootPath);
+                if (cachedAnalysis) {
+                    const initialFilePage = this.paginateFiles(
+                        fullScan.files,
+                        0,
+                        this.WORKSPACE_FILES_PAGE_SIZE
+                    );
+                    this.analysisCache.set(rootPath, {
+                        timestamp,
+                        data: {
+                            ...cachedAnalysis.data,
+                            type,
+                            frameworks,
+                            dependencies,
+                            devDependencies,
+                            stats,
+                            languages,
+                            files: initialFilePage.files,
+                            filesPage: {
+                                offset: initialFilePage.offset,
+                                limit: initialFilePage.limit,
+                                total: initialFilePage.total,
+                                hasMore: initialFilePage.hasMore,
+                            },
+                            monorepo,
+                            issues,
+                        },
+                    });
+                }
+            } catch (error) {
+                this.logWarn('Background workspace scan failed:', getErrorMessage(error as Error));
+            } finally {
+                this.backgroundScansInProgress.delete(rootPath);
+            }
+        })();
     }
 
     private paginateFiles(files: string[], offset: number, limit: number): WorkspaceFilesPageResult {
@@ -548,27 +642,60 @@ export class WorkspaceService extends BaseService {
         return langMap;
     }
 
-    private async scanFiles(dir: string, rootPath: string, fileList: string[] = []): Promise<string[]> {
-        this.logInfo(`Scanning directory: ${dir}`);
-        try {
-            const entries = await fs.readdir(dir, { withFileTypes: true });
-            for (const entry of entries) {
-                if (this.shouldIgnore(entry.name)) { continue; }
-                const fullPath = path.join(dir, entry.name);
+    private async scanFiles(
+        rootPath: string,
+        options?: { budgetMs?: number; maxFiles?: number }
+    ): Promise<{ files: string[]; complete: boolean }> {
+        const files: string[] = [];
+        const dirsToVisit: string[] = [rootPath];
+        const budgetMs = options?.budgetMs;
+        const maxFiles = options?.maxFiles;
+        const startedAt = Date.now();
+        let complete = true;
 
-                if (entry.isDirectory()) {
-                    await this.scanFiles(fullPath, rootPath, fileList);
-                } else {
-                    fileList.push(fullPath);
-                }
+        while (dirsToVisit.length > 0) {
+            if (budgetMs !== undefined && Date.now() - startedAt >= budgetMs) {
+                complete = false;
+                break;
             }
-        } catch (error) {
-            this.logWarn(`Failed to scan directory ${dir}:`, getErrorMessage(error as Error));
+            if (maxFiles !== undefined && files.length >= maxFiles) {
+                complete = false;
+                break;
+            }
+
+            const currentDir = dirsToVisit.pop();
+            if (!currentDir) {
+                break;
+            }
+
+            try {
+                const entries = await fs.readdir(currentDir, { withFileTypes: true });
+                for (const entry of entries) {
+                    if (this.shouldIgnore(entry.name)) {
+                        continue;
+                    }
+
+                    const fullPath = path.join(currentDir, entry.name);
+                    if (entry.isDirectory()) {
+                        dirsToVisit.push(fullPath);
+                        continue;
+                    }
+
+                    files.push(fullPath);
+                    if (maxFiles !== undefined && files.length >= maxFiles) {
+                        complete = false;
+                        break;
+                    }
+                }
+            } catch (error) {
+                this.logWarn(`Failed to scan directory ${currentDir}:`, getErrorMessage(error as Error));
+            }
         }
-        if (dir === rootPath) {
-            this.logInfo(`Workspace analysis started for ${rootPath}. Found ${fileList.slice(0, 3)}...`);
-        }
-        return fileList;
+
+        this.logInfo(
+            `Workspace analysis scan complete for ${rootPath}: ${files.length} files${complete ? '' : ' (partial)'}`
+        );
+        return { files: files.sort(), complete };
     }
 
     private shouldIgnore(name: string): boolean {
@@ -935,25 +1062,31 @@ export class WorkspaceService extends BaseService {
         if (depKeys.some(d => d.includes('retrofit'))) { frameworks.push('Retrofit'); }
     }
 
-    private async calculateStats(files: string[], runStart: number): Promise<WorkspaceStats> {
+    private async calculateStats(
+        files: string[],
+        runStart: number,
+        maxSampleCount = files.length
+    ): Promise<WorkspaceStats> {
         if (runStart % 100 === 0) {
             appLogger.info(LOG_CONTEXT, 'Calculate stats sample', { filesCount: files.length });
         }
         let totalSize = 0;
         let lastModified = 0;
         const fileCount = files.length;
+        const sampledFiles = this.buildStatsSample(files, maxSampleCount);
 
         // Simple LOC estimation based on file size (very rough)
         // 100 bytes approx 1 line of code including whitespace
         let totalBytes = 0;
 
-        for (const file of files) {
+        for (const file of sampledFiles) {
             try {
                 const stat = await fs.stat(file);
                 totalSize += stat.size;
                 totalBytes += stat.size;
-                if (stat.mtimeMs > lastModified) {
-                    lastModified = stat.mtimeMs;
+                const modifiedAt = Math.max(0, Math.trunc(stat.mtimeMs));
+                if (modifiedAt > lastModified) {
+                    lastModified = modifiedAt;
                 }
             } catch (error) {
                 // Ignore missing file errors during scan
@@ -961,12 +1094,33 @@ export class WorkspaceService extends BaseService {
             }
         }
 
+        const sampleCount = sampledFiles.length;
+        const scaleFactor = sampleCount > 0 && sampleCount < fileCount
+            ? fileCount / sampleCount
+            : 1;
+
         return {
             fileCount,
-            totalSize,
-            loc: Math.round(totalBytes / 50), // Rough estimate: 50 bytes per line avg
+            totalSize: Math.round(totalSize * scaleFactor),
+            loc: Math.round((totalBytes * scaleFactor) / 50), // Rough estimate: 50 bytes per line avg
             lastModified
         };
+    }
+
+    private buildStatsSample(files: string[], maxSampleCount: number): string[] {
+        if (maxSampleCount <= 0 || files.length <= maxSampleCount) {
+            return files;
+        }
+
+        const sampledFiles: string[] = [];
+        const step = Math.max(1, Math.floor(files.length / maxSampleCount));
+        for (let index = 0; index < files.length && sampledFiles.length < maxSampleCount; index += step) {
+            const file = files[index];
+            if (file) {
+                sampledFiles.push(file);
+            }
+        }
+        return sampledFiles;
     }
 
     /**

@@ -33,7 +33,7 @@ const sectionData = {
         "rootPath": "C:\\\\Users\\\\Workspace",
         "name": "名称..."
     },
-    "run": "运行项目",
+    "run": "运行工作区",
     "toggleSidebar": "切换侧边栏",
     "aiAssistant": "AI 助手",
     "online": "在线",

@@ -25,19 +25,30 @@ $ServiceName = "TengraDatabaseService"
 $DisplayName = "Tengra Database Service"
 $Description = "Manages the Tengra application database for AI assistant features"
 
-# Determine binary path
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$ProjectRoot = Split-Path -Parent $ScriptDir
+function Get-ManagedRuntimeBinDir {
+    $appData = [Environment]::GetFolderPath("ApplicationData")
+    return Join-Path $appData "Tengra\runtime\bin"
+}
 
-# Check if we're in dev or production
-if (Test-Path "$ProjectRoot\resources\bin\tengra-db-service.exe") {
-    $BinaryPath = "$ProjectRoot\resources\bin\tengra-db-service.exe"
-} elseif (Test-Path "$ProjectRoot\src\native\target\release\tengra-db-service.exe") {
-    $BinaryPath = "$ProjectRoot\src\native\target\release\tengra-db-service.exe"
-} else {
-    Write-Error "tengra-db-service.exe not found. Build it first with: cargo build --release -p tengra-db-service"
+function Resolve-BinaryPath {
+    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+    $projectRoot = Split-Path -Parent $scriptDir
+    $managedRuntimeBinary = Join-Path (Get-ManagedRuntimeBinDir) "tengra-db-service.exe"
+    $nativeBuildBinary = Join-Path $projectRoot "src\native\target\release\tengra-db-service.exe"
+
+    if (Test-Path $managedRuntimeBinary) {
+        return $managedRuntimeBinary
+    }
+
+    if (Test-Path $nativeBuildBinary) {
+        return $nativeBuildBinary
+    }
+
+    Write-Error "tengra-db-service.exe not found in the managed runtime directory or src/native/target/release."
     exit 1
 }
+
+$BinaryPath = Resolve-BinaryPath
 
 function Test-Administrator {
     $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()

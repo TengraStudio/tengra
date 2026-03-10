@@ -135,14 +135,17 @@ describe('Window IPC Handlers', () => {
 
         it('should ignore unauthorized sender', async () => {
             const handler = mockIpcMainListeners.get('window:minimize');
+            expect(handler).toBeDefined();
 
             const unauthorizedEvent = { sender: { id: 999 } }; // Unauthorized
-            handler!(unauthorizedEvent as any);
+            handler!(unauthorizedEvent as never);
+
+            await new Promise(resolve => setTimeout(resolve, 10));
 
             expect(mockMainWindow.minimize).not.toHaveBeenCalled();
             expect(appLogger.warn).toHaveBeenCalledWith(
                 'Security',
-                expect.stringContaining('Unauthorized window operation')
+                expect.stringContaining('Unauthorized window operation attempt')
             );
         });
     });
@@ -279,7 +282,6 @@ describe('Window IPC Handlers', () => {
 
             expect(electron.shell.openExternal).toHaveBeenCalledWith('https://example.com/');
             expect(result).toEqual({ success: true, data: { success: true } });
-
         });
 
         it('should reject empty URL', async () => {
@@ -287,19 +289,22 @@ describe('Window IPC Handlers', () => {
 
             const result = await handler!(mockEvent, '');
 
-            expect(result).toMatchObject({
-                success: false,
-                error: { message: 'Validation failed' }
+            expect(result).toEqual({
+                success: true,
+                data: { success: false, error: 'Validation failed' }
             });
         });
 
         it('should reject overly long URL', async () => {
             const handler = mockIpcMainHandlers.get('shell:openExternal');
-            const longUrl = 'https://' + 'a'.repeat(10000) + '.com';
+            const longUrl = 'https://' + 'a'.repeat(2500) + '.com';
 
             const result = await handler!(mockEvent, longUrl);
 
-            expect(result).toMatchObject({ success: false });
+            expect(result).toEqual({
+                success: true,
+                data: { success: false, error: 'Validation failed' }
+            });
         });
     });
 
@@ -309,7 +314,6 @@ describe('Window IPC Handlers', () => {
             expect(handler).toBeDefined();
 
             const result = await handler!(mockEvent, 'echo hello');
-
 
             expect(result).toEqual({ success: true, data: true });
         });
@@ -322,6 +326,15 @@ describe('Window IPC Handlers', () => {
 
             const result = await handler!(mockEvent, 'git', ['status'], '/app');
 
+
+            expect(result).toEqual({ success: true, data: { stdout: '', stderr: '', code: 0, error: '' } });
+        });
+
+        it('should allow Windows shim commands without throwing spawn errors', async () => {
+            const handler = mockIpcMainHandlers.get('shell:runCommand');
+            expect(handler).toBeDefined();
+
+            const result = await handler!(mockEvent, 'npm', ['--version'], '/app');
 
             expect(result).toEqual({ success: true, data: { stdout: '', stderr: '', code: 0, error: '' } });
         });

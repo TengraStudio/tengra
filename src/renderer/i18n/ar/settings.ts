@@ -32,7 +32,6 @@ const sectionData = {
         "images": "الصور",
         "mcpServers": "MCP الخوادم",
         "accessibility": "إمكانية الوصول",
-        "mcpMarketplace": "MCP السوق"
     },
     "accessibility": {
         "title": "إمكانية الوصول",
@@ -123,15 +122,13 @@ const sectionData = {
         "title": "بروتوكول السياق النموذجي",
         "subtitle": "إدارة خوادم MCP الخاصة بك وتثبيت أدوات جديدة",
         "tabs": {
-            "servers": "الخوادم",
-            "marketplace": "السوق"
+            "servers": "الخوادم"
         },
         "servers": {
             "title": "الخوادم التي تم تكوينها",
             "subtitle": "إدارة اتصالات خادم Model context Protocol",
             "connect": "ربط الخادم",
             "empty": "لا توجد خوادم متصلة",
-            "emptyHint": "قم بتثبيت الخوادم من علامة التبويب Marketplace",
             "enabled": "ممكّن",
             "note": "ملحوظة",
             "noteText": "يمكن لمساعدي الذكاء الاصطناعي الوصول إلى الخوادم الممكّنة فقط. قم بتبديل زر الطاقة لتمكين/تعطيل كل خادم.",

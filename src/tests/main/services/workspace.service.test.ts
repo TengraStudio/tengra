@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 
 import { WorkspaceService } from '@main/services/workspace/workspace.service';
-import { beforeEach,describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mocking fs and path
 vi.mock('fs', () => ({
@@ -194,6 +194,38 @@ describe('WorkspaceService', () => {
         expect(page.limit).toBe(1);
         expect(page.files).toHaveLength(1);
         expect(page.total).toBeGreaterThanOrEqual(3);
+    });
+
+    it('uses sampled stats for partial scans and completes the full scan in background', async () => {
+        const mockDirPath = '/mock/workspace';
+        const rootEntries = Array.from({ length: 5001 }, (_, index) => mockDirent(`file-${index}.ts`, false));
+
+        vi.mocked(fs.readdir).mockResolvedValueOnce(rootEntries as never).mockResolvedValueOnce(rootEntries as never);
+        vi.mocked(fs.stat).mockResolvedValue({
+            size: 100,
+            mtimeMs: Date.now(),
+            isDirectory: () => false,
+            isFile: () => true
+        } as unknown as import('fs').Stats);
+
+        const initial = await workspaceService.analyzeWorkspace(mockDirPath);
+        expect(initial.stats.fileCount).toBe(5000);
+
+        for (let attempt = 0; attempt < 20; attempt++) {
+            const fileListCache = (
+                workspaceService as unknown as {
+                    fileListCache: Map<string, { files: string[]; timestamp: number; complete: boolean }>;
+                }
+            ).fileListCache;
+            const cachedFiles = fileListCache.get(mockDirPath);
+            if (cachedFiles?.complete && cachedFiles.files.length === 5001) {
+                break;
+            }
+            await new Promise(resolve => setTimeout(resolve, 5));
+        }
+
+        const fullPage = await workspaceService.getWorkspaceFilePage(mockDirPath, 0, 6000);
+        expect(fullPage.total).toBe(5001);
     });
 
     it('parses env vars with comments, quotes, and embedded equals signs', async () => {

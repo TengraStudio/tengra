@@ -1,17 +1,23 @@
-import { FileEntry } from '@shared/types';
+import { FileEntry, ServiceResponse } from '@shared/types';
 import { IpcRenderer, IpcRendererEvent } from 'electron';
+
+type FileListResponse = ServiceResponse<FileEntry[]>;
+type FileReadResponse = ServiceResponse<string>;
+type FileWriteResponse = { success: boolean; error?: string };
+type FileExistsResponse = { success: boolean; data: boolean; error?: string };
+type SearchFilesResponse = { success: boolean; results: string[]; error?: string };
 
 export interface FilesBridge {
     // Basic operations (mostly used by the 'files' sub-object in original preload)
-    listDirectory: (path: string) => Promise<FileEntry[]>;
-    readFile: (path: string) => Promise<string>;
+    listDirectory: (path: string) => Promise<FileListResponse>;
+    readFile: (path: string) => Promise<FileReadResponse>;
     readImage: (path: string) => Promise<{ success: boolean; content?: string; error?: string }>;
     writeFile: (
         path: string,
         content: string,
         context?: { aiSystem?: string; chatSessionId?: string; changeReason?: string }
-    ) => Promise<void>;
-    exists: (path: string) => Promise<boolean>;
+    ) => Promise<FileWriteResponse>;
+    exists: (path: string) => Promise<FileExistsResponse>;
 
     // Extended operations (mostly top-level in original preload)
     readPdf: (path: string) => Promise<string>;
@@ -20,18 +26,18 @@ export interface FilesBridge {
         title?: string;
         filters?: { name: string; extensions: string[] }[];
     }) => Promise<string | null>;
-    createDirectory: (path: string) => Promise<void>;
-    deleteFile: (path: string) => Promise<void>;
-    deleteDirectory: (path: string) => Promise<void>;
-    renamePath: (oldPath: string, newPath: string) => Promise<void>;
-    searchFiles: (rootPath: string, pattern: string) => Promise<string[]>;
+    createDirectory: (path: string) => Promise<FileWriteResponse>;
+    deleteFile: (path: string) => Promise<FileWriteResponse>;
+    deleteDirectory: (path: string) => Promise<FileWriteResponse>;
+    renamePath: (oldPath: string, newPath: string) => Promise<FileWriteResponse>;
+    searchFiles: (rootPath: string, pattern: string) => Promise<SearchFilesResponse>;
     searchFilesStream: (
         rootPath: string,
         pattern: string,
         onResult: (path: string) => void,
         onComplete?: () => void
     ) => () => void;
-    saveFile: (content: string, filename: string) => Promise<void>;
+    saveFile: (content: string, filename: string) => Promise<FileWriteResponse>;
     exportChatToPdf: (chatId: string, title: string) => Promise<{
         success: boolean;
         path?: string;

@@ -1,8 +1,8 @@
 //! Database module - SQLite-based storage with vector search support
 
 use anyhow::{Context, Result};
-use rusqlite::{params, Connection, OptionalExtension};
-use std::path::Path;
+use rusqlite::{params, Connection, OpenFlags, OptionalExtension};
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -11,6 +11,7 @@ use crate::types::*;
 /// Database wrapper providing thread-safe access to SQLite
 pub struct Database {
     conn: Arc<Mutex<Connection>>,
+    db_path: PathBuf,
 }
 
 const LEGACY_ROOT_HEAD: &str = "pro";
@@ -35,46 +36,43 @@ fn legacy_root() -> String {
     [LEGACY_ROOT_HEAD, LEGACY_ROOT_TAIL].concat()
 }
 
-fn legacy_workspace_table() -> String {
-    let root = legacy_root();
-    format!("{root}s")
+fn legacy_workspace_table() -> &'static str {
+    "workspaces"
 }
 
-fn legacy_workspace_id_column() -> String {
-    let root = legacy_root();
-    join_segments("_", &[root.as_str(), ID_SEGMENT])
+fn legacy_workspace_id_column() -> &'static str {
+    "workspace_id"
 }
 
-fn legacy_workspace_path_column() -> String {
-    let root = legacy_root();
-    join_segments("_", &[root.as_str(), PATH_SEGMENT])
+fn legacy_workspace_path_column() -> &'static str {
+    "workspace_path"
 }
 
 fn legacy_chat_workspace_index() -> String {
     let root = legacy_root();
-    join_segments("_", &[IDX_SEGMENT, CHATS_SEGMENT, root.as_str(), ID_SEGMENT])
+    join_segments("_", &[IDX_SEGMENT, CHATS_SEGMENT, &root, ID_SEGMENT])
 }
 
 fn legacy_workspace_status_index() -> String {
     let table = legacy_workspace_table();
-    join_segments("_", &[IDX_SEGMENT, table.as_str(), STATUS_SEGMENT])
+    join_segments("_", &[IDX_SEGMENT, table, STATUS_SEGMENT])
 }
 
 fn legacy_workspace_updated_index() -> String {
     let table = legacy_workspace_table();
-    join_segments("_", &[IDX_SEGMENT, table.as_str(), UPDATED_SEGMENT, AT_SEGMENT])
+    join_segments("_", &[IDX_SEGMENT, table, UPDATED_SEGMENT, AT_SEGMENT])
 }
 
 fn legacy_code_symbols_workspace_path_index() -> String {
     let root = legacy_root();
-    join_segments("_", &[IDX_SEGMENT, CODE_SYMBOLS_SEGMENT, root.as_str(), PATH_SEGMENT])
+    join_segments("_", &[IDX_SEGMENT, CODE_SYMBOLS_SEGMENT, &root, PATH_SEGMENT])
 }
 
 fn legacy_semantic_fragments_workspace_id_index() -> String {
     let root = legacy_root();
     join_segments(
         "_",
-        &[IDX_SEGMENT, SEMANTIC_FRAGMENTS_SEGMENT, root.as_str(), ID_SEGMENT],
+        &[IDX_SEGMENT, SEMANTIC_FRAGMENTS_SEGMENT, &root, ID_SEGMENT],
     )
 }
 
@@ -82,7 +80,7 @@ fn legacy_semantic_fragments_workspace_path_index() -> String {
     let root = legacy_root();
     join_segments(
         "_",
-        &[IDX_SEGMENT, SEMANTIC_FRAGMENTS_SEGMENT, root.as_str(), PATH_SEGMENT],
+        &[IDX_SEGMENT, SEMANTIC_FRAGMENTS_SEGMENT, &root, PATH_SEGMENT],
     )
 }
 
@@ -91,13 +89,13 @@ fn rename_workspace_id_to_path_migration_name() -> String {
     let workspace_path = legacy_workspace_path_column();
     join_segments(
         "_",
-        &["rename", workspace_id.as_str(), "to", workspace_path.as_str()],
+        &["rename", workspace_id, "to", workspace_path],
     )
 }
 
 fn rename_workspace_id_to_path_for(segment: &str) -> String {
     let rename_name = rename_workspace_id_to_path_migration_name();
-    join_segments("_", &[rename_name.as_str(), segment])
+    join_segments("_", &[&rename_name, segment])
 }
 
 impl Database {
@@ -115,13 +113,26 @@ impl Database {
 
         Ok(Self {
             conn: Arc::new(Mutex::new(conn)),
+            db_path: path.to_path_buf(),
         })
+    }
+
+    fn open_read_connection(&self) -> Result<Connection> {
+        let conn = Connection::open_with_flags(
+            &self.db_path,
+            OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
+        )
+        .context("Failed to open read-only database connection")?;
+        conn.busy_timeout(std::time::Duration::from_millis(1_000))?;
+        Ok(conn)
     }
 
     /// Initialize the database schema
     pub async fn initialize(&self) -> Result<()> {
         let conn = self.conn.lock().await;
         self.run_migrations(&conn)?;
+        self.repair_workspace_schema(&conn)?;
+        self.ensure_runtime_support_tables(&conn)?;
         Ok(())
     }
 
@@ -150,7 +161,26 @@ impl Database {
 
             if applied.is_none() {
                 tracing::info!("Running migration {}: {}", id, name);
-                conn.execute_batch(&sql)?;
+                
+                let mut should_apply = true;
+                if id == 9 {
+                    // Conditional migration for renaming projects -> workspaces
+                    let projects_exists: bool = conn.query_row(
+                        "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='projects'",
+                        [],
+                        |row| Ok(row.get::<_, i32>(0)? > 0),
+                    ).unwrap_or(false);
+                    
+                    if !projects_exists {
+                        tracing::info!("Table 'projects' not found, skipping rename migration 9");
+                        should_apply = false;
+                    }
+                }
+
+                if should_apply {
+                    conn.execute_batch(&sql)?;
+                }
+
                 conn.execute(
                     "INSERT INTO _migrations (id, name, applied_at) VALUES (?, ?, ?)",
                     params![id, name, chrono::Utc::now().timestamp_millis()],
@@ -158,6 +188,130 @@ impl Database {
             }
         }
 
+        Ok(())
+    }
+
+    fn table_exists(&self, conn: &Connection, table_name: &str) -> Result<bool> {
+        conn.query_row(
+            "SELECT count(*) FROM sqlite_master WHERE type='table' AND name = ?",
+            [table_name],
+            |row| Ok(row.get::<_, i32>(0)? > 0),
+        )
+        .context("Failed to inspect sqlite_master")
+    }
+
+    fn column_exists(&self, conn: &Connection, table_name: &str, column_name: &str) -> Result<bool> {
+        let pragma_sql = format!("PRAGMA table_info({table_name})");
+        let mut stmt = conn.prepare(&pragma_sql)?;
+        let rows = stmt.query_map([], |row| row.get::<_, String>(1))?;
+        for row in rows {
+            if row? == column_name {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
+    fn repair_workspace_schema(&self, conn: &Connection) -> Result<()> {
+        let has_projects = self.table_exists(conn, "projects")?;
+        let has_workspaces = self.table_exists(conn, "workspaces")?;
+
+        if has_projects && !has_workspaces {
+            tracing::warn!("Repairing legacy schema: renaming projects table to workspaces");
+            conn.execute_batch("ALTER TABLE projects RENAME TO workspaces;")?;
+        }
+
+        if self.column_exists(conn, "chats", "project_id")? && !self.column_exists(conn, "chats", "workspace_id")? {
+            tracing::warn!("Repairing legacy schema: renaming chats.project_id to workspace_id");
+            conn.execute_batch("ALTER TABLE chats RENAME COLUMN project_id TO workspace_id;")?;
+        }
+
+        for table_name in [SEMANTIC_FRAGMENTS_SEGMENT, FILE_DIFFS_SEGMENT, TOKEN_USAGE_SEGMENT, CODE_SYMBOLS_SEGMENT] {
+            if self.column_exists(conn, table_name, "project_path")?
+                && !self.column_exists(conn, table_name, legacy_workspace_path_column())?
+            {
+                let alter_sql = format!(
+                    "ALTER TABLE {table_name} RENAME COLUMN project_path TO {};",
+                    legacy_workspace_path_column()
+                );
+                tracing::warn!(
+                    "Repairing legacy schema: renaming {table_name}.project_path to {}",
+                    legacy_workspace_path_column()
+                );
+                conn.execute_batch(&alter_sql)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn ensure_runtime_support_tables(&self, conn: &Connection) -> Result<()> {
+        conn.execute_batch(
+            r#"
+            CREATE TABLE IF NOT EXISTS advanced_memories (
+                id TEXT PRIMARY KEY,
+                content TEXT NOT NULL,
+                embedding TEXT,
+                source TEXT NOT NULL,
+                source_id TEXT NOT NULL,
+                source_context TEXT,
+                category TEXT NOT NULL,
+                tags TEXT NOT NULL DEFAULT '[]',
+                confidence REAL NOT NULL DEFAULT 0,
+                importance REAL NOT NULL DEFAULT 0,
+                initial_importance REAL NOT NULL DEFAULT 0,
+                status TEXT NOT NULL DEFAULT 'pending',
+                validated_at INTEGER,
+                validated_by TEXT,
+                access_count INTEGER NOT NULL DEFAULT 0,
+                last_accessed_at INTEGER NOT NULL,
+                related_memory_ids TEXT NOT NULL DEFAULT '[]',
+                contradicts_ids TEXT NOT NULL DEFAULT '[]',
+                merged_into_id TEXT,
+                workspace_id TEXT,
+                context_tags TEXT NOT NULL DEFAULT '[]',
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                expires_at INTEGER,
+                metadata TEXT NOT NULL DEFAULT '{}'
+            );
+            CREATE INDEX IF NOT EXISTS idx_advanced_memories_workspace_id ON advanced_memories(workspace_id);
+            CREATE INDEX IF NOT EXISTS idx_advanced_memories_status ON advanced_memories(status);
+            CREATE INDEX IF NOT EXISTS idx_advanced_memories_updated_at ON advanced_memories(updated_at DESC);
+
+            CREATE TABLE IF NOT EXISTS pending_memories (
+                id TEXT PRIMARY KEY,
+                content TEXT NOT NULL,
+                embedding TEXT,
+                source TEXT NOT NULL,
+                source_id TEXT NOT NULL,
+                source_context TEXT,
+                extracted_at INTEGER NOT NULL,
+                suggested_category TEXT NOT NULL,
+                suggested_tags TEXT NOT NULL DEFAULT '[]',
+                extraction_confidence REAL NOT NULL DEFAULT 0,
+                relevance_score REAL NOT NULL DEFAULT 0,
+                novelty_score REAL NOT NULL DEFAULT 0,
+                requires_user_validation INTEGER NOT NULL DEFAULT 1,
+                auto_confirm_reason TEXT,
+                potential_contradictions TEXT NOT NULL DEFAULT '[]',
+                similar_memories TEXT NOT NULL DEFAULT '[]',
+                workspace_id TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_pending_memories_extracted_at ON pending_memories(extracted_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_pending_memories_workspace_id ON pending_memories(workspace_id);
+
+            CREATE TABLE IF NOT EXISTS agents (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL UNIQUE,
+                system_prompt TEXT NOT NULL,
+                tools TEXT NOT NULL DEFAULT '[]',
+                parent_model TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL
+            );
+            "#,
+        )?;
         Ok(())
     }
 
@@ -529,29 +683,16 @@ impl Database {
             ),
             (
                 9,
-                "add_marketplace_models_table".to_string(),
+                "rename_project_to_workspace_full".to_string(),
                 r#"
-                -- Marketplace models table for Ollama/HuggingFace model catalog
-                CREATE TABLE IF NOT EXISTS marketplace_models (
-                    id TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    provider TEXT NOT NULL,
-                    pulls TEXT,
-                    tag_count INTEGER DEFAULT 0,
-                    last_updated TEXT,
-                    categories TEXT DEFAULT '[]',
-                    short_description TEXT,
-                    downloads INTEGER,
-                    likes INTEGER,
-                    author TEXT,
-                    created_at INTEGER NOT NULL,
-                    updated_at INTEGER NOT NULL
-                );
-                CREATE INDEX IF NOT EXISTS idx_marketplace_models_provider ON marketplace_models(provider);
-                CREATE INDEX IF NOT EXISTS idx_marketplace_models_name ON marketplace_models(name);
-                CREATE INDEX IF NOT EXISTS idx_marketplace_models_updated_at ON marketplace_models(updated_at DESC);
-            "#
-                .to_string(),
+                -- Migration 9: Rename all 'project' related schema to 'workspace'
+                ALTER TABLE projects RENAME TO workspaces;
+                ALTER TABLE chats RENAME COLUMN project_id TO workspace_id;
+                ALTER TABLE semantic_fragments RENAME COLUMN project_path TO workspace_path;
+                ALTER TABLE file_diffs RENAME COLUMN project_path TO workspace_path;
+                ALTER TABLE token_usage RENAME COLUMN project_path TO workspace_path;
+                ALTER TABLE code_symbols RENAME COLUMN project_path TO workspace_path;
+                "# .to_string(),
             ),
         ]
     }
@@ -1243,7 +1384,7 @@ impl Database {
     }
 
     pub async fn search_code_symbols(&self, req: VectorSearchRequest) -> Result<Vec<CodeSymbol>> {
-        let conn = self.conn.lock().await;
+        let conn = self.open_read_connection()?;
         let workspace_path = legacy_workspace_path_column();
 
         let mut sql = format!(
@@ -1327,7 +1468,7 @@ impl Database {
     }
 
     pub async fn search_semantic_fragments(&self, req: VectorSearchRequest) -> Result<Vec<SemanticFragment>> {
-        let conn = self.conn.lock().await;
+        let conn = self.open_read_connection()?;
         let workspace_path = legacy_workspace_path_column();
 
         let mut sql = format!(
@@ -1444,197 +1585,6 @@ impl Database {
                 affected_rows: affected,
             })
         }
-    }
-
-    // ========================================================================
-    // Marketplace Model Operations
-    // ========================================================================
-
-    pub async fn upsert_marketplace_models(&self, models: Vec<MarketplaceModel>) -> Result<usize> {
-        let conn = self.conn.lock().await;
-        let now = chrono::Utc::now().timestamp_millis();
-        let mut count = 0;
-
-        for model in models {
-            conn.execute(
-                "INSERT INTO marketplace_models (id, name, provider, pulls, tag_count, last_updated, categories, short_description, downloads, likes, author, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                 ON CONFLICT(id) DO UPDATE SET
-                    pulls = excluded.pulls,
-                    tag_count = excluded.tag_count,
-                    last_updated = excluded.last_updated,
-                    categories = excluded.categories,
-                    short_description = excluded.short_description,
-                    downloads = excluded.downloads,
-                    likes = excluded.likes,
-                    updated_at = excluded.updated_at",
-                params![
-                    model.id,
-                    model.name,
-                    model.provider,
-                    model.pulls,
-                    model.tag_count,
-                    model.last_updated,
-                    serde_json::to_string(&model.categories).unwrap_or_else(|_| "[]".to_string()),
-                    model.short_description,
-                    model.downloads,
-                    model.likes,
-                    model.author,
-                    now,
-                    now,
-                ],
-            )?;
-            count += 1;
-        }
-
-        Ok(count)
-    }
-
-    pub async fn get_marketplace_models(&self, provider: Option<&str>, limit: Option<i64>, offset: Option<i64>) -> Result<Vec<MarketplaceModel>> {
-        let conn = self.conn.lock().await;
-
-        let sql = if let Some(p) = provider {
-            format!(
-                "SELECT id, name, provider, pulls, tag_count, last_updated, categories, short_description, downloads, likes, author, created_at, updated_at
-                 FROM marketplace_models WHERE provider = '{}' ORDER BY updated_at DESC LIMIT {} OFFSET {}",
-                p, limit.unwrap_or(100), offset.unwrap_or(0)
-            )
-        } else {
-            format!(
-                "SELECT id, name, provider, pulls, tag_count, last_updated, categories, short_description, downloads, likes, author, created_at, updated_at
-                 FROM marketplace_models ORDER BY updated_at DESC LIMIT {} OFFSET {}",
-                limit.unwrap_or(100), offset.unwrap_or(0)
-            )
-        };
-
-        let mut stmt = conn.prepare(&sql)?;
-        let rows = stmt.query_map([], |row| {
-            Ok(MarketplaceModel {
-                id: row.get(0)?,
-                name: row.get(1)?,
-                provider: row.get(2)?,
-                pulls: row.get(3)?,
-                tag_count: row.get(4)?,
-                last_updated: row.get(5)?,
-                categories: row.get::<_, Option<String>>(6)?
-                    .and_then(|s| serde_json::from_str(&s).ok())
-                    .unwrap_or_default(),
-                short_description: row.get(7)?,
-                downloads: row.get(8)?,
-                likes: row.get(9)?,
-                author: row.get(10)?,
-                created_at: row.get(11)?,
-                updated_at: row.get(12)?,
-            })
-        })?;
-
-        rows.collect::<Result<Vec<_>, _>>().context("Failed to fetch marketplace models")
-    }
-
-    pub async fn search_marketplace_models(&self, query: &str, provider: Option<&str>, limit: Option<i64>) -> Result<Vec<MarketplaceModel>> {
-        let conn = self.conn.lock().await;
-        let search_pattern = format!("%{}%", query.to_lowercase());
-        let limit_val = limit.unwrap_or(50);
-
-        let mut models = Vec::new();
-
-        if let Some(p) = provider {
-            let sql = format!(
-                "SELECT id, name, provider, pulls, tag_count, last_updated, categories, short_description, downloads, likes, author, created_at, updated_at
-                 FROM marketplace_models
-                 WHERE provider = ?1 AND (LOWER(name) LIKE ?2 OR LOWER(short_description) LIKE ?2 OR categories LIKE ?2)
-                 ORDER BY updated_at DESC LIMIT {}",
-                limit_val
-            );
-            let mut stmt = conn.prepare(&sql)?;
-            let rows = stmt.query_map(params![p, &search_pattern], |row| {
-                Ok(MarketplaceModel {
-                    id: row.get(0)?,
-                    name: row.get(1)?,
-                    provider: row.get(2)?,
-                    pulls: row.get(3)?,
-                    tag_count: row.get(4)?,
-                    last_updated: row.get(5)?,
-                    categories: row.get::<_, Option<String>>(6)?
-                        .and_then(|s| serde_json::from_str(&s).ok())
-                        .unwrap_or_default(),
-                    short_description: row.get(7)?,
-                    downloads: row.get(8)?,
-                    likes: row.get(9)?,
-                    author: row.get(10)?,
-                    created_at: row.get(11)?,
-                    updated_at: row.get(12)?,
-                })
-            })?;
-            for row in rows {
-                models.push(row?);
-            }
-        } else {
-            let sql = format!(
-                "SELECT id, name, provider, pulls, tag_count, last_updated, categories, short_description, downloads, likes, author, created_at, updated_at
-                 FROM marketplace_models
-                 WHERE LOWER(name) LIKE ?1 OR LOWER(short_description) LIKE ?1 OR categories LIKE ?1
-                 ORDER BY updated_at DESC LIMIT {}",
-                limit_val
-            );
-            let mut stmt = conn.prepare(&sql)?;
-            let rows = stmt.query_map(params![&search_pattern], |row| {
-                Ok(MarketplaceModel {
-                    id: row.get(0)?,
-                    name: row.get(1)?,
-                    provider: row.get(2)?,
-                    pulls: row.get(3)?,
-                    tag_count: row.get(4)?,
-                    last_updated: row.get(5)?,
-                    categories: row.get::<_, Option<String>>(6)?
-                        .and_then(|s| serde_json::from_str(&s).ok())
-                        .unwrap_or_default(),
-                    short_description: row.get(7)?,
-                    downloads: row.get(8)?,
-                    likes: row.get(9)?,
-                    author: row.get(10)?,
-                    created_at: row.get(11)?,
-                    updated_at: row.get(12)?,
-                })
-            })?;
-            for row in rows {
-                models.push(row?);
-            }
-        }
-
-        Ok(models)
-    }
-
-    pub async fn get_marketplace_model_count(&self, provider: Option<&str>) -> Result<i64> {
-        let conn = self.conn.lock().await;
-
-        let count: i64 = if let Some(p) = provider {
-            conn.query_row(
-                "SELECT COUNT(*) FROM marketplace_models WHERE provider = ?",
-                [p],
-                |row| row.get(0),
-            )?
-        } else {
-            conn.query_row(
-                "SELECT COUNT(*) FROM marketplace_models",
-                [],
-                |row| row.get(0),
-            )?
-        };
-
-        Ok(count)
-    }
-
-    pub async fn clear_marketplace_models(&self, provider: Option<&str>) -> Result<usize> {
-        let conn = self.conn.lock().await;
-
-        let affected = if let Some(p) = provider {
-            conn.execute("DELETE FROM marketplace_models WHERE provider = ?", [p])?
-        } else {
-            conn.execute("DELETE FROM marketplace_models", [])?
-        };
-
-        Ok(affected)
     }
 }
 

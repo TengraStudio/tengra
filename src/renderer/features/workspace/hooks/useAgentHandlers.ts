@@ -4,7 +4,7 @@ import { AttachedFile, ModelOption } from '../components/agent/TaskInputForm';
 
 import { useFilePreviewUrl } from './useFilePreviewUrl';
 
-const getWorkspaceAgentBridge = () => window.electron.workspaceAgent;
+const getAutomationBridge = () => window.electron.session.automation;
 
 interface UseAgentHandlersProps {
     selectedTaskId: string | null;
@@ -63,7 +63,7 @@ export const useAgentHandlers = ({
             return;
         }
         try {
-            const result = await getWorkspaceAgentBridge().selectModel({
+            const result = await getAutomationBridge().selectModel({
                 taskId: selectedTaskId,
                 provider,
                 model

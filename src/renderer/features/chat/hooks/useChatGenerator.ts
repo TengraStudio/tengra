@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { chatStream } from '@/lib/chat-stream';
 import { getSystemPrompt } from '@/lib/identity';
 import { generateId } from '@/lib/utils';
-import { AppSettings, Chat, ChatError, Message, ToolDefinition } from '@/types';
+import { AppSettings, Chat, ChatError, Message, ToolDefinition, ToolResult } from '@/types';
 import { CatchError } from '@/types/common';
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -62,8 +62,74 @@ interface ChatStreamChunk {
     reasoning?: string;
 }
 
+const IMAGE_REQUEST_COUNT_MAX = 5;
+const IMAGE_ACTION_PATTERN = /\b(create|draw|generate|make|render|olu[sş]tur|u[̈u]ret|yarat|ciz|[çc]iz)\b/i;
+const IMAGE_SUBJECT_PATTERN = /\b(avatar|drawing|g[oö]rsel|icon|illustration|image|logo|picture|poster|render|resim|sketch|wallpaper|foto(?:g(?:raf)?)?)\b/i;
+const DIRECT_IMAGE_RESULT_KEYS = ['images', 'paths', 'files'] as const;
+
 const getReasoningEffort = (modelId: string, appSettings: AppSettings | undefined) => {
     return appSettings?.modelSettings?.[modelId]?.reasoningLevel;
+};
+
+const getMessageTextContent = (message: Message): string => {
+    if (typeof message.content === 'string') {
+        return message.content;
+    }
+    return message.content
+        .filter(part => part.type === 'text')
+        .map(part => part.text)
+        .join('\n')
+        .trim();
+};
+
+const isExplicitImageRequest = (message: Message): boolean => {
+    const text = getMessageTextContent(message).toLowerCase();
+    if (text.trim().length === 0) {
+        return false;
+    }
+    const hasImageSubject = IMAGE_SUBJECT_PATTERN.test(text);
+    const hasImageAction = IMAGE_ACTION_PATTERN.test(text);
+    return hasImageSubject && hasImageAction;
+};
+
+const extractImageRequestCount = (message: Message): number => {
+    const text = getMessageTextContent(message);
+    const match = text.match(/(\d+)\s*(?:adet|image(?:s)?|photo(?:s)?|picture(?:s)?|tane|g[oö]rsel|resim|foto(?:g(?:raf)?)?)/i);
+    if (!match?.[1]) {
+        return 1;
+    }
+    const parsed = Number.parseInt(match[1], 10);
+    if (!Number.isFinite(parsed)) {
+        return 1;
+    }
+    return Math.max(1, Math.min(parsed, IMAGE_REQUEST_COUNT_MAX));
+};
+
+const createModelToolList = (provider: string, allTools: ToolDefinition[]): ToolDefinition[] => {
+    return allTools.filter(toolDefinition => {
+        const toolName = toolDefinition?.function?.name;
+        if (!toolName || toolName === 'generate_image') {
+            return false;
+        }
+        return provider === 'opencode' || provider === 'antigravity';
+    });
+};
+
+const readToolResultImages = (toolResult: ToolResult): string[] => {
+    if (typeof toolResult.result === 'string') {
+        return [toolResult.result];
+    }
+    if (!toolResult.result || Array.isArray(toolResult.result) || typeof toolResult.result !== 'object') {
+        return [];
+    }
+    for (const key of DIRECT_IMAGE_RESULT_KEYS) {
+        const value = toolResult.result[key];
+        if (!Array.isArray(value)) {
+            continue;
+        }
+        return value.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0);
+    }
+    return [];
 };
 
 const prepareMessages = (options: PrepareMessagesOptions) => {
@@ -105,6 +171,72 @@ const prepareMessages = (options: PrepareMessagesOptions) => {
     const presetOptions = getPresetOptions(appSettings, modelConfig);
 
     return { allMessages: [systemMessage, ...chatMessages], presetOptions };
+};
+
+const buildModelConversation = (
+    messages: Message[],
+    assistantMessage: Message,
+    toolResults: Message[]
+): Message[] => {
+    return [...messages, assistantMessage, ...toolResults];
+};
+
+const completeDirectImageMessage = async (options: {
+    assistantId: string;
+    chatId: string;
+    userMessage: Message;
+    activeModel: string;
+    selectedProvider: string;
+    setChats: React.Dispatch<React.SetStateAction<Chat[]>>;
+    t: (key: string) => string;
+}): Promise<void> => {
+    const { assistantId, chatId, userMessage, activeModel, selectedProvider, setChats, t } = options;
+    const prompt = getMessageTextContent(userMessage);
+    const requestedCount = extractImageRequestCount(userMessage);
+    const startedAt = performance.now();
+    const toolResult = await window.electron.executeTools(
+        'generate_image',
+        { prompt, count: requestedCount },
+        generateId()
+    );
+
+    if (!toolResult.success) {
+        throw new Error(toolResult.error ?? t('chat.error'));
+    }
+
+    const images = readToolResultImages(toolResult);
+    if (images.length === 0) {
+        throw new Error('Image generation returned no images');
+    }
+
+    const responseTime = Math.round(performance.now() - startedAt);
+    const updates: Partial<Message> = {
+        content: '',
+        images,
+        responseTime,
+        toolResults: [toolResult],
+    };
+
+    setChats(prev => prev.map(chat => (
+        chat.id === chatId
+            ? {
+                ...chat,
+                isGenerating: false,
+                messages: chat.messages.map(message => (
+                    message.id === assistantId
+                        ? {
+                            ...message,
+                            ...updates,
+                            provider: selectedProvider,
+                            model: activeModel,
+                        }
+                        : message
+                )),
+            }
+            : chat
+    )));
+
+    await window.electron.db.updateMessage(assistantId, updates);
 };
 
 export const useChatGenerator = (
@@ -155,7 +287,7 @@ export const useChatGenerator = (
         const isMultiModel = modelsToUse.length > 1;
 
         try {
-            const allTools: ToolDefinition[] = await window.electron.getToolDefinitions();
+            const allTools: ToolDefinition[] = (await window.electron.getToolDefinitions()) ?? [];
 
             const tempMsg: Message = {
                 id: assistantId,
@@ -181,21 +313,26 @@ export const useChatGenerator = (
             );
             void window.electron.db.addMessage({ ...tempMsg, chatId, timestamp: Date.now() });
 
-            if (isMultiModel) {
+            if (isExplicitImageRequest(userMessage)) {
+                await completeDirectImageMessage({
+                    assistantId,
+                    chatId,
+                    userMessage,
+                    activeModel,
+                    selectedProvider,
+                    setChats,
+                    t,
+                });
+            } else if (isMultiModel) {
                 await generateMultiModelResponse({
                     chatId, assistantId, userMessage, models: modelsToUse, allTools, chats, setChats,
                     appSettings, language, selectedPersona, activeWorkspacePath, workspaceId, setStreamingStates,
                     autoReadEnabled, handleSpeak, t, formatChatError, systemMode
                 });
             } else {
-                const tools = systemMode === 'agent' ? allTools.filter(tDefinition => {
-                    if (!tDefinition.function.name) { return false; }
-                    if (selectedProvider === 'opencode') { return true; }
-                    if (selectedProvider === 'antigravity') { return true; }
-                    return tDefinition.function.name === 'generate_image';
-                }) : [];
+                const tools = systemMode === 'agent' ? createModelToolList(selectedProvider, allTools ?? []) : [];
 
-                const { presetOptions } = prepareMessages({
+                const { allMessages, presetOptions } = prepareMessages({
                     chatId, chats, userMessage, appSettings, selectedModel: activeModel,
                     selectedProvider, language, selectedPersona, systemMode
                 });
@@ -206,8 +343,9 @@ export const useChatGenerator = (
                     agentToolsEnabled: systemMode === 'agent', reasoningEffort
                 };
                 await executeToolTurnLoop({
+                    initialMessages: allMessages,
                     chatId, assistantId, activeModel, selectedProvider, tools, fullOptions, workspaceId,
-                    autoReadEnabled, handleSpeak, t, setStreamingStates, setChats, activeWorkspacePath, systemMode, chats
+                    autoReadEnabled, handleSpeak, t, setStreamingStates, setChats, activeWorkspacePath, systemMode
                 });
             }
         } catch (e) {
@@ -247,7 +385,9 @@ export const useChatGenerator = (
 
     const stopGeneration = async () => {
         try {
-            window.electron.abortChat();
+            for (const activeChatId of Object.keys(streamingStates)) {
+                window.electron.session.conversation.abort(activeChatId);
+            }
             setStreamingStates({});
         } catch (e) {
             window.electron.log.error('Failed to stop generation', e as Error);
@@ -258,22 +398,23 @@ export const useChatGenerator = (
 };
 
 const executeToolTurnLoop = async (params: {
+    initialMessages: Message[];
     chatId: string; assistantId: string; activeModel: string; selectedProvider: string; tools: ToolDefinition[];
     fullOptions: Record<string, unknown>; workspaceId: string | undefined; autoReadEnabled: boolean;
     handleSpeak: (id: string, content: string) => void; t: (key: string) => string;
     setStreamingStates: React.Dispatch<React.SetStateAction<Record<string, StreamStreamingState>>>;
     setChats: React.Dispatch<React.SetStateAction<Chat[]>>; activeWorkspacePath: string | undefined;
-    systemMode: 'thinking' | 'agent' | 'fast'; chats: Chat[];
+    systemMode: 'thinking' | 'agent' | 'fast';
 }) => {
     const {
-        chatId, assistantId, activeModel, selectedProvider, tools, fullOptions, workspaceId,
-        autoReadEnabled, handleSpeak, t, setStreamingStates, setChats, activeWorkspacePath, systemMode, chats
+        initialMessages, chatId, assistantId, activeModel, selectedProvider, tools, fullOptions, workspaceId,
+        autoReadEnabled, handleSpeak, t, setStreamingStates, setChats, activeWorkspacePath, systemMode
     } = params;
 
     let currentAssistantId = assistantId;
     let toolIterations = 0;
     const MAX_TOOL_ITERATIONS = 5;
-    let currentMessages: Message[] = chats.find(c => c.id === chatId)?.messages ?? [];
+    let currentMessages: Message[] = initialMessages;
 
     while (toolIterations < MAX_TOOL_ITERATIONS) {
         if (currentMessages.length === 0) { break; }
@@ -323,11 +464,13 @@ const executeToolTurnLoop = async (params: {
                 provider: selectedProvider, model: activeModel
             };
 
-            const messagesWithToolResults = currentMessages
-                .map(message => (message.id === currentAssistantId ? assistantMsg : message))
-                .concat(toolResults);
+            const messagesWithToolResults = buildModelConversation(
+                currentMessages,
+                assistantMsg,
+                toolResults
+            );
             const nextMessages = [...messagesWithToolResults, nextAssistantPlaceholder];
-            currentMessages = nextMessages;
+            currentMessages = messagesWithToolResults;
             setChats(prev => prev.map(chat => (chat.id === chatId ? { ...chat, messages: nextMessages } : chat)));
             currentAssistantId = nextAssistantId;
             void window.electron.db.addMessage({ ...nextAssistantPlaceholder, chatId, timestamp: Date.now() });
@@ -386,11 +529,7 @@ async function orchestrationMultiModelStreams(params: OrchestrationParams) {
                 selectedProvider: modelInfo.provider, language, selectedPersona, systemMode
             });
             const reasoningEffort = getReasoningEffort(modelInfo.model, appSettings);
-            const tools = systemMode === 'agent' ? allTools.filter((tDefinition: ToolDefinition) => {
-                if (!tDefinition.function.name) { return false; }
-                if (modelInfo.provider === 'opencode') { return true; }
-                return tDefinition.function.name === 'generate_image' && modelInfo.provider === 'antigravity';
-            }) : [];
+            const tools = systemMode === 'agent' ? createModelToolList(modelInfo.provider, allTools ?? []) : [];
 
             const stream = chatStream({
                 messages: allMessages, model: modelInfo.model, tools, provider: modelInfo.provider,

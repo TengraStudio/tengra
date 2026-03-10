@@ -1,4 +1,4 @@
-import { Braces, FileText, GitBranch, Layout, ListTodo, Play, Search, Settings } from 'lucide-react';
+import { FileText, GitBranch, Layout, ListTodo, Play, Search, Settings } from 'lucide-react';
 import React from 'react';
 
 import { cn } from '@/lib/utils';
@@ -21,7 +21,6 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
         { id: 'overview', icon: Layout, title: t('workspaceDashboard.overview') },
         { id: 'tasks', icon: ListTodo, title: t('workspaceDashboard.todoList') },
         { id: 'search', icon: Search, title: t('workspaceDashboard.search') },
-        { id: 'code', icon: Braces, title: 'Code' },
         { id: 'git', icon: GitBranch, title: t('workspaceDashboard.git') },
         { id: 'env', icon: Settings, title: t('workspaceDashboard.environment') },
         { id: 'logs', icon: FileText, title: t('workspaceDashboard.logs') },

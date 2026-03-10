@@ -153,6 +153,8 @@ export class AuthService extends BaseService {
     private _providerSessionLimits = new Map<string, number>();
     private readonly _defaultSessionLimit = 5;
     private _sessionIdleTtlMs = 24 * 60 * 60 * 1000;
+    private linkedAccountsCache: LinkedAccount[] | null = null;
+    private linkedAccountsCacheInFlight: Promise<LinkedAccount[]> | null = null;
 
     constructor(
         private databaseService: DatabaseService,
@@ -172,6 +174,7 @@ export class AuthService extends BaseService {
 
         // Proactively migrate all tokens in DB to new encryption format
         await this.migrateExistingTokens();
+        await this.refreshLinkedAccountsCache();
     }
 
     async cleanup(): Promise<void> {
@@ -180,6 +183,8 @@ export class AuthService extends BaseService {
         // Clear any cached sensitive data
         // Note: Encrypted tokens in database are preserved
         this.sessions.clear();
+        this.linkedAccountsCache = null;
+        this.linkedAccountsCacheInFlight = null;
 
         appLogger.info('AuthService', 'Authentication service cleanup complete');
     }
@@ -297,7 +302,7 @@ export class AuthService extends BaseService {
      */
     async getAccountsByProvider(provider: string): Promise<LinkedAccountInfo[]> {
         const normalized = this.normalizeProvider(provider);
-        const accounts = await this.databaseService.getLinkedAccounts(normalized);
+        const accounts = await this.getLinkedAccountsCached(normalized);
         return accounts.map(a => this.toPublicAccount(a));
     }
 
@@ -306,7 +311,7 @@ export class AuthService extends BaseService {
      */
     async getActiveAccount(provider: string): Promise<LinkedAccountInfo | null> {
         const normalized = this.normalizeProvider(provider);
-        const account = await this.databaseService.getActiveLinkedAccount(normalized);
+        const account = await this.getActiveLinkedAccountCached(normalized);
         if (!account) { return null; }
 
         if (this.isExpired(account)) {
@@ -325,7 +330,7 @@ export class AuthService extends BaseService {
      */
     async getActiveToken(provider: string): Promise<string | undefined> {
         const normalized = this.normalizeProvider(provider);
-        const account = await this.databaseService.getActiveLinkedAccount(normalized);
+        const account = await this.getActiveLinkedAccountCached(normalized);
         if (!account) { return undefined; }
 
         if (this.isExpired(account)) {
@@ -347,7 +352,7 @@ export class AuthService extends BaseService {
      */
     async getAccountsByProviderFull(provider: string): Promise<LinkedAccount[]> {
         const normalized = this.normalizeProvider(provider);
-        const accounts = await this.databaseService.getLinkedAccounts(normalized);
+        const accounts = await this.getLinkedAccountsCached(normalized);
         const fullAccounts: LinkedAccount[] = [];
 
         for (const a of accounts) {
@@ -368,7 +373,7 @@ export class AuthService extends BaseService {
      */
     async getActiveAccountFull(provider: string): Promise<LinkedAccount | null> {
         const normalized = this.normalizeProvider(provider);
-        const account = await this.databaseService.getActiveLinkedAccount(normalized);
+        const account = await this.getActiveLinkedAccountCached(normalized);
         if (!account) { return null; }
 
         if (this.isExpired(account)) {
@@ -395,6 +400,7 @@ export class AuthService extends BaseService {
     async setActiveAccount(provider: string, accountId: string): Promise<void> {
         const normalized = this.normalizeProvider(provider);
         await this.databaseService.setActiveLinkedAccount(normalized, accountId);
+        this.applyActiveAccountToCache(normalized, accountId);
         appLogger.info('AuthService', `Set active account for ${normalized}: ${accountId}`);
     }
 
@@ -415,6 +421,7 @@ export class AuthService extends BaseService {
         await this.ensureActivation(normalized, account, !!existing);
 
         await this.databaseService.saveLinkedAccount(account);
+        this.upsertLinkedAccountCache(account);
         this.emitLinkEvents(normalized, account, tokenData);
 
         return this.toPublicAccount(account);
@@ -433,7 +440,7 @@ export class AuthService extends BaseService {
             return this.linkAccount(provider, tokenData);
         }
 
-        const existing = await this.databaseService.getLinkedAccount(accountId);
+        const existing = await this.getLinkedAccountCached(accountId);
         const resolvedProvider = existing?.provider ?? normalized;
         if (existing?.provider && existing.provider !== normalized) {
             appLogger.warn('AuthService', `Provider mismatch for account ${accountId}: ${existing.provider} vs ${normalized}. Keeping existing.`);
@@ -450,6 +457,7 @@ export class AuthService extends BaseService {
 
         await this.ensureActivation(resolvedProvider, account, !!existing);
         await this.databaseService.saveLinkedAccount(account);
+        this.upsertLinkedAccountCache(account);
         this.emitLinkEvents(resolvedProvider, account, tokenData);
 
         return this.toPublicAccount(account);
@@ -458,7 +466,7 @@ export class AuthService extends BaseService {
     private async findExistingAccount(provider: string, email?: string): Promise<LinkedAccount | undefined> {
         let existing = await this.findAccountByEmail(provider, email);
         if (!existing && !email) {
-            const accounts = await this.databaseService.getLinkedAccounts(provider);
+            const accounts = await this.getLinkedAccountsCached(provider);
             if (accounts.length > 0) {
                 existing = accounts[0];
             }
@@ -499,7 +507,7 @@ export class AuthService extends BaseService {
     }
 
     private async ensureActivation(provider: string, account: LinkedAccount, hadExisting: boolean): Promise<void> {
-        const existingAccounts = await this.databaseService.getLinkedAccounts(provider);
+        const existingAccounts = await this.getLinkedAccountsCached(provider);
         if (existingAccounts.length === 0 || (existingAccounts.length === 1 && hadExisting)) {
             account.isActive = true;
         }
@@ -515,7 +523,7 @@ export class AuthService extends BaseService {
      */
     async unlinkAccount(accountId: string): Promise<void> {
         // Get the account first to check if it's active
-        const accounts = await this.databaseService.getLinkedAccounts();
+        const accounts = await this.getAllLinkedAccountsCached();
         const account = accounts.find(a => a.id === accountId);
 
         if (!account) {
@@ -524,6 +532,7 @@ export class AuthService extends BaseService {
         }
 
         await this.databaseService.deleteLinkedAccount(accountId);
+        this.removeLinkedAccountFromCache(accountId);
         appLogger.info('AuthService', `Unlinked account: ${accountId}`);
 
         // Notify token service to stop refreshing this account
@@ -531,9 +540,10 @@ export class AuthService extends BaseService {
 
         // If this was the active account, make another one active
         if (account.isActive) {
-            const remainingAccounts = await this.databaseService.getLinkedAccounts(account.provider);
+            const remainingAccounts = await this.getLinkedAccountsCached(account.provider);
             if (remainingAccounts.length > 0 && remainingAccounts[0]) {
                 await this.databaseService.setActiveLinkedAccount(account.provider, remainingAccounts[0].id);
+                this.applyActiveAccountToCache(account.provider, remainingAccounts[0].id);
                 appLogger.info('AuthService', `Auto-activated next account for ${account.provider}: ${remainingAccounts[0].id}`);
             }
         }
@@ -544,10 +554,11 @@ export class AuthService extends BaseService {
      */
     async unlinkAllForProvider(provider: string): Promise<void> {
         const normalized = this.normalizeProvider(provider);
-        const accounts = await this.databaseService.getLinkedAccounts(normalized);
+        const accounts = await this.getLinkedAccountsCached(normalized);
 
         for (const account of accounts) {
             await this.databaseService.deleteLinkedAccount(account.id);
+            this.removeLinkedAccountFromCache(account.id);
             // Notify token service to stop refreshing this account
             this.eventBus.emit('account:unlinked', { accountId: account.id, provider: account.provider });
         }
@@ -558,7 +569,7 @@ export class AuthService extends BaseService {
      * Update an existing linked account token.
      */
     async updateToken(accountId: string, tokenData: Partial<TokenData>): Promise<void> {
-        const accounts = await this.databaseService.getLinkedAccounts();
+        const accounts = await this.getAllLinkedAccountsCached();
         const account = accounts.find(a => a.id === accountId);
         if (!account) { return; }
 
@@ -577,6 +588,7 @@ export class AuthService extends BaseService {
         if (tokenData.metadata) { updatedAccount.metadata = { ...account.metadata, ...tokenData.metadata }; }
 
         await this.databaseService.saveLinkedAccount(updatedAccount);
+        this.upsertLinkedAccountCache(updatedAccount);
         appLogger.info('AuthService', `Updated token and profile for account: ${accountId}`);
         this.eventBus.emit('account:updated', { accountId: account.id, provider: account.provider });
     }
@@ -588,7 +600,7 @@ export class AuthService extends BaseService {
      * Check if a specific account exists in the database.
      */
     async accountExists(accountId: string): Promise<boolean> {
-        const accounts = await this.databaseService.getLinkedAccounts();
+        const accounts = await this.getAllLinkedAccountsCached();
         return accounts.some(a => a.id === accountId);
     }
 
@@ -628,7 +640,7 @@ export class AuthService extends BaseService {
      * Get all linked accounts across all providers.
      */
     async getAllAccounts(): Promise<LinkedAccountInfo[]> {
-        const accounts = await this.databaseService.getLinkedAccounts();
+        const accounts = await this.getAllLinkedAccountsCached();
         return accounts.map(a => this.toPublicAccount(a));
     }
 
@@ -637,7 +649,7 @@ export class AuthService extends BaseService {
      */
     async hasLinkedAccount(provider: string): Promise<boolean> {
         const normalized = this.normalizeProvider(provider);
-        const accounts = await this.databaseService.getLinkedAccounts(normalized);
+        const accounts = await this.getLinkedAccountsCached(normalized);
         return accounts.length > 0;
     }
 
@@ -645,7 +657,7 @@ export class AuthService extends BaseService {
      * Get all accounts with decrypted tokens (for internal use).
      */
     async getAllAccountsFull(): Promise<LinkedAccount[]> {
-        const accounts = await this.databaseService.getLinkedAccounts();
+        const accounts = await this.getAllLinkedAccountsCached();
         const fullAccounts: LinkedAccount[] = [];
 
         for (const a of accounts) {
@@ -659,6 +671,92 @@ export class AuthService extends BaseService {
             void this.checkAndUpgradeEncryption(a);
         }
         return fullAccounts;
+    }
+
+    private async getAllLinkedAccountsCached(): Promise<LinkedAccount[]> {
+        if (this.linkedAccountsCache) {
+            return [...this.linkedAccountsCache];
+        }
+        return this.refreshLinkedAccountsCache();
+    }
+
+    private async getLinkedAccountsCached(provider?: string): Promise<LinkedAccount[]> {
+        if (!provider) {
+            return this.getAllLinkedAccountsCached();
+        }
+
+        const normalized = this.normalizeProvider(provider);
+
+        if (!this.linkedAccountsCache) {
+            const providerAccounts = await this.databaseService.getLinkedAccounts(normalized);
+            return [...providerAccounts];
+        }
+
+        const accounts = await this.getAllLinkedAccountsCached();
+        return accounts.filter(account => this.normalizeProvider(account.provider) === normalized);
+    }
+
+    private async getLinkedAccountCached(accountId: string): Promise<LinkedAccount | null> {
+        const accounts = await this.getAllLinkedAccountsCached();
+        return accounts.find(account => account.id === accountId) ?? null;
+    }
+
+    private async getActiveLinkedAccountCached(provider: string): Promise<LinkedAccount | null> {
+        if (!this.linkedAccountsCache) {
+            const normalized = this.normalizeProvider(provider);
+            const activeAccount = await this.databaseService.getActiveLinkedAccount(normalized);
+            if (activeAccount) {
+                return activeAccount;
+            }
+        }
+
+        const accounts = await this.getLinkedAccountsCached(provider);
+        return accounts.find(account => account.isActive) ?? accounts[0] ?? null;
+    }
+
+    private async refreshLinkedAccountsCache(): Promise<LinkedAccount[]> {
+        if (this.linkedAccountsCacheInFlight) {
+            return this.linkedAccountsCacheInFlight;
+        }
+        this.linkedAccountsCacheInFlight = this.databaseService.getLinkedAccounts()
+            .then(accounts => {
+                this.linkedAccountsCache = accounts;
+                return [...accounts];
+            })
+            .finally(() => {
+                this.linkedAccountsCacheInFlight = null;
+            });
+        return this.linkedAccountsCacheInFlight;
+    }
+
+    private upsertLinkedAccountCache(account: LinkedAccount): void {
+        const current = this.linkedAccountsCache ?? [];
+        const next = current.filter(existing => existing.id !== account.id);
+        next.push(account);
+        this.linkedAccountsCache = next;
+    }
+
+    private removeLinkedAccountFromCache(accountId: string): void {
+        if (!this.linkedAccountsCache) {
+            return;
+        }
+        this.linkedAccountsCache = this.linkedAccountsCache.filter(account => account.id !== accountId);
+    }
+
+    private applyActiveAccountToCache(provider: string, accountId: string): void {
+        if (!this.linkedAccountsCache) {
+            return;
+        }
+        const normalized = this.normalizeProvider(provider);
+        this.linkedAccountsCache = this.linkedAccountsCache.map(account => {
+            if (this.normalizeProvider(account.provider) !== normalized) {
+                return account;
+            }
+            return {
+                ...account,
+                isActive: account.id === accountId
+            };
+        });
     }
 
     detectProvider(providerHint: string | undefined, tokenData?: Partial<TokenData>): string {

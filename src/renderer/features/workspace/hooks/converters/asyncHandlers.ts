@@ -3,11 +3,11 @@
  */
 
 import { AgentEventRecord } from '@shared/types/agent-state';
-import { WorkspaceState } from '@shared/types/workspace-agent';
+import { WorkspaceState } from '@shared/types/automation-workflow';
 
 import { EventResponse, MessageResponse, StatusResponse, TelemetryResponse } from './taskDetailsProcessor';
 
-const getWorkspaceAgentBridge = () => window.electron.workspaceAgent;
+const getAutomationBridge = () => window.electron.session.automation;
 
 export interface IpcInvokeResult {
     success: boolean;
@@ -98,21 +98,21 @@ const buildEventsResponse = (
  * Pause a running task.
  */
 export const pauseTaskHandler = async (taskId: string): Promise<void> => {
-    await getWorkspaceAgentBridge().pauseTask(taskId);
+    await getAutomationBridge().pauseTask(taskId);
 };
 
 /**
  * Stop a running task.
  */
 export const stopTaskHandler = async (taskId: string): Promise<void> => {
-    await getWorkspaceAgentBridge().stop(taskId);
+    await getAutomationBridge().stop(taskId);
 };
 
 /**
  * Save a snapshot of the current task.
  */
 export const saveSnapshotHandler = async (taskId: string): Promise<boolean> => {
-    const result = await getWorkspaceAgentBridge().saveSnapshot(taskId);
+    const result = await getAutomationBridge().saveSnapshot(taskId);
     return result.success;
 };
 
@@ -120,7 +120,7 @@ export const saveSnapshotHandler = async (taskId: string): Promise<boolean> => {
  * Resume a paused task.
  */
 export const resumeTaskHandler = async (taskId: string): Promise<IpcInvokeResult> => {
-    return await getWorkspaceAgentBridge().resumeTask(taskId);
+    return await getAutomationBridge().resumeTask(taskId);
 };
 
 /**
@@ -128,7 +128,7 @@ export const resumeTaskHandler = async (taskId: string): Promise<IpcInvokeResult
  */
 export const resumeCheckpointHandler = async (checkpointId: string): Promise<IpcInvokeResult> => {
     try {
-        await window.electron.invoke('agent:resume-checkpoint', checkpointId);
+        await getAutomationBridge().resumeCheckpoint(checkpointId);
         return { success: true };
     } catch (error) {
         window.electron.log.error('Failed to resume checkpoint:', error as Error);
@@ -143,7 +143,7 @@ export const resumeCheckpointHandler = async (checkpointId: string): Promise<Ipc
  * Approve an execution plan.
  */
 export const approvePlanHandler = async (taskId: string): Promise<boolean> => {
-    const result = await getWorkspaceAgentBridge().approveCurrentPlan(taskId);
+    const result = await getAutomationBridge().approveCurrentPlan(taskId);
     if (!result.success) {
         window.electron.log.error('Failed to approve plan:', result.error ?? 'Unknown error');
     }
@@ -154,7 +154,7 @@ export const approvePlanHandler = async (taskId: string): Promise<boolean> => {
  * Reject an execution plan with optional reason.
  */
 export const rejectPlanHandler = async (taskId: string, reason?: string): Promise<boolean> => {
-    const result = await getWorkspaceAgentBridge().rejectCurrentPlan(taskId, reason);
+    const result = await getAutomationBridge().rejectCurrentPlan(taskId, reason);
     if (!result.success) {
         window.electron.log.error('Failed to reject plan:', result.error ?? 'Unknown error');
     }
@@ -165,14 +165,14 @@ export const rejectPlanHandler = async (taskId: string, reason?: string): Promis
  * Approve a specific step (AGT-HIL-01).
  */
 export const approveStepHandler = async (taskId: string, stepId: string): Promise<void> => {
-    await getWorkspaceAgentBridge().approveStep(taskId, stepId);
+    await getAutomationBridge().approveStep(taskId, stepId);
 };
 
 /**
  * Skip a specific step (AGT-HIL-03).
  */
 export const skipStepHandler = async (taskId: string, stepId: string): Promise<void> => {
-    await getWorkspaceAgentBridge().skipStep(taskId, stepId);
+    await getAutomationBridge().skipStep(taskId, stepId);
 };
 
 /**
@@ -183,7 +183,7 @@ export const editStepHandler = async (
     stepId: string,
     text: string
 ): Promise<void> => {
-    await getWorkspaceAgentBridge().editStep(taskId, stepId, text);
+    await getAutomationBridge().editStep(taskId, stepId, text);
 };
 
 /**
@@ -194,7 +194,7 @@ export const addStepCommentHandler = async (
     stepId: string,
     comment: string
 ): Promise<void> => {
-    await getWorkspaceAgentBridge().addStepComment(taskId, stepId, comment);
+    await getAutomationBridge().addStepComment(taskId, stepId, comment);
 };
 
 /**
@@ -204,7 +204,7 @@ export const insertInterventionHandler = async (
     taskId: string,
     afterStepId: string
 ): Promise<void> => {
-    await getWorkspaceAgentBridge().insertInterventionPoint(taskId, afterStepId);
+    await getAutomationBridge().insertInterventionPoint(taskId, afterStepId);
 };
 
 /**
@@ -220,8 +220,8 @@ export const fetchTaskDetailsHandler = async (
 }> => {
     try {
         const [status, eventsResponse] = await Promise.all([
-            getWorkspaceAgentBridge().getStatus(taskId),
-            getWorkspaceAgentBridge().getTaskEvents(taskId),
+            getAutomationBridge().getStatus(taskId),
+            getAutomationBridge().getTaskEvents(taskId),
         ]);
 
         return {
@@ -238,3 +238,4 @@ export const fetchTaskDetailsHandler = async (
         throw error;
     }
 };
+

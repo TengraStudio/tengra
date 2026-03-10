@@ -19,6 +19,13 @@ const renderDashboardTabs = (
 };
 
 describe('DashboardTabs state transitions', () => {
+    it('does not render a separate code tab anymore', () => {
+        const onDashboardTabChange = vi.fn();
+        renderDashboardTabs('overview', onDashboardTabChange);
+
+        expect(screen.queryByTitle('Code')).not.toBeInTheDocument();
+    });
+
     it('emits tab transition when a non-active tab is clicked', () => {
         const onDashboardTabChange = vi.fn();
         renderDashboardTabs('overview', onDashboardTabChange);

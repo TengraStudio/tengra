@@ -26,7 +26,12 @@ export class AntigravityHandler {
         } catch (error) {
             if (axios.isAxiosError(error) && error.response?.status === 401) {
                 appLogger.warn('QuotaService', 'Antigravity token invalid/expired (401). Triggering forced refresh.');
-                void this.tokenService.ensureFreshToken(account.provider, true);
+                void this.tokenService.ensureFreshToken(account.provider, true).catch(refreshError => {
+                    appLogger.warn(
+                        'QuotaService',
+                        `Forced Antigravity token refresh failed: ${refreshError instanceof Error ? refreshError.message : String(refreshError)}`
+                    );
+                });
             }
         }
         return null;

@@ -19,21 +19,21 @@ $Services = @{
 
 $RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
 
-# Get the bin directory
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$InstallRoot = Split-Path -Parent $ScriptDir
-$LocalAppData = [Environment]::GetFolderPath("LocalApplicationData")
-$BinCandidates = @(
-    (Join-Path $InstallRoot "resources\bin"),
-    (Join-Path $InstallRoot "resources\resources\bin"),
-    (Join-Path $LocalAppData "Programs\Tengra\resources\bin"),
-    (Join-Path $LocalAppData "Programs\Tengra\resources\resources\bin")
-)
-$BinDir = $BinCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
-if (-not $BinDir) {
-    # Keep deterministic fallback for error messages
-    $BinDir = $BinCandidates[0]
+function Get-ManagedRuntimeBinDir {
+    $appData = [Environment]::GetFolderPath("ApplicationData")
+    return Join-Path $appData "Tengra\runtime\bin"
 }
+
+function Get-BinDir {
+    $managedBinDir = Get-ManagedRuntimeBinDir
+    if (Test-Path $managedBinDir) {
+        return $managedBinDir
+    }
+
+    return $managedBinDir
+}
+
+$BinDir = Get-BinDir
 
 function Write-Log {
     param([string]$Message, [string]$Color = "White")

@@ -3,8 +3,6 @@ import React from 'react';
 
 import { Language } from '@/i18n';
 
-import { WorkspacesPageHealthIndicator } from './WorkspacesPageHealthIndicator';
-
 interface WorkspacesHeaderProps {
     title: string
     subtitle: string
@@ -31,7 +29,7 @@ interface WorkspacesHeaderProps {
 export const WorkspacesHeader: React.FC<WorkspacesHeaderProps> = ({
     title, subtitle, newWorkspaceLabel, searchPlaceholder, searchQuery, setSearchQuery, onNewWorkspace,
     selectedCount, totalCount, onToggleSelectAll, onBulkDelete, onBulkArchive,
-    viewMode, onViewModeChange, listPreset, onListPresetChange, onExportList, t, language
+    viewMode, onViewModeChange, listPreset, onListPresetChange, onExportList, t
 }) => {
     return (
         <>
@@ -39,7 +37,6 @@ export const WorkspacesHeader: React.FC<WorkspacesHeaderProps> = ({
                 <div>
                     <h1 className="text-3xl font-light tracking-tight text-foreground flex items-center gap-4">
                         {title}
-                        <WorkspacesPageHealthIndicator language={language} />
                     </h1>
                     <p className="text-muted-foreground mt-2 font-light">
                         {subtitle}

@@ -14,10 +14,12 @@ export interface Attachment {
 }
 
 export interface ToolCall {
+    [key: string]: JsonValue | undefined
     id: string
     index?: number
     type: 'function'
     function: {
+        [key: string]: JsonValue | undefined
         name: string
         arguments: string
     }
@@ -33,6 +35,7 @@ export interface ToolDefinition {
 }
 
 export interface ToolResult {
+    [key: string]: JsonValue | undefined
     toolCallId: string
     name: string
     result: JsonValue
@@ -64,6 +67,13 @@ export interface MessageVariant {
     timestamp: Date
     label?: string // e.g. "Draft 1", "Creative", "Concise"
     isSelected?: boolean
+    status?: 'completed' | 'interrupted'
+    error?: string
+}
+
+export interface ChatRecoveryMetadata {
+    interruptedToolCallIds?: string[]
+    interruptedToolNames?: string[]
 }
 
 export interface Message {
@@ -87,6 +97,7 @@ export interface Message {
     sources?: string[] | undefined
     variants?: MessageVariant[] | undefined // Alternative responses
     attachments?: Attachment[] | undefined
+    metadata?: JsonObject | undefined
 }
 
 export interface Chat {

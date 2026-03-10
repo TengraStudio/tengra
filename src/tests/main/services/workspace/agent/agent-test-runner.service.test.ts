@@ -1,5 +1,5 @@
 import { AgentTestRunnerService } from '@main/services/workspace/automation-workflow/agent-test-runner.service';
-import { StepTestConfig, TestCoverageResult, TestRunConfig } from '@shared/types/workspace-agent';
+import { StepTestConfig, TestCoverageResult, TestRunConfig } from '@shared/types/automation-workflow';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('child_process', () => ({
@@ -303,3 +303,4 @@ describe('AgentTestRunnerService', () => {
         });
     });
 });
+

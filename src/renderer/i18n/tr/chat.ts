@@ -22,7 +22,7 @@ const sectionData = {
         "plaintext": "düz metin",
         "running": "Çalışıyor...",
         "execute": "Çalıştır",
-        "addToWorkspace": "Projeye Ekle",
+        "addToWorkspace": "Çalışma Alanına Ekle",
         "openInEditor": "Düzenleyicide Aç",
         "output": "Çıktı",
         "executed": "{{language}} bloğu başarıyla çalıştırıldı."

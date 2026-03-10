@@ -23,7 +23,7 @@ const sectionData = {
     "selectAgentProfile": "选择代理配置文件",
     "agentSelected": "已选择代理",
     "defaultAgent": "默认代理",
-    "defaultAgentDesc": "通用项目代理",
+    "defaultAgentDesc": "通用工作区代理",
     "approveAndRun": "批准并运行",
     "planning": "正在计划",
     "running": "正在运行",
@@ -34,7 +34,7 @@ const sectionData = {
     "thinkingOff": "思考关闭",
     "selectAction": "选择操作",
     "noDescription": "未提供描述",
-    "selectWorkspace": "选择项目",
+    "selectWorkspace": "选择工作区",
     "unnamedGroup": "未命名团体",
     "votingPanel": {
         "title": "投票会议",

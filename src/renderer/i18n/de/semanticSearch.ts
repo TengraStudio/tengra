@@ -1,7 +1,7 @@
 const sectionData = {
     "title": "Semantische Suche",
     "placeholder": "Fragen Sie nach der Codebasis...",
-    "indexing": "Projekt wird indiziert...",
+    "indexing": "Arbeitsbereich wird indiziert...",
     "results": "Suchergebnisse",
     "noResults": "Keine semantischen Treffer gefunden.",
     "relevance": "Relevanz",

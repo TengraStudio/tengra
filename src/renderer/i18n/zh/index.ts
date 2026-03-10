@@ -54,7 +54,6 @@ import languagesSection from '@renderer/i18n/zh/languages';
 import loadingSection from '@renderer/i18n/zh/loading';
 import loggingSection from '@renderer/i18n/zh/logging';
 import markdownSection from '@renderer/i18n/zh/markdown';
-import marketplaceSection from '@renderer/i18n/zh/marketplace';
 import mcpSection from '@renderer/i18n/zh/mcp';
 import memorySection from '@renderer/i18n/zh/memory';
 import messageBubbleSection from '@renderer/i18n/zh/messageBubble';
@@ -94,7 +93,6 @@ import toolsSection from '@renderer/i18n/zh/tools';
 import updateNotificationSection from '@renderer/i18n/zh/updateNotification';
 import voiceSection from '@renderer/i18n/zh/voice';
 import welcomeSection from '@renderer/i18n/zh/welcome';
-import workflowsSection from '@renderer/i18n/zh/workflows';
 import workspaceSection from '@renderer/i18n/zh/workspace';
 import workspaceAgentSection from '@renderer/i18n/zh/workspaceAgent';
 import workspaceDashboardSection from '@renderer/i18n/zh/workspaceDashboard';
@@ -159,7 +157,6 @@ export const zh = {
     "loading": loadingSection,
     "logging": loggingSection,
     "markdown": markdownSection,
-    "marketplace": marketplaceSection,
     "mcp": mcpSection,
     "memory": memorySection,
     "messageBubble": messageBubbleSection,
@@ -203,7 +200,6 @@ export const zh = {
     "updateNotification": updateNotificationSection,
     "voice": voiceSection,
     "welcome": welcomeSection,
-    "workflows": workflowsSection,
     "workspace": workspaceSection,
     "workspaceModals": workspaceModalsSection
 };

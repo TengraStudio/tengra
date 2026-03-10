@@ -5,6 +5,7 @@ import type { GroupedModels, ModelInfo } from '@/types';
 import { AppSettings } from '@/types';
 
 import { ModelCategory, ModelListItem } from '../types';
+import { getSelectableProviderId } from '../utils/model-fetcher';
 import { getModelLifecycleMeta } from '../utils/model-selector-metadata';
 
 interface UseModelCategoriesProps {
@@ -146,7 +147,7 @@ function mapModelToItem(
     const thinkingLevels = Array.isArray(m.thinkingLevels) ? m.thinkingLevels as string[] : undefined;
     const description = typeof m.description === 'string' ? m.description : undefined;
 
-    const provider = m.provider ?? '';
+    const provider = getSelectableProviderId(m);
     const disabled = ctx.isModelDisabled(id, provider);
     const isLocalProvider = provider === 'ollama' || provider === 'local' || provider === 'lm_studio';
     const pricing = extractPricing(m.pricing);

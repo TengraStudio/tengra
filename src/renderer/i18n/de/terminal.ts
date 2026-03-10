@@ -43,7 +43,7 @@ const sectionData = {
     "runTask": "Aufgabe ausführen",
     "taskRunner": "Task-Runner",
     "tasksSearchPlaceholder": "Suchaufgaben...",
-    "noTasksFound": "Für dieses Projekt wurden keine Aufgaben gefunden",
+    "noTasksFound": "Für dieses Arbeitsbereich wurden keine Aufgaben gefunden",
     "closeSplit": "Split schließen",
     "toggleSplitOrientation": "Geteilte Ausrichtung umschalten",
     "searchRegex": "Regex-Suche",
@@ -85,13 +85,13 @@ const sectionData = {
     "copyStripAnsi": "Kopieren (Strip ANSI)",
     "pastePreview": "Vorschau einfügen",
     "pasteTest": "Testpaste",
-    "workspaceIssuesTabTitle": "Projektprobleme",
-    "workspaceIssuesTitle": "Projektwarnungen und -fehler",
-    "workspaceIssuesDescription": "Aggregierte Warnungen und Fehler, die im aktuellen Projekt erkannt wurden.",
-    "workspaceIssuesLoading": "Auffrischende Projektdiagnose...",
-    "workspaceIssuesNoWorkspace": "Öffnen Sie ein Projekt, um die Diagnose zu überprüfen.",
+    "workspaceIssuesTabTitle": "Arbeitsbereichprobleme",
+    "workspaceIssuesTitle": "Arbeitsbereichwarnungen und -fehler",
+    "workspaceIssuesDescription": "Aggregierte Warnungen und Fehler, die im aktuellen Arbeitsbereich erkannt wurden.",
+    "workspaceIssuesLoading": "Auffrischende Arbeitsbereichdiagnose...",
+    "workspaceIssuesNoWorkspace": "Öffnen Sie ein Arbeitsbereich, um die Diagnose zu überprüfen.",
     "workspaceIssuesNoIssues": "Beim letzten Scan wurden keine Warnungen oder Fehler erkannt.",
-    "workspaceIssuesLoadFailed": "Die Projektdiagnose konnte nicht geladen werden."
+    "workspaceIssuesLoadFailed": "Die Arbeitsbereichdiagnose konnte nicht geladen werden."
 };
 
 export default sectionData;

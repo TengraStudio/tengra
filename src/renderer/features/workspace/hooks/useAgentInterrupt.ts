@@ -9,7 +9,7 @@ interface UseAgentInterruptProps {
     selectedTaskId: string | null;
 }
 
-const getWorkspaceAgentBridge = () => window.electron.workspaceAgent;
+const getAutomationBridge = () => window.electron.session.automation;
 
 /**
  * Hook for managing agent interrupt modal state and model selection during interrupts
@@ -25,7 +25,7 @@ export const useAgentInterrupt = ({ selectedTaskId }: UseAgentInterruptProps) =>
             return;
         }
         try {
-            const result = await getWorkspaceAgentBridge().selectModel({
+            const result = await getAutomationBridge().selectModel({
                 taskId: selectedTaskId,
                 provider,
                 model

@@ -4,7 +4,6 @@ import { registerAuditIpc } from '@main/ipc/audit';
 import { registerAuthIpc } from '@main/ipc/auth';
 import { registerBackupIpc } from '@main/ipc/backup';
 import { registerBrainIpcHandlers } from '@main/ipc/brain';
-import { registerChatIpc } from '@main/ipc/chat';
 import { registerClipboardIpc } from '@main/ipc/clipboard';
 import { registerCodeIntelligenceIpc } from '@main/ipc/code-intelligence';
 import { registerCodeSandboxIpc } from '@main/ipc/code-sandbox';
@@ -13,6 +12,7 @@ import { registerContractIpc } from '@main/ipc/contract';
 import { registerDbIpc } from '@main/ipc/db';
 import { registerDialogIpc } from '@main/ipc/dialog';
 import { registerExportIpc } from '@main/ipc/export';
+import { registerExtensionIpc } from '@main/ipc/extension';
 import { registerFilesIpc } from '@main/ipc/files';
 import { registerGalleryIpc } from '@main/ipc/gallery';
 import { registerGitIpc } from '@main/ipc/git';
@@ -23,9 +23,7 @@ import { registerKeyRotationIpc } from '@main/ipc/key-rotation';
 import { registerLazyServicesIpc } from '@main/ipc/lazy-services';
 import { registerLlamaIpc } from '@main/ipc/llama';
 import { registerLoggingIpc } from '@main/ipc/logging';
-import { registerMarketplaceIpc } from '@main/ipc/marketplace';
 import { registerMcpIpc } from '@main/ipc/mcp';
-import { registerMcpMarketplaceHandlers } from '@main/ipc/mcp-marketplace';
 import { registerMemoryIpc } from '@main/ipc/memory';
 import { registerMetricsIpc } from '@main/ipc/metrics';
 import { registerMigrationIpc } from '@main/ipc/migration';
@@ -40,21 +38,30 @@ import { registerPromptTemplatesIpc } from '@main/ipc/prompt-templates';
 import { registerProxyIpc } from '@main/ipc/proxy';
 import { registerProxyEmbedIpc } from '@main/ipc/proxy-embed';
 import { registerScreenshotIpc } from '@main/ipc/screenshot';
+import { registerSessionIpc } from '@main/ipc/session';
+import { registerSessionAutomationIpc } from '@main/ipc/session-automation';
+import { registerSessionConversationIpc } from '@main/ipc/session-conversation';
+import { registerSessionCouncilIpc } from '@main/ipc/session-council';
+import { registerSessionWorkspaceIpc } from '@main/ipc/session-workspace';
 import { registerSettingsIpc } from '@main/ipc/settings';
+import { registerSharedPromptsIpc } from '@main/ipc/shared-prompts';
 import { registerSshIpc } from '@main/ipc/ssh';
 import { registerTerminalIpc } from '@main/ipc/terminal';
 import { registerThemeIpc } from '@main/ipc/theme';
 import { registerTokenEstimationIpc } from '@main/ipc/token-estimation';
 import { registerToolsIpc } from '@main/ipc/tools';
 import { registerUsageIpc } from '@main/ipc/usage';
+import { registerUserCollaborationIpc } from '@main/ipc/user-collaboration';
 import { registerVoiceIpc } from '@main/ipc/voice';
 import { registerWindowIpc } from '@main/ipc/window';
-import { registerWorkflowIpc } from '@main/ipc/workflow';
 import { registerWorkspaceIpc } from '@main/ipc/workspace';
-import { registerWorkspaceAgentIpc } from '@main/ipc/workspace-agent';
 import { appLogger } from '@main/logging/logger';
 import { McpDispatcher } from '@main/mcp/dispatcher';
-import { Services } from '@main/startup/services';
+import { SharedPromptsService } from '@main/services/data/shared-prompts.service';
+import type { LogoService } from '@main/services/external/logo.service';
+import type { DockerService } from '@main/services/workspace/docker.service';
+import { UserCollaborationService } from '@main/services/workspace/user-collaboration.service';
+import { container, Services } from '@main/startup/services';
 import { ToolExecutor } from '@main/tools/tool-executor';
 import { registerBatchIpc } from '@main/utils/ipc-batch.util';
 import { setIpcEventBus } from '@main/utils/ipc-wrapper.util';
@@ -68,12 +75,16 @@ export async function registerIpcHandlers(
     mcpDispatcher: McpDispatcher
 ): Promise<void> {
     setIpcEventBus(services.eventBusService);
-    const [logoService, sshService, dockerService, marketplaceService] = await Promise.all([
-        services.logoService.resolve(),
-        services.sshService.resolve(),
-        services.dockerService.resolve(),
-        services.marketplaceService.resolve(),
-    ]);
+    const sshService = await services.sshService.resolve();
+    const logoService = container.resolve<LogoService>('logoService');
+    const dockerService = container.resolve<DockerService>('dockerService');
+    const userCollaborationService = new UserCollaborationService(
+        services.authService,
+        services.eventBusService
+    );
+    const sharedPromptsService = new SharedPromptsService(services.databaseService);
+    await userCollaborationService.initialize();
+    await sharedPromptsService.initialize();
 
     // Registers
     registerWindowIpc(getMainWindow, allowedFileRoots);
@@ -110,7 +121,7 @@ export async function registerIpcHandlers(
     );
     registerKeyRotationIpc(getMainWindow, services.keyRotationService);
 
-    registerChatIpc({
+    registerSessionConversationIpc({
         getMainWindow,
         settingsService: services.settingsService,
         copilotService: services.copilotService,
@@ -119,6 +130,7 @@ export async function registerIpcHandlers(
         codeIntelligenceService: services.codeIntelligenceService,
         contextRetrievalService: services.contextRetrievalService,
         databaseService: services.databaseService,
+        chatSessionRegistryService: services.chatSessionRegistryService,
         rateLimitService: services.rateLimitService,
     });
 
@@ -188,14 +200,18 @@ export async function registerIpcHandlers(
     registerHFModelIpc(services.llmService, services.huggingFaceService);
     registerMultiModelIpc(services.multiModelComparisonService);
     registerCollaborationIpc(getMainWindow, services.modelCollaborationService);
+    registerSessionIpc(
+        getMainWindow,
+        services.sessionDirectoryService,
+        services.sessionModuleRegistryService,
+        services.eventBusService
+    );
+    registerSessionAutomationIpc(services.automationWorkflowService, getMainWindow);
+    registerSessionCouncilIpc(getMainWindow, services.automationWorkflowService);
+    registerSessionWorkspaceIpc(getMainWindow, services.databaseService);
 
     registerToolsIpc(getMainWindow, toolExecutor, services.commandService);
     registerMcpIpc(mcpDispatcher, getMainWindow);
-    registerMcpMarketplaceHandlers(
-        services.mcpMarketplaceService,
-        services.settingsService,
-        services.mcpPluginService
-    );
 
     registerScreenshotIpc(getMainWindow);
     registerLoggingIpc();
@@ -211,12 +227,19 @@ export async function registerIpcHandlers(
     );
 
     registerDialogIpc(getMainWindow);
+    registerExtensionIpc();
+    registerUserCollaborationIpc(
+        getMainWindow,
+        userCollaborationService,
+        services.eventBusService
+    );
 
     registerProxyEmbedIpc(services.proxyService);
     registerExportIpc(getMainWindow, services.exportService);
 
     // Prompt Templates
     registerPromptTemplatesIpc(getMainWindow, services.promptTemplatesService);
+    registerSharedPromptsIpc(sharedPromptsService);
 
     // Register Gallery IPC
     registerGalleryIpc(services.dataService.getPath('gallery'), services.databaseService);
@@ -224,8 +247,7 @@ export async function registerIpcHandlers(
     // Register Idea Generator IPC
     registerIdeaGeneratorIpc(services.ideaGeneratorService, services.eventBusService);
 
-    services.workspaceAgentService.setToolExecutor(toolExecutor);
-    registerWorkspaceAgentIpc(services.workspaceAgentService, getMainWindow, services.databaseService);
+    services.automationWorkflowService.setToolExecutor(toolExecutor);
 
     // Register Multi-Agent Orchestrator IPC
     registerOrchestratorIpc(services.multiAgentOrchestratorService, getMainWindow);
@@ -239,15 +261,6 @@ export async function registerIpcHandlers(
 
     // Theme Management
     registerThemeIpc(services.themeService);
-
-    // Marketplace
-    registerMarketplaceIpc({
-        marketplaceService,
-        rateLimitService: services.rateLimitService,
-    });
-
-    // Workflow Automation
-    registerWorkflowIpc(getMainWindow, services.workflowService);
 
     // Register Batch IPC
     registerBatchIpc();

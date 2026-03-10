@@ -6,10 +6,10 @@ import * as path from 'path';
 import { appLogger } from '@main/logging/logger';
 import { TelemetryService } from '@main/services/analysis/telemetry.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
+import { getManagedRuntimeRoot, getManagedRuntimeTempDir } from '@main/services/system/runtime-path.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { getErrorMessage } from '@shared/utils/error.util';
 import axios from 'axios';
-import { app } from 'electron';
 
 import type { GitHubRelease, GitHubReleaseAsset, ImageGenerationOptions } from './local-image.types';
 
@@ -81,7 +81,7 @@ export class SdCppManager {
     /** Force reinstallation of SD-CPP runtime. */
     async reinstall(): Promise<void> {
         appLogger.info('SdCppManager', 'Triggering sd-cpp reinstallation/repair...');
-        const baseDir = path.join(app.getPath('userData'), 'ai', 'sd-cpp');
+        const baseDir = path.join(getManagedRuntimeRoot(), 'sd-cpp');
         this.sdCppRuntimePromise = null;
 
         if (fs.existsSync(baseDir)) {
@@ -172,7 +172,7 @@ export class SdCppManager {
     private async ensureRuntime(): Promise<{ binaryPath: string; modelPath: string }> {
         this.emitStatus('installing');
         const settings = this.deps.settingsService.getSettings();
-        const baseDir = path.join(app.getPath('userData'), 'ai', 'sd-cpp');
+        const baseDir = path.join(getManagedRuntimeRoot(), 'sd-cpp');
         const binDir = path.join(baseDir, 'bin');
         const modelDir = path.join(baseDir, 'models');
 
@@ -416,7 +416,7 @@ export class SdCppManager {
     }
 
     private createTempOutputPath(extension: string): string {
-        const tempDir = path.join(process.cwd(), 'temp', 'generated');
+        const tempDir = path.join(getManagedRuntimeTempDir(), 'generated');
         if (!fs.existsSync(tempDir)) {
             fs.mkdirSync(tempDir, { recursive: true });
         }

@@ -10,11 +10,10 @@ import { createAuditBridge } from './preload/domains/audit.preload';
 import { createAuthBridge } from './preload/domains/auth.preload';
 import { createAuthSessionBridge } from './preload/domains/auth-session.preload';
 import { createBatchBridge } from './preload/domains/batch.preload';
-import { createChatBridge } from './preload/domains/chat.preload';
 import { createClipboardBridge } from './preload/domains/clipboard.preload';
 import { createCodeBridge } from './preload/domains/code.preload';
 import { createCodeSandboxBridge } from './preload/domains/code-sandbox.preload';
-import { createCollaborationBridge } from './preload/domains/collaboration.preload';
+import { createModelCollaborationBridge } from './preload/domains/collaboration.preload';
 import { createDbBridge } from './preload/domains/db.preload';
 import { createExportBridge } from './preload/domains/export.preload';
 import { createExtensionBridge } from './preload/domains/extension.preload';
@@ -28,9 +27,7 @@ import { createLazyServicesBridge } from './preload/domains/lazy-services.preloa
 import { createLinkedAccountsBridge } from './preload/domains/linked-accounts.preload';
 import { createLlamaBridge } from './preload/domains/llama.preload';
 import { createLogBridge } from './preload/domains/log.preload';
-import { createMarketplaceBridge } from './preload/domains/marketplace.preload';
 import { createMcpBridge } from './preload/domains/mcp.preload';
-import { createMcpMarketplaceBridge } from './preload/domains/mcp-marketplace.preload';
 import { createMemoryBridge } from './preload/domains/memory.preload';
 import { createMetricsBridge } from './preload/domains/metrics.preload';
 import { createModelDownloaderBridge } from './preload/domains/model-downloader.preload';
@@ -39,21 +36,23 @@ import { createOllamaBridge } from './preload/domains/ollama.preload';
 import { createOrchestratorBridge } from './preload/domains/orchestrator.preload';
 import { createPerformanceBridge } from './preload/domains/performance.preload';
 import { createProcessBridge } from './preload/domains/process.preload';
+import { createPromptTemplatesBridge } from './preload/domains/prompt-templates.preload';
 import { createProxyBridge } from './preload/domains/proxy.preload';
 import { createProxyEmbedBridge } from './preload/domains/proxy-embed.preload';
 import { createProxyRateLimitBridge } from './preload/domains/proxy-rate-limit.preload';
 import { createSdCppBridge } from './preload/domains/sd-cpp.preload';
+import { createSessionBridge } from './preload/domains/session.preload';
 import { createSettingsBridge } from './preload/domains/settings.preload';
+import { createSharedPromptsBridge } from './preload/domains/shared-prompts.preload';
 import { createSSHBridge } from './preload/domains/ssh.preload';
 import { createTerminalBridge } from './preload/domains/terminal.preload';
 import { createToolsBridge } from './preload/domains/tools.preload';
 import { createUpdateBridge } from './preload/domains/update.preload';
 import { createUsageBridge } from './preload/domains/usage.preload';
+import { createLiveCollaborationBridge } from './preload/domains/user-collaboration.preload';
 import { createVoiceBridge } from './preload/domains/voice.preload';
 import { createWindowControlsBridge } from './preload/domains/window-controls.preload';
-import { createWorkflowBridge } from './preload/domains/workflow.preload';
 import { createWorkspaceBridge } from './preload/domains/workspace.preload';
-import { createWorkspaceAgentBridge } from './preload/domains/workspace-agent.preload';
 
 const api = {
     ...createWindowControlsBridge(ipcRenderer),
@@ -64,9 +63,7 @@ const api = {
     ...createLinkedAccountsBridge(ipcRenderer),
     ...createAppBridge(ipcRenderer),
     ...createClipboardBridge(ipcRenderer),
-    ...createChatBridge(ipcRenderer),
     ...createSdCppBridge(ipcRenderer),
-    ...createWorkflowBridge(ipcRenderer),
     ...createModelDownloaderBridge(ipcRenderer),
     ...createToolsBridge(ipcRenderer),
 
@@ -117,7 +114,6 @@ const api = {
     code: createCodeBridge(ipcRenderer),
     git: createGitBridge(ipcRenderer),
     ollama: createOllamaBridge(ipcRenderer),
-    marketplace: createMarketplaceBridge(ipcRenderer),
     performance: createPerformanceBridge(ipcRenderer),
     llama: createLlamaBridge(ipcRenderer),
     db: createDbBridge(ipcRenderer),
@@ -125,13 +121,13 @@ const api = {
     advancedMemory: createAdvancedMemoryBridge(ipcRenderer),
     codeSandbox: createCodeSandboxBridge(ipcRenderer),
     voice: createVoiceBridge(ipcRenderer),
-    collaboration: createCollaborationBridge(ipcRenderer),
+    modelCollaboration: createModelCollaborationBridge(ipcRenderer),
+    collaboration: createModelCollaborationBridge(ipcRenderer),
     audit: createAuditBridge(ipcRenderer),
     agent: createAgentBridge(ipcRenderer),
     terminal: createTerminalBridge(ipcRenderer),
     ssh: createSSHBridge(ipcRenderer),
     mcp: createMcpBridge(ipcRenderer),
-    mcpMarketplace: createMcpMarketplaceBridge(ipcRenderer),
     proxyEmbed: createProxyEmbedBridge(ipcRenderer),
     extension: createExtensionBridge(ipcRenderer),
     orchestrator: createOrchestratorBridge(ipcRenderer),
@@ -140,7 +136,7 @@ const api = {
     gallery: createGalleryBridge(ipcRenderer),
     update: createUpdateBridge(ipcRenderer),
     ideas: createIdeasBridge(ipcRenderer),
-    workspaceAgent: createWorkspaceAgentBridge(ipcRenderer),
+    session: createSessionBridge(ipcRenderer),
     workspace: createWorkspaceBridge(ipcRenderer),
     modelRegistry: createModelRegistryBridge(ipcRenderer),
     process: createProcessBridge(ipcRenderer),
@@ -148,10 +144,12 @@ const api = {
     lazyServices: createLazyServicesBridge(ipcRenderer),
     ipcContract: createIpcContractBridge(ipcRenderer),
     files: createFilesBridge(ipcRenderer),
-    ...createFilesBridge(ipcRenderer),
+    ...createSharedPromptsBridge(ipcRenderer),
+    ...createPromptTemplatesBridge(ipcRenderer),
+    liveCollaboration: createLiveCollaborationBridge(ipcRenderer),
+    userCollaboration: createLiveCollaborationBridge(ipcRenderer),
     ...createSettingsBridge(ipcRenderer),
     ...createHuggingFaceBridge(ipcRenderer),
-    ...createUpdateBridge(ipcRenderer),
     ...createExportBridge(ipcRenderer),
     ...createLogBridge(ipcRenderer),
 };

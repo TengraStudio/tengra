@@ -1,4 +1,4 @@
-import { AgentPerformanceService } from '@main/services/workspace/agent/agent-performance.service';
+import { AgentPerformanceService } from '@main/services/workspace/automation-workflow/agent-performance.service';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@main/logging/logger', () => ({

@@ -13,7 +13,6 @@ const sectionData = {
         "images": "Görseller",
         "mcpServers": "MCP Sunucuları",
         "accessibility": "Erişilebilirlik",
-        "mcpMarketplace": "MCP Pazaryeri"
     },
     "searchPlaceholder": "Ayarlarda ara...",
     "searchResults": "{count} ayar bulundu",
@@ -124,15 +123,13 @@ const sectionData = {
         "title": "Model Bağlam Protokolü",
         "subtitle": "MCP sunucularını yönetin ve yeni araçlar yükleyin",
         "tabs": {
-            "servers": "Sunucular",
-            "marketplace": "Pazar"
+            "servers": "Sunucular"
         },
         "servers": {
             "title": "Yapılandırılmış Sunucular",
             "subtitle": "Model Bağlam Protokolü sunucu bağlantılarını yönetin",
             "connect": "Sunucu Bağla",
             "empty": "Bağlı sunucu yok",
-            "emptyHint": "Pazar sekmesinden sunucu yükleyin",
             "enabled": "etkin",
             "note": "Not",
             "noteText": "Yalnızca etkin sunuculara AI asistanları erişebilir. Her sunucuyu etkinleştirmek/devre dışı bırakmak için güç düğmesini kullanın.",

@@ -56,18 +56,15 @@ vi.mock('@renderer/features/workspace/components/workspace/WorkspaceMountItem', 
         mount,
         isExpanded,
         onToggle,
-        onRemove,
-        mountStatus,
+        onRemove, 
     }: {
         mount: WorkspaceMount;
         isExpanded: boolean;
         onToggle: (id: string) => void;
-        onRemove: (id: string) => void;
-        mountStatus: Record<string, string>;
+        onRemove: (id: string) => void; 
     }) => (
         <div data-testid={`mount-item-${mount.id}`}>
             <span>{mount.name}</span>
-            <span data-testid={`mount-status-${mount.id}`}>{mountStatus[mount.id] ?? 'unknown'}</span>
             <button onClick={() => onToggle(mount.id)} data-testid={`toggle-${mount.id}`}>
                 {isExpanded ? 'Collapse' : 'Expand'}
             </button>
@@ -186,12 +183,7 @@ describe('WorkspaceExplorer', () => {
             const props = createMockProps({ mounts: [] });
             render(<WorkspaceExplorer {...props} />);
             expect(screen.getByText('workspace.noMounts')).toBeInTheDocument();
-        });
-
-        it('should display mount status', () => {
-            render(<WorkspaceExplorer {...mockProps} />);
-            expect(screen.getByTestId('mount-status-mount-1')).toHaveTextContent('connected');
-        });
+        }); 
     });
 
     describe('Mount Management', () => {
@@ -382,29 +374,7 @@ describe('WorkspaceExplorer', () => {
             expect(screen.getByTestId('mount-item-mount-2')).toBeInTheDocument();
             expect(screen.getByTestId('mount-item-mount-3')).toBeInTheDocument();
         });
-
-        it('should handle disconnected mount status', () => {
-            const props = createMockProps({
-                mountStatus: { 'mount-1': 'disconnected' },
-            });
-            render(<WorkspaceExplorer {...props} />);
-            expect(screen.getByTestId('mount-status-mount-1')).toHaveTextContent('disconnected');
-        });
-
-        it('should handle connecting mount status', () => {
-            const props = createMockProps({
-                mountStatus: { 'mount-1': 'connecting' },
-            });
-            render(<WorkspaceExplorer {...props} />);
-            expect(screen.getByTestId('mount-status-mount-1')).toHaveTextContent('connecting');
-        });
-
-        it('should handle missing mount status', () => {
-            const props = createMockProps({ mountStatus: {} });
-            render(<WorkspaceExplorer {...props} />);
-            expect(screen.getByTestId('mount-status-mount-1')).toHaveTextContent('unknown');
-        });
-
+   
         it('should handle multiple selected entries', async () => {
             const onContextAction = vi.fn();
             const entries = [

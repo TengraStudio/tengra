@@ -8,7 +8,7 @@ const sectionData = {
     "commandPalette": "Befehlspalette",
     "toggleSidebar": "Seitenleiste umschalten",
     "goToChat": "Zum Chat gehen",
-    "goToWorkspaces": "Zu Projekten gehen",
+    "goToWorkspaces": "Zu Arbeitsbereichen gehen",
     "goToCouncil": "Zum Rat gehen",
     "goToSettings": "Zu den Einstellungen gehen",
     "sendMessage": "Nachricht senden",

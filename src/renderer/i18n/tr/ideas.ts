@@ -1,6 +1,6 @@
 const sectionData = {
-    "title": "Proje Fikirleri",
-    "subtitle": "Pazar araştırması ile yapay zeka destekli proje fikri üretimi",
+    "title": "Çalışma Alanı Fikirleri",
+    "subtitle": "Pazar araştırması ile yapay zeka destekli çalışma alanı fikri üretimi",
     "newSession": "Yeni Oturum",
     "backToSetup": "Kuruluma Dön",
     "selectModel": "AI Model Seç",
@@ -34,7 +34,7 @@ const sectionData = {
     },
     "idea": {
         "viewDetails": "Detayları Görüntüle",
-        "approve": "Onayla ve Proje Oluştur",
+        "approve": "Onayla ve Çalışma Alanı Oluştur",
         "reject": "Reddet",
         "archive": "Arşivle",
         "archiving": "Arşivleniyor...",
@@ -43,11 +43,11 @@ const sectionData = {
         "competitiveAdvantages": "Rekabet Avantajları",
         "marketTrends": "Pazar Trendleri",
         "competitors": "Rakipler",
-        "selectPath": "Proje Yolunu Seç",
+        "selectPath": "Çalışma Alanı Yolunu Seç",
         "pathPlaceholder": "C:\\\\Workspaces\\\\my-workspace",
-        "creating": "Proje oluşturuluyor...",
+        "creating": "Çalışma Alanı oluşturuluyor...",
         "detailedDescription": "Detaylı Açıklama",
-        "roadmap": "Proje Yol Haritası",
+        "roadmap": "Çalışma Alanı Yol Haritası",
         "techStack": "Teknoloji Stack'i",
         "competitorAnalysis": "Rakip Analizi",
         "technicalDetails": "Teknik Detaylar",
@@ -55,7 +55,7 @@ const sectionData = {
         "impactHigh": "Yüksek (Tahmini)",
         "effort": "Efor",
         "effortMedium": "Orta",
-        "openFullWorkspace": "Projeyi Aç"
+        "openFullWorkspace": "Çalışma Alanını Aç"
     },
     "techStack": {
         "frontend": "Frontend",
@@ -75,7 +75,7 @@ const sectionData = {
         "ideaResearch": "Bu fikir için pazar araştırılıyor...",
         "naming": "İsim önerileri oluşturuluyor...",
         "longDescription": "Detaylı açıklama yazılıyor...",
-        "roadmap": "Proje yol haritası hazırlanıyor...",
+        "roadmap": "Çalışma Alanı yol haritası hazırlanıyor...",
         "techStack": "Teknoloji stack'i seçiliyor...",
         "competitorAnalysis": "Rakipler analiz ediliyor...",
         "finalizing": "Fikir sonlandırılıyor...",
@@ -104,12 +104,12 @@ const sectionData = {
         "categoriesRequired": "Lütfen en az bir kategori seçin",
         "researchFailed": "Araştırma başarısız. Lütfen tekrar deneyin.",
         "generationFailed": "Fikir üretimi başarısız. Lütfen tekrar deneyin.",
-        "approvalFailed": "Proje oluşturulamadı. Lütfen tekrar deneyin.",
+        "approvalFailed": "Çalışma Alanı oluşturulamadı. Lütfen tekrar deneyin.",
         "logoFailed": "Logo oluşturma başarısız. Lütfen tekrar deneyin."
     },
     "empty": {
         "noSessions": "Henüz fikir oturumu yok",
-        "noSessionsDesc": "Proje fikirleri üretmek için yeni bir oturum başlatın",
+        "noSessionsDesc": "Çalışma Alanı fikirleri üretmek için yeni bir oturum başlatın",
         "noIdeas": "Henüz fikir üretilmedi",
         "noIdeasDesc": "Fikir üretmek için araştırma aşamasını tamamlayın"
     },
@@ -187,8 +187,8 @@ const sectionData = {
         },
         "statusLabel": "Durum",
         "readyForPilot": "Pilot İçin Hazır",
-        "workspaceCreated": "Proje Oluşturuldu",
-        "workspaceNamePlaceholder": "Proje Adı",
+        "workspaceCreated": "Çalışma Alanı Oluşturuldu",
+        "workspaceNamePlaceholder": "Çalışma Alanı Adı",
         "regenerateTitle": "Bu fikri yeniden üret",
         "regenerate": "Yeniden Üret",
         "regenerating": "Yeniden üretiliyor...",

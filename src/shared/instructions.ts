@@ -2,7 +2,7 @@
  * Centralized AI System Instructions
  * 
  * This file contains all system prompts and personality configurations.
- * Used by both main process (chat.ts) and renderer (for display purposes).
+ * Used by both main process (session-conversation.ts) and renderer (for display purposes).
  */
 
 export type SupportedLanguage = 'tr' | 'en';
@@ -179,7 +179,7 @@ export function getDefaultPersonality(): PersonalityConfig {
 }
 
 /**
- * Get system prompt for local model injection (in chat.ts)
+ * Get system prompt for local model injection (in session-conversation.ts)
  * This version gets personality from memory
  */
 export function getLocalModelPrompt(modelName: string): string {

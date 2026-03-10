@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { BaseService } from '@main/services/base.service';
+import { getManagedRuntimeTempDir } from '@main/services/system/runtime-path.service';
 import { getErrorMessage } from '@shared/utils/error.util';
 
 import { LocalImageAnalytics } from './local-image-analytics';
@@ -491,7 +492,7 @@ export class LocalImageService extends BaseService {
     }
 
     private async cleanupStaleTempFiles(): Promise<void> {
-        const tempDir = path.join(process.cwd(), 'temp', 'generated');
+        const tempDir = path.join(getManagedRuntimeTempDir(), 'generated');
         try {
             await fs.promises.access(tempDir, fs.constants.F_OK);
         } catch {

@@ -6,20 +6,22 @@
     "type": "commonjs",
     "scripts": {
         "dev": "set ELECTRON_RUN_AS_NODE= && set NODE_OPTIONS=--max-old-space-size=8192 && vite",
-        "build": "tsc && npm run lint && vite build && node scripts/build-native.js",
+        "build": "node scripts/build-optimized.js",
+        "build:legacy": "tsc && npm run lint && vite build && node scripts/build-native.js",
         "build:check": "tsc --noEmit && vite build",
         "electron:build": "npm run build && electron-builder",
         "build:exe": "npm run build && electron-builder --win --x64",
         "preview": "vite preview",
-        "test": "vitest run && vitest run --config vitest.config.renderer.ts",
-        "test:unit": "vitest run",
-        "test:renderer": "vitest run --config vitest.config.renderer.ts",
+        "test": "vitest run",
+        "test:unit": "vitest run --project main",
+        "test:renderer": "vitest run --project renderer",
         "test:watch": "vitest",
         "test:coverage": "vitest run --coverage && vitest run --coverage --config vitest.config.renderer.ts",
         "test:e2e": "playwright test",
-        "lint": "set NODE_OPTIONS=--max-old-space-size=8192 && eslint .",
+        "lint": "set NODE_OPTIONS=--max-old-space-size=8192 && eslint . --cache --cache-location node_modules/.cache/.eslintcache",
         "lint:fix": "npm run lint -- --fix",
         "type-check": "tsc --noEmit",
+        "verify": "node scripts/verify-optimized.js",
         "format": "node scripts/format-changed.js --write",
         "format:all": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
         "tool": "node scripts/tool.js",
@@ -169,15 +171,6 @@
         },
         "files": [
             "dist/**/*"
-        ],
-        "extraResources": [
-            {
-                "from": "resources/bin",
-                "to": "bin",
-                "filter": [
-                    "**/*"
-                ]
-            }
         ],
         "extraFiles": [
             {

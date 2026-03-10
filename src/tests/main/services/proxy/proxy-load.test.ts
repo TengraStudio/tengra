@@ -423,7 +423,7 @@ describe('ProxyService load/stress tests', () => {
 
             // Simulate recovery
             vi.mocked(deps.mockProcessManager.stop).mockResolvedValue({ running: false, pid: 0 });
-            await expect(deps.proxyService.stopEmbeddedProxy()).resolves.toBeDefined();
+            await expect(deps.proxyService.stopEmbeddedProxy()).resolves.toBeUndefined();
         });
 
         it('should handle alternating success/failure patterns', async () => {

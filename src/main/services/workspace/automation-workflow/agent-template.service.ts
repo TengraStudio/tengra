@@ -16,7 +16,7 @@ import {
     AgentTemplate,
     AgentTemplateCategory,
     AgentTemplateExport,
-} from '@shared/types/workspace-agent';
+} from '@shared/types/automation-workflow';
 
 // ===== AGT-TPL-01: Built-in Templates =====
 
@@ -736,3 +736,4 @@ export function getAgentTemplateService(deps: AgentTemplateDependencies): AgentT
     instance ??= new AgentTemplateService(deps);
     return instance;
 }
+

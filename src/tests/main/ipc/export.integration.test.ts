@@ -313,7 +313,7 @@ describe('Export IPC Integration', () => {
 
             expect(result).toMatchObject({
                 success: false,
-                error: { message: 'Internal server error', code: 'ERROR' }
+                error: { message: 'PDF generation failed', code: 'IPC_HANDLER_ERROR' }
             });
         });
     });

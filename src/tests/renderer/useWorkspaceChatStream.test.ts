@@ -13,17 +13,22 @@ type ChunkListener = (chunk: ChatStreamChunk & { done?: boolean; chatId?: string
 let streamListener: ChunkListener | null = null;
 const mockUnsubscribe = vi.fn();
 const mockAbortChat = vi.fn();
-const mockChatStream = vi.fn<() => Promise<void>>();
+const mockChatStream = vi.fn<() => Promise<{ success: boolean }>>();
 
 // Provide window.electron stubs used by chat-stream.ts
 Object.defineProperty(window, 'electron', {
     value: {
-        chatStream: mockChatStream,
-        abortChat: mockAbortChat,
-        onStreamChunk: vi.fn((cb: ChunkListener) => {
-            streamListener = cb;
-            return mockUnsubscribe;
-        }),
+        session: {
+            conversation: {
+                stream: mockChatStream,
+                abort: mockAbortChat,
+                onStreamChunk: vi.fn((cb: ChunkListener) => {
+                    streamListener = cb;
+                    return mockUnsubscribe;
+                }),
+                onGenerationStatus: vi.fn(),
+            },
+        },
     },
     configurable: true,
     writable: true,
@@ -62,7 +67,7 @@ describe('useWorkspaceChatStream', () => {
         vi.clearAllMocks();
         idCounter = 0;
         streamListener = null;
-        mockChatStream.mockResolvedValue(undefined);
+        mockChatStream.mockResolvedValue({ success: true });
     });
 
     it('happy path: start → chunk → chunk → done accumulates message', async () => {

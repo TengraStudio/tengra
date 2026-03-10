@@ -103,7 +103,7 @@ function createService() {
             ai: {
                 preferredMemoryModels: ['llama3.2:1b']
             }
-        }) as any)
+        }) as SettingsService['getSettings'] extends () => infer T ? T : never)
     };
 
     const service = new AdvancedMemoryService(

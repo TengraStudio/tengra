@@ -1,10 +1,10 @@
-import { AgentStartOptions } from '@shared/types/workspace-agent';
+import { AgentStartOptions } from '@shared/types/automation-workflow';
 
 import { Workspace } from '@/types';
 
 import { AttachedFile, ModelOption } from '../../components/agent/TaskInputForm';
 
-const getWorkspaceAgentBridge = () => window.electron.workspaceAgent;
+const getAutomationBridge = () => window.electron.session.automation;
 
 interface StartTaskResult {
     success: boolean;
@@ -80,7 +80,7 @@ export const invokeStartTask = async (
             }))
         };
 
-        const { taskId } = await getWorkspaceAgentBridge().start(options);
+        const { taskId } = await getAutomationBridge().start(options);
         if (!taskId) {
             return {
                 success: false,
@@ -100,4 +100,5 @@ export const invokeStartTask = async (
         };
     }
 };
+
 

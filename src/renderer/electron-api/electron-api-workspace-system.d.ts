@@ -11,6 +11,7 @@ import type {
 import type {
     FileSearchResult,
     IpcValue,
+    ServiceResponse,
     TodoFile,
     Workspace,
     WorkspaceAnalysis,
@@ -208,13 +209,21 @@ export interface ElectronApiWorkspaceSystemDomain {
     };
 
     files: {
-        listDirectory: (path: string) => Promise<FileEntry[]>;
-        readFile: (path: string) => Promise<string>;
+        listDirectory: (path: string) => Promise<ServiceResponse<FileEntry[]>>;
+        readFile: (path: string) => Promise<ServiceResponse<string>>;
         readImage: (
             path: string
         ) => Promise<{ success: boolean; content?: string; error?: string }>;
-        writeFile: (path: string, content: string) => Promise<void>;
-        exists: (path: string) => Promise<boolean>;
+        writeFile: (path: string, content: string) => Promise<{ success: boolean; error?: string }>;
+        exists: (path: string) => Promise<{ success: boolean; data: boolean; error?: string }>;
+        createDirectory: (path: string) => Promise<{ success: boolean; error?: string }>;
+        deleteFile: (path: string) => Promise<{ success: boolean; error?: string }>;
+        deleteDirectory: (path: string) => Promise<{ success: boolean; error?: string }>;
+        renamePath: (oldPath: string, newPath: string) => Promise<{ success: boolean; error?: string }>;
+        searchFiles: (
+            rootPath: string,
+            pattern: string
+        ) => Promise<{ success: boolean; results: string[]; error?: string }>;
     };
 
     // Proxy
@@ -320,4 +329,4 @@ export interface ElectronApiWorkspaceSystemDomain {
         readText: () => Promise<{ success: boolean; text: string }>;
     };
     // Database
-}
+}

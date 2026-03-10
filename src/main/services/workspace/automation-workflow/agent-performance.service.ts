@@ -1,6 +1,6 @@
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
-import { AgentPerformanceMetrics } from '@shared/types/workspace-agent';
+import { AgentPerformanceMetrics } from '@shared/types/automation-workflow';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 /**
@@ -391,3 +391,4 @@ export class AgentPerformanceService extends BaseService {
         return history;
     }
 }
+

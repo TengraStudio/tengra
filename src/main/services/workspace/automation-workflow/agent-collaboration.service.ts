@@ -22,7 +22,7 @@ import {
     VotingTemplate,
     WorkerAvailabilityRecord,
     WorkspaceStep,
-} from '@shared/types/workspace-agent';
+} from '@shared/types/automation-workflow';
 
 import { AgentConsensusService } from './collaboration/agent-consensus.service';
 import { AgentDebateService } from './collaboration/agent-debate.service';
@@ -281,7 +281,7 @@ export class AgentCollaborationService extends BaseService {
         reviewerNotes?: string;
     }): HelperMergeGateDecision {
         // Basic heuristic evaluation for now
-        const hasFailKeywords = /fail|error|wrong|incomplete|missing/i.test(input.helperOutput);
+        const hasFailKeywords = /\b(fail|error|wrong|incomplete|missing)/i.test(input.helperOutput);
 
         return {
             accepted: !hasFailKeywords,
@@ -312,3 +312,4 @@ export class AgentCollaborationService extends BaseService {
         this.logInfo('Cleaned up all collaboration sub-services');
     }
 }
+

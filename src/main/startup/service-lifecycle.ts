@@ -97,16 +97,13 @@ const DEFERRED_SERVICE_NAMES: string[] = [
     'agentPersistenceService',
     'agentCheckpointService',
     'agentPerformanceService',
-    'workspaceAgentService',
+    'automationWorkflowService',
     'multiAgentOrchestratorService',
     // Workspace & external
     'marketResearchService',
     'ideaGeneratorService',
     'workspaceScaffoldService',
-    'workflowService',
     'backupService',
-    // MCP
-    'mcpMarketplaceService',
 ];
 
 export function startCriticalHealthChecks(deps: { databaseService: unknown; networkService: unknown }): void {

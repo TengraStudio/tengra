@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Must clear module-level state between tests
@@ -18,6 +18,13 @@ afterEach(() => {
     vi.resetModules();
 });
 
+async function flushFeatureFlagUpdate(): Promise<void> {
+    await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+    });
+}
+
 describe('useFeatureFlag', () => {
     it('returns loading state initially', async () => {
         mockInvoke.mockReturnValue(new Promise(() => { /* never resolves */ }));
@@ -36,11 +43,9 @@ describe('useFeatureFlag', () => {
 
         const { result } = renderHook(() => useFeatureFlag('enabled.flag'));
 
-        // Wait for async IPC to resolve
-        await vi.waitFor(() => {
-            expect(result.current.isLoading).toBe(false);
-        });
+        await flushFeatureFlagUpdate();
 
+        expect(result.current.isLoading).toBe(false);
         expect(result.current.isEnabled).toBe(true);
         expect(result.current.error).toBeNull();
     });
@@ -51,10 +56,9 @@ describe('useFeatureFlag', () => {
 
         const { result } = renderHook(() => useFeatureFlag('disabled.flag'));
 
-        await vi.waitFor(() => {
-            expect(result.current.isLoading).toBe(false);
-        });
+        await flushFeatureFlagUpdate();
 
+        expect(result.current.isLoading).toBe(false);
         expect(result.current.isEnabled).toBe(false);
         expect(result.current.error).toBeNull();
     });
@@ -65,10 +69,9 @@ describe('useFeatureFlag', () => {
 
         const { result } = renderHook(() => useFeatureFlag('error.flag'));
 
-        await vi.waitFor(() => {
-            expect(result.current.isLoading).toBe(false);
-        });
+        await flushFeatureFlagUpdate();
 
+        expect(result.current.isLoading).toBe(false);
         expect(result.current.isEnabled).toBe(false);
         expect(result.current.error).toBe('IPC failed');
     });
@@ -79,16 +82,18 @@ describe('useFeatureFlag', () => {
 
         const { result } = renderHook(() => useFeatureFlag('toggle.flag'));
 
-        await vi.waitFor(() => {
-            expect(result.current.isLoading).toBe(false);
-        });
+        await flushFeatureFlagUpdate();
+
+        expect(result.current.isLoading).toBe(false);
         expect(result.current.isEnabled).toBe(false);
 
-        invalidateFeatureFlag('toggle.flag');
-
-        await vi.waitFor(() => {
-            expect(result.current.isEnabled).toBe(true);
+        act(() => {
+            invalidateFeatureFlag('toggle.flag');
         });
+
+        await flushFeatureFlagUpdate();
+
+        expect(result.current.isEnabled).toBe(true);
     });
 
     it('clearFeatureFlagCache clears all flags', async () => {
@@ -97,16 +102,18 @@ describe('useFeatureFlag', () => {
 
         const { result } = renderHook(() => useFeatureFlag('cached.flag'));
 
-        await vi.waitFor(() => {
-            expect(result.current.isLoading).toBe(false);
-        });
+        await flushFeatureFlagUpdate();
+
+        expect(result.current.isLoading).toBe(false);
 
         mockInvoke.mockResolvedValue(false);
-        clearFeatureFlagCache();
-
-        await vi.waitFor(() => {
-            expect(result.current.isEnabled).toBe(false);
+        act(() => {
+            clearFeatureFlagCache();
         });
+
+        await flushFeatureFlagUpdate();
+
+        expect(result.current.isEnabled).toBe(false);
     });
 
     it('falls back to false when window.api is undefined', async () => {
@@ -119,9 +126,9 @@ describe('useFeatureFlag', () => {
 
         const { result } = renderHook(() => useFeatureFlag('no-api.flag'));
 
-        await vi.waitFor(() => {
-            expect(result.current.isLoading).toBe(false);
-        });
+        await flushFeatureFlagUpdate();
+
+        expect(result.current.isLoading).toBe(false);
         expect(result.current.isEnabled).toBe(false);
     });
 });

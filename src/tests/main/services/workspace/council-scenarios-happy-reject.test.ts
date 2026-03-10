@@ -2,9 +2,9 @@
  * Council Scenarios 1–2: Happy Path & Reject Flow
  */
 
-import { AgentCollaborationService } from '@main/services/workspace/agent/agent-collaboration.service';
-import { AgentPersistenceService } from '@main/services/workspace/agent/agent-persistence.service';
+import { AgentCollaborationService } from '@main/services/workspace/automation-workflow/agent-collaboration.service';
 import { AgentExecutorService } from '@main/services/workspace/automation-workflow/agent-executor.service';
+import { AgentPersistenceService } from '@main/services/workspace/automation-workflow/agent-persistence.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createMockPersistence, createMockPlan, createMockTaskState } from './council-scenarios.helpers';

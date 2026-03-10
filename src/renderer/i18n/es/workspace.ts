@@ -30,10 +30,10 @@ const sectionData = {
     "previewArea": "Área de vista previa",
     "convertToCode": "Convertir a código",
     "placeholders": {
-        "rootPath": "C:\\\\Usuarios\\\\Proyecto",
+        "rootPath": "C:\\\\Usuarios\\\\Espacio de trabajo",
         "name": "Nombre..."
     },
-    "run": "Ejecutar proyecto",
+    "run": "Ejecutar espacio de trabajo",
     "toggleSidebar": "Alternar barra lateral",
     "aiAssistant": "Asistente IA",
     "online": "En línea",

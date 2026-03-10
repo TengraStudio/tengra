@@ -1,6 +1,6 @@
 /**
  * Theme System Types - VSCode Compatible
- * Based on VSCode's theme extension API for marketplace compatibility
+ * Based on VSCode's theme extension API for extension compatibility
  */
 
 export type ThemeType = 'light' | 'dark' | 'highContrast';
@@ -73,7 +73,7 @@ export interface ThemeColors {
 
 /**
  * Theme Manifest - VSCode compatible structure
- * Allows declarative theme definitions for marketplace
+ * Allows declarative theme definitions for extension distribution
  */
 export interface ThemeManifest {
     // Required metadata
@@ -91,7 +91,7 @@ export interface ThemeManifest {
     colors: ThemeColors;
     preview?: string; // Preview image URL or color
 
-    // Marketplace metadata
+    // Distribution metadata
     category?: ThemeCategory;
     downloads?: number;
     rating?: number;

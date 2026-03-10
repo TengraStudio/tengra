@@ -22,6 +22,10 @@ export interface OpenFile {
     path: string; name: string; content: string; isDirty: boolean; initialLine?: number;
 }
 
+function normalizeSearchResults(value: FileSearchResult[] | null | undefined): FileSearchResult[] {
+    return Array.isArray(value) ? value : [];
+}
+
 export function useWorkspaceDashboardLogic({ workspace, activeTab: externalTab, onTabChange, selectedEntry, onOpenFile, onUpdate, language = 'en' }: UseWorkspaceDashboardLogicProps) {
     const { t } = useTranslation(language);
     const [stats, setStats] = useState<WorkspaceStats | null>(null);
@@ -57,8 +61,10 @@ export function useWorkspaceDashboardLogic({ workspace, activeTab: externalTab, 
         if (searchQuery.trim().length < 2) { return; }
         setIsSearching(true);
         try {
-            setSearchResults(await window.electron.code.searchFiles(workspaceRoot, searchQuery, workspace.id));
+            const results = await window.electron.code.searchFiles(workspaceRoot, searchQuery, workspace.id);
+            setSearchResults(normalizeSearchResults(results));
         } catch (error) {
+            setSearchResults([]);
             appLogger.error('WorkspaceDashboard', 'Search failed', error as Error);
         } finally {
             setIsSearching(false);

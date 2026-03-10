@@ -1,7 +1,7 @@
-import { registerChatIpc } from '@main/ipc/chat';
 import { registerFilesIpc } from '@main/ipc/files';
 import { registerMemoryIpc } from '@main/ipc/memory';
 import { registerOllamaIpc } from '@main/ipc/ollama';
+import { registerSessionConversationIpc } from '@main/ipc/session-conversation';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const ipcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
@@ -109,7 +109,7 @@ describe('Offline critical path smoke', () => {
 
         registerFilesIpc(() => mainWindow as never, fileSystemService as never, new Set<string>());
         registerMemoryIpc(() => mainWindow as never, memoryService as never);
-        registerChatIpc(options as never);
+        registerSessionConversationIpc(options as never);
         registerOllamaIpc({
             getMainWindow: () => mainWindow as never,
             localAIService: localAIService as never,
@@ -120,7 +120,7 @@ describe('Offline critical path smoke', () => {
 
         const isRunning = await ipcMainHandlers.get('ollama:isRunning')?.(mockEvent);
         const workspaceResult = await ipcMainHandlers.get('files:listDirectory')?.(mockEvent, 'C:\\workspace');
-        const chatResult = await ipcMainHandlers.get('chat:openai')?.(mockEvent, {
+        const chatResult = await ipcMainHandlers.get('session:conversation:complete')?.(mockEvent, {
             messages: [{ role: 'user', content: 'hello from offline mode' }],
             model: 'llama3',
             tools: [],
@@ -141,3 +141,4 @@ describe('Offline critical path smoke', () => {
         expect(options.proxyService.getProxyKey).not.toHaveBeenCalled();
     });
 });
+

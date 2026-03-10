@@ -2,9 +2,9 @@
  * Council Scenarios 5–7: Crash Flow, Multi-Agent Help Flow & Governance Flow
  */
 
-import { AgentCollaborationService } from '@main/services/workspace/agent/agent-collaboration.service';
-import { AgentPersistenceService } from '@main/services/workspace/agent/agent-persistence.service';
+import { AgentCollaborationService } from '@main/services/workspace/automation-workflow/agent-collaboration.service';
 import { AgentExecutorService } from '@main/services/workspace/automation-workflow/agent-executor.service';
+import { AgentPersistenceService } from '@main/services/workspace/automation-workflow/agent-persistence.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createMockPersistence, createMockPlan, createMockTaskState } from './council-scenarios.helpers';
@@ -167,7 +167,7 @@ describe('Council Scenario 6 – Multi-Agent Help Flow: helper joins, merge acce
         const decision = collaboration.evaluateHelperMergeGate({
             acceptanceCriteria: ['tests pass', 'no lint errors'],
             constraints: ['max 200 lines'],
-            helperOutput: 'All tests pass and no lint errors found. Code is 150 lines.'
+            helperOutput: 'All tests pass and no issues found. Code is 150 lines.'
         });
 
         expect(decision.accepted).toBe(true);
@@ -200,12 +200,12 @@ describe('Council Scenario 7 – Governance Flow: blocked model rejected, altern
         collaboration = new AgentCollaborationService({ llm: mockLlm } as never);
     });
 
-    it('should detect deadlock when votes are evenly split', () => {
+    it('should detect deadlock when votes are evenly split', async () => {
         const session = collaboration.createVotingSession(
             'task-001', 0, 'Which model to use?', ['gpt-4', 'claude-3']
         );
 
-        void collaboration.submitVote({
+        await collaboration.submitVote({
             sessionId: session.id,
             modelId: 'model-a',
             provider: 'openai',
@@ -213,7 +213,7 @@ describe('Council Scenario 7 – Governance Flow: blocked model rejected, altern
             confidence: 80
         });
 
-        void collaboration.submitVote({
+        await collaboration.submitVote({
             sessionId: session.id,
             modelId: 'model-b',
             provider: 'anthropic',
@@ -226,16 +226,16 @@ describe('Council Scenario 7 – Governance Flow: blocked model rejected, altern
         expect(resolved!.status).toBe('deadlocked');
     });
 
-    it('should allow manual override on deadlocked voting', () => {
+    it('should allow manual override on deadlocked voting', async () => {
         const session = collaboration.createVotingSession(
             'task-001', 0, 'Which model?', ['gpt-4', 'claude-3']
         );
 
-        void collaboration.submitVote({
+        await collaboration.submitVote({
             sessionId: session.id, modelId: 'a', provider: 'openai',
             decision: 'gpt-4', confidence: 80
         });
-        void collaboration.submitVote({
+        await collaboration.submitVote({
             sessionId: session.id, modelId: 'b', provider: 'anthropic',
             decision: 'claude-3', confidence: 80
         });

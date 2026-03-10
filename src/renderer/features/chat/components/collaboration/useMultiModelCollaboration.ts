@@ -116,7 +116,7 @@ export function useMultiModelCollaboration({
         setResults(null);
 
         try {
-            const result = await window.electron.collaboration.run({
+            const result = await window.electron.modelCollaboration.run({
                 messages,
                 models: selectedModels,
                 strategy

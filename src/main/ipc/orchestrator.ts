@@ -1,6 +1,6 @@
 import { MultiAgentOrchestratorService } from '@main/services/workspace/orchestrator.service';
 import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { OrchestratorState, WorkspaceStep } from '@shared/types/workspace-agent';
+import { OrchestratorState, WorkspaceStep } from '@shared/types/automation-workflow';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 
 /**
@@ -73,3 +73,4 @@ export function registerOrchestratorIpc(
         )
     );
 }
+

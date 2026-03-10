@@ -33,6 +33,7 @@ import type { OllamaHealthService } from '@main/services/llm/ollama-health.servi
 import type { ProxyService } from '@main/services/proxy/proxy.service';
 import type { RateLimitService } from '@main/services/security/rate-limit.service';
 import type { SettingsService } from '@main/services/system/settings.service';
+import { SESSION_CONVERSATION_CHANNELS } from '@shared/constants/ipc-channels';
 
 describe('Ollama IPC Handlers', () => {
     const ipcMainHandlers = new Map<string, CallableFunction>();
@@ -328,7 +329,7 @@ describe('Ollama IPC Handlers', () => {
 
             expect(mockRateLimitService.waitForToken).toHaveBeenCalledWith('ollama:chat');
             expect(mockOllamaService.chatStream).toHaveBeenCalled();
-            expect(mockEvent.sender.send).toHaveBeenCalledWith('ollama:streamChunk', {
+            expect(mockEvent.sender.send).toHaveBeenCalledWith(SESSION_CONVERSATION_CHANNELS.STREAM_CHUNK, {
                 content: 'Response',
                 reasoning: ''
             });

@@ -1,10 +1,11 @@
-import { fetchModels, groupModels } from '@renderer/features/models/utils/model-fetcher'; 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { pushNotification } from '@/store/notification-center.store';
 import type { GroupedModels, ModelInfo } from '@/types';
 import { AppSettings } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
+
+import { fetchModels, getSelectableProviderId, groupModels } from '../utils/model-fetcher';
 
 import { useModelSelection } from './useModelSelection';
 
@@ -18,6 +19,17 @@ const LOCALE_MODEL_HINTS: Record<string, string[]> = {
     zh: ['qwen', 'deepseek', 'glm', 'gpt-4o'],
 };
 
+function normalizeSelectionProvider(provider: string | undefined): string {
+    const raw = (provider ?? '').trim().toLowerCase();
+    if (raw === 'github') {
+        return 'copilot';
+    }
+    if (raw === 'anthropic') {
+        return 'claude';
+    }
+    return raw;
+}
+
 function pickLocalePreferredModel(models: ModelInfo[], locale: string): { provider: string; model: string } | null {
     const hints = LOCALE_MODEL_HINTS[locale] ?? [];
     for (const hint of hints) {
@@ -25,30 +37,15 @@ function pickLocalePreferredModel(models: ModelInfo[], locale: string): { provid
             const id = model.id?.toLowerCase() ?? '';
             return id.includes(hint);
         });
-        if (preferred?.id && preferred.provider) {
-            return { provider: preferred.provider, model: preferred.id };
+        if (preferred?.id) {
+            return { provider: getSelectableProviderId(preferred), model: preferred.id };
         }
     }
 
-    const firstValidModel = models.find(model => model.id && model.provider);
-    return firstValidModel?.id && firstValidModel.provider
-        ? { provider: firstValidModel.provider, model: firstValidModel.id }
+    const firstValidModel = models.find(model => model.id && getSelectableProviderId(model) !== '');
+    return firstValidModel?.id
+        ? { provider: getSelectableProviderId(firstValidModel), model: firstValidModel.id }
         : null;
-}
-
-function hasCredential(value: string | undefined): boolean {
-    return typeof value === 'string' && value.trim() !== '' && value !== 'connected';
-}
-
-function isProviderConfigured(provider: string, settings: AppSettings | null): boolean {
-    const normalized = provider.toLowerCase();
-    if (normalized === 'nvidia') { return hasCredential(settings?.nvidia?.apiKey); }
-    if (normalized === 'openai') { return hasCredential(settings?.openai?.apiKey); }
-    if (normalized === 'codex') { return settings?.codex?.connected === true || hasCredential(settings?.openai?.apiKey); }
-    if (normalized === 'copilot' || normalized === 'github') { return settings?.copilot?.connected === true; }
-    if (normalized === 'anthropic' || normalized === 'claude') { return hasCredential(settings?.anthropic?.apiKey) || hasCredential(settings?.claude?.apiKey); }
-    if (normalized === 'antigravity') { return settings?.antigravity?.connected === true; }
-    return true;
 }
 
 export function useModelManager(
@@ -115,10 +112,7 @@ export function useModelManager(
     useEffect(() => {
         const defaultModel = appSettings?.general.defaultModel;
         const locale = appSettings?.general.language ?? 'en';
-        const availableModels = models.filter(m => {
-            const provider = m.provider ?? '';
-            return provider !== '' && isProviderConfigured(provider, appSettings);
-        });
+        const availableModels = models.filter(m => getSelectableProviderId(m) !== '');
 
         const resolveFallback = (): { provider: string; model: string } | null => {
             const preferred = pickLocalePreferredModel(availableModels, locale);
@@ -126,15 +120,15 @@ export function useModelManager(
                 return preferred;
             }
             const first = availableModels[0];
-            if (!first?.id || !first.provider) {
+            if (!first?.id) {
                 return null;
             }
-            return { provider: first.provider, model: first.id };
+            return { provider: getSelectableProviderId(first), model: first.id };
         };
 
-        const persistedProvider = appSettings?.general.lastProvider ?? '';
+        const persistedProvider = normalizeSelectionProvider(appSettings?.general.lastProvider);
         const persistedPairExists = availableModels.some(m =>
-            m.id === defaultModel && m.provider === persistedProvider
+            m.id?.toLowerCase() === defaultModel?.toLowerCase() && getSelectableProviderId(m) === persistedProvider
         );
         // const selectedMeta = availableModels.find(m => m.id === defaultModel && m.provider === persistedProvider);
         // const lifecycleMeta = selectedMeta ? getModelLifecycleMeta(selectedMeta) : { lifecycle: 'active' as const };
@@ -167,6 +161,15 @@ export function useModelManager(
         }
 
         if (defaultModel && persistedProvider && persistedPairExists) {
+            if (appSettings?.general.lastProvider !== persistedProvider) {
+                setAppSettings({
+                    ...appSettings,
+                    general: {
+                        ...appSettings.general,
+                        lastProvider: persistedProvider
+                    }
+                });
+            }
             // Priority 1: Use persisted state if present
             if (selectedModel && selectedModel === defaultModel && selectedProvider === persistedProvider) {
                 // Already in sync
@@ -265,6 +268,45 @@ export function useModelManager(
             modelSettings
         });
     }, [appSettings, setAppSettings]);
+
+    useEffect(() => {
+        if (!appSettings) {
+            return;
+        }
+        const activeModelId = selectedModel || appSettings.general.defaultModel;
+        const activeProvider = selectedProvider || appSettings.general.lastProvider;
+        if (!activeModelId || !activeProvider) {
+            return;
+        }
+
+        const activeModelInfo = models.find(model =>
+            model.id === activeModelId && getSelectableProviderId(model) === activeProvider
+        );
+        const thinkingLevels = activeModelInfo?.thinkingLevels;
+        if (!Array.isArray(thinkingLevels) || thinkingLevels.length === 0) {
+            return;
+        }
+
+        const currentReasoningLevel = appSettings.modelSettings?.[activeModelId]?.reasoningLevel;
+        if (currentReasoningLevel && thinkingLevels.includes(currentReasoningLevel)) {
+            return;
+        }
+
+        const defaultReasoningLevel = thinkingLevels.includes('low')
+            ? 'low'
+            : thinkingLevels[0];
+        if (!defaultReasoningLevel) {
+            return;
+        }
+
+        setModelReasoningLevel(activeModelId, defaultReasoningLevel);
+    }, [
+        appSettings,
+        models,
+        selectedModel,
+        selectedProvider,
+        setModelReasoningLevel
+    ]);
 
     return useMemo(() => ({
         models,

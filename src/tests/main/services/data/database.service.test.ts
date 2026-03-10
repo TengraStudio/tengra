@@ -53,6 +53,33 @@ describe('DatabaseService', () => {
         const mockDatabaseClient = {
             initialize: vi.fn().mockResolvedValue(undefined),
             isConnected: vi.fn().mockReturnValue(true),
+            getWorkspaces: vi.fn().mockResolvedValue([]),
+            getWorkspace: vi.fn().mockResolvedValue({
+                id: '1',
+                title: 'Test',
+                description: '',
+                path: '/path',
+                mounts: [],
+                chat_ids: [],
+                council_config: { enabled: false, members: [], consensusThreshold: 0.7 },
+                status: 'active',
+                metadata: {},
+                created_at: 1,
+                updated_at: 1
+            }),
+            createWorkspace: vi.fn().mockResolvedValue({
+                id: '1',
+                title: 'Test',
+                description: '',
+                path: '/path',
+                mounts: [],
+                chat_ids: [],
+                council_config: { enabled: false, members: [], consensusThreshold: 0.7 },
+                status: 'active',
+                metadata: {},
+                created_at: 1,
+                updated_at: 1
+            }),
             executeQuery: vi.fn().mockImplementation(async (req) => {
                 const res = await mockQuery(req.sql, req.params);
                 return {
@@ -63,7 +90,12 @@ describe('DatabaseService', () => {
             searchCodeSymbols: vi.fn().mockResolvedValue([]),
             storeCodeSymbol: vi.fn().mockResolvedValue(undefined),
             storeSemanticFragment: vi.fn().mockResolvedValue(undefined),
-            searchSemanticFragments: vi.fn().mockResolvedValue([])
+            searchSemanticFragments: vi.fn().mockResolvedValue([]),
+            setPoolLimits: vi.fn(),
+            getConnectionPoolMetrics: vi.fn().mockReturnValue({}),
+            recycleConnectionPool: vi.fn().mockResolvedValue(undefined),
+            testConnection: vi.fn().mockResolvedValue({ healthy: true, latencyMs: 1 }),
+            getHealth: vi.fn().mockResolvedValue({ success: true })
         } as unknown as DatabaseClientService;
 
         const mockTimeTracking = {
@@ -83,13 +115,27 @@ describe('DatabaseService', () => {
         it('should initialize and run migrations', () => {
             expect(service).toBeDefined();
         });
+
+        it('should expose advanced memory table bootstrap on the knowledge repository', () => {
+            const knowledgeRepository = Reflect.get(service, '_knowledge') as { ensureMemoryTables?: unknown } | undefined;
+            expect(typeof knowledgeRepository?.ensureMemoryTables).toBe('function');
+        });
     });
 
     describe('Workspace Operations', () => {
         it('should create and get a workspace', async () => {
-            // mockQuery already returns the default workspace for SELECT by id
             const workspace = await service.createWorkspace('Test', '/path');
             expect(workspace.title).toBe('Test');
+            const dbClient = Reflect.get(service, 'dbClient') as {
+                createWorkspace: ReturnType<typeof vi.fn>
+            };
+            expect(dbClient.createWorkspace).toHaveBeenCalledWith({
+                title: 'Test',
+                path: '/path',
+                description: '',
+                mounts: undefined,
+                council_config: undefined
+            });
         });
 
         it('should archive a workspace', async () => {

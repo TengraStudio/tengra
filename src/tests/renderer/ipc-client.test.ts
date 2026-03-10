@@ -99,14 +99,14 @@ describe('ipc-client', () => {
 
 
         type Contract = IpcContractMap & {
-            'mcp:marketplace:install': {
+            'mcp:install': {
                 args: [string];
                 response: { success: boolean };
             };
         };
 
-        const result = await invokeTypedIpc<Contract, 'mcp:marketplace:install'>(
-            'mcp:marketplace:install',
+        const result = await invokeTypedIpc<Contract, 'mcp:install'>(
+            'mcp:install',
             ['server-id'],
             {
                 argsSchema: z.tuple([z.string().min(1)]),
@@ -115,6 +115,6 @@ describe('ipc-client', () => {
         );
 
         expect(result.success).toBe(true);
-        expect(invoke).toHaveBeenCalledWith('mcp:marketplace:install', 'server-id');
+        expect(invoke).toHaveBeenCalledWith('mcp:install', 'server-id');
     });
 });

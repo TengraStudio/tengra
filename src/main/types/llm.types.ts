@@ -1,5 +1,6 @@
 
 import { ToolDefinition } from '@shared/types';
+import type { JsonValue } from '@shared/types/common';
 
 /**
  * Role of the message sender.
@@ -24,9 +25,11 @@ export interface ContentPart {
  * Represents a tool call within a message.
  */
 export interface ToolCall {
+    [key: string]: JsonValue | undefined;
     id: string;
     type: 'function';
     function: {
+        [key: string]: JsonValue | undefined;
         name: string;
         arguments: string;
     };

@@ -6,6 +6,7 @@ import { LinkedAccount } from '@main/services/data/database.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { QuotaModel, QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
+import { getManagedRuntimeTempDir } from '@main/services/system/runtime-path.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { withRetry } from '@main/utils/retry.util';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -547,7 +548,7 @@ export class LocalImageProviders {
     }
 
     private saveTempImage(buffer: Buffer): string {
-        const tempDir = path.join(process.cwd(), 'temp', 'generated');
+        const tempDir = path.join(getManagedRuntimeTempDir(), 'generated');
         if (!fs.existsSync(tempDir)) {
             fs.mkdirSync(tempDir, { recursive: true });
         }

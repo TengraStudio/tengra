@@ -7,7 +7,7 @@ import {
     StepModelConfig,
     TaskType,
     WorkspaceStep,
-} from '@shared/types/workspace-agent';
+} from '@shared/types/automation-workflow';
 
 /** Default model routing rules based on task type */
 const DEFAULT_ROUTING_RULES: ModelRoutingRule[] = [
@@ -151,3 +151,4 @@ export class AgentRoutingService extends BaseService {
         // No persistent state
     }
 }
+

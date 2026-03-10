@@ -18,6 +18,15 @@ const generateUniqueId = (): string => {
     return `${Date.now()}_${crypto.randomUUID().substring(0, 8)}`;
 };
 
+/** Maximum number of activity log entries retained in memory. */
+const ACTIVITY_LOG_MAX_SIZE = 1000;
+
+/**
+ * Caps the activity log array to ACTIVITY_LOG_MAX_SIZE, keeping the most recent entries.
+ */
+const capActivityLogs = (logs: ActivityLog[]): ActivityLog[] =>
+    logs.length > ACTIVITY_LOG_MAX_SIZE ? logs.slice(logs.length - ACTIVITY_LOG_MAX_SIZE) : logs;
+
 interface UseAgentEventsProps {
     selectedTaskId: string | null;
     setStatus: React.Dispatch<React.SetStateAction<AgentTaskStatus>>;
@@ -84,7 +93,7 @@ const addActivityLog = (
     type: ActivityLog['type'],
     message: string
 ) => {
-    setActivityLogs(prev => [...prev, { id: generateUniqueId(), type, message, timestamp: new Date() }]);
+    setActivityLogs(prev => capActivityLogs([...prev, { id: generateUniqueId(), type, message, timestamp: new Date() }]));
 };
 
 const processLifecycleEvent = (type: string, data: EventData, ctrl: EventControllers) => {
@@ -161,12 +170,12 @@ const processToolEvent = (type: string, data: EventData, ctrl: EventControllers)
                 startTime: new Date()
             }];
         });
-        setActivityLogs(prev => [...prev, { id: generateUniqueId(), type: 'tool', message: `Executing tool: ${data.toolName}...`, timestamp: new Date() }]);
+        setActivityLogs(prev => capActivityLogs([...prev, { id: generateUniqueId(), type: 'tool', message: `Executing tool: ${data.toolName}...`, timestamp: new Date() }]));
     } else if (type === 'agent:tool_completed' && data.toolCallId) {
         setToolExecutions(prev => prev.map(t => t.id === data.toolCallId ? { ...t, status: 'completed', endTime: new Date(), duration: data.duration } : t));
     } else if (type === 'agent:tool_error' && data.toolCallId) {
         setToolExecutions(prev => prev.map(t => t.id === data.toolCallId ? { ...t, status: 'error', endTime: new Date(), error: data.error } : t));
-        setActivityLogs(prev => [...prev, { id: generateUniqueId(), type: 'error', message: `Tool error: ${data.error ?? 'Unknown error'}`, timestamp: new Date() }]);
+        setActivityLogs(prev => capActivityLogs([...prev, { id: generateUniqueId(), type: 'error', message: `Tool error: ${data.error ?? 'Unknown error'}`, timestamp: new Date() }]));
     }
 };
 
@@ -192,7 +201,7 @@ const processPlanEvent = (type: string, data: EventData, ctrl: EventControllers)
         };
         setCurrentPlan(newPlan);
         // Log the plan steps for activity stream
-        setActivityLogs(prev => [
+        setActivityLogs(prev => capActivityLogs([
             ...prev,
             { id: generateUniqueId(), type: 'info', message: `Plan created with ${steps.length} steps:`, timestamp: new Date() },
             ...steps.map((s, idx) => ({
@@ -201,7 +210,7 @@ const processPlanEvent = (type: string, data: EventData, ctrl: EventControllers)
                 message: `  ${idx + 1}. ${s.description}`,
                 timestamp: new Date()
             }))
-        ]);
+        ]));
         setStatus(prev => {
             const metrics = prev.metrics ? { ...prev.metrics, totalSteps: steps.length } : undefined;
             return { ...prev, state: 'planning', metrics } as AgentTaskStatus;
@@ -211,9 +220,9 @@ const processPlanEvent = (type: string, data: EventData, ctrl: EventControllers)
         const progress = Math.round((stepIdx / (currentPlanStepsCount || 1)) * 100);
         setStatus(prev => ({ ...prev, state: 'executing', progress, currentStep: data.description ?? `Executing step ${stepIdx + 1}...` }));
         if (data.thoughts) {
-            setActivityLogs(prev => [...prev, { id: generateUniqueId(), type: 'llm', message: `Step Reason: ${data.thoughts}`, timestamp: new Date() }]);
+            setActivityLogs(prev => capActivityLogs([...prev, { id: generateUniqueId(), type: 'llm', message: `Step Reason: ${data.thoughts}`, timestamp: new Date() }]));
         }
-        setActivityLogs(prev => [...prev, { id: generateUniqueId(), type: 'info', message: `Step ${stepIdx + 1}: ${data.description ?? 'No description'}`, timestamp: new Date() }]);
+        setActivityLogs(prev => capActivityLogs([...prev, { id: generateUniqueId(), type: 'info', message: `Step ${stepIdx + 1}: ${data.description ?? 'No description'}`, timestamp: new Date() }]));
     }
 };
 
@@ -228,9 +237,9 @@ const handleLlmResponse = (data: EventData, ctrl: EventControllers) => {
         const displayContent = content.length > MAX_DISPLAY_LENGTH
             ? `${content.substring(0, MAX_DISPLAY_LENGTH)}... (truncated)`
             : content;
-        setActivityLogs(prev => [...prev, { id: generateUniqueId(), type: 'llm', message: `AI Response: ${displayContent}`, timestamp: new Date() }]);
+        setActivityLogs(prev => capActivityLogs([...prev, { id: generateUniqueId(), type: 'llm', message: `AI Response: ${displayContent}`, timestamp: new Date() }]));
     }
-    setActivityLogs(prev => [...prev, { id: generateUniqueId(), type: 'llm', message: `Received response from ${data.provider ?? 'unknown'} in ${duration.toFixed(1)}s${tokens}`, timestamp: new Date() }]);
+    setActivityLogs(prev => capActivityLogs([...prev, { id: generateUniqueId(), type: 'llm', message: `Received response from ${data.provider ?? 'unknown'} in ${duration.toFixed(1)}s${tokens}`, timestamp: new Date() }]));
     if (data.metrics) {
         setStatus(prev => ({ ...prev, metrics: data.metrics }));
     }
@@ -239,32 +248,32 @@ const handleLlmResponse = (data: EventData, ctrl: EventControllers) => {
 const handlePlanAwaitingApproval = (_data: EventData, ctrl: EventControllers) => {
     const { setStatus, setActivityLogs } = ctrl;
     setStatus(prev => ({ ...prev, state: 'waiting_approval' }));
-    setActivityLogs(prev => [...prev, {
+    setActivityLogs(prev => capActivityLogs([...prev, {
         id: generateUniqueId(),
         type: 'info',
         message: '📋 Execution plan ready. Waiting for your approval to proceed.',
         timestamp: new Date()
-    }]);
+    }]));
 };
 
 const handlePlanApproved = (ctrl: EventControllers) => {
     const { setActivityLogs } = ctrl;
-    setActivityLogs(prev => [...prev, {
+    setActivityLogs(prev => capActivityLogs([...prev, {
         id: generateUniqueId(),
         type: 'success',
         message: '✓ Plan approved. Starting execution...',
         timestamp: new Date()
-    }]);
+    }]));
 };
 
 const handlePlanRejected = (_data: EventData, ctrl: EventControllers) => {
     const { setActivityLogs } = ctrl;
-    setActivityLogs(prev => [...prev, {
+    setActivityLogs(prev => capActivityLogs([...prev, {
         id: generateUniqueId(),
         type: 'error',
         message: `✗ Plan rejected${_data.reason ? `: ${_data.reason}` : ''}`,
         timestamp: new Date()
-    }]);
+    }]));
 };
 
 const handleStateChanged = (_data: EventData, ctrl: EventControllers) => {
@@ -276,43 +285,43 @@ const handleStateChanged = (_data: EventData, ctrl: EventControllers) => {
 
 const handleLlmRequest = (_data: EventData, ctrl: EventControllers) => {
     const { setActivityLogs } = ctrl;
-    setActivityLogs(prev => [...prev, {
+    setActivityLogs(prev => capActivityLogs([...prev, {
         id: generateUniqueId(),
         type: 'llm',
         message: `Calling LLM with ${_data.provider ?? 'unknown'}...`,
         timestamp: new Date()
-    }]);
+    }]));
 };
 
 const handleProviderChanged = (_data: EventData, ctrl: EventControllers) => {
     const { setActivityLogs } = ctrl;
-    setActivityLogs(prev => [...prev, {
+    setActivityLogs(prev => capActivityLogs([...prev, {
         id: generateUniqueId(),
         type: 'info',
         message: `Switched provider: ${_data.fromProvider ?? 'unknown'} → ${_data.toProvider ?? 'unknown'}${_data.reason ? ` (${_data.reason})` : ''}`,
         timestamp: new Date()
-    }]);
+    }]));
 };
 
 const handleErrorOccurred = (_data: EventData, ctrl: EventControllers) => {
     const { setActivityLogs } = ctrl;
-    setActivityLogs(prev => [...prev, {
+    setActivityLogs(prev => capActivityLogs([...prev, {
         id: generateUniqueId(),
         type: 'error',
         message: _data.message ?? 'Unknown error',
         timestamp: new Date()
-    }]);
+    }]));
 };
 
 const handleResourceError = (_data: EventData, ctrl: EventControllers) => {
     const { setStatus, setActivityLogs } = ctrl;
     const errorMsg = _data.message ?? 'Insufficient system resources';
-    setActivityLogs(prev => [...prev, {
+    setActivityLogs(prev => capActivityLogs([...prev, {
         id: generateUniqueId(),
         type: 'error',
         message: `⚠️ Resource Error: ${errorMsg}. Task paused - please select a cloud-based model.`,
         timestamp: new Date()
-    }]);
+    }]));
     setStatus(prev => ({ ...prev, state: 'waiting_user', error: errorMsg }));
 };
 

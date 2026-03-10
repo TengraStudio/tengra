@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import React, { useEffect, useId, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 import { useTranslation } from '@/i18n';
 
@@ -167,9 +168,9 @@ const ModalBase: React.FC<ModalProps> = ({
 
     if (!isOpen) { return null; }
 
-    return (
+    const modalContent = (
         <div
-            className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300"
+            className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300"
             onClick={handleBackdropClick}
             role="dialog"
             aria-modal="true"
@@ -213,6 +214,8 @@ const ModalBase: React.FC<ModalProps> = ({
             </div>
         </div>
     );
+
+    return createPortal(modalContent, document.body);
 };
 
 export const Modal = React.memo(ModalBase);

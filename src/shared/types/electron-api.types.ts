@@ -1,4 +1,9 @@
 import type {
+    CollaborationResponse,
+    CollaborationSyncUpdate,
+    JoinCollaborationRoom,
+} from '@shared/schemas/collaboration.schema';
+import type {
     InlineSuggestionRequest,
     InlineSuggestionResponse,
     InlineSuggestionTelemetry,
@@ -17,14 +22,14 @@ import {
     SharedMemorySyncRequest,
     SharedMemorySyncResult,
 } from './advanced-memory';
-import { DbMarketplaceModel } from './db-api';
+import {
+    OrchestratorState,
+} from './automation-workflow';
 import {
     AgentDefinition,
     AgentStartOptions,
     AppSettings,
     Chat,
-    ChatRequest,
-    ChatStreamRequest,
     CodexUsage,
     CopilotQuota,
     FileEntry,
@@ -35,6 +40,10 @@ import {
     OllamaLibraryModel,
     ProcessInfo,
     QuotaResponse,
+    SessionCapabilityDescriptor,
+    SessionEventEnvelope,
+    SessionRecoverySnapshot,
+    SessionState,
     SSHConfig,
     SSHDevContainer,
     SSHExecOptions,
@@ -50,14 +59,9 @@ import {
     SSHTransferTask,
     SSHTunnelPreset,
     TodoItem,
-    ToolCall,
     WorkspaceAnalysis,
-    WorkspaceState,
     WorkspaceStep,
 } from './index';
-import {
-    OrchestratorState,
-} from './workspace-agent';
 
 export interface ModelDefinition {
     id: string;
@@ -75,27 +79,6 @@ export interface ModelDefinition {
     reset?: string;
     [key: string]: IpcValue | undefined;
 }
-
-export interface OllamaMarketplaceModelDetails {
-    name: string;
-    shortDescription: string;
-    longDescriptionHtml: string;
-    versions: Array<{
-        version: string;
-        size: string;
-        maxContext: string;
-        inputType: string;
-        digest: string;
-    }>;
-}
-
-export interface HuggingFaceMarketplaceModelDetails {
-    name: string;
-    shortDescription: string;
-    longDescriptionMarkdown: string;
-}
-
-export type MarketplaceModelDetails = OllamaMarketplaceModelDetails | HuggingFaceMarketplaceModelDetails;
 
 export interface ProxyModelResponse {
     data: ModelDefinition[];
@@ -405,22 +388,7 @@ export interface ElectronAPI {
         }>;
     };
 
-    // Ollama chat
     getModels: () => Promise<ModelDefinition[] | { antigravityError?: string }>;
-    chat: (messages: Message[], model: string) => Promise<{ content: string; done: boolean }>;
-    chatOpenAI: (request: ChatRequest) => Promise<{
-        content: string;
-        toolCalls?: ToolCall[];
-        reasoning?: string;
-        images?: string[];
-        sources?: string[];
-    }>;
-    chatStream: (request: ChatStreamRequest) => Promise<{ success: boolean; queued?: boolean }>;
-    abortChat: (chatId?: string) => void;
-    onStreamChunk: (
-        callback: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string }) => void
-    ) => () => void;
-    removeStreamChunkListener: () => void;
 
     // Ollama management
     isOllamaRunning: () => Promise<boolean>;
@@ -464,14 +432,6 @@ export interface ElectronAPI {
     getOllamaGPUAlertThresholds: () => Promise<{ highMemoryPercent: number; highTemperatureC: number; lowMemoryMB: number }>;
     onOllamaGPUAlert: (callback: (alert: IpcValue) => void) => () => void;
     onOllamaGPUStatus: (callback: (status: IpcValue) => void) => () => void;
-
-    // Marketplace API (models from database)
-    marketplace: {
-        getModels: (provider?: 'ollama' | 'huggingface', limit?: number, offset?: number) => Promise<DbMarketplaceModel[]>;
-        searchModels: (query: string, provider?: 'ollama' | 'huggingface', limit?: number) => Promise<DbMarketplaceModel[]>;
-        getModelDetails: (modelName: string, provider?: 'ollama' | 'huggingface') => Promise<MarketplaceModelDetails | null>;
-        getStatus: () => Promise<{ lastScrapeTime: number; isScraping: boolean }>;
-    };
 
     // llama.cpp
     llama: {
@@ -692,6 +652,37 @@ export interface ElectronAPI {
         onUserLeave: (callback: (user: unknown) => void) => void;
     };
 
+    modelCollaboration: {
+        run: (request: {
+            messages: Message[];
+            models: Array<{ provider: string; model: string }>;
+            strategy?: 'consensus' | 'voting' | 'best-of-n' | 'chain-of-thought';
+        }) => Promise<{
+            response?: string;
+            responses: Array<{
+                provider: string;
+                model: string;
+                content: string;
+                latency: number;
+            }>;
+            consensus?: string;
+            bestResponse?: {
+                provider: string;
+                model: string;
+                content: string;
+            };
+            modelContributions?: Array<{ model: string; response: string }>;
+        }>;
+        getProviderStats: () => Promise<
+            Array<{ provider: string; requestCount: number; avgLatency: number }>
+        >;
+        getActiveTaskCount: () => Promise<number>;
+        setProviderConfig: (
+            provider: string,
+            config: { concurrencyLimit?: number; rateLimit?: number }
+        ) => Promise<void>;
+    };
+
     audit: {
         log: (event: string, details: Record<string, IpcValue>) => Promise<void>;
         getLogs: (options?: { limit?: number; offset?: number }) => Promise<unknown[]>;
@@ -845,23 +836,6 @@ export interface ElectronAPI {
         removeResultListener: () => void;
     };
 
-    mcpMarketplace: {
-        list: () => Promise<{ success: boolean; servers?: unknown[]; error?: string }>;
-        search: (query: string) => Promise<{ success: boolean; servers?: unknown[]; error?: string }>;
-        filter: (category: string) => Promise<{ success: boolean; servers?: unknown[]; error?: string }>;
-        categories: () => Promise<{ success: boolean; categories?: string[]; error?: string }>;
-        install: (serverId: string) => Promise<{ success: boolean; error?: string }>;
-        uninstall: (serverId: string) => Promise<{ success: boolean; error?: string }>;
-        installed: () => Promise<{ success: boolean; servers?: MCPServerConfig[]; error?: string }>;
-        toggle: (serverId: string, enabled: boolean) => Promise<{ success: boolean; error?: string }>;
-        updateConfig: (serverId: string, patch: Partial<MCPServerConfig>) => Promise<{ success: boolean; error?: string }>;
-        versionHistory: (serverId: string) => Promise<{ success: boolean; history?: string[]; error?: string }>;
-        rollbackVersion: (serverId: string, targetVersion: string) => Promise<{ success: boolean; error?: string }>;
-        debug: () => Promise<{ success: boolean; metrics?: Record<string, IpcValue>; error?: string }>;
-        refresh: () => Promise<{ success: boolean; error?: string }>;
-        health: () => Promise<unknown>;
-    };
-
     proxyEmbed: {
         start: (options?: unknown) => Promise<Record<string, IpcValue>>;
         stop: () => Promise<Record<string, IpcValue>>;
@@ -992,7 +966,6 @@ export interface ElectronAPI {
         batchDownload: (input: unknown) => Promise<unknown>;
     };
 
-    onChatGenerationStatus: (callback: (data: unknown) => void) => () => void;
     onAgentEvent: (callback: (payload: unknown) => void) => () => void;
     onSdCppStatus: (callback: (data: unknown) => void) => () => void;
     onSdCppProgress: (callback: (data: unknown) => void) => () => void;
@@ -1105,103 +1078,24 @@ export interface ElectronAPI {
         onDeepResearchProgress: (callback: (progress: unknown) => void) => () => void;
     };
 
-    workspaceAgent: {
-        start: (options: unknown) => Promise<string>;
-        generatePlan: (options: unknown) => Promise<unknown>;
-        approvePlan: (plan: unknown, taskId: string) => Promise<unknown>;
-        stop: (taskId: string) => Promise<void>;
-        pauseTask: (taskId: string) => Promise<void>;
-        resumeTask: (taskId: string) => Promise<void>;
-        saveSnapshot: (taskId: string) => Promise<void>;
-        approveCurrentPlan: (taskId: string) => Promise<void>;
-        rejectCurrentPlan: (taskId: string, reason: string) => Promise<void>;
-        createPullRequest: (taskId: string) => Promise<void>;
-        resetState: () => Promise<void>;
-        getStatus: (taskId: string) => Promise<unknown>;
-        getTaskMessages: (taskId: string) => Promise<unknown[]>;
-        getTaskEvents: (taskId: string) => Promise<unknown[]>;
-        getTaskTelemetry: (taskId: string) => Promise<unknown>;
-        getTaskHistory: (workspaceId: string) => Promise<unknown[]>;
-        deleteTask: (taskId: string) => Promise<void>;
-        getAvailableModels: () => Promise<unknown[]>;
-        retryStep: (index: number, taskId: string) => Promise<void>;
-        selectModel: (payload: unknown) => Promise<void>;
-        approveStep: (taskId: string, stepId: string) => Promise<void>;
-        skipStep: (taskId: string, stepId: string) => Promise<void>;
-        editStep: (taskId: string, stepId: string, text: string) => Promise<void>;
-        addStepComment: (taskId: string, stepId: string, comment: string) => Promise<void>;
-        insertInterventionPoint: (taskId: string, afterStepId: string) => Promise<void>;
-        getCheckpoints: (taskId: string) => Promise<unknown[]>;
-        rollbackCheckpoint: (checkpointId: string) => Promise<void>;
-        getPlanVersions: (taskId: string) => Promise<unknown[]>;
-        deleteTaskByNodeId: (nodeId: string) => Promise<void>;
-        getProfiles: () => Promise<unknown[]>;
-        getRoutingRules: () => Promise<unknown[]>;
-        setRoutingRules: (rules: unknown[]) => Promise<void>;
-        createVotingSession: (payload: unknown) => Promise<unknown>;
-        submitVote: (payload: unknown) => Promise<unknown>;
-        requestVotes: (payload: unknown) => Promise<void>;
-        resolveVoting: (sessionId: string) => Promise<void>;
-        getVotingSession: (sessionId: string) => Promise<unknown>;
-        listVotingSessions: (taskId: string) => Promise<unknown[]>;
-        overrideVotingDecision: (payload: unknown) => Promise<void>;
-        getVotingAnalytics: (taskId: string) => Promise<unknown>;
-        getVotingConfiguration: () => Promise<unknown>;
-        updateVotingConfiguration: (patch: unknown) => Promise<void>;
-        listVotingTemplates: () => Promise<unknown[]>;
-        buildConsensus: (outputs: unknown[]) => Promise<unknown>;
-        createDebateSession: (payload: unknown) => Promise<unknown>;
-        submitDebateArgument: (payload: unknown) => Promise<unknown>;
-        resolveDebateSession: (sessionId: string) => Promise<void>;
-        overrideDebateSession: (payload: unknown) => Promise<void>;
-        getDebateSession: (sessionId: string) => Promise<unknown>;
-        listDebateHistory: (taskId: string) => Promise<unknown[]>;
-        getDebateReplay: (sessionId: string) => Promise<unknown>;
-        generateDebateSummary: (sessionId: string) => Promise<string>;
-        getTeamworkAnalytics: () => Promise<unknown>;
-        councilSendMessage: (payload: unknown) => Promise<void>;
-        councilGetMessages: (payload: unknown) => Promise<unknown[]>;
-        councilCleanupExpiredMessages: (taskId: string) => Promise<void>;
-        councilHandleQuotaInterrupt: (payload: unknown) => Promise<void>;
-        councilRegisterWorkerAvailability: (payload: unknown) => Promise<void>;
-        councilListAvailableWorkers: (payload: unknown) => Promise<unknown[]>;
-        councilScoreHelperCandidates: (payload: unknown) => Promise<unknown[]>;
-        councilGenerateHelperHandoff: (payload: unknown) => Promise<unknown>;
-        councilReviewHelperMerge: (payload: unknown) => Promise<unknown>;
-        council: {
-            generatePlan: (taskId: string, task: string) => Promise<unknown>;
-            getProposal: (taskId: string) => Promise<unknown>;
-            approveProposal: (taskId: string) => Promise<unknown>;
-            rejectProposal: (taskId: string, reason: string) => Promise<unknown>;
-            startExecution: (taskId: string) => Promise<void>;
-            pauseExecution: (taskId: string) => Promise<void>;
-            resumeExecution: (taskId: string) => Promise<void>;
-            getTimeline: (taskId: string) => Promise<unknown[]>;
-        };
-        getTemplates: (category?: string) => Promise<unknown[]>;
-        getTemplate: (id: string) => Promise<unknown>;
-        saveTemplate: (template: unknown) => Promise<unknown>;
-        deleteTemplate: (id: string) => Promise<boolean>;
-        exportTemplate: (id: string) => Promise<string>;
-        importTemplate: (exported: string) => Promise<unknown>;
-        applyTemplate: (payload: unknown) => Promise<void>;
-        onUpdate: (callback: (state: WorkspaceState) => void) => () => void;
-        onQuotaInterrupt: (callback: (payload: unknown) => void) => () => void;
-        saveCanvasNodes: (nodes: unknown[]) => Promise<void>;
-        getCanvasNodes: () => Promise<unknown[]>;
-        deleteCanvasNode: (id: string) => Promise<void>;
-        saveCanvasEdges: (edges: unknown[]) => Promise<void>;
-        getCanvasEdges: () => Promise<unknown[]>;
-        deleteCanvasEdge: (id: string) => Promise<void>;
-        health: () => Promise<unknown>;
-    };
-
     orchestrator: {
         start: (task: string, workspaceId?: string) => Promise<string>;
         approve: (plan: WorkspaceStep[]) => Promise<void>;
         getState: () => Promise<OrchestratorState>;
         stop: () => Promise<void>;
         onUpdate: (callback: (state: OrchestratorState) => void) => () => void;
+    };
+
+    session: {
+        conversation: import('./session-conversation').SessionConversationApi;
+        automation: import('./session-domain-apis').SessionAutomationApi;
+        workspace: import('./session-domain-apis').SessionWorkspaceApi;
+        council: import('./session-domain-apis').SessionCouncilApi;
+        getState: (sessionId: string) => Promise<SessionState | null>;
+        list: () => Promise<SessionRecoverySnapshot[]>;
+        listCapabilities: () => Promise<SessionCapabilityDescriptor[]>;
+        health: () => Promise<{ status: 'ready'; activeSessions: number }>;
+        onEvent: (callback: (event: SessionEventEnvelope) => void) => () => void;
     };
 
     extension: {
@@ -1229,16 +1123,6 @@ export interface ElectronAPI {
         readText: () => Promise<string>;
     };
 
-    workflow: {
-        getAll: () => Promise<unknown[]>;
-        get: (id: string) => Promise<unknown>;
-        create: (workflow: unknown) => Promise<unknown>;
-        update: (id: string, updates: unknown) => Promise<unknown>;
-        delete: (id: string) => Promise<boolean>;
-        execute: (id: string, context?: unknown) => Promise<unknown>;
-        triggerManual: (triggerId: string, context?: unknown) => Promise<unknown>;
-    };
-
     modelDownloader: {
         start: (request: unknown) => Promise<string>;
         pause: (downloadId: string) => Promise<void>;
@@ -1259,4 +1143,67 @@ export interface ElectronAPI {
         getCategories: () => Promise<string[]>;
         getTags: () => Promise<string[]>;
     };
+
+    sharedPrompts: {
+        list: (filter?: {
+            query?: string;
+            category?: string;
+            tags?: string[];
+            limit?: number;
+            offset?: number;
+        }) => Promise<Array<{
+            id: string;
+            title: string;
+            content: string;
+            category: string;
+            tags: string[];
+            author: string;
+            createdAt: number;
+            updatedAt: number;
+        }>>;
+        create: (input: {
+            title: string;
+            content: string;
+            category?: string;
+            tags?: string[];
+            author?: string;
+        }) => Promise<{
+            id: string;
+            title: string;
+            content: string;
+            category: string;
+            tags: string[];
+            author: string;
+            createdAt: number;
+            updatedAt: number;
+        }>;
+        update: (id: string, input: {
+            title?: string;
+            content?: string;
+            category?: string;
+            tags?: string[];
+            author?: string;
+        }) => Promise<{
+            id: string;
+            title: string;
+            content: string;
+            category: string;
+            tags: string[];
+            author: string;
+            createdAt: number;
+            updatedAt: number;
+        } | undefined>;
+        delete: (id: string) => Promise<boolean>;
+        export: (filePath?: string) => Promise<{ success: boolean; path?: string; data?: string }>;
+        import: (filePathOrJson: string, isFilePath?: boolean) => Promise<{ success: boolean; imported: number }>;
+    };
+
+    userCollaboration: {
+        joinRoom: (params: JoinCollaborationRoom) => Promise<CollaborationResponse>;
+        leaveRoom: (roomId: string) => Promise<CollaborationResponse>;
+        sendUpdate: (params: CollaborationSyncUpdate) => Promise<CollaborationResponse>;
+        onSyncUpdate: (callback: (payload: { roomId: string; data: string }) => void) => () => void;
+        onError: (callback: (payload: { roomId: string; error: string }) => void) => () => void;
+    };
+    liveCollaboration: ElectronAPI['userCollaboration'];
 }

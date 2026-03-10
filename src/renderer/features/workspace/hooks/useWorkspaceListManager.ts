@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
-import { Folder, TerminalTab,Workspace } from '@/types';
+import { Folder, TerminalTab, Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 // PERF-002-1: Consolidate related state to reduce re-renders
@@ -109,11 +109,11 @@ export function useWorkspaceListManager() {
     }, [loadWorkspaces]);
 
     useEffect(() => {
-        const handleWorkspaceUpdated = (_event: unknown, _data?: { id?: string }) => {
+        const handleWorkspaceUpdated = (_payload: { id?: string }) => {
             void loadWorkspacesRef.current();
         };
 
-        const unsubscribe = window.electron.ipcRenderer.on('workspace:updated', handleWorkspaceUpdated);
+        const unsubscribe = window.electron.db.onWorkspaceUpdated(handleWorkspaceUpdated);
         return () => {
             unsubscribe();
         };

@@ -42,6 +42,14 @@ describe('IpcProvider', () => {
         const base = window.electron ?? webElectronMock;
         window.electron = {
             ...base,
+            liveCollaboration: {
+                ...base.liveCollaboration,
+                joinRoom: mockJoinRoom,
+                leaveRoom: mockLeaveRoom,
+                sendUpdate: mockSendUpdate,
+                onSyncUpdate: mockOnSyncUpdate,
+                onError: mockOnError,
+            },
             userCollaboration: {
                 ...base.userCollaboration,
                 joinRoom: mockJoinRoom,

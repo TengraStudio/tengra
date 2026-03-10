@@ -1,5 +1,4 @@
 import { registerCodeIntelligenceIpc } from '@main/ipc/code-intelligence';
-import { registerMcpMarketplaceHandlers } from '@main/ipc/mcp-marketplace';
 import { registerProcessIpc } from '@main/ipc/process';
 import { ipcMain } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -55,50 +54,6 @@ describe('IPC Handler Coverage', () => {
         const ok = await spawn?.(mockEvent, 'npm', ['run', 'test'], 'C:/repo');
         expect(ok).toBe('task-1');
         expect(processService.spawn).toHaveBeenCalledWith('npm', ['run', 'test'], 'C:/repo');
-    });
-
-    it('enforces validated wrapper behavior for mcp marketplace handlers', async () => {
-        const handlers = getRegisteredHandlers();
-        const marketplaceService = {
-            listServers: vi.fn(async () => [{ id: 'srv-1', name: 'Srv', command: 'npx srv', description: 'd' }]),
-            searchServers: vi.fn(async () => [{ id: 'srv-1' }]),
-            filterByCategory: vi.fn(async () => []),
-            getCategories: vi.fn(async () => ['dev']),
-            refreshCache: vi.fn(async () => undefined),
-        };
-        const settingsService = {
-            getSettings: vi.fn(() => ({ mcpUserServers: [] })),
-            saveSettings: vi.fn(async () => undefined),
-        };
-        const pluginService = {
-            listPlugins: vi.fn(async () => []),
-            getDispatchMetrics: vi.fn(() => ({ totalDispatches: 0 })),
-        };
-
-
-        const mockEvent = {
-            sender: { id: 1 }
-        } as any;
-
-        registerMcpMarketplaceHandlers(
-            marketplaceService as any,
-            settingsService as any,
-            pluginService as any
-        );
-
-
-
-        const search = handlers.get('mcp:marketplace:search');
-        const list = handlers.get('mcp:marketplace:list');
-        expect(search).toBeDefined();
-        expect(list).toBeDefined();
-
-        const invalidSearch = await search?.(mockEvent, '');
-        expect(invalidSearch).toMatchObject({ success: false });
-        expect(marketplaceService.searchServers).not.toHaveBeenCalled();
-
-        const listResult = await list?.(mockEvent);
-        expect(listResult).toMatchObject({ success: true, servers: expect.any(Array) });
     });
 
     it('uses default fallback values for validated code intelligence handlers', async () => {

@@ -1,11 +1,41 @@
 import { Check, Copy, ExternalLink, Play, Save, Square, Volume2, VolumeX } from 'lucide-react';
+import { Highlight, themes } from 'prism-react-renderer';
 import React, { memo, useState } from 'react';
 
-import { CodeEditor } from '@/components/ui/CodeEditor';
 import { Language, useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 import { normalizeLanguage } from '@/utils/language-map';
+
+const PRISM_LANGUAGE_ALIASES: Record<string, string> = {
+    plaintext: 'text',
+    shell: 'bash',
+    zsh: 'bash',
+    dockerfile: 'docker',
+    mysql: 'sql',
+    pgsql: 'sql',
+    'objective-c': 'objectivec',
+    mdx: 'jsx',
+};
+
+const PRISM_SUPPORTED_LANGUAGES = new Set([
+    'bash', 'c', 'cpp', 'csharp', 'css', 'diff', 'docker', 'go', 'graphql',
+    'html', 'ini', 'java', 'javascript', 'json', 'jsx', 'kotlin', 'less',
+    'lua', 'markdown', 'objectivec', 'perl', 'php', 'powershell', 'python',
+    'ruby', 'rust', 'scala', 'sql', 'swift', 'text', 'tsx', 'typescript',
+    'xml', 'yaml',
+]);
+
+const getHighlightLanguage = (language: string): string => {
+    const lowerLanguage = language.toLowerCase().trim();
+    const normalizedLanguage = normalizeLanguage(language);
+    const prismLanguage =
+        PRISM_LANGUAGE_ALIASES[lowerLanguage] ??
+        PRISM_LANGUAGE_ALIASES[normalizedLanguage] ??
+        normalizedLanguage;
+
+    return PRISM_SUPPORTED_LANGUAGES.has(prismLanguage) ? prismLanguage : 'text';
+};
 
 interface MonacoBlockProps {
     language: string;
@@ -43,14 +73,17 @@ export const MonacoBlock = memo<MonacoBlockProps>(
 
         const lines = code.split('\n').length;
         const height = Math.min(Math.max(lines * 19 + 20, 100), 600);
+        const normalizedLanguage = normalizeLanguage(language);
+        const highlightLanguage = getHighlightLanguage(language);
         const canExecute = [
             'javascript',
             'typescript',
             'python',
+            'shell',
             'sh',
             'bash',
             'powershell',
-        ].includes(normalizeLanguage(language));
+        ].includes(normalizedLanguage);
 
         return (
             <div className="not-prose my-4 rounded-xl overflow-hidden border border-border/30 bg-card group/code transition-all duration-300 shadow-xl relative">
@@ -64,14 +97,31 @@ export const MonacoBlock = memo<MonacoBlockProps>(
                     t={t}
                 />
                 <div style={{ height: `${height}px` }} className="relative w-full overflow-hidden">
-                    <CodeEditor
-                        value={code}
-                        language={normalizeLanguage(language)}
-                        readOnly={true}
-                        showMinimap={lines > 25}
-                        fontSize={13}
-                        className="bg-card"
-                    />
+                    <Highlight theme={themes.vsDark} code={code} language={highlightLanguage}>
+                        {({ style, tokens, getLineProps, getTokenProps }) => (
+                            <pre
+                                className="m-0 h-full overflow-auto bg-card p-4 text-sm leading-relaxed"
+                                style={style}
+                            >
+                                {tokens.map((line, index) => (
+                                    <div
+                                        key={index}
+                                        {...getLineProps({ line })}
+                                        className="flex min-w-max"
+                                    >
+                                        <span className="mr-4 inline-block w-6 shrink-0 select-none text-right text-xs text-muted-foreground/30">
+                                            {index + 1}
+                                        </span>
+                                        <div className="flex-1">
+                                            {line.map((token, tokenIndex) => (
+                                                <span key={tokenIndex} {...getTokenProps({ token })} />
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </pre>
+                        )}
+                    </Highlight>
                     <FloatingActions
                         canExecute={canExecute}
                         isExecuting={isExecuting}

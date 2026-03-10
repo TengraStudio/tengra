@@ -171,7 +171,7 @@ export function useChatInputController() {
     }, [groupedModels, getFallbackModel]);
 
     const callEnhanceLlm = useCallback(async (m: string, p: string) => {
-        const res = await window.electron.chatOpenAI({
+        const res = await window.electron.session.conversation.complete({
             messages: [
                 {
                     id: '1',

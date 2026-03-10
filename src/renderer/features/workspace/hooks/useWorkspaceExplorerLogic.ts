@@ -41,7 +41,7 @@ export function useWorkspaceExplorerLogic(
             try {
                 const result =
                     mount.type === 'local'
-                        ? await window.electron.listDirectory(mount.rootPath)
+                        ? await window.electron.files.listDirectory(mount.rootPath)
                         : await window.electron.ssh.listDir(mount.id, mount.rootPath);
                 if (result.success) {
                     const anyResult = result as {

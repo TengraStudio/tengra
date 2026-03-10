@@ -7,7 +7,7 @@ const sectionData = {
     "analyze": {
         "title": "Analiz Et",
         "description": "Dosya ve verileri incele.",
-        "prompt": "Bu projedeki mimari yapıyı analiz edip geliştirme önerileri sunar mısın?"
+        "prompt": "Bu çalışma alanındaki mimari yapıyı analiz edip geliştirme önerileri sunar mısın?"
     },
     "creative": {
         "title": "Yaratıcı Yazım",

@@ -1,4 +1,4 @@
-import { WorkspaceStep, WorkspaceStepStatus } from '@shared/types/workspace-agent';
+import { WorkspaceStep, WorkspaceStepStatus } from '@shared/types/automation-workflow';
 
 export class TaskStateMachine {
     getPendingDependencyIds(plan: WorkspaceStep[], index: number): string[] {
@@ -45,3 +45,4 @@ export class TaskStateMachine {
         plan[stepIndex].status = status;
     }
 }
+

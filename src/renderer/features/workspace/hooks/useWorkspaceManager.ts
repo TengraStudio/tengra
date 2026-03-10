@@ -71,47 +71,9 @@ function useMountState(workspace: Workspace): [WorkspaceMount[], (mounts: Worksp
     return [mounts, setMounts];
 }
 
-// Helper hook for SSH mount status sync
-function useMountStatusSync(
-    mounts: WorkspaceMount[]
-): Record<string, 'connected' | 'disconnected' | 'connecting'> {
-    const [mountStatus, setMountStatus] = useState<
-        Record<string, 'connected' | 'disconnected' | 'connecting'>
-    >({});
-
-    useEffect(() => {
-        let cancelled = false;
-        const syncStatus = async () => {
-            const next: Record<string, 'connected' | 'disconnected' | 'connecting'> = {};
-            for (const mount of mounts) {
-                if (mount.type === 'local') {
-                    next[mount.id] = 'connected';
-                } else {
-                    try {
-                        const isConnected = await window.electron.ssh.isConnected(mount.id);
-                        next[mount.id] = isConnected ? 'connected' : 'disconnected';
-                    } catch {
-                        next[mount.id] = 'disconnected';
-                    }
-                }
-            }
-            if (!cancelled) {
-                setMountStatus(next);
-            }
-        };
-        void syncStatus();
-        return () => {
-            cancelled = true;
-        };
-    }, [mounts]);
-
-    return mountStatus;
-}
-
 // Helper hook for SSH operations
 function useSSHOperations(
     notify: (type: 'success' | 'error' | 'info', message: string) => void,
-    mountStatus: Record<string, 'connected' | 'disconnected' | 'connecting'>,
     t: (key: string) => string
 ) {
     const MAX_CONNECT_RETRIES = 3;
@@ -145,9 +107,6 @@ function useSSHOperations(
             }
             if (!validateSSHMount(mount)) {
                 return false;
-            }
-            if (mountStatus[mount.id] === 'connected') {
-                return true;
             }
 
             const sshConfig = mount.ssh;
@@ -188,7 +147,7 @@ function useSSHOperations(
             notify('error', lastError);
             return false;
         },
-        [mountStatus, notify, t, validateSSHMount, waitFor]
+        [notify, t, validateSSHMount, waitFor]
     );
 
     return { ensureMountReady };
@@ -233,7 +192,7 @@ async function readCodeFile(
 ): Promise<{ content: string; type: 'code' | 'image'; result: ServiceResponse<string> }> {
     const result =
         mount.type === 'local'
-            ? await window.electron.readFile(filePath)
+            ? await window.electron.files.readFile(filePath)
             : await window.electron.ssh.readFile(mount.id, filePath);
     const content = result.success ? extractContentFromResult(result) : '';
 
@@ -322,7 +281,7 @@ function useFileOperations(
             }
             const result =
                 targetMount.type === 'local'
-                    ? await window.electron.writeFile(path, '')
+                    ? await window.electron.files.writeFile(path, '')
                     : await window.electron.ssh.writeFile(targetMount.id, path, '');
             if (result.success) {
                 setRefreshSignal(s => s + 1);
@@ -343,7 +302,7 @@ function useFileOperations(
             }
             const result =
                 targetMount.type === 'local'
-                    ? await window.electron.createDirectory(path)
+                    ? await window.electron.files.createDirectory(path)
                     : await window.electron.ssh.mkdir(targetMount.id, path);
             if (result.success) {
                 setRefreshSignal(s => s + 1);
@@ -371,7 +330,7 @@ function useFileOperations(
             const newPath = parentPath ? `${parentPath}${separator}${newName}` : newName;
             const result =
                 mount.type === 'local'
-                    ? await window.electron.renamePath(entry.path, newPath)
+                    ? await window.electron.files.renamePath(entry.path, newPath)
                     : await window.electron.ssh.rename(mount.id, entry.path, newPath);
             if (result.success) {
                 setRefreshSignal(s => s + 1);
@@ -393,8 +352,8 @@ function useFileOperations(
             const result =
                 mount.type === 'local'
                     ? entry.isDirectory
-                        ? await window.electron.deleteDirectory(entry.path)
-                        : await window.electron.deleteFile(entry.path)
+                        ? await window.electron.files.deleteDirectory(entry.path)
+                        : await window.electron.files.deleteFile(entry.path)
                     : entry.isDirectory
                         ? await window.electron.ssh.deleteDir(mount.id, entry.path)
                         : await window.electron.ssh.deleteFile(mount.id, entry.path);
@@ -425,7 +384,7 @@ function useFileOperations(
 
             const result =
                 mount.type === 'local'
-                    ? await window.electron.renamePath(entry.path, newPath)
+                    ? await window.electron.files.renamePath(entry.path, newPath)
                     : await window.electron.ssh.rename(mount.id, entry.path, newPath);
 
             if (result.success) {
@@ -637,8 +596,7 @@ function useTabManagement(workspaceId: string) {
  */
 export function useWorkspaceManager({ workspace, notify, logActivity, t }: UseWorkspaceManagerProps) {
     const [mounts, setMounts] = useMountState(workspace);
-    const mountStatus = useMountStatusSync(mounts);
-    const { ensureMountReady } = useSSHOperations(notify, mountStatus, t);
+    const { ensureMountReady } = useSSHOperations(notify, t);
     const {
         createFile,
         createFolder,
@@ -758,7 +716,7 @@ export function useWorkspaceManager({ workspace, notify, logActivity, t }: UseWo
 
         const result =
             mount.type === 'local'
-                ? await window.electron.writeFile(activeTabData.path, activeTabData.content)
+                ? await window.electron.files.writeFile(activeTabData.path, activeTabData.content)
                 : await window.electron.ssh.writeFile(
                     mount.id,
                     activeTabData.path,
@@ -837,7 +795,6 @@ export function useWorkspaceManager({ workspace, notify, logActivity, t }: UseWo
 
     return {
         mounts,
-        mountStatus,
         openTabs,
         activeTabId,
         setActiveEditorTabId,

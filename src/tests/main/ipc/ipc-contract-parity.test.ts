@@ -8,7 +8,7 @@ const IPC_DIR = path.join(SRC_ROOT, 'main', 'ipc');
 const PRELOAD_FILE = path.join(SRC_ROOT, 'main', 'preload.ts');
 const PRELOAD_DOMAINS_DIR = path.join(SRC_ROOT, 'main', 'preload', 'domains');
 const SHARED_CHANNELS_FILE = path.join(SRC_ROOT, 'shared', 'constants', 'ipc-channels.ts');
-const IPC_INDEX_FILE = path.join(SRC_ROOT, 'main', 'ipc', 'index.ts');
+const STARTUP_IPC_FILE = path.join(SRC_ROOT, 'main', 'startup', 'ipc.ts');
 
 function getTypeScriptFiles(dirPath: string): string[] {
     return fs.readdirSync(dirPath)
@@ -111,7 +111,7 @@ function getValidatedHandlerFiles(): string[] {
 }
 
 function getRegistrationImportsAndCalls(): { imports: string[]; calls: string[] } {
-    const content = fs.readFileSync(IPC_INDEX_FILE, 'utf8');
+    const content = fs.readFileSync(STARTUP_IPC_FILE, 'utf8');
     const imports: string[] = [];
     const calls: string[] = [];
     const importRegex = /import \{([^}]+)\} from '@main\/ipc\/[^']+'/g;
@@ -203,13 +203,13 @@ describe('SAFE-005 IPC contract parity', () => {
         ).toHaveLength(0);
     });
 
-    it('keeps registerAllIpc imports and registrations synchronized', () => {
+    it('keeps registerIpcHandlers imports and registrations synchronized', () => {
         const { imports, calls } = getRegistrationImportsAndCalls();
         const missingCalls = imports.filter(imported => !calls.includes(imported));
 
         expect(
             missingCalls,
-            `Imported register functions in ipc/index.ts not called by registerAllIpc: ${missingCalls.join(', ')}`
+            `Imported register functions in startup/ipc.ts not called by registerIpcHandlers: ${missingCalls.join(', ')}`
         ).toHaveLength(0);
     });
 });

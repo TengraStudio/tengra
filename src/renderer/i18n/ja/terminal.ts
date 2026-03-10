@@ -43,7 +43,7 @@ const sectionData = {
     "runTask": "タスクの実行",
     "taskRunner": "タスクランナー",
     "tasksSearchPlaceholder": "タスクを検索...",
-    "noTasksFound": "このプロジェクトのタスクが見つかりませんでした",
+    "noTasksFound": "このワークスペースのタスクが見つかりませんでした",
     "closeSplit": "分割を閉じる",
     "toggleSplitOrientation": "分割方向の切り替え",
     "searchRegex": "正規表現検索",
@@ -85,13 +85,13 @@ const sectionData = {
     "copyStripAnsi": "コピー (ANSI をストリップ)",
     "pastePreview": "プレビューの貼り付け",
     "pasteTest": "テストペースト",
-    "workspaceIssuesTabTitle": "プロジェクトの問題",
-    "workspaceIssuesTitle": "プロジェクトの警告とエラー",
-    "workspaceIssuesDescription": "現在のプロジェクト全体で検出された警告とエラーの集約。",
-    "workspaceIssuesLoading": "プロジェクト診断を更新しています...",
-    "workspaceIssuesNoWorkspace": "プロジェクトを開いて診断を検査します。",
+    "workspaceIssuesTabTitle": "ワークスペースの問題",
+    "workspaceIssuesTitle": "ワークスペースの警告とエラー",
+    "workspaceIssuesDescription": "現在のワークスペース全体で検出された警告とエラーの集約。",
+    "workspaceIssuesLoading": "ワークスペース診断を更新しています...",
+    "workspaceIssuesNoWorkspace": "ワークスペースを開いて診断を検査します。",
     "workspaceIssuesNoIssues": "最新のスキャンでは警告やエラーは検出されませんでした。",
-    "workspaceIssuesLoadFailed": "プロジェクト診断のロードに失敗しました。"
+    "workspaceIssuesLoadFailed": "ワークスペース診断のロードに失敗しました。"
 };
 
 export default sectionData;

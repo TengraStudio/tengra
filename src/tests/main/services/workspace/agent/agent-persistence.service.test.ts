@@ -1,4 +1,4 @@
-import { AgentPersistenceService } from '@main/services/workspace/agent/agent-persistence.service';
+import { AgentPersistenceService } from '@main/services/workspace/automation-workflow/agent-persistence.service';
 import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { AgentTaskState } from '@shared/types/agent-state';
 import { beforeEach,describe, expect, it, vi } from 'vitest';
@@ -128,5 +128,15 @@ describe('AgentPersistenceService', () => {
         expect(loadedTask).toBeDefined();
         expect(loadedTask?.taskId).toBe('task-123');
         expect(loadedTask?.state).toBe('idle');
+    });
+
+    it('should repair legacy agent_tasks state column during migrations', async () => {
+        mockAll.mockResolvedValueOnce([{ name: 'agent_tasks' }]);
+
+        await service.runMigrations();
+
+        expect(mockExec).toHaveBeenCalledWith(
+            expect.stringContaining('ALTER TABLE agent_tasks ADD COLUMN state TEXT NOT NULL DEFAULT')
+        );
     });
 });

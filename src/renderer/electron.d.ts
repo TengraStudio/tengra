@@ -7,53 +7,11 @@ import type {
 import type { AppSettings } from '@shared/types';
 import type { IpcRendererEvent } from 'electron';
 
-// Marketplace model from database
-export interface DbMarketplaceModel {
-    id: string;
-    name: string;
-    provider: 'ollama' | 'huggingface';
-    pulls?: string;
-    tagCount: number;
-    lastUpdated?: string;
-    categories: string[];
-    shortDescription?: string;
-    downloads?: number;
-    likes?: number;
-    author?: string;
-    createdAt: number;
-    updatedAt: number;
-}
-
-export interface OllamaMarketplaceModelDetails {
-    name: string;
-    shortDescription: string;
-    longDescriptionHtml: string;
-    versions: Array<{
-        version: string;
-        size: string;
-        maxContext: string;
-        inputType: string;
-        digest: string;
-    }>;
-}
-
-export interface HuggingFaceMarketplaceModelDetails {
-    name: string;
-    shortDescription: string;
-    longDescriptionMarkdown: string;
-}
-
-export type MarketplaceModelDetails =
-    | OllamaMarketplaceModelDetails
-    | HuggingFaceMarketplaceModelDetails;
-
 import {
     AgentDefinition,
     AgentStartOptions,
     AppSettings,
     Chat,
-    ChatRequest,
-    ChatStreamRequest,
     ClaudeQuota,
     CopilotQuota,
     EntityKnowledge,
@@ -86,7 +44,6 @@ import {
     SSHTransferTask,
     SSHTunnelPreset,
     TodoFile,
-    ToolCall,
     ToolDefinition,
     ToolResult,
     Workspace,
@@ -194,7 +151,7 @@ export interface TokenData {
  * const settings = await window.electron.getSettings()
  *
  * // Send a chat message
- * await window.electron.chatStream(messages, model, tools, provider, options, chatId)
+ * await window.electron.session.conversation.stream({ messages, model, tools, provider, options, chatId })
  * ```
  */
 import type { ElectronApiIntegrationsDomain } from '@renderer/electron-api/electron-api-integrations';
@@ -419,26 +376,6 @@ export interface ElectronAPI {
     ) => Promise<{ stdout: string; stderr: string; code: number }>;
     git: ElectronApiWorkspaceSystemDomain['git'];
     getModels: () => Promise<ModelDefinition[] | { antigravityError?: string }>;
-    chat: (messages: Message[], model: string) => Promise<{ content: string }>;
-    chatOpenAI: (request: ChatRequest) => Promise<IpcValue>;
-    chatStream: (request: ChatStreamRequest) => Promise<void>;
-    abortChat: (chatId?: string) => void;
-    onStreamChunk: (
-        callback: (chunk: {
-            content?: string;
-            toolCalls?: ToolCall[];
-            reasoning?: string;
-            done?: boolean;
-        }) => void
-    ) => () => void;
-    removeStreamChunkListener: (
-        callback?: (chunk: {
-            content?: string;
-            toolCalls?: ToolCall[];
-            reasoning?: string;
-            done?: boolean;
-        }) => void
-    ) => void;
 
     // Ollama management
     isOllamaRunning: () => Promise<boolean>;
@@ -462,14 +399,10 @@ export interface ElectronAPI {
     forceOllamaHealthCheck: () => Promise<{ status: 'ok' | 'error' }>;
     checkCuda: () => Promise<{ hasCuda: boolean; detail?: string }>;
     onOllamaStatusChange: (callback: (status: { status: string }) => void) => void;
-    onChatGenerationStatus: (
-        callback: (data: { chatId?: string; isGenerating?: boolean }) => void
-    ) => () => void;
     onAgentEvent: (callback: (payload: unknown) => void) => () => void;
     onSdCppStatus: (callback: (data: unknown) => void) => () => void;
     onSdCppProgress: (callback: (data: unknown) => void) => () => void;
     modelDownloader: ElectronApiModelsMemoryDomain['modelDownloader'];
-    marketplace: ElectronApiModelsMemoryDomain['marketplace'];
     llama: ElectronApiModelsMemoryDomain['llama'];
     sdCpp: ElectronApiModelsMemoryDomain['sdCpp'];
     clipboard: ElectronApiWorkspaceSystemDomain['clipboard'];
@@ -477,6 +410,7 @@ export interface ElectronAPI {
     terminal: ElectronApiIntegrationsDomain['terminal'];
     agent: ElectronApiIntegrationsDomain['agent'];
     modelRegistry: ElectronApiIntegrationsDomain['modelRegistry'];
+    session: ElectronApiIntegrationsDomain['session'];
     ssh: ElectronApiIntegrationsDomain['ssh'];
     executeTools: (
         toolName: string,
@@ -488,7 +422,6 @@ export interface ElectronAPI {
 
     // MCP
     mcp: ElectronApiIntegrationsDomain['mcp'];
-    mcpMarketplace: ElectronApiIntegrationsDomain['mcpMarketplace'];
     proxyEmbed: ElectronApiIntegrationsDomain['proxyEmbed'];
     captureScreenshot: () => Promise<{ success: boolean; image?: string; error?: string }>;
 
@@ -549,6 +482,7 @@ export interface ElectronAPI {
 
     update: ElectronApiIntegrationsDomain['update'];
     collaboration: ElectronApiIntegrationsDomain['collaboration'];
+    modelCollaboration: ElectronApiIntegrationsDomain['modelCollaboration'];
     audit: ElectronApiIntegrationsDomain['audit'];
     memory: ElectronApiModelsMemoryDomain['memory'];
     advancedMemory: ElectronApiModelsMemoryDomain['advancedMemory'];
@@ -561,16 +495,17 @@ export interface ElectronAPI {
         listener: (event: IpcRendererEvent, ...args: IpcValue[]) => void
     ) => () => void;
 
-    workspaceAgent: ElectronApiIntegrationsDomain['workspaceAgent'];
     orchestrator: ElectronApiIntegrationsDomain['orchestrator'];
+    session: ElectronApiIntegrationsDomain['session'];
     metrics: ElectronApiIntegrationsDomain['metrics'];
     usage: ElectronApiIntegrationsDomain['usage'];
-    workflow: ElectronApiIntegrationsDomain['workflow'];
     voice: ElectronApiIntegrationsDomain['voice'];
     extension: ElectronApiIntegrationsDomain['extension'];
     codeSandbox: ElectronApiIntegrationsDomain['codeSandbox'];
     promptTemplates: ElectronApiIntegrationsDomain['promptTemplates'];
+    sharedPrompts: ElectronApiIntegrationsDomain['sharedPrompts'];
     userCollaboration: ElectronApiIntegrationsDomain['userCollaboration'];
+    liveCollaboration: ElectronApiIntegrationsDomain['liveCollaboration'];
 }
 
 declare global {

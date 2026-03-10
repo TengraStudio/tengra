@@ -2,7 +2,7 @@ const sectionData = {
     "commitGenerator": "مولد التزامات Git",
     "generatorSubtitle": "اقتراحات رسائل الالتزام بالذكاء الاصطناعي",
     "generate": "توليد",
-    "selectWorkspace": "اختر مشروعاً لتوليد رسائل الالتزام",
+    "selectWorkspace": "اختر مساحة عملاً لتوليد رسائل الالتزام",
     "suggestedMessage": "رسالة الالتزام المقترحة",
     "stagedChanges": "معاينة التغييرات المرحّلة",
     "noStagedChanges": "لم يتم العثور على تغييرات مرحّلة. استخدم `git add` لترحيل التغييرات أولاً.",

@@ -83,15 +83,13 @@ const sectionData = {
         "title": "Model Context Protocol",
         "subtitle": "MCP-Server verwalten und neue Tools installieren",
         "tabs": {
-            "servers": "Server",
-            "marketplace": "Marketplace"
+            "servers": "Server"
         },
         "servers": {
             "title": "Konfigurierte Server",
             "subtitle": "Verwalten Sie Ihre Model-Context-Protocol-Serververbindungen",
             "connect": "Server verbinden",
             "empty": "Keine Server verbunden",
-            "emptyHint": "Installieren Sie Server über die Registerkarte „Marktplatz“.",
             "enabled": "ermöglicht",
             "note": "Notiz",
             "noteText": "Für KI-Assistenten sind nur aktivierte Server zugänglich. Betätigen Sie den Netzschalter, um jeden Server zu aktivieren/deaktivieren.",
@@ -121,7 +119,6 @@ const sectionData = {
         "images": "Bilder",
         "mcpServers": "MCP Server",
         "accessibility": "Zugänglichkeit",
-        "mcpMarketplace": "MCP Marktplatz"
     },
     "accessibility": {
         "title": "Zugänglichkeit",

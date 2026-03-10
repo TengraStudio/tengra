@@ -3,6 +3,7 @@ import { EventEmitter } from 'events';
 import * as http from 'http';
 
 import { appLogger } from '@main/logging/logger';
+import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { withRetry } from '@main/utils/retry.util';
 import { SERVICE_DEFAULTS } from '@shared/constants/defaults';
@@ -154,9 +155,11 @@ export class OllamaService {
     };
     private lastGPUCheck: Date = new Date();
     private gpuMonitoringInterval: NodeJS.Timeout | null = null;
+    private eventBusService: EventBusService;
 
-    constructor(settingsService: SettingsService) {
+    constructor(settingsService: SettingsService, eventBusService: EventBusService) {
         this.settingsService = settingsService;
+        this.eventBusService = eventBusService;
         const settings = this.settingsService.getSettings();
         if (settings.ollama.url) {
             try {
@@ -170,6 +173,14 @@ export class OllamaService {
 
         // Initialize connection pool
         this.initializeConnectionPool();
+
+        // Register hibernation listeners
+        this.eventBusService.onCustom('power:hibernation-start', () => this.stopGPUMonitoring());
+        this.eventBusService.onCustom('power:hibernation-stop', () => {
+            // Only resume if it was supposed to be running
+            // For now, we'll just restart it with default interval
+            this.startGPUMonitoring();
+        });
     }
 
     abort() {
@@ -1042,12 +1053,21 @@ export class OllamaService {
     }
 
     /**
-     * Cleanup resources
+     * Release all held resources: GPU monitoring interval, event listeners, and connection pool.
+     * Called automatically by the DI container on shutdown.
      */
-    destroy(): void {
+    async cleanup(): Promise<void> {
         this.stopGPUMonitoring();
         this.gpuEventEmitter.removeAllListeners();
         this.connectionPool = [];
         appLogger.info('OllamaService', 'Service destroyed and resources cleaned up');
+    }
+
+    /**
+     * Legacy entry point — delegates to {@link cleanup} for backwards compatibility.
+     * @deprecated Prefer calling `cleanup()` directly.
+     */
+    destroy(): void {
+        void this.cleanup();
     }
 }

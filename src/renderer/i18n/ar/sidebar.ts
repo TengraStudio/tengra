@@ -47,8 +47,7 @@ const sectionData = {
     "active": "نشيط",
     "memory": "ذاكرة",
     "agent": "عامل",
-    "models": "نماذج",
-    "workflows": "سير العمل"
+    "models": "نماذج"
 };
 
 export default sectionData;

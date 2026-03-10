@@ -104,7 +104,7 @@ describe('Workspace IPC Integration', () => {
         const result = await handler?.(mockEvent, '/root', 'proj-1');
 
         expect(analyzeWorkspaceMock).toHaveBeenCalledWith('/root');
-        expect(vi.mocked(mockCodeIntelligenceService.indexWorkspace)).toHaveBeenCalledWith('/root', 'proj-1');
+        expect(vi.mocked(mockCodeIntelligenceService.indexWorkspace)).not.toHaveBeenCalled();
         expect(result).toMatchObject({
             success: true,
             data: mockResult

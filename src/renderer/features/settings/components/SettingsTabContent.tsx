@@ -70,7 +70,6 @@ export const SettingsTabContent: React.FC<SettingsTabContentProps> = ({
             />
         ),
         'mcp-servers': <MCPSettingsTab />,
-        'mcp-marketplace': <MCPSettingsTab />,
         images: <ImageSettingsTab {...sharedProps} />,
         gallery: (
             <div className="h-[75vh] min-h-[500px] border border-white/5 rounded-2xl overflow-hidden bg-black/20">

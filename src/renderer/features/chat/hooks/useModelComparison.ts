@@ -87,7 +87,7 @@ export function useModelComparison(): UseModelComparisonReturn {
         abortRef.current = false;
 
         try {
-            const response = await window.electron.collaboration.run({
+            const response = await window.electron.modelCollaboration.run({
                 messages: [{ id: 'cmp-1', role: 'user', content: prompt.trim(), timestamp: new Date() }],
                 models: selectedModels,
             });

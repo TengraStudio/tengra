@@ -1,12 +1,8 @@
 const sectionData = {
     "management": "MCP 管理",
     "myServers": "我的服务器",
-    "marketplace": "市场",
     "addServer": "添加服务器",
     "systemServers": "系统服务器",
-    "installedServers": "市场 / 已安装",
-    "discoverMarket": "探索市场",
-    "marketplaceSubtitle": "为您的平台探索上千个服务器。",
     "searchPlaceholder": "搜索服务器或工具...",
     "searchTools": "搜索工具...",
     "storeTitle": "MCP 工具商店",

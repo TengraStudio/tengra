@@ -120,7 +120,7 @@ describe('ChatInput', () => {
     it('renders chat input group and disabled send button when empty', () => {
         render(<ChatInput />);
 
-        expect(screen.getByRole('group', { name: 'Chat input' })).toBeInTheDocument();
+        expect(screen.getByRole('group', { name: 'aria.chatInput' })).toBeInTheDocument();
         expect(screen.getByRole('combobox', { name: 'input.placeholder.default' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'common.send' })).toBeDisabled();
 

@@ -1,8 +1,8 @@
-export type McpSettingsView = 'servers' | 'marketplace';
+export type McpSettingsView = 'servers';
 
 export function sanitizeMcpSettingsView(raw: unknown): McpSettingsView {
-    if (raw === 'servers' || raw === 'marketplace') {
+    if (raw === 'servers') {
         return raw;
     }
-    return 'marketplace';
+    return 'servers';
 }

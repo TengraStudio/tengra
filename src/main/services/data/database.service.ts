@@ -12,12 +12,12 @@ import { JobState } from '@main/services/system/job-scheduler.service';
 import { PromptTemplate } from '@main/utils/prompt-templates.util';
 import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { AdvancedSemanticFragment, PendingMemory } from '@shared/types/advanced-memory';
+import { AgentProfile } from '@shared/types/automation-workflow';
 import { IpcValue, JsonObject, JsonValue } from '@shared/types/common';
 import { DatabaseAdapter, SqlParams, SqlValue } from '@shared/types/database';
 import { DbDetailedStats, DbStats, DbTokenStats } from '@shared/types/db-api';
 import { FileDiff } from '@shared/types/file-diff';
 import { Workspace } from '@shared/types/workspace';
-import { AgentProfile } from '@shared/types/workspace-agent';
 import { AppErrorCode, TengraError, ValidationError } from '@shared/utils/error.util';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -323,9 +323,17 @@ export class DatabaseService extends BaseService {
             this._userBehavior = new UserBehaviorRepository(adapter);
 
             await this._uac.ensureTables();
+            await this._knowledge.ensureMemoryTables();
             await this._knowledge.ensureFileDiffTable();
             await this._system.ensureProductionIndexes();
             await this.ensureMigrationInfrastructure();
+            const chatRecovery = await this._chats.recoverInterruptedChats();
+            if (chatRecovery.recoveredChats > 0) {
+                appLogger.info(
+                    'DatabaseService',
+                    `Recovered interrupted chats: chats=${chatRecovery.recoveredChats}, deletedMessages=${chatRecovery.deletedMessages}, interruptedVariants=${chatRecovery.interruptedVariants}, interruptedToolMessages=${chatRecovery.interruptedToolMessages}`
+                );
+            }
             this.clearQueryAnalytics();
 
             appLogger.info('DatabaseService', 'Remote database connection complete!');
@@ -458,18 +466,27 @@ export class DatabaseService extends BaseService {
     private async trackQuery<T>(sql: string, params: SqlParams | undefined, executor: () => Promise<T>): Promise<T> {
         const startedAt = Date.now();
         const normalizedSql = this.normalizeSql(sql);
+        let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
         try {
             const result = await Promise.race([
                 executor(),
-                new Promise<T>((_, reject) =>
-                    setTimeout(() => reject(new Error(`Query timeout after ${this.queryTimeoutMs}ms`)), this.queryTimeoutMs)
-                )
+                new Promise<T>((_, reject) => {
+                    timeoutHandle = setTimeout(
+                        () => reject(new Error(`Query timeout after ${this.queryTimeoutMs}ms`)),
+                        this.queryTimeoutMs
+                    );
+                    if (timeoutHandle?.unref) { timeoutHandle.unref(); }
+                })
             ]);
             this.recordQueryMetrics(normalizedSql, params, Date.now() - startedAt);
             return result;
         } catch (error) {
             this.recordQueryMetrics(normalizedSql, params, Date.now() - startedAt);
             throw error;
+        } finally {
+            if (timeoutHandle !== null) {
+                clearTimeout(timeoutHandle);
+            }
         }
     }
 
@@ -1023,6 +1040,28 @@ export class DatabaseService extends BaseService {
     /** Checks whether the database contains any data. */
     async hasData(): Promise<boolean> { return true; }
 
+    private parseWorkspaceMountsJson(mountsJson?: string): JsonValue[] | undefined {
+        if (!mountsJson) {
+            return undefined;
+        }
+
+        const parsed = JSON.parse(mountsJson) as JsonValue;
+        return Array.isArray(parsed) ? parsed : undefined;
+    }
+
+    private parseWorkspaceCouncilConfigJson(councilConfigJson?: string): JsonObject | undefined {
+        if (!councilConfigJson) {
+            return undefined;
+        }
+
+        const parsed = JSON.parse(councilConfigJson) as JsonValue;
+        return this.isJsonObject(parsed) ? parsed : undefined;
+    }
+
+    private isJsonObject(value: JsonValue): value is JsonObject {
+        return typeof value === 'object' && value !== null && !Array.isArray(value);
+    }
+
     // Folders
     /** Retrieves all folders. */
     async getFolders() { return this._system.getFolders(); }
@@ -1049,13 +1088,28 @@ export class DatabaseService extends BaseService {
 
     // Workspaces
     /** Retrieves all workspaces. */
-    async getWorkspaces(): Promise<Workspace[]> { return this._workspaces.getWorkspaces(); }
+    async getWorkspaces(): Promise<Workspace[]> {
+        const workspaces = await this.dbClient.getWorkspaces();
+        return workspaces.map(workspace => this._workspaces.mapDbWorkspace(workspace));
+    }
     /** Retrieves a workspace by ID. */
-    async getWorkspace(id: string): Promise<Workspace | null | undefined> { return this._workspaces.getWorkspace(id); }
+    async getWorkspace(id: string): Promise<Workspace | null | undefined> {
+        const workspace = await this.dbClient.getWorkspace(id);
+        return workspace ? this._workspaces.mapDbWorkspace(workspace) : null;
+    }
     /** Checks whether a workspace path has indexed symbols. */
     async hasIndexedSymbols(workspacePath: string): Promise<boolean> { return this._workspaces.hasIndexedSymbols(workspacePath); }
     /** Creates a new workspace with the given title, path, description, and optional metadata. */
-    async createWorkspace(title: string, path: string, desc: string = '', m?: string, c?: string): Promise<Workspace> { return this._workspaces.createWorkspace(title, path, desc, m, c); }
+    async createWorkspace(title: string, path: string, desc: string = '', m?: string, c?: string): Promise<Workspace> {
+        const workspace = await this.dbClient.createWorkspace({
+            title,
+            path,
+            description: desc,
+            mounts: this.parseWorkspaceMountsJson(m),
+            council_config: this.parseWorkspaceCouncilConfigJson(c)
+        });
+        return this._workspaces.mapDbWorkspace(workspace);
+    }
     /** Updates a workspace by ID with the provided partial updates. */
     async updateWorkspace(id: string, updates: Partial<Workspace>): Promise<Workspace | undefined> { return this._workspaces.updateWorkspace(id, updates); }
     /** Deletes a workspace by ID, optionally removing associated files. */
@@ -1614,11 +1668,11 @@ export class DatabaseService extends BaseService {
 
     // --- Agent Template Methods ---
 
-    async getAgentTemplates(): Promise<import('@shared/types/workspace-agent').AgentTemplate[]> {
+    async getAgentTemplates(): Promise<import('@shared/types/automation-workflow').AgentTemplate[]> {
         return this._system.getAgentTemplates();
     }
 
-    async saveAgentTemplate(template: import('@shared/types/workspace-agent').AgentTemplate): Promise<void> {
+    async saveAgentTemplate(template: import('@shared/types/automation-workflow').AgentTemplate): Promise<void> {
         return this._system.saveAgentTemplate(template);
     }
 
@@ -1626,3 +1680,4 @@ export class DatabaseService extends BaseService {
         return this._system.deleteAgentTemplate(id);
     }
 }
+

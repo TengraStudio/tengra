@@ -17,62 +17,97 @@ export interface AgentMessage {
 export class CollaborationService {
     private wss: WebSocketServer | null = null;
     private clients: Map<string, WebSocket[]> = new Map(); // sessionId -> sockets
+    private takeoverClient: WebSocket | null = null;
+    private retryTimeout: ReturnType<typeof setTimeout> | null = null;
+    private retryGeneration = 0;
 
     constructor() {
         // We'll bind to a specific port, e.g., 3001
         this.initializeServer(3001);
     }
 
-    private initializeServer(port: number) {
+    private initializeServer(port: number): void {
         try {
-            // Attempt to start server
-            this.wss = new WebSocketServer({ port });
-
-            this.wss.on('error', (err: Error & { code?: string }) => {
-                if (err.code === 'EADDRINUSE') {
-                    appLogger.warn('collaboration.service', `[CollaborationService] Port ${port} in use. Attempting to close old instance...`);
-
-                    // Connect to the existing instance and tell it to die
-                    const client = new WebSocket(`ws://localhost:${port}`);
-
-                    client.on('open', () => {
-                        client.send(JSON.stringify({ type: 'shutdown', reason: 'New instance taking over' }));
-                        client.close();
-
-                        // Retry starting server after a short delay
-                        setTimeout(() => {
-                            try {
-                                this.wss = new WebSocketServer({ port });
-                                this.setupServerListeners();
-                                appLogger.info('collaboration.service', `[CollaborationService] Successfully took over port ${port}`);
-                            } catch (retryErr) {
-                                appLogger.error('collaboration.service', `[CollaborationService] Failed to bind port ${port} after shutdown attempt`, retryErr as Error);
-                            }
-                        }, 3000);
-                    });
-
-                    client.on('error', (connErr) => {
-                        appLogger.error('collaboration.service', `[CollaborationService] Failed to connect to existing instance on port ${port}`, connErr as Error);
-                    });
-                } else {
-                    appLogger.error('collaboration.service', '[CollaborationService] WebSocket server error', err);
-                }
-            });
-
-            this.setupServerListeners();
+            const server = new WebSocketServer({ port });
+            this.wss = server;
+            this.attachServerErrorHandler(server, port);
+            this.setupServerListeners(server);
             appLogger.info('collaboration.service', `[CollaborationService] WebSocket server started on port ${port}`);
-
         } catch (e) {
-            appLogger.error('collaboration.service', '[CollaborationService] Failed to initialize server', e as Error);
+            this.handleServerError(port, e as Error & { code?: string });
         }
     }
 
-    private setupServerListeners() {
-        if (!this.wss) {
+    private attachServerErrorHandler(server: WebSocketServer, port: number): void {
+        server.on('error', (error: Error & { code?: string }) => {
+            if (this.wss === server) {
+                this.handleServerError(port, error);
+            }
+        });
+    }
+
+    private handleServerError(port: number, error: Error & { code?: string }): void {
+        if (error.code !== 'EADDRINUSE') {
+            appLogger.error('collaboration.service', '[CollaborationService] WebSocket server error', error);
             return;
         }
 
-        this.wss.on('connection', (ws) => {
+        appLogger.warn('collaboration.service', `[CollaborationService] Port ${port} in use. Attempting takeover...`);
+        this.requestTakeover(port);
+    }
+
+    private requestTakeover(port: number): void {
+        if (this.takeoverClient !== null) {
+            this.takeoverClient.terminate();
+            this.takeoverClient = null;
+        }
+
+        const takeoverClient = new WebSocket(`ws://localhost:${port}`);
+        this.takeoverClient = takeoverClient;
+
+        takeoverClient.on('open', () => {
+            if (this.takeoverClient !== takeoverClient) {
+                return;
+            }
+
+            takeoverClient.send(JSON.stringify({ type: 'shutdown', reason: 'New instance taking over' }));
+            takeoverClient.close();
+            this.takeoverClient = null;
+            this.scheduleRetry(port);
+        });
+
+        takeoverClient.on('error', connErr => {
+            if (this.takeoverClient !== takeoverClient) {
+                return;
+            }
+            this.takeoverClient = null;
+            appLogger.error('collaboration.service', `[CollaborationService] Failed to connect to existing instance on port ${port}`, connErr as Error);
+        });
+    }
+
+    private scheduleRetry(port: number): void {
+        if (this.retryTimeout !== null) {
+            clearTimeout(this.retryTimeout);
+        }
+
+        const retryGeneration = ++this.retryGeneration;
+        this.retryTimeout = setTimeout(() => {
+            if (retryGeneration !== this.retryGeneration) {
+                return;
+            }
+
+            this.retryTimeout = null;
+
+            const staleServer = this.wss;
+            this.wss = null;
+            staleServer?.close();
+
+            this.initializeServer(port);
+        }, 3000);
+    }
+
+    private setupServerListeners(server: WebSocketServer): void {
+        server.on('connection', (ws) => {
             appLogger.info('collaboration.service', '[CollaborationService] New client connected');
 
             ws.on('message', (data) => {
@@ -84,13 +119,12 @@ export class CollaborationService {
                         appLogger.warn('collaboration.service', '[CollaborationService] Received shutdown signal from new instance. Quitting...');
 
                         // Close server immediately to free port
-                        if (this.wss) {
-                            this.wss.close(() => {
+                        if (this.wss === server) {
+                            this.wss = null;
+                            server.close(() => {
                                 appLogger.info('collaboration.service', '[CollaborationService] Server closed. Exiting app...');
                                 app.exit(0);
                             });
-                        } else {
-                            app.exit(0);
                         }
                         return;
                     }
@@ -153,5 +187,36 @@ export class CollaborationService {
                 ws.send(payload);
             }
         });
+    }
+
+    /**
+     * Releases all held resources: pending retry timer, takeover client,
+     * every tracked session socket, and the WebSocketServer itself.
+     */
+    public cleanup(): void {
+        this.retryGeneration += 1;
+        if (this.retryTimeout !== null) {
+            clearTimeout(this.retryTimeout);
+            this.retryTimeout = null;
+        }
+        if (this.takeoverClient !== null) {
+            this.takeoverClient.terminate();
+            this.takeoverClient = null;
+        }
+        for (const sockets of this.clients.values()) {
+            for (const ws of sockets) {
+                ws.terminate();
+            }
+        }
+        this.clients.clear();
+        if (this.wss !== null) {
+            const activeServer = this.wss;
+            this.wss = null;
+            activeServer.close();
+        }
+    }
+
+    public dispose(): void {
+        this.cleanup();
     }
 }

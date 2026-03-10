@@ -209,7 +209,6 @@ interface ModelSelectorCategoryListProps {
     onSelect: (provider: string, id: string, isMultiSelect: boolean) => void;
     toggleFavorite?: (modelId: string) => void;
     t: (key: string) => string;
-    compactRows?: boolean;
 }
 
 const CategoryRow: React.FC<{
@@ -273,7 +272,6 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
     onSelect,
     toggleFavorite,
     t,
-    compactRows: _compactRows,
 }) => {
     const [collapsedCategoryIds, setCollapsedCategoryIds] = React.useState<Set<string>>(
         () => new Set<string>()
@@ -313,13 +311,6 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
         });
     };
 
-    const recommendedModels = dedupe(
-        [...allModels]
-            .filter(model => model.lifecycle !== 'retired')
-            .sort((a, b) => scoreModelForMode(b, chatMode) - scoreModelForMode(a, chatMode))
-            .slice(0, 8)
-    );
-
     const deprecatedModels = dedupe(
         allModels.filter(model => model.lifecycle === 'deprecated' || model.lifecycle === 'retired')
     );
@@ -327,22 +318,6 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
 
     return (
         <>
-            {showCuratedSections && recommendedModels.length > 0 && (
-                <ModelSection
-                    title="Recommended"
-                    icon={<Sparkles className="w-3.5 h-3.5 text-primary" />}
-                    models={recommendedModels}
-                    selectedModels={selectedModels}
-                    selectedModel={selectedModel}
-                    selectedProvider={selectedProvider}
-                    onSelect={onSelect}
-                    toggleFavorite={toggleFavorite}
-                    t={t}
-                />
-            )}
-
-
-
             {showCuratedSections && favoriteModels.length > 0 && (
                 <ModelSection
                     title={t('common.favorites')}

@@ -57,7 +57,7 @@ const sectionData = {
     "numberOfLogos": "Number of Logos",
     "noImageModelsFound": "No image generation model is available right now. Connect a provider account or install a local image backend.",
     "recommendedImageModels": "Recommended image models",
-    "openImageMarketplace": "Open HF Marketplace",
+    "openImageModels": "Open HF Models",
     "openCivitai": "Open Civitai",
     "openStableDiffusionCpp": "Open stable-diffusion.cpp",
     "openOllamaLibrary": "Open Ollama Library",

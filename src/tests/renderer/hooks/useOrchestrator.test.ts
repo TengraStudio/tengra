@@ -41,6 +41,10 @@ describe('useOrchestrator', () => {
     it('fetches initial state on mount', async () => {
         const { result } = renderHook(() => useOrchestrator());
 
+        await act(async () => {
+            await Promise.resolve();
+        });
+
         await vi.waitFor(() => {
             expect(result.current.state).toEqual({ phase: 'idle' });
         });
@@ -58,6 +62,10 @@ describe('useOrchestrator', () => {
 
     it('updates state on IPC update', async () => {
         const { result } = renderHook(() => useOrchestrator());
+
+        await act(async () => {
+            await Promise.resolve();
+        });
 
         await vi.waitFor(() => {
             expect(result.current.state).not.toBeNull();
@@ -133,6 +141,10 @@ describe('useOrchestrator', () => {
         mockGetState.mockResolvedValueOnce({ phase: 'idle' }).mockResolvedValueOnce({ phase: 'executing' });
         const { result } = renderHook(() => useOrchestrator());
 
+        await act(async () => {
+            await Promise.resolve();
+        });
+
         await vi.waitFor(() => {
             expect(result.current.state).toEqual({ phase: 'idle' });
         });
@@ -146,6 +158,10 @@ describe('useOrchestrator', () => {
 
     it('does not update state after unmount', async () => {
         const { result, unmount } = renderHook(() => useOrchestrator());
+
+        await act(async () => {
+            await Promise.resolve();
+        });
 
         await vi.waitFor(() => {
             expect(result.current.state).not.toBeNull();

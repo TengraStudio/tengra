@@ -1,6 +1,9 @@
+export * from './automation-session';
 export * from './automation-workflow';
 export * from './electron-api.types';
-export * from './workspace-agent';
+export * from './session-conversation';
+export * from './session-domain-apis';
+export * from './session-workspace';
 export * from '@/types/agent';
 export * from '@/types/ai';
 export * from '@/types/chat';
@@ -14,14 +17,14 @@ export * from '@/types/memory';
 export * from '@/types/model.types';
 export * from '@/types/quota';
 export * from '@/types/renderer';
+export * from '@/types/runtime-manifest';
+export * from '@/types/session-engine';
 export * from '@/types/settings';
 export * from '@/types/ssh';
 export * from '@/types/system';
 export * from '@/types/templates';
 export * from '@/types/terminal';
 export * from '@/types/workspace';
-
-
 
 export interface ServiceResponse<T = void> {
     success: boolean;

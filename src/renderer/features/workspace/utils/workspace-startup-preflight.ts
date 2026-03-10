@@ -43,6 +43,10 @@ export interface WorkspaceStartupPreflightResult {
     securityPosture: WorkspaceSecurityPosture;
 }
 
+interface WorkspaceStartupPreflightOptions {
+    includeNonBlockingChecks?: boolean;
+}
+
 interface ToolCheckDefinition {
     id: string;
     command: string;
@@ -100,7 +104,8 @@ async function canRunTool(command: string, cwd: string): Promise<boolean> {
 }
 
 async function isToolRequiredForPath(workspacePath: string, fileName: string): Promise<boolean> {
-    return window.electron.files.exists(`${workspacePath}\\${fileName}`);
+    const result = await window.electron.files.exists(`${workspacePath}\\${fileName}`);
+    return result.success && result.data;
 }
 
 async function hasPythonWorkspaceFiles(workspacePath: string): Promise<boolean> {
@@ -162,7 +167,7 @@ async function checkRequiredTools(workspacePath: string): Promise<WorkspaceStart
                 severity: 'error',
                 message: definition.missingMessage,
                 fixAction: definition.fixAction,
-                blocking: true,
+                blocking: false,
             });
         }
     }
@@ -257,9 +262,13 @@ async function collectSecurityPosture(workspacePath: string): Promise<WorkspaceS
     };
 }
 
-export async function runWorkspaceStartupPreflight(workspace: Workspace): Promise<WorkspaceStartupPreflightResult> {
+export async function runWorkspaceStartupPreflight(
+    workspace: Workspace,
+    options?: WorkspaceStartupPreflightOptions
+): Promise<WorkspaceStartupPreflightResult> {
     const issues: WorkspaceStartupPreflightIssue[] = [];
     const fallbackPosture: WorkspaceSecurityPosture = { risk: 'medium', findings: ['Security posture could not be fully evaluated.'], remediatedCount: 0 };
+    const includeNonBlockingChecks = options?.includeNonBlockingChecks ?? true;
     if (!workspace.path) {
         issues.push({
             id: 'missing-path',
@@ -279,7 +288,8 @@ export async function runWorkspaceStartupPreflight(workspace: Workspace): Promis
         };
     }
 
-    const pathExists = await window.electron.files.exists(workspace.path);
+    const pathExistsResult = await window.electron.files.exists(workspace.path);
+    const pathExists = pathExistsResult.success && pathExistsResult.data;
     if (!pathExists) {
         issues.push({
             id: 'path-not-found',
@@ -316,7 +326,7 @@ export async function runWorkspaceStartupPreflight(workspace: Workspace): Promis
     let openingMode: 'fast' | 'full' = 'fast';
     let runbooks: WorkspaceRunbook[] = [];
     let securityPosture = fallbackPosture;
-    if (pathExists) {
+    if (pathExists && includeNonBlockingChecks) {
         openingMode = await deriveOpeningMode(workspace.path);
         runbooks = await buildRunbooks(workspace.path, workspace);
         securityPosture = await collectSecurityPosture(workspace.path);

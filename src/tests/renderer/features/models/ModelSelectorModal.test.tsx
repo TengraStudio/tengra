@@ -149,7 +149,7 @@ function createMockCategories(overrides?: Partial<ModelCategory>[]): ModelCatego
             disabled: false,
             provider: 'test-provider',
             type: 'chat',
-            thinkingLevels: ['low', 'medium', 'high'] as any, // SAFETY: Testing mock
+            thinkingLevels: ['low', 'medium', 'high'],
         },
         {
             id: 'model-3',
@@ -201,8 +201,8 @@ function createMockProps(overrides?: Partial<React.ComponentProps<typeof ModelSe
         t: (key: string) => key,
         chatMode: 'instant' as const,
         onChatModeChange: vi.fn(),
-        thinkingLevel: 'medium',
-        onThinkingLevelChange: vi.fn(),
+            thinkingLevel: 'low',
+            onThinkingLevelChange: vi.fn(),
         onConfirmSelection: vi.fn(),
         ...overrides,
     };
@@ -381,10 +381,10 @@ describe('ModelSelectorModal', () => {
             const highLevelButton = screen.getByText('High');
             fireEvent.click(highLevelButton);
 
-            expect(onThinkingLevelChange).toHaveBeenCalledWith('high');
+            expect(onThinkingLevelChange).toHaveBeenCalledWith('model-2', 'high');
         });
 
-        it('should enable confirm button after selecting a thinking level', async () => {
+        it('should default reasoning selection to low for reasoning-capable models', async () => {
             const onSelect = vi.fn();
             const props = createMockProps({ onSelect });
             render(<ModelSelectorModal {...props} />);
@@ -393,16 +393,8 @@ describe('ModelSelectorModal', () => {
             const modelButton = getModelButton('Test Model 2');
             fireEvent.click(modelButton);
 
-            // Confirm button should be disabled initially
-            const confirmButton = screen.getByText('modelSelector.selectLevelFirst');
-            expect(confirmButton).toBeDisabled();
-
-            // Select a thinking level
-            const mediumLevelButton = screen.getByText('Medium');
-            fireEvent.click(mediumLevelButton);
-
-            // Now confirm button should be enabled
             expect(screen.getByText('modelSelector.confirmModel')).not.toBeDisabled();
+            expect(screen.getByText('Low')).toHaveClass('bg-primary');
         });
     });
 
@@ -417,7 +409,7 @@ describe('ModelSelectorModal', () => {
             expect(onClose).toHaveBeenCalled();
         });
 
-        it('should not close modal on Escape when reasoning selection is required', async () => {
+        it('should close modal on Escape when default reasoning selection is already valid', async () => {
             const onClose = vi.fn();
             const props = createMockProps({ onClose });
             render(<ModelSelectorModal {...props} />);
@@ -426,11 +418,10 @@ describe('ModelSelectorModal', () => {
             const modelButton = getModelButton('Test Model 2');
             fireEvent.click(modelButton);
 
-            // Press Escape - should not close, should cancel pending
+            // Press Escape - default low is already selected, so close is allowed
             fireEvent.keyDown(document, { key: 'Escape' });
 
-            expect(onClose).not.toHaveBeenCalled();
-            expect(screen.queryByText('Low')).not.toBeInTheDocument();
+            expect(onClose).toHaveBeenCalled();
         });
     });
 
@@ -459,7 +450,7 @@ describe('ModelSelectorModal', () => {
             expect(onClose).not.toHaveBeenCalled();
         });
 
-        it('should not close on backdrop click when reasoning selection is required', async () => {
+        it('should close on backdrop click when default reasoning selection is already valid', async () => {
             const onClose = vi.fn();
             const props = createMockProps({ onClose });
             render(<ModelSelectorModal {...props} />);
@@ -472,7 +463,7 @@ describe('ModelSelectorModal', () => {
             const backdrop = screen.getByRole('dialog');
             fireEvent.click(backdrop);
 
-            expect(onClose).not.toHaveBeenCalled();
+            expect(onClose).toHaveBeenCalled();
         });
     });
 

@@ -1,101 +1,33 @@
-import { VotingAnalytics, VotingConfiguration, VotingSession, VotingTemplate } from '@shared/types/workspace-agent';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import type { FC } from 'react';
 
 import { useTranslation } from '@/i18n';
-import { appLogger } from '@/utils/renderer-logger';
+
+import { useSessionCouncilVoting } from './hooks/useSessionCouncilVoting';
 
 interface AgentVotingPanelProps {
     taskId?: string;
 }
 
-const VOTING_REFRESH_INTERVAL_MS = 4000;
-
-export const AgentVotingPanel: React.FC<AgentVotingPanelProps> = ({ taskId }) => {
+export const AgentVotingPanel: FC<AgentVotingPanelProps> = ({ taskId }) => {
     const { t } = useTranslation();
-    const [sessions, setSessions] = useState<VotingSession[]>([]);
-    const [analytics, setAnalytics] = useState<VotingAnalytics | null>(null);
-    const [votingConfiguration, setVotingConfiguration] = useState<VotingConfiguration | null>(null);
-    const [templates, setTemplates] = useState<VotingTemplate[]>([]);
-    const [selectedTemplateId, setSelectedTemplateId] = useState('');
-    const [selectedSessionId, setSelectedSessionId] = useState('');
-    const [overrideDecision, setOverrideDecision] = useState('');
-    const [overrideReason, setOverrideReason] = useState('');
-    const [isOverriding, setIsOverriding] = useState(false);
-
-    const selectedSession = useMemo(
-        () => sessions.find(session => session.id === selectedSessionId) ?? null,
-        [sessions, selectedSessionId]
-    );
-
-    const disagreementDetails = useMemo(() => {
-        if (!selectedSession) {
-            return [];
-        }
-        const counts = new Map<string, number>();
-        for (const vote of selectedSession.votes) {
-            counts.set(vote.decision, (counts.get(vote.decision) ?? 0) + 1);
-        }
-        return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
-    }, [selectedSession]);
-
-    const refreshVotingData = useCallback(async () => {
-        try {
-            const [sessionList, analyticsResult, configResult, templateResult] = await Promise.all([
-                window.electron.workspaceAgent.listVotingSessions(taskId),
-                window.electron.workspaceAgent.getVotingAnalytics(taskId),
-                window.electron.workspaceAgent.getVotingConfiguration(),
-                window.electron.workspaceAgent.listVotingTemplates()
-            ]);
-            setSessions(sessionList);
-            setAnalytics(analyticsResult);
-            setVotingConfiguration(configResult);
-            setTemplates(templateResult);
-            if (sessionList.length > 0 && !sessionList.some(session => session.id === selectedSessionId)) {
-                setSelectedSessionId(sessionList[0]?.id ?? '');
-            }
-            if (templateResult.length > 0 && !templateResult.some(template => template.id === selectedTemplateId)) {
-                setSelectedTemplateId(templateResult[0]?.id ?? '');
-            }
-        } catch (error) {
-            appLogger.error('AgentVotingPanel', 'Failed to refresh voting data', error as Error);
-        }
-    }, [taskId, selectedSessionId, selectedTemplateId]);
-
-    useEffect(() => {
-        void refreshVotingData();
-        const intervalId = window.setInterval(() => {
-            void refreshVotingData();
-        }, VOTING_REFRESH_INTERVAL_MS);
-        return () => {
-            window.clearInterval(intervalId);
-        };
-    }, [refreshVotingData]);
-
-    useEffect(() => {
-        if (selectedSession && !overrideDecision) {
-            setOverrideDecision(selectedSession.finalDecision ?? selectedSession.options[0] ?? '');
-        }
-    }, [selectedSession, overrideDecision]);
-
-    const handleOverride = async (): Promise<void> => {
-        if (!selectedSession || !overrideDecision || isOverriding) {
-            return;
-        }
-        setIsOverriding(true);
-        try {
-            await window.electron.workspaceAgent.overrideVotingDecision({
-                sessionId: selectedSession.id,
-                finalDecision: overrideDecision,
-                reason: overrideReason.trim() || undefined
-            });
-            setOverrideReason('');
-            await refreshVotingData();
-        } catch (error) {
-            appLogger.error('AgentVotingPanel', 'Failed to override voting decision', error as Error);
-        } finally {
-            setIsOverriding(false);
-        }
-    };
+    const {
+        analytics,
+        disagreementDetails,
+        handleOverride,
+        isOverriding,
+        overrideDecision,
+        overrideReason,
+        selectedSession,
+        selectedSessionId,
+        selectedTemplateId,
+        sessions,
+        templates,
+        votingConfiguration,
+        setOverrideDecision,
+        setOverrideReason,
+        setSelectedSessionId,
+        setSelectedTemplateId,
+    } = useSessionCouncilVoting(taskId);
 
     return (
         <div className="rounded-xl border border-border/60 bg-card/95 p-3 shadow-lg backdrop-blur">

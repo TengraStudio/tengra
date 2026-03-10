@@ -7,7 +7,7 @@ const sectionData = {
     "analyze": {
         "title": "分析",
         "description": "检查文件和数据。",
-        "prompt": "您能分析这个项目的架构并提供改进建议吗？"
+        "prompt": "您能分析这个工作区的架构并提供改进建议吗？"
     },
     "creative": {
         "title": "创意写作",

@@ -1,6 +1,6 @@
 # Tengra Theme System
 
-VSCode-compatible theme system for marketplace extensibility.
+VSCode-compatible theme system for extension-based extensibility.
 
 ## Architecture
 
@@ -25,7 +25,7 @@ Each theme is defined by a JSON manifest declaring its type explicitly:
 
 ### Key Benefits
 
-✅ **Marketplace Ready** - Users can create and share themes
+✅ **Extension Ready** - Users can create and share themes
 ✅ **No Hardcoded Lists** - Theme type declared in manifest
 ✅ **VSCode Compatible** - Industry-standard approach
 ✅ **Type Safe** - Full TypeScript support
@@ -121,12 +121,12 @@ document.documentElement.setAttribute('data-theme', 'my-theme');
 - **Tengra Black** (`black`) - Pure black with electric cyan
 - **Tengra White** (`white`) - Clean white with vibrant purple
 
-## Marketplace Integration (Future)
+## Theme Distribution (Future)
 
-When marketplace is ready:
+When theme distribution is ready:
 
 1. Theme creator uploads manifest JSON
-2. Users install via marketplace
+2. Users install via extension packages
 3. Theme auto-registers on install
 4. Logo and UI adapt automatically
 
@@ -190,7 +190,7 @@ const isLight = themeRegistry.isLightTheme('my-theme');
 - Theme creator knows their intent
 - Instant lookup, no calculation
 - Works with any visual design
-- Marketplace compatible
+- Extension compatible
 
 ## Migration Guide
 
@@ -219,7 +219,7 @@ If you have old themes, convert to manifest:
 
 1. **Industry Standard** - Proven by millions of themes
 2. **Creator Intent** - Theme author knows if it's light/dark
-3. **Marketplace Ready** - Works with extension system
+3. **Extension Ready** - Works with extension system
 4. **Future Proof** - Can add more types (e.g., `amoled`, `solarized`)
 5. **Performance** - No runtime calculation needed
 
