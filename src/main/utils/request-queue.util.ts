@@ -9,7 +9,7 @@ import { getErrorMessage } from '@shared/utils/error.util';
 
 export type Priority = 'high' | 'normal' | 'low';
 
-type QueueResult = unknown;
+type QueueResult = RuntimeValue;
 
 interface QueuedRequest<T> {
     id: string;
@@ -67,11 +67,11 @@ export class RequestQueue {
                 return;
             }
 
-            const request: QueuedRequest<T> = {
+            const request: QueuedRequest<QueueResult> = {
                 id: `req-${++this.requestId}`,
                 priority: options?.priority ?? 'normal',
-                fn,
-                resolve,
+                fn: async () => await fn(),
+                resolve: (value: QueueResult) => resolve(value as T),
                 reject,
                 createdAt: Date.now(),
                 provider: options?.provider
@@ -79,7 +79,7 @@ export class RequestQueue {
 
             // Insert based on priority
             const insertIndex = this.findInsertIndex(request.priority);
-            this.queue.splice(insertIndex, 0, request as QueuedRequest<unknown>);
+            this.queue.splice(insertIndex, 0, request);
 
             // Try to process
             void this.processQueue();

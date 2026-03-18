@@ -9,7 +9,7 @@ export const terminalCreateOptionsSchema = z.object({
     backendId: z.string().optional(),
     workspaceId: z.string().optional(),
     title: z.string().optional(),
-    metadata: z.record(z.string(), z.unknown()).optional()
+    metadata: z.record(z.string(), z.custom<RuntimeValue>(() => true)).optional()
 });
 
 export const terminalExplainErrorOptionsSchema = z.object({
@@ -49,6 +49,11 @@ export const fixErrorResultSchema = z.object({
 });
 
 export const terminalIsAvailableResponseSchema = z.boolean();
+export const terminalGetDiscoverySnapshotArgsSchema = z.tuple([
+    z.object({
+        refresh: z.boolean().optional(),
+    }).optional(),
+]);
 
 export const terminalGetShellsResponseSchema = z.array(z.object({
     id: z.string(),
@@ -62,9 +67,16 @@ export const terminalGetBackendsResponseSchema = z.array(z.object({
     available: z.boolean()
 }));
 
+export const terminalGetDiscoverySnapshotResponseSchema = z.object({
+    terminalAvailable: z.boolean(),
+    shells: terminalGetShellsResponseSchema,
+    backends: terminalGetBackendsResponseSchema,
+    refreshedAt: z.number().int().nonnegative(),
+});
+
 export const terminalGetDockerContainersResponseSchema = z.object({
     success: z.boolean(),
-    containers: z.array(z.record(z.string(), z.unknown())).optional(),
+    containers: z.array(z.record(z.string(), z.custom<RuntimeValue>(() => true))).optional(),
     error: z.string().optional(),
     raw: z.string().optional()
 });

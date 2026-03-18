@@ -55,7 +55,7 @@ export interface ComfyWorkflowTemplate {
     id: string
     name: string
     description?: string
-    workflow: Record<string, unknown>
+    workflow: Record<string, RuntimeValue>
     createdAt: number
     updatedAt: number
 }
@@ -96,7 +96,7 @@ export interface ImageComparisonResult {
     }
 }
 
-export type ImageProvider = 'antigravity' | 'ollama' | 'sd-webui' | 'comfyui' | 'pollinations' | 'sd-cpp'
+export type ImageProvider = 'antigravity' | 'ollama' | 'sd-webui' | 'comfyui' | 'sd-cpp'
 
 export interface AntigravityAccount {
     id: string

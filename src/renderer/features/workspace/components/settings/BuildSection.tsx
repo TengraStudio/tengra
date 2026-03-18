@@ -6,13 +6,13 @@ import { SettingsSectionProps } from './types';
 export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setFormData, t }) => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div>
-            <h3 className="text-lg font-semibold text-foreground mb-1">{t('workspaces.buildAndTest') || 'Build & Test'}</h3>
-            <p className="text-sm text-muted-foreground">{t('workspaces.buildDesc') || 'Configure how your workspace is built and tested.'}</p>
+            <h3 className="text-lg font-semibold text-foreground mb-1">{t('workspaces.build')}</h3>
+            <p className="text-sm text-muted-foreground">{t('workspaces.buildDesc')}</p>
         </div>
 
         <div className="grid grid-cols-1 gap-6">
             <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground uppercase">{t('workspaces.buildCommand') || 'Build Command'}</label>
+                <label className="text-xs font-medium text-muted-foreground uppercase">{t('workspaces.buildCommand')}</label>
                 <div className="relative">
                     <Code className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input
@@ -26,7 +26,7 @@ export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setForm
             </div>
 
             <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground uppercase">{t('workspaces.testCommand') || 'Test Command'}</label>
+                <label className="text-xs font-medium text-muted-foreground uppercase">{t('workspaces.testCommand')}</label>
                 <div className="relative">
                     <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input
@@ -40,7 +40,7 @@ export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setForm
             </div>
 
             <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground uppercase">{t('workspaces.lintCommand') || 'Lint Command'}</label>
+                <label className="text-xs font-medium text-muted-foreground uppercase">{t('workspaces.lintCommand')}</label>
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input
@@ -55,7 +55,7 @@ export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setForm
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground uppercase">{t('workspaces.outputDir') || 'Output Directory'}</label>
+                    <label className="text-xs font-medium text-muted-foreground uppercase">{t('workspaces.outputDir')}</label>
                     <input
                         type="text"
                         value={formData.outputDir}
@@ -65,7 +65,7 @@ export const BuildSection: React.FC<SettingsSectionProps> = ({ formData, setForm
                     />
                 </div>
                 <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground uppercase">{t('workspaces.envFile') || 'Env File'}</label>
+                    <label className="text-xs font-medium text-muted-foreground uppercase">{t('workspaces.envFile')}</label>
                     <input
                         type="text"
                         value={formData.envFile}

@@ -52,17 +52,17 @@ export class StreamParser {
         }
     }
 
-    private static getStreamBody(input: unknown): ReadableStream<Uint8Array> | AsyncIterable<Uint8Array> {
+    private static getStreamBody(input: RuntimeValue): ReadableStream<Uint8Array> | AsyncIterable<Uint8Array> {
         if (input && typeof input === 'object' && 'body' in input) {
-            const body = (input as { body?: unknown }).body;
+            const body = (input as { body?: RuntimeValue }).body;
             if (body) { return body as ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>; }
         }
         return input as ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>;
     }
 
-    private static isWebStream(body: unknown): body is ReadableStream<Uint8Array> {
+    private static isWebStream(body: RuntimeValue): body is ReadableStream<Uint8Array> {
         if (!body || typeof body !== 'object') { return false; }
-        const maybeWeb = body as { getReader?: unknown };
+        const maybeWeb = body as { getReader?: RuntimeValue };
         return typeof maybeWeb.getReader === 'function';
     }
 

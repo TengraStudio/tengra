@@ -1,4 +1,4 @@
-import { ServiceResponse, SystemInfo } from '@shared/types';
+import { ProcessMetric, ServiceResponse,StartupMetrics, SystemInfo } from '@shared/types';
 import { JsonObject } from '@shared/types/common';
 
 export interface ISecurityService {
@@ -36,12 +36,17 @@ export interface IPerformanceService {
     }>;
     detectLeak(): Promise<ServiceResponse<{ isPossibleLeak: boolean; trend: number[] }>>;
     triggerGC(): ServiceResponse<{ success: boolean }>;
+    getProcessMetrics(): Promise<ServiceResponse<ProcessMetric[]>>;
+    getStartupMetrics(): ServiceResponse<StartupMetrics>;
+    recordStartupEvent(event: keyof StartupMetrics): void;
     getDashboard(): ServiceResponse<{
         memory: {
             latestRss: number;
             latestHeapUsed: number;
             sampleCount: number;
         };
+        processes: ProcessMetric[];
+        startup: StartupMetrics;
         alerts: Array<{ timestamp: number; level: 'info' | 'warn' | 'error'; message: string }>;
     }>;
 }

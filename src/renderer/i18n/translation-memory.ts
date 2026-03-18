@@ -30,11 +30,11 @@ export interface ScoredTranslationEntry extends TranslationEntry {
 /** Supported language codes for translation memory */
 type LangCode = 'tr' | 'de' | 'fr' | 'es' | 'ja' | 'zh' | 'ar';
 
-function toTranslationRecord<T extends object>(value: T): Record<string, unknown> {
-    return value as Record<string, unknown>;
+function toTranslationRecord<T extends object>(value: T): Record<string, RendererDataValue> {
+    return value as Record<string, RendererDataValue>;
 }
 
-const LANG_MAP: Record<LangCode, Record<string, unknown>> = {
+const LANG_MAP: Record<LangCode, Record<string, RendererDataValue>> = {
     tr: toTranslationRecord(tr),
     de: toTranslationRecord(de),
     fr: toTranslationRecord(fr),
@@ -108,7 +108,7 @@ export function computeSimilarity(a: string, b: string): number {
  * @returns Map of flattened keys to string values
  */
 function flattenObject(
-    obj: Record<string, unknown>,
+    obj: Record<string, RendererDataValue>,
     prefix = ''
 ): Map<string, string> {
     const result = new Map<string, string>();
@@ -120,7 +120,7 @@ function flattenObject(
         if (typeof value === 'string') {
             result.set(fullKey, value);
         } else if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-            const nested = flattenObject(value as Record<string, unknown>, fullKey);
+            const nested = flattenObject(value as Record<string, RendererDataValue>, fullKey);
             for (const [nestedKey, nestedValue] of nested) {
                 result.set(nestedKey, nestedValue);
             }
@@ -136,13 +136,13 @@ function flattenObject(
  * @param key - Dot-notation key path
  * @returns The string value or undefined
  */
-function resolveKey(obj: Record<string, unknown>, key: string): string | undefined {
+function resolveKey(obj: Record<string, RendererDataValue>, key: string): string | undefined {
     const parts = key.split('.');
-    let current: unknown = obj;
+    let current: RendererDataValue = obj;
 
     for (const part of parts) {
         if (current === null || typeof current !== 'object') { return undefined; }
-        current = (current as Record<string, unknown>)[part];
+        current = (current as Record<string, RendererDataValue>)[part];
     }
 
     return typeof current === 'string' ? current : undefined;

@@ -2,11 +2,11 @@ import { EventEmitter } from 'events';
 
 import { appLogger } from '@main/logging/logger';
 import { SESSION_RUNTIME_EVENTS } from '@shared/constants/session-runtime-events';
+import { JsonObject, JsonValue } from '@shared/types/common';
 import {
     WorkspaceStep,
     WorkspaceStepStatus,
-} from '@shared/types/automation-workflow';
-import { JsonObject, JsonValue } from '@shared/types/common';
+} from '@shared/types/council';
 
 export type EventHandler<T = JsonValue> = (data: T) => void | Promise<void>;
 
@@ -73,11 +73,11 @@ export interface AppEvents {
     };
     [SESSION_RUNTIME_EVENTS.AUTOMATION_COST_ESTIMATED]: {
         taskId: string;
-        estimate: unknown;
+        estimate: RuntimeValue;
     };
 
     // Generic
-    [key: string]: unknown; // Replaced any with unknown
+    [key: string]: RuntimeValue; // Replaced any with unknown
 }
 
 /**
@@ -86,7 +86,7 @@ export interface AppEvents {
  */
 class EventBus {
     private emitter = new EventEmitter();
-    private eventHistory: Array<{ event: string; data: unknown; timestamp: number }> = [];
+    private eventHistory: Array<{ event: string; data: RuntimeValue; timestamp: number }> = [];
     private readonly maxHistory = 100;
 
     constructor() {
@@ -183,7 +183,7 @@ class EventBus {
      * @param event - Optional event name to filter history
      * @returns Array of history entries
      */
-    getHistory(event?: string): Array<{ event: string; data: unknown; timestamp: number }> {
+    getHistory(event?: string): Array<{ event: string; data: RuntimeValue; timestamp: number }> {
         if (event) {
             return this.eventHistory.filter(e => e.event === event);
         }

@@ -128,7 +128,7 @@ function formatDisplayLabel(m: ModelInfo): string {
 
 function extractPricing(pricing: ModelInfo['pricing']): { input?: number; output?: number } | undefined {
     if (!pricing || typeof pricing !== 'object' || Array.isArray(pricing)) { return undefined; }
-    const p = pricing as { input?: unknown; output?: unknown };
+    const p = pricing as { input?: RendererDataValue; output?: RendererDataValue };
     return {
         input: typeof p.input === 'number' ? p.input : undefined,
         output: typeof p.output === 'number' ? p.output : undefined
@@ -140,6 +140,8 @@ function mapModelToItem(
     ctx: { searchLower: string, favorites: Set<string>, hidden: Set<string>, selectedModel: string, isModelDisabled: (id: string, p: string) => boolean }
 ): ModelListItem | null {
     const id = m.id ?? '';
+    const provider = getSelectableProviderId(m);
+    if (shouldHideModel(id, m.label ?? m.name, provider)) { return null; }
     if (!matchesSearch(m, ctx.searchLower)) { return null; }
     if (ctx.hidden.has(id) && id !== ctx.selectedModel) { return null; }
 
@@ -147,7 +149,6 @@ function mapModelToItem(
     const thinkingLevels = Array.isArray(m.thinkingLevels) ? m.thinkingLevels as string[] : undefined;
     const description = typeof m.description === 'string' ? m.description : undefined;
 
-    const provider = getSelectableProviderId(m);
     const disabled = ctx.isModelDisabled(id, provider);
     const isLocalProvider = provider === 'ollama' || provider === 'local' || provider === 'lm_studio';
     const pricing = extractPricing(m.pricing);
@@ -175,12 +176,89 @@ function mapModelToItem(
         lifecycle: lifecycleMeta.lifecycle,
         replacementModelId: lifecycleMeta.replacementModelId,
         sunsetDate: lifecycleMeta.sunsetDate,
+        quotaInfo: m.quotaInfo,
+        percentage: typeof m.percentage === 'number' ? m.percentage : undefined,
+        reset: typeof m.reset === 'string' ? m.reset : undefined,
     };
 }
 
 function finalizeCategories(cats: ModelCategory[]): ModelCategory[] {
     for (const cat of cats) {
+        if (cat.id === 'antigravity') {
+            cat.models = dedupeAntigravityModels(cat.models);
+        }
         cat.models.sort((a, b) => a.label.localeCompare(b.label));
     }
     return cats.filter(cat => cat.models.length > 0);
+}
+
+function shouldHideModel(modelId: string, label: string | undefined, provider: string): boolean {
+    if (provider !== 'antigravity') {
+        return false;
+    }
+    const normalizedId = modelId.toLowerCase();
+    const normalizedLabel = (label ?? '').toLowerCase();
+    const isImageModel = normalizedId.includes('image') || normalizedLabel.includes(' image');
+    if (isImageModel) {
+        return normalizedId.includes('tab_jump_flash_lite_preview');
+    }
+
+    return normalizedId.includes('gemini-3-pro')
+        || normalizedLabel.includes('gemini 3 pro')
+        || normalizedId.includes('tab_jump_flash_lite_preview');
+}
+
+function dedupeAntigravityModels(models: ModelListItem[]): ModelListItem[] {
+    const deduped = new Map<string, ModelListItem>();
+
+    for (const model of models) {
+        const key = normalizeAntigravityLabel(model.label);
+        const existing = deduped.get(key);
+        if (!existing || shouldReplaceAntigravityModel(existing, model)) {
+            deduped.set(key, model);
+        }
+    }
+
+    return Array.from(deduped.values());
+}
+
+function normalizeAntigravityLabel(label: string): string {
+    return label
+        .toLowerCase()
+        .replace(/\s*\(antigravity\)\s*$/i, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function normalizeAntigravityId(modelId: string): string {
+    return modelId.toLowerCase().replace(/-antigravity$/, '');
+}
+
+function shouldReplaceAntigravityModel(existing: ModelListItem, candidate: ModelListItem): boolean {
+    const existingPercent = getAntigravityPercent(existing);
+    const candidatePercent = getAntigravityPercent(candidate);
+    if (candidatePercent !== existingPercent) {
+        return candidatePercent > existingPercent;
+    }
+
+    const existingIsPrimary = !existing.id.toLowerCase().endsWith('-antigravity');
+    const candidateIsPrimary = !candidate.id.toLowerCase().endsWith('-antigravity');
+    if (candidateIsPrimary !== existingIsPrimary) {
+        return candidateIsPrimary;
+    }
+
+    const existingId = normalizeAntigravityId(existing.id);
+    const candidateId = normalizeAntigravityId(candidate.id);
+    return candidateId.localeCompare(existingId) < 0;
+}
+
+function getAntigravityPercent(model: ModelListItem): number {
+    const fraction = model.quotaInfo?.remainingFraction;
+    if (typeof fraction === 'number' && Number.isFinite(fraction)) {
+        return Math.round(Math.max(0, Math.min(1, fraction)) * 100);
+    }
+    if (typeof model.percentage === 'number' && Number.isFinite(model.percentage)) {
+        return Math.round(Math.max(0, Math.min(100, model.percentage)));
+    }
+    return 0;
 }

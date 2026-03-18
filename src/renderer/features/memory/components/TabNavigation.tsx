@@ -38,7 +38,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
       { id: 'pending', label: t('memory.tabs.pending'), icon: Clock, count: pendingCount },
       { id: 'confirmed', label: t('memory.tabs.confirmed'), icon: CheckCircle, count: confirmedCount },
       { id: 'archived', label: t('memory.tabs.archived'), icon: Archive, count: archivedCount },
-      { id: 'visualization', label: t('memory.tabs.visualization') || 'Visualization', icon: LayoutGrid },
+      { id: 'visualization', label: t('memory.tabs.visualization'), icon: LayoutGrid },
       { id: 'stats', label: t('memory.tabs.stats'), icon: Gauge },
     ];
 

@@ -17,7 +17,7 @@ export class DatabaseError extends AppError {
   constructor(
     message: string,
     code: string = 'DATABASE_ERROR',
-    options?: { cause?: Error; context?: Record<string, unknown>; operation?: string }
+    options?: { cause?: Error; context?: Record<string, RuntimeValue>; operation?: string }
   ) {
     super(message, code, { cause: options?.cause, context: options?.context });
     this.operation = options?.operation;

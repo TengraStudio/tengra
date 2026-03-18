@@ -33,7 +33,7 @@ describe('Migration IPC Handlers', () => {
         // Capture IPC handlers
         vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: CallableFunction) => {
             ipcMainHandlers.set(channel, handler);
-            return { channels: [channel] } as unknown as Electron.IpcMain;
+            return { channels: [channel] } as never as Electron.IpcMain;
         });
 
         // Mock database service
@@ -43,7 +43,7 @@ describe('Migration IPC Handlers', () => {
                 appliedMigrations: ['001', '002', '003', '004', '005'],
                 pendingMigrations: []
             })
-        } as unknown as DatabaseService;
+        } as never as DatabaseService;
 
         mockEvent = {} as IpcMainInvokeEvent;
 

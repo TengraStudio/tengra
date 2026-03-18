@@ -1,7 +1,7 @@
 import { registerCodeSandboxIpc } from '@main/ipc/code-sandbox';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-type IpcHandler = (...args: unknown[]) => unknown | Promise<unknown>;
+type IpcHandler = (...args: TestValue[]) => TestValue | Promise<TestValue>;
 const ipcMainHandlers = new Map<string, IpcHandler>();
 
 vi.mock('electron', () => ({

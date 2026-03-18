@@ -13,7 +13,7 @@ describe('PromptRepository', () => {
     let repo: PromptRepository;
 
     beforeEach(() => {
-        repo = new PromptRepository(mockDb as any);
+        repo = new PromptRepository(mockDb as never);
         vi.clearAllMocks();
     });
 
@@ -31,7 +31,7 @@ describe('PromptRepository', () => {
         // db.createPrompt returns the created object
         mockDb.createPrompt.mockResolvedValue(prompt);
 
-        const result = await repo.create(prompt as any);
+        const result = await repo.create(prompt as never);
         expect(result).toBe(prompt);
         // Expect decomposed arguments
         expect(mockDb.createPrompt).toHaveBeenCalledWith('Test', 'Content', []);

@@ -254,7 +254,7 @@ describe('RateLimitService - Telemetry Events', () => {
             (call) => call[1] === RateLimitTelemetryEvent.LIMIT_SET
         );
         expect(setCalls).toHaveLength(1);
-        expect((setCalls[0][2] as Record<string, unknown>)?.requestsPerMinute).toBe(42);
+        expect((setCalls[0][2] as Record<string, TestValue>)?.requestsPerMinute).toBe(42);
     });
 
     it('should emit WAIT_STARTED and WAIT_EXCEEDED on waitForToken timeout', async () => {

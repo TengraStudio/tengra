@@ -27,7 +27,7 @@ export const ToolsSectionComponent: React.FC<ToolsSectionProps> = ({
     return (
         <SidebarSection
             id="tools"
-            title={t('sidebar.tools') || 'Tools'}
+            title={t('sidebar.tools')}
             icon={<Plug className="w-3.5 h-3.5" />}
             defaultExpanded={false}
             badge={3}

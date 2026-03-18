@@ -89,7 +89,7 @@ export const ContextMenuStateSchema = z.object({
 /**
  * Type guard to check if a value is a valid WorkspaceMount
  */
-export function isValidWorkspaceMount(value: unknown): value is z.infer<typeof WorkspaceMountSchema> {
+export function isValidWorkspaceMount(value: RendererDataValue): value is z.infer<typeof WorkspaceMountSchema> {
     const result = WorkspaceMountSchema.safeParse(value);
     return result.success;
 }
@@ -97,7 +97,7 @@ export function isValidWorkspaceMount(value: unknown): value is z.infer<typeof W
 /**
  * Type guard to check if a value is a valid WorkspaceEntry
  */
-export function isValidWorkspaceEntry(value: unknown): value is z.infer<typeof WorkspaceEntrySchema> {
+export function isValidWorkspaceEntry(value: RendererDataValue): value is z.infer<typeof WorkspaceEntrySchema> {
     const result = WorkspaceEntrySchema.safeParse(value);
     return result.success;
 }
@@ -105,7 +105,7 @@ export function isValidWorkspaceEntry(value: unknown): value is z.infer<typeof W
 /**
  * Type guard to check if a value is a valid MountStatus
  */
-export function isValidMountStatus(value: unknown): value is z.infer<typeof MountStatusSchema> {
+export function isValidMountStatus(value: RendererDataValue): value is z.infer<typeof MountStatusSchema> {
     const result = MountStatusSchema.safeParse(value);
     return result.success;
 }
@@ -113,7 +113,7 @@ export function isValidMountStatus(value: unknown): value is z.infer<typeof Moun
 /**
  * Type guard to check if a value is a valid ContextMenuAction
  */
-export function isValidContextMenuAction(value: unknown): value is z.infer<typeof ContextMenuActionSchema> {
+export function isValidContextMenuAction(value: RendererDataValue): value is z.infer<typeof ContextMenuActionSchema> {
     const result = ContextMenuActionSchema.safeParse(value);
     return result.success;
 }
@@ -240,7 +240,7 @@ export class WorkspaceExplorerError extends Error {
     constructor(
         message: string,
         public readonly code: WorkspaceExplorerErrorCode,
-        public readonly details?: Record<string, unknown>
+        public readonly details?: Record<string, RendererDataValue>
     ) {
         super(message);
         this.name = 'WorkspaceExplorerError';
@@ -301,7 +301,7 @@ export function validateMountConnection(
  * @returns Validation result
  */
 export function validateEntrySelection(
-    entry: unknown,
+    entry: RendererDataValue,
     mountId?: string
 ): { success: boolean; error?: WorkspaceExplorerError; data?: z.infer<typeof WorkspaceEntrySchema> } {
     // Validate entry structure

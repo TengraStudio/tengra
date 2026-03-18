@@ -1,6 +1,19 @@
 import { HttpService } from '@main/services/external/http.service';
 import { beforeEach,describe, expect, it, vi } from 'vitest';
 
+interface MockHttpResponse {
+    ok: boolean;
+    status: number;
+    statusText: string;
+    headers: {
+        forEach: ReturnType<typeof vi.fn>;
+        get: ReturnType<typeof vi.fn>;
+    };
+    json: () => Promise<RuntimeValue>;
+    text: () => Promise<string>;
+    clone: () => MockHttpResponse;
+}
+
 // Mock global fetch
 const globalFetch = vi.fn();
 global.fetch = globalFetch;
@@ -13,19 +26,22 @@ describe('HttpService', () => {
         globalFetch.mockReset();
     });
 
-    const createMockResponse = (overrides: any = {}) => ({
-        ok: true,
-        status: 200,
-        statusText: 'OK',
-        headers: {
-            forEach: vi.fn(),
-            get: vi.fn()
-        },
-        json: async () => ({}),
-        text: async () => '',
-        clone: function () { return this; },
-        ...overrides
-    });
+    const createMockResponse = (overrides: Partial<MockHttpResponse> = {}): MockHttpResponse => {
+        const response: MockHttpResponse = {
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            headers: {
+                forEach: vi.fn(),
+                get: vi.fn()
+            },
+            json: async () => ({}),
+            text: async () => '',
+            clone: () => response,
+            ...overrides
+        };
+        return response;
+    };
 
     it('should return successful response without retries', async () => {
         globalFetch.mockResolvedValueOnce(createMockResponse({

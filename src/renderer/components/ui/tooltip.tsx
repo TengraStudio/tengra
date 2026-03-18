@@ -27,6 +27,36 @@ export interface TooltipProps {
     className?: string;
 }
 
+type TooltipTriggerElement = HTMLElement;
+type TooltipFocusEvent = React.FocusEvent<TooltipTriggerElement>;
+type TooltipMouseEvent = React.MouseEvent<TooltipTriggerElement>;
+type TooltipFocusHandler = ((event: TooltipFocusEvent) => void) | undefined;
+type TooltipMouseHandler = ((event: TooltipMouseEvent) => void) | undefined;
+
+function composeMouseHandlers(
+    childHandler: TooltipMouseHandler,
+    tooltipHandler: () => void
+): (event: TooltipMouseEvent) => void {
+    return event => {
+        childHandler?.(event);
+        if (!event.defaultPrevented) {
+            tooltipHandler();
+        }
+    };
+}
+
+function composeFocusHandlers(
+    childHandler: TooltipFocusHandler,
+    tooltipHandler: () => void
+): (event: TooltipFocusEvent) => void {
+    return event => {
+        childHandler?.(event);
+        if (!event.defaultPrevented) {
+            tooltipHandler();
+        }
+    };
+}
+
 export function Tooltip({
     children,
     content,
@@ -134,7 +164,13 @@ export function Tooltip({
     }, []);
 
     // Clone element and add event handlers - use type assertion for ref handling
-    const childProps = children.props as { ref?: React.Ref<HTMLElement> };
+    const childProps = children.props as {
+        ref?: React.Ref<HTMLElement>
+        onMouseEnter?: TooltipMouseHandler
+        onMouseLeave?: TooltipMouseHandler
+        onFocus?: TooltipFocusHandler
+        onBlur?: TooltipFocusHandler
+    };
     const trigger = React.cloneElement(children, {
         ref: (node: HTMLElement | null) => {
             triggerRef.current = node;
@@ -147,10 +183,10 @@ export function Tooltip({
                 (originalRef as React.MutableRefObject<HTMLElement | null>).current = node;
             }
         },
-        onMouseEnter: showTooltip,
-        onMouseLeave: hideTooltip,
-        onFocus: showTooltip,
-        onBlur: hideTooltip,
+        onMouseEnter: composeMouseHandlers(childProps.onMouseEnter, showTooltip),
+        onMouseLeave: composeMouseHandlers(childProps.onMouseLeave, hideTooltip),
+        onFocus: composeFocusHandlers(childProps.onFocus, showTooltip),
+        onBlur: composeFocusHandlers(childProps.onBlur, hideTooltip),
     });
 
     return (

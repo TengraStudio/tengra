@@ -1,8 +1,8 @@
 import { useTranslation } from '@renderer/i18n';
+import { FitAddon } from '@xterm/addon-fit';
+import { Terminal as XTerm } from '@xterm/xterm';
 import { Minimize2, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Terminal as XTerm } from 'xterm';
-import { FitAddon } from 'xterm-addon-fit';
 
 import { useTheme } from '@/hooks/useTheme';
 import { invokeTypedIpc } from '@/lib/ipc-client';
@@ -17,7 +17,7 @@ import {
     terminalWriteResponseSchema
 } from '../utils/terminal-ipc';
 
-import 'xterm/css/xterm.css';
+import '@xterm/xterm/css/xterm.css';
 
 export function DetachedTerminalWindow() {
     const { t } = useTranslation();

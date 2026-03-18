@@ -1,12 +1,46 @@
 import { vi } from 'vitest';
 
+interface MockWindow {
+    webContents?: {
+        id?: number;
+    };
+}
+
+interface MockSender {
+    id?: number;
+    webContents?: {
+        id?: number;
+    };
+}
+
+interface MockIpcInvokeEvent {
+    sender?: MockSender;
+}
+
+type MockHandler = (...args: readonly RuntimeValue[]) => RuntimeValue | Promise<RuntimeValue>;
+
+interface MockSchema {
+    parse: (args: readonly RuntimeValue[]) => RuntimeValue;
+}
+
+interface MockIpcHandlerOptions {
+    wrapResponse?: boolean;
+    onError?: (error: RuntimeValue, handlerName: string) => RuntimeValue | Promise<RuntimeValue>;
+    argsSchema?: MockSchema;
+    onValidationFailed?: (error: RuntimeValue, handlerName: string) => void;
+    defaultValue?: RuntimeValue;
+}
+
 vi.mock('@main/ipc/sender-validator', () => ({
-    createMainWindowSenderValidator: (getMainWindow: any, operationName: string) => (event: any) => {
+    createMainWindowSenderValidator: (
+        getMainWindow: () => MockWindow | null,
+        operationName: string
+    ) => (event: MockIpcInvokeEvent) => {
         // If event is a minimal mock (empty object), skip validation to avoid breaking existing tests
-        if (!event?.sender) { return; }
+        const senderId = event.sender?.id ?? event.sender?.webContents?.id;
+        if (senderId === undefined) { return; }
 
         const win = getMainWindow();
-        const senderId = event.sender.id ?? event.sender.webContents?.id;
         const winId = win?.webContents?.id;
 
         if (winId !== undefined && senderId !== winId) {
@@ -19,11 +53,36 @@ vi.mock('@main/ipc/sender-validator', () => ({
 }));
 
 vi.mock('@main/utils/ipc-wrapper.util', async (importOriginal) => {
-    const original: any = await importOriginal();
+    const original = await importOriginal<typeof import('@main/utils/ipc-wrapper.util')>();
 
-    const formatError = (error: any, wrapResponse: boolean) => {
-        const message = error.message || String(error);
-        const code = error.code || 'IPC_HANDLER_ERROR'; // Match createIpcHandler's default
+    const toRuntimeValue = <T>(value: T): RuntimeValue => {
+        if (
+            typeof value === 'string'
+            || typeof value === 'number'
+            || typeof value === 'bigint'
+            || typeof value === 'boolean'
+            || typeof value === 'symbol'
+            || value === null
+            || value === undefined
+            || typeof value === 'object'
+        ) {
+            return value as RuntimeValue;
+        }
+        return String(value);
+    };
+
+    const formatError = (error: RuntimeValue, wrapResponse: boolean): RuntimeValue => {
+        const message = error instanceof Error
+            ? error.message
+            : typeof error === 'object' && error && 'message' in error
+                ? String((error as Record<string, RuntimeValue>).message ?? error)
+                : String(error);
+        const code = typeof error === 'object' && error && 'code' in error
+            ? String((error as Record<string, RuntimeValue>).code ?? 'IPC_HANDLER_ERROR')
+            : 'IPC_HANDLER_ERROR';
+        const context = typeof error === 'object' && error && 'context' in error
+            ? (error as Record<string, RuntimeValue>).context
+            : undefined;
 
         if (wrapResponse) {
             return {
@@ -31,64 +90,77 @@ vi.mock('@main/utils/ipc-wrapper.util', async (importOriginal) => {
                 error: {
                     message,
                     code,
-                    ...(error.context ? { context: error.context } : {})
+                    ...(context !== undefined ? { context } : {})
                 }
             };
         }
-        throw error;
+        throw error instanceof Error ? error : new Error(message);
     };
 
     return {
         ...original,
-        createIpcHandler: (name: string, handler: (...args: unknown[]) => unknown, options?: any) => async (...args: unknown[]) => {
+        createIpcHandler: (
+            name: string,
+            handler: MockHandler,
+            options: MockIpcHandlerOptions = {}
+        ) => async (...args: readonly RuntimeValue[]) => {
             const wrapResponse = options?.wrapResponse === true;
             try {
-                const result = await handler(...args as any);
+                const result = await handler(...args);
                 return wrapResponse ? { success: true, data: result } : result;
-            } catch (error: any) {
+            } catch (error) {
                 if (options?.onError) {
                     try {
-                        const errorResult = await Promise.resolve(options.onError(error, name));
+                        const errorResult = await Promise.resolve(options.onError(toRuntimeValue(error), name));
                         return wrapResponse ? { success: true, data: errorResult } : errorResult;
-                    } catch (innerError: any) {
-                        return formatError(innerError, wrapResponse);
+                    } catch (innerError) {
+                        return formatError(toRuntimeValue(innerError), wrapResponse);
                     }
                 }
-                return formatError(error, wrapResponse);
+                return formatError(toRuntimeValue(error), wrapResponse);
             }
         },
-        createSafeIpcHandler: (_name: string, handler: (...args: unknown[]) => unknown, defaultValue: unknown, options?: any) => async (...args: unknown[]) => {
+        createSafeIpcHandler: (
+            _name: string,
+            handler: MockHandler,
+            defaultValue: RuntimeValue,
+            options: MockIpcHandlerOptions = {}
+        ) => async (...args: readonly RuntimeValue[]) => {
             const wrapResponse = options?.wrapResponse === true;
             try {
-                const result = await (handler as any)(...args);
+                const result = await handler(...args);
                 return wrapResponse ? { success: true, data: result } : result;
             } catch {
                 return wrapResponse ? { success: true, data: defaultValue } : defaultValue;
             }
         },
-        createValidatedIpcHandler: (name: string, handler: (...args: any[]) => any, options: any) => {
-            return async (...args: any[]) => {
+        createValidatedIpcHandler: (
+            name: string,
+            handler: MockHandler,
+            options: MockIpcHandlerOptions = {}
+        ) => {
+            return async (...args: readonly RuntimeValue[]) => {
                 const wrapResponse = options?.wrapResponse === true;
                 const restArgs = args.slice(1);
 
                 if (options?.argsSchema) {
                     try {
                         options.argsSchema.parse(restArgs);
-                    } catch (error: any) {
+                    } catch (error) {
                         try {
                             if (options?.onValidationFailed) {
-                                options.onValidationFailed(error, name);
+                                options.onValidationFailed(toRuntimeValue(error), name);
                             }
-                        } catch (onValError: any) {
-                            return formatError(onValError, wrapResponse);
+                        } catch (onValError) {
+                            return formatError(toRuntimeValue(onValError), wrapResponse);
                         }
 
                         if (options?.onError) {
                             try {
-                                const errorResult = await Promise.resolve(options.onError(error, name));
+                                const errorResult = await Promise.resolve(options.onError(toRuntimeValue(error), name));
                                 return wrapResponse ? { success: true, data: errorResult } : errorResult;
-                            } catch (innerError: any) {
-                                return formatError(innerError, wrapResponse);
+                            } catch (innerError) {
+                                return formatError(toRuntimeValue(innerError), wrapResponse);
                             }
                         }
 
@@ -96,26 +168,26 @@ vi.mock('@main/utils/ipc-wrapper.util', async (importOriginal) => {
                             return wrapResponse ? { success: true, data: options.defaultValue } : options.defaultValue;
                         }
 
-                        return formatError(error, wrapResponse);
+                        return formatError(toRuntimeValue(error), wrapResponse);
                     }
                 }
 
                 try {
                     const result = await handler(...args);
                     return wrapResponse ? { success: true, data: result } : result;
-                } catch (error: any) {
+                } catch (error) {
                     if (options?.onError) {
                         try {
-                            const errorResult = await Promise.resolve(options.onError(error, name));
+                            const errorResult = await Promise.resolve(options.onError(toRuntimeValue(error), name));
                             return wrapResponse ? { success: true, data: errorResult } : errorResult;
-                        } catch (innerError: any) {
-                            return formatError(innerError, wrapResponse);
+                        } catch (innerError) {
+                            return formatError(toRuntimeValue(innerError), wrapResponse);
                         }
                     }
                     if (options?.defaultValue !== undefined) {
                         return wrapResponse ? { success: true, data: options.defaultValue } : options.defaultValue;
                     }
-                    return formatError(error, wrapResponse);
+                    return formatError(toRuntimeValue(error), wrapResponse);
                 }
             };
         }

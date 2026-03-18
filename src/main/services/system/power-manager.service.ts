@@ -6,6 +6,7 @@ import { SettingsService } from './settings.service';
 
 export class PowerManagerService extends BaseService {
     private isLowPowerModeActive = false;
+    private isHibernating = false;
     private hibernationTimeout: NodeJS.Timeout | null = null;
     private readonly HIBERNATION_DELAY_MS = 10 * 60 * 1000; // 10 minutes
 
@@ -34,6 +35,9 @@ export class PowerManagerService extends BaseService {
     }
 
     private handleWindowBlur() {
+        if (this.hasInteractiveWindow()) {
+            return;
+        }
         const settings = this.settingsService.getSettings();
         if (settings.window?.lowPowerMode) {
             this.enterLowPowerMode();
@@ -45,9 +49,14 @@ export class PowerManagerService extends BaseService {
     }
 
     private handleWindowFocus() {
+        if (!this.hasInteractiveWindow()) {
+            return;
+        }
         this.exitLowPowerMode();
         this.cancelHibernation();
-        this.resumeHibernatedServices();
+        if (this.isHibernating) {
+            this.resumeHibernatedServices();
+        }
     }
 
     private enterLowPowerMode() {
@@ -65,6 +74,7 @@ export class PowerManagerService extends BaseService {
         });
 
         // 2. Broadcast event
+        this.eventBus.emit('power:state-changed', { isLowPowerMode: true });
         this.eventBus.emitCustom('power:low-power-entry', { timestamp: Date.now() });
         
         // 3. Lower process priority for child processes (if possible via ProcessManager)
@@ -84,6 +94,7 @@ export class PowerManagerService extends BaseService {
             }
         });
 
+        this.eventBus.emit('power:state-changed', { isLowPowerMode: false });
         this.eventBus.emitCustom('power:low-power-exit', { timestamp: Date.now() });
     }
 
@@ -103,6 +114,10 @@ export class PowerManagerService extends BaseService {
     }
 
     private hibernateServices() {
+        if (this.isHibernating) {
+            return;
+        }
+        this.isHibernating = true;
         this.logInfo('Hibernating background services due to inactivity...');
         // Only hibernate truly non-critical heavy services
         // Example: model-service, embedding-service if they are idle
@@ -112,11 +127,27 @@ export class PowerManagerService extends BaseService {
     }
 
     private resumeHibernatedServices() {
+        if (!this.isHibernating) {
+            return;
+        }
+        this.isHibernating = false;
         this.logInfo('Resuming services from hibernation...');
         this.eventBus.emitCustom('power:hibernation-stop', { timestamp: Date.now() });
     }
 
+    private hasInteractiveWindow(): boolean {
+        const windows = BrowserWindow.getAllWindows().filter(window => !window.isDestroyed());
+        if (windows.length === 0) {
+            return false;
+        }
+        return windows.some(window => window.isFocused() || window.isVisible());
+    }
+
     async cleanup(): Promise<void> {
         this.cancelHibernation();
+    }
+
+    isLowPowerMode(): boolean {
+        return this.isLowPowerModeActive;
     }
 }

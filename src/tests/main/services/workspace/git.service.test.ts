@@ -11,7 +11,7 @@ vi.mock('fs', () => ({
 }));
 
 vi.mock('@shared/utils/error.util', () => ({
-    getErrorMessage: (e: unknown) => (e instanceof Error ? e.message : String(e))
+    getErrorMessage: (e: TestValue) => (e instanceof Error ? e.message : String(e))
 }));
 
 import { execFile } from 'child_process';
@@ -23,7 +23,7 @@ const mockedExecFile = vi.mocked(execFile);
 
 function setupExecFile(stdout: string, stderr = ''): void {
     mockedExecFile.mockImplementation(
-        (_cmd: string, _args: unknown, _opts: unknown, cb: unknown) => {
+        (_cmd: string, _args: TestValue, _opts: TestValue, cb: TestValue) => {
             (cb as (err: Error | null, stdout: string, stderr: string) => void)(null, stdout, stderr);
             return undefined as never;
         }
@@ -32,7 +32,7 @@ function setupExecFile(stdout: string, stderr = ''): void {
 
 function setupExecFileError(message: string): void {
     mockedExecFile.mockImplementation(
-        (_cmd: string, _args: unknown, _opts: unknown, cb: unknown) => {
+        (_cmd: string, _args: TestValue, _opts: TestValue, cb: TestValue) => {
             (cb as (err: Error | null, stdout: string, stderr: string) => void)(new Error(message), '', '');
             return undefined as never;
         }

@@ -1,5 +1,8 @@
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
+import { EventBusService } from '@main/services/system/event-bus.service';
+import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
+import { PowerManagerService } from '@main/services/system/power-manager.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { withRetry } from '@main/utils/retry.util';
 import { RETRY_DEFAULTS } from '@shared/constants/defaults';
@@ -79,12 +82,13 @@ export interface MetaTelemetrySnapshot {
 export interface TelemetryEvent {
     id: string;
     name: string;
-    properties?: Record<string, unknown>;
+    properties?: Record<string, RuntimeValue>;
     timestamp: number;
     sessionId: string;
 }
 
 export class TelemetryService extends BaseService {
+    private static readonly FLUSH_JOB_ID = 'telemetry:flush';
     private sessionId: string;
     private queue: TelemetryEvent[] = [];
     private flushInterval: NodeJS.Timeout | null = null;
@@ -105,10 +109,33 @@ export class TelemetryService extends BaseService {
     private metaOverflowDrops = 0;
     private metaValidationRejects = 0;
     private metaLastOperationAt: number | null = null;
+    private readonly settingsService: SettingsService;
+    private readonly powerManager: PowerManagerService;
+    private readonly eventBus: EventBusService;
+    private readonly jobScheduler?: JobSchedulerService;
 
-    constructor(private settingsService: SettingsService) {
+    constructor(
+        settingsService?: SettingsService,
+        powerManager?: PowerManagerService,
+        eventBus?: EventBusService,
+        jobScheduler?: JobSchedulerService
+    ) {
         super('TelemetryService');
+        this.eventBus = eventBus ?? new EventBusService();
+        this.settingsService = settingsService ?? this.createFallbackSettingsService();
+        this.powerManager = powerManager ?? this.createFallbackPowerManager();
+        this.jobScheduler = jobScheduler;
         this.sessionId = uuidv4();
+    }
+
+    private createFallbackSettingsService(): SettingsService {
+        return {
+            getSettings: () => ({}),
+        } as SettingsService;
+    }
+
+    private createFallbackPowerManager(): PowerManagerService {
+        return new PowerManagerService(this.settingsService, this.eventBus);
     }
 
     /**
@@ -134,7 +161,7 @@ export class TelemetryService extends BaseService {
     /**
      * Validates properties object size
      */
-    private validateProperties(properties: Record<string, unknown> | undefined): { valid: boolean; error?: TelemetryErrorCode } {
+    private validateProperties(properties: Record<string, RuntimeValue> | undefined): { valid: boolean; error?: TelemetryErrorCode } {
         if (!properties) {
             return { valid: true };
         }
@@ -220,13 +247,16 @@ export class TelemetryService extends BaseService {
         const start = performance.now();
         this.logInfo('Initializing Telemetry Service...');
         this.startFlushing();
+
         this.checkPerformanceBudget('initialize', performance.now() - start, TELEMETRY_PERFORMANCE_BUDGETS.initialize);
     }
 
     override async cleanup(): Promise<void> {
         const start = performance.now();
+        this.jobScheduler?.unregisterRecurringJob(TelemetryService.FLUSH_JOB_ID);
         if (this.flushInterval) {
             clearInterval(this.flushInterval);
+            this.flushInterval = null;
         }
         await this.flush();
         this.checkPerformanceBudget('cleanup', performance.now() - start, TELEMETRY_PERFORMANCE_BUDGETS.cleanup);
@@ -243,7 +273,7 @@ export class TelemetryService extends BaseService {
      * @param name - The event name (max 256 chars, alphanumeric, dots, dashes, underscores)
      * @param properties - Optional properties object (max 100KB when stringified)
      */
-    track(name: string, properties?: Record<string, unknown>): { success: boolean; error?: TelemetryErrorCode } {
+    track(name: string, properties?: Record<string, RuntimeValue>): { success: boolean; error?: TelemetryErrorCode } {
         const start = performance.now();
 
         if (!this.isTelemetryEnabled()) {
@@ -300,7 +330,7 @@ export class TelemetryService extends BaseService {
      * @returns Result with per-event success/failure details
      */
     trackBatch(
-        events: ReadonlyArray<{ name: string; properties?: Record<string, unknown> }>
+        events: ReadonlyArray<{ name: string; properties?: Record<string, RuntimeValue> }>
     ): { success: boolean; error?: TelemetryErrorCode; results?: Array<{ success: boolean; error?: TelemetryErrorCode }> } {
         const start = performance.now();
 
@@ -337,7 +367,31 @@ export class TelemetryService extends BaseService {
     }
 
     private startFlushing() {
-        this.flushInterval = setInterval(() => { void this.flush(); }, 60000); // Flush every minute
+        if (this.jobScheduler) {
+            this.jobScheduler.registerRecurringJob(
+                TelemetryService.FLUSH_JOB_ID,
+                async () => {
+                    await this.flush();
+                },
+                () => this.getFlushIntervalMs(),
+                {
+                    persistState: false,
+                    runOnStart: false,
+                }
+            );
+            return;
+        }
+
+        if (this.flushInterval) {
+            clearInterval(this.flushInterval);
+        }
+        this.flushInterval = setInterval(() => {
+            void this.flush();
+        }, this.getFlushIntervalMs());
+    }
+
+    private getFlushIntervalMs(): number {
+        return this.powerManager.isLowPowerMode() ? 300000 : this.flushIntervalMs;
     }
 
     private async flushWithRetry(): Promise<boolean> {

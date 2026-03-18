@@ -268,13 +268,13 @@ export class ThemeService extends BaseService {
         }
     }
 
-    private validateManifest(manifest: unknown): manifest is ThemeManifest {
+    private validateManifest(manifest: RuntimeValue): manifest is ThemeManifest {
         if (typeof manifest !== 'object' || manifest === null) {
             this.logWarn('Manifest validation failed: not an object');
             return false;
         }
 
-        const m = manifest as Record<string, unknown>;
+        const m = manifest as Record<string, RuntimeValue>;
 
         // Validate required string fields
         if (typeof m.id !== 'string' || !m.id.trim()) {
@@ -296,7 +296,7 @@ export class ThemeService extends BaseService {
 
         // Validate type enum
         if (m.type !== 'light' && m.type !== 'dark' && m.type !== 'highContrast') {
-            this.logWarn(`Manifest validation failed: invalid type "${m.type}"`);
+            this.logWarn(`Manifest validation failed: invalid type "${String(m.type)}"`);
             return false;
         }
 
@@ -306,7 +306,7 @@ export class ThemeService extends BaseService {
             return false;
         }
 
-        const colors = m.colors as Record<string, unknown>;
+        const colors = m.colors as Record<string, RuntimeValue>;
         // Validate required color fields
         const requiredColors = ['background', 'foreground', 'primary', 'secondary', 'accent', 'muted', 'destructive', 'border', 'input', 'ring', 'card', 'cardForeground', 'popover', 'popoverForeground', 'primaryForeground', 'secondaryForeground', 'accentForeground', 'destructiveForeground', 'mutedForeground'];
         for (const color of requiredColors) {

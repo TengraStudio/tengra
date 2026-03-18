@@ -101,11 +101,11 @@ describe('RateLimitService', () => {
         });
 
         it('should reject null config', () => {
-            expect(() => service.setLimit('provider', null as unknown as { requestsPerMinute: number })).toThrow('non-null object');
+            expect(() => service.setLimit('provider', null as never as { requestsPerMinute: number })).toThrow('non-null object');
         });
 
         it('should reject undefined config', () => {
-            expect(() => service.setLimit('provider', undefined as unknown as { requestsPerMinute: number })).toThrow('non-null object');
+            expect(() => service.setLimit('provider', undefined as never as { requestsPerMinute: number })).toThrow('non-null object');
         });
 
         it('should set INVALID_CONFIG error code for bad config values', () => {

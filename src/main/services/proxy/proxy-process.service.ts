@@ -7,7 +7,6 @@ import * as path from 'path';
 import { promisify } from 'util';
 
 import { appLogger } from '@main/logging/logger';
-import { DataService } from '@main/services/data/data.service';
 import { validatePort } from '@main/services/proxy/proxy-validation.util';
 import { AuthService } from '@main/services/security/auth.service';
 import { AuthAPIService } from '@main/services/security/auth-api.service';
@@ -32,10 +31,15 @@ export interface ProxyEmbedStatus {
     running: boolean;
     pid?: number;
     port?: number;
-    configPath?: string;
     binaryPath?: string;
     error?: string;
     errorCode?: string;
+}
+
+interface ProxyRuntimeLaunchConfig {
+    managementPassword: string;
+    port: number;
+    proxyApiKey: string;
 }
 
 export class ProxyProcessManager {
@@ -46,12 +50,7 @@ export class ProxyProcessManager {
     private authApiKey: string = '';
     private isProxyRunning: boolean = false;
 
-    constructor(
-        private settingsService: SettingsService,
-        private dataService: DataService,
-        private authService: AuthService,
-        private authAPIService: AuthAPIService
-    ) { }
+    constructor(private settingsService: SettingsService, private authService: AuthService, private authAPIService: AuthAPIService) { }
 
     async start(options?: { port?: number; persistent?: boolean }): Promise<ProxyEmbedStatus> {
         const startTime = performance.now();
@@ -107,11 +106,10 @@ export class ProxyProcessManager {
             return { running: false, error: 'AuthAPIService not initialized', errorCode: AppErrorCode.PROXY_NOT_INITIALIZED };
         }
 
-        // Generate YAML config
-        const proxyConfigPath = await this.generateProxyConfigFile(this.currentPort);
+        const runtimeConfig = await this.prepareRuntimeLaunchConfig(this.currentPort);
 
         // 3. Spawn process
-        this.spawnProxyProcess(binaryPath, proxyConfigPath, authAPIPort, options?.persistent);
+        this.spawnProxyProcess(binaryPath, runtimeConfig, authAPIPort, options?.persistent);
 
         this.isProxyRunning = true;
 
@@ -159,7 +157,7 @@ export class ProxyProcessManager {
 
     private spawnProxyProcess(
         binaryPath: string,
-        configPath: string,
+        runtimeConfig: ProxyRuntimeLaunchConfig,
         authPort: number,
         persistent?: boolean
     ) {
@@ -170,18 +168,22 @@ export class ProxyProcessManager {
 
         appLogger.info(
             'Proxy',
-            `Spawning proxy: ${binaryPath} -config ${configPath} (detached: ${shouldDetach})`
+            `Spawning proxy: ${binaryPath} -port ${runtimeConfig.port} (detached: ${shouldDetach})`
         );
 
         this.child = spawn(
             binaryPath,
             [
-                '-config',
-                configPath,
+                '-port',
+                runtimeConfig.port.toString(),
                 '-auth-api-port',
                 authPort.toString(),
                 '-auth-api-key',
                 this.authApiKey,
+                '-proxy-api-key',
+                runtimeConfig.proxyApiKey,
+                '-management-password',
+                runtimeConfig.managementPassword,
             ],
             {
                 cwd: path.dirname(binaryPath),
@@ -277,7 +279,7 @@ export class ProxyProcessManager {
     }
 
     private getSourceDir(): string {
-        return path.join(process.cwd(), 'vendor', 'cliproxyapi', 'cmd', 'cliproxy-embed');
+        return path.join(process.cwd(), 'src', 'services', 'cliproxy-runtime');
     }
 
     private async ensureBinary(): Promise<string> {
@@ -447,64 +449,89 @@ export class ProxyProcessManager {
     }
 
     /**
-     * Generate a YAML config file for the cliproxy binary.
-     * This is SEPARATE from settings.json to avoid corruption.
+     * Prepare runtime launch inputs for the embedded proxy runtime.
      */
-    async generateProxyConfigFile(port: number): Promise<string> {
+    async prepareRuntimeLaunchConfig(port: number): Promise<ProxyRuntimeLaunchConfig> {
         const start = performance.now();
         const portError = validatePort(port);
         if (portError) {
             throw new Error(`Invalid proxy config port: ${portError}`);
         }
 
+        const proxyApiKey = await this.ensureProxyApiKey();
+        const managementPassword = await this.ensureManagementPassword();
         const settings = this.settingsService.getSettings();
-        const proxyKey = settings.proxy?.key ?? '';
-        const authDir = this.dataService.getPath('auth');
-        const authDirNormalized = authDir.replace(/\\/g, '/');
-        await fs.promises.mkdir(authDir, { recursive: true });
-
-        const yamlConfig = `host: "127.0.0.1"
-port: ${port}
-api-keys:
-  - "${proxyKey}"
-auth-dir: "${authDirNormalized}"
-remote-management:
-  secret-key: "${proxyKey}"
-debug: false
-logging-to-file: false
-`;
-
-        // Write to proxy-config.yaml (not settings.json)
-        const configDir = this.dataService.getPath('config');
-        const configPath = path.join(configDir, 'proxy-config.yaml');
-
-        await fs.promises.writeFile(configPath, yamlConfig, 'utf8');
-        appLogger.info('Proxy', `Generated proxy config at: ${configPath}`);
-
-        // Update settings with just the basic proxy info (no YAML-specific fields)
         await this.settingsService.saveSettings({
             proxy: {
                 enabled: settings.proxy?.enabled ?? false,
                 url: settings.proxy?.url ?? `http://127.0.0.1:${port}/v1`,
-                key: proxyKey,
-                authStoreKey: settings.proxy?.authStoreKey,
+                key: proxyApiKey,
+                authStoreKey: managementPassword,
             },
         });
 
         const elapsed = performance.now() - start;
         if (elapsed > PROXY_PROCESS_PERFORMANCE_BUDGETS.CONFIG_GENERATION_MS) {
-            appLogger.warn('Proxy', `generateProxyConfigFile exceeded budget: ${elapsed.toFixed(1)}ms > ${PROXY_PROCESS_PERFORMANCE_BUDGETS.CONFIG_GENERATION_MS}ms`);
+            appLogger.warn('Proxy', `prepareRuntimeLaunchConfig exceeded budget: ${elapsed.toFixed(1)}ms > ${PROXY_PROCESS_PERFORMANCE_BUDGETS.CONFIG_GENERATION_MS}ms`);
         }
 
-        return configPath;
+        return {
+            managementPassword,
+            port,
+            proxyApiKey,
+        };
     }
 
     /**
-     * @deprecated Use generateProxyConfigFile instead
+     * @deprecated Use prepareRuntimeLaunchConfig instead
      */
     async generateConfig(port: number) {
-        // Kept for backwards compatibility - just calls the new method
-        await this.generateProxyConfigFile(port);
+        // Kept for backwards compatibility - just prepares runtime launch inputs.
+        await this.prepareRuntimeLaunchConfig(port);
+    }
+
+    private async ensureProxyApiKey(): Promise<string> {
+        const settings = this.settingsService.getSettings();
+        const proxySettings = settings.proxy ?? {
+            enabled: false,
+            url: `http://127.0.0.1:${this.currentPort}/v1`,
+            key: '',
+        };
+        let proxyApiKey = proxySettings.key.trim();
+
+        if (!proxyApiKey || proxyApiKey.length > 72) {
+            proxyApiKey = crypto.randomBytes(32).toString('base64');
+            await this.settingsService.saveSettings({
+                proxy: {
+                    ...proxySettings,
+                    key: proxyApiKey,
+                },
+            });
+        }
+
+        return proxyApiKey;
+    }
+
+    private async ensureManagementPassword(): Promise<string> {
+        const settings = this.settingsService.getSettings();
+        const proxySettings = settings.proxy ?? {
+            enabled: false,
+            url: `http://127.0.0.1:${this.currentPort}/v1`,
+            key: '',
+        };
+        let managementPassword = proxySettings.authStoreKey?.trim() ?? '';
+
+        if (!managementPassword || managementPassword.length > 72) {
+            managementPassword = crypto.randomBytes(32).toString('base64');
+            await this.settingsService.saveSettings({
+                proxy: {
+                    ...proxySettings,
+                    authStoreKey: managementPassword,
+                },
+            });
+        }
+
+        return managementPassword;
     }
 
     private async handleAuthUpdateFromProxy(jsonString: string) {

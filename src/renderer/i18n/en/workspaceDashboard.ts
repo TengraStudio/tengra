@@ -113,6 +113,14 @@ const sectionData = {
     "logsEmpty": "No logs available. Run your workspace to generate log output.",
     "logsClear": "Clear Logs",
     "logsFilter": "Filter logs...",
+    "logsAllSources": "All sources",
+    "logsStats": {
+        "total": "Total",
+        "info": "Info",
+        "warn": "Warn",
+        "error": "Error",
+        "debug": "Debug"
+    },
     "editor": {
         "loading": "Loading editor...",
         "error": "Editor error: {{error}}",
@@ -163,7 +171,51 @@ const sectionData = {
             "fri": "Fri",
             "sun": "Sun"
         }
-    }
+    },
+    "todoCanvas": {
+        "invalidJsonImportFile": "Invalid JSON import file.",
+        "blockedLabel": "blocked",
+        "statusAll": "all",
+        "allCategories": "all categories",
+        "inProgress": "in progress",
+        "completed": "completed",
+        "history": "history",
+        "templates": "Templates",
+        "selectNode": "Select a node to edit details.",
+        "task": "Task",
+        "category": "Category",
+        "assignee": "Assignee",
+        "parent": "Parent",
+        "none": "none",
+        "links": "Links (chat / file / commit)",
+        "subTask": "Sub-task",
+        "swimlaneLayout": "Swimlane Layout",
+        "templateSprintPlanning": "Sprint Planning",
+        "templateBacklogRefinement": "Backlog Refinement",
+        "templateImplementation": "Implementation",
+        "templateQaVerification": "QA Verification",
+        "templateRelease": "Release",
+        "templateBugTriage": "Bug Triage",
+        "templateReproduceIssue": "Reproduce Issue",
+        "templateRootCauseAnalysis": "Root Cause Analysis",
+        "templateFixAndTests": "Fix & Tests",
+        "templateRegressionCheck": "Regression Check",
+        "categoryPlanning": "planning",
+        "categoryDevelopment": "development",
+        "categoryQa": "qa",
+        "categoryRelease": "release",
+        "categoryBug": "bug"
+    },
+    "searchMatchCaseTitle": "Match Case",
+    "searchMatchWholeWordTitle": "Match Whole Word",
+    "searchUseRegexTitle": "Use Regular Expression",
+    "searchIncludePatternPlaceholder": "e.g. *.ts, src/**",
+    "searchExcludePatternPlaceholder": "e.g. node_modules, dist",
 };
 
 export default sectionData;
+
+
+
+
+

@@ -17,8 +17,8 @@ const mockReadFile = vi.fn();
 
 vi.mock('fs', () => ({
     promises: {
-        stat: (...args: unknown[]) => mockStat(...args),
-        readFile: (...args: unknown[]) => mockReadFile(...args),
+        stat: (...args: TestValue[]) => mockStat(...args),
+        readFile: (...args: TestValue[]) => mockReadFile(...args),
     },
 }));
 

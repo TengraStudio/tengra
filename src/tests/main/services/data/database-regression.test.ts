@@ -24,8 +24,8 @@ vi.mock('@main/logging/logger', () => ({
 const mockQuery = vi.fn().mockImplementation(async () => ({ rows: [], affectedRows: 0 }));
 
 function buildMocks() {
-    const dataService = { getPath: vi.fn().mockReturnValue('/mock') } as unknown as DataService;
-    const eventBus = { emit: vi.fn(), on: vi.fn(), off: vi.fn() } as unknown as EventBusService;
+    const dataService = { getPath: vi.fn().mockReturnValue('/mock') } as never as DataService;
+    const eventBus = { emit: vi.fn(), on: vi.fn(), off: vi.fn() } as never as EventBusService;
     const dbClient = {
         initialize: vi.fn().mockResolvedValue(undefined),
         isConnected: vi.fn().mockReturnValue(true),
@@ -45,10 +45,10 @@ function buildMocks() {
         getHealth: vi.fn().mockResolvedValue({ success: true, data: { status: 'healthy' } }),
         setPoolLimits: vi.fn(),
         recycleConnectionPool: vi.fn().mockResolvedValue(undefined)
-    } as unknown as DatabaseClientService;
+    } as never as DatabaseClientService;
     const timeTracking = {
         getTimeStats: vi.fn().mockResolvedValue({ totalOnlineTime: 0, totalCodingTime: 0, workspaceCodingTime: {} })
-    } as unknown as TimeTrackingService;
+    } as never as TimeTrackingService;
     return { dataService, eventBus, dbClient, timeTracking };
 }
 

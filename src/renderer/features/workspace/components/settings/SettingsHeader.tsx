@@ -36,7 +36,7 @@ export const SettingsHeader: React.FC<SettingsHeaderProps> = ({
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-white/5 transition-colors disabled:opacity-30"
             >
                 <RotateCcw className="w-4 h-4" />
-                {t('common.reset') || 'Reset'}
+                {t('common.reset')}
             </button>
             <button
                 onClick={onSave}
@@ -44,7 +44,7 @@ export const SettingsHeader: React.FC<SettingsHeaderProps> = ({
                 className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-50 shadow-lg shadow-primary/20"
             >
                 <Save className="w-4 h-4" />
-                {t('common.save') || 'Save Changes'}
+                {t('common.save')}
             </button>
         </div>
     </div>

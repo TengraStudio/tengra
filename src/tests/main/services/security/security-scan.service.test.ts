@@ -27,11 +27,11 @@ beforeEach(() => {
         emit: vi.fn(),
         on: vi.fn().mockReturnValue(() => undefined),
         off: vi.fn()
-    } as unknown as EventBusService;
+    } as never as EventBusService;
 
     mockJobScheduler = {
         registerRecurringJob: vi.fn()
-    } as unknown as JobSchedulerService;
+    } as never as JobSchedulerService;
 
     service = new SecurityScanService(mockEventBus, mockJobScheduler);
 });
@@ -64,7 +64,7 @@ describe('SecurityScanService - runScan', () => {
         });
 
         vi.mocked(execFile).mockImplementation(
-            (_cmd: unknown, _args: unknown, _opts: unknown, callback: unknown) => {
+            (_cmd: TestValue, _args: TestValue, _opts: TestValue, callback: TestValue) => {
                 (callback as (err: Error | null, stdout: string, stderr: string) => void)(null, auditOutput, '');
                 return {} as ReturnType<typeof execFile>;
             }
@@ -87,7 +87,7 @@ describe('SecurityScanService - runScan', () => {
         });
 
         vi.mocked(execFile).mockImplementation(
-            (_cmd: unknown, _args: unknown, _opts: unknown, callback: unknown) => {
+            (_cmd: TestValue, _args: TestValue, _opts: TestValue, callback: TestValue) => {
                 (callback as (err: Error | null, stdout: string, stderr: string) => void)(null, auditOutput, '');
                 return {} as ReturnType<typeof execFile>;
             }
@@ -109,7 +109,7 @@ describe('SecurityScanService - runScan', () => {
         });
 
         vi.mocked(execFile).mockImplementation(
-            (_cmd: unknown, _args: unknown, _opts: unknown, callback: unknown) => {
+            (_cmd: TestValue, _args: TestValue, _opts: TestValue, callback: TestValue) => {
                 (callback as (err: Error | null, stdout: string, stderr: string) => void)(null, auditOutput, '');
                 return {} as ReturnType<typeof execFile>;
             }
@@ -130,7 +130,7 @@ describe('SecurityScanService - runScan', () => {
         });
 
         vi.mocked(execFile).mockImplementation(
-            (_cmd: unknown, _args: unknown, _opts: unknown, callback: unknown) => {
+            (_cmd: TestValue, _args: TestValue, _opts: TestValue, callback: TestValue) => {
                 (callback as (err: Error | null, stdout: string, stderr: string) => void)(null, auditOutput, '');
                 return {} as ReturnType<typeof execFile>;
             }
@@ -147,7 +147,7 @@ describe('SecurityScanService - runScan', () => {
 
     it('should handle invalid JSON output gracefully', async () => {
         vi.mocked(execFile).mockImplementation(
-            (_cmd: unknown, _args: unknown, _opts: unknown, callback: unknown) => {
+            (_cmd: TestValue, _args: TestValue, _opts: TestValue, callback: TestValue) => {
                 (callback as (err: Error | null, stdout: string, stderr: string) => void)(null, 'not-json', '');
                 return {} as ReturnType<typeof execFile>;
             }
@@ -161,7 +161,7 @@ describe('SecurityScanService - runScan', () => {
 
     it('should return failure result when npm audit produces no output', async () => {
         vi.mocked(execFile).mockImplementation(
-            (_cmd: unknown, _args: unknown, _opts: unknown, callback: unknown) => {
+            (_cmd: TestValue, _args: TestValue, _opts: TestValue, callback: TestValue) => {
                 (callback as (err: Error | null, stdout: string, stderr: string) => void)(
                     new Error('npm audit produced no output'), '', ''
                 );

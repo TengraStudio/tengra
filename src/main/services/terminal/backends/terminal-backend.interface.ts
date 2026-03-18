@@ -11,7 +11,7 @@ export interface TerminalCreateOptions {
     env: Record<string, string | undefined>;
     onData: (data: string) => void;
     onExit: (code: number) => void;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, RuntimeValue>;
 }
 
 /**

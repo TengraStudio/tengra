@@ -19,7 +19,7 @@ export class IpcError extends AppError {
     channel: string,
     message: string,
     code: string = 'IPC_ERROR',
-    options?: { cause?: Error; context?: Record<string, unknown> }
+    options?: { cause?: Error; context?: Record<string, RuntimeValue> }
   ) {
     super(message, code, options);
     this.channel = channel;

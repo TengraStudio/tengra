@@ -36,7 +36,7 @@ import {
     MonitoringTelemetryEvent,
 } from '@main/services/analysis/monitoring.service';
 
-const mockExec = exec as unknown as ReturnType<typeof vi.fn>;
+const mockExec = exec as never as ReturnType<typeof vi.fn>;
 
 describe('MonitoringService edge cases (B-0451)', () => {
     let service: MonitoringService;
@@ -48,7 +48,7 @@ describe('MonitoringService edge cases (B-0451)', () => {
         vi.mocked(os.totalmem).mockReturnValue(16_000_000_000);
         vi.mocked(os.freemem).mockReturnValue(8_000_000_000);
         mockExec.mockImplementation(
-            (_cmd: string, _opts: Record<string, unknown>, cb: (err: null, out: string, stderr: string) => void) => {
+            (_cmd: string, _opts: Record<string, TestValue>, cb: (err: null, out: string, stderr: string) => void) => {
                 cb(null, 'mock output', '');
             }
         );
@@ -191,7 +191,7 @@ describe('MonitoringService edge cases (B-0451)', () => {
 
         it('should emit COMMAND_FAILED on getSystemMonitor failure', async () => {
             mockExec.mockImplementation(
-                (_cmd: string, _opts: Record<string, unknown>, cb: (err: Error, out: string, stderr: string) => void) => {
+                (_cmd: string, _opts: Record<string, TestValue>, cb: (err: Error, out: string, stderr: string) => void) => {
                     cb(new Error('exec boom'), '', '');
                 }
             );

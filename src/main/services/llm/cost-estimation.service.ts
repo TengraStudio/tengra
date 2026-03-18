@@ -4,8 +4,8 @@
  */
 
 import { BaseService } from '@main/services/base.service';
-import { CostEstimate, PlanCostBreakdown, WorkspaceStep } from '@shared/types/automation-workflow';
 import { Message } from '@shared/types/chat';
+import { CostEstimate, PlanCostBreakdown, WorkspaceStep } from '@shared/types/council';
 
 import { getTokenEstimationService, TokenEstimationService } from './token-estimation.service';
 

@@ -155,7 +155,7 @@ ${context}`;
         };
     }
 
-    private sanitizeHexColors(input: unknown): string[] {
+    private sanitizeHexColors(input: RuntimeValue): string[] {
         if (!Array.isArray(input)) {
             return [];
         }

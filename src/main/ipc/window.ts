@@ -51,6 +51,34 @@ const RUN_COMMAND_ALLOWED_EXECUTABLES = new Set([
     'docker',
     'kubectl'
 ]);
+const WINDOW_MESSAGE_KEY = {
+    SHELL_OPEN_EXTERNAL_ACCESS_DENIED: 'mainProcess.window.shellOpenExternal.accessDenied',
+    SHELL_OPEN_EXTERNAL_FORBIDDEN_PROTOCOL: 'mainProcess.window.shellOpenExternal.forbiddenProtocol',
+    SHELL_OPEN_EXTERNAL_VALIDATION_FAILED: 'mainProcess.window.shellOpenExternal.validationFailed',
+    SHELL_RUN_COMMAND_VALIDATION_FAILED: 'mainProcess.window.shellRunCommand.validationFailed',
+    SHELL_RUN_COMMAND_COMMAND_TOO_LONG: 'mainProcess.window.shellRunCommand.commandTooLong',
+    SHELL_RUN_COMMAND_TOO_MANY_ARGUMENTS: 'mainProcess.window.shellRunCommand.tooManyArguments',
+    SHELL_RUN_COMMAND_ARGUMENT_TOO_LONG: 'mainProcess.window.shellRunCommand.argumentTooLong',
+    SHELL_RUN_COMMAND_INVALID_ARGUMENT: 'mainProcess.window.shellRunCommand.invalidArgument',
+    SHELL_RUN_COMMAND_EXECUTABLE_NOT_ALLOWED: 'mainProcess.window.shellRunCommand.executableNotAllowed',
+    SHELL_RUN_COMMAND_WORKING_DIRECTORY_NOT_ALLOWED: 'mainProcess.window.shellRunCommand.workingDirectoryNotAllowed',
+    SHELL_RUN_COMMAND_ARGUMENT_POLICY_VIOLATION: 'mainProcess.window.shellRunCommand.argumentPolicyViolation',
+    SHELL_RUN_COMMAND_RATE_LIMIT_EXCEEDED: 'mainProcess.window.shellRunCommand.rateLimitExceeded'
+} as const;
+const WINDOW_ERROR_MESSAGE = {
+    ACCESS_DENIED: 'Access denied',
+    FORBIDDEN_PROTOCOL: 'Forbidden protocol',
+    VALIDATION_FAILED: 'Validation failed',
+    COMMAND_VALIDATION_FAILED: 'Command validation failed',
+    COMMAND_TOO_LONG: 'Command too long',
+    TOO_MANY_ARGUMENTS: 'Too many arguments',
+    ARGUMENT_TOO_LONG: 'Argument too long',
+    INVALID_ARGUMENT: 'Invalid argument',
+    EXECUTABLE_NOT_ALLOWED: 'Executable is not allowed',
+    WORKING_DIRECTORY_NOT_ALLOWED: 'Working directory is not allowed',
+    ARGUMENT_POLICY_VIOLATION: 'Argument policy violation',
+    RATE_LIMIT_EXCEEDED: 'Rate limit exceeded'
+} as const;
 
 /** AUD-2026-02-27-03: Rate limiter for shell:runCommand — 30 executions per minute */
 const runCommandRateLimiter = new RateLimiter({
@@ -230,7 +258,7 @@ function registerWindowControlHandlers(getMainWindow: () => BrowserWindow | null
         }
     });
 
-    ipcMain.handle('window:openDetachedTerminal', async (event, optionsRaw: unknown) => {
+    ipcMain.handle('window:openDetachedTerminal', async (event, optionsRaw: RuntimeValue) => {
         validateSender(event);
         const win = getMainWindow();
         if (!win) {
@@ -315,18 +343,18 @@ function registerWindowControlHandlers(getMainWindow: () => BrowserWindow | null
  * @param value - Raw options object to parse
  * @returns Validated options or null if invalid
  */
-function parseDetachedTerminalOptions(value: unknown): DetachedTerminalWindowOptions | null {
+function parseDetachedTerminalOptions(value: RuntimeValue): DetachedTerminalWindowOptions | null {
     if (!value || typeof value !== 'object') {
         return null;
     }
 
-    const raw = value as Record<string, unknown>;
+    const raw = value as Record<string, RuntimeValue>;
     const sessionId = typeof raw.sessionId === 'string' ? raw.sessionId.trim() : '';
     if (!sessionId) {
         return null;
     }
 
-    const normalize = (input: unknown): string | undefined => {
+    const normalize = (input: RuntimeValue): string | undefined => {
         if (typeof input !== 'string') {
             return undefined;
         }
@@ -342,6 +370,40 @@ function parseDetachedTerminalOptions(value: unknown): DetachedTerminalWindowOpt
         title: normalize(raw.title),
         shell: normalize(raw.shell),
         cwd: normalize(raw.cwd),
+    };
+}
+
+type ShellOpenExternalFailure = {
+    success: false;
+    error: string;
+    messageKey?: string;
+};
+
+function createShellOpenExternalFailure(
+    error: string,
+    messageKey?: string
+): ShellOpenExternalFailure {
+    return { success: false, error, messageKey };
+}
+
+type RunCommandResult = {
+    stdout: string;
+    stderr: string;
+    code: number;
+    error: string;
+    messageKey?: string;
+};
+
+function createRunCommandFailure(
+    stderr: string,
+    messageKey: string
+): RunCommandResult {
+    return {
+        stdout: '',
+        stderr,
+        code: 1,
+        error: WINDOW_ERROR_MESSAGE.COMMAND_VALIDATION_FAILED,
+        messageKey
     };
 }
 
@@ -361,17 +423,20 @@ function registerShellHandlers(getMainWindow: () => BrowserWindow | null, allowe
             try {
                 const decodedPath = decodeURIComponent(filePath);
                 if (!isPathAllowed(decodedPath, allowedRoots)) {
-                    return { success: false, error: 'Access denied' };
+                    return createShellOpenExternalFailure(
+                        WINDOW_ERROR_MESSAGE.ACCESS_DENIED,
+                        WINDOW_MESSAGE_KEY.SHELL_OPEN_EXTERNAL_ACCESS_DENIED
+                    );
                 }
                 const error = await shell.openPath(decodedPath);
                 if (error) {
                     appLogger.error('WindowIPC', `shell.openPath failed: ${error}`);
-                    return { success: false, error };
+                    return createShellOpenExternalFailure(error);
                 }
                 return { success: true };
             } catch (e) {
                 appLogger.error('WindowIPC', `Safe file open catch: ${e}`);
-                return { success: false, error: String(e) };
+                return createShellOpenExternalFailure(String(e));
             }
         }
 
@@ -389,19 +454,25 @@ function registerShellHandlers(getMainWindow: () => BrowserWindow | null, allowe
                         'WindowIPC',
                         `shell.openExternal failed: ${getErrorMessage(e as Error)}`
                     );
-                    return { success: false, error: String(e) };
+                    return createShellOpenExternalFailure(String(e));
                 }
             } else {
-                return { success: false, error: 'Forbidden protocol' };
+                return createShellOpenExternalFailure(
+                    WINDOW_ERROR_MESSAGE.FORBIDDEN_PROTOCOL,
+                    WINDOW_MESSAGE_KEY.SHELL_OPEN_EXTERNAL_FORBIDDEN_PROTOCOL
+                );
             }
         } catch (e) {
             appLogger.error('WindowIPC', `openExternal catch: ${e}`);
-            return { success: false, error: String(e) };
+            return createShellOpenExternalFailure(String(e));
         }
     }, {
         argsSchema: z.tuple([urlSchema]),
         wrapResponse: true,
-        defaultValue: { success: false, error: 'Validation failed' }
+        defaultValue: createShellOpenExternalFailure(
+            WINDOW_ERROR_MESSAGE.VALIDATION_FAILED,
+            WINDOW_MESSAGE_KEY.SHELL_OPEN_EXTERNAL_VALIDATION_FAILED
+        )
     }));
 
     ipcMain.handle('shell:openTerminal', createValidatedIpcHandler('shell:openTerminal', async (event, command: string) => {
@@ -462,7 +533,7 @@ function registerShellHandlers(getMainWindow: () => BrowserWindow | null, allowe
         defaultValue: false
     }));
 
-    ipcMain.handle('shell:runCommand', createValidatedIpcHandler('shell:runCommand', async (event, command: string, args: string[], cwd?: string) => {
+    ipcMain.handle('shell:runCommand', createValidatedIpcHandler<RunCommandResult, [string, string[], string | undefined]>('shell:runCommand', async (event, command: string, args: string[], cwd?: string) => {
         validateSender(event);
 
         // AUD-SEC-037: Hardened command validation
@@ -472,47 +543,74 @@ function registerShellHandlers(getMainWindow: () => BrowserWindow | null, allowe
 
         if (command.length > MAX_COMMAND_LENGTH) {
             appLogger.warn('WindowIPC', 'Command exceeds maximum length');
-            return { stdout: '', stderr: 'Command too long', code: 1, error: 'Command validation failed' };
+            return createRunCommandFailure(
+                WINDOW_ERROR_MESSAGE.COMMAND_TOO_LONG,
+                WINDOW_MESSAGE_KEY.SHELL_RUN_COMMAND_COMMAND_TOO_LONG
+            );
         }
 
         if (args.length > MAX_ARGS_COUNT) {
             appLogger.warn('WindowIPC', 'Too many arguments');
-            return { stdout: '', stderr: 'Too many arguments', code: 1, error: 'Command validation failed' };
+            return createRunCommandFailure(
+                WINDOW_ERROR_MESSAGE.TOO_MANY_ARGUMENTS,
+                WINDOW_MESSAGE_KEY.SHELL_RUN_COMMAND_TOO_MANY_ARGUMENTS
+            );
         }
 
         for (const arg of args) {
             if (arg.length > MAX_ARG_LENGTH) {
                 appLogger.warn('WindowIPC', 'Argument exceeds maximum length');
-                return { stdout: '', stderr: 'Argument too long', code: 1, error: 'Command validation failed' };
+                return createRunCommandFailure(
+                    WINDOW_ERROR_MESSAGE.ARGUMENT_TOO_LONG,
+                    WINDOW_MESSAGE_KEY.SHELL_RUN_COMMAND_ARGUMENT_TOO_LONG
+                );
             }
             if (/[\r\n\0]/.test(arg)) {
                 appLogger.warn('WindowIPC', 'Argument contains forbidden control characters');
-                return { stdout: '', stderr: 'Invalid argument', code: 1, error: 'Command validation failed' };
+                return createRunCommandFailure(
+                    WINDOW_ERROR_MESSAGE.INVALID_ARGUMENT,
+                    WINDOW_MESSAGE_KEY.SHELL_RUN_COMMAND_INVALID_ARGUMENT
+                );
             }
         }
 
         const executable = normalizeExecutableName(command);
         if (!RUN_COMMAND_ALLOWED_EXECUTABLES.has(executable)) {
             appLogger.warn('WindowIPC', `Blocked shell:runCommand executable: ${executable}`);
-            return { stdout: '', stderr: 'Executable is not allowed', code: 1, error: 'Command validation failed' };
+            return createRunCommandFailure(
+                WINDOW_ERROR_MESSAGE.EXECUTABLE_NOT_ALLOWED,
+                WINDOW_MESSAGE_KEY.SHELL_RUN_COMMAND_EXECUTABLE_NOT_ALLOWED
+            );
         }
 
         if (cwd && !isPathAllowed(cwd, allowedRoots)) {
             appLogger.warn('WindowIPC', `Blocked shell:runCommand cwd outside allowed roots: ${cwd}`);
-            return { stdout: '', stderr: 'Working directory is not allowed', code: 1, error: 'Command validation failed' };
+            return createRunCommandFailure(
+                WINDOW_ERROR_MESSAGE.WORKING_DIRECTORY_NOT_ALLOWED,
+                WINDOW_MESSAGE_KEY.SHELL_RUN_COMMAND_WORKING_DIRECTORY_NOT_ALLOWED
+            );
         }
 
         // AUD-2026-02-27-03: Per-command argument validation (path traversal, injection)
         const argPolicy = validateCommandArgs(executable, args);
         if (!argPolicy.allowed) {
             appLogger.warn('WindowIPC', `Blocked shell:runCommand args: ${argPolicy.reason}`);
-            return { stdout: '', stderr: argPolicy.reason ?? 'Argument policy violation', code: 1, error: 'Command validation failed' };
+            return createRunCommandFailure(
+                argPolicy.reason ?? WINDOW_ERROR_MESSAGE.ARGUMENT_POLICY_VIOLATION,
+                WINDOW_MESSAGE_KEY.SHELL_RUN_COMMAND_ARGUMENT_POLICY_VIOLATION
+            );
         }
 
         // AUD-2026-02-27-03: Rate limiting for execution attempts
         if (!runCommandRateLimiter.tryAcquire()) {
             appLogger.warn('WindowIPC', 'shell:runCommand rate limit exceeded');
-            return { stdout: '', stderr: 'Rate limit exceeded', code: 1, error: 'Rate limit exceeded' };
+            return {
+                stdout: '',
+                stderr: WINDOW_ERROR_MESSAGE.RATE_LIMIT_EXCEEDED,
+                code: 1,
+                error: WINDOW_ERROR_MESSAGE.RATE_LIMIT_EXCEEDED,
+                messageKey: WINDOW_MESSAGE_KEY.SHELL_RUN_COMMAND_RATE_LIMIT_EXCEEDED
+            };
         }
 
         return new Promise(resolve => {
@@ -545,7 +643,13 @@ function registerShellHandlers(getMainWindow: () => BrowserWindow | null, allowe
     }, {
         argsSchema: z.tuple([commandSchema, z.array(z.string()), cwdSchema]),
         wrapResponse: true,
-        defaultValue: { stdout: '', stderr: '', code: 1, error: 'Validation failed' }
+        defaultValue: {
+            stdout: '',
+            stderr: '',
+            code: 1,
+            error: WINDOW_ERROR_MESSAGE.VALIDATION_FAILED,
+            messageKey: WINDOW_MESSAGE_KEY.SHELL_RUN_COMMAND_VALIDATION_FAILED
+        }
     }));
 }
 

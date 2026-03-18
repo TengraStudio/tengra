@@ -154,7 +154,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(
 
         return (
             <div
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+                className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="logging-dashboard-title"

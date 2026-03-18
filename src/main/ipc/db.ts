@@ -7,6 +7,7 @@ import { serializeToIpc, validatedAs, validatedToJsonObject } from '@main/utils/
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
 import { DB_CHANNELS } from '@shared/constants/ipc-channels';
+import { DetailedStatsSchema, StatsPeriodSchema, TimeTrackingStatsSchema, TokenStatsSchema } from '@shared/schemas/statistics.schema';
 import { Chat, Folder, Message, Prompt } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
 import { DbTokenStats } from '@shared/types/db-api';
@@ -560,7 +561,21 @@ function registerStatsHandlers(databaseService: DatabaseService, validateSender:
         return await databaseService.system.getDetailedStats(period || 'daily');
     }, {
         defaultValue: null,
-        argsSchema: z.tuple([z.enum(['daily', 'weekly', 'monthly', 'yearly']).optional()])
+        argsSchema: z.tuple([StatsPeriodSchema.optional()]),
+        responseSchema: DetailedStatsSchema.nullable()
+    }));
+
+    ipcMain.handle('db:getTimeStats', createValidatedIpcHandler('db:getTimeStats', async (event) => {
+        validateSender(event);
+        return await databaseService.getTimeStats();
+    }, {
+        defaultValue: {
+            totalOnlineTime: 0,
+            totalCodingTime: 0,
+            workspaceCodingTime: {}
+        },
+        argsSchema: z.tuple([]),
+        responseSchema: TimeTrackingStatsSchema
     }));
 
     ipcMain.handle('db:getProviderStats', createValidatedIpcHandler('db:getProviderStats', async (event) => {
@@ -576,6 +591,7 @@ function registerStatsHandlers(databaseService: DatabaseService, validateSender:
         };
     }, {
         defaultValue: { totalSent: 0, totalReceived: 0, totalCost: 0, timeline: [], byProvider: {}, byModel: {} } as DbTokenStats,
-        argsSchema: z.tuple([])
+        argsSchema: z.tuple([]),
+        responseSchema: TokenStatsSchema
     }));
 }

@@ -28,8 +28,14 @@ const sectionData = {
     "select": "Seç",
     "close": "Kapat",
     "engineLabel": "Tengra Komut Motoru",
+    "keyboardHelp": "Use arrow keys to move through command results and Enter to run the selected command.",
     "previewEmpty": "Detayları görmek için bir öğe seçin",
-    "noResultsHint": "Sohbetler, modeller veya ayarlar içinde aramayı deneyin"
+    "noResultsHint": "Sohbetler, modeller veya ayarlar içinde aramayı deneyin",
+    "unknown": "Unknown",
+    "noDetails": "No details",
+    "metadataType": "Type",
+    "metadataCreated": "Created",
+    "metadataProvider": "Provider"
 };
 
 export default sectionData;

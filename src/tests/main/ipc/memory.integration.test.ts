@@ -2,7 +2,7 @@
 import { registerMemoryIpc } from '@main/ipc/memory';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mockIpcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
+const mockIpcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
 
 // Mock memory service
 const mockMemoryService = {
@@ -18,8 +18,8 @@ const mockMemoryService = {
 // Mock electron
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
-            mockIpcMainHandlers.set(channel, handler);
+        handle: vi.fn((channel: string, handler: (...args: TestValue[]) => TestValue | Promise<TestValue>) => {
+            mockIpcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
         }),
         removeHandler: vi.fn((channel: string) => {
             mockIpcMainHandlers.delete(channel);
@@ -289,3 +289,4 @@ describe('Memory IPC Handlers', () => {
         });
     });
 });
+

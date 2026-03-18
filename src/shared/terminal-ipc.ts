@@ -41,9 +41,18 @@ export type TerminalIpcContract = IpcContractMap & {
         args: [];
         response: Array<{ id: string; name: string; available: boolean }>;
     };
+    'terminal:getDiscoverySnapshot': {
+        args: [{ refresh?: boolean } | undefined];
+        response: {
+            terminalAvailable: boolean;
+            shells: Array<{ id: string; name: string; path: string }>;
+            backends: Array<{ id: string; name: string; available: boolean }>;
+            refreshedAt: number;
+        };
+    };
     'terminal:getDockerContainers': {
         args: [];
-        response: { success: boolean; containers?: Record<string, unknown>[]; error?: string; raw?: string };
+        response: { success: boolean; containers?: Record<string, RuntimeValue>[]; error?: string; raw?: string };
     };
     'terminal:readBuffer': {
         args: [string];

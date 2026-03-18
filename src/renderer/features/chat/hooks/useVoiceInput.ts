@@ -96,7 +96,7 @@ export function useVoiceInput(onFinalResult: (text: string) => void, language: s
                 recognitionRef.current.start();
                 setIsListening(true);
             } catch (error) {
-                handleError(error, 'VoiceInput.startListening');
+                handleError(error as TypeAssertionValue, 'VoiceInput.startListening');
             }
         }
     }, []);

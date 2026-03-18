@@ -20,9 +20,9 @@ interface FontOption {
 
 const createFontOptions = (t: (key: string) => string): FontOption[] => [
     { id: "'Inter', system-ui, sans-serif", label: `Inter (${t('appearance.default')})` },
-    { id: "'JetBrains Mono', monospace", label: 'JetBrains Mono' },
-    { id: "'Roboto', sans-serif", label: 'Roboto' },
-    { id: "'Outfit', sans-serif", label: 'Outfit' },
+    { id: "'JetBrains Mono', monospace", label: t('appearance.fontOptionJetBrainsMono') },
+    { id: "'Roboto', sans-serif", label: t('appearance.fontOptionRoboto') },
+    { id: "'Outfit', sans-serif", label: t('appearance.fontOptionOutfit') },
     { id: 'system-ui, sans-serif', label: t('appearance.system') },
 ];
 

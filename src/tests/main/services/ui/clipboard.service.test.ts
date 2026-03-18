@@ -263,7 +263,11 @@ describe('ClipboardService', () => {
 
             const service = new ClipboardService();
             const result = service.readImage();
-            expect(result).toEqual({ success: false, error: 'Clipboard does not contain an image' });
+            expect(result).toEqual({
+                success: false,
+                error: 'Clipboard does not contain an image',
+                messageKey: 'mainProcess.clipboardService.imageNotFound'
+            });
         });
 
         it('should return dataUrl when clipboard has an image', () => {

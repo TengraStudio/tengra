@@ -30,10 +30,14 @@ describe('runtime-path.service', () => {
         expect(runtimePaths.getManagedRuntimeBinDir()).toBe('/mock/appData/Tengra/runtime/bin');
         expect(runtimePaths.getManagedRuntimeModelsDir()).toBe('/mock/appData/Tengra/runtime/models');
         expect(runtimePaths.getManagedRuntimeTempDir()).toBe('/mock/appData/Tengra/runtime/temp');
+        expect(runtimePaths.getManagedRuntimeDownloadsDir()).toBe('/mock/appData/Tengra/runtime/downloads');
+        expect(runtimePaths.getManagedRuntimeManifestsDir()).toBe('/mock/appData/Tengra/runtime/manifests');
         expect(mkdirSync).toHaveBeenCalledWith('/mock/appData/Tengra/runtime', { recursive: true });
         expect(mkdirSync).toHaveBeenCalledWith('/mock/appData/Tengra/runtime/bin', { recursive: true });
         expect(mkdirSync).toHaveBeenCalledWith('/mock/appData/Tengra/runtime/models', { recursive: true });
         expect(mkdirSync).toHaveBeenCalledWith('/mock/appData/Tengra/runtime/temp', { recursive: true });
+        expect(mkdirSync).toHaveBeenCalledWith('/mock/appData/Tengra/runtime/downloads', { recursive: true });
+        expect(mkdirSync).toHaveBeenCalledWith('/mock/appData/Tengra/runtime/manifests', { recursive: true });
     });
 
     it('normalizes the managed runtime binary path for the current OS', async () => {

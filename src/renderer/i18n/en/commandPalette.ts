@@ -28,8 +28,14 @@ const sectionData = {
     "select": "Select",
     "close": "Close",
     "engineLabel": "Tengra Command Engine",
+    "keyboardHelp": "Use arrow keys to move through command results and Enter to run the selected command.",
     "previewEmpty": "Select an item to view details",
-    "noResultsHint": "Try searching for chats, models, or settings"
+    "noResultsHint": "Try searching for chats, models, or settings",
+    "unknown": "Unknown",
+    "noDetails": "No details",
+    "metadataType": "Type",
+    "metadataCreated": "Created",
+    "metadataProvider": "Provider"
 };
 
 export default sectionData;

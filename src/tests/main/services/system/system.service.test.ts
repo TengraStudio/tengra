@@ -73,7 +73,7 @@ describe('SystemService', () => {
 
     describe('setVolume', () => {
         it('should clamp volume to 0-100', async () => {
-            mockSpawnChild.on.mockImplementation((evt: string, cb: (...args: unknown[]) => void) => {
+            mockSpawnChild.on.mockImplementation((evt: string, cb: (...args: TestValue[]) => void) => {
                 if (evt === 'close') {cb(0);}
             });
             mockSpawnChild.stdout.on.mockImplementation(() => {});

@@ -59,6 +59,16 @@ struct ModelInfo {
     pub quota_info: Option<serde_json::Value>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct Billing {
+    #[serde(default)]
+    is_premium: bool,
+    #[serde(default)]
+    multiplier: f64,
+    #[serde(default)]
+    restricted_to: Option<Vec<String>>,
+}
+
 #[derive(Serialize)]
 struct Response {
     success: bool,
@@ -231,8 +241,13 @@ async fn fetch_copilot(client: &Client, token: Option<String>, plan: Option<Stri
         };
     };
 
-    let is_free = plan.as_deref() == Some("free");
-    let url = "https://api.githubcopilot.com/models";
+    let plan_str = plan.as_deref().unwrap_or("free");
+    let url = match plan_str {
+        "individual" => "https://api.individual.githubcopilot.com/models",
+        "business" => "https://api.business.githubcopilot.com/models",
+        "enterprise" => "https://api.enterprise.githubcopilot.com/models",
+        _ => "https://api.githubcopilot.com/models",
+    };
 
     match client
         .get(url)
@@ -245,17 +260,54 @@ async fn fetch_copilot(client: &Client, token: Option<String>, plan: Option<Stri
     {
         Ok(res) => {
             if !res.status().is_success() {
+                let status = res.status();
+                let error_body = res.text().await.unwrap_or_else(|_| "Failed to read error body".into());
                 return Response {
                     success: false,
                     models: vec![],
-                    error: Some(format!("Copilot HTTP {}", res.status())),
+                    error: Some(format!("Copilot HTTP {} - Body: {}", status, error_body)),
                 };
             }
 
             #[derive(Deserialize)]
+            #[allow(dead_code)]
+            struct CopilotCapabilityLimits {
+                #[serde(default)]
+                max_context_window_tokens: Option<u64>,
+            }
+
+            #[derive(Deserialize)]
+            struct CopilotCapabilitySupports {
+                #[serde(default)]
+                reasoning_effort: Option<Vec<String>>,
+            }
+
+            #[derive(Deserialize)]
+            #[allow(dead_code)]
+            struct CopilotCapabilities {
+                #[serde(default)]
+                limits: Option<CopilotCapabilityLimits>,
+                #[serde(default)]
+                supports: Option<CopilotCapabilitySupports>,
+                #[serde(default, rename = "type")]
+                model_type: Option<String>,
+            }
+
+            #[derive(Deserialize)]
+            #[allow(dead_code)]
             struct CopilotModelData {
                 id: String,
                 name: Option<String>,
+                #[serde(default)]
+                billing: Option<Billing>,
+                #[serde(default)]
+                capabilities: Option<CopilotCapabilities>,
+                #[serde(default)]
+                vendor: Option<String>,
+                #[serde(default)]
+                preview: Option<bool>,
+                #[serde(default)]
+                model_picker_enabled: Option<bool>,
             }
 
             #[derive(Deserialize)]
@@ -263,26 +315,73 @@ async fn fetch_copilot(client: &Client, token: Option<String>, plan: Option<Stri
                 data: Vec<CopilotModelData>,
             }
 
-            match res.json::<CopilotResponse>().await {
+            let text = res.text().await.unwrap_or_else(|_| "[]".into());
+
+            match serde_json::from_str::<CopilotResponse>(&text) {
                 Ok(data) => {
                     let mut models: Vec<ModelInfo> = data
                         .data
                         .into_iter()
-                        .filter_map(|m| {
-                            get_copilot_model_metadata(&m.id, is_free).map(|(thinking_levels, pricing, description)| {
-                                ModelInfo {
-                                    id: m.id.clone(),
-                                    name: m.name.unwrap_or_else(|| m.id.clone()),
-                                    provider: "copilot".into(),
-                                    description: description.or(Some("GitHub Copilot Model".into())),
-                                    downloads: None,
-                                    pricing,
-                                    thinking_levels,
-                                    percentage: None,
-                                    reset: None,
-                                    quota_info: None,
+                        // Skip embedding models - only include chat models
+                        .filter(|m| {
+                            let model_type = m.capabilities.as_ref()
+                                .and_then(|c| c.model_type.as_deref())
+                                .unwrap_or("chat");
+                            model_type == "chat"
+                        })
+                        // Filter by restricted_to if present in billing
+                        .filter(|m| {
+                            if let Some(billing) = &m.billing {
+                                if let Some(restricted_to) = &billing.restricted_to {
+                                    if !restricted_to.is_empty() {
+                                        return restricted_to.contains(&plan_str.to_string());
+                                    }
                                 }
-                            })
+                            }
+                            true
+                        })
+                        .map(|m| {
+                            // Extract thinking levels from API capabilities
+                            let thinking_levels = m.capabilities.as_ref()
+                                .and_then(|c| c.supports.as_ref())
+                                .and_then(|s| s.reasoning_effort.clone());
+
+                            // Use billing multiplier for pricing
+                            let pricing = m.billing.as_ref().map(|b| {
+                                let mul = b.multiplier;
+                                Pricing {
+                                    input: mul,
+                                    cached_input: Some(mul * 0.5),
+                                    cache_write_5m: None,
+                                    cache_write_1h: None,
+                                    output: mul,
+                                }
+                            });
+
+                            let is_preview = m.preview.unwrap_or(false);
+                            let display_name = m.name.unwrap_or_else(|| m.id.clone());
+                            let vendor = m.vendor.unwrap_or_default();
+
+                            let description = if is_preview {
+                                Some(format!("{} (Preview)", vendor))
+                            } else if !vendor.is_empty() {
+                                Some(vendor)
+                            } else {
+                                Some("GitHub Copilot Model".into())
+                            };
+
+                            ModelInfo {
+                                id: m.id,
+                                name: display_name,
+                                provider: "copilot".into(),
+                                description,
+                                downloads: None,
+                                pricing,
+                                thinking_levels,
+                                percentage: None,
+                                reset: None,
+                                quota_info: None,
+                            }
                         })
                         .collect();
 
@@ -294,11 +393,13 @@ async fn fetch_copilot(client: &Client, token: Option<String>, plan: Option<Stri
                         error: None,
                     }
                 }
-                Err(e) => Response {
-                    success: false,
-                    models: vec![],
-                    error: Some(e.to_string()),
-                },
+                Err(e) => {
+                    Response {
+                        success: false,
+                        models: vec![],
+                        error: Some(e.to_string()),
+                    }
+                }
             }
         }
         Err(e) => Response {
@@ -309,60 +410,6 @@ async fn fetch_copilot(client: &Client, token: Option<String>, plan: Option<Stri
     }
 }
 
-/// Returns (thinking_levels, pricing, description) for GitHub Copilot models
-fn get_copilot_model_metadata(
-    id: &str,
-    is_free: bool,
-) -> Option<(Option<Vec<String>>, Option<Pricing>, Option<String>)> {
-    let id_lower = id.to_lowercase();
-
-    // Map common GitHub IDs to the required pricing/multipliers
-    let thinking_levels = Some(vec!["low".into(), "medium".into(), "high".into()]);
-
-    let (name, paid_mul, free_mul) = match id_lower.as_str() {
-        "claude-3.5-haiku" | "claude-haiku-4.5" => ("Claude Haiku 4.5", Some(0.33), Some(1.0)),
-        "claude-3-opus" | "claude-opus-4.5" => ("Claude Opus 4.5", Some(3.0), None),
-        "claude-opus-4.6" => ("Claude Opus 4.6", Some(3.0), None),
-        "claude-opus-4.6-fast" => ("Claude Opus 4.6 (fast mode) (preview)", Some(30.0), None),
-        "claude-3-sonnet" | "claude-sonnet-4" => ("Claude Sonnet 4", Some(1.0), None),
-        "claude-sonnet-4.5" => ("Claude Sonnet 4.5", Some(1.0), None),
-        "claude-sonnet-4.6" => ("Claude Sonnet 4.6", Some(1.0), None),
-        "gemini-2.5-pro" => ("Gemini 2.5 Pro", Some(1.0), None),
-        "gemini-3-flash" => ("Gemini 3 Flash", Some(0.33), None),
-        "gemini-3-pro" => ("Gemini 3 Pro", Some(1.0), None),
-        "gemini-3.1-pro" => ("Gemini 3.1 Pro", Some(1.0), None),
-        "gpt-4.1" => ("GPT-4.1", Some(0.0), Some(1.0)),
-        "gpt-4o" => ("GPT-4o", Some(0.0), Some(1.0)),
-        "gpt-5-mini" => ("GPT-5 mini", Some(0.0), Some(1.0)),
-        "gpt-5.1" => ("GPT-5.1", Some(1.0), None),
-        "gpt-5.1-codex" => ("GPT-5.1 Codex", Some(1.0), None),
-        "gpt-5.1-codex-mini" => ("GPT-5.1-Codex-Mini", Some(0.33), None),
-        "gpt-5.1-codex-max" => ("GPT-5.1-Codex-Max", Some(1.0), None),
-        "gpt-5.2" => ("GPT-5.2", Some(1.0), None),
-        "gpt-5.2-codex" => ("GPT-5.2 Codex", Some(1.0), None),
-        "gpt-5.3-codex" => ("GPT-5.3 Codex", Some(1.0), None),
-        "grok-code-fast-1" => ("Grok Code Fast 1", Some(0.25), None),
-        "raptor-mini" => ("Raptor mini", Some(0.0), Some(1.0)),
-        "goldeneye" => ("Goldeneye", None, Some(1.0)),
-        _ => return None, // Filter out any other models
-    };
-
-    let multiplier = if is_free { free_mul } else { paid_mul };
-
-    match multiplier {
-        Some(m) => {
-            let pricing = Some(Pricing {
-                input: m,
-                cached_input: Some(m * 0.5), // Standard cashback assumption if not specified
-                cache_write_5m: None,
-                cache_write_1h: None,
-                output: m,
-            });
-            Some((thinking_levels, pricing, Some(name.into())))
-        }
-        None => None, // Not applicable for this plan
-    }
-} 
 
 async fn fetch_antigravity(
     client: &Client,
@@ -435,10 +482,12 @@ async fn fetch_antigravity(
                                 "chat_20706",
                                 "rev19-uic3-1p",
                                 "tab_flash_lite_preview",
+                                "tab_jump_flash_lite_preview",
                             ]
                             .contains(&id.as_str())
                         })
-                        .map(|(mut id, info)| {
+                        .filter_map(|(id, info)| {
+                            let mut id = normalize_antigravity_model_id(&id)?;
                             // Normalize IDs to match proxy expectations
                             if id == "claude-opus-4-5-thinking" || id == "claude-opus-4.5-thinking"
                             {
@@ -483,8 +532,15 @@ async fn fetch_antigravity(
                             if id.contains("claude") {
                                 name = name.replace("Gemini ", "");
                             }
+                            if id == "gemini-3.1-flash-image" {
+                                name = "Gemini 3.1 Flash Image".into();
+                            } else if id == "gemini-3-pro-image-preview" {
+                                name = "Gemini 3 Pro Image".into();
+                            } else if id == "gemini-2.5-flash-image-preview" {
+                                name = "Gemini 2.5 Flash Image".into();
+                            }
 
-                            ModelInfo {
+                            Some(ModelInfo {
                                 id: id.clone(),
                                 name,
                                 provider: "antigravity".into(),
@@ -495,7 +551,7 @@ async fn fetch_antigravity(
                                 percentage,
                                 reset,
                                 quota_info: info.quota_info.clone(),
-                            }
+                            })
                         })
                         .collect();
 
@@ -590,6 +646,16 @@ fn get_antigravity_metadata(id: &str) -> (Option<Vec<String>>, Option<Pricing>) 
                 output: 5.00,
             }),
         ),
+        "gemini-3.1-flash-image" => (
+            Some(vec!["low".into(), "high".into()]),
+            Some(Pricing {
+                input: 1.25,
+                cached_input: Some(0.31),
+                cache_write_5m: None,
+                cache_write_1h: None,
+                output: 5.00,
+            }),
+        ),
         "gemini-3-pro-image-preview" | "gemini-3-pro-image" => (
             Some(vec!["low".into(), "high".into()]),
             Some(Pricing {
@@ -614,6 +680,39 @@ fn get_antigravity_metadata(id: &str) -> (Option<Vec<String>>, Option<Pricing>) 
     }
 }
 
+fn normalize_antigravity_model_id(model_id: &str) -> Option<String> {
+    let trimmed = model_id.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    let without_models_prefix = trimmed
+        .strip_prefix("models/")
+        .or_else(|| trimmed.strip_prefix("Models/"))
+        .unwrap_or(trimmed);
+    let normalized = without_models_prefix.to_lowercase();
+    let canonical = match normalized.as_str() {
+        "gemini-3.1-flash-image" | "gemini-3.1-flash-image-preview" => "gemini-3.1-flash-image",
+        "gemini-3-pro-image" | "gemini-3-pro-image-preview" => "gemini-3-pro-image-preview",
+        "gemini-2.5-flash-image" | "gemini-2.5-flash-image-preview" => "gemini-2.5-flash-image-preview",
+        _ => without_models_prefix,
+    };
+
+    if normalized.contains("image") {
+        let supported_image_model = matches!(
+            canonical,
+            "gemini-3.1-flash-image"
+                | "gemini-3-pro-image-preview"
+                | "gemini-2.5-flash-image-preview"
+        );
+        if !supported_image_model {
+            return None;
+        }
+    }
+
+    Some(canonical.to_string())
+}
+
 async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>) -> Response {
     let models = vec![
         ModelInfo {
@@ -636,6 +735,18 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
             downloads: None,
             thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into(), "xhigh".into()]),
             pricing: Some(Pricing { input: 2.75, cached_input: Some(0.275), cache_write_5m: None, cache_write_1h: None, output: 22.00 }),
+            percentage: None,
+            reset: None,
+            quota_info: None,
+        },
+        ModelInfo {
+            id: "gpt-5.4-mini".into(),
+            name: "GPT 5.4 Mini".into(),
+            provider: "codex".into(),
+            description: Some("Compact GPT 5.4 Codex variant tuned for faster, lower-cost coding tasks.".into()),
+            downloads: None,
+            thinking_levels: Some(vec!["low".into(), "medium".into(), "high".into()]),
+            pricing: Some(Pricing { input: 0.55, cached_input: Some(0.055), cache_write_5m: None, cache_write_1h: None, output: 4.40 }),
             percentage: None,
             reset: None,
             quota_info: None,

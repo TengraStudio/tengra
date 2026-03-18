@@ -68,7 +68,7 @@ export class IpcProvider extends Observable<string> {
             });
 
             // 4. Local Awareness Updates
-            this.awareness.on('update', ({ added, updated, removed }: { added: number[], updated: number[], removed: number[] }, origin: unknown) => {
+            this.awareness.on('update', ({ added, updated, removed }: { added: number[], updated: number[], removed: number[] }, origin: RendererDataValue) => {
                 if (origin !== this) {
                     const changedClients = added.concat(updated).concat(removed);
                     const update = encodeAwarenessUpdate(this.awareness, changedClients);

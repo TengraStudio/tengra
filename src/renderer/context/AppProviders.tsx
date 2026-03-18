@@ -1,6 +1,7 @@
-import { LanguageProvider } from '@renderer/i18n';
+import { LanguageProvider, useTranslation } from '@renderer/i18n';
 import { Component, ErrorInfo, ReactNode } from 'react';
 
+import { RuntimeBootstrapBoundary } from '@/components/runtime/RuntimeBootstrapBoundary';
 import { AuthProvider } from '@/context/AuthContext';
 import { ChatProvider } from '@/context/ChatContext';
 import { LowPowerProvider } from '@/context/low-power.context';
@@ -12,6 +13,8 @@ import { appLogger } from '@/utils/renderer-logger';
 
 interface ProviderBoundaryProps {
     providerName: string
+    errorTitle: string
+    providerFailedPrefix: string
     children: ReactNode
 }
 
@@ -51,9 +54,11 @@ class ProviderBoundary extends Component<ProviderBoundaryProps, ProviderBoundary
             return (
                 <div className="h-screen w-screen flex items-center justify-center bg-background text-foreground p-6">
                     <div className="max-w-3xl rounded-lg border border-destructive/40 bg-card p-5 font-mono text-sm">
-                        <div className="text-destructive font-bold">Startup Provider Crash</div>
-                        <div className="mt-2">Provider: {this.props.providerName}</div>
-                        <div className="mt-2 break-words">{this.state.message}</div>
+                        <div className="text-destructive font-bold">{this.props.errorTitle}</div>
+                        <p className="font-bold mb-1">
+                            {this.props.providerFailedPrefix}: {this.props.providerName}
+                        </p>
+                        <p>{this.state.message}</p>
                     </div>
                 </div>
             );
@@ -62,35 +67,81 @@ class ProviderBoundary extends Component<ProviderBoundaryProps, ProviderBoundary
     }
 }
 
-export function AppProviders({ children }: { children: ReactNode }) {
+function LocalizedRuntimeProviders({ children }: { children: ReactNode }) {
+    const { t } = useTranslation();
+    const errorTitle = t('appProviders.startupProviderCrash');
+    const providerFailedPrefix = t('appProviders.providerFailedPrefix');
+
     return (
-        <ProviderBoundary providerName="SettingsProvider">
+        <RuntimeBootstrapBoundary>
+            <ProviderBoundary
+                providerName="AuthProvider"
+                errorTitle={errorTitle}
+                providerFailedPrefix={providerFailedPrefix}
+            >
+                <AuthProvider>
+                    <ProviderBoundary
+                        providerName="ThemeProvider"
+                        errorTitle={errorTitle}
+                        providerFailedPrefix={providerFailedPrefix}
+                    >
+                        <ThemeProvider>
+                            <ProviderBoundary
+                                providerName="ModelProvider"
+                                errorTitle={errorTitle}
+                                providerFailedPrefix={providerFailedPrefix}
+                            >
+                                <ModelProvider>
+                                    <ProviderBoundary
+                                        providerName="WorkspaceProvider"
+                                        errorTitle={errorTitle}
+                                        providerFailedPrefix={providerFailedPrefix}
+                                    >
+                                        <WorkspaceProvider>
+                                            <ProviderBoundary
+                                                providerName="ChatProvider"
+                                                errorTitle={errorTitle}
+                                                providerFailedPrefix={providerFailedPrefix}
+                                            >
+                                                <ChatProvider>{children}</ChatProvider>
+                                            </ProviderBoundary>
+                                        </WorkspaceProvider>
+                                    </ProviderBoundary>
+                                </ModelProvider>
+                            </ProviderBoundary>
+                        </ThemeProvider>
+                    </ProviderBoundary>
+                </AuthProvider>
+            </ProviderBoundary>
+        </RuntimeBootstrapBoundary>
+    );
+}
+
+export function AppProviders({ children }: { children: ReactNode }) {
+    const { t: tEn } = useTranslation('en');
+    const errorTitle = tEn('appProviders.startupProviderCrash');
+    const providerFailedPrefix = tEn('appProviders.providerFailedPrefix');
+
+    return (
+        <ProviderBoundary
+            providerName="SettingsProvider"
+            errorTitle={errorTitle}
+            providerFailedPrefix={providerFailedPrefix}
+        >
             <SettingsProvider>
-                <ProviderBoundary providerName="LowPowerProvider">
+                <ProviderBoundary
+                    providerName="LowPowerProvider"
+                    errorTitle={errorTitle}
+                    providerFailedPrefix={providerFailedPrefix}
+                >
                     <LowPowerProvider>
-                        <ProviderBoundary providerName="LanguageProvider">
+                        <ProviderBoundary
+                            providerName="LanguageProvider"
+                            errorTitle={errorTitle}
+                            providerFailedPrefix={providerFailedPrefix}
+                        >
                             <LanguageProvider>
-                                <ProviderBoundary providerName="AuthProvider">
-                                    <AuthProvider>
-                                        <ProviderBoundary providerName="ThemeProvider">
-                                            <ThemeProvider>
-                                                <ProviderBoundary providerName="ModelProvider">
-                                                    <ModelProvider>
-                                                        <ProviderBoundary providerName="WorkspaceProvider">
-                                                            <WorkspaceProvider>
-                                                                <ProviderBoundary providerName="ChatProvider">
-                                                                    <ChatProvider>
-                                                                        {children}
-                                                                    </ChatProvider>
-                                                                </ProviderBoundary>
-                                                            </WorkspaceProvider>
-                                                        </ProviderBoundary>
-                                                    </ModelProvider>
-                                                </ProviderBoundary>
-                                            </ThemeProvider>
-                                        </ProviderBoundary>
-                                    </AuthProvider>
-                                </ProviderBoundary>
+                                <LocalizedRuntimeProviders>{children}</LocalizedRuntimeProviders>
                             </LanguageProvider>
                         </ProviderBoundary>
                     </LowPowerProvider>

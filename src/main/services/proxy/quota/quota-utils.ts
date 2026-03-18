@@ -35,7 +35,7 @@ export class QuotaUtils {
             // Go deeper
             if (depth < maxDepth) {
                 const children = Array.isArray(obj)
-                    ? (obj as unknown as JsonValue[])
+                    ? (obj as RuntimeValue as JsonValue[])
                     : Object.values(obj);
                 for (const child of children) {
                     if (child && typeof child === 'object') {

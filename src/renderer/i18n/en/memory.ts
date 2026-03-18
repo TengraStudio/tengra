@@ -5,6 +5,22 @@ const sectionData = {
     "totalFacts": "Total Facts",
     "episodes": "Episodes",
     "entities": "Entities",
+    "graph": "Knowledge Graph",
+    "timeline": "Memory Timeline",
+    "graphView": "Knowledge Graph",
+    "timelineView": "Memory Timeline",
+    "erDiagram": "Entity Diagram",
+    "entitiesTracked": "{{count}} entities tracked",
+    "graphStats": "{{nodes}} nodes • {{edges}} edges",
+    "graphLoading": "Rebuilding graph...",
+    "graphEdgeRelated": "related",
+    "graphEdgeContradicts": "contradicts",
+    "timelineTotalEvents": "{{count}} total events",
+    "timelineFilterAll": "All",
+    "timelineFilterEpisode": "Episodes",
+    "timelineFilterFragment": "Fragments",
+    "timelineReconstructing": "Reconstructing timeline...",
+    "emptyState": "No memory data to display",
     "facts": "Facts",
     "select": "Select Memory",
     "stats": {
@@ -100,6 +116,7 @@ const sectionData = {
         "pending": "Pending",
         "confirmed": "Confirmed",
         "archived": "Archived",
+        "visualization": "Visualization",
         "stats": "Stats"
     },
     "categories": {
@@ -126,10 +143,26 @@ const sectionData = {
         "globalContext": "Global Context",
         "totalActiveFragments": "Total Active Fragments"
     },
+    "visualization": {
+        "title": "Memory Visualization",
+        "subtitle": "Interactive exploration of agent knowledge",
+        "legend": {
+            "semanticContext": "Semantic Context",
+            "entityKnowledge": "Entity Knowledge",
+            "episodicExperience": "Episodic Experience"
+        },
+        "poweredBy": "Powered by Tengra Advanced Memory Service"
+    },
     "errors": {
         "exportFailed": "Memory export failed",
         "importFailed": "Memory import failed"
-    }
+    },
+    "refreshTitle": "Refresh",
 };
 
 export default sectionData;
+
+
+
+
+

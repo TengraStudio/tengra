@@ -25,7 +25,6 @@ As an AI Agent on Tengra, you ARE these rules. They are your core logic.
 9.  **PROCRASTINATION**: No uncommitted changes. Commit after every TODO completion.
 10. **FRIDAY FORBIDDEN**: NO COMMITS OR MAJOR DEPLOYMENTS ON FRIDAYS. Fridays are for testing, documentation, and review ONLY.
 11. **TRANSLATION OVERLOAD**: No locale updates on weekdays.
-12. **DOCS**: No changes without mirroring to `.codex/`. ทุก dökümantasyon `.codex/` altında toplanmalıdır.
 13. **IGNORANCE**: No coding without first reading ALL active rules and commandments. You MUST call `view_file` on rule files (`MASTER_COMMANDMENTS.md`, `AI_RULES.md`, `advanced-hardening.md`) at the start of every session.
 14. **HARDENING**: Strictly adhere to the [Advanced Hardening Rules](./advanced-hardening.md). Ignorance of architectural standards is a fatal error.
 
@@ -80,7 +79,3 @@ Use these for direct system and environment interaction:
 
 ---
 "Leave no warning behind. Code for performance, type for safety."
-
-
-
-

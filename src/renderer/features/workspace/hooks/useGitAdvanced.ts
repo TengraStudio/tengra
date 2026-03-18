@@ -4,7 +4,9 @@ import {
     GitBlameLine,
     GitCommitDetails,
     GitConflict,
+    GitRemoteLinkSet,
 } from '../components/git/types';
+import { buildGitRemoteLinks } from '../utils/git-remote-links';
 
 import { useGitAdvancedOperations } from './useGitAdvancedOperations';
 import { useGitConflicts } from './useGitConflicts';
@@ -42,6 +44,13 @@ export function useGitAdvanced(workspacePath?: string) {
     const [blameLines, setBlameLines] = useState<GitBlameLine[]>([]);
     const [commitDetails, setCommitDetails] = useState<GitCommitDetails | null>(null);
     const [rebaseStatus, setRebaseStatus] = useState<RebaseStatus>(DEFAULT_REBASE_STATUS);
+    const [remoteLinks, setRemoteLinks] = useState<GitRemoteLinkSet[]>([]);
+    const [currentBranch, setCurrentBranch] = useState<string | null>(null);
+    const [trackingSummary, setTrackingSummary] = useState<{ tracking: string | null; ahead: number; behind: number }>({
+        tracking: null,
+        ahead: 0,
+        behind: 0,
+    });
 
     const canRun = useMemo(() => !!workspacePath && workspacePath.trim().length > 0, [workspacePath]);
 
@@ -121,6 +130,25 @@ export function useGitAdvanced(workspacePath?: string) {
         }
     }, [canRun, workspacePath, invokeGit]);
 
+    const fetchRemoteLinks = useCallback(async () => {
+        if (!canRun || !workspacePath) {
+            return;
+        }
+        const [remotesResponse, branchResponse, trackingResponse] = await Promise.all([
+            window.electron.git.getRemotes(workspacePath),
+            window.electron.git.getBranch(workspacePath),
+            window.electron.git.getTrackingInfo(workspacePath),
+        ]);
+        const branch = branchResponse.success ? branchResponse.branch ?? null : null;
+        setCurrentBranch(branch);
+        setTrackingSummary({
+            tracking: trackingResponse.success ? trackingResponse.tracking ?? null : null,
+            ahead: trackingResponse.success ? trackingResponse.ahead ?? 0 : 0,
+            behind: trackingResponse.success ? trackingResponse.behind ?? 0 : 0,
+        });
+        setRemoteLinks(buildGitRemoteLinks(remotesResponse.remotes ?? [], branch));
+    }, [canRun, workspacePath]);
+
     const refreshAll = useCallback(async () => {
         if (!canRun) {
             return;
@@ -135,6 +163,7 @@ export function useGitAdvanced(workspacePath?: string) {
                 advancedOpsHook.fetchFlowStatus(),
                 advancedOpsHook.fetchHooks(),
                 advancedOpsHook.fetchStats(),
+                fetchRemoteLinks(),
             ]);
         } finally {
             setIsLoading(false);
@@ -145,7 +174,46 @@ export function useGitAdvanced(workspacePath?: string) {
         stashesHook,
         fetchRebaseStatus,
         advancedOpsHook,
+        fetchRemoteLinks,
     ]);
+
+    const {
+        rebasePlan,
+        submodules,
+        flowStatus,
+        hooks,
+        hookTemplates,
+        hookValidation,
+        hookTestOutput,
+        stats,
+        operationTimeoutMs,
+        activeOperationId,
+        lastOperationError,
+        setOperationTimeoutMs,
+        cancelActiveOperation,
+        fetchRebasePlan,
+        runRebaseAction,
+        fetchSubmodules,
+        runSubmoduleAction,
+        fetchFlowStatus,
+        startFlowBranch,
+        finishFlowBranch,
+        fetchHooks,
+        installHook,
+        validateHook,
+        testHook,
+        exportHooks,
+        fetchStats,
+        exportStats,
+        createBranch,
+        deleteBranch,
+        renameBranch,
+        setUpstream,
+        generatePrSummary,
+        fetchFileHistory,
+        compareRefs,
+        fetchHotspots,
+    } = advancedOpsHook;
 
     return {
         isLoading,
@@ -155,17 +223,20 @@ export function useGitAdvanced(workspacePath?: string) {
         blameLines,
         commitDetails,
         rebaseStatus,
-        rebasePlan: advancedOpsHook.rebasePlan,
-        submodules: advancedOpsHook.submodules,
-        flowStatus: advancedOpsHook.flowStatus,
-        hooks: advancedOpsHook.hooks,
-        hookTemplates: advancedOpsHook.hookTemplates,
-        hookValidation: advancedOpsHook.hookValidation,
-        hookTestOutput: advancedOpsHook.hookTestOutput,
-        stats: advancedOpsHook.stats,
-        operationTimeoutMs: advancedOpsHook.operationTimeoutMs,
-        activeOperationId: advancedOpsHook.activeOperationId,
-        lastOperationError: advancedOpsHook.lastOperationError,
+        remoteLinks,
+        currentBranch,
+        trackingSummary,
+        rebasePlan,
+        submodules,
+        flowStatus,
+        hooks,
+        hookTemplates,
+        hookValidation,
+        hookTestOutput,
+        stats,
+        operationTimeoutMs,
+        activeOperationId,
+        lastOperationError,
         refreshAll,
         fetchConflicts: conflictsHook.fetchConflicts,
         resolveConflict: conflictsHook.resolveConflict,
@@ -179,21 +250,30 @@ export function useGitAdvanced(workspacePath?: string) {
         loadBlame,
         loadCommitDetails,
         fetchRebaseStatus,
-        fetchRebasePlan: advancedOpsHook.fetchRebasePlan,
-        runRebaseAction: advancedOpsHook.runRebaseAction,
-        fetchSubmodules: advancedOpsHook.fetchSubmodules,
-        runSubmoduleAction: advancedOpsHook.runSubmoduleAction,
-        fetchFlowStatus: advancedOpsHook.fetchFlowStatus,
-        startFlowBranch: advancedOpsHook.startFlowBranch,
-        finishFlowBranch: advancedOpsHook.finishFlowBranch,
-        fetchHooks: advancedOpsHook.fetchHooks,
-        installHook: advancedOpsHook.installHook,
-        validateHook: advancedOpsHook.validateHook,
-        testHook: advancedOpsHook.testHook,
-        exportHooks: advancedOpsHook.exportHooks,
-        fetchStats: advancedOpsHook.fetchStats,
-        exportStats: advancedOpsHook.exportStats,
-        setOperationTimeoutMs: advancedOpsHook.setOperationTimeoutMs,
-        cancelActiveOperation: advancedOpsHook.cancelActiveOperation,
+        fetchRemoteLinks,
+        fetchRebasePlan,
+        runRebaseAction,
+        fetchSubmodules,
+        runSubmoduleAction,
+        fetchFlowStatus,
+        startFlowBranch,
+        finishFlowBranch,
+        fetchHooks,
+        installHook,
+        validateHook,
+        testHook,
+        exportHooks,
+        fetchStats,
+        exportStats,
+        setOperationTimeoutMs,
+        cancelActiveOperation,
+        createBranch,
+        deleteBranch,
+        renameBranch,
+        setUpstream,
+        generatePrSummary,
+        fetchFileHistory,
+        compareRefs,
+        fetchHotspots,
     };
 }

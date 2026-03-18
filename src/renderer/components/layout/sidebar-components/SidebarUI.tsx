@@ -71,7 +71,7 @@ export const SidebarNewChatButton: React.FC<SidebarNewChatButtonProps> = ({
                 </span>
             )}
             {!isCollapsed && (
-                <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skewed-highlight" />
+                <div className="absolute inset-0 bg-primary-foreground/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skewed-highlight" />
             )}
         </Button>
     </div>
@@ -125,7 +125,7 @@ const SidebarToggleButton = ({
             variant="ghost"
             size="icon"
             onClick={toggleSidebar}
-            className="h-8 w-8 hover:bg-muted/10 text-muted-foreground hover:text-foreground transition-colors"
+            className="h-8 w-8 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
             title={isCollapsed ? t('sidebar.expand') : t('sidebar.collapse')}
             aria-label={isCollapsed ? t('sidebar.expand') : t('sidebar.collapse')}
         >

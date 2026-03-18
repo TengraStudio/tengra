@@ -1,6 +1,6 @@
 import { OllamaService } from '@main/services/llm/ollama.service';
-import { SettingsService } from '@main/services/system/settings.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
+import { SettingsService } from '@main/services/system/settings.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock fs to control SettingsService.loadSettings
@@ -43,7 +43,7 @@ describe('LLM-Settings Integration', () => {
             subscribe: vi.fn(),
             emit: vi.fn(),
             emitCustom: vi.fn()
-        } as unknown as EventBusService;
+        } as never as EventBusService;
         
         // We need to verify OllamaService reads from SettingsService
         ollamaService = new OllamaService(settingsService, eventBusService);
@@ -55,7 +55,7 @@ describe('LLM-Settings Integration', () => {
         // OllamaService doesn't seem to expose host/port publicly.
         // But we can check via reflection for this test.
 
-        const serviceRef = ollamaService as unknown as { host: string; port: number };
+        const serviceRef = ollamaService as never as { host: string; port: number };
         expect(serviceRef.host).toBe('custom-host');
         expect(serviceRef.port).toBe(1234);
     });

@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 
-import { GalleryView } from '@/components/shared/GalleryView';
+import { SettingsCategory } from '@/features/settings/types';
 import type { GroupedModels, ModelInfo } from '@/types';
 
 import { SettingsSharedProps } from '../types';
@@ -19,15 +19,50 @@ const PersonasTab = React.lazy(() => import('@/features/settings/components/Pers
 const SpeechTab = React.lazy(() => import('@/features/settings/components/SpeechTab').then(m => ({ default: m.SpeechTab })));
 const StatisticsTab = React.lazy(() => import('@/features/settings/components/StatisticsTab').then(m => ({ default: m.StatisticsTab })));
 const VoiceSettingsTab = React.lazy(() => import('@/features/settings/components/VoiceSettingsTab').then(m => ({ default: m.VoiceSettingsTab })));
+const GalleryView = React.lazy(() => import('@/components/shared/GalleryView').then(m => ({ default: m.GalleryView })));
 
 interface SettingsTabContentProps {
-    activeTab: string
+    activeTab: SettingsCategory
     sharedProps: SettingsSharedProps
     installedModels: ModelInfo[]
     proxyModels?: ModelInfo[]
     onRefreshModels: (bypassCache?: boolean) => void
     handleFactoryReset: () => void | Promise<void>
     groupedModels?: GroupedModels
+}
+
+function renderSettingsTabContent({
+    activeTab,
+    sharedProps,
+    installedModels,
+    proxyModels,
+    onRefreshModels,
+    handleFactoryReset,
+    groupedModels
+}: SettingsTabContentProps): React.ReactNode {
+    switch (activeTab) {
+        case 'general': return <GeneralTab {...sharedProps} />;
+        case 'accounts': return <AccountsTab {...sharedProps} />;
+        case 'appearance': return <AppearanceTab {...sharedProps} />;
+        case 'models': return <ModelsTab {...sharedProps} installedModels={installedModels} proxyModels={proxyModels} onRefreshModels={onRefreshModels} />;
+        case 'statistics': return <StatisticsTab {...sharedProps} />;
+        case 'personas': return <PersonasTab {...sharedProps} />;
+        case 'speech': return <SpeechTab {...sharedProps} />;
+        case 'developer': return <DeveloperTab {...sharedProps} />;
+        case 'advanced': return <AdvancedTab {...sharedProps} installedModels={installedModels} proxyModels={proxyModels} />;
+        case 'about': return <AboutTab {...sharedProps} onReset={() => { void handleFactoryReset(); }} />;
+        case 'usage-limits': return <ModelUsageLimitsTab {...sharedProps} groupedModels={groupedModels} />;
+        case 'mcp-servers': return <MCPSettingsTab />;
+        case 'images': return <ImageSettingsTab {...sharedProps} />;
+        case 'gallery':
+            return (
+                <div className="h-[75vh] min-h-[500px] border border-white/5 rounded-2xl overflow-hidden bg-black/20">
+                    <GalleryView language={sharedProps.settings?.general.language ?? 'tr'} />
+                </div>
+            );
+        case 'voice': return <VoiceSettingsTab {...sharedProps} />;
+        default: return null;
+    }
 }
 
 export const SettingsTabContent: React.FC<SettingsTabContentProps> = ({
@@ -39,45 +74,17 @@ export const SettingsTabContent: React.FC<SettingsTabContentProps> = ({
     handleFactoryReset,
     groupedModels
 }) => {
-    const tabMap: Record<string, React.ReactNode> = {
-        general: <GeneralTab {...sharedProps} />,
-        accounts: <AccountsTab {...sharedProps} />,
-        appearance: <AppearanceTab {...sharedProps} />,
-        models: (
-            <ModelsTab
-                {...sharedProps}
-                installedModels={installedModels}
-                proxyModels={proxyModels}
-                onRefreshModels={onRefreshModels}
-            />
-        ),
-        statistics: <StatisticsTab {...sharedProps} />,
-        personas: <PersonasTab {...sharedProps} />,
-        speech: <SpeechTab {...sharedProps} />,
-        developer: <DeveloperTab {...sharedProps} />,
-        advanced: (
-            <AdvancedTab
-                {...sharedProps}
-                installedModels={installedModels}
-                proxyModels={proxyModels}
-            />
-        ),
-        about: <AboutTab {...sharedProps} onReset={() => { void handleFactoryReset(); }} />,
-        'usage-limits': (
-            <ModelUsageLimitsTab
-                {...sharedProps}
-                groupedModels={groupedModels}
-            />
-        ),
-        'mcp-servers': <MCPSettingsTab />,
-        images: <ImageSettingsTab {...sharedProps} />,
-        gallery: (
-            <div className="h-[75vh] min-h-[500px] border border-white/5 rounded-2xl overflow-hidden bg-black/20">
-                <GalleryView language={sharedProps.settings?.general.language ?? 'tr'} />
-            </div>
-        ),
-        voice: <VoiceSettingsTab {...sharedProps} />
-    };
-
-    return <Suspense fallback={<div className="animate-pulse p-6 text-muted-foreground">Loading...</div>}>{tabMap[activeTab] ?? null}</Suspense>;
+    return (
+        <Suspense fallback={<div className="animate-pulse p-6 text-muted-foreground">{sharedProps.t('common.loading')}</div>}>
+            {renderSettingsTabContent({
+                activeTab,
+                sharedProps,
+                installedModels,
+                proxyModels,
+                onRefreshModels,
+                handleFactoryReset,
+                groupedModels
+            })}
+        </Suspense>
+    );
 };

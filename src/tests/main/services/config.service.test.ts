@@ -2,9 +2,14 @@ import { ConfigService } from '@main/services/system/config.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+interface MockSettingsService {
+    getSetting: ReturnType<typeof vi.fn>;
+    getSettings: ReturnType<typeof vi.fn>;
+}
+
 describe('ConfigService', () => {
     let configService: ConfigService;
-    let mockSettingsService: any;
+    let mockSettingsService: MockSettingsService;
     const originalEnv = process.env;
 
     beforeEach(() => {
@@ -15,7 +20,7 @@ describe('ConfigService', () => {
             getSettings: vi.fn().mockReturnValue({})
         };
 
-        configService = new ConfigService(mockSettingsService as SettingsService);
+        configService = new ConfigService(mockSettingsService as never as SettingsService);
     });
 
     afterEach(() => {
@@ -111,7 +116,7 @@ describe('ConfigService', () => {
             process.env.LOG_LEVEL = 'debug';
             process.env.API_TIMEOUT = '5000';
 
-            const newService = new ConfigService(mockSettingsService as SettingsService);
+            const newService = new ConfigService(mockSettingsService as never as SettingsService);
             await newService.initialize();
 
             expect(newService.get('NODE_ENV')).toBe('test');

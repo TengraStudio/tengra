@@ -27,11 +27,11 @@ describe('Security Fixes Verification (SEC-001)', () => {
 
     describe('Security Server - Port Validation', () => {
         const mockDeps = {
-            command: { executeCommand: vi.fn() } as any,
-            security: {} as any,
-            system: {} as any,
-            settings: { getSettings: () => ({ mcpSecurityAllowedHosts: ['example.com'] }) } as any
-        } as unknown as McpDeps;
+            command: { executeCommand: vi.fn() } as never,
+            security: {} as never,
+            system: {} as never,
+            settings: { getSettings: () => ({ mcpSecurityAllowedHosts: ['example.com'] }) } as never
+        } as never as McpDeps;
 
         const securityServer = buildSecurityServers(mockDeps).find(s => s.name === 'security-audit');
         const portScanAction = securityServer?.actions.find(a => a.name === 'portScan');

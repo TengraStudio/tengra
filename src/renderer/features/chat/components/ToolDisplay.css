@@ -1,12 +1,12 @@
 /* Tool Display Premium Styles */
 .tool-container {
-    border: 1px solid hsl(var(--border) / 0.5);
+    border: 1px solid hsl(var(--border) / 50%);
     border-radius: var(--radius);
     background: hsl(var(--card));
     color: hsl(var(--card-foreground));
     overflow: hidden;
     margin-top: 8px;
-    font-family: 'Inter', sans-serif;
+    font-family: Inter, sans-serif;
     transition: all 0.2s ease;
 }
 
@@ -16,7 +16,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 8px 12px;
-    background: hsl(var(--muted) / 0.3);
+    background: hsl(var(--muted) / 30%);
     cursor: pointer;
     user-select: none;
     font-size: 13px;
@@ -24,7 +24,7 @@
 }
 
 .tool-header-row:hover {
-    background: hsl(var(--muted) / 0.5);
+    background: hsl(var(--muted) / 50%);
 }
 
 .tool-status-icon {
@@ -54,10 +54,10 @@
 }
 
 .tool-body {
-    border-top: 1px solid hsl(var(--border) / 0.5);
+    border-top: 1px solid hsl(var(--border) / 50%);
     padding: 12px;
     font-size: 13px;
-    background: hsl(var(--card) / 0.5);
+    background: hsl(var(--card) / 50%);
 }
 
 .tool-section {
@@ -90,7 +90,7 @@
 .file-path {
     font-family: 'JetBrains Mono', monospace;
     color: hsl(var(--primary));
-    background: hsl(var(--primary) / 0.1);
+    background: hsl(var(--primary) / 10%);
     padding: 4px 8px;
     border-radius: 4px;
     display: inline-block;

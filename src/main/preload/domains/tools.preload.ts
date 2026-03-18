@@ -5,7 +5,8 @@ export interface ToolsBridge {
     executeTools: (
         toolName: string,
         args: Record<string, IpcValue>,
-        toolCallId?: string
+        toolCallId?: string,
+        workspaceAgentSessionId?: string
     ) => Promise<ToolResult>;
     killTool: (toolCallId: string) => Promise<boolean>;
     getToolDefinitions: () => Promise<ToolDefinition[]>;
@@ -13,8 +14,13 @@ export interface ToolsBridge {
 
 export function createToolsBridge(ipc: IpcRenderer): ToolsBridge {
     return {
-        executeTools: (toolName, args, toolCallId) =>
-            ipc.invoke('tools:execute', { toolName, args, toolCallId }),
+        executeTools: (toolName, args, toolCallId, workspaceAgentSessionId) =>
+            ipc.invoke('tools:execute', {
+                toolName,
+                args,
+                toolCallId,
+                workspaceAgentSessionId,
+            }),
         killTool: toolCallId => ipc.invoke('tools:kill', toolCallId),
         getToolDefinitions: () => ipc.invoke('tools:get-definitions'),
     };

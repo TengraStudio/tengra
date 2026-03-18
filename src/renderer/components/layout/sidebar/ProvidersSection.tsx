@@ -25,7 +25,7 @@ export const ProvidersSectionComponent: React.FC<ProvidersSectionProps> = ({
     return (
         <SidebarSection
             id="ai-providers"
-            title={t('sidebar.aiProviders') || 'AI Providers'}
+            title={t('sidebar.aiProviders')}
             icon={<Sparkles className="w-3.5 h-3.5" />}
             defaultExpanded={false}
             badge={4}

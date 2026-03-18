@@ -1,7 +1,5 @@
 import { IpcValue } from '@shared/types/common';
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
-// Increase max listeners for ipcRenderer to handle multiple terminal/process streams
-ipcRenderer.setMaxListeners(60);
 
 import { createAdvancedMemoryBridge } from './preload/domains/advanced-memory.preload';
 import { createAgentBridge } from './preload/domains/agent.preload';
@@ -33,13 +31,13 @@ import { createMetricsBridge } from './preload/domains/metrics.preload';
 import { createModelDownloaderBridge } from './preload/domains/model-downloader.preload';
 import { createModelRegistryBridge } from './preload/domains/model-registry.preload';
 import { createOllamaBridge } from './preload/domains/ollama.preload';
-import { createOrchestratorBridge } from './preload/domains/orchestrator.preload';
 import { createPerformanceBridge } from './preload/domains/performance.preload';
 import { createProcessBridge } from './preload/domains/process.preload';
 import { createPromptTemplatesBridge } from './preload/domains/prompt-templates.preload';
 import { createProxyBridge } from './preload/domains/proxy.preload';
 import { createProxyEmbedBridge } from './preload/domains/proxy-embed.preload';
 import { createProxyRateLimitBridge } from './preload/domains/proxy-rate-limit.preload';
+import { createRuntimeBridge } from './preload/domains/runtime.preload';
 import { createSdCppBridge } from './preload/domains/sd-cpp.preload';
 import { createSessionBridge } from './preload/domains/session.preload';
 import { createSettingsBridge } from './preload/domains/settings.preload';
@@ -53,6 +51,9 @@ import { createLiveCollaborationBridge } from './preload/domains/user-collaborat
 import { createVoiceBridge } from './preload/domains/voice.preload';
 import { createWindowControlsBridge } from './preload/domains/window-controls.preload';
 import { createWorkspaceBridge } from './preload/domains/workspace.preload';
+
+// Increase max listeners for ipcRenderer to handle multiple terminal/process streams
+ipcRenderer.setMaxListeners(60);
 
 const api = {
     ...createWindowControlsBridge(ipcRenderer),
@@ -129,8 +130,8 @@ const api = {
     ssh: createSSHBridge(ipcRenderer),
     mcp: createMcpBridge(ipcRenderer),
     proxyEmbed: createProxyEmbedBridge(ipcRenderer),
+    runtime: createRuntimeBridge(ipcRenderer),
     extension: createExtensionBridge(ipcRenderer),
-    orchestrator: createOrchestratorBridge(ipcRenderer),
     metrics: createMetricsBridge(ipcRenderer),
     usage: createUsageBridge(ipcRenderer),
     gallery: createGalleryBridge(ipcRenderer),

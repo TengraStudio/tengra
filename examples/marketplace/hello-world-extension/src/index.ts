@@ -4,7 +4,7 @@
 
 export interface ExtensionContext {
     extensionId: string;
-    subscriptions: { dispose(): any }[];
+    subscriptions: { dispose(): void }[];
     logger: {
         info(message: string): void;
     };

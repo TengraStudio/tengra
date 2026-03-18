@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ExtensionLogEntry,useExtensionLogs } from '@/features/extensions/hooks/useExtensionLogs';
 
-type LogCallback = (_event: unknown, log: ExtensionLogEntry) => void;
+type IpcRendererListener = Parameters<typeof window.electron.ipcRenderer.on>[1];
+type IpcRendererEventLike = Parameters<IpcRendererListener>[0];
+type LogCallback = (_event: IpcRendererEventLike, log: ExtensionLogEntry) => void;
 
 describe('useExtensionLogs', () => {
     let logCallback: LogCallback | null = null;
@@ -42,9 +44,10 @@ describe('useExtensionLogs', () => {
 
     it('should add matching logs', () => {
         const { result } = renderHook(() => useExtensionLogs('ext-1'));
+        const event = {} as IpcRendererEventLike;
 
         act(() => {
-            logCallback?.(null, {
+            logCallback?.(event, {
                 extensionId: 'ext-1',
                 level: 'info',
                 message: 'Hello',
@@ -58,9 +61,10 @@ describe('useExtensionLogs', () => {
 
     it('should filter logs by extensionId', () => {
         const { result } = renderHook(() => useExtensionLogs('ext-1'));
+        const event = {} as IpcRendererEventLike;
 
         act(() => {
-            logCallback?.(null, {
+            logCallback?.(event, {
                 extensionId: 'ext-2',
                 level: 'info',
                 message: 'Wrong ext',
@@ -73,9 +77,10 @@ describe('useExtensionLogs', () => {
 
     it('should clear logs', () => {
         const { result } = renderHook(() => useExtensionLogs('ext-1'));
+        const event = {} as IpcRendererEventLike;
 
         act(() => {
-            logCallback?.(null, {
+            logCallback?.(event, {
                 extensionId: 'ext-1',
                 level: 'error',
                 message: 'Error!',

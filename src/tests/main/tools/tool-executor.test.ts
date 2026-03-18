@@ -39,7 +39,7 @@ describe('ToolExecutor', () => {
             web,
             system,
             mcp
-        } as unknown as ToolExecutorOptions;
+        } as never as ToolExecutorOptions;
 
         return new ToolExecutor(options);
     };
@@ -130,5 +130,25 @@ describe('ToolExecutor', () => {
         expect(localImage.generateImage).toHaveBeenCalledTimes(2);
         expect(localImage.generateImage).toHaveBeenNthCalledWith(1, { prompt: 'Draw a cat' });
         expect(localImage.generateImage).toHaveBeenNthCalledWith(2, { prompt: 'Draw a cat' });
+    });
+
+    it('uses the longer default timeout for generate_image', async () => {
+        vi.useFakeTimers();
+        localImage.generateImage.mockImplementation(
+            () => new Promise(resolve => setTimeout(() => resolve('safe-file://image-1.png'), 35_000))
+        );
+
+        const executor = createExecutor();
+        const pendingResult = executor.execute('generate_image', { prompt: 'Draw a cat' });
+
+        await vi.advanceTimersByTimeAsync(35_000);
+        const result = await pendingResult;
+
+        expect(result).toEqual({
+            success: true,
+            result: { images: ['safe-file://image-1.png'] },
+        });
+
+        vi.useRealTimers();
     });
 });

@@ -89,6 +89,8 @@ func (s *httpAuthStore) Save(ctx context.Context, auth *coreauth.Auth) (string, 
 	}
 
 	body, err := json.Marshal(map[string]any{
+		"provider":      auth.Provider,
+		"type":          auth.Provider,
 		"access_token":  auth.Metadata["access_token"],
 		"refresh_token": auth.Metadata["refresh_token"],
 		"session_token": auth.Metadata["session_token"],
@@ -122,6 +124,15 @@ func (s *httpAuthStore) Save(ctx context.Context, auth *coreauth.Auth) (string, 
 
 	if resp.StatusCode != http.StatusOK {
 		data, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode == http.StatusNotFound && strings.Contains(string(data), "Account not found") {
+			// New OAuth logins are persisted separately via the direct auth update channel.
+			// Treat missing-account saves as a no-op so stale runtime callbacks do not recreate
+			// deleted accounts and successful fresh logins do not emit noisy false-negative logs.
+			s.mu.Lock()
+			s.cache[auth.ID] = auth.Clone()
+			s.mu.Unlock()
+			return auth.ID, nil
+		}
 		return "", fmt.Errorf("auth save failed with status %d: %s", resp.StatusCode, string(data))
 	}
 
@@ -232,15 +243,15 @@ func (s *httpAuthStore) sync(ctx context.Context) error {
 		}
 
 		auth := &coreauth.Auth{
-			ID:        account.ID,
-			Provider:  account.Provider,
-			Label:     label,
-			Status:    status,
-			Disabled:  account.Disabled,
+			ID:         account.ID,
+			Provider:   account.Provider,
+			Label:      label,
+			Status:     status,
+			Disabled:   account.Disabled,
 			Attributes: attributes,
-			Metadata:  metadata,
-			CreatedAt: time.UnixMilli(account.CreatedAt).UTC(),
-			UpdatedAt: time.UnixMilli(account.UpdatedAt).UTC(),
+			Metadata:   metadata,
+			CreatedAt:  time.UnixMilli(account.CreatedAt).UTC(),
+			UpdatedAt:  time.UnixMilli(account.UpdatedAt).UTC(),
 		}
 
 		if existing, ok := s.cache[account.ID]; ok && existing != nil && account.UpdatedAt <= existing.UpdatedAt.UnixMilli() {

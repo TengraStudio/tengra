@@ -32,8 +32,8 @@ describe('DockerService', () => {
         mockCommand = { executeCommand: vi.fn() };
         mockSSH = { executeCommand: vi.fn() };
         service = new DockerService(
-            mockCommand as unknown as CommandService,
-            mockSSH as unknown as SSHService
+            mockCommand as never as CommandService,
+            mockSSH as never as SSHService
         );
     });
 
@@ -46,7 +46,7 @@ describe('DockerService', () => {
             });
             const result = await service.listContainers();
             expect(result.success).toBe(true);
-            expect((result as { success: boolean; containers: unknown[] }).containers).toHaveLength(2);
+            expect((result as { success: boolean; containers: TestValue[] }).containers).toHaveLength(2);
         });
 
         it('should pass -a flag when all=true', async () => {
@@ -134,7 +134,7 @@ describe('DockerService', () => {
             });
             const result = await service.getStats();
             expect(result.success).toBe(true);
-            expect((result as { success: boolean; stats: unknown[] }).stats).toHaveLength(1);
+            expect((result as { success: boolean; stats: TestValue[] }).stats).toHaveLength(1);
         });
 
         it('should handle command failure', async () => {
@@ -155,7 +155,7 @@ describe('DockerService', () => {
             });
             const result = await service.listImages();
             expect(result.success).toBe(true);
-            expect((result as { success: boolean; images: unknown[] }).images).toHaveLength(1);
+            expect((result as { success: boolean; images: TestValue[] }).images).toHaveLength(1);
         });
 
         it('should handle SSH connection', async () => {

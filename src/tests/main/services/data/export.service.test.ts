@@ -312,7 +312,7 @@ describe('ExportService', () => {
         });
 
         it('should include top-level fields', () => {
-            const data = JSON.parse(service.getExportContent(chat, opts)) as Record<string, unknown>;
+            const data = JSON.parse(service.getExportContent(chat, opts)) as Record<string, TestValue>;
             expect(data['title']).toBe('Test Chat');
             expect(data['model']).toBe('gpt-4');
             expect(data['messageCount']).toBe(2);
@@ -326,14 +326,14 @@ describe('ExportService', () => {
         });
 
         it('should include timestamps by default', () => {
-            const data = JSON.parse(service.getExportContent(chat, opts)) as { messages: { timestamp?: unknown }[] };
+            const data = JSON.parse(service.getExportContent(chat, opts)) as { messages: { timestamp?: TestValue }[] };
             expect(data.messages[0]!.timestamp).toBeDefined();
         });
 
         it('should omit timestamps when disabled', () => {
             const data = JSON.parse(
                 service.getExportContent(chat, { format: 'json', includeTimestamps: false })
-            ) as { messages: { timestamp?: unknown }[] };
+            ) as { messages: { timestamp?: TestValue }[] };
             expect(data.messages[0]!.timestamp).toBeUndefined();
         });
 
@@ -375,7 +375,7 @@ describe('ExportService', () => {
             });
             const data = JSON.parse(
                 service.getExportContent(toolChat, { format: 'json', includeToolCalls: true })
-            ) as { messages: { toolCalls?: unknown[] }[] };
+            ) as { messages: { toolCalls?: TestValue[] }[] };
             expect(data.messages[0]!.toolCalls).toHaveLength(1);
         });
 
@@ -392,7 +392,7 @@ describe('ExportService', () => {
             });
             const data = JSON.parse(
                 service.getExportContent(toolChat, { format: 'json', includeToolCalls: false })
-            ) as { messages: { toolCalls?: unknown[] }[] };
+            ) as { messages: { toolCalls?: TestValue[] }[] };
             expect(data.messages[0]!.toolCalls).toBeUndefined();
         });
 
@@ -550,7 +550,7 @@ describe('ExportService', () => {
         it('should return empty string for non-string non-array content', () => {
             const odd = createChat({
                 messages: [
-                    createMessage({ id: 'od', role: 'user', content: undefined as unknown as string })
+                    createMessage({ id: 'od', role: 'user', content: undefined as never as string })
                 ]
             });
             // Should not throw
@@ -597,7 +597,7 @@ describe('ExportService - file operations', () => {
     describe('exportChat', () => {
         const mockWindow = {
             webContents: { printToPDF: vi.fn() }
-        } as unknown as Electron.BrowserWindow;
+        } as never as Electron.BrowserWindow;
 
         beforeEach(() => {
             service.setWindow(mockWindow);
@@ -713,7 +713,7 @@ describe('ExportService - file operations', () => {
         const mockPrintToPDF = vi.fn();
         const mockWindow = {
             webContents: { printToPDF: mockPrintToPDF }
-        } as unknown as Electron.BrowserWindow;
+        } as never as Electron.BrowserWindow;
 
         beforeEach(() => {
             service.setWindow(mockWindow);

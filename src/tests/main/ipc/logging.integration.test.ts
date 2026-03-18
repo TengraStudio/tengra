@@ -8,17 +8,17 @@ interface LogEntry {
     timestamp: Date;
 }
 
-const mockIpcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
-const mockIpcMainListeners = new Map<string, (...args: unknown[]) => void>();
-const mockWindows: unknown[] = [];
+const mockIpcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
+const mockIpcMainListeners = new Map<string, (...args: TestValue[]) => void>();
+const mockWindows: TestValue[] = [];
 
 // Mock electron
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
-            mockIpcMainHandlers.set(channel, handler);
+        handle: vi.fn((channel: string, handler: (...args: TestValue[]) => TestValue | Promise<TestValue>) => {
+            mockIpcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
         }),
-        on: vi.fn((channel: string, handler: (...args: unknown[]) => void) => {
+        on: vi.fn((channel: string, handler: (...args: TestValue[]) => void) => {
             mockIpcMainListeners.set(channel, handler);
         }),
         removeHandler: vi.fn((channel: string) => {
@@ -30,7 +30,7 @@ vi.mock('electron', () => ({
     },
     BrowserWindow: {
         getAllWindows: vi.fn(() => mockWindows),
-        fromWebContents: vi.fn((sender: unknown) => {
+        fromWebContents: vi.fn((sender: TestValue) => {
             return { id: (sender as { id: number }).id };
         }),
     },
@@ -284,3 +284,4 @@ describe('Logging IPC Handlers', () => {
         });
     });
 });
+

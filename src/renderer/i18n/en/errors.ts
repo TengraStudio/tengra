@@ -6,6 +6,12 @@ const sectionData = {
     "technicalDetails": "TECHNICAL DETAILS (STACK TRACE)",
     "copyDetails": "Copy Details",
     "rootNotFound": "Root element not found",
+    "ipcValidation": {
+        "hostRequired": "Host is required.",
+        "usernameRequired": "Username is required.",
+        "tokenRequired": "At least one token field must be present.",
+        "invalidUrlOrProtocol": "Invalid URL or unsupported protocol."
+    },
     "rateLimitWarning": "Rate limit warning ({{provider}}): {{remaining}}/{{limit}} remaining",
     "rateLimit": {
         "exceeded": "Rate limit exceeded. Please wait and try again.",
@@ -130,6 +136,9 @@ const sectionData = {
         "restoreFailed": "Failed to restore database from backup.",
         "restoreSuccess": "Database restored successfully.",
         "slowQuery": "Slow query detected: {{duration}}ms."
+    },
+    "extension": {
+        "sandboxSizeLimit": "Extension script exceeds sandbox size limit ({{maxSizeKb}} KB)."
     }
 };
 

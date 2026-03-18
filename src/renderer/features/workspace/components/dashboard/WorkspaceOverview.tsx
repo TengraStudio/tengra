@@ -48,7 +48,7 @@ export function WorkspaceOverviewHeader({
             <div className="relative group shrink-0">
                 <div className="w-32 h-32 rounded-2xl bg-muted/40 border-2 border-dashed border-border flex items-center justify-center overflow-hidden transition-all group-hover:border-primary/50 shadow-inner">
                     {workspace.logo ? (
-                        <img src={`safe-file://${workspace.logo}`} alt="Logo" className="w-full h-full object-cover" />
+                        <img src={`safe-file://${workspace.logo}`} alt={t('workspaces.logoAlt')} className="w-full h-full object-cover" />
                     ) : (
                         <Sparkles className="w-10 h-10 text-muted-foreground/20" />
                     )}
@@ -58,7 +58,7 @@ export function WorkspaceOverviewHeader({
                         className="absolute inset-0 bg-primary/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2 text-primary-foreground"
                     >
                         <Camera className="w-6 h-6" />
-                        <span className="text-xxs font-bold uppercase tracking-tighter">{t('workspaces.changeLogo') || 'Change Logo'}</span>
+                        <span className="text-xxs font-bold uppercase tracking-tighter">{t('workspaces.changeLogo')}</span>
                     </button>
                 </div>
             </div>
@@ -103,7 +103,7 @@ export function WorkspaceOverviewHeader({
                                 onChange={e => onSetDesc(e.target.value)}
                                 onBlur={() => onSaveDesc()}
                                 className="w-full bg-muted/40 border border-primary/30 rounded-xl p-3 text-sm text-foreground outline-none min-h-[80px] resize-none"
-                                placeholder={(t('workspaces.description') || 'Description') + '...'}
+                                placeholder={t('workspaces.workspaceDescPlaceholder')}
                             />
                         </div>
                     ) : (

@@ -195,7 +195,7 @@ const buildNewStreamingState = (update: StreamingStateUpdate, state: StreamStrea
 };
 
 export interface ProcessStreamOptions {
-    stream: AsyncGenerator<StreamChunk, void, unknown>
+    stream: AsyncGenerator<StreamChunk, void, RendererDataValue>
     chatId: string
     assistantId: string
     setStreamingStates: Dispatch<SetStateAction<Record<string, StreamStreamingState>>>
@@ -330,7 +330,7 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
             return;
         }
         pendingDbSave = saveMessageToDb(saveOptions)
-            .catch((error: unknown) => {
+            .catch((error: RendererDataValue) => {
                 const err = error instanceof Error ? error : new Error(String(error));
                 window.electron.log.error('[processChatStream] Failed to save streamed message', err);
             })

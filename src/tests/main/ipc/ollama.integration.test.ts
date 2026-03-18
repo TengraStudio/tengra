@@ -12,7 +12,11 @@ vi.mock('@main/logging/logger', () => ({
 
 
 vi.mock('@main/startup/ollama', () => ({
-    startOllama: vi.fn().mockResolvedValue({ success: true, message: 'Started' })
+    startOllama: vi.fn().mockResolvedValue({
+        success: true,
+        message: 'Started',
+        messageKey: 'images.ollamaStartup.started'
+    })
 }));
 
 vi.mock('electron', () => ({
@@ -54,7 +58,7 @@ describe('Ollama IPC Handlers', () => {
         // Capture IPC handlers
         vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: CallableFunction) => {
             ipcMainHandlers.set(channel, handler);
-            return { channels: [channel] } as unknown as Electron.IpcMain;
+            return { channels: [channel] } as never as Electron.IpcMain;
         });
 
         // Mock window
@@ -63,7 +67,7 @@ describe('Ollama IPC Handlers', () => {
             webContents: {
                 send: vi.fn()
             }
-        } as unknown as BrowserWindow;
+        } as never as BrowserWindow;
 
         vi.mocked(BrowserWindow.getAllWindows).mockReturnValue([mockWindow]);
 
@@ -71,7 +75,7 @@ describe('Ollama IPC Handlers', () => {
         mockLocalAIService = {
             checkCudaSupport: vi.fn().mockResolvedValue({ hasCuda: false }),
             ollamaChat: vi.fn().mockResolvedValue({ message: { content: 'Response', role: 'assistant' } })
-        } as unknown as LocalAIService;
+        } as never as LocalAIService;
 
         mockOllamaService = {
             pullModel: vi.fn().mockResolvedValue({ success: true }),
@@ -98,17 +102,17 @@ describe('Ollama IPC Handlers', () => {
             testConnection: vi.fn(),
             reconnect: vi.fn(),
             getGPUInfo: vi.fn()
-        } as unknown as OllamaService;
+        } as never as OllamaService;
 
         mockOllamaHealthService = {
             getStatus: vi.fn().mockReturnValue({ online: true, lastCheck: new Date() }),
             forceCheck: vi.fn().mockResolvedValue({ online: true, lastCheck: new Date() }),
             on: vi.fn()
-        } as unknown as OllamaHealthService;
+        } as never as OllamaHealthService;
 
         mockRateLimitService = {
             waitForToken: vi.fn().mockResolvedValue(undefined)
-        } as unknown as RateLimitService;
+        } as never as RateLimitService;
 
         mockSettingsService = {} as SettingsService;
         mockLLMService = {} as LLMService;
@@ -118,7 +122,7 @@ describe('Ollama IPC Handlers', () => {
             sender: {
                 send: vi.fn()
             }
-        } as unknown as IpcMainInvokeEvent;
+        } as never as IpcMainInvokeEvent;
 
         registerOllamaIpc({
             getMainWindow: () => null,
@@ -486,7 +490,11 @@ describe('Ollama IPC Handlers', () => {
             const result = await handler!(mockEvent);
 
             expect(startOllama).toHaveBeenCalled();
-            expect(result).toEqual({ success: true, message: 'Started' });
+            expect(result).toEqual({
+                success: true,
+                message: 'Started',
+                messageKey: 'images.ollamaStartup.started'
+            });
         });
     });
 

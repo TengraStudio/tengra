@@ -12,7 +12,7 @@ interface CacheNode<K, V> {
 }
 
 interface CacheEntry {
-    value: unknown
+    value: RendererDataValue
     timestamp: number
 }
 
@@ -219,7 +219,7 @@ export const settingsCache = new LRUCache<string, CacheEntry>(10);
 /**
  * Cache wrapper for database queries
  */
-export async function withCache<T>(
+export async function withCache<T extends RendererDataValue>(
     cacheKey: string,
     fetcher: () => Promise<T>,
     cache: LRUCache<string, CacheEntry> = dbQueryCache,

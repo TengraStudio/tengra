@@ -27,7 +27,7 @@ export interface IpcResponse<T = JsonValue> {
 /**
  * Configuration options for the IPC handler wrapper.
  */
-export interface IpcHandlerOptions {
+export interface IpcHandlerOptions<TErrorValue = RuntimeValue> {
     /**
      * If true, wraps the response in { success: true, data: result } format.
      * If false, returns the result directly (default for backward compatibility).
@@ -36,7 +36,7 @@ export interface IpcHandlerOptions {
     /**
      * Custom error handler. If provided, this will be called instead of the default error handling.
      */
-    onError?: (error: Error, handlerName: string) => unknown;
+    onError?: (error: Error, handlerName: string) => TErrorValue | RuntimeValue;
 }
 
 let ipcEventBus: EventBusService | null = null;
@@ -80,20 +80,20 @@ function emitIpcLifecycleEvent(
  * @param handler The actual handler function.
  * @param options Optional configuration for the handler wrapper.
  */
-export const createIpcHandler = <T = JsonValue, Args extends unknown[] = unknown[]>(
+export const createIpcHandler = <T = JsonValue, Args extends readonly RuntimeValue[] = readonly RuntimeValue[]>(
     handlerName: string,
     handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>,
     options: IpcHandlerOptions = {}
 ) => {
     const { wrapResponse = false, onError } = options;
 
-    return async (event: IpcMainInvokeEvent, ...args: unknown[]): Promise<IpcResponse<T> | T> => {
+    return async (event: IpcMainInvokeEvent, ...args: Args): Promise<IpcResponse<T> | T> => {
         const startedAt = Date.now();
         emitIpcLifecycleEvent('started', handlerName);
 
         try {
             // appLogger.debug('IpcHandler', `[${handlerName}] Started`); // Optional: verbose logging
-            const result = await handler(event, ...(args as Args));
+            const result = await handler(event, ...args);
             // appLogger.debug('IpcHandler', `[${handlerName}] Completed`);
             emitIpcLifecycleEvent('succeeded', handlerName, Date.now() - startedAt);
 
@@ -103,7 +103,10 @@ export const createIpcHandler = <T = JsonValue, Args extends unknown[] = unknown
             return result;
         } catch (error) {
             const errorObj = error as Error;
-            appLogger.error('IpcHandler', `[${handlerName}] Failed: ${getErrorMessage(errorObj)}`);
+            appLogger.error('IpcHandler', `[${handlerName}] Failed: ${getErrorMessage(errorObj)}`, {
+                stack: errorObj.stack,
+                errorName: errorObj.name
+            });
             emitIpcLifecycleEvent('failed', handlerName, Date.now() - startedAt, getErrorMessage(errorObj));
 
             // If custom error handler is provided, use it
@@ -159,7 +162,7 @@ export const createIpcHandler = <T = JsonValue, Args extends unknown[] = unknown
  * }, []))
  * ```
  */
-export const createSafeIpcHandler = <T = JsonValue, Args extends unknown[] = unknown[]>(
+export const createSafeIpcHandler = <T = JsonValue, Args extends readonly RuntimeValue[] = readonly RuntimeValue[]>(
     handlerName: string,
     handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>,
     defaultValue: T,
@@ -170,12 +173,12 @@ export const createSafeIpcHandler = <T = JsonValue, Args extends unknown[] = unk
         handler,
         {
             ...options,
-            onError: () => defaultValue
+            onError: () => defaultValue as RuntimeValue
         }
     );
 };
 
-interface ValidatedIpcHandlerOptions<T, Args extends unknown[]> extends IpcHandlerOptions {
+interface ValidatedIpcHandlerOptions<T, Args extends readonly RuntimeValue[]> extends IpcHandlerOptions {
     argsSchema?: z.ZodTuple<[z.ZodTypeAny, ...z.ZodTypeAny[]]> | z.ZodTuple<[]>;
     responseSchema?: ZodType<T>;
     normalizeArgs?: (args: Args) => Args;
@@ -195,7 +198,7 @@ interface ValidatedIpcHandlerOptions<T, Args extends unknown[]> extends IpcHandl
  * Security note: schema validation runs in the main process boundary and should be
  * used for any handler that accepts renderer-originated payloads.
  */
-export const createValidatedIpcHandler = <T = JsonValue, Args extends unknown[] = unknown[]>(
+export const createValidatedIpcHandler = <T = JsonValue, Args extends readonly RuntimeValue[] = readonly RuntimeValue[]>(
     handlerName: string,
     handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>,
     options: ValidatedIpcHandlerOptions<T, Args> = {}
@@ -213,9 +216,16 @@ export const createValidatedIpcHandler = <T = JsonValue, Args extends unknown[] 
                 try {
                     return fn();
                 } catch (error) {
+                    if (stage === 'args') {
+                        appLogger.debug('IpcValidation', `[${handlerName}] Validation failed for args`, {
+                            argCount: args.length,
+                        });
+                    }
                     if (error instanceof ZodError) {
                         const issues = error.issues.map(issue => {
-                            const path = issue.path.length > 0 ? issue.path.join('.') : 'root';
+                            const path = (issue.path && Array.isArray(issue.path) && issue.path.length > 0)
+                                ? issue.path.join('.')
+                                : 'root';
                             return `${path}: ${issue.message}`;
                         });
                         appLogger.warn(
@@ -234,9 +244,10 @@ export const createValidatedIpcHandler = <T = JsonValue, Args extends unknown[] 
             };
 
             const parsedArgs = argsSchema
-                ? parseWithLog('args', () => argsSchema.parse(args) as Args)
+                ? parseWithLog('args', () => argsSchema.parse(args) as readonly RuntimeValue[] as Args)
                 : args;
             const finalArgs = normalizeArgs ? normalizeArgs(parsedArgs) : parsedArgs;
+            
             const result = await handler(event, ...finalArgs);
             return responseSchema
                 ? parseWithLog('response', () => responseSchema.parse(result))
@@ -245,5 +256,3 @@ export const createValidatedIpcHandler = <T = JsonValue, Args extends unknown[] 
         ipcOptions
     );
 };
-
-

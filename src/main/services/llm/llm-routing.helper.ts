@@ -54,6 +54,16 @@ export function normalizeModelName(model: string, provider?: string): string {
     const lowerProvider = (provider ?? '').toLowerCase();
     let target = model;
 
+    if (lowerProvider === 'antigravity') {
+        const lowerTarget = target.toLowerCase();
+        if (lowerTarget.endsWith('-antigravity')) {
+            target = target.slice(0, -'-antigravity'.length);
+        }
+        if (lowerTarget.startsWith('antigravity/')) {
+            target = target.slice('antigravity/'.length);
+        }
+    }
+
     const prefixes: Record<string, string[]> = {
         'ollama': ['ollama/'],
         'anthropic': ['anthropic/', 'claude/'],
@@ -75,7 +85,6 @@ export function normalizeModelName(model: string, provider?: string): string {
         }
     }
 
-    // Antigravity proxy requires prefix
     if (lowerProvider === 'antigravity' && !target.startsWith('antigravity/')) {
         target = `antigravity/${target}`;
     }

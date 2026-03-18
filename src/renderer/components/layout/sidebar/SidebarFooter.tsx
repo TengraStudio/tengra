@@ -4,6 +4,7 @@ import React from 'react';
 import { SettingsCategory } from '@/features/settings/types';
 import { Language } from '@/i18n';
 import { Workspace } from '@/types';
+import { preloadViewResources } from '@/views/view-manager/view-loaders';
 
 import { SidebarItem } from './SidebarItem';
 import { SidebarSettingsMenu } from './SidebarSettingsMenu';
@@ -51,6 +52,9 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
                     label={t('sidebar.settings')}
                     active={currentView === 'settings' || showSettingsMenu}
                     onClick={toggleSettingsMenu}
+                    onMouseEnter={() => { void preloadViewResources('settings'); }}
+                    onFocus={() => { void preloadViewResources('settings'); }}
+                    onPointerDown={() => { void preloadViewResources('settings'); }}
                     isCollapsed={isCollapsed}
                     iconClassName={`transition-transform duration-700 ease-in-out ${showSettingsMenu ? 'rotate-180' : 'group-hover/item:rotate-180'}`}
                 />

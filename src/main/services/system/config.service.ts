@@ -88,7 +88,7 @@ export class ConfigService extends BaseService {
         if (process.env[key] !== undefined) {
             // Basic casting, env vars are strings. Might need parsing for boolean/numbers if stricter typing needed.
             // For now return string or cast.
-            return process.env[key] as unknown as T;
+            return process.env[key] as RuntimeValue as T;
         }
 
         // 3. Check Settings Service

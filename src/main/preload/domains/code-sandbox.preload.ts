@@ -36,7 +36,7 @@ export interface CodeSandboxBridge {
                 fastMs: number;
                 executeMs: number;
             };
-            metrics: Record<string, unknown>;
+            metrics: Record<string, RuntimeValue>;
         };
         error?: string;
         errorCode?: string;

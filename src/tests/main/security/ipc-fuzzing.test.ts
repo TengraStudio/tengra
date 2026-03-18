@@ -111,12 +111,12 @@ describe('IPC Fuzzing – Malformed payloads', () => {
     });
 
     it('safeJsonParse handles number as input', () => {
-        const result = safeJsonParse(42 as unknown as string, { fallback: true });
+        const result = safeJsonParse(42 as never as string, { fallback: true });
         expect(result).toEqual({ fallback: true });
     });
 
     it('safeJsonParse handles boolean as input', () => {
-        const result = safeJsonParse(true as unknown as string, 'default');
+        const result = safeJsonParse(true as never as string, 'default');
         expect(result).toBe('default');
     });
 
@@ -126,7 +126,7 @@ describe('IPC Fuzzing – Malformed payloads', () => {
     });
 
     it('sanitizeString handles object coerced to string', () => {
-        const result = sanitizeString({} as unknown as string);
+        const result = sanitizeString({} as never as string);
         expect(result).toBe('');
     });
 
@@ -210,7 +210,7 @@ describe('IPC Fuzzing – Rate limiting simulation', () => {
 
     it('rapid sequential calls to sanitizeObject remain consistent', () => {
         const input = { key: 'value', __proto__: { admin: true } } as JsonObject;
-        const results: Array<Record<string, unknown> | null | undefined> = [];
+        const results: Array<Record<string, TestValue> | null | undefined> = [];
         for (let i = 0; i < 500; i++) {
             results.push(sanitizeObject({ ...input }));
         }
@@ -249,11 +249,11 @@ describe('IPC Fuzzing – Rate limiting simulation', () => {
 // ---------------------------------------------------------------------------
 describe('IPC Fuzzing – Type confusion', () => {
     it('sanitizeString handles Symbol gracefully', () => {
-        expect(sanitizeString(Symbol('test') as unknown as string)).toBe('');
+        expect(sanitizeString(Symbol('test') as never as string)).toBe('');
     });
 
     it('sanitizeString handles BigInt gracefully', () => {
-        expect(sanitizeString(BigInt(42) as unknown as string)).toBe('');
+        expect(sanitizeString(BigInt(42) as never as string)).toBe('');
     });
 
     it('safeJsonParse handles circular reference attempt', () => {
@@ -273,7 +273,7 @@ describe('IPC Fuzzing – Type confusion', () => {
         // sanitizeObject iterates Object.entries which calls getters
         try {
             sanitizeObject(tricky);
-        } catch (error: unknown) {
+        } catch (error) {
             expect((error as Error).message).toContain('getter trap');
         }
     });

@@ -27,7 +27,7 @@ vi.mock('@main/logging/logger', () => ({
 import { exec } from 'child_process';
 import * as os from 'os';
 
-const mockExec = exec as unknown as ReturnType<typeof vi.fn>;
+const mockExec = exec as never as ReturnType<typeof vi.fn>;
 
 describe('MonitoringService', () => {
     let service: MonitoringService;
@@ -405,7 +405,7 @@ describe('MonitoringService', () => {
 
         it('should propagate command errors as failed response in getSystemMonitor', async () => {
             vi.mocked(os.platform).mockReturnValue('darwin');
-            mockExec.mockImplementation((_command: string, _options: Record<string, unknown>, callback: (err: Error | null, stdout: string, stderr: string) => void) => {
+            mockExec.mockImplementation((_command: string, _options: Record<string, TestValue>, callback: (err: Error | null, stdout: string, stderr: string) => void) => {
                 callback(new Error('exec error'), '', 'some stderr');
             });
 
@@ -417,7 +417,7 @@ describe('MonitoringService', () => {
 
         it('should propagate command errors as failed response in getBatteryStatus', async () => {
             vi.mocked(os.platform).mockReturnValue('darwin');
-            mockExec.mockImplementation((_command: string, _options: Record<string, unknown>, callback: (err: Error | null, stdout: string, stderr: string) => void) => {
+            mockExec.mockImplementation((_command: string, _options: Record<string, TestValue>, callback: (err: Error | null, stdout: string, stderr: string) => void) => {
                 callback(new Error('pmset failed'), '', '');
             });
 
@@ -631,7 +631,7 @@ describe('MonitoringService - validation', () => {
         });
 
         it('should reject null config', () => {
-            const result = service.configureAlert(null as unknown as AlertConfiguration);
+            const result = service.configureAlert(null as never as AlertConfiguration);
             expect(result.success).toBe(false);
             expect(result.error).toContain(MonitoringErrorCode.INVALID_ALERT_CONFIG);
         });
@@ -674,7 +674,7 @@ describe('MonitoringService - validation', () => {
         it('should reject non-boolean enabled field', () => {
             const result = service.configureAlert({
                 ...validAlert,
-                enabled: 1 as unknown as boolean,
+                enabled: 1 as never as boolean,
             });
             expect(result.success).toBe(false);
             expect(result.error).toContain(MonitoringErrorCode.INVALID_ALERT_CONFIG);
@@ -736,7 +736,7 @@ describe('MonitoringService - validation', () => {
             vi.mocked(os.totalmem).mockReturnValue(16000000000);
             vi.mocked(os.freemem).mockReturnValue(8000000000);
             vi.mocked(os.platform).mockReturnValue('win32');
-            mockExec.mockImplementation((_command: string, _options: Record<string, unknown>, callback: (err: Error | null, stdout: string, stderr: string) => void) => {
+            mockExec.mockImplementation((_command: string, _options: Record<string, TestValue>, callback: (err: Error | null, stdout: string, stderr: string) => void) => {
                 callback(null, 'mock output', '');
             });
 
@@ -791,7 +791,7 @@ describe('MonitoringService - validation', () => {
             vi.mocked(os.totalmem).mockReturnValue(16000000000);
             vi.mocked(os.freemem).mockReturnValue(8000000000);
             vi.mocked(os.platform).mockReturnValue('win32');
-            mockExec.mockImplementation((_command: string, _options: Record<string, unknown>, callback: (err: Error | null, stdout: string, stderr: string) => void) => {
+            mockExec.mockImplementation((_command: string, _options: Record<string, TestValue>, callback: (err: Error | null, stdout: string, stderr: string) => void) => {
                 callback(new Error('command boom'), '', '');
             });
 

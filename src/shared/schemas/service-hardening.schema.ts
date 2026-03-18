@@ -167,6 +167,11 @@ export const EmbeddingTextInputSchema = z.object({
 });
 
 export const WorkspaceRootPathSchema = z.string().trim().min(1).max(4096);
+export const WorkspaceActiveRootPathSchema = z.union([
+    WorkspaceRootPathSchema,
+    z.null(),
+    z.undefined()
+]).transform(val => val ?? null);
 export const WorkspaceEnvKeySchema = z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/);
 export const WorkspaceEnvVarsSchema = z.record(WorkspaceEnvKeySchema, z.string().max(20000));
 
@@ -292,4 +297,8 @@ export const GenerateLogoOptionsSchema = z.object({
 export const WorkspaceIdentitySchema = z.object({
     suggestedPrompts: z.array(z.string().max(1000)).max(50),
     colors: z.array(z.string().max(64)).max(20)
+});
+
+export const WorkspaceActiveStateSchema = z.object({
+    rootPath: WorkspaceActiveRootPathSchema,
 });

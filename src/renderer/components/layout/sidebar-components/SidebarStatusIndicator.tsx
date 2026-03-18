@@ -29,39 +29,33 @@ export const SidebarStatusIndicator: React.FC<SidebarStatusIndicatorProps> = ({
     const statusConfig = {
         online: {
             color: 'bg-success',
-            glow: 'shadow-emerald-500/50',
-            pulse: true,
-            defaultLabel: 'Online'
+            glow: 'shadow-success/50',
+            pulse: true
         },
         warning: {
             color: 'bg-warning',
-            glow: 'shadow-amber-500/50',
-            pulse: true,
-            defaultLabel: 'Warning'
+            glow: 'shadow-warning/50',
+            pulse: true
         },
         error: {
             color: 'bg-destructive',
-            glow: 'shadow-red-500/50',
-            pulse: true,
-            defaultLabel: 'Error'
+            glow: 'shadow-destructive/50',
+            pulse: true
         },
         offline: {
             color: 'bg-muted',
             glow: '',
-            pulse: false,
-            defaultLabel: 'Offline'
+            pulse: false
         },
         loading: {
             color: 'bg-primary',
-            glow: 'shadow-blue-500/50',
-            pulse: false,
-            defaultLabel: 'Loading'
+            glow: 'shadow-primary/50',
+            pulse: false
         },
         idle: {
             color: 'bg-muted',
             glow: '',
-            pulse: false,
-            defaultLabel: 'Idle'
+            pulse: false
         }
     };
 

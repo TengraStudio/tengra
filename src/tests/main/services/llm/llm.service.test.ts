@@ -47,18 +47,18 @@ describe('LLMService', () => {
         vi.clearAllMocks();
         type LlmDeps = ConstructorParameters<typeof LLMService>[0];
         service = new LLMService({
-            httpService: mockHttpService as unknown as LlmDeps['httpService'],
-            configService: mockConfigService as unknown as LlmDeps['configService'],
-            keyRotationService: mockKeyRotationService as unknown as LlmDeps['keyRotationService'],
-            rateLimitService: mockRateLimitService as unknown as LlmDeps['rateLimitService'],
-            settingsService: { getSettings: vi.fn().mockReturnValue({}) } as unknown as LlmDeps['settingsService'],
-            proxyService: { getEmbeddedProxyStatus: vi.fn().mockReturnValue({}), getProxyKey: vi.fn().mockResolvedValue('test-key') } as unknown as LlmDeps['proxyService'],
-            tokenService: mockTokenService as unknown as LlmDeps['tokenService'],
-            huggingFaceService: mockHuggingFaceService as unknown as LlmDeps['huggingFaceService'],
-            fallbackService: { route: vi.fn(), getChain: vi.fn().mockReturnValue([]) } as unknown as LlmDeps['fallbackService'],
-            cacheService: mockCacheService as unknown as LlmDeps['cacheService']
+            httpService: mockHttpService as never as LlmDeps['httpService'],
+            configService: mockConfigService as never as LlmDeps['configService'],
+            keyRotationService: mockKeyRotationService as never as LlmDeps['keyRotationService'],
+            rateLimitService: mockRateLimitService as never as LlmDeps['rateLimitService'],
+            settingsService: { getSettings: vi.fn().mockReturnValue({}) } as never as LlmDeps['settingsService'],
+            proxyService: { getEmbeddedProxyStatus: vi.fn().mockReturnValue({}), getProxyKey: vi.fn().mockResolvedValue('test-key') } as never as LlmDeps['proxyService'],
+            tokenService: mockTokenService as never as LlmDeps['tokenService'],
+            huggingFaceService: mockHuggingFaceService as never as LlmDeps['huggingFaceService'],
+            fallbackService: { route: vi.fn(), getChain: vi.fn().mockReturnValue([]) } as never as LlmDeps['fallbackService'],
+            cacheService: mockCacheService as never as LlmDeps['cacheService']
         });
-        (service as unknown as { imagePersistence: unknown }).imagePersistence = mockImagePersistence;
+        (service as never as { imagePersistence: TestValue }).imagePersistence = mockImagePersistence;
     });
 
     afterEach(() => {
@@ -72,7 +72,7 @@ describe('LLMService', () => {
 
         it('should throw ValidationError when message content is invalid', async () => {
             service.setOpenAIApiKey('sk-test');
-            const invalidMessages = [{ role: 'user' }] as unknown as ChatMessage[];
+            const invalidMessages = [{ role: 'user' }] as never as ChatMessage[];
             await expect(service.chatOpenAI(invalidMessages)).rejects.toThrow(ValidationError);
         });
 

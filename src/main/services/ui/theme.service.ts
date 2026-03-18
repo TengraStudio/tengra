@@ -74,7 +74,7 @@ export class ThemeService extends BaseService {
         if (this.telemetryLog.length > ThemeService.MAX_TELEMETRY_LOG) {
             this.telemetryLog.shift();
         }
-        this.logInfo(`Telemetry: ${event.action}`, event as unknown as JsonObject);
+        this.logInfo(`Telemetry: ${event.action}`, event as RuntimeValue as JsonObject);
     }
 
     /** Returns a copy of the recent telemetry event log. */
@@ -451,7 +451,7 @@ export class ThemeService extends BaseService {
             this.validateImportedTheme(themeObject);
 
             const imported = await this.addCustomTheme({
-                ...(themeObject as unknown as CustomTheme),
+                ...(themeObject as RuntimeValue as CustomTheme),
                 isCustom: true,
                 source: 'imported'
             });

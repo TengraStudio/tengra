@@ -1,7 +1,6 @@
 import { BaseService } from '@main/services/base.service';
 import { CouncilCapabilityService } from '@main/services/session/capabilities/council-capability.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
-import { AgentCollaborationService } from '@main/services/workspace/automation-workflow/agent-collaboration.service';
 import { SESSION_CAPABILITY_DESCRIPTORS } from '@shared/constants/session-capabilities';
 import {
     SessionCapability,
@@ -22,7 +21,6 @@ export class SessionModuleRegistryService extends BaseService {
 
     constructor(
         eventBus: EventBusService,
-        collaborationService: AgentCollaborationService,
         councilCapabilityService: CouncilCapabilityService
     ) {
         super('SessionModuleRegistryService');
@@ -30,7 +28,6 @@ export class SessionModuleRegistryService extends BaseService {
         this.registerModule(
             new CouncilSessionModule(
                 eventBus,
-                collaborationService,
                 councilCapabilityService
             )
         );
@@ -39,16 +36,14 @@ export class SessionModuleRegistryService extends BaseService {
         this.registerModule(new TaskPlanningSessionModule(eventBus));
         this.registerModule(new TaskExecutionSessionModule(eventBus));
         this.registerModule(
-            new PassiveSessionModule('tools', eventBus, ['chat', 'workspace', 'automation'], 'session:capability:tools')
+            new PassiveSessionModule('tools', eventBus, ['chat', 'workspace'], 'session:capability:tools')
         );
         this.registerModule(
-            new PassiveSessionModule('rag', eventBus, ['chat', 'workspace', 'automation'], 'session:capability:rag')
+            new PassiveSessionModule('rag', eventBus, ['chat', 'workspace'], 'session:capability:rag')
         );
+
         this.registerModule(
             new PassiveSessionModule('image_generation', eventBus, ['chat', 'workspace'], 'session:capability:image-generation')
-        );
-        this.registerModule(
-            new PassiveSessionModule('checkpoints', eventBus, ['automation'], 'session:capability:checkpoints')
         );
     }
 

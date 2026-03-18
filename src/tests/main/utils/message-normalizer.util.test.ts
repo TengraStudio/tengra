@@ -1,5 +1,10 @@
 import { MessageNormalizer } from '@main/utils/message-normalizer.util';
+import type { AnthropicContentBlock, OpenAIContentPart } from '@shared/types/llm-provider-types';
 import { describe, expect, it } from 'vitest';
+
+interface OpenAIMessageWithImages {
+    images?: string[];
+}
 
 describe('MessageNormalizer', () => {
     describe('normalizeOpenAIMessages', () => {
@@ -7,8 +12,8 @@ describe('MessageNormalizer', () => {
             const messages = [
                 { role: 'user', content: 'hello', images: ['base64data'] }
             ];
-            const normalized = MessageNormalizer.normalizeOpenAIMessages(messages as any, 'gemini-3-pro-high');
-            expect((normalized[0] as any).images).toBeUndefined();
+            const normalized = MessageNormalizer.normalizeOpenAIMessages(messages as never, 'gemini-3-pro-high');
+            expect((normalized[0] as OpenAIMessageWithImages).images).toBeUndefined();
             expect(normalized[0]!.content).toBe('hello');
         });
 
@@ -16,9 +21,13 @@ describe('MessageNormalizer', () => {
             const messages = [
                 { role: 'user', content: 'look', images: ['base64data'] }
             ];
-            const normalized = MessageNormalizer.normalizeOpenAIMessages(messages as any, 'gpt-4o');
-            expect(Array.isArray(normalized[0]!.content)).toBe(true);
-            const content = normalized[0]!.content as Array<any>;
+            const normalized = MessageNormalizer.normalizeOpenAIMessages(messages as never, 'gpt-4o');
+            const contentValue = normalized[0]!.content;
+            expect(Array.isArray(contentValue)).toBe(true);
+            if (!Array.isArray(contentValue)) {
+                throw new Error('Expected OpenAI content array');
+            }
+            const content = contentValue as OpenAIContentPart[];
             expect(content[0]).toEqual({ type: 'text', text: 'look' });
             expect(content[1]).toEqual({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,base64data' } });
         });
@@ -30,7 +39,7 @@ describe('MessageNormalizer', () => {
                 { role: 'system', content: 'sys' },
                 { role: 'user', content: 'hi' }
             ];
-            const normalized = MessageNormalizer.normalizeAnthropicMessages(messages as any);
+            const normalized = MessageNormalizer.normalizeAnthropicMessages(messages as never);
             expect(normalized).toHaveLength(1);
             expect(normalized[0]!.role).toBe('user');
         });
@@ -39,8 +48,14 @@ describe('MessageNormalizer', () => {
             const messages = [
                 { role: 'user', content: 'hi', images: ['base64data'] }
             ];
-            const normalized = MessageNormalizer.normalizeAnthropicMessages(messages as any);
-            expect((normalized[0]!.content as any)[1]).toEqual({
+            const normalized = MessageNormalizer.normalizeAnthropicMessages(messages as never);
+            const contentValue = normalized[0]!.content;
+            expect(Array.isArray(contentValue)).toBe(true);
+            if (!Array.isArray(contentValue)) {
+                throw new Error('Expected Anthropic content array');
+            }
+            const content = contentValue as AnthropicContentBlock[];
+            expect(content[1]).toEqual({
                 type: 'image',
                 source: {
                     type: 'base64',

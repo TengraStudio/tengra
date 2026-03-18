@@ -129,7 +129,13 @@ const sectionData = {
     "errors": {
         "exportFailed": "内存导出失败",
         "importFailed": "内存导入失败"
-    }
+    },
+    "refreshTitle": "Refresh",
 };
 
 export default sectionData;
+
+
+
+
+

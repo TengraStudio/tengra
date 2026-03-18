@@ -29,7 +29,19 @@ const sectionData = {
     "step3": "Kodlamaya Başlayın",
     "language": {
         "title": "Dilinizi seçin",
-        "description": "Tengra kullanmaya başlamak için tercih ettiğiniz dili seçin."
+        "description": "Tengra kullanmaya başlamak için tercih ettiğiniz dili seçin.",
+        "labels": {
+            "en": "English",
+            "tr": "Türkçe",
+            "de": "Deutsch",
+            "fr": "Français",
+            "es": "Español",
+            "ja": "日本語",
+            "zh": "简体中文",
+            "ar": "العربية"
+        },
+        "LANGUAGE_PROMPT_INVALID_LANGUAGE": "Seçilen dil desteklenmiyor.",
+        "LANGUAGE_PROMPT_SAVE_FAILED": "Dil kaydedilemedi. Lütfen tekrar deneyin."
     }
 };
 

@@ -73,7 +73,7 @@ export const useSpeechRecognition = (
             setIsListening(true);
             window._activeRecognition = recognition;
         } catch (err) {
-            handleError(err, 'SpeechRecognition.start');
+            handleError(err as TypeAssertionValue, 'SpeechRecognition.start');
             setIsListening(false);
         }
     }, [language, onResult]);

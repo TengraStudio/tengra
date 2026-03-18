@@ -17,7 +17,6 @@ To maintain high code quality and safety, we follow strict guidelines.
     - Short functions (max 150 lines, 60 lines preferred).
     - Check all return values.
 5.  **BOY SCOUT RULE**: Mandatory. Leave the code cleaner. Every session MUST fix at least one existing lint warning or type issue.
-6.  **DOCS MIRRORING**: All documentation must be updated in the root folder and mirrored to `.codex/`.
 
 ---
 

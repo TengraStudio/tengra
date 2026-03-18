@@ -38,7 +38,12 @@ const FILE_MESSAGE_KEY = {
     OPERATION_FAILED: 'errors.files.operationFailed',
     VALIDATION_FAILED: 'errors.files.validationFailed',
     WRITE_FAILED: 'errors.files.writeFailed',
-    SEARCH_FAILED: 'errors.files.searchFailed'
+    SEARCH_FAILED: 'errors.files.searchFailed',
+    WINDOW_NOT_FOUND: 'mainProcess.files.windowNotFound'
+} as const;
+const FILE_ERROR_MESSAGE = {
+    WINDOW_NOT_FOUND: 'Window not found',
+    WRITE_FAILED: 'Write failed'
 } as const;
 const FILE_PERFORMANCE_BUDGET_MS = {
     EXISTS: 30,
@@ -154,26 +159,26 @@ export function registerFilesIpc(
         };
     };
 
-    const isResultSuccessful = (result: unknown): boolean => {
+    const isResultSuccessful = (result: RuntimeValue): boolean => {
         if (typeof result !== 'object' || result === null) {
             return true;
         }
         if ('success' in result) {
-            const success = (result as { success?: unknown }).success;
+            const success = (result as { success?: RuntimeValue }).success;
             return typeof success === 'boolean' ? success : true;
         }
         if ('exists' in result) {
-            const exists = (result as { exists?: unknown }).exists;
+            const exists = (result as { exists?: RuntimeValue }).exists;
             return typeof exists === 'boolean' ? exists : true;
         }
         return true;
     };
-    const auditFileOperation = async (action: string, targetPath: string | undefined, result: unknown) => {
+    const auditFileOperation = async (action: string, targetPath: string | undefined, result: RuntimeValue) => {
         await auditLogService?.logFileSystemOperation(action, isResultSuccessful(result), {
             targetPath,
         });
     };
-    const runWithFileAudit = async <T>(
+    const runWithFileAudit = async <T extends RuntimeValue>(
         action: string,
         targetPath: string | undefined,
         operation: () => Promise<T>
@@ -182,7 +187,7 @@ export function registerFilesIpc(
         await auditFileOperation(action, targetPath, result);
         return result;
     };
-    const withDefaultErrorCode = <TDefault>(defaultValue: TDefault, error: Error): TDefault => {
+    const withDefaultErrorCode = <TDefault extends RuntimeValue>(defaultValue: TDefault, error: Error): TDefault => {
         if (typeof defaultValue !== 'object' || defaultValue === null) {
             return defaultValue;
         }
@@ -207,7 +212,7 @@ export function registerFilesIpc(
         } as TDefault;
     };
 
-    const createValidatedIpcHandler = <T, Args extends unknown[] = unknown[]>(
+    const createValidatedIpcHandler = <T extends RuntimeValue, Args extends RuntimeValue[] = RuntimeValue[]>(
         channel: string,
         handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>,
         options: Parameters<typeof baseCreateValidatedIpcHandler<T, Args>>[2]
@@ -267,7 +272,11 @@ export function registerFilesIpc(
     ipcMain.handle('files:selectDirectory', createValidatedIpcHandler('files:selectDirectory', async () => {
         const win = getMainWindow();
         if (!win) {
-            return { success: false, error: 'Window not found' };
+            return {
+                success: false,
+                error: FILE_ERROR_MESSAGE.WINDOW_NOT_FOUND,
+                messageKey: FILE_MESSAGE_KEY.WINDOW_NOT_FOUND
+            };
         }
 
         const result = await dialog.showOpenDialog(win, {
@@ -292,7 +301,11 @@ export function registerFilesIpc(
     ipcMain.handle('files:selectFile', createValidatedIpcHandler('files:selectFile', async (_event, options?: { title?: string, filters?: { name: string, extensions: string[] }[] }) => {
         const win = getMainWindow();
         if (!win) {
-            return { success: false, error: 'Window not found' };
+            return {
+                success: false,
+                error: FILE_ERROR_MESSAGE.WINDOW_NOT_FOUND,
+                messageKey: FILE_MESSAGE_KEY.WINDOW_NOT_FOUND
+            };
         }
 
         const result = await dialog.showOpenDialog(win, {
@@ -360,7 +373,7 @@ export function registerFilesIpc(
             }
             return {
                 success: false,
-                error: trackedResult.error ?? 'Write failed',
+                error: trackedResult.error ?? FILE_ERROR_MESSAGE.WRITE_FAILED,
                 messageKey: FILE_MESSAGE_KEY.WRITE_FAILED,
                 uiState: 'failure'
             };
@@ -373,14 +386,14 @@ export function registerFilesIpc(
         }
         return {
             success: false,
-            error: writeResult.error ?? 'Write failed',
+            error: writeResult.error ?? FILE_ERROR_MESSAGE.WRITE_FAILED,
             messageKey: FILE_MESSAGE_KEY.WRITE_FAILED,
             uiState: 'failure'
         };
     }, {
         defaultValue: {
             success: false,
-            error: 'Write failed',
+            error: FILE_ERROR_MESSAGE.WRITE_FAILED,
             errorCode: FILE_IPC_ERROR_CODE.OPERATION_FAILED,
             messageKey: FILE_MESSAGE_KEY.WRITE_FAILED,
             uiState: 'failure'

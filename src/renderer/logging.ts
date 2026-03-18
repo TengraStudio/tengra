@@ -9,6 +9,10 @@ interface RendererLoggingWindow extends Window {
 type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 type LogValue = JsonValue | Error | object
 
+function isBenignResizeObserverMessage(message: string): boolean {
+    return message.includes('ResizeObserver loop completed with undelivered notifications');
+}
+
 export function installRendererLogger() {
     const loggingWindow = window as RendererLoggingWindow;
     if (loggingWindow.__tengraRendererLoggerInstalled__ === true) {return;}
@@ -83,6 +87,9 @@ export function installRendererLogger() {
     };
 
     const onWindowError = (event: ErrorEvent): void => {
+        if (isBenignResizeObserverMessage(event.message)) {
+            return;
+        }
         const error = event.error instanceof Error ? event.error : null;
         const parts = [
             `message=${event.message}`,

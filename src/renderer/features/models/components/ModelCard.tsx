@@ -23,14 +23,14 @@ const ARCHITECTURE_MAP: Record<string, string> = {
     qwen: 'Qwen'
 };
 
-function detectArchitecture(modelName: string): string {
+function detectArchitecture(modelName: string, fallbackArchitecture: string): string {
     const nameLower = modelName.toLowerCase();
     for (const [key, arch] of Object.entries(ARCHITECTURE_MAP)) {
         if (nameLower.includes(key)) {
             return arch;
         }
     }
-    return 'Transformer';
+    return fallbackArchitecture;
 }
 
 function formatDownloads(downloads: number): string {
@@ -103,7 +103,7 @@ export const ModelCard = memo(({
     const params = isOllama
         ? (model as OllamaLibraryModel).tags.find(tag => tag.toLowerCase().includes('b') || tag.toLowerCase().includes('m'))
         : '';
-    const architecture = detectArchitecture(name);
+    const architecture = detectArchitecture(name, t('modelExplorer.architectureTransformer'));
     const badgeContent = getSecondaryBadgeContent(model);
 
     return (
@@ -121,13 +121,13 @@ export const ModelCard = memo(({
                         {isRecommended && (
                             <span className="inline-flex items-center gap-1 text-xxxs font-black uppercase tracking-wider px-2 py-1 rounded-lg bg-primary/15 text-primary border border-primary/20">
                                 <Sparkles className="w-3 h-3" />
-                                Recommended
+                                {t('modelExplorer.recommended')}
                             </span>
                         )}
                         {isWatchlisted && (
                             <span className="inline-flex items-center gap-1 text-xxxs font-black uppercase tracking-wider px-2 py-1 rounded-lg bg-warning/15 text-warning border border-warning/20">
                                 <Star className="w-3 h-3" />
-                                Watchlist
+                                {t('modelExplorer.watchlist')}
                             </span>
                         )}
                     </div>
@@ -138,14 +138,14 @@ export const ModelCard = memo(({
                 <div className="flex items-center gap-3 mb-6">
                     <span className="text-xxs font-black uppercase tracking-widest text-primary/70">{architecture}</span>
                     {params && <span className="w-1 h-1 rounded-full bg-border" />}
-                    {params && <span className="text-xxs font-black uppercase tracking-widest text-muted-foreground">{params} Params</span>}
+                    {params && <span className="text-xxs font-black uppercase tracking-widest text-muted-foreground">{params} {t('modelExplorer.paramsSuffix')}</span>}
                 </div>
                 <p className="text-sm text-muted-foreground/70 line-clamp-3 mb-8 leading-relaxed font-medium">
-                    {model.description || 'Access state-of-the-art intelligence with this advanced language model.'}
+                    {model.description || t('modelExplorer.defaultDescription')}
                 </p>
                 {model.provider === 'huggingface' && (
                     <div className="mb-4 text-xxs font-bold text-muted-foreground flex items-center justify-between border border-border/30 rounded-lg px-3 py-2 bg-muted/20">
-                        <span>Benchmark Score</span>
+                        <span>{t('modelExplorer.benchmarkScore')}</span>
                         <span className="text-primary">{Math.round((model as HFModel).recommendationScore ?? 0)}/100</span>
                     </div>
                 )}

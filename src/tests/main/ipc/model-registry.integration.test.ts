@@ -2,12 +2,12 @@ import { registerModelRegistryIpc } from '@main/ipc/model-registry';
 import { IpcMainInvokeEvent } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const ipcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
+const ipcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
 
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
-            ipcMainHandlers.set(channel, handler);
+        handle: vi.fn((channel: string, handler: (...args: TestValue[]) => TestValue | Promise<TestValue>) => {
+            ipcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
         }),
         setMaxListeners: vi.fn()
     }
@@ -99,7 +99,7 @@ describe('Model Registry IPC Integration', () => {
 
             expect(Array.isArray(result)).toBe(true);
             expect(result).toHaveLength(1);
-            expect((result as Record<string, unknown>[])[0].isInstalled).toBe(true);
+            expect((result as Record<string, TestValue>[])[0].isInstalled).toBe(true);
             expect(mockModelRegistryService.getInstalledModels).toHaveBeenCalledTimes(1);
         });
 
@@ -191,3 +191,4 @@ describe('Model Registry IPC Integration', () => {
         });
     });
 });
+

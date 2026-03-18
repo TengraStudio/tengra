@@ -46,7 +46,7 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
             <textarea
                 value={batchPrompts}
                 onChange={event => setBatchPrompts(event.target.value)}
-                placeholder={t('settings.images.batchPrompts') || 'Batch Prompts (one per line)'}
+                placeholder={t('settings.images.batchPrompts')}
                 className="min-h-[78px] w-full rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
             />
             <button
@@ -61,13 +61,13 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                 <input
                     value={editSource}
                     onChange={event => setEditSource(event.target.value)}
-                    placeholder={t('settings.images.editSource') || 'Source Image Path'}
+                    placeholder={t('settings.images.editSource')}
                     className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
                 />
                 <input
                     value={editPrompt}
                     onChange={event => setEditPrompt(event.target.value)}
-                    placeholder={t('settings.images.editPrompt') || 'Edit Prompt'}
+                    placeholder={t('settings.images.editPrompt')}
                     className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
                 />
                 <select
@@ -75,19 +75,19 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                     onChange={event => handleApplyEditPreset(event.target.value as 'balanced' | 'detail' | 'stylize')}
                     className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
                 >
-                    <option value="balanced">{t('settings.images.editPresetBalanced') || 'Preset: Balanced'}</option>
-                    <option value="detail">{t('settings.images.editPresetDetail') || 'Preset: Detail Recovery'}</option>
-                    <option value="stylize">{t('settings.images.editPresetStylize') || 'Preset: Stylize'}</option>
+                    <option value="balanced">{t('settings.images.editPresetBalanced')}</option>
+                    <option value="detail">{t('settings.images.editPresetDetail')}</option>
+                    <option value="stylize">{t('settings.images.editPresetStylize')}</option>
                 </select>
                 <select
                     value={editMode}
                     onChange={event => setEditMode(event.target.value as 'img2img' | 'inpaint' | 'outpaint' | 'style-transfer')}
                     className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
                 >
-                    <option value="img2img">img2img</option>
-                    <option value="inpaint">inpaint</option>
-                    <option value="outpaint">outpaint</option>
-                    <option value="style-transfer">style-transfer</option>
+                    <option value="img2img">{t('settings.images.editModeImg2Img')}</option>
+                    <option value="inpaint">{t('settings.images.editModeInpaint')}</option>
+                    <option value="outpaint">{t('settings.images.editModeOutpaint')}</option>
+                    <option value="style-transfer">{t('settings.images.editModeStyleTransfer')}</option>
                 </select>
                 <input
                     type="number"

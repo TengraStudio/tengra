@@ -18,7 +18,7 @@ const MAX_JSON_LENGTH = 1048576; // 1MB
  * @param value - Raw theme ID input to validate
  * @returns Trimmed theme ID or null if invalid
  */
-function validateThemeId(value: unknown): string | null {
+function validateThemeId(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -38,7 +38,7 @@ function validateThemeId(value: unknown): string | null {
  * @param value - Raw theme name input to validate
  * @returns Trimmed theme name or null if invalid
  */
-function validateThemeName(value: unknown): string | null {
+function validateThemeName(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -54,7 +54,7 @@ function validateThemeName(value: unknown): string | null {
  * @param value - Raw JSON string to validate
  * @returns The JSON string or null if invalid
  */
-function validateJsonString(value: unknown): string | null {
+function validateJsonString(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -71,11 +71,11 @@ type CustomThemeDraft = Omit<CustomTheme, 'id' | 'createdAt' | 'modifiedAt'>;
  * @param value - Raw theme object to validate
  * @returns Validated custom theme draft or null if invalid
  */
-function validateCustomThemeInput(value: unknown): CustomThemeDraft | null {
+function validateCustomThemeInput(value: RuntimeValue): CustomThemeDraft | null {
     if (!value || typeof value !== 'object') {
         return null;
     }
-    const candidate = value as Record<string, unknown>;
+    const candidate = value as Record<string, RuntimeValue>;
     if (typeof candidate['name'] !== 'string' || candidate['name'].trim().length === 0) {
         return null;
     }
@@ -119,7 +119,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
     ));
 
     ipcMain.handle('theme:runtime:install', createIpcHandler('theme:runtime:install',
-        async (_event: IpcMainInvokeEvent, themeManifest: unknown) => {
+        async (_event: IpcMainInvokeEvent, themeManifest: RuntimeValue) => {
             if (!themeManifest || typeof themeManifest !== 'object') {
                 throw new Error('Invalid theme manifest');
             }
@@ -128,7 +128,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
     ));
 
     ipcMain.handle('theme:runtime:uninstall', createIpcHandler('theme:runtime:uninstall',
-        async (_event: IpcMainInvokeEvent, themeIdRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, themeIdRaw: RuntimeValue) => {
             const themeId = validateThemeId(themeIdRaw);
             if (!themeId) {
                 throw new Error('Invalid theme ID');
@@ -153,7 +153,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
     ));
 
     ipcMain.handle('theme:set', createSafeIpcHandler('theme:set',
-        async (_event: IpcMainInvokeEvent, themeIdRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, themeIdRaw: RuntimeValue) => {
             const themeId = validateThemeId(themeIdRaw);
             if (!themeId) {
                 throw new Error('Invalid theme ID');
@@ -169,7 +169,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
     ));
 
     ipcMain.handle('theme:getDetails', createSafeIpcHandler('theme:getDetails',
-        async (_event: IpcMainInvokeEvent, themeIdRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, themeIdRaw: RuntimeValue) => {
             const themeId = validateThemeId(themeIdRaw);
             if (!themeId) {
                 throw new Error('Invalid theme ID');
@@ -185,7 +185,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
     ));
 
     ipcMain.handle('theme:addCustom', createIpcHandler('theme:addCustom',
-        async (_event: IpcMainInvokeEvent, theme: unknown) => {
+        async (_event: IpcMainInvokeEvent, theme: RuntimeValue) => {
             const validatedTheme = validateCustomThemeInput(theme);
             if (!validatedTheme) {
                 throw new Error('Invalid theme object');
@@ -195,7 +195,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
     ));
 
     ipcMain.handle('theme:updateCustom', createIpcHandler('theme:updateCustom',
-        async (_event: IpcMainInvokeEvent, idRaw: unknown, updates: unknown) => {
+        async (_event: IpcMainInvokeEvent, idRaw: RuntimeValue, updates: RuntimeValue) => {
             const id = validateThemeId(idRaw);
             if (!id) {
                 throw new Error('Invalid theme ID');
@@ -208,7 +208,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
     ));
 
     ipcMain.handle('theme:deleteCustom', createIpcHandler('theme:deleteCustom',
-        async (_event: IpcMainInvokeEvent, idRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, idRaw: RuntimeValue) => {
             const id = validateThemeId(idRaw);
             if (!id) {
                 throw new Error('Invalid theme ID');
@@ -218,7 +218,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
     ));
 
     ipcMain.handle('theme:toggleFavorite', createSafeIpcHandler('theme:toggleFavorite',
-        async (_event: IpcMainInvokeEvent, themeIdRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, themeIdRaw: RuntimeValue) => {
             const themeId = validateThemeId(themeIdRaw);
             if (!themeId) {
                 throw new Error('Invalid theme ID');
@@ -234,7 +234,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
     ));
 
     ipcMain.handle('theme:isFavorite', createSafeIpcHandler('theme:isFavorite',
-        async (_event: IpcMainInvokeEvent, themeIdRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, themeIdRaw: RuntimeValue) => {
             const themeId = validateThemeId(themeIdRaw);
             if (!themeId) {
                 throw new Error('Invalid theme ID');
@@ -263,7 +263,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
     ));
 
     ipcMain.handle('theme:applyPreset', createSafeIpcHandler('theme:applyPreset',
-        async (_event: IpcMainInvokeEvent, presetIdRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, presetIdRaw: RuntimeValue) => {
             const presetId = validateThemeId(presetIdRaw);
             if (!presetId) {
                 throw new Error('Invalid preset ID');
@@ -286,7 +286,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
     ));
 
     ipcMain.handle('theme:export', createSafeIpcHandler('theme:export',
-        async (_event: IpcMainInvokeEvent, themeIdRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, themeIdRaw: RuntimeValue) => {
             const themeId = validateThemeId(themeIdRaw);
             if (!themeId) {
                 throw new Error('Invalid theme ID');
@@ -305,7 +305,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
     ));
 
     ipcMain.handle('theme:import', createIpcHandler('theme:import',
-        async (_event: IpcMainInvokeEvent, jsonStringRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, jsonStringRaw: RuntimeValue) => {
             const jsonString = validateJsonString(jsonStringRaw);
             if (!jsonString) {
                 throw new Error('Invalid JSON string');
@@ -315,7 +315,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
     ));
 
     ipcMain.handle('theme:duplicate', createIpcHandler('theme:duplicate',
-        async (_event: IpcMainInvokeEvent, themeIdRaw: unknown, newNameRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, themeIdRaw: RuntimeValue, newNameRaw: RuntimeValue) => {
             const themeId = validateThemeId(themeIdRaw);
             if (!themeId) {
                 throw new Error('Invalid theme ID');

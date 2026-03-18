@@ -15,6 +15,9 @@ import (
 	"github.com/gin-gonic/gin"
 	internalapi "github.com/router-for-me/CLIProxyAPI/v6/internal/api"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/config"
+	"github.com/router-for-me/CLIProxyAPI/v6/internal/registry"
+	"github.com/router-for-me/CLIProxyAPI/v6/internal/runtime/executor"
+	_ "github.com/router-for-me/CLIProxyAPI/v6/internal/translator"
 	sdkaccess "github.com/router-for-me/CLIProxyAPI/v6/sdk/access"
 	apihandlers "github.com/router-for-me/CLIProxyAPI/v6/sdk/api/handlers"
 	sdkauth "github.com/router-for-me/CLIProxyAPI/v6/sdk/auth"
@@ -37,10 +40,10 @@ func main() {
 		CommercialMode: true,
 		Debug:          false,
 		Host:           "127.0.0.1",
-		AuthDir:        runtimeConfig.authDir,
 		LoggingToFile:  false,
 		Port:           runtimeConfig.port,
 	}
+	cfg.RemoteManagement.SecretKey = runtimeConfig.managementPassword
 	cfg.RemoteManagement.DisableControlPanel = true
 	cfg.RemoteManagement.PanelGitHubRepository = ""
 
@@ -51,9 +54,12 @@ func main() {
 
 	authManager := coreauth.NewManager(sdkauth.GetTokenStore(), &coreauth.RoundRobinSelector{}, nil)
 	authManager.SetRetryConfig(cfg.RequestRetry, time.Duration(cfg.MaxRetryInterval)*time.Second)
+	registerRuntimeExecutors(authManager, cfg)
 	if err := authManager.Load(context.Background()); err != nil {
 		log.Printf("cliproxy-runtime: initial auth load failed: %v", err)
 	}
+	waitForRuntimeAuthWarmup(context.Background(), authManager, cfg)
+	syncRuntimeModelRegistry(context.Background(), authManager, cfg)
 
 	server := internalapi.NewServer(
 		cfg,
@@ -70,7 +76,7 @@ func main() {
 	defer cancel()
 
 	go watchSignals(cancel)
-	go startPeriodicAuthReload(ctx, authManager)
+	go startPeriodicAuthReload(ctx, authManager, cfg)
 
 	stopDone := make(chan struct{})
 	go func() {
@@ -95,7 +101,6 @@ func main() {
 type runtimeConfig struct {
 	authAPIKey         string
 	authAPIPort        int
-	authDir            string
 	managementPassword string
 	port               int
 	proxyAPIKey        string
@@ -105,14 +110,12 @@ func parseRuntimeConfig() (runtimeConfig, error) {
 	var cfg runtimeConfig
 
 	flag.IntVar(&cfg.port, "port", 8317, "listen port")
-	flag.StringVar(&cfg.authDir, "auth-dir", "", "auth working directory")
 	flag.IntVar(&cfg.authAPIPort, "auth-api-port", 0, "auth API port")
 	flag.StringVar(&cfg.authAPIKey, "auth-api-key", "", "auth API key")
 	flag.StringVar(&cfg.proxyAPIKey, "proxy-api-key", "", "runtime proxy API key")
 	flag.StringVar(&cfg.managementPassword, "management-password", "", "runtime localhost management password")
 	flag.Parse()
 
-	cfg.authDir = strings.TrimSpace(cfg.authDir)
 	cfg.authAPIKey = strings.TrimSpace(cfg.authAPIKey)
 	cfg.proxyAPIKey = strings.TrimSpace(cfg.proxyAPIKey)
 	cfg.managementPassword = strings.TrimSpace(cfg.managementPassword)
@@ -141,7 +144,7 @@ func watchSignals(cancel context.CancelFunc) {
 	cancel()
 }
 
-func startPeriodicAuthReload(ctx context.Context, authManager *coreauth.Manager) {
+func startPeriodicAuthReload(ctx context.Context, authManager *coreauth.Manager, cfg *config.Config) {
 	authManager.StartAutoRefresh(ctx, 15*time.Minute)
 
 	ticker := time.NewTicker(30 * time.Second)
@@ -154,7 +157,115 @@ func startPeriodicAuthReload(ctx context.Context, authManager *coreauth.Manager)
 		case <-ticker.C:
 			if err := authManager.Load(ctx); err != nil {
 				log.Printf("cliproxy-runtime: periodic auth reload failed: %v", err)
+				continue
 			}
+			syncRuntimeModelRegistry(ctx, authManager, cfg)
 		}
 	}
 }
+
+func registerRuntimeExecutors(authManager *coreauth.Manager, cfg *config.Config) {
+	if authManager == nil || cfg == nil {
+		return
+	}
+
+	authManager.RegisterExecutor(executor.NewAntigravityExecutor(cfg))
+	authManager.RegisterExecutor(executor.NewClaudeExecutor(cfg))
+	authManager.RegisterExecutor(executor.NewCodexExecutor(cfg))
+	authManager.RegisterExecutor(executor.NewGeminiExecutor(cfg))
+}
+
+func waitForRuntimeAuthWarmup(ctx context.Context, authManager *coreauth.Manager, cfg *config.Config) {
+	if authManager == nil || cfg == nil {
+		return
+	}
+
+	const maxAttempts = 10
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		if hasRuntimeProviderAuth(authManager, "antigravity") || hasRuntimeProviderAuth(authManager, "claude") || hasRuntimeProviderAuth(authManager, "codex") || hasRuntimeProviderAuth(authManager, "gemini") {
+			return
+		}
+
+		if attempt > 0 {
+			time.Sleep(500 * time.Millisecond)
+		}
+
+		if err := authManager.Load(ctx); err != nil {
+			log.Printf("cliproxy-runtime: auth warmup load attempt %d failed: %v", attempt+1, err)
+		}
+	}
+}
+
+func hasRuntimeProviderAuth(authManager *coreauth.Manager, provider string) bool {
+	if authManager == nil {
+		return false
+	}
+
+	target := strings.ToLower(strings.TrimSpace(provider))
+	for _, auth := range authManager.List() {
+		if auth == nil || auth.Disabled {
+			continue
+		}
+		if strings.ToLower(strings.TrimSpace(auth.Provider)) == target {
+			return true
+		}
+	}
+	return false
+}
+
+func syncRuntimeModelRegistry(ctx context.Context, authManager *coreauth.Manager, cfg *config.Config) {
+	if authManager == nil || cfg == nil {
+		return
+	}
+
+	modelRegistry := registry.GetGlobalRegistry()
+	for _, auth := range authManager.List() {
+		if auth == nil || auth.ID == "" {
+			continue
+		}
+
+		modelRegistry.UnregisterClient(auth.ID)
+		if auth.Disabled {
+			continue
+		}
+
+		models := resolveModelsForAuth(ctx, auth, cfg)
+		if len(models) == 0 {
+			continue
+		}
+
+		modelRegistry.RegisterClient(auth.ID, strings.ToLower(strings.TrimSpace(auth.Provider)), models)
+	}
+}
+
+func resolveModelsForAuth(ctx context.Context, auth *coreauth.Auth, cfg *config.Config) []*registry.ModelInfo {
+	if auth == nil || cfg == nil {
+		return nil
+	}
+
+	switch strings.ToLower(strings.TrimSpace(auth.Provider)) {
+	case "antigravity":
+		models := fetchAntigravityModels(ctx, auth, cfg)
+		return models
+	case "claude", "anthropic":
+		return registry.GetClaudeModels()
+	case "codex":
+		return registry.GetOpenAIModels()
+	case "gemini", "google":
+		return registry.GetGeminiModels()
+	default:
+		return nil
+	}
+}
+
+func fetchAntigravityModels(ctx context.Context, auth *coreauth.Auth, cfg *config.Config) []*registry.ModelInfo {
+	if auth == nil || cfg == nil {
+		return nil
+	}
+
+	requestCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
+	return executor.FetchAntigravityModels(requestCtx, auth, cfg)
+}
+ 

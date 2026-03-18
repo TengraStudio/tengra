@@ -1,9 +1,9 @@
 import { useTranslation } from '@renderer/i18n';
 import { getTerminalTheme } from '@renderer/lib/terminal-theme';
+import { FitAddon } from '@xterm/addon-fit';
 import { WebglAddon } from '@xterm/addon-webgl';
+import { Terminal, type Terminal as XTerm } from '@xterm/xterm';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { Terminal as XTerm } from 'xterm';
-import { FitAddon } from 'xterm-addon-fit';
 
 import { useTheme } from '@/hooks/useTheme';
 import { invokeTypedIpc } from '@/lib/ipc-client';
@@ -22,7 +22,7 @@ import {
     terminalWriteResponseSchema
 } from '../utils/terminal-ipc';
 
-import 'xterm/css/xterm.css';
+import '@xterm/xterm/css/xterm.css';
 
 const TERMINAL_SCROLLBACK_LINES = 10000;
 
@@ -215,7 +215,7 @@ export const TerminalSession = memo(
             initializingTerminals.add(tab.id);
 
             // Initialize xterm with increased scrollback
-            const term = new XTerm({
+            const term = new Terminal({
                 cursorBlink: true,
                 fontSize: 13,
                 fontFamily: "'JetBrains Mono', 'Cascadia Code', Consolas, monospace",

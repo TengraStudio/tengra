@@ -15,11 +15,11 @@ interface SubscriptionOptions {
     priority?: number
 }
 
-type EventBusListener = (payload: unknown) => void
+type EventBusListener = (payload: RuntimeValue) => void
 
 export class EventBusService extends BaseService {
     private bus: EventEmitter;
-    private eventHistory: { event: string; payload: unknown; timestamp: number; id: string }[] = [];
+    private eventHistory: { event: string; payload: RuntimeValue; timestamp: number; id: string }[] = [];
     private subscriptions = new Map<string, { event: string; listener: EventBusListener }>();
     private readonly MAX_HISTORY = SERVICE_DEFAULTS.EVENT_HISTORY_SIZE;
 
@@ -70,7 +70,7 @@ export class EventBusService extends BaseService {
     /**
      * Emit a custom event for extensions
      */
-    emitCustom(event: string, payload: unknown): void {
+    emitCustom(event: string, payload: RuntimeValue): void {
         const eventId = randomUUID();
         const timestamp = Date.now();
 
@@ -86,7 +86,7 @@ export class EventBusService extends BaseService {
     /**
      * Get recent event history for debugging
      */
-    getHistory(): Array<{ event: string; payload: unknown; timestamp: number; id: string }> {
+    getHistory(): Array<{ event: string; payload: RuntimeValue; timestamp: number; id: string }> {
         return this.eventHistory;
     }
 
@@ -145,12 +145,12 @@ export class EventBusService extends BaseService {
      */
     onCustom(
         event: string,
-        listener: (payload: unknown) => void,
+        listener: (payload: RuntimeValue) => void,
         options: SubscriptionOptions = {}
     ): string {
         const subscriptionId = randomUUID();
 
-        const wrappedListener = (payload: unknown) => {
+        const wrappedListener = (payload: RuntimeValue) => {
             try {
                 listener(payload);
 

@@ -2,16 +2,16 @@ import { MCPServerConfig } from '@shared/types';
 import { IpcRenderer } from 'electron';
 
 export interface McpBridge {
-    list: () => Promise<unknown[]>;
-    dispatch: (service: string, action: string, args: unknown) => Promise<unknown>;
+    list: () => Promise<RuntimeValue[]>;
+    dispatch: (service: string, action: string, args: RuntimeValue) => Promise<RuntimeValue>;
     toggle: (service: string, enabled: boolean) => Promise<void>;
     install: (config: MCPServerConfig) => Promise<void>;
     uninstall: (name: string) => Promise<void>;
-    getDebugMetrics: () => Promise<Record<string, unknown>>;
-    listPermissionRequests: () => Promise<unknown[]>;
-    setActionPermission: (service: string, action: string, policy: unknown) => Promise<void>;
-    resolvePermissionRequest: (requestId: string, decision: unknown) => Promise<void>;
-    onResult: (callback: (result: unknown) => void) => void;
+    getDebugMetrics: () => Promise<Record<string, RuntimeValue>>;
+    listPermissionRequests: () => Promise<RuntimeValue[]>;
+    setActionPermission: (service: string, action: string, policy: RuntimeValue) => Promise<void>;
+    resolvePermissionRequest: (requestId: string, decision: RuntimeValue) => Promise<void>;
+    onResult: (callback: (result: RuntimeValue) => void) => void;
     removeResultListener: () => void;
 }
 

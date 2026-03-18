@@ -1,17 +1,56 @@
 import { buildActions, McpDeps, validateNumber, validateString, withTimeout } from '@main/mcp/server-utils';
 import { McpService } from '@main/mcp/types';
 
+const INTERNET_MESSAGE_KEY = {
+    INVALID_IP_FORMAT: 'mainProcess.internetServer.invalidIpFormat',
+    INVALID_IP_OCTETS: 'mainProcess.internetServer.invalidIpOctets',
+    PRIVATE_IP_NOT_ALLOWED: 'mainProcess.internetServer.privateIpNotAllowed',
+    INVALID_TIMEZONE_FORMAT: 'mainProcess.internetServer.invalidTimezoneFormat',
+    FAILED_TO_FETCH_TOP_STORIES: 'mainProcess.internetServer.failedToFetchTopStories',
+    INVALID_COIN_OR_CURRENCY: 'mainProcess.internetServer.invalidCoinOrCurrency'
+} as const;
+const INTERNET_ERROR_MESSAGE = {
+    INVALID_IP_FORMAT: 'Invalid IP address format (only IPv4 supported)',
+    INVALID_IP_OCTETS: 'Invalid IP address octets',
+    PRIVATE_IP_NOT_ALLOWED: 'Private/local IP addresses not allowed (SSRF protection)',
+    INVALID_TIMEZONE_FORMAT: 'Invalid timezone format (use Area/Location, e.g., Europe/London)',
+    FAILED_TO_FETCH_TOP_STORIES: 'Failed to fetch top stories',
+    INVALID_COIN_OR_CURRENCY: 'Invalid coin or currency format'
+} as const;
+
+class InternetLocalizedError extends Error {
+    constructor(
+        message: string,
+        public readonly messageKey: string,
+        public readonly messageParams?: Record<string, string | number>
+    ) {
+        super(message);
+        this.name = 'InternetLocalizedError';
+    }
+}
+
+function createInternetError(
+    message: string,
+    messageKey: string,
+    messageParams?: Record<string, string | number>
+): InternetLocalizedError {
+    return new InternetLocalizedError(message, messageKey, messageParams);
+}
+
 /**
  * Validates IP address format (IPv4 only for safety)
  */
-const validateIPAddress = (ip: unknown): string => {
+const validateIPAddress = (ip: RuntimeValue): string => {
     const ipStr = validateString(ip, 45); // Max IPv6 length
 
     // Only allow public IPv4 addresses
     const ipv4Pattern = /^(\d{1,3}\.){3}\d{1,3}$/;
 
     if (!ipv4Pattern.test(ipStr)) {
-        throw new Error('Invalid IP address format (only IPv4 supported)');
+        throw createInternetError(
+            INTERNET_ERROR_MESSAGE.INVALID_IP_FORMAT,
+            INTERNET_MESSAGE_KEY.INVALID_IP_FORMAT
+        );
     }
 
     // Check each octet is valid
@@ -19,7 +58,10 @@ const validateIPAddress = (ip: unknown): string => {
     for (const octet of octets) {
         const num = parseInt(octet, 10);
         if (num < 0 || num > 255) {
-            throw new Error('Invalid IP address octets');
+            throw createInternetError(
+                INTERNET_ERROR_MESSAGE.INVALID_IP_OCTETS,
+                INTERNET_MESSAGE_KEY.INVALID_IP_OCTETS
+            );
         }
     }
 
@@ -35,7 +77,10 @@ const validateIPAddress = (ip: unknown): string => {
         firstOctet === 0 || // 0.0.0.0/8
         firstOctet >= 224 // Multicast/reserved
     ) {
-        throw new Error('Private/local IP addresses not allowed (SSRF protection)');
+        throw createInternetError(
+            INTERNET_ERROR_MESSAGE.PRIVATE_IP_NOT_ALLOWED,
+            INTERNET_MESSAGE_KEY.PRIVATE_IP_NOT_ALLOWED
+        );
     }
 
     return ipStr;
@@ -44,12 +89,15 @@ const validateIPAddress = (ip: unknown): string => {
 /**
  * Validates timezone format
  */
-const validateTimezone = (tz: unknown): string => {
+const validateTimezone = (tz: RuntimeValue): string => {
     const timezone = validateString(tz, 100);
 
     // Basic timezone validation (Area/Location format)
     if (!/^[A-Z][a-zA-Z_]+\/[A-Z][a-zA-Z_]+$/.test(timezone) && timezone !== 'Etc/UTC') {
-        throw new Error('Invalid timezone format (use Area/Location, e.g., Europe/London)');
+        throw createInternetError(
+            INTERNET_ERROR_MESSAGE.INVALID_TIMEZONE_FORMAT,
+            INTERNET_MESSAGE_KEY.INVALID_TIMEZONE_FORMAT
+        );
     }
 
     return timezone;
@@ -113,10 +161,14 @@ export function buildInternetServers(deps: McpDeps): McpService[] {
                         );
 
                         if (!idsRes.success || !Array.isArray(idsRes.data)) {
-                            return { success: false, error: 'Failed to fetch top stories' };
+                            return {
+                                success: false,
+                                error: INTERNET_ERROR_MESSAGE.FAILED_TO_FETCH_TOP_STORIES,
+                                messageKey: INTERNET_MESSAGE_KEY.FAILED_TO_FETCH_TOP_STORIES
+                            };
                         }
 
-                        const ids = (idsRes.data as unknown as number[]).slice(0, limit);
+                        const ids = (idsRes.data as RuntimeValue as number[]).slice(0, limit);
 
                         // Fetch stories with limited concurrency
                         const stories = await Promise.all(
@@ -151,7 +203,10 @@ export function buildInternetServers(deps: McpDeps): McpService[] {
 
                         // Validate coin/currency format (alphanumeric only)
                         if (!/^[a-z0-9-]+$/.test(c) || !/^[a-z]{3}$/.test(vs)) {
-                            throw new Error('Invalid coin or currency format');
+                            throw createInternetError(
+                                INTERNET_ERROR_MESSAGE.INVALID_COIN_OR_CURRENCY,
+                                INTERNET_MESSAGE_KEY.INVALID_COIN_OR_CURRENCY
+                            );
                         }
 
                         const url = `https://api.coingecko.com/api/v3/simple/price?ids=${c}&vs_currencies=${vs}`;

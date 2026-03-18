@@ -40,7 +40,7 @@ function mockDataService(): DataService {
             if (type === 'config') { return '/mock/config'; }
             return '/mock';
         })
-    } as unknown as DataService;
+    } as never as DataService;
 }
 
 function mockDatabaseService(): DatabaseService {
@@ -59,10 +59,10 @@ function mockDatabaseService(): DatabaseService {
         getFolder: vi.fn().mockResolvedValue(null),
         updateFolder: vi.fn().mockResolvedValue({ success: true }),
         createFolder: vi.fn().mockResolvedValue({ success: true })
-    } as unknown as DatabaseService;
+    } as never as DatabaseService;
 }
 
-function validBackupJson(overrides: Record<string, unknown> = {}): string {
+function validBackupJson(overrides: Record<string, TestValue> = {}): string {
     return JSON.stringify({
         _metadata: {
             version: '2.0',
@@ -644,7 +644,7 @@ describe('BackupService (data) - advanced', () => {
             // The simplest valid case is a backup without a stored checksum (already tested above).
             // Here we verify that a mismatched checksum is detected.
             const content = validBackupJson();
-            const parsed = JSON.parse(content) as Record<string, Record<string, unknown>>;
+            const parsed = JSON.parse(content) as Record<string, Record<string, TestValue>>;
             parsed._metadata!.checksum = 'bad-checksum';
             (fs.promises.readFile as Mock).mockResolvedValue(JSON.stringify(parsed, null, 2));
 

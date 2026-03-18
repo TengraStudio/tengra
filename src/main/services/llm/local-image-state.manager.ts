@@ -148,7 +148,7 @@ export class LocalImageStateManager {
         id?: string;
         name: string;
         description?: string;
-        workflow: Record<string, unknown>;
+        workflow: Record<string, RuntimeValue>;
     }): Promise<ComfyWorkflowTemplate> {
         const now = Date.now();
         const existingIndex = input.id

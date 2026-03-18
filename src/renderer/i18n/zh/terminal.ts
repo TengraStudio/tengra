@@ -91,7 +91,16 @@ const sectionData = {
     "workspaceIssuesLoading": "正在刷新工作区诊断...",
     "workspaceIssuesNoWorkspace": "打开一个工作区来检查诊断。",
     "workspaceIssuesNoIssues": "最新扫描中未检测到警告或错误。",
-    "workspaceIssuesLoadFailed": "无法加载工作区诊断。"
+    "workspaceIssuesLoadFailed": "无法加载工作区诊断。",
+    "splitPresetsTitle": "Split presets",
+    "renamePresetTitle": "Rename preset",
+    "deletePresetTitle": "Delete preset",
+    "syncInputTitle": "Synchronized input for split panes",
 };
 
 export default sectionData;
+
+
+
+
+

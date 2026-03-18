@@ -62,7 +62,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
     const [workflowTemplateJson, setWorkflowTemplateJson] = useState('');
     const [workflowShareCode, setWorkflowShareCode] = useState('');
 
-    const currentProvider = (settings?.images?.provider || 'antigravity') as ImageProvider;
+    const currentProvider = normalizeImageProvider(settings?.images?.provider);
 
     const checkStatus = useCallback(async () => {
         try {
@@ -105,11 +105,11 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
     useEffect(() => {
         void Promise.all([checkStatus(), refreshImageData()]);
 
-        const removeStatusListener = window.electron.onSdCppStatus((data: unknown) => {
+        const removeStatusListener = window.electron.onSdCppStatus((data: RendererDataValue) => {
             setSdCppStatus((data as { state: string }).state);
         });
 
-        const removeProgressListener = window.electron.onSdCppProgress((data: unknown) => {
+        const removeProgressListener = window.electron.onSdCppProgress((data: RendererDataValue) => {
             setDownloadProgress(data as { downloaded: number; total: number; filename: string });
         });
 
@@ -128,7 +128,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
                 ...settings,
                 images: {
                     ...(settings.images || { provider: 'antigravity' }),
-                    provider: provider as ImageProvider,
+                    provider: normalizeImageProvider(provider),
                 },
             };
             void handleSave(updated);
@@ -341,7 +341,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
             return;
         }
         try {
-            const parsed = JSON.parse(trimmedJson) as Record<string, unknown>;
+            const parsed = JSON.parse(trimmedJson) as Record<string, RendererDataValue>;
             await window.electron.ipcRenderer.invoke('sd-cpp:saveWorkflowTemplate', {
                 name: trimmedName,
                 workflow: parsed
@@ -540,4 +540,11 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
         handleExportWorkflowTemplateShare,
         handleImportWorkflowTemplateShare,
     };
+}
+
+function normalizeImageProvider(provider?: string): ImageProvider {
+    if (provider === 'sd-cpp') {
+        return 'sd-cpp';
+    }
+    return 'antigravity';
 }

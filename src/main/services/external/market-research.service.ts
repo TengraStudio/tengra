@@ -349,7 +349,7 @@ export class MarketResearchService extends BaseService {
         return [];
     }
 
-    private parseProductHuntResponse(data: unknown): ProductHuntProduct[] {
+    private parseProductHuntResponse(data: RuntimeValue): ProductHuntProduct[] {
         const typedData = data as {
             data?: {
                 posts?: {
@@ -448,7 +448,7 @@ export class MarketResearchService extends BaseService {
         return [];
     }
 
-    private parseCrunchbaseResponse(data: unknown): CrunchbaseCompany[] {
+    private parseCrunchbaseResponse(data: RuntimeValue): CrunchbaseCompany[] {
         const typedData = data as {
             entities?: Array<{
                 properties?: {

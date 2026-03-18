@@ -32,6 +32,50 @@ type ChatContextType = ReturnType<typeof useChatManager> & {
 }
 
 const ChatContext = createContext<ChatContextType | null>(null);
+type ChatHeaderContextType = {
+    currentChatId: string | null
+    currentChatTitle: string | null
+    clearMessages: () => Promise<void>
+};
+const ChatHeaderContext = createContext<ChatHeaderContextType | null>(null);
+type ChatShellContextType = {
+    chatsCount: number
+    createNewChat: () => void
+};
+const ChatShellContext = createContext<ChatShellContextType | null>(null);
+type ChatLibraryContextType = {
+    chats: Chat[]
+    currentChatId: string | null
+    setCurrentChatId: (id: string | null) => void
+    deleteChat: (id: string) => Promise<void>
+    updateChat: (id: string, updates: Partial<Chat>) => Promise<void>
+    folders: ChatContextType['folders']
+    createFolder: ChatContextType['createFolder']
+    deleteFolder: ChatContextType['deleteFolder']
+    prompts: ChatContextType['prompts']
+    createPrompt: ChatContextType['createPrompt']
+    updatePrompt: ChatContextType['updatePrompt']
+    deletePrompt: ChatContextType['deletePrompt']
+    togglePin: ChatContextType['togglePin']
+    bulkDeleteChats: ChatContextType['bulkDeleteChats']
+};
+const ChatLibraryContext = createContext<ChatLibraryContextType | null>(null);
+type ChatComposerContextType = {
+    setInput: ChatContextType['setInput']
+    handleSend: ChatContextType['handleSend']
+    processFile: ChatContextType['processFile']
+};
+const ChatComposerContext = createContext<ChatComposerContextType | null>(null);
+type ChatWindowCommandContextType = {
+    clearMessages: () => Promise<void>
+    lastAssistantMessageText: string
+};
+const ChatWindowCommandContext = createContext<ChatWindowCommandContextType | null>(null);
+type ChatListeningContextType = {
+    isListening: boolean
+    stopListening: () => void
+};
+const ChatListeningContext = createContext<ChatListeningContextType | null>(null);
 
 function formatRateLimitError(message: string, t: (key: string) => string): string {
     try {
@@ -108,6 +152,10 @@ function useHistorySync(
     isRestoringRef: React.MutableRefObject<boolean>
 ): void {
     const saveTimeoutRef = useRef<NodeJS.Timeout>();
+    // Extract saveState to avoid depending on the full historyManager object.
+    // saveState is now a stable reference (empty useCallback deps), so this
+    // effect only re-runs when chats or currentChatId change.
+    const { saveState } = historyManager;
 
     useEffect(() => {
         if (isRestoringRef.current) {
@@ -122,7 +170,7 @@ function useHistorySync(
 
         if (chats.length > 0) {
             saveTimeoutRef.current = setTimeout(() => {
-                historyManager.saveState(chats, currentChatId);
+                saveState(chats, currentChatId);
             }, 500);
         }
 
@@ -131,7 +179,7 @@ function useHistorySync(
                 clearTimeout(saveTimeoutRef.current);
             }
         };
-    }, [chats, currentChatId, historyManager, isRestoringRef]);
+    }, [chats, currentChatId, saveState, isRestoringRef]);
 }
 
 export function ChatProvider({ children }: { children: ReactNode }) {
@@ -163,6 +211,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         setChats: chatManager.setChats,
         setCurrentChatId: chatManager.setCurrentChatId
     }), [chatManager.setChats, chatManager.setCurrentChatId]);
+    const currentChatTitle = useMemo(() => {
+        if (!chatManager.currentChatId) {
+            return null;
+        }
+
+        const activeChat = chatManager.chats.find(chat => chat.id === chatManager.currentChatId);
+        return activeChat?.title ?? null;
+    }, [chatManager.chats, chatManager.currentChatId]);
 
     useHistorySync(chatManager.chats, chatManager.currentChatId, historyManager, isRestoringRef);
     useUndoRedoKeyboard(historyManager, handlers, isRestoringRef);
@@ -207,11 +263,84 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         workspaces, selectedWorkspace, setSelectedWorkspace, loadWorkspaces,
         historyManager.canUndo, historyManager.canRedo, undo, redo
     ]);
+    const headerValue = useMemo(() => ({
+        currentChatId: chatManager.currentChatId,
+        currentChatTitle,
+        clearMessages: chatManager.clearMessages,
+    }), [chatManager.clearMessages, chatManager.currentChatId, currentChatTitle]);
+    const shellValue = useMemo(() => ({
+        chatsCount: chatManager.chats.length,
+        createNewChat: chatManager.createNewChat,
+    }), [chatManager.chats.length, chatManager.createNewChat]);
+    const libraryValue = useMemo(() => ({
+        chats: chatManager.chats,
+        currentChatId: chatManager.currentChatId,
+        setCurrentChatId: chatManager.setCurrentChatId,
+        deleteChat: chatManager.deleteChat,
+        updateChat: chatManager.updateChat,
+        folders: chatManager.folders,
+        createFolder: chatManager.createFolder,
+        deleteFolder: chatManager.deleteFolder,
+        prompts: chatManager.prompts,
+        createPrompt: chatManager.createPrompt,
+        updatePrompt: chatManager.updatePrompt,
+        deletePrompt: chatManager.deletePrompt,
+        togglePin: chatManager.togglePin,
+        bulkDeleteChats: chatManager.bulkDeleteChats,
+    }), [
+        chatManager.chats,
+        chatManager.currentChatId,
+        chatManager.setCurrentChatId,
+        chatManager.deleteChat,
+        chatManager.updateChat,
+        chatManager.folders,
+        chatManager.createFolder,
+        chatManager.deleteFolder,
+        chatManager.prompts,
+        chatManager.createPrompt,
+        chatManager.updatePrompt,
+        chatManager.deletePrompt,
+        chatManager.togglePin,
+        chatManager.bulkDeleteChats,
+    ]);
+    const composerValue = useMemo(() => ({
+        setInput: chatManager.setInput,
+        handleSend: chatManager.handleSend,
+        processFile: chatManager.processFile,
+    }), [chatManager.handleSend, chatManager.processFile, chatManager.setInput]);
+    const lastAssistantMessageText = useMemo(() => {
+        const lastAssistantMessage = [...chatManager.messages]
+            .reverse()
+            .find(message => message.role === 'assistant');
+        return typeof lastAssistantMessage?.content === 'string'
+            ? lastAssistantMessage.content
+            : '';
+    }, [chatManager.messages]);
+    const windowCommandValue = useMemo(() => ({
+        clearMessages: chatManager.clearMessages,
+        lastAssistantMessageText,
+    }), [chatManager.clearMessages, lastAssistantMessageText]);
+    const listeningValue = useMemo(() => ({
+        isListening: chatManager.isListening,
+        stopListening: chatManager.stopListening,
+    }), [chatManager.isListening, chatManager.stopListening]);
 
     return (
-        <ChatContext.Provider value={value}>
-            {children}
-        </ChatContext.Provider>
+        <ChatShellContext.Provider value={shellValue}>
+            <ChatHeaderContext.Provider value={headerValue}>
+                <ChatLibraryContext.Provider value={libraryValue}>
+                    <ChatComposerContext.Provider value={composerValue}>
+                        <ChatWindowCommandContext.Provider value={windowCommandValue}>
+                            <ChatListeningContext.Provider value={listeningValue}>
+                                <ChatContext.Provider value={value}>
+                                    {children}
+                                </ChatContext.Provider>
+                            </ChatListeningContext.Provider>
+                        </ChatWindowCommandContext.Provider>
+                    </ChatComposerContext.Provider>
+                </ChatLibraryContext.Provider>
+            </ChatHeaderContext.Provider>
+        </ChatShellContext.Provider>
     );
 }
 
@@ -219,6 +348,54 @@ export function useChat() {
     const context = useContext(ChatContext);
     if (!context) {
         throw new Error('useChat must be used within a ChatProvider');
+    }
+    return context;
+}
+
+export function useChatHeader() {
+    const context = useContext(ChatHeaderContext);
+    if (!context) {
+        throw new Error('useChatHeader must be used within a ChatProvider');
+    }
+    return context;
+}
+
+export function useChatShell() {
+    const context = useContext(ChatShellContext);
+    if (!context) {
+        throw new Error('useChatShell must be used within a ChatProvider');
+    }
+    return context;
+}
+
+export function useChatLibrary() {
+    const context = useContext(ChatLibraryContext);
+    if (!context) {
+        throw new Error('useChatLibrary must be used within a ChatProvider');
+    }
+    return context;
+}
+
+export function useChatComposer() {
+    const context = useContext(ChatComposerContext);
+    if (!context) {
+        throw new Error('useChatComposer must be used within a ChatProvider');
+    }
+    return context;
+}
+
+export function useChatWindowCommand() {
+    const context = useContext(ChatWindowCommandContext);
+    if (!context) {
+        throw new Error('useChatWindowCommand must be used within a ChatProvider');
+    }
+    return context;
+}
+
+export function useChatListening() {
+    const context = useContext(ChatListeningContext);
+    if (!context) {
+        throw new Error('useChatListening must be used within a ChatProvider');
     }
     return context;
 }

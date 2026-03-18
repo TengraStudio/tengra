@@ -203,7 +203,7 @@ export const ipcMetricsStore = new IpcMetricsStore();
  * }, telemetryService);
  * ```
  */
-export function withIpcTelemetry<TArgs extends unknown[], TResult>(
+export function withIpcTelemetry<TArgs extends RuntimeValue[], TResult>(
     channel: string,
     handler: (...args: TArgs) => Promise<TResult>,
     telemetryService?: TelemetryService

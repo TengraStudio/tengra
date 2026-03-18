@@ -34,13 +34,13 @@ const {
     mockSaveWorkspaceSnippets: vi.fn(),
 }));
 
-vi.mock('@/components/ui/CodeMirrorEditor', () => ({
-    CodeMirrorEditor: ({
-        content,
+vi.mock('@/components/ui/CodeEditor', () => ({
+    CodeEditor: ({
+        value,
         language,
         onChange,
     }: {
-        content: string;
+        value: string;
         language: string;
         onChange: (value?: string) => void;
     }) => (
@@ -48,7 +48,7 @@ vi.mock('@/components/ui/CodeMirrorEditor', () => ({
             <textarea
                 aria-label="code-editor-input"
                 data-testid="code-editor-input"
-                value={content}
+                value={value}
                 onChange={event => onChange(event.target.value)}
             />
         </div>

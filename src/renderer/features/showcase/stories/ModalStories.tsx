@@ -9,10 +9,12 @@ import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Modal } from '@/components/ui/modal';
+import { useTranslation } from '@/i18n';
 
 import type { ComponentStory } from '../types';
 
-const ModalWrapper: React.FC<Record<string, unknown>> = (props) => {
+const ModalWrapper: React.FC<Record<string, RendererDataValue>> = (props) => {
+  const { t } = useTranslation();
   const { title, content, size, showFooter } = props as {
     title?: string
     content?: string
@@ -20,77 +22,87 @@ const ModalWrapper: React.FC<Record<string, unknown>> = (props) => {
     showFooter?: boolean
   };
   const [isOpen, setIsOpen] = useState(false);
+  const resolvedTitle = title ? t(title) : t('showcase.modal.fallback.title');
+  const resolvedContent = content ? t(content) : t('showcase.modal.fallback.content');
 
   return (
     <>
       <Button variant="outline" onClick={() => setIsOpen(true)}>
-        Open {title ?? 'Modal'}
+        {t('showcase.modal.actions.openWithTitle', { title: resolvedTitle })}
       </Button>
       <Modal
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        title={title}
+        title={resolvedTitle}
         size={size}
         footer={showFooter ? (
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
-            <Button onClick={() => setIsOpen(false)}>Confirm</Button>
+            <Button variant="ghost" onClick={() => setIsOpen(false)}>{t('showcase.modal.actions.cancel')}</Button>
+            <Button onClick={() => setIsOpen(false)}>{t('showcase.modal.actions.confirm')}</Button>
           </div>
         ) : undefined}
       >
-        <p className="text-muted-foreground">{content ?? 'Modal content goes here.'}</p>
+        <p className="text-muted-foreground">{resolvedContent}</p>
       </Modal>
     </>
   );
 };
 
-const ConfirmWrapper: React.FC<Record<string, unknown>> = (props) => {
+const ConfirmWrapper: React.FC<Record<string, RendererDataValue>> = (props) => {
+  const { t } = useTranslation();
   const { variant, title, message } = props as {
     variant?: 'danger' | 'warning' | 'info'
     title?: string
     message?: string
   };
   const [isOpen, setIsOpen] = useState(false);
+  const resolvedVariant = variant ?? 'danger';
+  const variantLabelByType: Record<'danger' | 'warning' | 'info', string> = {
+    danger: t('showcase.variants.danger'),
+    warning: t('showcase.variants.warning'),
+    info: t('showcase.variants.info'),
+  };
 
   return (
     <>
       <Button variant="outline" onClick={() => setIsOpen(true)}>
-        Open {variant ?? 'danger'} confirm
+        {t('showcase.modal.confirm.actions.openVariant', { variant: variantLabelByType[resolvedVariant] })}
       </Button>
       <ConfirmationModal
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         onConfirm={() => setIsOpen(false)}
-        title={title ?? 'Are you sure?'}
-        message={message ?? 'This action cannot be undone.'}
+        title={title ? t(title) : t('showcase.modal.confirm.fallback.title')}
+        message={message ? t(message) : t('showcase.modal.confirm.fallback.message')}
         variant={variant}
       />
     </>
   );
 };
 
-const FormModalWrapper: React.FC<Record<string, unknown>> = () => {
+const FormModalWrapper: React.FC<Record<string, RendererDataValue>> = () => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
       <Button variant="outline" onClick={() => setIsOpen(true)}>
-        Open Form Modal
+        {t('showcase.modal.form.actions.open')}
       </Button>
-      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Create Item" size="md" footer={
+      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title={t('showcase.modal.form.title')} size="md" footer={
         <div className="flex gap-2">
-          <Button variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
-          <Button onClick={() => setIsOpen(false)}>Create</Button>
+          <Button variant="ghost" onClick={() => setIsOpen(false)}>{t('showcase.modal.actions.cancel')}</Button>
+          <Button onClick={() => setIsOpen(false)}>{t('showcase.modal.form.actions.create')}</Button>
         </div>
       }>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name-input">Name</Label>
-            <Input id="name-input" placeholder="Enter name..." />
+            <Label htmlFor="name-input">{t('showcase.modal.form.labels.name')}</Label>
+            <Input id="name-input" placeholder={t('showcase.modal.form.placeholders.name')} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="desc-input">Description</Label>
-            <Input id="desc-input" placeholder="Enter description..." />
+            <Label htmlFor="desc-input">{t('showcase.modal.form.labels.description')}</Label>
+            <Input id="desc-input" placeholder={t('showcase.modal.form.placeholders.description')} />
           </div>
         </div>
       </Modal>
@@ -99,33 +111,54 @@ const FormModalWrapper: React.FC<Record<string, unknown>> = () => {
 };
 
 export const modalStory: ComponentStory = {
-  name: 'Modal',
-  category: 'Overlay',
-  component: ModalWrapper as React.ComponentType<Record<string, unknown>>,
+  name: 'showcase.story.modal',
+  category: 'showcase.categories.overlay',
+  component: ModalWrapper as React.ComponentType<Record<string, RendererDataValue>>,
   variants: [
-    { name: 'Basic', props: { title: 'Basic Modal', content: 'Simple modal content.' } },
-    { name: 'With Footer', props: { title: 'Confirm', content: 'Confirm action?', showFooter: true } },
-    { name: 'Large', props: { title: 'Large Modal', size: 'lg', content: 'This is a large modal.' } },
-    { name: 'Small', props: { title: 'Small Modal', size: 'sm', content: 'Compact modal.' } },
+    {
+      name: 'showcase.variants.basic',
+      props: { title: 'showcase.modal.titles.basic', content: 'showcase.modal.contents.simple' },
+    },
+    {
+      name: 'showcase.variants.withFooter',
+      props: { title: 'showcase.modal.titles.confirm', content: 'showcase.modal.contents.confirmAction', showFooter: true },
+    },
+    {
+      name: 'showcase.variants.large',
+      props: { title: 'showcase.modal.titles.large', size: 'lg', content: 'showcase.modal.contents.large' },
+    },
+    {
+      name: 'showcase.variants.small',
+      props: { title: 'showcase.modal.titles.small', size: 'sm', content: 'showcase.modal.contents.small' },
+    },
   ],
 };
 
 export const confirmationModalStory: ComponentStory = {
-  name: 'ConfirmationModal',
-  category: 'Overlay',
-  component: ConfirmWrapper as React.ComponentType<Record<string, unknown>>,
+  name: 'showcase.story.confirmationModal',
+  category: 'showcase.categories.overlay',
+  component: ConfirmWrapper as React.ComponentType<Record<string, RendererDataValue>>,
   variants: [
-    { name: 'Danger', props: { variant: 'danger', title: 'Delete Item?', message: 'This will be permanently deleted.' } },
-    { name: 'Warning', props: { variant: 'warning', title: 'Unsaved Changes', message: 'You have unsaved changes.' } },
-    { name: 'Info', props: { variant: 'info', title: 'Heads Up', message: 'This will update all records.' } },
+    {
+      name: 'showcase.variants.danger',
+      props: { variant: 'danger', title: 'showcase.modal.confirm.titles.deleteItem', message: 'showcase.modal.confirm.messages.deletePermanent' },
+    },
+    {
+      name: 'showcase.variants.warning',
+      props: { variant: 'warning', title: 'showcase.modal.confirm.titles.unsavedChanges', message: 'showcase.modal.confirm.messages.unsavedChanges' },
+    },
+    {
+      name: 'showcase.variants.info',
+      props: { variant: 'info', title: 'showcase.modal.confirm.titles.headsUp', message: 'showcase.modal.confirm.messages.updateRecords' },
+    },
   ],
 };
 
 export const formModalStory: ComponentStory = {
-  name: 'Form Modal',
-  category: 'Overlay',
-  component: FormModalWrapper as React.ComponentType<Record<string, unknown>>,
+  name: 'showcase.story.formModal',
+  category: 'showcase.categories.overlay',
+  component: FormModalWrapper as React.ComponentType<Record<string, RendererDataValue>>,
   variants: [
-    { name: 'Create Form', props: {}, description: 'Modal with form fields and actions' },
+    { name: 'showcase.variants.createForm', props: {}, description: 'showcase.modal.form.descriptions.withFields' },
   ],
 };

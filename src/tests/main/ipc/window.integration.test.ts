@@ -21,16 +21,16 @@ const mockMainWindow = {
     loadURL: vi.fn(),
 };
 
-const mockIpcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
-const mockIpcMainListeners = new Map<string, (...args: unknown[]) => void>();
+const mockIpcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
+const mockIpcMainListeners = new Map<string, (...args: TestValue[]) => void>();
 
 // Mock electron
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
-            mockIpcMainHandlers.set(channel, handler);
+        handle: vi.fn((channel: string, handler: (...args: TestValue[]) => TestValue | Promise<TestValue>) => {
+            mockIpcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
         }),
-        on: vi.fn((channel: string, handler: (...args: unknown[]) => void) => {
+        on: vi.fn((channel: string, handler: (...args: TestValue[]) => void) => {
             mockIpcMainListeners.set(channel, handler);
         }),
         removeHandler: vi.fn((channel: string) => {
@@ -41,8 +41,8 @@ vi.mock('electron', () => ({
         }),
     },
     BrowserWindow: {
-        fromWebContents: vi.fn((sender: unknown) => {
-            return (sender as Record<string, unknown>).id === 1 ? mockMainWindow : null;
+        fromWebContents: vi.fn((sender: TestValue) => {
+            return (sender as Record<string, TestValue>).id === 1 ? mockMainWindow : null;
         }),
     },
     shell: {
@@ -86,7 +86,7 @@ vi.mock('child_process', () => ({
         stderr: {
             on: vi.fn(),
         },
-        on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
+        on: vi.fn((event: string, cb: (...args: TestValue[]) => void) => {
             if (event === 'close') {
                 setTimeout(() => cb(0), 0);
             }
@@ -291,7 +291,11 @@ describe('Window IPC Handlers', () => {
 
             expect(result).toEqual({
                 success: true,
-                data: { success: false, error: 'Validation failed' }
+                data: {
+                    success: false,
+                    error: 'Validation failed',
+                    messageKey: 'mainProcess.window.shellOpenExternal.validationFailed'
+                }
             });
         });
 
@@ -303,7 +307,11 @@ describe('Window IPC Handlers', () => {
 
             expect(result).toEqual({
                 success: true,
-                data: { success: false, error: 'Validation failed' }
+                data: {
+                    success: false,
+                    error: 'Validation failed',
+                    messageKey: 'mainProcess.window.shellOpenExternal.validationFailed'
+                }
             });
         });
     });
@@ -347,3 +355,4 @@ describe('Window IPC Handlers', () => {
         });
     });
 });
+

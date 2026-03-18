@@ -12,12 +12,11 @@
 3.  **NO PLACEHOLDERS**: Write final, production-ready code with complete logic.
 4.  **BUILD & LINT**: Never deliver code that fails `npm run build`, `npm run lint`, or `npm run type-check`.
 5.  **NASA RULES**: Max 150 lines per function. Fixed loop bounds mandatory.
-6.  **BOY SCOUT RULE**: Mandatory. Every edit MUST fix at least one existing lint/type issue.
-7.  **CODEX MIRRORING**: All documentation must be kept in sync with the `.codex/` directory.
-8.  **ADVANCED HARDENING**: Strictly follow [Advanced Agent Hardening Rules](.agent/rules/advanced-hardening.md).
-9.  **FRIDAY FORBIDDEN**: NO COMMITS OR MAJOR DEPLOYMENTS ON FRIDAYS. Fridays are for testing, documentation, and review ONLY.
-10. **TEST PASS MANDATORY**: Never commit code that fails any test. `npm run test` must pass 100%.
-11. **READ RULES FIRST**: You MUST read rule files (`MASTER_COMMANDMENTS.md`, `AI_RULES.md`, `advanced-hardening.md`) using `view_file` at the start of every session before coding. (Locations: `.agent/rules/`, root).
+6.  **BOY SCOUT RULE**: Mandatory. Every edit MUST fix at least one existing lint/type issue.directory.
+7.  **ADVANCED HARDENING**: Strictly follow [Advanced Agent Hardening Rules](.agent/rules/advanced-hardening.md).
+8.  **FRIDAY FORBIDDEN**: NO COMMITS OR MAJOR DEPLOYMENTS ON FRIDAYS. Fridays are for testing, documentation, and review ONLY.
+9. **TEST PASS MANDATORY**: Never commit code that fails any test. `npm run test` must pass 100%.
+10. **READ RULES FIRST**: You MUST read rule files (`MASTER_COMMANDMENTS.md`, `AI_RULES.md`, `advanced-hardening.md`) using `view_file` at the start of every session before coding. (Locations: `.agent/rules/`, root).
 
 ---
 

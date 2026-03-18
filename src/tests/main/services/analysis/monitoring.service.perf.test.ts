@@ -30,7 +30,7 @@ import * as os from 'os';
 import { appLogger } from '@main/logging/logger';
 import { MONITORING_PERFORMANCE_BUDGETS, MonitoringService } from '@main/services/analysis/monitoring.service';
 
-const mockExec = exec as unknown as ReturnType<typeof vi.fn>;
+const mockExec = exec as never as ReturnType<typeof vi.fn>;
 
 describe('MonitoringService performance budgets', () => {
     let service: MonitoringService;
@@ -42,7 +42,7 @@ describe('MonitoringService performance budgets', () => {
         vi.mocked(os.totalmem).mockReturnValue(16_000_000_000);
         vi.mocked(os.freemem).mockReturnValue(8_000_000_000);
         mockExec.mockImplementation(
-            (_cmd: string, _opts: Record<string, unknown>, cb: (err: null, out: string, stderr: string) => void) => {
+            (_cmd: string, _opts: Record<string, TestValue>, cb: (err: null, out: string, stderr: string) => void) => {
                 cb(null, 'mock output', '');
             }
         );

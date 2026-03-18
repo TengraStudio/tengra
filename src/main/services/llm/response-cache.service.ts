@@ -46,7 +46,7 @@ export class ResponseCacheService extends BaseService {
     /**
      * Retrieves a cached response if available and not expired.
      */
-    async get(messages: Message[], model: string, options?: Record<string, unknown>): Promise<OpenAIResponse | null> {
+    async get(messages: Message[], model: string, options?: Record<string, RuntimeValue>): Promise<OpenAIResponse | null> {
         const normalizedModel = this.normalizeModel(model);
         const key = this.generateKey(messages, normalizedModel, options);
         const now = Date.now();
@@ -77,7 +77,7 @@ export class ResponseCacheService extends BaseService {
         model: string,
         response: OpenAIResponse,
         ttlMs: number = 3600000,
-        options?: Record<string, unknown>
+        options?: Record<string, RuntimeValue>
     ): Promise<void> {
         const normalizedModel = this.normalizeModel(model);
         const key = this.generateKey(messages, normalizedModel, options);
@@ -206,7 +206,7 @@ export class ResponseCacheService extends BaseService {
     /**
      * Generates a deterministic SHA256 hash for the given request parameters.
      */
-    private generateKey(messages: Message[], model: string, options?: Record<string, unknown>): string {
+    private generateKey(messages: Message[], model: string, options?: Record<string, RuntimeValue>): string {
         const payload = {
             keyVersion: this.KEY_VERSION,
             namespace: this.cacheNamespace,
@@ -231,7 +231,7 @@ export class ResponseCacheService extends BaseService {
         return trimmed.length > 0 ? trimmed : 'default';
     }
 
-    private normalizeForKey(value: unknown): unknown {
+    private normalizeForKey(value: RuntimeValue): RuntimeValue {
         if (value === null || value === undefined) {
             return null;
         }
@@ -239,10 +239,10 @@ export class ResponseCacheService extends BaseService {
             return value.map(item => this.normalizeForKey(item));
         }
         if (typeof value === 'object') {
-            const record = value as Record<string, unknown>;
+            const record = value as Record<string, RuntimeValue>;
             return Object.keys(record)
                 .sort()
-                .reduce<Record<string, unknown>>((accumulator, key) => {
+                .reduce<Record<string, RuntimeValue>>((accumulator, key) => {
                     const nestedValue = record[key];
                     if (nestedValue !== undefined && typeof nestedValue !== 'function') {
                         accumulator[key] = this.normalizeForKey(nestedValue);

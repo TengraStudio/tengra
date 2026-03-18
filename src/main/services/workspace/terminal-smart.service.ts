@@ -351,7 +351,7 @@ Return ONLY valid JSON, no markdown or other text.
         try {
             const match = content.match(/\{[\s\S]*\}/);
             if (match) {
-                const parsed = JSON.parse(match[0]) as Record<string, unknown>;
+                const parsed = JSON.parse(match[0]) as Record<string, RuntimeValue>;
                 return {
                     explanation: typeof parsed.explanation === 'string' ? parsed.explanation : 'Unable to parse explanation',
                     breakdown: Array.isArray(parsed.breakdown) ? parsed.breakdown as ExplainCommandResult['breakdown'] : [],
@@ -375,7 +375,7 @@ Return ONLY valid JSON, no markdown or other text.
         try {
             const match = content.match(/\{[\s\S]*\}/);
             if (match) {
-                const parsed = JSON.parse(match[0]) as Record<string, unknown>;
+                const parsed = JSON.parse(match[0]) as Record<string, RuntimeValue>;
                 return {
                     summary: typeof parsed.summary === 'string' ? parsed.summary : 'Unable to parse summary',
                     cause: typeof parsed.cause === 'string' ? parsed.cause : 'Unknown',
@@ -401,7 +401,7 @@ Return ONLY valid JSON, no markdown or other text.
         try {
             const match = content.match(/\{[\s\S]*\}/);
             if (match) {
-                const parsed = JSON.parse(match[0]) as Record<string, unknown>;
+                const parsed = JSON.parse(match[0]) as Record<string, RuntimeValue>;
                 const confidence = parsed.confidence;
                 return {
                     suggestedCommand: typeof parsed.suggestedCommand === 'string' ? parsed.suggestedCommand : '',

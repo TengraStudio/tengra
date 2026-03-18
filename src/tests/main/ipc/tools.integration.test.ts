@@ -1,11 +1,14 @@
+import type { DatabaseService } from '@main/services/data/database.service';
+import type { CommandService } from '@main/services/system/command.service';
+import type { ToolExecutor } from '@main/tools/tool-executor';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock electron
-const mockIpcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
+const mockIpcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
-            mockIpcMainHandlers.set(channel, handler);
+        handle: vi.fn((channel: string, handler: (...args: TestValue[]) => TestValue | Promise<TestValue>) => {
+            mockIpcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
         }),
         removeHandler: vi.fn((channel: string) => {
             mockIpcMainHandlers.delete(channel);
@@ -24,7 +27,7 @@ vi.mock('@main/logging/logger', () => ({
 
 // Mock rate limiter
 vi.mock('@main/utils/rate-limiter.util', () => ({
-    withRateLimit: vi.fn(async (_key: string, fn: () => unknown) => await fn()),
+    withRateLimit: vi.fn((_key: string, fn: () => TestValue | Promise<TestValue>) => Promise.resolve(fn())),
 }));
 
 // Mock ToolExecutor
@@ -44,6 +47,7 @@ import { withRateLimit } from '@main/utils/rate-limiter.util';
 describe('Tools IPC Integration', () => {
     let mockToolExecutor: Record<string, ReturnType<typeof vi.fn>>;
     let mockCommandService: Record<string, ReturnType<typeof vi.fn>>;
+    let mockDatabaseService: Record<string, ReturnType<typeof vi.fn>>;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -58,10 +62,16 @@ describe('Tools IPC Integration', () => {
             killCommand: vi.fn(),
         };
 
+        mockDatabaseService = {
+            getChat: vi.fn().mockResolvedValue(null),
+            getWorkspace: vi.fn().mockResolvedValue(null),
+        };
+
         registerToolsIpc(
             () => null,
-            mockToolExecutor as unknown as Parameters<typeof registerToolsIpc>[1],
-            mockCommandService as unknown as Parameters<typeof registerToolsIpc>[2]
+            mockToolExecutor as never as ToolExecutor,
+            mockCommandService as never as CommandService,
+            mockDatabaseService as never as DatabaseService
         );
     });
 
@@ -208,3 +218,4 @@ describe('Tools IPC Integration', () => {
         });
     });
 });
+

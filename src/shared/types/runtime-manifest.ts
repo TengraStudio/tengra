@@ -80,3 +80,70 @@ export interface RuntimeBootstrapPlan {
     entries: RuntimeBootstrapPlanEntry[];
     summary: RuntimeBootstrapPlanSummary;
 }
+
+export type RuntimeHealthStatus = 'ready' | 'missing' | 'not-executable' | 'external' | 'unsupported';
+export type RuntimeHealthAction = 'none' | 'install' | 'start';
+
+export interface RuntimeHealthEntry {
+    componentId: string;
+    displayName: string;
+    status: RuntimeHealthStatus;
+    source: RuntimeComponentSource;
+    installPath?: string;
+    installUrl?: string;
+    requirement: RuntimeComponentRequirement;
+    message: string;
+    messageKey?: string;
+    messageParams?: Record<string, string | number>;
+    detected?: boolean;
+    running?: boolean;
+    action?: RuntimeHealthAction;
+}
+
+export interface RuntimeHealthReport {
+    entries: RuntimeHealthEntry[];
+    summary: {
+        ready: number;
+        missing: number;
+        invalid: number;
+        external: number;
+        unsupported: number;
+    };
+}
+
+export type RuntimeBootstrapExecutionStatus =
+    | 'ready'
+    | 'installed'
+    | 'install-required'
+    | 'failed'
+    | 'external'
+    | 'unsupported';
+
+export interface RuntimeBootstrapExecutionEntry {
+    componentId: string;
+    displayName: string;
+    version: string;
+    status: RuntimeBootstrapExecutionStatus;
+    requirement: RuntimeComponentRequirement;
+    source: RuntimeComponentSource;
+    installPath?: string;
+    downloadedAssetPath?: string;
+    installUrl?: string;
+    error?: string;
+}
+
+export interface RuntimeBootstrapExecutionResult {
+    manifestVersion: string;
+    environment: RuntimeTargetEnvironment;
+    entries: RuntimeBootstrapExecutionEntry[];
+    summary: {
+        ready: number;
+        installed: number;
+        installRequired: number;
+        failed: number;
+        external: number;
+        unsupported: number;
+        blockingFailures: number;
+    };
+    health: RuntimeHealthReport;
+}

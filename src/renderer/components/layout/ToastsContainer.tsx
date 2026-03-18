@@ -1,6 +1,7 @@
-import { CalendarClock, CheckCheck, Clock3, History, Trash2 } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CalendarClock, CheckCheck, Clock3, History, Info, Trash2 } from 'lucide-react';
 import {  useState } from 'react';
 
+import { useTranslation } from '@/i18n';
 import { useBreakpoint } from '@/lib/responsive';
 import { cn } from '@/lib/utils';
 import {
@@ -35,6 +36,7 @@ function formatTime(timestamp: number): string {
 }
 
 export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
+    const { t } = useTranslation();
     const [isCenterOpen, setIsCenterOpen] = useState(false);
     const breakpoint = useBreakpoint();
     const snapshot = useNotificationCenterStore(state => state);
@@ -56,7 +58,13 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
 
                 {visibleToasts.map(toast => {
                     const icon =
-                        toast.type === 'success' ? 'OK' : toast.type === 'error' ? 'ERR' : 'INFO';
+                        toast.type === 'success'
+                            ? <CheckCheck className="w-3 h-3" />
+                            : toast.type === 'error'
+                                ? <AlertCircle className="w-3 h-3" />
+                                : toast.type === 'warning'
+                                    ? <AlertTriangle className="w-3 h-3" />
+                                    : <Info className="w-3 h-3" />;
                     const normalizedToast = activeNotifications.find(item => item.id === toast.id);
                     return (
                         <div
@@ -123,10 +131,10 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                                             dismissNotification(normalizedToast.id);
                                         }}
                                         className="px-2 py-1 rounded border border-border/50 text-[10px] font-semibold text-foreground/80"
-                                        title="Remind in 5 minutes"
+                                        title={t('common.remindInMinutes', { minutes: 5 })}
                                     >
                                         <Clock3 className="w-3 h-3 inline mr-1" />
-                                        Snooze
+                                        {t('common.snooze')}
                                     </button>
                                 </div>
                             )}
@@ -147,7 +155,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                     <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
                         <div className="flex items-center gap-2">
                             <History className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm font-semibold">Notification Center</span>
+                            <span className="text-sm font-semibold">{t('notifications.center.title')}</span>
                         </div>
                         <div className="flex items-center gap-1">
                             <button
@@ -155,7 +163,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                                     markAllNotificationsRead();
                                 }}
                                 className="p-1.5 rounded hover:bg-accent/50 text-muted-foreground"
-                                title="Mark all read"
+                                title={t('common.markRead')}
                             >
                                 <CheckCheck className="w-4 h-4" />
                             </button>
@@ -164,7 +172,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                                     clearNotificationHistory();
                                 }}
                                 className="p-1.5 rounded hover:bg-accent/50 text-muted-foreground"
-                                title="Clear history"
+                                title={t('notifications.center.clearHistory')}
                             >
                                 <Trash2 className="w-4 h-4" />
                             </button>
@@ -173,7 +181,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                                     setIsCenterOpen(false);
                                 }}
                                 className="p-1.5 rounded hover:bg-accent/50 text-muted-foreground"
-                                title="Close"
+                                title={t('common.close')}
                             >
                                 x
                             </button>
@@ -182,7 +190,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
 
                     <div className="px-4 py-3 border-b border-border/60">
                         <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                            Preferences
+                            {t('notifications.center.preferences')}
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             {notificationTypes.map(type => (
@@ -204,18 +212,18 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                     </div>
 
                     <div className="px-4 py-2 border-b border-border/60 text-[11px] text-muted-foreground flex flex-wrap gap-x-3 gap-y-1">
-                        <span>Delivered: {snapshot.analytics.deliveredTotal}</span>
-                        <span>Dismissed: {snapshot.analytics.dismissedTotal}</span>
-                        <span>Actions: {snapshot.analytics.actionClicksTotal}</span>
-                        <span>Suppressed: {snapshot.analytics.suppressedTotal}</span>
-                        <span>Scheduled: {snapshot.analytics.scheduledTotal}</span>
-                        <span>Pending: {snapshot.scheduled.length}</span>
+                        <span>{t('notifications.center.analytics.delivered')}: {snapshot.analytics.deliveredTotal}</span>
+                        <span>{t('notifications.center.analytics.dismissed')}: {snapshot.analytics.dismissedTotal}</span>
+                        <span>{t('notifications.center.analytics.actions')}: {snapshot.analytics.actionClicksTotal}</span>
+                        <span>{t('notifications.center.analytics.suppressed')}: {snapshot.analytics.suppressedTotal}</span>
+                        <span>{t('notifications.center.analytics.scheduled')}: {snapshot.analytics.scheduledTotal}</span>
+                        <span>{t('notifications.center.analytics.pending')}: {snapshot.scheduled.length}</span>
                     </div>
 
                     {snapshot.scheduled.length > 0 && (
                         <div className="px-4 py-2 border-b border-border/60">
                             <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-                                Scheduled
+                                {t('notifications.center.scheduled')}
                             </div>
                             <div className="space-y-1.5 max-h-24 overflow-auto">
                                 {snapshot.scheduled.slice(0, 6).map(item => (
@@ -237,7 +245,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                     <div className="max-h-[340px] overflow-auto px-4 py-2 space-y-2">
                         {history.length === 0 && (
                             <div className="py-6 text-center text-xs text-muted-foreground">
-                                No notifications yet.
+                                {t('notifications.center.noNotifications')}
                             </div>
                         )}
                         {history.map(item => (
@@ -270,7 +278,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                                             }}
                                             className="px-2 py-1 rounded border border-border/50 text-[10px] text-muted-foreground"
                                         >
-                                            Mark Read
+                                            {t('common.markRead')}
                                         </button>
                                     )}
                                     <button
@@ -279,7 +287,7 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                                         }}
                                         className="px-2 py-1 rounded border border-border/50 text-[10px] text-muted-foreground"
                                     >
-                                        Dismiss
+                                        {t('common.dismiss')}
                                     </button>
                                     {item.actions.map(action => (
                                         <button

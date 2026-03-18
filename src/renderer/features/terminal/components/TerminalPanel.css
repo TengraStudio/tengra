@@ -49,12 +49,12 @@
     cursor: pointer;
     transition: background 0.2s;
     background: transparent;
-    color: var(--text-secondary, #cccccc);
+    color: var(--text-secondary, #ccc);
 }
 
 .terminal-tab.active {
     background: var(--bg-primary, #1e1e1e);
-    color: var(--text-primary, #ffffff);
+    color: var(--text-primary, #fff);
 }
 
 .terminal-tab:hover {
@@ -90,7 +90,7 @@
     background: none;
     border: none;
     border-radius: var(--radius-sm, 4px);
-    color: var(--text-secondary, #cccccc);
+    color: var(--text-secondary, #ccc);
     cursor: pointer;
     transition: background 0.2s;
 }

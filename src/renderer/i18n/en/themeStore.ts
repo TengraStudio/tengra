@@ -10,7 +10,17 @@ const sectionData = {
     "apply": "Apply Theme",
     "active": "Active",
     "pro": "PRO",
+    "by": "by",
+    "authorTengraTeam": "Tengra Team",
     "themes": {
+        "black": {
+            "name": "Tengra Black",
+            "description": "The default pure black theme"
+        },
+        "white": {
+            "name": "Tengra White",
+            "description": "Clean and minimal white theme"
+        },
         "dark-default": {
             "name": "Dark Default",
             "description": "The default dark theme with purple accents"

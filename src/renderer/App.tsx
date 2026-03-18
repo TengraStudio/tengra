@@ -25,10 +25,16 @@ import { trackResponsiveBreakpoint } from '@renderer/store/responsive-analytics.
 import { ViewManager } from '@renderer/views/ViewManager';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useAuth } from '@/context/AuthContext';
-import { useChat } from '@/context/ChatContext';
+import { useAuthSettingsUi } from '@/context/AuthContext';
+import {
+    useChatComposer,
+    useChatHeader,
+    useChatLibrary,
+    useChatShell,
+    useChatWindowCommand,
+} from '@/context/ChatContext';
 import { useModel } from '@/context/ModelContext';
-import { useWorkspace } from '@/context/WorkspaceContext';
+import { useWorkspaceLibrary, useWorkspaceSelection } from '@/context/WorkspaceContext';
 
 import '@renderer/App.css';
 
@@ -83,6 +89,378 @@ interface RateLimitWarningPayload {
     limit?: number
 }
 
+const SidebarConnector: React.FC<{
+    currentView: AppView;
+    isCollapsed: boolean;
+    onChangeView: (view: AppView) => void;
+    toggleSidebar: () => void;
+}> = ({ currentView, isCollapsed, onChangeView, toggleSidebar }) => {
+    const { setSettingsCategory } = useAuthSettingsUi();
+
+    const handleOpenSettings = useCallback((category?: SettingsCategory) => {
+        onChangeView('settings');
+        if (category) {
+            setSettingsCategory(category);
+        }
+    }, [onChangeView, setSettingsCategory]);
+
+    return (
+        <Sidebar
+            currentView={currentView}
+            onChangeView={onChangeView}
+            isCollapsed={isCollapsed}
+            toggleSidebar={toggleSidebar}
+            onOpenSettings={handleOpenSettings}
+            onSearch={() => { }}
+        />
+    );
+};
+
+const AppModalsConnector: React.FC<{
+    t: (key: string) => string;
+    language: ReturnType<typeof useLanguage>['language'];
+    setCurrentView: (view: AppView) => void;
+    showShortcuts: boolean;
+    setShowShortcuts: (show: boolean) => void;
+    isAudioOverlayOpen: boolean;
+    setIsAudioOverlayOpen: (open: boolean) => void;
+    showSSHManager: boolean;
+    setShowSSHManager: (show: boolean) => void;
+}> = ({
+    t,
+    language,
+    setCurrentView,
+    showShortcuts,
+    setShowShortcuts,
+    isAudioOverlayOpen,
+    setIsAudioOverlayOpen,
+    showSSHManager,
+    setShowSSHManager,
+}) => {
+    const { handleAntigravityLogout, isAuthModalOpen, setIsAuthModalOpen, setSettingsCategory } =
+        useAuthSettingsUi();
+    const { setInput } = useChatComposer();
+    const handleVoiceInput = useCallback((text: string) => {
+        setInput(prev => prev + text);
+    }, [setInput]);
+    const { isListening, startListening, stopListening } = useVoiceInput(handleVoiceInput);
+    const { stop: handleStopSpeak, isSpeaking } = useTextToSpeech();
+
+    return (
+        <AppModals
+            isAuthModalOpen={isAuthModalOpen}
+            setIsAuthModalOpen={setIsAuthModalOpen}
+            t={t}
+            handleAntigravityLogout={handleAntigravityLogout}
+            setSettingsCategory={setSettingsCategory}
+            setCurrentView={setCurrentView}
+            showShortcuts={showShortcuts}
+            setShowShortcuts={setShowShortcuts}
+            isAudioOverlayOpen={isAudioOverlayOpen}
+            setIsAudioOverlayOpen={setIsAudioOverlayOpen}
+            isListening={isListening}
+            startListening={startListening}
+            stopListening={stopListening}
+            isSpeaking={isSpeaking}
+            handleStopSpeak={handleStopSpeak}
+            language={language}
+            showSSHManager={showSSHManager}
+            setShowSSHManager={setShowSSHManager}
+        />
+    );
+};
+
+const VoiceActionsConnector: React.FC<{
+    setCurrentView: (view: AppView) => void;
+    addToast: (toast: { type: 'info'; message: string }) => void;
+}> = ({ setCurrentView, addToast }) => {
+    const { createNewChat } = useChatShell();
+    const { handleSend, setInput } = useChatComposer();
+
+    useVoiceActions({
+        setCurrentView: view => setCurrentView(view),
+        addToast: toast => addToast(toast),
+        createNewChat,
+        handleSend,
+        setInput: value => setInput(value),
+    });
+
+    return null;
+};
+
+const KeyboardShortcutsConnector: React.FC<{
+    showCommandPalette: boolean;
+    setShowCommandPalette: (show: boolean) => void;
+    showShortcuts: boolean;
+    setShowShortcuts: (show: boolean) => void;
+    showSSHManager: boolean;
+    setShowSSHManager: (show: boolean) => void;
+    setCurrentView: (view: AppView) => void;
+    onToggleSidebar: () => void;
+}> = ({
+    showCommandPalette,
+    setShowCommandPalette,
+    showShortcuts,
+    setShowShortcuts,
+    showSSHManager,
+    setShowSSHManager,
+    setCurrentView,
+    onToggleSidebar,
+}) => {
+    const { createNewChat } = useChatShell();
+    const { currentChatId, clearMessages } = useChatHeader();
+    const { setSettingsCategory } = useAuthSettingsUi();
+
+    const keyboardShortcutsConfig = useMemo(
+        () => ({
+            onCommandPalette: () => {
+                setShowCommandPalette(!showCommandPalette);
+            },
+            onNewChat: createNewChat,
+            onOpenSettings: () => {
+                setCurrentView('settings');
+                setSettingsCategory('general');
+            },
+            onShowShortcuts: () => {
+                setShowShortcuts(true);
+            },
+            onClearChat: () => {
+                void clearMessages();
+            },
+            onSwitchView: (view: AppView) => {
+                setCurrentView(view);
+            },
+            onToggleSidebar: () => {
+                onToggleSidebar();
+            },
+            onCloseModals: () => {
+                setShowCommandPalette(false);
+                setShowShortcuts(false);
+                setShowSSHManager(false);
+            },
+            showCommandPalette,
+            showShortcuts,
+            showSSHManager,
+            currentChatId,
+        }),
+        [
+            clearMessages,
+            createNewChat,
+            currentChatId,
+            onToggleSidebar,
+            setCurrentView,
+            setSettingsCategory,
+            setShowCommandPalette,
+            setShowShortcuts,
+            setShowSSHManager,
+            showCommandPalette,
+            showShortcuts,
+            showSSHManager,
+        ]
+    );
+
+    useKeyboardShortcuts(keyboardShortcutsConfig);
+    return null;
+};
+
+const QuickActionBarConnector: React.FC<{
+    language: ReturnType<typeof useLanguage>['language'];
+    explainPrefix: string;
+    translatePrefix: string;
+}> = ({ language, explainPrefix, translatePrefix }) => {
+    const { handleSend, setInput } = useChatComposer();
+
+    return (
+        <QuickActionBar
+            onExplain={text => {
+                setInput(`${explainPrefix}${text}`);
+                void handleSend();
+            }}
+            onTranslate={text => {
+                setInput(`${translatePrefix}${text}`);
+                void handleSend();
+            }}
+            language={language}
+        />
+    );
+};
+
+const CommandPaletteConnector: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    setCurrentView: (view: AppView) => void;
+    t: (key: string) => string;
+}> = ({ isOpen, onClose, setCurrentView, t }) => {
+    const { chats, setCurrentChatId } = useChatLibrary();
+    const { clearMessages } = useChatHeader();
+    const { createNewChat } = useChatShell();
+    const { workspaces } = useWorkspaceLibrary();
+    const { setSelectedWorkspace } = useWorkspaceSelection();
+    const { models, loadModels, selectedModel, setSelectedModel } = useModel();
+    const { setSettingsCategory } = useAuthSettingsUi();
+
+    return (
+        <CommandPalette
+            isOpen={isOpen}
+            onClose={onClose}
+            chats={chats}
+            onSelectChat={(chatId: string) => {
+                setCurrentChatId(chatId);
+                setCurrentView('chat');
+            }}
+            onNewChat={createNewChat}
+            workspaces={workspaces}
+            onSelectWorkspace={(id: string) => {
+                const workspace = workspaces.find(item => item.id === id);
+                if (workspace) {
+                    setSelectedWorkspace(workspace);
+                    setCurrentView('workspace');
+                }
+            }}
+            onOpenSettings={(category?: SettingsCategory) => {
+                setCurrentView('settings');
+                if (category) {
+                    setSettingsCategory(category);
+                }
+            }}
+            onOpenSSHManager={() => {
+                window.dispatchEvent(new CustomEvent('app:open-ssh-manager'));
+            }}
+            onRefreshModels={bypassCache => {
+                void loadModels(bypassCache);
+            }}
+            models={models}
+            onSelectModel={setSelectedModel}
+            selectedModel={selectedModel}
+            onClearChat={() => {
+                void clearMessages();
+            }}
+            t={t}
+        />
+    );
+};
+
+const WindowAppCommandConnector: React.FC<{
+    setShowSSHManager: (show: boolean) => void;
+}> = ({ setShowSSHManager }) => {
+    const { clearMessages, lastAssistantMessageText } = useChatWindowCommand();
+
+    useEffect(() => {
+        const handleClearChat = () => {
+            void clearMessages();
+        };
+        const handleOpenSshManager = () => {
+            setShowSSHManager(true);
+        };
+        const handleCopyLastResponse = () => {
+            if (lastAssistantMessageText.trim()) {
+                void navigator.clipboard.writeText(lastAssistantMessageText);
+            }
+        };
+
+        window.addEventListener('app:clear-chat', handleClearChat as EventListener);
+        window.addEventListener('app:open-ssh-manager', handleOpenSshManager as EventListener);
+        window.addEventListener('app:copy-last-response', handleCopyLastResponse as EventListener);
+
+        return () => {
+            window.removeEventListener('app:clear-chat', handleClearChat as EventListener);
+            window.removeEventListener('app:open-ssh-manager', handleOpenSshManager as EventListener);
+            window.removeEventListener('app:copy-last-response', handleCopyLastResponse as EventListener);
+        };
+    }, [clearMessages, lastAssistantMessageText, setShowSSHManager]);
+
+    return null;
+};
+
+const SelectionPersistenceConnector: React.FC = () => {
+    const { selectedModel } = useModel();
+    const { selectedWorkspace } = useWorkspaceSelection();
+
+    useEffect(() => {
+        if (selectedModel) {
+            localStorage.setItem('app.lastModel', selectedModel);
+        }
+    }, [selectedModel]);
+
+    useEffect(() => {
+        if (selectedWorkspace?.id) {
+            localStorage.setItem('app.lastWorkspaceId', selectedWorkspace.id);
+        }
+    }, [selectedWorkspace?.id]);
+
+    return null;
+};
+
+const DragDropContent: React.FC<{
+    isDragging: boolean;
+    setIsDragging: (dragging: boolean) => void;
+    addToast: (toast: { type: 'error'; message: string }) => void;
+    currentView: AppView;
+    templates: ChatTemplate[];
+    messagesEndRef: React.RefObject<HTMLDivElement>;
+    fileInputRef: React.RefObject<HTMLInputElement>;
+    textareaRef: React.RefObject<HTMLTextAreaElement>;
+    onScrollToBottom: () => void;
+    showScrollButton: boolean;
+    setShowScrollButton: (show: boolean) => void;
+    showFileMenu: boolean;
+    setShowFileMenu: (show: boolean) => void;
+    settingsSearchQuery?: string;
+}> = ({
+    isDragging,
+    setIsDragging,
+    addToast,
+    currentView,
+    templates,
+    messagesEndRef,
+    fileInputRef,
+    textareaRef,
+    onScrollToBottom,
+    showScrollButton,
+    setShowScrollButton,
+    showFileMenu,
+    setShowFileMenu,
+    settingsSearchQuery,
+}) => {
+    const { processFile } = useChatComposer();
+    const { t } = useTranslation();
+
+    return (
+        <DragDropWrapper
+            isDragging={isDragging}
+            setIsDragging={setIsDragging}
+            onFileDrop={file => {
+                void (async () => {
+                    const validation = await validateDroppedFile(file, t);
+                    if (!validation.valid) {
+                        addToast({
+                            type: 'error',
+                            message: validation.error || t('common.invalidInput'),
+                        });
+                        return;
+                    }
+                    void processFile(file);
+                })();
+            }}
+        >
+            <ViewManager
+                currentView={currentView}
+                templates={templates}
+                messagesEndRef={messagesEndRef}
+                fileInputRef={fileInputRef}
+                textareaRef={textareaRef}
+                onScrollToBottom={onScrollToBottom}
+                showScrollButton={showScrollButton}
+                setShowScrollButton={setShowScrollButton}
+                showFileMenu={showFileMenu}
+                setShowFileMenu={setShowFileMenu}
+                settingsSearchQuery={settingsSearchQuery}
+            />
+            <div id="modal-root" />
+        </DragDropWrapper>
+    );
+};
+
 export default function App() {
     if (isDetachedTerminalWindow) {
         return <DetachedTerminalWindow />;
@@ -94,29 +472,7 @@ export default function App() {
 function MainApp() {
     const sessionTimeout = useSessionTimeout();
     const { language } = useLanguage();
-    const { handleAntigravityLogout, isAuthModalOpen, setIsAuthModalOpen, setSettingsCategory } =
-        useAuth();
-    const {
-        setInput,
-        handleSend,
-        processFile,
-        createNewChat,
-        currentChatId,
-        setCurrentChatId,
-        chats,
-        setChats,
-    } = useChat();
     const { t } = useTranslation();
-    const handleVoiceInput = useCallback(
-        (text: string) => {
-            setInput(prev => prev + text);
-        },
-        [setInput]
-    );
-    const { isListening, startListening, stopListening } = useVoiceInput(handleVoiceInput);
-    const { stop: handleStopSpeak, isSpeaking } = useTextToSpeech();
-    const { models, loadModels, selectedModel, setSelectedModel } = useModel();
-    const { workspaces: workspaces, selectedWorkspace: selectedWorkspace, setSelectedWorkspace: setSelectedWorkspace } = useWorkspace();
     const appState = useAppState();
     const {
         currentView,
@@ -129,14 +485,6 @@ function MainApp() {
     const breakpoint = useBreakpoint();
     const [settingsSearchQuery, setSettingsSearchQuery] = useState('');
 
-    // Initialize global voice actions
-    useVoiceActions({
-        setCurrentView: (view) => setCurrentView(view),
-        addToast: (toast) => addToast(toast),
-        createNewChat,
-        handleSend,
-        setInput: (value) => setInput(value),
-    });
     const [showExtensionModal, setShowExtensionModal] = useState(false);
     const [showLanguagePrompt, setShowLanguagePrompt] = useState(() => {
         // Show prompt only on first run if language wasn't explicitly selected
@@ -145,12 +493,12 @@ function MainApp() {
 
     useAppInitialization(); // Keep initialization but don't use auto-warning
 
-    // Auto-collapse sidebar when entering the workspace view or selecting a workspace
+    // Auto-collapse sidebar when entering the workspace view.
     useEffect(() => {
-        if (!isSidebarCollapsed && (currentView === 'workspace' || selectedWorkspace)) {
+        if (!isSidebarCollapsed && currentView === 'workspace') {
             setIsSidebarCollapsed(true);
         }
-    }, [currentView, selectedWorkspace, isSidebarCollapsed, setIsSidebarCollapsed]);
+    }, [currentView, isSidebarCollapsed, setIsSidebarCollapsed]);
 
     useEffect(() => {
         trackResponsiveBreakpoint({
@@ -171,69 +519,9 @@ function MainApp() {
         }
     };
 
-    const handleClearChat = useCallback(() => {
-        const clear = async () => {
-            if (currentChatId) {
-                await window.electron.db.deleteMessages(currentChatId);
-                const updatedChats = await window.electron.db.getAllChats();
-                setChats(updatedChats);
-            }
-        };
-        void clear();
-    }, [currentChatId, setChats]);
     const handleToggleSidebar = useCallback(() => {
         setIsSidebarCollapsed(!isSidebarCollapsed);
     }, [isSidebarCollapsed, setIsSidebarCollapsed]);
-    const handleOpenSettings = useCallback((category?: SettingsCategory) => {
-        setCurrentView('settings');
-        if (category) {
-            setSettingsCategory(category);
-        }
-    }, [setCurrentView, setSettingsCategory]);
-
-    const keyboardShortcutsConfig = useMemo(
-        () => ({
-            onCommandPalette: () => {
-                setShowCommandPalette(!appState.showCommandPalette);
-            },
-            onNewChat: createNewChat,
-            onOpenSettings: () => {
-                setCurrentView('settings');
-                setSettingsCategory('general');
-            },
-            onShowShortcuts: () => {
-                appState.setShowShortcuts(true);
-            },
-            onClearChat: handleClearChat,
-            onSwitchView: (view: AppView) => {
-                setCurrentView(view);
-            },
-            onToggleSidebar: () => {
-                handleToggleSidebar();
-            },
-            onCloseModals: () => {
-                appState.setShowCommandPalette(false);
-                appState.setShowShortcuts(false);
-                appState.setShowSSHManager(false);
-            },
-            showCommandPalette: appState.showCommandPalette,
-            showShortcuts: appState.showShortcuts,
-            showSSHManager: appState.showSSHManager,
-            currentChatId,
-        }),
-        [
-            appState,
-            createNewChat,
-            currentChatId,
-            handleToggleSidebar,
-            handleClearChat,
-            setCurrentView,
-            setShowCommandPalette,
-            setSettingsCategory
-        ]
-    );
-
-    useKeyboardShortcuts(keyboardShortcutsConfig);
     const chatTemplates = useMemo(() => getChatTemplates(t), [t]);
 
     useEffect(() => {
@@ -267,18 +555,6 @@ function MainApp() {
         };
     }, [addToast, t]);
 
-    useEffect(() => {
-        if (selectedModel) {
-            localStorage.setItem('app.lastModel', selectedModel);
-        }
-    }, [selectedModel]);
-
-    useEffect(() => {
-        if (selectedWorkspace?.id) {
-            localStorage.setItem('app.lastWorkspaceId', selectedWorkspace.id);
-        }
-    }, [selectedWorkspace?.id]);
-
     return (
         <ErrorBoundary
             resetKeys={[appState.currentView]}
@@ -289,13 +565,11 @@ function MainApp() {
                             isSidebarCollapsed={appState.isSidebarCollapsed}
                             setIsSidebarCollapsed={appState.setIsSidebarCollapsed}
                             sidebarContent={
-                                <Sidebar
+                                <SidebarConnector
                                     currentView={appState.currentView}
                                     onChangeView={setCurrentView}
                                     isCollapsed={appState.isSidebarCollapsed}
                                     toggleSidebar={handleToggleSidebar}
-                                    onOpenSettings={handleOpenSettings}
-                                    onSearch={() => { }}
                                 />
                             }
                             mainContent={
@@ -340,36 +614,39 @@ function MainApp() {
                     </Suspense>
                 )}
 
-                <AppModals
-                    isAuthModalOpen={isAuthModalOpen}
-                    setIsAuthModalOpen={setIsAuthModalOpen}
+                <AppModalsConnector
                     t={t}
-                    handleAntigravityLogout={handleAntigravityLogout}
-                    setSettingsCategory={setSettingsCategory}
                     setCurrentView={setCurrentView}
                     showShortcuts={appState.showShortcuts}
                     setShowShortcuts={appState.setShowShortcuts}
                     isAudioOverlayOpen={appState.isAudioOverlayOpen}
                     setIsAudioOverlayOpen={appState.setIsAudioOverlayOpen}
-                    isListening={isListening}
-                    startListening={startListening}
-                    stopListening={stopListening}
-                    isSpeaking={isSpeaking}
-                    handleStopSpeak={handleStopSpeak}
                     language={language}
                     showSSHManager={appState.showSSHManager}
                     setShowSSHManager={appState.setShowSSHManager}
                 />
+                <VoiceActionsConnector
+                    setCurrentView={setCurrentView}
+                    addToast={toast => addToast(toast)}
+                />
+                <WindowAppCommandConnector
+                    setShowSSHManager={appState.setShowSSHManager}
+                />
+                <SelectionPersistenceConnector />
+                <KeyboardShortcutsConnector
+                    showCommandPalette={appState.showCommandPalette}
+                    setShowCommandPalette={appState.setShowCommandPalette}
+                    showShortcuts={appState.showShortcuts}
+                    setShowShortcuts={appState.setShowShortcuts}
+                    showSSHManager={appState.showSSHManager}
+                    setShowSSHManager={appState.setShowSSHManager}
+                    setCurrentView={setCurrentView}
+                    onToggleSidebar={handleToggleSidebar}
+                />
                 <Suspense fallback={null}>
-                    <QuickActionBar
-                        onExplain={text => {
-                            setInput(`${t('quickAction.explainPrefix')}${text}`);
-                            void handleSend();
-                        }}
-                        onTranslate={text => {
-                            setInput(`${t('quickAction.translatePrefix')}${text}`);
-                            void handleSend();
-                        }}
+                    <QuickActionBarConnector
+                        explainPrefix={t('quickAction.explainPrefix')}
+                        translatePrefix={t('quickAction.translatePrefix')}
                         language={language}
                     />
                 </Suspense>
@@ -378,35 +655,12 @@ function MainApp() {
                 </Suspense>
                 <ToastsContainer toasts={appState.toasts} removeToast={appState.removeToast} />
                 <Suspense fallback={null}>
-                    <CommandPalette
+                    <CommandPaletteConnector
                         isOpen={appState.showCommandPalette}
                         onClose={() => {
                             appState.setShowCommandPalette(false);
                         }}
-                        chats={chats}
-                        onSelectChat={setCurrentChatId}
-                        onNewChat={createNewChat}
-                        workspaces={workspaces}
-                        onSelectWorkspace={(id: string) => {
-                            const p = workspaces.find(pro => pro.id === id);
-                            if (p) {
-                                setSelectedWorkspace(p);
-                                setCurrentView('workspace');
-                            }
-                        }}
-                        onOpenSettings={handleOpenSettings}
-                        onOpenSSHManager={() => {
-                            appState.setShowSSHManager(true);
-                        }}
-                        onRefreshModels={bypassCache => {
-                            void loadModels(bypassCache);
-                        }}
-                        models={models}
-                        onSelectModel={m => {
-                            setSelectedModel(m);
-                        }}
-                        selectedModel={selectedModel}
-                        onClearChat={handleClearChat}
+                        setCurrentView={setCurrentView}
                         t={t}
                     />
                 </Suspense>
@@ -415,13 +669,11 @@ function MainApp() {
                         isSidebarCollapsed={appState.isSidebarCollapsed}
                         setIsSidebarCollapsed={appState.setIsSidebarCollapsed}
                         sidebarContent={
-                            <Sidebar
+                            <SidebarConnector
                                 currentView={appState.currentView}
                                 onChangeView={setCurrentView}
                                 isCollapsed={appState.isSidebarCollapsed}
                                 toggleSidebar={handleToggleSidebar}
-                                onOpenSettings={handleOpenSettings}
-                                onSearch={() => { }}
                             />
                         }
                         mainContent={
@@ -432,39 +684,22 @@ function MainApp() {
                                     setSettingsSearchQuery={setSettingsSearchQuery}
                                     onExtensionClick={() => setShowExtensionModal(true)}
                                 />
-                                <DragDropWrapper
+                                <DragDropContent
                                     isDragging={appState.isDragging}
                                     setIsDragging={appState.setIsDragging}
-                                    onFileDrop={file => {
-                                        void (async () => {
-                                            // Validate file before processing
-                                            const validation = await validateDroppedFile(file);
-                                            if (!validation.valid) {
-                                                appState.addToast({
-                                                    type: 'error',
-                                                    message: validation.error || 'Invalid file',
-                                                });
-                                                return;
-                                            }
-                                            void processFile(file);
-                                        })();
-                                    }}
-                                >
-                                    <ViewManager
-                                        currentView={appState.currentView}
-                                        templates={chatTemplates}
-                                        messagesEndRef={appState.messagesEndRef}
-                                        fileInputRef={appState.fileInputRef}
-                                        textareaRef={appState.textareaRef}
-                                        onScrollToBottom={handleScrollToBottom}
-                                        showScrollButton={appState.showScrollButton}
-                                        setShowScrollButton={appState.setShowScrollButton}
-                                        showFileMenu={appState.showFileMenu}
-                                        setShowFileMenu={appState.setShowFileMenu}
-                                        settingsSearchQuery={settingsSearchQuery}
-                                    />
-                                    <div id="modal-root" />
-                                </DragDropWrapper>
+                                    addToast={toast => appState.addToast(toast)}
+                                    currentView={appState.currentView}
+                                    templates={chatTemplates}
+                                    messagesEndRef={appState.messagesEndRef}
+                                    fileInputRef={appState.fileInputRef}
+                                    textareaRef={appState.textareaRef}
+                                    onScrollToBottom={handleScrollToBottom}
+                                    showScrollButton={appState.showScrollButton}
+                                    setShowScrollButton={appState.setShowScrollButton}
+                                    showFileMenu={appState.showFileMenu}
+                                    setShowFileMenu={appState.setShowFileMenu}
+                                    settingsSearchQuery={settingsSearchQuery}
+                                />
                             </>
                         }
                     />

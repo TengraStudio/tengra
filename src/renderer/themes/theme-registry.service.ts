@@ -110,12 +110,12 @@ export class ThemeRegistryService {
     /**
      * Validate theme manifest
      */
-    validateManifest(manifest: unknown): manifest is ThemeManifest {
+    validateManifest(manifest: RendererDataValue): manifest is ThemeManifest {
         if (typeof manifest !== 'object' || manifest === null) {
             return false;
         }
 
-        const m = manifest as Record<string, unknown>;
+        const m = manifest as Record<string, RendererDataValue>;
 
         return (
             typeof m.id === 'string' &&

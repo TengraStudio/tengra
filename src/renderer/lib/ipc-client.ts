@@ -20,7 +20,7 @@ const ipcContractInfoSchema = z.object({
 let contractCompatibilityPromise: Promise<void> | null = null;
 
 /** In-flight request cache for request deduplication */
-const inflightRequests = new Map<string, Promise<unknown>>();
+const inflightRequests = new Map<string, Promise<RendererDataValue>>();
 
 export type { IpcContractEntry, IpcContractMap };
 
@@ -30,7 +30,7 @@ export interface IpcInvokeOptions<T> {
     maxAttempts?: number;
     baseDelayMs?: number;
     maxDelayMs?: number;
-    shouldRetry?: (error: unknown) => boolean;
+    shouldRetry?: (error: RendererDataValue) => boolean;
     /** Enable request deduplication for identical concurrent calls */
     deduplicate?: boolean;
     /** Time in ms to keep dedup entry after settlement (default: 100) */
@@ -41,14 +41,14 @@ function wait(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function getErrorMessage(error: unknown): string {
+function getErrorMessage(error: RendererDataValue): string {
     if (error instanceof Error) {
         return error.message;
     }
     return String(error);
 }
 
-function isRetryableError(error: unknown): boolean {
+function isRetryableError(error: RendererDataValue): boolean {
     if (error instanceof ZodError) {
         return false;
     }
@@ -103,7 +103,7 @@ async function ensureIpcContractCompatibility(): Promise<void> {
                 throw new Error(formatContractMismatch(contractInfo));
             }
         } catch (error) {
-            throw new Error(`IPC contract negotiation failed: ${getErrorMessage(error)}`);
+            throw new Error(`IPC contract negotiation failed: ${getErrorMessage(error as TypeAssertionValue)}`);
         }
     })();
 
@@ -133,7 +133,7 @@ function buildDedupKey(channel: string, args: IpcValue[]): string {
  * @param windowMs - Time in ms to keep the entry after the promise settles
  */
 function trackDedupPromise<T>(key: string, promise: Promise<T>, windowMs: number): void {
-    inflightRequests.set(key, promise);
+    inflightRequests.set(key, promise as Promise<RendererDataValue>);
     void promise.finally(() => {
         setTimeout(() => {
             if (inflightRequests.get(key) === promise) {
@@ -150,7 +150,7 @@ interface RetryOptions<T> {
     maxAttempts: number;
     baseDelayMs: number;
     maxDelayMs: number;
-    shouldRetry: (error: unknown) => boolean;
+    shouldRetry: (error: RendererDataValue) => boolean;
 }
 
 /**
@@ -160,15 +160,16 @@ interface RetryOptions<T> {
  */
 async function executeWithRetry<T>(opts: RetryOptions<T>): Promise<T> {
     const { channel, args, responseSchema, maxAttempts, baseDelayMs, maxDelayMs, shouldRetry } = opts;
-    let lastError: unknown;
+    let lastError: RendererDataValue;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
         try {
             const response = await window.electron.ipcRenderer.invoke(channel, ...args);
             return responseSchema.parse(response);
         } catch (error) {
-            lastError = error;
-            if (attempt >= maxAttempts || !shouldRetry(error)) {
+            const handledError = error as TypeAssertionValue;
+            lastError = handledError;
+            if (attempt >= maxAttempts || !shouldRetry(handledError)) {
                 break;
             }
             await wait(getRetryDelay(attempt, baseDelayMs, maxDelayMs));
@@ -242,5 +243,5 @@ export async function invokeTypedIpc<
     options: IpcInvokeOptions<TContract[TChannel]['response']>
 ): Promise<TContract[TChannel]['response']> {
     // SAFETY: The args conform to the strict contract schema at design-time but need to be coerced to IpcValue[] for the underlying generic IPC transport.
-    return invokeIpc<TContract[TChannel]['response']>(channel, args as unknown as IpcValue[], options);
+    return invokeIpc<TContract[TChannel]['response']>(channel, args as TypeAssertionValue as IpcValue[], options);
 }

@@ -21,10 +21,10 @@ export type AuthFile = { provider?: string; type?: string; name?: string }
 export type PersonaDraft = { name: string; description: string; prompt: string }
 export type TimeStats = Awaited<ReturnType<Window['electron']['db']['getTimeStats']>>
 export interface AccountWrapper<T> {
-    accounts: (T & { accountId?: string; email?: string; error?: string })[]
+    accounts: (T & { accountId?: string; email?: string; error?: string; isActive?: boolean })[]
 }
 
-export type ImageProvider = 'antigravity' | 'ollama' | 'sd-webui' | 'comfyui' | 'pollinations' | 'sd-cpp';
+export type ImageProvider = 'antigravity' | 'ollama' | 'sd-webui' | 'comfyui' | 'sd-cpp';
 
 export interface ImageHistoryEntry {
     id: string;
@@ -86,7 +86,7 @@ export interface ImageWorkflowTemplateEntry {
     id: string;
     name: string;
     description?: string;
-    workflow: Record<string, unknown>;
+    workflow: Record<string, RendererDataValue>;
     createdAt: number;
     updatedAt: number;
 }

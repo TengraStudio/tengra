@@ -27,6 +27,7 @@ const sectionData = {
     "create": "Create",
     "connect": "Connect",
     "selectFolder": "Select Folder",
+    "defaultWorkspaceName": "Workspace",
     "alreadyExists": "Already Exists",
     "alreadyExistsDesc": "Link an existing workspace folder on your computer.",
     "sshTodo": "SSH (Coming Soon)",
@@ -39,6 +40,9 @@ const sectionData = {
     "connectionFailed": "Connection failed",
     "connectionIdNotFound": "Connection established but ID not found.",
     "listFailed": "Failed to list directory",
+    "selectFailed": "Failed to select directory",
+    "createFailed": "Failed to create workspace",
+    "optional": "(Optional)",
     "categories": {
         "web": "Web Application",
         "backend": "Backend Service",

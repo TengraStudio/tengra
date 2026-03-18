@@ -19,6 +19,7 @@ const sectionData = {
     "inputAriaLabel": "{{type}} adı",
     "deleteConfirm": "{name} silmek istediğinizden emin misiniz?",
     "deleteMultipleConfirm": "{count} öğeyi silmek istediğinizden emin misiniz?",
+    "permanentDeletionWarning": "This cannot be undone and permanently removes files from disk.",
     "confirm": "Onayla"
 };
 

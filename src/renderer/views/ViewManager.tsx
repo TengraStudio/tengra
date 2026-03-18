@@ -1,14 +1,19 @@
-import { useAuth } from '@renderer/context/AuthContext';
-import { useChat } from '@renderer/context/ChatContext';
+import { useChatListening } from '@renderer/context/ChatContext';
 import { useModel } from '@renderer/context/ModelContext';
-import { useWorkspace } from '@renderer/context/WorkspaceContext';
+import {
+    useWorkspaceLibrary,
+    useWorkspaceSelection,
+    useWorkspaceTerminal,
+} from '@renderer/context/WorkspaceContext';
 import { ChatTemplate } from '@renderer/features/chat/types';
-import React, { lazy, Suspense, useEffect, useMemo } from 'react';
+import { AppView } from '@renderer/hooks/useAppState';
+import React, { Suspense, useEffect, useMemo } from 'react';
 
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { renderViewSkeleton } from '@/components/ui/view-skeletons';
-import { Language, useTranslation } from '@/i18n';
+import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from '@/i18n';
 import {
     getAnimationDurationMs,
     resolveAnimationPreset,
@@ -19,19 +24,17 @@ import { cn } from '@/lib/utils';
 import { trackAnimationEvent } from '@/store/animation-analytics.store';
 import type { GroupedModels } from '@/types';
 
-// Lazy load feature modules
-
-const DockerDashboard = lazy(() => import('@/features/mcp/DockerDashboard').then(m => ({ default: m.DockerDashboard })));
-const MemoryInspector = lazy(() => import('@/features/memory/components/MemoryInspector').then(m => ({ default: m.MemoryInspector })));
-const IdeasPage = lazy(() => import('@/features/ideas/IdeasPage').then(m => ({ default: m.IdeasPage })));
-const AutomationWorkflowView = lazy(() => import('@/features/automation-workflow/AutomationWorkflowView').then(m => ({ default: m.AutomationWorkflowView })));
-const ModelsPage = lazy(() => import('@/features/models/pages/ModelsPage').then(m => ({ default: m.ModelsPage })));
-
-import { AppView } from '@renderer/hooks/useAppState';
-
-const ChatViewWrapper = lazy(() => import('./view-manager/ChatViewWrapper').then(m => ({ default: m.ChatViewWrapper })));
-const WorkspaceView = lazy(() => import('@/features/workspace/WorkspacePage').then(m => ({ default: m.MemoizedWorkspacesPage })));
-const SettingsView = lazy(() => import('./view-manager/SettingsView').then(m => ({ default: m.SettingsView })));
+import {
+    ChatViewWrapperView,
+    DockerDashboardView,
+    getDefaultPreloadViews,
+    IdeasPageView,
+    MemoryInspectorView,
+    ModelsPageView,
+    preloadViewResources,
+    SettingsRouteView,
+    WorkspaceRouteView,
+} from './view-manager/view-loaders';
 
 interface ViewManagerProps {
     currentView: AppView
@@ -52,26 +55,23 @@ interface ViewManagerProps {
  * Chat component wrapper to isolate hook consumption
  */
 const ChatSection: React.FC<Omit<ViewManagerProps, 'currentView' | 'onNavigateToWorkspace'>> = (props) => (
-    <ChatViewWrapper {...props} />
+    <ChatViewWrapperView {...props} />
 );
 
 /**
  * Workspace component wrapper to isolate hook consumption
  */
-const WorkspaceSection: React.FC<{ language: Language }> = ({ language }) => {
+const WorkspaceSection: React.FC = () => {
     const {
-        workspaces: workspaces, selectedWorkspace: selectedWorkspace, setSelectedWorkspace: setSelectedWorkspace,
-        terminalTabs, activeTerminalId, setTerminalTabs, setActiveTerminalId
-    } = useWorkspace();
-    const {
-        selectedProvider, selectedModel, setSelectedProvider, setSelectedModel,
-        persistLastSelection, groupedModels
-    } = useModel();
-    const { quotas, codexUsage, settings } = useAuth();
-    const { isLoading, handleSend, messages, chatError } = useChat();
+        workspaces,
+    } = useWorkspaceLibrary();
+    const { selectedWorkspace, setSelectedWorkspace } = useWorkspaceSelection();
+    const { terminalTabs, activeTerminalId, setTerminalTabs, setActiveTerminalId } =
+        useWorkspaceTerminal();
+    const { language } = useAuth();
 
     return (
-        <WorkspaceView
+        <WorkspaceRouteView
             workspaces={workspaces}
             selectedWorkspace={selectedWorkspace}
             onSelectWorkspace={setSelectedWorkspace}
@@ -80,23 +80,6 @@ const WorkspaceSection: React.FC<{ language: Language }> = ({ language }) => {
             activeTabId={activeTerminalId}
             setTabs={setTerminalTabs}
             setActiveTabId={setActiveTerminalId}
-            selectedProvider={selectedProvider}
-            selectedModel={selectedModel}
-            onSelectModel={(p, m) => {
-                setSelectedProvider(p);
-                setSelectedModel(m);
-                void persistLastSelection(p, m);
-            }}
-            groupedModels={groupedModels ?? undefined}
-            quotas={quotas}
-            codexUsage={codexUsage}
-            settings={settings}
-            sendMessage={content => {
-                void handleSend(content);
-            }}
-            messages={messages}
-            isLoading={isLoading}
-            chatError={chatError}
         />
     );
 };
@@ -115,7 +98,7 @@ const SettingsSection: React.FC = () => {
         : models.filter(m => m.provider === 'ollama');
 
     return (
-        <SettingsView
+        <SettingsRouteView
             installedModels={installedModels}
             proxyModels={proxyModels}
             loadModels={(bypassCache) => void loadModels(bypassCache)}
@@ -125,27 +108,101 @@ const SettingsSection: React.FC = () => {
     );
 };
 
+const DockerSection: React.FC = () => {
+    const { handleOpenTerminal } = useWorkspaceTerminal();
+    const { language } = useAuth();
+
+    return (
+        <div className="h-full p-6 overflow-y-auto bg-tech-grid bg-tech-grid-sm">
+            <Suspense fallback={<LoadingState size="md" />}>
+                <DockerDashboardView onOpenTerminal={handleOpenTerminal} language={language} />
+            </Suspense>
+        </div>
+    );
+};
+
+const IdeasSection: React.FC<{
+    onNavigateToWorkspace?: (workspaceId: string) => void | Promise<void>
+}> = ({ onNavigateToWorkspace }) => {
+    const { language } = useAuth();
+
+    return (
+        <Suspense fallback={<LoadingState size="md" />}>
+            <IdeasPageView
+                language={language}
+                onNavigateToWorkspace={(id: string) => void onNavigateToWorkspace?.(id)}
+            />
+        </Suspense>
+    );
+};
+
+const ModelsSection: React.FC = () => {
+    const { language } = useAuth();
+
+    return (
+        <Suspense fallback={<LoadingState size="md" />}>
+            <ModelsPageView language={language} />
+        </Suspense>
+    );
+};
+
+const TerminalPlaceholderSection: React.FC = () => {
+    const { t } = useTranslation();
+
+    return (
+        <div className="h-full p-6 flex flex-col items-center justify-center bg-tech-grid opacity-50">
+            <div className="text-muted-foreground text-sm font-mono border border-border/50 p-4 rounded-xl">
+                {t('terminal.dashboardPlaceholder')}
+            </div>
+        </div>
+    );
+};
+
+const ModelMenuHotkeyHandler: React.FC = () => {
+    const { setIsModelMenuOpen } = useModel();
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.ctrlKey && e.key === 'm') {
+                setIsModelMenuOpen(prev => !prev);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [setIsModelMenuOpen]);
+
+    return null;
+};
+
+const ListeningOverlay: React.FC = () => {
+    const { stopListening, isListening } = useChatListening();
+    const { t } = useTranslation();
+
+    if (!isListening) {
+        return null;
+    }
+
+    return (
+        <div
+            onClick={() => stopListening()}
+            className="absolute top-4 right-4 z-[9999] cursor-pointer bg-destructive/70 text-destructive-foreground px-3 py-1.5 rounded-full backdrop-blur-md animate-pulse flex items-center gap-2"
+        >
+            <div className="w-2 h-2 rounded-full bg-current animate-ping" />
+            <span className="text-xs font-bold uppercase tracking-wider text-xxs">
+                {t('audioChat.listeningLabel')}
+            </span>
+        </div>
+    );
+};
+
 export const ViewManager: React.FC<ViewManagerProps> = (props) => {
     const { currentView, onNavigateToWorkspace } = props;
-    const { language } = useAuth();
-    const { t } = useTranslation(language);
-    const { stopListening, isListening } = useChat();
-    const { setIsModelMenuOpen } = useModel();
-    const { handleOpenTerminal } = useWorkspace();
     const prefersReducedMotion = usePrefersReducedMotion();
 
     const pagePreset = useMemo(
         () => resolveAnimationPreset('page', prefersReducedMotion),
         [prefersReducedMotion]
     );
-
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.ctrlKey && e.key === 'm') { setIsModelMenuOpen(prev => !prev); }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [setIsModelMenuOpen]);
 
     useEffect(() => {
         trackAnimationEvent({
@@ -156,59 +213,64 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
         });
     }, [currentView, prefersReducedMotion]);
 
+    useEffect(() => {
+        const preloadTargets = getDefaultPreloadViews(currentView);
+        const preload = () => {
+            for (const view of preloadTargets) {
+                void preloadViewResources(view);
+            }
+        };
+
+        if (typeof window.requestIdleCallback === 'function') {
+            const idleId = window.requestIdleCallback(preload, { timeout: 1200 });
+            return () => {
+                window.cancelIdleCallback(idleId);
+            };
+        }
+
+        const timeoutId = window.setTimeout(preload, 180);
+        return () => {
+            window.clearTimeout(timeoutId);
+        };
+    }, [currentView]);
+
     const renderView = () => {
         switch (currentView) {
             case 'chat': return <ChatSection {...props} />;
-            case 'workspace': return <WorkspaceSection language={language} />;
+            case 'workspace': return <WorkspaceSection />;
             case 'settings': return <SettingsSection />;
-            case 'mcp': return (
-                <div className="h-full p-6 overflow-y-auto bg-tech-grid bg-tech-grid-sm">
-                    <Suspense fallback={<LoadingState size="md" />}><DockerDashboard onOpenTerminal={handleOpenTerminal} language={language} /></Suspense>
-                </div>
-            );
-            case 'memory': return <Suspense fallback={<LoadingState size="md" />}><MemoryInspector /></Suspense>;
-            case 'ideas': return <Suspense fallback={<LoadingState size="md" />}><IdeasPage language={language} onNavigateToWorkspace={(id: string) => void onNavigateToWorkspace?.(id)} /></Suspense>;
-            case 'automation-workflow': return <Suspense fallback={<LoadingState size="md" />}><AutomationWorkflowView /></Suspense>;
-            case 'models': return <Suspense fallback={<LoadingState size="md" />}><ModelsPage language={language} /></Suspense>;
-            case 'docker': return (
-                <div className="h-full p-6 overflow-y-auto bg-tech-grid bg-tech-grid-sm">
-                    <Suspense fallback={<LoadingState size="md" />}><DockerDashboard onOpenTerminal={handleOpenTerminal} language={language} /></Suspense>
-                </div>
-            );
-            case 'terminal': return (
-                <div className="h-full p-6 flex flex-col items-center justify-center bg-tech-grid opacity-50">
-                    <div className="text-muted-foreground text-sm font-mono border border-border/50 p-4 rounded-xl">
-                        {t('terminal.dashboardPlaceholder')}
-                    </div>
-                </div>
-            );
+            case 'mcp': return <DockerSection />;
+            case 'memory': return <Suspense fallback={<LoadingState size="md" />}><MemoryInspectorView /></Suspense>;
+            case 'ideas': return <IdeasSection onNavigateToWorkspace={onNavigateToWorkspace} />;
+            case 'models': return <ModelsSection />;
+            case 'docker': return <DockerSection />;
+            case 'terminal': return <TerminalPlaceholderSection />;
             default: return null;
         }
     };
 
     return (
-        <AnimatePresence mode="wait">
-            <motion.div
-                key={currentView}
-                className={cn("h-full overflow-hidden", currentView === 'memory' && "h-[calc(100vh-64px)]")}
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: pagePreset.duration, ease: pagePreset.ease }}
-            >
-                <ErrorBoundary resetKeys={[currentView]}>
-                    <Suspense fallback={renderViewSkeleton(currentView)}>
-                        {renderView()}
-                    </Suspense>
-                </ErrorBoundary>
-            </motion.div>
-            {isListening && (
-                <div onClick={() => stopListening()} className="absolute top-4 right-4 z-[9999] cursor-pointer bg-destructive/70 text-destructive-foreground px-3 py-1.5 rounded-full backdrop-blur-md animate-pulse flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-current animate-ping" />
-                    <span className="text-xs font-bold uppercase tracking-wider text-xxs">{t('audioChat.listeningLabel')}</span>
-                </div>
-            )}
-        </AnimatePresence>
+        <>
+            <ModelMenuHotkeyHandler />
+            <AnimatePresence initial={false}>
+                <motion.div
+                    key={currentView}
+                    className={cn("h-full overflow-hidden", currentView === 'memory' && "h-[calc(100vh-64px)]")}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: pagePreset.duration, ease: pagePreset.ease }}
+                    style={{ willChange: 'opacity' }}
+                >
+                    <ErrorBoundary resetKeys={[currentView]}>
+                        <Suspense fallback={renderViewSkeleton(currentView)}>
+                            {renderView()}
+                        </Suspense>
+                    </ErrorBoundary>
+                </motion.div>
+            </AnimatePresence>
+            <ListeningOverlay />
+        </>
     );
 };
 

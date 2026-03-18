@@ -10,7 +10,17 @@ const sectionData = {
     "apply": "Temayı Uygula",
     "active": "Aktif",
     "pro": "PRO",
+    "by": "by",
+    "authorTengraTeam": "Tengra Team",
     "themes": {
+        "black": {
+            "name": "Tengra Black",
+            "description": "The default pure black theme"
+        },
+        "white": {
+            "name": "Tengra White",
+            "description": "Clean and minimal white theme"
+        },
         "dark-default": {
             "name": "Koyu Varsayılan",
             "description": "Mor vurgulara sahip varsayılan koyu tema"

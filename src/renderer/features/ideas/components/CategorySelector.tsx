@@ -24,6 +24,7 @@ interface CategoryButtonProps {
     onClick: () => void
     incompatibleWithLabel: string | null
     isAtLimit: boolean
+    t: (key: string, params?: Record<string, string | number>) => string
 }
 
 const CategoryButton: React.FC<CategoryButtonProps> = ({
@@ -35,14 +36,15 @@ const CategoryButton: React.FC<CategoryButtonProps> = ({
     color,
     onClick,
     incompatibleWithLabel,
-    isAtLimit
+    isAtLimit,
+    t
 }) => (
     <div className="group relative">
         <button
             type="button"
             onClick={onClick}
             disabled={isDisabled}
-            title={incompatibleWithLabel ? `Incompatible with ${incompatibleWithLabel}` : undefined}
+            title={incompatibleWithLabel ? t('ideas.categorySelector.incompatibleWith', { category: incompatibleWithLabel }) : undefined}
             className={cn(
                 'flex items-center gap-2 px-3 py-2 rounded-lg transition-all',
                 'border text-sm font-medium',
@@ -58,25 +60,16 @@ const CategoryButton: React.FC<CategoryButtonProps> = ({
 
         {incompatibleWithLabel && !isSelected && (
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-background text-xxs text-foreground rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity z-10">
-                Incompatible with {incompatibleWithLabel}
+                {t('ideas.categorySelector.incompatibleWith', { category: incompatibleWithLabel })}
             </div>
         )}
         {isAtLimit && !incompatibleWithLabel && (
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-background text-xxs text-foreground rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity z-10">
-                Max 3 categories
+                {t('ideas.categorySelector.maxCategories')}
             </div>
         )}
     </div>
 );
-
-const CATEGORY_LABELS: Record<IdeaCategory, string> = {
-    'website': 'ideas.categories.website',
-    'mobile-app': 'ideas.categories.mobileApp',
-    'game': 'ideas.categories.game',
-    'cli-tool': 'ideas.categories.cliTool',
-    'desktop': 'ideas.categories.desktop',
-    'other': 'ideas.categories.other'
-};
 
 export const CategorySelector: React.FC<CategorySelectorProps> = ({
     selected,
@@ -92,11 +85,11 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
 
             const incompatibleWith = selected.find(s => rules.includes(s));
             if (incompatibleWith) {
-                return getCategoryMeta(incompatibleWith).label;
+                return t(getCategoryMeta(incompatibleWith).labelKey);
             }
             return null;
         };
-    }, [selected]);
+    }, [selected, t]);
 
     const toggleCategory = (category: IdeaCategory) => {
         if (disabled) { return; }
@@ -121,7 +114,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
                         <CategoryButton
                             key={category}
                             category={category}
-                            label={t(CATEGORY_LABELS[category]) || category}
+                            label={t(meta.labelKey)}
                             icon={meta.icon}
                             isSelected={isSelected}
                             isDisabled={disabled || (!!incompatibleWithLabel && !isSelected) || isAtLimit}
@@ -130,6 +123,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
                             onClick={() => toggleCategory(category)}
                             incompatibleWithLabel={incompatibleWithLabel}
                             isAtLimit={isAtLimit}
+                            t={t}
                         />
                     );
                 })}
@@ -137,7 +131,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
 
             {selected.length > 0 && (
                 <p className="text-xxs text-muted-foreground/40 italic">
-                    {selected.length}/3 categories selected
+                    {t('ideas.categorySelector.selectedCount', { count: selected.length })}
                 </p>
             )}
         </div>

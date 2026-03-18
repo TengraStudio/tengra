@@ -2,14 +2,12 @@ import { IpcRenderer } from 'electron';
 
 export interface ProxyEmbedBridge {
     start: (options?: {
-        configPath?: string;
         port?: number;
     }) => Promise<{ success: boolean; port?: number; error?: string }>;
     stop: () => Promise<{ success: boolean; error?: string }>;
     getStatus: () => Promise<{
         isRunning: boolean;
         port?: number;
-        configPath?: string;
         uptime?: number;
         totalRequests?: number;
         activeConnections?: number;

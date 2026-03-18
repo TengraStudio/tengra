@@ -24,7 +24,7 @@ function createMockWindow(): BrowserWindow {
         webContents: { send: vi.fn(), on: vi.fn() },
         on: vi.fn(),
         isDestroyed: vi.fn(() => false),
-    } as unknown as BrowserWindow;
+    } as never as BrowserWindow;
 }
 
 /** Helper to build a valid VoiceCommand for tests */

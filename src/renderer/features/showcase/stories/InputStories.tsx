@@ -7,10 +7,12 @@ import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useTranslation } from '@/i18n';
 
 import type { ComponentStory } from '../types';
 
-const InputWrapper: React.FC<Record<string, unknown>> = (props) => {
+const InputWrapper: React.FC<Record<string, RendererDataValue>> = (props) => {
+  const { t } = useTranslation();
   const { variant, size, placeholder, disabled, type, withLabel, labelText } = props as {
     variant?: 'default' | 'error' | 'success'
     size?: 'sm' | 'default' | 'lg'
@@ -24,17 +26,17 @@ const InputWrapper: React.FC<Record<string, unknown>> = (props) => {
   if (withLabel) {
     return (
       <div className="space-y-2 w-64">
-        <Label htmlFor="showcase-input">{labelText ?? 'Label'}</Label>
+        <Label htmlFor="showcase-input">{labelText ? t(labelText) : t('showcase.input.fallback.label')}</Label>
         <Input
           id="showcase-input"
           variant={variant}
           size={size}
-          placeholder={placeholder}
+          placeholder={placeholder ? t(placeholder) : undefined}
           disabled={disabled}
           type={type}
         />
         {variant === 'error' && (
-          <p className="text-xs text-destructive">This field is required</p>
+          <p className="text-xs text-destructive">{t('showcase.input.validation.required')}</p>
         )}
       </div>
     );
@@ -45,14 +47,15 @@ const InputWrapper: React.FC<Record<string, unknown>> = (props) => {
       className="w-64"
       variant={variant}
       size={size}
-      placeholder={placeholder}
+      placeholder={placeholder ? t(placeholder) : undefined}
       disabled={disabled}
       type={type}
     />
   );
 };
 
-const TextareaWrapper: React.FC<Record<string, unknown>> = (props) => {
+const TextareaWrapper: React.FC<Record<string, RendererDataValue>> = (props) => {
+  const { t } = useTranslation();
   const { placeholder, disabled, rows } = props as {
     placeholder?: string
     disabled?: boolean
@@ -61,7 +64,7 @@ const TextareaWrapper: React.FC<Record<string, unknown>> = (props) => {
   return (
     <Textarea
       className="w-72"
-      placeholder={placeholder}
+      placeholder={placeholder ? t(placeholder) : undefined}
       disabled={disabled}
       rows={rows}
     />
@@ -69,33 +72,33 @@ const TextareaWrapper: React.FC<Record<string, unknown>> = (props) => {
 };
 
 export const inputStory: ComponentStory = {
-  name: 'Input',
-  category: 'Forms',
-  component: InputWrapper as React.ComponentType<Record<string, unknown>>,
+  name: 'showcase.story.input',
+  category: 'showcase.categories.forms',
+  component: InputWrapper as React.ComponentType<Record<string, RendererDataValue>>,
   variants: [
-    { name: 'Default', props: { placeholder: 'Enter text...' } },
-    { name: 'Small', props: { size: 'sm', placeholder: 'Small input' } },
-    { name: 'Large', props: { size: 'lg', placeholder: 'Large input' } },
-    { name: 'Error', props: { variant: 'error', placeholder: 'Invalid value' } },
-    { name: 'Success', props: { variant: 'success', placeholder: 'Valid' } },
-    { name: 'Disabled', props: { disabled: true, placeholder: 'Disabled' } },
-    { name: 'Password', props: { type: 'password', placeholder: 'Password' } },
-    { name: 'With Label', props: { withLabel: true, labelText: 'Email', placeholder: 'user@example.com' } },
+    { name: 'showcase.variants.default', props: { placeholder: 'showcase.input.placeholders.enterText' } },
+    { name: 'showcase.variants.small', props: { size: 'sm', placeholder: 'showcase.input.placeholders.smallInput' } },
+    { name: 'showcase.variants.large', props: { size: 'lg', placeholder: 'showcase.input.placeholders.largeInput' } },
+    { name: 'showcase.variants.error', props: { variant: 'error', placeholder: 'showcase.input.placeholders.invalidValue' } },
+    { name: 'showcase.variants.success', props: { variant: 'success', placeholder: 'showcase.input.placeholders.valid' } },
+    { name: 'showcase.variants.disabled', props: { disabled: true, placeholder: 'showcase.input.placeholders.disabled' } },
+    { name: 'showcase.variants.password', props: { type: 'password', placeholder: 'showcase.input.placeholders.password' } },
+    { name: 'showcase.variants.withLabel', props: { withLabel: true, labelText: 'showcase.input.labels.email', placeholder: 'showcase.input.placeholders.email' } },
     {
-      name: 'With Error Label',
-      props: { withLabel: true, labelText: 'Username', variant: 'error', placeholder: 'Required' },
-      description: 'Shows validation error below input',
+      name: 'showcase.variants.withErrorLabel',
+      props: { withLabel: true, labelText: 'showcase.input.labels.username', variant: 'error', placeholder: 'showcase.input.placeholders.required' },
+      description: 'showcase.input.descriptions.errorLabel',
     },
   ],
 };
 
 export const textareaStory: ComponentStory = {
-  name: 'Textarea',
-  category: 'Forms',
-  component: TextareaWrapper as React.ComponentType<Record<string, unknown>>,
+  name: 'showcase.story.textarea',
+  category: 'showcase.categories.forms',
+  component: TextareaWrapper as React.ComponentType<Record<string, RendererDataValue>>,
   variants: [
-    { name: 'Default', props: { placeholder: 'Write something...' } },
-    { name: 'Custom Rows', props: { placeholder: 'Tall textarea', rows: 6 } },
-    { name: 'Disabled', props: { placeholder: 'Cannot edit', disabled: true } },
+    { name: 'showcase.variants.default', props: { placeholder: 'showcase.textarea.placeholders.writeSomething' } },
+    { name: 'showcase.variants.customRows', props: { placeholder: 'showcase.textarea.placeholders.tallTextarea', rows: 6 } },
+    { name: 'showcase.variants.disabled', props: { placeholder: 'showcase.textarea.placeholders.cannotEdit', disabled: true } },
   ],
 };

@@ -22,7 +22,11 @@ const sectionData = {
     "hide": "Modeli gizle",
     "show": "Modeli göster",
     "showHidden": "Gizlileri Göster",
-    "hideHidden": "Gizlileri Gizle"
+    "hideHidden": "Gizlileri Gizle",
+    "defaultModelSwitchedTitle": "Varsayılan model değiştirildi",
+    "defaultModelSwitchedMessage": "Önceki varsayılan model kullanılamıyor. {{model}} modeline geçildi.",
+    "modelValidationSucceeded": "Model file validation succeeded",
+    "modelValidationFailed": "Model validation failed"
 };
 
 export default sectionData;

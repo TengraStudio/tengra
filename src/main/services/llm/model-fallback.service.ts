@@ -69,7 +69,7 @@ export type ChatHandler = (
     model: string,
     messages: Message[],
     tools?: ToolDefinition[],
-    options?: Record<string, unknown>
+    options?: Record<string, RuntimeValue>
 ) => Promise<Message | null>;
 
 export class ModelFallbackService {
@@ -144,7 +144,7 @@ export class ModelFallbackService {
         messages: Message[],
         chatHandler: ChatHandler,
         tools?: ToolDefinition[],
-        options?: Record<string, unknown>
+        options?: Record<string, RuntimeValue>
     ): Promise<FallbackResult<Message>> {
         const attempts: FallbackAttempt[] = [];
         const enabledModels = this.config.models.filter(m => m.enabled);

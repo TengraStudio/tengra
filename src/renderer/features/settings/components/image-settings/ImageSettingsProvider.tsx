@@ -22,7 +22,7 @@ export const ImageSettingsProvider: React.FC<ImageSettingsProviderProps> = ({
                 {t('settings.images.provider')}
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {['antigravity', 'pollinations', 'sd-cpp'].map((p) => (
+                {['antigravity', 'sd-cpp'].map((p) => (
                     <button
                         key={p}
                         onClick={() => handleProviderChange(p)}
@@ -41,9 +41,6 @@ export const ImageSettingsProvider: React.FC<ImageSettingsProviderProps> = ({
                                 {p === 'sd-cpp' ? <span className="font-bold text-xs italic">SD</span> : <Image className="w-5 h-5" />}
                             </div>
                             <div className="min-w-0">
-                                <p className={cn("text-sm font-semibold transition-colors duration-200 truncate", currentProvider === p ? "text-foreground" : "text-muted-foreground group-hover:text-foreground")}>
-                                    {p === 'sd-cpp' ? 'Stable Diffusion (Local)' : p.charAt(0).toUpperCase() + p.slice(1)}
-                                </p>
                                 <p className="text-[10px] text-muted-foreground/60 leading-none mt-1.5 uppercase tracking-wider font-bold">
                                     {p === 'sd-cpp' ? t('settings.images.localRuntime') : t('settings.images.remoteCloud')}
                                 </p>

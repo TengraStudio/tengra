@@ -15,7 +15,7 @@ const MAX_ACTION_NAME_LENGTH = 128;
 /**
  * Validates a service name
  */
-function validateServiceName(value: unknown): string | null {
+function validateServiceName(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -29,7 +29,7 @@ function validateServiceName(value: unknown): string | null {
 /**
  * Validates an action name
  */
-function validateActionName(value: unknown): string | null {
+function validateActionName(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -43,7 +43,7 @@ function validateActionName(value: unknown): string | null {
 /**
  * Validates args object
  */
-function validateArgs(value: unknown): JsonObject {
+function validateArgs(value: RuntimeValue): JsonObject {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
         return {};
     }
@@ -56,14 +56,14 @@ function validateArgs(value: unknown): JsonObject {
 export function registerMcpIpc(mcpDispatcher: McpDispatcher, getMainWindow: () => BrowserWindow | null) {
     appLogger.info('McpIPC', 'Registering MCP IPC handlers');
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'mcp operation');
-    const createIpcHandler = <T = unknown, Args extends unknown[] = unknown[]>(
+    const createIpcHandler = <T = RuntimeValue, Args extends RuntimeValue[] = RuntimeValue[]>(
         channel: string,
         handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>
     ) => baseCreateIpcHandler<T, Args>(channel, async (event, ...args) => {
         validateSender(event);
         return await handler(event, ...args);
     });
-    const createSafeIpcHandler = <T = unknown, Args extends unknown[] = unknown[]>(
+    const createSafeIpcHandler = <T = RuntimeValue, Args extends RuntimeValue[] = RuntimeValue[]>(
         channel: string,
         handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>,
         defaultValue: T
@@ -79,7 +79,7 @@ export function registerMcpIpc(mcpDispatcher: McpDispatcher, getMainWindow: () =
     ));
 
     ipcMain.handle('mcp:dispatch', createIpcHandler('mcp:dispatch',
-        async (event: IpcMainInvokeEvent, serviceRaw: unknown, actionRaw: unknown, argsRaw: unknown) => {
+        async (event: IpcMainInvokeEvent, serviceRaw: RuntimeValue, actionRaw: RuntimeValue, argsRaw: RuntimeValue) => {
             const service = validateServiceName(serviceRaw);
             const action = validateActionName(actionRaw);
             if (!service || !action) {
@@ -95,7 +95,7 @@ export function registerMcpIpc(mcpDispatcher: McpDispatcher, getMainWindow: () =
     ));
 
     ipcMain.handle('mcp:toggle', createIpcHandler('mcp:toggle',
-        async (_event: IpcMainInvokeEvent, serviceRaw: unknown, enabledRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, serviceRaw: RuntimeValue, enabledRaw: RuntimeValue) => {
             const service = validateServiceName(serviceRaw);
             if (!service) {
                 throw new Error('Invalid service name');
@@ -115,7 +115,7 @@ export function registerMcpIpc(mcpDispatcher: McpDispatcher, getMainWindow: () =
     ));
 
     ipcMain.handle('mcp:uninstall', createIpcHandler('mcp:uninstall',
-        async (_event: IpcMainInvokeEvent, nameRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, nameRaw: RuntimeValue) => {
             const name = validateServiceName(nameRaw);
             if (!name) {
                 throw new Error('Invalid service name');
@@ -137,7 +137,7 @@ export function registerMcpIpc(mcpDispatcher: McpDispatcher, getMainWindow: () =
     ));
 
     ipcMain.handle('mcp:permissions:set', createIpcHandler('mcp:permissions:set',
-        async (_event: IpcMainInvokeEvent, serviceRaw: unknown, actionRaw: unknown, policyRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, serviceRaw: RuntimeValue, actionRaw: RuntimeValue, policyRaw: RuntimeValue) => {
             const service = validateServiceName(serviceRaw);
             const action = validateActionName(actionRaw);
             if (!service || !action) {
@@ -153,7 +153,7 @@ export function registerMcpIpc(mcpDispatcher: McpDispatcher, getMainWindow: () =
     ));
 
     ipcMain.handle('mcp:permissions:resolve-request', createIpcHandler('mcp:permissions:resolve-request',
-        async (_event: IpcMainInvokeEvent, requestIdRaw: unknown, decisionRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, requestIdRaw: RuntimeValue, decisionRaw: RuntimeValue) => {
             if (typeof requestIdRaw !== 'string' || requestIdRaw.trim().length === 0) {
                 throw new Error('Invalid request id');
             }

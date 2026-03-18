@@ -226,7 +226,7 @@ export function MCPServersTab() {
         }
         try {
             const settings = await window.electron.getSettings();
-            const nextServers = (settings.mcpUserServers ?? []).filter(server =>
+            const nextServers = (settings.mcpUserServers ?? []).filter((server: MCPServer) =>
                 server.id !== serverId && server.name !== serverId
             );
             await window.electron.saveSettings({
@@ -260,7 +260,7 @@ export function MCPServersTab() {
 
         try {
             const settings = await window.electron.getSettings();
-            const nextServers = (settings.mcpUserServers ?? []).map(server =>
+            const nextServers = (settings.mcpUserServers ?? []).map((server: MCPServer) =>
                 server.id === editingServer.id || server.name === editingServer.name
                     ? {
                         ...server,

@@ -66,7 +66,7 @@ describe('UsageTrackingService', () => {
         vi.mocked(fsPromises.access).mockRejectedValue(new Error('ENOENT'));
 
         // Cast needed because UsageTrackingService expects full DatabaseService
-        service = new UsageTrackingService(mockDb as unknown as ConstructorParameters<typeof UsageTrackingService>[0]);
+        service = new UsageTrackingService(mockDb as never as ConstructorParameters<typeof UsageTrackingService>[0]);
 
         // Wait for constructor's async initialize to complete
         await vi.runAllTimersAsync();
@@ -111,7 +111,7 @@ describe('UsageTrackingService', () => {
             vi.mocked(fsPromises.rename).mockResolvedValue(undefined);
 
             const freshDb = createMockDatabaseService();
-            new UsageTrackingService(freshDb as unknown as ConstructorParameters<typeof UsageTrackingService>[0]);
+            new UsageTrackingService(freshDb as never as ConstructorParameters<typeof UsageTrackingService>[0]);
             await vi.runAllTimersAsync();
 
             expect(freshDb.addUsageRecord).toHaveBeenCalledTimes(2);
@@ -134,7 +134,7 @@ describe('UsageTrackingService', () => {
             vi.mocked(fsPromises.rename).mockResolvedValue(undefined);
 
             const freshDb = createMockDatabaseService();
-            new UsageTrackingService(freshDb as unknown as ConstructorParameters<typeof UsageTrackingService>[0]);
+            new UsageTrackingService(freshDb as never as ConstructorParameters<typeof UsageTrackingService>[0]);
             await vi.runAllTimersAsync();
 
             expect(vi.mocked(fsPromises.rename)).toHaveBeenCalledTimes(1);
@@ -149,7 +149,7 @@ describe('UsageTrackingService', () => {
             vi.mocked(fsPromises.rename).mockResolvedValue(undefined);
 
             const freshDb = createMockDatabaseService();
-            new UsageTrackingService(freshDb as unknown as ConstructorParameters<typeof UsageTrackingService>[0]);
+            new UsageTrackingService(freshDb as never as ConstructorParameters<typeof UsageTrackingService>[0]);
             await vi.runAllTimersAsync();
 
             expect(freshDb.addUsageRecord).not.toHaveBeenCalled();
@@ -162,7 +162,7 @@ describe('UsageTrackingService', () => {
             vi.mocked(fsPromises.rename).mockResolvedValue(undefined);
 
             const freshDb = createMockDatabaseService();
-            new UsageTrackingService(freshDb as unknown as ConstructorParameters<typeof UsageTrackingService>[0]);
+            new UsageTrackingService(freshDb as never as ConstructorParameters<typeof UsageTrackingService>[0]);
             await vi.runAllTimersAsync();
 
             // safeJsonParse returns default => empty weekly => no records added
@@ -175,7 +175,7 @@ describe('UsageTrackingService', () => {
             vi.mocked(fsPromises.readFile).mockRejectedValue(new Error('Permission denied'));
 
             const freshDb = createMockDatabaseService();
-            new UsageTrackingService(freshDb as unknown as ConstructorParameters<typeof UsageTrackingService>[0]);
+            new UsageTrackingService(freshDb as never as ConstructorParameters<typeof UsageTrackingService>[0]);
             await vi.runAllTimersAsync();
 
             // Should not throw; error is caught internally
@@ -189,7 +189,7 @@ describe('UsageTrackingService', () => {
             vi.mocked(fsPromises.rename).mockResolvedValue(undefined);
 
             const freshDb = createMockDatabaseService();
-            new UsageTrackingService(freshDb as unknown as ConstructorParameters<typeof UsageTrackingService>[0]);
+            new UsageTrackingService(freshDb as never as ConstructorParameters<typeof UsageTrackingService>[0]);
             await vi.runAllTimersAsync();
 
             expect(freshDb.addUsageRecord).not.toHaveBeenCalled();
@@ -508,7 +508,7 @@ describe('UsageTrackingService', () => {
             failingDb.cleanupUsageRecords.mockRejectedValue(new Error('DB error'));
 
             // Should not throw
-            new UsageTrackingService(failingDb as unknown as ConstructorParameters<typeof UsageTrackingService>[0]);
+            new UsageTrackingService(failingDb as never as ConstructorParameters<typeof UsageTrackingService>[0]);
             await vi.runAllTimersAsync();
 
             expect(failingDb.cleanupUsageRecords).toHaveBeenCalled();
@@ -525,7 +525,7 @@ describe('UsageTrackingService', () => {
             failingDb.addUsageRecord.mockRejectedValue(new Error('DB insert failed'));
 
             // Should not throw
-            new UsageTrackingService(failingDb as unknown as ConstructorParameters<typeof UsageTrackingService>[0]);
+            new UsageTrackingService(failingDb as never as ConstructorParameters<typeof UsageTrackingService>[0]);
             await vi.runAllTimersAsync();
 
             expect(failingDb.addUsageRecord).toHaveBeenCalled();

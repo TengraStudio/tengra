@@ -1,5 +1,6 @@
 import { BaseService } from '@main/services/base.service';
 import { RuntimeManifestSchema } from '@shared/schemas/runtime-manifest.schema';
+import { JsonObject } from '@shared/types/common';
 import {
     RuntimeArch,
     RuntimeManifest,
@@ -14,7 +15,7 @@ export class RuntimeManifestService extends BaseService {
         super('RuntimeManifestService');
     }
 
-    parseManifest(rawManifest: unknown): RuntimeManifest {
+    parseManifest(rawManifest: JsonObject | RuntimeManifest): RuntimeManifest {
         return RuntimeManifestSchema.parse(rawManifest);
     }
 

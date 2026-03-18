@@ -1,9 +1,9 @@
-import { ChildProcess, execSync, spawn } from 'child_process';
-import * as fs from 'fs';
+import { ChildProcess, spawn } from 'child_process';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 
+import { findExecutableInPath, findFirstExistingPath } from './backend-discovery.util';
 import { ITerminalBackend, ITerminalProcess, TerminalCreateOptions } from './terminal-backend.interface';
 
 /**
@@ -87,21 +87,15 @@ export class KittyBackend implements ITerminalBackend {
     }
 
     private async discoverKittyPath(): Promise<string | null> {
-        const isWin = process.platform === 'win32';
-        const cmd = isWin ? 'where kitty' : 'which kitty';
-
-        try {
-            const result = execSync(cmd, { encoding: 'utf8' }).trim();
-            if (result) {
-                const first = result.split('\n')[0].trim();
-                appLogger.info('KittyBackend', `Found Kitty at: ${first}`);
-                return first;
-            }
-        } catch {
-            appLogger.debug('KittyBackend', 'Kitty not found in PATH');
+        const discoveredPath = await findExecutableInPath('kitty');
+        if (discoveredPath) {
+            appLogger.info('KittyBackend', `Found Kitty at: ${discoveredPath}`);
+            return discoveredPath;
         }
 
-        const commonPaths = isWin
+        appLogger.debug('KittyBackend', 'Kitty not found in PATH');
+
+        const commonPaths = process.platform === 'win32'
             ? [
                 'C:\\Program Files\\kitty\\kitty.exe',
                 'C:\\Program Files\\Kitty\\kitty.exe',
@@ -115,16 +109,10 @@ export class KittyBackend implements ITerminalBackend {
                 '/opt/kitty/bin/kitty'
             ];
 
-        for (const candidate of commonPaths) {
-            try {
-                // Sync I/O acceptable: one-time shell detection at backend init
-                if (fs.existsSync(candidate)) {
-                    appLogger.info('KittyBackend', `Found Kitty at common location: ${candidate}`);
-                    return candidate;
-                }
-            } catch {
-                // Ignore failed path checks.
-            }
+        const commonPath = await findFirstExistingPath(commonPaths);
+        if (commonPath) {
+            appLogger.info('KittyBackend', `Found Kitty at common location: ${commonPath}`);
+            return commonPath;
         }
 
         return null;

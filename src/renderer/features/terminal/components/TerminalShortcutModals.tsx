@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import type { TerminalShortcutPresetId } from '../utils/shortcut-config';
 
 interface TerminalShortcutModalsProps {
+    t: (key: string, options?: Record<string, string | number>) => string;
     inputRef: Ref<HTMLInputElement>;
     onImport: ChangeEventHandler<HTMLInputElement>;
     shortcutPreset: TerminalShortcutPresetId;
@@ -16,6 +17,7 @@ interface TerminalShortcutModalsProps {
 }
 
 export function TerminalShortcutModals({
+    t,
     inputRef,
     onImport,
     shortcutPreset,
@@ -36,7 +38,7 @@ export function TerminalShortcutModals({
             />
             <div className="pt-1 border-t border-border/50 space-y-1">
                 <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                    Shortcut Preset
+                    {t('terminal.shortcutPresetLabel')}
                 </div>
                 <div className="grid grid-cols-3 gap-1">
                     {(['default', 'vim', 'emacs'] as TerminalShortcutPresetId[]).map(presetId => (
@@ -61,13 +63,13 @@ export function TerminalShortcutModals({
                         onClick={exportShortcutPreferences}
                         className="px-2 py-1 rounded border border-border text-[11px] hover:bg-accent/50 transition-colors"
                     >
-                        Export
+                        {t('terminal.exportShortcut')}
                     </button>
                     <button
                         onClick={openImportDialog}
                         className="px-2 py-1 rounded border border-border text-[11px] hover:bg-accent/50 transition-colors"
                     >
-                        Import
+                        {t('terminal.importShortcut')}
                     </button>
                     <button
                         onClick={() => {
@@ -75,13 +77,13 @@ export function TerminalShortcutModals({
                         }}
                         className="px-2 py-1 rounded border border-border text-[11px] hover:bg-accent/50 transition-colors"
                     >
-                        Share
+                        {t('terminal.shareShortcut')}
                     </button>
                     <button
                         onClick={importShortcutShareCode}
                         className="px-2 py-1 rounded border border-border text-[11px] hover:bg-accent/50 transition-colors"
                     >
-                        Apply Code
+                        {t('terminal.applyShortcutCode')}
                     </button>
                 </div>
             </div>

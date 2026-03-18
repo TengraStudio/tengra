@@ -1,11 +1,16 @@
 import { appLogger } from '@main/logging/logger';
 import { z } from 'zod';
 
+const IPC_VALIDATION_HOST_REQUIRED = 'errors.ipcValidation.hostRequired';
+const IPC_VALIDATION_USERNAME_REQUIRED = 'errors.ipcValidation.usernameRequired';
+const IPC_VALIDATION_TOKEN_REQUIRED = 'errors.ipcValidation.tokenRequired';
+const IPC_VALIDATION_INVALID_URL_PROTOCOL = 'errors.ipcValidation.invalidUrlOrProtocol';
+
 /**
  * Validates data against a Zod schema.
  * Throws a focused error if validation fails.
  */
-export function validateIpc<T>(schema: z.ZodType<T>, data: unknown, context: string): T {
+export function validateIpc<T>(schema: z.ZodType<T>, data: RuntimeValue, context: string): T {
     const result = schema.safeParse(data);
 
     if (!result.success) {
@@ -22,9 +27,9 @@ export function validateIpc<T>(schema: z.ZodType<T>, data: unknown, context: str
 export const sshConnectionSchema = z.object({
     id: z.string().optional(),
     name: z.string().optional(),
-    host: z.string().min(1, "Host is required"),
+    host: z.string().min(1, IPC_VALIDATION_HOST_REQUIRED),
     port: z.number().int().min(1).max(65535).optional().default(22),
-    username: z.string().min(1, "Username is required"),
+    username: z.string().min(1, IPC_VALIDATION_USERNAME_REQUIRED),
     authType: z.enum(['password', 'key']).optional(),
     password: z.string().optional(),
     privateKey: z.string().optional(),
@@ -78,7 +83,7 @@ export const authTokenDataSchema = z.object({
     metadata: z.record(z.string(), z.unknown()).optional()
 }).refine(
     data => Boolean(data.accessToken || data.refreshToken || data.sessionToken),
-    { message: 'At least one token field must be present.' }
+    { message: IPC_VALIDATION_TOKEN_REQUIRED }
 );
 
 export const sessionIdSchema = z.string().uuid();
@@ -118,7 +123,7 @@ export const urlSchema = z.string().min(1).max(2048).refine(
             return url.startsWith('safe-file://');
         }
     },
-    { message: 'Invalid URL or unsupported protocol' }
+    { message: IPC_VALIDATION_INVALID_URL_PROTOCOL }
 );
 
 export const commandSchema = z.string().min(1).max(1024);

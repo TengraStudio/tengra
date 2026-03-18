@@ -9,11 +9,11 @@ vi.mock('electron', () => ({
 }));
 
 describe('MCP IPC Handlers', () => {
-    let registeredHandlers: Map<string, unknown>;
+    let registeredHandlers: Map<string, TestValue>;
 
     beforeEach(() => {
         registeredHandlers = new Map();
-        vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: unknown) => {
+        vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: TestValue) => {
             registeredHandlers.set(channel, handler);
         });
     });
@@ -24,7 +24,7 @@ describe('MCP IPC Handlers', () => {
         it('should list MCP services', async () => {
             const handler = async () => [{ name: 'filesystem', enabled: true }];
             registeredHandlers.set('mcp:list', handler);
-            const result = await (registeredHandlers.get('mcp:list') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('mcp:list') as () => Promise<TestValue>)();
             expect(Array.isArray(result)).toBe(true);
         });
     });
@@ -33,7 +33,7 @@ describe('MCP IPC Handlers', () => {
         it('should dispatch action', async () => {
             const handler = async () => ({ success: true, data: 'result' });
             registeredHandlers.set('mcp:dispatch', handler);
-            const result = await (registeredHandlers.get('mcp:dispatch') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('mcp:dispatch') as () => Promise<TestValue>)();
             expect(result).toHaveProperty('success');
         });
     });
@@ -42,7 +42,7 @@ describe('MCP IPC Handlers', () => {
         it('should toggle service', async () => {
             const handler = async () => ({ success: true });
             registeredHandlers.set('mcp:toggle', handler);
-            const result = await (registeredHandlers.get('mcp:toggle') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('mcp:toggle') as () => Promise<TestValue>)();
             expect(result).toEqual({ success: true });
         });
     });
@@ -51,7 +51,7 @@ describe('MCP IPC Handlers', () => {
         it('should install service', async () => {
             const handler = async () => ({ success: true });
             registeredHandlers.set('mcp:install', handler);
-            const result = await (registeredHandlers.get('mcp:install') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('mcp:install') as () => Promise<TestValue>)();
             expect(result).toEqual({ success: true });
         });
     });
@@ -60,7 +60,7 @@ describe('MCP IPC Handlers', () => {
         it('should uninstall service', async () => {
             const handler = async () => ({ success: true });
             registeredHandlers.set('mcp:uninstall', handler);
-            const result = await (registeredHandlers.get('mcp:uninstall') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('mcp:uninstall') as () => Promise<TestValue>)();
             expect(result).toEqual({ success: true });
         });
     });

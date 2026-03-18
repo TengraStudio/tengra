@@ -48,7 +48,7 @@ export const ExtensionInstallPrompt: React.FC<ExtensionInstallPromptProps> = ({
                         <X size={20} />
                     </button>
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-white/10 rounded-lg backdrop-blur">
+                        <div className="p-2 bg-foreground/10 rounded-lg backdrop-blur">
                             <Download size={24} className="text-foreground" />
                         </div>
                         <div>

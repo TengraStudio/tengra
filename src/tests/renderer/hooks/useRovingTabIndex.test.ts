@@ -3,6 +3,16 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { useRovingTabIndex } from '@/hooks/useRovingTabIndex';
 
+type KeyboardEventStub = Pick<React.KeyboardEvent<HTMLElement>, 'key' | 'preventDefault'>;
+
+function createKeyboardEvent(key: string): React.KeyboardEvent<HTMLElement> {
+    const event: KeyboardEventStub = {
+        key,
+        preventDefault: vi.fn(),
+    };
+    return event as React.KeyboardEvent<HTMLElement>;
+}
+
 describe('useRovingTabIndex', () => {
     it('initializes with focusedIndex 0', () => {
         const { result } = renderHook(() =>
@@ -50,7 +60,7 @@ describe('useRovingTabIndex', () => {
             useRovingTabIndex({ itemCount: 6, columns: 3 })
         );
 
-        const event = { key: 'ArrowRight', preventDefault: vi.fn() } as unknown as React.KeyboardEvent<HTMLElement>;
+        const event = createKeyboardEvent('ArrowRight');
         act(() => {
             result.current.getItemProps(0).onKeyDown(event);
         });
@@ -63,7 +73,7 @@ describe('useRovingTabIndex', () => {
             useRovingTabIndex({ itemCount: 6, columns: 3 })
         );
 
-        const event = { key: 'ArrowDown', preventDefault: vi.fn() } as unknown as React.KeyboardEvent<HTMLElement>;
+        const event = createKeyboardEvent('ArrowDown');
         act(() => {
             result.current.getItemProps(1).onKeyDown(event);
         });
@@ -76,7 +86,7 @@ describe('useRovingTabIndex', () => {
             useRovingTabIndex({ itemCount: 3, columns: 3 })
         );
 
-        const event = { key: 'ArrowDown', preventDefault: vi.fn() } as unknown as React.KeyboardEvent<HTMLElement>;
+        const event = createKeyboardEvent('ArrowDown');
         act(() => {
             result.current.getItemProps(0).onKeyDown(event);
         });
@@ -93,11 +103,11 @@ describe('useRovingTabIndex', () => {
         // Move to index 3 first
         act(() => { result.current.getItemProps(3).onFocus(); });
 
-        const homeEvent = { key: 'Home', preventDefault: vi.fn() } as unknown as React.KeyboardEvent<HTMLElement>;
+        const homeEvent = createKeyboardEvent('Home');
         act(() => { result.current.getItemProps(3).onKeyDown(homeEvent); });
         expect(result.current.focusedIndex).toBe(0);
 
-        const endEvent = { key: 'End', preventDefault: vi.fn() } as unknown as React.KeyboardEvent<HTMLElement>;
+        const endEvent = createKeyboardEvent('End');
         act(() => { result.current.getItemProps(0).onKeyDown(endEvent); });
         expect(result.current.focusedIndex).toBe(5);
     });
@@ -108,7 +118,7 @@ describe('useRovingTabIndex', () => {
             useRovingTabIndex({ itemCount: 6, columns: 3, onSelect })
         );
 
-        const enterEvent = { key: 'Enter', preventDefault: vi.fn() } as unknown as React.KeyboardEvent<HTMLElement>;
+        const enterEvent = createKeyboardEvent('Enter');
         act(() => { result.current.getItemProps(2).onKeyDown(enterEvent); });
 
         expect(onSelect).toHaveBeenCalledWith(2);

@@ -36,6 +36,7 @@ export class TokenService extends BaseService {
     };
 
     private intervals: NodeJS.Timeout[] = [];
+    private unsubscribers: Array<() => void> = [];
 
     constructor(
         _settingsService: SettingsService,
@@ -61,6 +62,9 @@ export class TokenService extends BaseService {
             appLogger.error('TokenService', `Failed to start token-service: ${getErrorMessage(error)}`);
         });
 
+        await this.registerExistingAccountsForMonitoring();
+        this.subscribeToAccountEvents();
+
         if (this.options.jobScheduler) {
             this.options.jobScheduler.registerRecurringJob(
                 'token-refresh-oauth',
@@ -74,6 +78,18 @@ export class TokenService extends BaseService {
                 'token-refresh-copilot',
                 async () => { void this.copilotService.ensureCopilotToken(); },
                 () => this.getCopilotRefreshInterval()
+            );
+
+            this.options.jobScheduler.registerRecurringJob(
+                'token-refresh-sync',
+                async () => {
+                    await this.syncTokensFromService();
+                },
+                () => 30000,
+                {
+                    persistState: false,
+                    runOnStart: false,
+                }
             );
         } else {
             // Legacy/test fallback
@@ -90,6 +106,10 @@ export class TokenService extends BaseService {
             clearInterval(interval);
         }
         this.intervals = [];
+        for (const unsubscribe of this.unsubscribers) {
+            unsubscribe();
+        }
+        this.unsubscribers = [];
     }
 
     async refreshSingleToken(account: LinkedAccount, force: boolean = false): Promise<void> {
@@ -227,7 +247,7 @@ export class TokenService extends BaseService {
     private async refreshNativeToken(account: LinkedAccount, _force: boolean): Promise<void> {
         const clientId = this.getClientId(account);
         const clientSecret = this.getClientSecret(account);
-        if (!clientId || !clientSecret) {
+        if (!clientId) {
             return;
         }
 
@@ -358,6 +378,141 @@ export class TokenService extends BaseService {
     }
 
     private async syncTokensFromService(): Promise<void> {
-        // Sync logic placeholder
+        interface SyncedTokenState {
+            token: {
+                id: string;
+                provider: string;
+                access_token?: string;
+                refresh_token?: string;
+                session_token?: string;
+                expires_at?: number;
+            };
+        }
+
+        let monitoredTokens: Record<string, SyncedTokenState>;
+        try {
+            monitoredTokens = await this.options.processManager.sendGetRequest<Record<string, SyncedTokenState>>(
+                'token-service',
+                '/sync'
+            );
+        } catch (error) {
+            appLogger.debug('TokenService', `Token sync skipped: ${getErrorMessage(error)}`);
+            return;
+        }
+
+        const accounts = await this.authService.getAllAccountsFull();
+        const accountsById = new Map(accounts.map(account => [account.id, account]));
+
+        for (const [accountId, monitored] of Object.entries(monitoredTokens)) {
+            const account = accountsById.get(accountId);
+            if (!account || !this.shouldSyncMonitoredToken(account, monitored.token)) {
+                continue;
+            }
+
+            await this.authService.updateToken(account.id, {
+                accessToken: monitored.token.access_token,
+                refreshToken: monitored.token.refresh_token,
+                sessionToken: monitored.token.session_token,
+                expiresAt: monitored.token.expires_at
+            });
+            this.eventBus.emit('token:refreshed', { provider: account.provider, accountId: account.id });
+        }
+    }
+
+    private subscribeToAccountEvents(): void {
+        this.unsubscribers.push(
+            this.eventBus.on('account:linked', payload => void this.monitorAccountById(payload.accountId)),
+            this.eventBus.on('account:updated', payload => void this.monitorAccountById(payload.accountId)),
+            this.eventBus.on('account:unlinked', payload => void this.unregisterAccount(payload.accountId))
+        );
+    }
+
+    private async registerExistingAccountsForMonitoring(): Promise<void> {
+        const accounts = await this.authService.getAllAccountsFull();
+        for (const account of accounts) {
+            await this.monitorAccount(account);
+        }
+    }
+
+    private async monitorAccountById(accountId: string): Promise<void> {
+        const accounts = await this.authService.getAllAccountsFull();
+        const account = accounts.find(item => item.id === accountId);
+        if (!account) {
+            return;
+        }
+        await this.monitorAccount(account);
+    }
+
+    private async monitorAccount(account: LinkedAccount): Promise<void> {
+        const clientId = this.getClientId(account);
+        if (!clientId || !this.supportsMonitoring(account)) {
+            return;
+        }
+
+        const token = {
+            id: account.id,
+            provider: account.provider,
+            access_token: account.accessToken,
+            refresh_token: account.refreshToken,
+            session_token: account.sessionToken,
+            expires_at: account.expiresAt,
+            scope: account.scope,
+            email: account.email
+        };
+
+        try {
+            await this.options.processManager.sendRequest(
+                'token-service',
+                {
+                    token,
+                    client_id: clientId,
+                    client_secret: this.getClientSecret(account)
+                },
+                10000,
+                '/monitor'
+            );
+        } catch (error) {
+            appLogger.warn(
+                'TokenService',
+                `Failed to register ${account.provider}:${account.id} for token monitoring: ${getErrorMessage(error)}`
+            );
+        }
+    }
+
+    private async unregisterAccount(accountId: string): Promise<void> {
+        try {
+            await this.options.processManager.sendRequest(
+                'token-service',
+                { id: accountId },
+                10000,
+                '/unregister'
+            );
+        } catch (error) {
+            appLogger.warn(
+                'TokenService',
+                `Failed to unregister ${accountId} from token monitoring: ${getErrorMessage(error)}`
+            );
+        }
+    }
+
+    private supportsMonitoring(account: LinkedAccount): boolean {
+        return this.isNativeProvider(account) || this.isGithubProvider(account);
+    }
+
+    private shouldSyncMonitoredToken(
+        account: LinkedAccount,
+        token: {
+            access_token?: string;
+            refresh_token?: string;
+            session_token?: string;
+            expires_at?: number;
+        }
+    ): boolean {
+        return (
+            token.access_token !== account.accessToken ||
+            token.refresh_token !== account.refreshToken ||
+            token.session_token !== account.sessionToken ||
+            token.expires_at !== account.expiresAt
+        );
     }
 }

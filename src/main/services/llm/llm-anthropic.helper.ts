@@ -11,11 +11,11 @@ import { validateLLMContent } from './llm-openai.helper';
 /**
  * Builds the Anthropic API request body.
  */
-export function buildAnthropicBody(messages: Array<Message | ChatMessage>, model: string): Record<string, unknown> {
+export function buildAnthropicBody(messages: Array<Message | ChatMessage>, model: string): Record<string, RuntimeValue> {
     const normalized = MessageNormalizer.normalizeAnthropicMessages(messages);
     const systemMessage = messages.find(m => m.role === 'system')?.content;
 
-    const body: Record<string, unknown> = {
+    const body: Record<string, RuntimeValue> = {
         model,
         messages: normalized,
         max_tokens: 4096
@@ -51,7 +51,7 @@ export async function handleAnthropicApiResponse(
 /**
  * Wraps Anthropic errors in appropriate error types.
  */
-export function handleAnthropicError(error: unknown): Error {
+export function handleAnthropicError(error: RuntimeValue): Error {
     if (error instanceof ApiError || error instanceof AuthenticationError) { return error; }
     return new NetworkError(error instanceof Error ? error.message : String(error), { provider: 'anthropic' });
 }

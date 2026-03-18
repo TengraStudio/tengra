@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock electron
-const mockIpcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
+const mockIpcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
-            mockIpcMainHandlers.set(channel, handler);
+        handle: vi.fn((channel: string, handler: (...args: TestValue[]) => TestValue | Promise<TestValue>) => {
+            mockIpcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
         }),
         removeHandler: vi.fn((channel: string) => {
             mockIpcMainHandlers.delete(channel);
@@ -26,7 +26,7 @@ vi.mock('@main/logging/logger', () => ({
 
 // Mock sanitize util
 vi.mock('@shared/utils/sanitize.util', () => ({
-    safeJsonParse: vi.fn((jsonString: string, fallback: unknown) => {
+    safeJsonParse: vi.fn((jsonString: string, fallback: TestValue) => {
         try {
             return JSON.parse(jsonString);
         } catch {
@@ -63,7 +63,7 @@ describe('Agent IPC Integration', () => {
             recoverAgentFromArchive: vi.fn(),
         };
 
-        registerAgentIpc(() => null, mockAgentService as unknown as Parameters<typeof registerAgentIpc>[1]);
+        registerAgentIpc(() => null, mockAgentService as never as Parameters<typeof registerAgentIpc>[1]);
     });
 
     it('should register expected handlers', () => {
@@ -122,7 +122,7 @@ describe('Agent IPC Integration', () => {
             vi.mocked(mockAgentService.getAllAgents).mockResolvedValue(mockAgents);
 
             const handler = mockIpcMainHandlers.get('agent:get-all');
-            const result = await handler!({}) as { success: boolean; data: any };
+            const result = await handler!({}) as { success: boolean; data: TestValue };
 
             // Result should be JSON-serializable
             expect(JSON.stringify(result.data)).toBeTruthy();
@@ -240,3 +240,4 @@ describe('Agent IPC Integration', () => {
         });
     });
 });
+

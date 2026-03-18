@@ -134,9 +134,14 @@ export class AuthAPIService extends BaseService {
                 return;
             }
 
+            const existingAccount = await this.getExistingAccount(accountId);
+            if (!existingAccount) {
+                this.sendError(res, 404, 'Account not found');
+                return;
+            }
+
             const tokenData = this.mapToTokenData(data);
-            const providerHint = this.getString(data, 'provider', 'type') ?? accountId.split('-')[0] ?? 'unknown';
-            const provider = this.normalizeProviderName(providerHint);
+            const provider = this.resolveProviderForAccountUpdate(existingAccount, data);
 
             await this.runAccountUpdateExclusive(accountId, async () => {
                 await this.authService.linkAccountWithId(provider, accountId, {
@@ -152,6 +157,29 @@ export class AuthAPIService extends BaseService {
             appLogger.error('AuthAPIService', `Failed to update account: ${error}`);
             this.sendError(res, 500, 'Internal server error');
         }
+    }
+
+    private resolveProviderForAccountUpdate(
+        existingAccount: import('@main/services/data/database.service').LinkedAccount,
+        data: JsonObject
+    ): string {
+        const providerHint = this.getString(data, 'provider', 'type');
+        if (providerHint) {
+            return this.normalizeProviderName(providerHint);
+        }
+
+        if (existingAccount.provider) {
+            return this.normalizeProviderName(existingAccount.provider);
+        }
+
+        return 'unknown';
+    }
+
+    private async getExistingAccount(
+        accountId: string
+    ): Promise<import('@main/services/data/database.service').LinkedAccount | undefined> {
+        const allAccounts = await this.authService.getAllAccountsFull();
+        return allAccounts.find(account => account.id === accountId);
     }
 
     private async getAccountsPayloadCached(): Promise<string> {
@@ -307,8 +335,8 @@ export class AuthAPIService extends BaseService {
 
         if (isClaudeProvider || isCodexProvider) {
             // Let Rust token-service own Claude/Codex refresh; proxy sees only access token
-            delete (baseMetadata as { refresh_token?: unknown }).refresh_token;
-            delete (baseMetadata as { refreshToken?: unknown }).refreshToken;
+            delete (baseMetadata as { refresh_token?: RuntimeValue }).refresh_token;
+            delete (baseMetadata as { refreshToken?: RuntimeValue }).refreshToken;
         }
 
         return {
@@ -337,6 +365,8 @@ export class AuthAPIService extends BaseService {
             copilot_token: 'copilot',
             antigravity: 'antigravity',
             antigravity_token: 'antigravity',
+            google: 'antigravity',
+            google_token: 'antigravity',
             anthropic: 'claude',
             anthropic_key: 'claude',
             claude: 'claude',

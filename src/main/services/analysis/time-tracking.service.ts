@@ -32,8 +32,8 @@ export class TimeTrackingService extends BaseService {
     private appStartTime: number | null = null;
     private codingStartTime: number | null = null;
     private workspaceStartTimes: Map<string, number> = new Map();
-    private saveInterval: NodeJS.Timeout | null = null;
     private isTracking = false;
+    private schemaEnsured = false;
 
     constructor(
         private databaseClient: DatabaseClientService
@@ -42,27 +42,13 @@ export class TimeTrackingService extends BaseService {
     }
 
     async initialize(): Promise<void> {
-        // Load any incomplete sessions on startup
+        await this.ensureTimeTrackingTable();
         await this.resumeTracking();
-
-        // Start tracking app online time
         this.startAppTracking();
-
-        // Save tracking data every 60 seconds
-        this.saveInterval = setInterval(() => {
-            this.saveCurrentTracking().catch(err => {
-                this.logError('Failed to save current tracking', err);
-            });
-        }, 60000);
     }
 
     async cleanup(): Promise<void> {
-        // Stop tracking and save final times
         await this.stopAppTracking();
-        if (this.saveInterval) {
-            clearInterval(this.saveInterval);
-            this.saveInterval = null;
-        }
     }
 
     /**
@@ -144,6 +130,7 @@ export class TimeTrackingService extends BaseService {
      */
     private async recordTime(record: Omit<TimeTrackingRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> {
         try {
+            await this.ensureTimeTrackingTable();
             const id = uuidv4();
             const now = Date.now();
 
@@ -168,23 +155,8 @@ export class TimeTrackingService extends BaseService {
         }
     }
 
-    /**
-     * Save current tracking state (called periodically)
-     */
-    private async saveCurrentTracking(): Promise<void> {
-        // Save app online time if tracking
-        if (this.isTracking && this.appStartTime) {
-            // We don't want to save incomplete sessions here, just continue tracking
-            // Complete sessions are saved when stopAppTracking is called
-        }
-    }
-
-    /**
-     * Resume tracking from incomplete sessions (on app startup)
-     */
     private async resumeTracking(): Promise<void> {
-        // On startup, we assume the app was closed, so we don't resume incomplete sessions
-        // This is by design - we only track active sessions
+        return Promise.resolve();
     }
 
     /**
@@ -192,6 +164,7 @@ export class TimeTrackingService extends BaseService {
      */
     async getTimeStats(): Promise<TimeTrackingStats> {
         try {
+            await this.ensureTimeTrackingTable();
             const appOnlineTotal = await this.getTotalTimeByType('app_online');
             const codingTotal = await this.getTotalTimeByType('coding');
             const workspaceCodingTime = await this.getWorkspaceCodingStats();
@@ -223,6 +196,30 @@ export class TimeTrackingService extends BaseService {
                 workspaceCodingTime: {}
             };
         }
+    }
+
+    /**
+     * Ensure the time tracking table exists before reads or writes.
+     */
+    private async ensureTimeTrackingTable(): Promise<void> {
+        if (this.schemaEnsured) { return; }
+
+        await this.databaseClient.executeQuery({
+            sql: `
+                CREATE TABLE IF NOT EXISTS time_tracking (
+                    id TEXT PRIMARY KEY,
+                    type TEXT NOT NULL,
+                    ${WORKSPACE_COMPAT_ID_COLUMN} TEXT,
+                    start_time INTEGER NOT NULL,
+                    end_time INTEGER,
+                    duration_ms INTEGER NOT NULL DEFAULT 0,
+                    created_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL
+                )
+            `
+        });
+
+        this.schemaEnsured = true;
     }
 
     /**

@@ -41,13 +41,13 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                 <input
                     value={presetName}
                     onChange={event => setPresetName(event.target.value)}
-                    placeholder={t('settings.images.presetName') || 'Preset Name'}
+                    placeholder={t('settings.images.presetName')}
                     className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
                 />
                 <input
                     value={presetPromptPrefix}
                     onChange={event => setPresetPromptPrefix(event.target.value)}
-                    placeholder={t('settings.images.promptPrefix') || 'Prompt Prefix'}
+                    placeholder={t('settings.images.promptPrefix')}
                     className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
                 />
             </div>
@@ -69,7 +69,7 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                                     onClick={() => { void handleExportPresetShare(preset.id); }}
                                     className="rounded border border-white/15 px-1.5 py-0.5 text-[10px] text-muted-foreground"
                                 >
-                                    {t('settings.images.presetShare') || 'Share'}
+                                    {t('settings.images.exportPreset')}
                                 </button>
                                 <button onClick={() => { void handleDeletePreset(preset.id); }} className="text-destructive">
                                     <XCircle className="h-3.5 w-3.5" />
@@ -83,14 +83,14 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                 <textarea
                     value={presetShareCode}
                     onChange={event => setPresetShareCode(event.target.value)}
-                    placeholder={t('settings.images.presetShareCode') || 'Preset share code'}
+                    placeholder={t('settings.images.presetShareCodePlaceholder')}
                     className="min-h-[58px] w-full rounded-md border border-white/10 bg-black/10 px-2 py-1.5 font-mono text-[10px]"
                 />
                 <button
                     onClick={() => { void handleImportPresetShare(); }}
                     className="mt-2 rounded-lg border border-primary/35 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary"
                 >
-                    {t('settings.images.presetImport') || 'Import Preset'}
+                    {t('settings.images.importPresetShare')}
                 </button>
             </div>
         </div>

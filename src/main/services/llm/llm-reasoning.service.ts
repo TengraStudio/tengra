@@ -76,7 +76,7 @@ export function getClaudeBudget(effort: string): number {
  * @param reasoningEffort - Optional explicit effort level.
  */
 export function applyReasoningEffort(
-    body: Record<string, unknown>,
+    body: Record<string, RuntimeValue>,
     model: string,
     systemMode?: SystemMode,
     reasoningEffort?: string

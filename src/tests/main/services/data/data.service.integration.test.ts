@@ -82,7 +82,7 @@ describe('DataService Integration', () => {
     });
 
     it('should return paths for all valid data types', () => {
-        const validTypes: DataType[] = ['auth', 'db', 'config', 'logs', 'models', 'gallery', 'galleryImages', 'galleryVideos', 'data'];
+        const validTypes: DataType[] = ['db', 'config', 'logs', 'models', 'gallery', 'galleryImages', 'galleryVideos', 'data'];
         for (const type of validTypes) {
             const p = service.getPath(type);
             expect(typeof p).toBe('string');
@@ -116,33 +116,32 @@ describe('DataService Integration', () => {
         it('should track events through full init→use→cleanup cycle', async () => {
             const freshService = new DataService();
             const trackFn = vi.fn().mockReturnValue({ success: true });
-            freshService.setTelemetryService({ track: trackFn } as unknown as TelemetryService);
+            freshService.setTelemetryService({ track: trackFn } as never as TelemetryService);
 
             await freshService.initialize();
-            freshService.getPath('auth');
             freshService.getPath('db');
             await freshService.cleanup();
 
-            const eventNames = trackFn.mock.calls.map((c: unknown[]) => c[0]);
+            const eventNames = trackFn.mock.calls.map((c: TestValue[]) => c[0]);
             expect(eventNames).toContain(DataServiceTelemetryEvent.INITIALIZE_START);
             expect(eventNames).toContain(DataServiceTelemetryEvent.INITIALIZE_COMPLETE);
             expect(eventNames.filter(
                 (e): boolean => e === DataServiceTelemetryEvent.PATH_ACCESSED
-            ).length).toBe(2);
+            ).length).toBe(1);
         });
 
         it('should include durationMs in initialize complete event', async () => {
             const freshService = new DataService();
             const trackFn = vi.fn().mockReturnValue({ success: true });
-            freshService.setTelemetryService({ track: trackFn } as unknown as TelemetryService);
+            freshService.setTelemetryService({ track: trackFn } as never as TelemetryService);
 
             await freshService.initialize();
 
             const completeCall = trackFn.mock.calls.find(
-                (c: unknown[]) => c[0] === DataServiceTelemetryEvent.INITIALIZE_COMPLETE
+                (c: TestValue[]) => c[0] === DataServiceTelemetryEvent.INITIALIZE_COMPLETE
             );
             expect(completeCall).toBeDefined();
-            const props = completeCall![1] as Record<string, unknown>;
+            const props = completeCall![1] as Record<string, TestValue>;
             expect(typeof props.durationMs).toBe('number');
             expect(props.success).toBe(true);
             await freshService.cleanup();
@@ -198,7 +197,7 @@ describe('DataService Integration', () => {
             try {
                 await freshService.initialize();
                 expect.fail('Should have thrown');
-            } catch (error: unknown) {
+            } catch (error) {
                 const err = error as Error & { code?: string };
                 expect(err.code).toBe(DataServiceErrorCode.DIRECTORY_CREATE_FAILED);
             }
@@ -208,7 +207,7 @@ describe('DataService Integration', () => {
             try {
                 service.getPath('__proto__' as DataType);
                 expect.fail('Should have thrown');
-            } catch (error: unknown) {
+            } catch (error) {
                 const err = error as Error & { code?: string };
                 expect(err.code).toBe(DataServiceErrorCode.PATH_TYPE_INVALID);
             }
@@ -218,7 +217,7 @@ describe('DataService Integration', () => {
             try {
                 service.getPath('badtype' as DataType);
                 expect.fail('Should have thrown');
-            } catch (error: unknown) {
+            } catch (error) {
                 const err = error as Error;
                 expect(err.message).toContain('badtype');
             }
@@ -283,7 +282,7 @@ describe('DataService Integration', () => {
         it('should provide all paths even before initialization', () => {
             const freshService = new DataService();
             const paths = freshService.getAllPaths();
-            expect(Object.keys(paths).length).toBe(9);
+            expect(Object.keys(paths).length).toBe(8);
         });
     });
 });

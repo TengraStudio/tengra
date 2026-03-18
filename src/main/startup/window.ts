@@ -52,11 +52,14 @@ export function createWindow(settingsService?: SettingsService): BrowserWindow {
     // SEC-H-001: Enforce navigation restrictions via shared utility
     enforceNavigationRestrictions(win, 'MainWindow');
 
-    if (!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) {
-        void win.loadURL(process.env['ELECTRON_RENDERER_URL']);
+    const devServerUrl = process.env['VITE_DEV_SERVER_URL'] || process.env['ELECTRON_RENDERER_URL'];
+
+    if (!app.isPackaged && devServerUrl) {
+        void win.loadURL(devServerUrl);
     } else {
         void win.loadFile(path.join(__dirname, '../renderer/index.html'));
     }
+
 
     mainWindow = win;
     return win;
@@ -123,14 +126,23 @@ function setupWebContentsSecurity(win: BrowserWindow) {
         // Build CSP sources based on environment
         const scriptSources = [
             `'self'`,
-            `'nonce-${nonce}'`,
             'blob:',
+            ...(isDev ? [`'unsafe-inline'`, `'unsafe-eval'`] : [`'nonce-${nonce}'`]),
         ];
 
         const connectSources = [
             `'self'`,
             'https:',
-            ...(isDev ? ['http://localhost:*', 'http://127.0.0.1:*', 'ws://localhost:*', 'wss://localhost:*'] : []),
+            ...(isDev
+                ? [
+                    'http://localhost:*',
+                    'http://127.0.0.1:*',
+                    'ws://localhost:*',
+                    'ws://127.0.0.1:*',
+                    'wss://localhost:*',
+                    'wss://127.0.0.1:*',
+                ]
+                : []),
         ];
 
         const csp = [
@@ -163,8 +175,6 @@ function setupWebContentsSecurity(win: BrowserWindow) {
             },
         });
     });
-
-    // Monitor for CSP violations
     win.webContents.on('console-message', event => {
         if (event.message.includes('Content Security Policy')) {
             appLogger.warn('Security', `CSP violation observed: ${event.message}`);

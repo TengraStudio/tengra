@@ -51,6 +51,7 @@ const sectionData = {
     "commands": "Commands",
     "connect": "Connect",
     "favorites": "Favorites",
+    "fit": "Fit",
     "fitView": "Fit View",
     "host": "Host",
     "next": "Next",
@@ -66,6 +67,7 @@ const sectionData = {
     "searching": "Searching...",
     "send": "Send",
     "stop": "Stop",
+    "pause": "Pause",
     "unarchive": "Unarchive",
     "update": "Update",
     "username": "Username",
@@ -87,8 +89,15 @@ const sectionData = {
     "finalizing": "Finalizing...",
     "timeRemaining": "~{{seconds}}s remaining",
     "loadingContext": "Loading {{context}}",
+    "layout": "Layout",
     "selectEllipsis": "Select...",
-    "offlineBanner": "You are offline. Some features may be unavailable."
+    "offlineBanner": "You are offline. Some features may be unavailable.",
+    "snooze": "Snooze",
+    "markRead": "Mark Read",
+    "dismiss": "Dismiss",
+    "remindInMinutes": "Remind in {{minutes}} minutes",
+    "optional": "Optional",
+    "escKey": "Esc"
 };
 
 export default sectionData;

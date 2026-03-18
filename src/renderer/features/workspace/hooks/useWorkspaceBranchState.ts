@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 interface UseWorkspaceBranchStateOptions {
     workspacePath?: string;
+    enabled?: boolean;
     notify: (type: 'success' | 'error' | 'info', message: string) => void;
     t: (path: string, options?: Record<string, string | number>) => string;
 }
@@ -28,13 +29,22 @@ async function loadWorkspaceBranchSnapshot(workspacePath: string): Promise<Works
     };
 }
 
-export function useWorkspaceBranchState({ workspacePath, notify, t }: UseWorkspaceBranchStateOptions) {
+export function useWorkspaceBranchState({
+    workspacePath,
+    enabled = true,
+    notify,
+    t,
+}: UseWorkspaceBranchStateOptions) {
     const [currentBranchName, setCurrentBranchName] = useState('main');
     const [availableBranches, setAvailableBranches] = useState<string[]>([]);
     const [isBranchLoading, setIsBranchLoading] = useState(false);
     const [isBranchSwitching, setIsBranchSwitching] = useState(false);
 
     const refreshBranchState = useCallback(async () => {
+        if (!enabled) {
+            setIsBranchLoading(false);
+            return;
+        }
         if (!workspacePath) {
             setCurrentBranchName('main');
             setAvailableBranches([]);
@@ -55,14 +65,23 @@ export function useWorkspaceBranchState({ workspacePath, notify, t }: UseWorkspa
         } finally {
             setIsBranchLoading(false);
         }
-    }, [workspacePath]);
+    }, [enabled, workspacePath]);
 
     useEffect(() => {
+        if (!enabled) {
+            setCurrentBranchName('main');
+            setAvailableBranches([]);
+            setIsBranchLoading(false);
+            return;
+        }
         void refreshBranchState();
-    }, [refreshBranchState]);
+    }, [enabled, refreshBranchState]);
 
     const handleBranchSelect = useCallback(
         async (branch: string) => {
+            if (!enabled) {
+                return;
+            }
             if (!workspacePath || branch === currentBranchName) {
                 return;
             }
@@ -88,7 +107,7 @@ export function useWorkspaceBranchState({ workspacePath, notify, t }: UseWorkspa
                 setIsBranchSwitching(false);
             }
         },
-        [currentBranchName, notify, workspacePath, refreshBranchState, t]
+        [currentBranchName, enabled, notify, workspacePath, refreshBranchState, t]
     );
 
     return {

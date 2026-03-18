@@ -44,7 +44,7 @@ export const ArchiveWorkspaceModal: React.FC<ArchiveWorkspaceModalProps> = ({
                             className="px-6 py-2 rounded-lg text-sm font-medium bg-success text-foreground hover:bg-success active:scale-95 transition-all shadow-lg shadow-emerald-900/20"
                         >
                             {workspace.status === 'archived'
-                                ? t('common.unarchive') || 'Unarchive'
+                                ? t('common.unarchive')
                                 : t('workspaces.archiveWorkspace')}
                         </button>
                     </div>

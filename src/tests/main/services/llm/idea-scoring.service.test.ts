@@ -39,7 +39,7 @@ describe('IdeaScoringService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         service = new IdeaScoringService(
-            mockLlmService as unknown as LLMService
+            mockLlmService as never as LLMService
         );
     });
 

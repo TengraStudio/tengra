@@ -28,7 +28,7 @@ function loadSyncInputEnabled(storageKey: string): boolean {
         if (!raw) {
             return false;
         }
-        const parsed = JSON.parse(raw) as { enabled?: unknown };
+        const parsed = JSON.parse(raw) as { enabled?: RendererDataValue };
         return typeof parsed.enabled === 'boolean' ? parsed.enabled : false;
     } catch {
         return false;

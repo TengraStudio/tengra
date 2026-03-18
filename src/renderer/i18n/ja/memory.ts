@@ -129,7 +129,13 @@ const sectionData = {
     "errors": {
         "exportFailed": "メモリのエクスポートに失敗しました",
         "importFailed": "メモリのインポートに失敗しました"
-    }
+    },
+    "refreshTitle": "Refresh",
 };
 
 export default sectionData;
+
+
+
+
+

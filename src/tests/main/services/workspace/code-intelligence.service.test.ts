@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('fs', () => ({
     promises: {
-        readFile: vi.fn()
+        readFile: vi.fn(),
+        stat: vi.fn(async () => ({ mtimeMs: 123 })),
+        writeFile: vi.fn(async () => undefined),
     }
 }));
 
@@ -27,7 +29,7 @@ vi.mock('@main/services/workspace/code-intelligence/symbol-parser.util', () => (
 
 vi.mock('@main/services/workspace/code-intelligence/file-scanner.util', () => ({
     scanDirRecursively: vi.fn(async (_root: string, _files: string[]) => undefined),
-    scanDirForTodos: vi.fn(async (_root: string, _todos: unknown[]) => undefined)
+    scanDirForTodos: vi.fn(async (_root: string, _todos: TestValue[]) => undefined)
 }));
 
 vi.mock('@main/services/workspace/code-intelligence/symbol-navigation.util', () => ({
@@ -76,8 +78,12 @@ import { analyzeCodeQuality } from '@main/services/workspace/code-intelligence/c
 import {
     generateFileDocumentation,
     generateWorkspaceDocumentation,
-    getFileOutline} from '@main/services/workspace/code-intelligence/documentation-generator.util';
-import { scanDirForTodos,scanDirRecursively } from '@main/services/workspace/code-intelligence/file-scanner.util';
+    getFileOutline,
+} from '@main/services/workspace/code-intelligence/documentation-generator.util';
+import {
+    scanDirForTodos,
+    scanDirRecursively,
+} from '@main/services/workspace/code-intelligence/file-scanner.util';
 import { renameSymbol } from '@main/services/workspace/code-intelligence/rename-symbol.util';
 import {
     findDefinition,
@@ -85,7 +91,8 @@ import {
     findSymbols,
     findUsage,
     getSymbolRelationships,
-    searchFiles} from '@main/services/workspace/code-intelligence/symbol-navigation.util';
+    searchFiles,
+} from '@main/services/workspace/code-intelligence/symbol-navigation.util';
 import { parseFileSymbols } from '@main/services/workspace/code-intelligence/symbol-parser.util';
 import type { CodeSymbol } from '@main/services/workspace/code-intelligence/types';
 import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
@@ -105,7 +112,7 @@ function createMockDb(): {
         hasIndexedSymbols: vi.fn(async () => false),
         deleteCodeSymbolsForFile: vi.fn(async () => undefined),
         deleteSemanticFragmentsForFile: vi.fn(async () => undefined),
-    } as unknown as { [K in keyof DatabaseService]: ReturnType<typeof vi.fn> };
+    } as never as { [K in keyof DatabaseService]: ReturnType<typeof vi.fn> };
 }
 
 function createMockEmbedding(): {
@@ -113,7 +120,7 @@ function createMockEmbedding(): {
 } {
     return {
         generateEmbedding: vi.fn(async () => [0.1, 0.2, 0.3]),
-    } as unknown as { [K in keyof EmbeddingService]: ReturnType<typeof vi.fn> };
+    } as never as { [K in keyof EmbeddingService]: ReturnType<typeof vi.fn> };
 }
 
 describe('CodeIntelligenceService', () => {
@@ -126,8 +133,8 @@ describe('CodeIntelligenceService', () => {
         mockDb = createMockDb();
         mockEmbedding = createMockEmbedding();
         service = new CodeIntelligenceService(
-            mockDb as unknown as DatabaseService,
-            mockEmbedding as unknown as EmbeddingService
+            mockDb as never as DatabaseService,
+            mockEmbedding as never as EmbeddingService
         );
     });
 
@@ -205,7 +212,7 @@ describe('CodeIntelligenceService', () => {
     });
 
     describe('indexWorkspace', () => {
-        it('should index all scanned files and mark the workspace as indexed', async () => {
+        it('should index all scanned files and cache the workspace as indexed', async () => {
             vi.mocked(scanDirRecursively).mockImplementation(async (_root: string, files: string[]) => {
                 files.push('/root/a.ts', '/root/b.ts');
             });
@@ -214,9 +221,9 @@ describe('CodeIntelligenceService', () => {
 
             await service.indexWorkspace('/root', 'proj-1');
 
-            expect(mockDb.clearCodeSymbols).toHaveBeenCalledWith('/root');
-            expect(mockDb.clearSemanticFragments).toHaveBeenCalledWith('/root');
             expect(vi.mocked(scanDirRecursively)).toHaveBeenCalled();
+            await service.indexWorkspace('/root', 'proj-1');
+            expect(mockDb.clearCodeSymbols).not.toHaveBeenCalled();
         });
 
         it('should skip indexing when already in progress', async () => {
@@ -287,7 +294,7 @@ describe('CodeIntelligenceService', () => {
         it('should send progress events to browser windows', async () => {
             const mockSend = vi.fn();
             vi.mocked(BrowserWindow.getAllWindows).mockReturnValue([
-                { webContents: { send: mockSend } } as unknown as BrowserWindow
+                { webContents: { send: mockSend } } as never as BrowserWindow
             ]);
             vi.mocked(scanDirRecursively).mockImplementation(async (_root: string, files: string[]) => {
                 files.push('/root/a.ts');
@@ -307,7 +314,7 @@ describe('CodeIntelligenceService', () => {
             vi.mocked(scanDirRecursively).mockRejectedValue(new Error('scan error'));
             const mockSend = vi.fn();
             vi.mocked(BrowserWindow.getAllWindows).mockReturnValue([
-                { webContents: { send: mockSend } } as unknown as BrowserWindow
+                { webContents: { send: mockSend } } as never as BrowserWindow
             ]);
 
             await service.indexWorkspace('/root', 'proj-fail');
@@ -402,7 +409,7 @@ describe('CodeIntelligenceService', () => {
 
     describe('scanTodos', () => {
         it('should return todos from file scanner', async () => {
-            vi.mocked(scanDirForTodos).mockImplementation(async (_root: string, todos: unknown[]) => {
+            vi.mocked(scanDirForTodos).mockImplementation(async (_root: string, todos: TestValue[]) => {
                 (todos as Array<{ file: string; line: number; text: string }>).push(
                     { file: '/root/a.ts', line: 10, text: 'TODO: fix this' }
                 );
@@ -415,7 +422,7 @@ describe('CodeIntelligenceService', () => {
 
     describe('scanWorkspaceTodos', () => {
         it('should group todos by file with relative paths', async () => {
-            vi.mocked(scanDirForTodos).mockImplementation(async (_root: string, todos: unknown[]) => {
+            vi.mocked(scanDirForTodos).mockImplementation(async (_root: string, todos: TestValue[]) => {
                 const arr = todos as Array<{ file: string; line: number; text: string }>;
                 arr.push(
                     { file: '/root/src/a.ts', line: 5, text: 'TODO: first' },

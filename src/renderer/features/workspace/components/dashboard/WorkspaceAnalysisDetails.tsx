@@ -1,5 +1,3 @@
-import { WorkspaceStats } from '@/types';
-
 interface WorkspaceTechStackProps {
     frameworks: string[]
     t: (key: string) => string
@@ -25,12 +23,31 @@ export function WorkspaceTechStack({ frameworks, t }: WorkspaceTechStackProps) {
 }
 
 interface WorkspaceLanguageDistributionProps {
-    languages: Record<string, number | unknown>
-    stats: WorkspaceStats | null
+    languages: Record<string, number>
     t: (key: string) => string
 }
 
-export function WorkspaceLanguageDistribution({ languages, stats, t }: WorkspaceLanguageDistributionProps) {
+function formatLanguagePercentage(count: number, totalLanguageWeight: number): string {
+    if (totalLanguageWeight <= 0) {
+        return '0%';
+    }
+
+    const rawPercentage = (count / totalLanguageWeight) * 100;
+    if (rawPercentage >= 1) {
+        return `${rawPercentage.toFixed(1)}%`;
+    }
+    if (rawPercentage > 0) {
+        return '<1%';
+    }
+    return '0%';
+}
+
+export function WorkspaceLanguageDistribution({ languages, t }: WorkspaceLanguageDistributionProps) {
+    const totalLanguageWeight = Object.values(languages).reduce(
+        (sum, value) => sum + (typeof value === 'number' ? value : 0),
+        0
+    );
+
     return (
         <div className="bg-card/40 rounded-2xl border border-border p-5 space-y-4">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -42,12 +59,15 @@ export function WorkspaceLanguageDistribution({ languages, stats, t }: Workspace
                     .sort(([, a], [, b]) => (b as number) - (a as number))
                     .slice(0, 15)
                     .map(([lang, count]) => {
-                        const percentage = stats ? Math.round(((count as number) / stats.fileCount) * 100) : 0;
+                        const percentage =
+                            totalLanguageWeight > 0
+                                ? ((count as number) / totalLanguageWeight) * 100
+                                : 0;
                         return (
                             <div key={lang} className="space-y-1">
                                 <div className="flex justify-between text-xxs uppercase font-bold tracking-tight">
                                     <span className="text-foreground/80">{lang}</span>
-                                    <span className="text-muted-foreground">{percentage}%</span>
+                                    <span className="text-muted-foreground">{formatLanguagePercentage(count as number, totalLanguageWeight)}</span>
                                 </div>
                                 <div className="h-1 w-full bg-muted/20 rounded-full overflow-hidden">
                                     <div
@@ -87,4 +107,4 @@ export function WorkspaceAnalysisTodos({ todos, t }: WorkspaceAnalysisTodosProps
             </div>
         </div>
     );
-}
+}

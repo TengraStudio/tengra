@@ -37,12 +37,12 @@ const createMockDatabaseService = (): DatabaseService => ({
     pruneAuditLogsOlderThan: vi.fn().mockResolvedValue(0),
     pruneAuditLogsToMaxEntries: vi.fn().mockResolvedValue(undefined),
     countAuditLogs: vi.fn().mockResolvedValue(0)
-} as unknown as DatabaseService);
+} as never as DatabaseService);
 
 /** Builds a valid audit entry with correct integrity hash for use in verifyIntegrity tests. */
 function buildValidEntry(
     action: string, category: AuditLogEntry['category'], timestamp: number,
-    prevHash: string, extra: Record<string, unknown> = {}
+    prevHash: string, extra: Record<string, TestValue> = {}
 ): AuditLogEntry {
     const hash = createHash('sha256').update(JSON.stringify({
         action, category, success: true, userId: undefined,
@@ -55,7 +55,7 @@ function buildValidEntry(
 }
 
 function getIntegrity(entry: AuditLogEntry): IntegrityBlock {
-    return (entry.details as Record<string, unknown>)?.integrity as IntegrityBlock;
+    return (entry.details as Record<string, TestValue>)?.integrity as IntegrityBlock;
 }
 
 describe('AuditLogService', () => {
@@ -193,12 +193,12 @@ describe('AuditLogService', () => {
 
         it('should merge user details with integrity and handle missing details', async () => {
             await service.log({ action: 't1', category: 'data', success: true, details: { key: 'val' } });
-            const d1 = vi.mocked(mockDbService.addAuditLog).mock.calls[0]![0].details as Record<string, unknown>;
+            const d1 = vi.mocked(mockDbService.addAuditLog).mock.calls[0]![0].details as Record<string, TestValue>;
             expect(d1.key).toBe('val');
             expect(d1.integrity).toBeDefined();
 
             await service.log({ action: 't2', category: 'settings', success: true });
-            const d2 = vi.mocked(mockDbService.addAuditLog).mock.calls[1]![0].details as Record<string, unknown>;
+            const d2 = vi.mocked(mockDbService.addAuditLog).mock.calls[1]![0].details as Record<string, TestValue>;
             expect(d2.integrity).toBeDefined();
         });
 
@@ -356,7 +356,7 @@ describe('AuditLogService', () => {
         });
 
         it('should skip undefined entries without failing', async () => {
-            const logs = [undefined, undefined] as unknown as AuditLogEntry[];
+            const logs = [undefined, undefined] as never as AuditLogEntry[];
             vi.mocked(mockDbService.getAuditLogs).mockResolvedValue(logs);
             expect((await service.verifyIntegrity()).ok).toBe(true);
         });
@@ -409,8 +409,8 @@ describe('AuditLogService', () => {
                 action: 'nested', category: 'data', success: true,
                 details: { level1: { level2: { level3: 'deep' } }, array: [1, 2, 3] }
             });
-            const details = vi.mocked(mockDbService.addAuditLog).mock.calls[0]![0].details as Record<string, unknown>;
-            expect(((details.level1 as Record<string, unknown>).level2 as Record<string, unknown>).level3).toBe('deep');
+            const details = vi.mocked(mockDbService.addAuditLog).mock.calls[0]![0].details as Record<string, TestValue>;
+            expect(((details.level1 as Record<string, TestValue>).level2 as Record<string, TestValue>).level3).toBe('deep');
 
             const original = { action: 'immutable', category: 'security' as const, success: true, details: { key: 'value' } };
             const ref = original.details;

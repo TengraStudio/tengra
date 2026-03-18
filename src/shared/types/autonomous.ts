@@ -13,7 +13,7 @@ export interface UACSuccessCriteria {
     id: string;
     description: string;
     type: 'file_exists' | 'command_exit_zero' | 'content_match' | 'lint_passed' | 'test_passed';
-    params: Record<string, unknown>;
+    params: Record<string, RuntimeValue>;
     status: 'pending' | 'checking' | 'passed' | 'failed';
     errorMessage?: string;
 }
@@ -33,7 +33,7 @@ export interface UACTriggerNode extends UACNodeBase {
     type: 'trigger';
     data: {
         triggerType: 'manual' | 'schedule' | 'event';
-        config?: Record<string, unknown>;
+        config?: Record<string, RuntimeValue>;
     };
 }
 
@@ -41,9 +41,9 @@ export interface UACActionNode extends UACNodeBase {
     type: 'action';
     data: {
         action: string;
-        params?: Record<string, unknown>;
+        params?: Record<string, RuntimeValue>;
         progress?: number;
-        output?: unknown;
+        output?: RuntimeValue;
         thought?: string;
     };
 }
@@ -103,13 +103,13 @@ export interface UACTask {
     context: {
         allowedTools: string[];
         maxSteps: number;
-        history: Record<string, unknown>[]; // Full raw message history
+        history: Record<string, RuntimeValue>[]; // Full raw message history
     };
 }
 
 export interface UACEvent {
     type: 'TASK_START' | 'TASK_UPDATE' | 'NODE_START' | 'NODE_COMPLETE' | 'VERIFICATION_START' | 'VERIFICATION_RESULT' | 'NEED_APPROVAL' | 'TASK_COMPLETE';
-    payload: unknown;
+    payload: RuntimeValue;
     taskId: string;
     timestamp: string;
 }

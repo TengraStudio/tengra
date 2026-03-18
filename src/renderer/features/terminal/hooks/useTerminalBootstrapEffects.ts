@@ -4,6 +4,13 @@ import type { TerminalTab } from '@/types';
 
 import type { ShellInfo,TerminalBackendInfo } from './useTerminalBackendsAndRemote';
 
+type TerminalDiscoverySnapshot = {
+    terminalAvailable: boolean;
+    shells: ShellInfo[];
+    backends: TerminalBackendInfo[];
+    refreshedAt: number;
+};
+
 type UseTerminalBootstrapEffectsParams = {
     isOpen: boolean;
     tabsLength: number;
@@ -16,8 +23,7 @@ type UseTerminalBootstrapEffectsParams = {
     isNewTerminalMenuOpen: boolean;
     isCreatingRef: MutableRefObject<boolean>;
     hasAutoCreatedRef: MutableRefObject<boolean>;
-    fetchAvailableShells: () => Promise<ShellInfo[]>;
-    fetchAvailableBackends: () => Promise<TerminalBackendInfo[]>;
+    fetchDiscoverySnapshot: (refresh?: boolean) => Promise<TerminalDiscoverySnapshot>;
     fetchRemoteConnections: () => Promise<void>;
     resolveDefaultBackendId: (backends: TerminalBackendInfo[], preferredId?: string | null) => string | undefined;
     createTerminal: (type: string, backendId?: string) => string;
@@ -35,8 +41,7 @@ export function useTerminalBootstrapEffects({
     isNewTerminalMenuOpen,
     isCreatingRef,
     hasAutoCreatedRef,
-    fetchAvailableShells,
-    fetchAvailableBackends,
+    fetchDiscoverySnapshot,
     fetchRemoteConnections,
     resolveDefaultBackendId,
     createTerminal,
@@ -46,41 +51,25 @@ export function useTerminalBootstrapEffects({
             return;
         }
 
-        let cancelled = false;
-        const loadShellsAndMaybeCreate = async () => {
-            const shells =
-                availableShells.length > 0 ? availableShells : await fetchAvailableShells();
-            const backends =
-                availableBackends.length > 0 ? availableBackends : await fetchAvailableBackends();
-            if (cancelled || isCreatingRef.current || hasAutoCreatedRef.current) {
-                return;
-            }
-            if (tabsLength === 0) {
-                isCreatingRef.current = true;
-                hasAutoCreatedRef.current = true;
-                if (!cancelled && tabsRef.current.length === 0) {
-                    const shellId =
-                        shells[0]?.id ??
-                        availableShells[0]?.id ??
-                        tabsRef.current[0]?.type ??
-                        'powershell';
-                    createTerminal(shellId, resolveDefaultBackendId(backends));
-                }
-                isCreatingRef.current = false;
-            }
-        };
+        if (isCreatingRef.current || hasAutoCreatedRef.current || tabsLength > 0) {
+            return;
+        }
 
-        void loadShellsAndMaybeCreate();
-        return () => {
-            cancelled = true;
-        };
+        isCreatingRef.current = true;
+        hasAutoCreatedRef.current = true;
+        if (tabsRef.current.length === 0) {
+            const shellId =
+                availableShells[0]?.id ??
+                tabsRef.current[0]?.type ??
+                'powershell';
+            createTerminal(shellId, resolveDefaultBackendId(availableBackends) ?? 'node-pty');
+        }
+        isCreatingRef.current = false;
     }, [
         isOpen,
         tabsLength,
         availableBackends,
         availableShells,
-        fetchAvailableBackends,
-        fetchAvailableShells,
         createTerminal,
         resolveDefaultBackendId,
         tabsRef,
@@ -89,12 +78,35 @@ export function useTerminalBootstrapEffects({
     ]);
 
     useEffect(() => {
+        if (!isOpen) {
+            return;
+        }
+
+        if (
+            availableShells.length === 0 &&
+            availableBackends.length === 0 &&
+            !isLoadingShells &&
+            !isLoadingBackends
+        ) {
+            void fetchDiscoverySnapshot();
+        }
+    }, [
+        availableBackends.length,
+        availableShells.length,
+        fetchDiscoverySnapshot,
+        isLoadingBackends,
+        isLoadingShells,
+        isOpen,
+    ]);
+
+    useEffect(() => {
         if (isOpen && isNewTerminalMenuOpen) {
-            if (availableShells.length === 0 && !isLoadingShells) {
-                void fetchAvailableShells();
-            }
-            if (availableBackends.length === 0 && !isLoadingBackends) {
-                void fetchAvailableBackends();
+            if (
+                (availableShells.length === 0 || availableBackends.length === 0) &&
+                !isLoadingShells &&
+                !isLoadingBackends
+            ) {
+                void fetchDiscoverySnapshot();
             }
             if (!isLoadingRemoteConnections) {
                 void fetchRemoteConnections();
@@ -108,8 +120,7 @@ export function useTerminalBootstrapEffects({
         isLoadingShells,
         isLoadingBackends,
         isLoadingRemoteConnections,
-        fetchAvailableShells,
-        fetchAvailableBackends,
+        fetchDiscoverySnapshot,
         fetchRemoteConnections,
     ]);
 }

@@ -21,7 +21,7 @@ export function registerModelDownloaderIpc(modelDownloaderService: ModelDownload
         'model-downloader:start',
         createSafeIpcHandler(
             'model-downloader:start',
-            async (_event: IpcMainInvokeEvent, requestRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, requestRaw: RuntimeValue) => {
                 const request = requestRaw as ModelDownloadRequest;
                 const result = modelDownloaderService.startDownload(request);
                 return result;
@@ -34,7 +34,7 @@ export function registerModelDownloaderIpc(modelDownloaderService: ModelDownload
         'model-downloader:pause',
         createSafeIpcHandler(
             'model-downloader:pause',
-            async (_event: IpcMainInvokeEvent, downloadIdRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, downloadIdRaw: RuntimeValue) => {
                 const downloadId = typeof downloadIdRaw === 'string' ? downloadIdRaw : '';
                 return { success: modelDownloaderService.pauseDownload(downloadId) };
             },
@@ -46,7 +46,7 @@ export function registerModelDownloaderIpc(modelDownloaderService: ModelDownload
         'model-downloader:cancel',
         createSafeIpcHandler(
             'model-downloader:cancel',
-            async (_event: IpcMainInvokeEvent, downloadIdRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, downloadIdRaw: RuntimeValue) => {
                 const downloadId = typeof downloadIdRaw === 'string' ? downloadIdRaw : '';
                 return { success: modelDownloaderService.cancelDownload(downloadId) };
             },
@@ -58,7 +58,7 @@ export function registerModelDownloaderIpc(modelDownloaderService: ModelDownload
         'model-downloader:resume',
         createSafeIpcHandler(
             'model-downloader:resume',
-            async (_event: IpcMainInvokeEvent, downloadIdRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, downloadIdRaw: RuntimeValue) => {
                 const downloadId = typeof downloadIdRaw === 'string' ? downloadIdRaw : '';
                 return modelDownloaderService.resumeDownload(downloadId);
             },

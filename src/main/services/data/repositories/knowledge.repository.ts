@@ -643,7 +643,7 @@ export class KnowledgeRepository extends BaseRepository {
             ).run(workspacePath);
             deletedCounts.pendingMemories = pendingResult.rowsAffected ?? 0;
 
-            appLogger.info('KnowledgeRepository', `Cleaned up orphaned data for workspace ${workspacePath}`, deletedCounts as unknown as JsonObject);
+            appLogger.info('KnowledgeRepository', `Cleaned up orphaned data for workspace ${workspacePath}`, deletedCounts as RuntimeValue as JsonObject);
             return { deletedCounts };
         } catch (error) {
             appLogger.error('KnowledgeRepository', `Failed to cleanup workspace data for ${workspacePath}`, error as Error);
@@ -734,7 +734,7 @@ export class KnowledgeRepository extends BaseRepository {
 
             const totalOrphaned = Object.values(orphanedCounts).reduce((a, b) => a + b, 0);
             if (totalOrphaned > 0) {
-                appLogger.info('KnowledgeRepository', `Cleaned up ${totalOrphaned} orphaned records`, orphanedCounts as unknown as JsonObject);
+                appLogger.info('KnowledgeRepository', `Cleaned up ${totalOrphaned} orphaned records`, orphanedCounts as RuntimeValue as JsonObject);
             }
 
             return { orphanedCounts };

@@ -10,6 +10,20 @@ interface PerformanceMark {
     duration?: number;
 }
 
+interface TengraPerformanceBridge {
+    mark: (name: string) => void;
+    measure: (name: string, startMark: string, endMark: string) => number | null;
+    hasMark: (name: string) => boolean;
+    clear: (prefix?: string) => void;
+    getReport: () => { marks: PerformanceMark[]; measures: PerformanceMark[]; totalTime: number };
+}
+
+declare global {
+    interface Window {
+        __TENGRA_PERFORMANCE__?: TengraPerformanceBridge;
+    }
+}
+
 class PerformanceMonitor {
     private marks: Map<string, PerformanceMark> = new Map();
     private measures: PerformanceMark[] = [];
@@ -49,6 +63,10 @@ class PerformanceMonitor {
         return duration;
     }
 
+    hasMark(name: string): boolean {
+        return this.marks.has(name);
+    }
+
     /**
      * Get all performance data
      */
@@ -58,6 +76,21 @@ class PerformanceMonitor {
             measures: this.measures,
             totalTime: Date.now() - this.startTime
         };
+    }
+
+    clear(prefix?: string): void {
+        if (!prefix) {
+            this.reset();
+            return;
+        }
+
+        for (const key of this.marks.keys()) {
+            if (key.startsWith(prefix)) {
+                this.marks.delete(key);
+            }
+        }
+
+        this.measures = this.measures.filter(measure => !measure.name.startsWith(prefix));
     }
 
     /**
@@ -80,3 +113,14 @@ class PerformanceMonitor {
 
 // Singleton instance
 export const performanceMonitor = new PerformanceMonitor();
+
+if (typeof window !== 'undefined') {
+    window.__TENGRA_PERFORMANCE__ = {
+        mark: name => performanceMonitor.mark(name),
+        measure: (name, startMark, endMark) =>
+            performanceMonitor.measure(name, startMark, endMark),
+        hasMark: name => performanceMonitor.hasMark(name),
+        clear: prefix => performanceMonitor.clear(prefix),
+        getReport: () => performanceMonitor.getReport(),
+    };
+}

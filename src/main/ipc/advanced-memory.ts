@@ -69,14 +69,14 @@ type AdvancedMemoryUiState = 'ready' | 'empty' | 'failure';
 
 interface AdvancedMemoryResponseEnvelope {
     success: boolean;
-    data?: unknown;
+    data?: RuntimeValue;
     error?: string;
     errorCode?: string;
     messageKey?: string;
     retryable?: boolean;
     uiState?: AdvancedMemoryUiState | string;
     fallbackUsed?: boolean;
-    [key: string]: unknown;
+    [key: string]: RuntimeValue;
 }
 
 interface AdvancedMemoryListEnvelope<T> extends AdvancedMemoryResponseEnvelope {
@@ -337,7 +337,7 @@ const createAdvancedMemoryHealthPayload = () => {
     };
 };
 
-const inferUiStateFromResult = (result: Record<string, unknown>): AdvancedMemoryUiState => {
+const inferUiStateFromResult = (result: Record<string, RuntimeValue>): AdvancedMemoryUiState => {
     const explicitUiState = result.uiState;
     if (explicitUiState === 'ready' || explicitUiState === 'empty' || explicitUiState === 'failure') {
         return explicitUiState;
@@ -353,7 +353,7 @@ const inferUiStateFromResult = (result: Record<string, unknown>): AdvancedMemory
 
     const dataValue = result.data;
     if (typeof dataValue === 'object' && dataValue !== null && 'memories' in dataValue) {
-        const memoriesValue = (dataValue as { memories?: unknown[] }).memories;
+        const memoriesValue = (dataValue as { memories?: RuntimeValue[] }).memories;
         if (Array.isArray(memoriesValue)) {
             return memoriesValue.length === 0 ? 'empty' : 'ready';
         }
@@ -362,7 +362,7 @@ const inferUiStateFromResult = (result: Record<string, unknown>): AdvancedMemory
     return 'ready';
 };
 
-const createTelemetryAwareHandler = <T extends AdvancedMemoryResponseEnvelope = AdvancedMemoryResponseEnvelope, Args extends unknown[] = unknown[]>(
+const createTelemetryAwareHandler = <T extends AdvancedMemoryResponseEnvelope = AdvancedMemoryResponseEnvelope, Args extends RuntimeValue[] = RuntimeValue[]>(
     channel: string,
     handler: (event: Electron.IpcMainInvokeEvent, ...args: Args) => Promise<T>,
     options: {
@@ -383,7 +383,7 @@ const createTelemetryAwareHandler = <T extends AdvancedMemoryResponseEnvelope = 
                 options.retries ?? 1,
                 options.retryDelayMs ?? 35
             );
-            const resultRecord = result as Record<string, unknown>;
+            const resultRecord = result as Record<string, RuntimeValue>;
             const uiState = inferUiStateFromResult(resultRecord);
             const durationMs = Date.now() - startedAt;
             if (uiState === 'failure') {
@@ -398,7 +398,7 @@ const createTelemetryAwareHandler = <T extends AdvancedMemoryResponseEnvelope = 
                 return { success: false, uiState } as T;
             }
             return {
-                ...(result as Record<string, unknown>),
+                ...(result as Record<string, RuntimeValue>),
                 uiState
             } as T;
         } catch (caughtError) {
@@ -477,7 +477,7 @@ function registerPendingHandlers(advancedMemoryService: AdvancedMemoryService): 
         responseSchema: pendingListResponseSchema
     }));
 
-    ipcMain.handle('advancedMemory:confirm', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string, unknown]>('advancedMemory:confirm', async (
+    ipcMain.handle('advancedMemory:confirm', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string, RuntimeValue]>('advancedMemory:confirm', async (
         _event,
         id,
         adjustments
@@ -574,7 +574,7 @@ function registerPendingHandlers(advancedMemoryService: AdvancedMemoryService): 
 
 
 function registerExplicitHandlers(advancedMemoryService: AdvancedMemoryService): void {
-    ipcMain.handle('advancedMemory:remember', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string, unknown]>('advancedMemory:remember', async (
+    ipcMain.handle('advancedMemory:remember', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [string, RuntimeValue]>('advancedMemory:remember', async (
         _event,
         content,
         options
@@ -728,26 +728,33 @@ function registerRecallHandlers(advancedMemoryService: AdvancedMemoryService): v
         argsSchema: z.tuple([z.string().optional(), z.number().optional()]),
         responseSchema: z.object({
             success: z.boolean(),
-            data: z.unknown()
+            data: z.custom<RuntimeValue>(() => true)
         })
     }));
 
-    ipcMain.handle('advancedMemory:import', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [unknown]>('advancedMemory:import', async (
-        _event,
-        payload
-    ) => {
-        const result = await advancedMemoryService.importMemories(payload ?? {});
-        return { success: true, data: result };
-    }, {
-        onError: () => ({ success: false, uiState: 'failure' }),
-        retries: 2,
-        messageKey: ADVANCED_MEMORY_MESSAGE_KEY.IMPORT_FAILED,
-        argsSchema: z.tuple([AdvancedMemoryImportPayloadSchema]),
-        responseSchema: z.object({
-            success: z.boolean(),
-            data: MemoryImportResultSchema
-        })
-    }));
+    ipcMain.handle(
+        'advancedMemory:import',
+        createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [z.infer<typeof AdvancedMemoryImportPayloadSchema>]>(
+            'advancedMemory:import',
+            async (
+                _event,
+                payload
+            ) => {
+                const result = await advancedMemoryService.importMemories(payload ?? {});
+                return { success: true, data: result };
+            },
+            {
+                onError: () => ({ success: false, uiState: 'failure' }),
+                retries: 2,
+                messageKey: ADVANCED_MEMORY_MESSAGE_KEY.IMPORT_FAILED,
+                argsSchema: z.tuple([AdvancedMemoryImportPayloadSchema]),
+                responseSchema: z.object({
+                    success: z.boolean(),
+                    data: MemoryImportResultSchema
+                })
+            }
+        )
+    );
 }
 
 function registerMaintenanceHandlers(advancedMemoryService: AdvancedMemoryService): void {
@@ -971,7 +978,7 @@ function registerManagementHandlers(advancedMemoryService: AdvancedMemoryService
         })
     }));
 
-    ipcMain.handle('advancedMemory:createSharedNamespace', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [unknown]>('advancedMemory:createSharedNamespace', async (
+    ipcMain.handle('advancedMemory:createSharedNamespace', createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [RuntimeValue]>('advancedMemory:createSharedNamespace', async (
         _event,
         payload
     ) => {
@@ -1031,7 +1038,7 @@ function registerManagementHandlers(advancedMemoryService: AdvancedMemoryService
         })
     }));
 
-    ipcMain.handle(ADVANCED_MEMORY_COMPAT_CHANNELS.SEARCH_ACROSS_LEGACY_WORKSPACES, createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [unknown]>(ADVANCED_MEMORY_COMPAT_CHANNELS.SEARCH_ACROSS_LEGACY_WORKSPACES, async (
+    ipcMain.handle(ADVANCED_MEMORY_COMPAT_CHANNELS.SEARCH_ACROSS_LEGACY_WORKSPACES, createTelemetryAwareHandler<AdvancedMemoryResponseEnvelope, [RuntimeValue]>(ADVANCED_MEMORY_COMPAT_CHANNELS.SEARCH_ACROSS_LEGACY_WORKSPACES, async (
         _event,
         payload
     ) => {

@@ -16,20 +16,26 @@ interface LanguageSelectionPromptProps {
     onClose: () => void;
 }
 
+interface PromptLanguageOption {
+    code: Language;
+    labelKey: string;
+    isRTL: boolean;
+}
+
 export function LanguageSelectionPrompt({ onClose }: LanguageSelectionPromptProps) {
     const { language, setLanguage, t } = useLanguage();
     const [isSaving, setIsSaving] = useState(false);
     const [errorCode, setErrorCode] = useState<string | null>(null);
 
-    const languages = useMemo<{ code: Language; name: string; isRTL: boolean }[]>(() => [
-        { code: 'en', name: 'English', isRTL: false },
-        { code: 'tr', name: 'Türkçe', isRTL: false },
-        { code: 'de', name: 'Deutsch', isRTL: false },
-        { code: 'fr', name: 'Français', isRTL: false },
-        { code: 'es', name: 'Español', isRTL: false },
-        { code: 'ja', name: '日本語', isRTL: false },
-        { code: 'zh', name: '简体中文', isRTL: false },
-        { code: 'ar', name: 'العربية', isRTL: true }
+    const languages = useMemo<PromptLanguageOption[]>(() => [
+        { code: 'en', labelKey: 'onboarding.language.labels.en', isRTL: false },
+        { code: 'tr', labelKey: 'onboarding.language.labels.tr', isRTL: false },
+        { code: 'de', labelKey: 'onboarding.language.labels.de', isRTL: false },
+        { code: 'fr', labelKey: 'onboarding.language.labels.fr', isRTL: false },
+        { code: 'es', labelKey: 'onboarding.language.labels.es', isRTL: false },
+        { code: 'ja', labelKey: 'onboarding.language.labels.ja', isRTL: false },
+        { code: 'zh', labelKey: 'onboarding.language.labels.zh', isRTL: false },
+        { code: 'ar', labelKey: 'onboarding.language.labels.ar', isRTL: true }
     ], []);
 
     const saveLanguageWithRetry = useCallback(async (code: Language): Promise<boolean> => {
@@ -110,7 +116,7 @@ export function LanguageSelectionPrompt({ onClose }: LanguageSelectionPromptProp
                                 : 'bg-background/30 hover:bg-primary/50 text-foreground border-border/40'
                                 } ${lang.isRTL ? 'font-arabic text-right' : ''}`}
                         >
-                        <span className="flex-1 text-left">{lang.name}</span>
+                            <span className="flex-1 text-left">{t(lang.labelKey)}</span>
                         </button>
                     ))}
                 </div>

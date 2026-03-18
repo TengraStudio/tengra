@@ -75,13 +75,13 @@ export interface LoadingStateProps {
  * @example
  * ```tsx
  * // Full screen loading
- * <LoadingState message="Loading data..." fullScreen />
+ * <LoadingState analyticsContext="initial-load" fullScreen />
  * 
  * // Inline loading
  * <LoadingState size="sm" inline />
  * 
  * // Default loading state
- * <LoadingState message="Please wait..." />
+ * <LoadingState />
  * ```
  */
 export const LoadingState: React.FC<LoadingStateProps> = React.memo(({

@@ -1,5 +1,5 @@
+import { type IDecoration, type Terminal as XTerm } from '@xterm/xterm';
 import { useEffect, useRef, useState } from 'react';
-import { IDecoration, Terminal as XTerm } from 'xterm';
 
 import { invokeTypedIpc } from '@/lib/ipc-client';
 import { appLogger } from '@/utils/renderer-logger';
@@ -140,7 +140,7 @@ export function useTerminalSmartSuggestions({
         });
 
         if (decoration) {
-            decoration.onRender(element => {
+            decoration.onRender((element: HTMLElement) => {
                 element.innerText = suggestion;
                 element.style.color = 'var(--foreground)';
                 element.style.opacity = '0.4';

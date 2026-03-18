@@ -57,7 +57,7 @@ export const registerSdCppIpc = (localImageService: LocalImageService) => {
         height: number;
         steps: number;
         cfgScale: number;
-        provider?: 'antigravity' | 'ollama' | 'sd-webui' | 'comfyui' | 'pollinations' | 'sd-cpp';
+        provider?: 'antigravity' | 'ollama' | 'sd-webui' | 'comfyui' | 'sd-cpp';
     }) => {
         return localImageService.saveGenerationPreset(preset);
     }, null));
@@ -82,7 +82,7 @@ export const registerSdCppIpc = (localImageService: LocalImageService) => {
         id?: string;
         name: string;
         description?: string;
-        workflow: Record<string, unknown>;
+        workflow: Record<string, RuntimeValue>;
     }) => {
         return localImageService.saveComfyWorkflowTemplate(payload);
     }, null));

@@ -57,7 +57,7 @@ describe('ScannerService', () => {
 
     describe('scanDirectory', () => {
         it('should return empty array for an empty directory', async () => {
-            vi.mocked(fs.readdir).mockResolvedValueOnce([] as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+            vi.mocked(fs.readdir).mockResolvedValueOnce([] as never as Awaited<ReturnType<typeof fs.readdir>>);
 
             const results = await service.scanDirectory('/empty');
 
@@ -67,7 +67,7 @@ describe('ScannerService', () => {
 
         it('should scan a single TypeScript file', async () => {
             const dirents = [mockDirent('app.ts', false)];
-            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as never as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValueOnce('const x = 1;');
 
             const results = await service.scanDirectory('/workspace');
@@ -81,7 +81,7 @@ describe('ScannerService', () => {
         it('should scan files with various allowed extensions', async () => {
             const extensions = ['.ts', '.tsx', '.js', '.jsx', '.md', '.py', '.go', '.rs', '.java', '.cpp', '.h', '.css', '.html', '.json'];
             const dirents = extensions.map((ext) => mockDirent(`file${ext}`, false));
-            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as never as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValue('content');
 
             const results = await service.scanDirectory('/workspace');
@@ -96,7 +96,7 @@ describe('ScannerService', () => {
                 mockDirent('archive.zip', false),
                 mockDirent('valid.ts', false),
             ];
-            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as never as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValue('content');
 
             const results = await service.scanDirectory('/workspace');
@@ -107,7 +107,7 @@ describe('ScannerService', () => {
 
         it('should skip empty files', async () => {
             const dirents = [mockDirent('empty.ts', false), mockDirent('filled.ts', false)];
-            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as never as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile)
                 .mockResolvedValueOnce('')
                 .mockResolvedValueOnce('const x = 1;');
@@ -124,11 +124,11 @@ describe('ScannerService', () => {
                 .mockResolvedValueOnce([
                     mockDirent('src', true),
                     mockDirent('index.ts', false),
-                ] as unknown as Awaited<ReturnType<typeof fs.readdir>>)
+                ] as never as Awaited<ReturnType<typeof fs.readdir>>)
                 // Subdirectory
                 .mockResolvedValueOnce([
                     mockDirent('main.ts', false),
-                ] as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+                ] as never as Awaited<ReturnType<typeof fs.readdir>>);
 
             vi.mocked(fs.readFile).mockResolvedValue('code');
 
@@ -145,7 +145,7 @@ describe('ScannerService', () => {
                 ...ignoredDirs.map((name) => mockDirent(name, true)),
                 mockDirent('app.ts', false),
             ];
-            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as never as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValue('content');
 
             const results = await service.scanDirectory('/workspace');
@@ -162,7 +162,7 @@ describe('ScannerService', () => {
                 mockDirent('.DS_Store', false),
                 mockDirent('app.ts', false),
             ];
-            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as never as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValue('content');
 
             const results = await service.scanDirectory('/workspace');
@@ -176,7 +176,7 @@ describe('ScannerService', () => {
 
         it('should handle case-insensitive extension matching', async () => {
             const dirents = [mockDirent('README.MD', false)];
-            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as never as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValue('# README');
 
             const results = await service.scanDirectory('/workspace');
@@ -191,7 +191,7 @@ describe('ScannerService', () => {
                 mockDirent('broken.ts', false),
                 mockDirent('good.ts', false),
             ];
-            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as never as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile)
                 .mockRejectedValueOnce(new Error('Permission denied'))
                 .mockResolvedValueOnce('valid content');
@@ -214,7 +214,7 @@ describe('ScannerService', () => {
 
         it('should log error for file read with non-Error thrown value', async () => {
             const dirents = [mockDirent('fail.ts', false)];
-            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as never as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockRejectedValueOnce('string error');
 
             const results = await service.scanDirectory('/workspace');
@@ -228,7 +228,7 @@ describe('ScannerService', () => {
         it('should return single chunk for short text', async () => {
             const shortContent = 'a'.repeat(500);
             const dirents = [mockDirent('short.ts', false)];
-            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as never as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValueOnce(shortContent);
 
             const results = await service.scanDirectory('/workspace');
@@ -240,7 +240,7 @@ describe('ScannerService', () => {
         it('should return single chunk for text exactly at chunk size', async () => {
             const exactContent = 'a'.repeat(1000);
             const dirents = [mockDirent('exact.ts', false)];
-            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as never as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValueOnce(exactContent);
 
             const results = await service.scanDirectory('/workspace');
@@ -254,7 +254,7 @@ describe('ScannerService', () => {
             // chunks: [0-1000], [800-1800], [1600-2500]
             const longContent = 'a'.repeat(2500);
             const dirents = [mockDirent('long.ts', false)];
-            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as never as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValueOnce(longContent);
 
             const results = await service.scanDirectory('/workspace');
@@ -270,7 +270,7 @@ describe('ScannerService', () => {
         it('should produce chunks that cover the entire text', async () => {
             const content = 'abcdefghij'.repeat(250); // 2500 chars
             const dirents = [mockDirent('full.ts', false)];
-            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as never as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValueOnce(content);
 
             const results = await service.scanDirectory('/workspace');
@@ -285,7 +285,7 @@ describe('ScannerService', () => {
             // 1001 chars -> 2 chunks: [0-1000], [800-1001]
             const content = 'x'.repeat(1001);
             const dirents = [mockDirent('over.ts', false)];
-            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as never as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValueOnce(content);
 
             const results = await service.scanDirectory('/workspace');
@@ -299,7 +299,7 @@ describe('ScannerService', () => {
     describe('ScanResult structure', () => {
         it('should include path, content, and chunks in each result', async () => {
             const dirents = [mockDirent('test.ts', false)];
-            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as never as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValueOnce('const hello = "world";');
 
             const results = await service.scanDirectory('/workspace');
@@ -315,7 +315,7 @@ describe('ScannerService', () => {
 
         it('should use full path including directory', async () => {
             const dirents = [mockDirent('component.tsx', false)];
-            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+            vi.mocked(fs.readdir).mockResolvedValueOnce(dirents as never as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValue('export default () => null;');
 
             const results = await service.scanDirectory('/workspace/src');
@@ -328,9 +328,9 @@ describe('ScannerService', () => {
         it('should scan through multiple nested levels', async () => {
             // /root -> /root/a -> /root/a/b -> file.ts
             vi.mocked(fs.readdir)
-                .mockResolvedValueOnce([mockDirent('a', true)] as unknown as Awaited<ReturnType<typeof fs.readdir>>)
-                .mockResolvedValueOnce([mockDirent('b', true)] as unknown as Awaited<ReturnType<typeof fs.readdir>>)
-                .mockResolvedValueOnce([mockDirent('file.ts', false)] as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+                .mockResolvedValueOnce([mockDirent('a', true)] as never as Awaited<ReturnType<typeof fs.readdir>>)
+                .mockResolvedValueOnce([mockDirent('b', true)] as never as Awaited<ReturnType<typeof fs.readdir>>)
+                .mockResolvedValueOnce([mockDirent('file.ts', false)] as never as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValue('deep content');
 
             const results = await service.scanDirectory('/root');
@@ -342,11 +342,11 @@ describe('ScannerService', () => {
         it('should skip ignored directory at any nesting level', async () => {
             // /root -> /root/src -> /root/src/node_modules (should be skipped)
             vi.mocked(fs.readdir)
-                .mockResolvedValueOnce([mockDirent('src', true)] as unknown as Awaited<ReturnType<typeof fs.readdir>>)
+                .mockResolvedValueOnce([mockDirent('src', true)] as never as Awaited<ReturnType<typeof fs.readdir>>)
                 .mockResolvedValueOnce([
                     mockDirent('node_modules', true),
                     mockDirent('index.ts', false),
-                ] as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+                ] as never as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.readFile).mockResolvedValue('code');
 
             const results = await service.scanDirectory('/root');

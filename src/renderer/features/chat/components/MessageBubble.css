@@ -21,18 +21,21 @@
 /* KaTeX Premium Styling */
 .katex-display {
     @apply my-6 py-4 px-6 !bg-transparent text-xl overflow-x-auto overflow-y-hidden transition-all duration-300;
+
     color: inherit;
     border-radius: 1rem;
 }
 
 .katex {
     @apply !bg-transparent;
+
     font-size: 1.15em;
     line-height: 1.2;
 }
 
 .katex-display > .katex {
     @apply text-foreground font-medium;
+
     display: inline-block;
 }
 

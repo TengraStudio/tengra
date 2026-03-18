@@ -53,7 +53,7 @@ describe('FileManagementService', () => {
         it('should extract printable strings from a file', async () => {
             const buffer = Buffer.from('hello\x00world\x00test');
             vi.mocked(fs.stat).mockResolvedValue({ size: buffer.length } as Awaited<ReturnType<typeof fs.stat>>);
-            vi.mocked(fs.readFile).mockResolvedValue(buffer as unknown as string);
+            vi.mocked(fs.readFile).mockResolvedValue(buffer as never as string);
 
             const result = await service.extractStrings('/test/file.bin');
             expect(result.success).toBe(true);
@@ -64,7 +64,7 @@ describe('FileManagementService', () => {
         it('should respect minLength parameter', async () => {
             const buffer = Buffer.from('ab\x00cdef\x00gh');
             vi.mocked(fs.stat).mockResolvedValue({ size: buffer.length } as Awaited<ReturnType<typeof fs.stat>>);
-            vi.mocked(fs.readFile).mockResolvedValue(buffer as unknown as string);
+            vi.mocked(fs.readFile).mockResolvedValue(buffer as never as string);
 
             const result = await service.extractStrings('/test/file.bin', 4);
             expect(result.success).toBe(true);
@@ -105,7 +105,7 @@ describe('FileManagementService', () => {
 
     describe('batchRename', () => {
         it('should rename matching files', async () => {
-            vi.mocked(fs.readdir).mockResolvedValue(['file_old.txt', 'file_old2.txt', 'other.txt'] as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+            vi.mocked(fs.readdir).mockResolvedValue(['file_old.txt', 'file_old2.txt', 'other.txt'] as never as Awaited<ReturnType<typeof fs.readdir>>);
             vi.mocked(fs.rename).mockResolvedValue(undefined);
 
             const result = await service.batchRename('/tmp/dir', '_old', '_new');
@@ -114,7 +114,7 @@ describe('FileManagementService', () => {
         });
 
         it('should handle empty directory', async () => {
-            vi.mocked(fs.readdir).mockResolvedValue([] as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+            vi.mocked(fs.readdir).mockResolvedValue([] as never as Awaited<ReturnType<typeof fs.readdir>>);
 
             const result = await service.batchRename('/tmp/dir', 'x', 'y');
             expect(result.success).toBe(true);
@@ -125,7 +125,7 @@ describe('FileManagementService', () => {
     describe('applyEdits', () => {
         it('should apply edits to file', async () => {
             vi.mocked(fs.stat).mockResolvedValue({ size: 100 } as Awaited<ReturnType<typeof fs.stat>>);
-            vi.mocked(fs.readFile).mockResolvedValue('line1\nline2\nline3' as unknown as string);
+            vi.mocked(fs.readFile).mockResolvedValue('line1\nline2\nline3' as never as string);
             vi.mocked(fs.writeFile).mockResolvedValue(undefined);
 
             const result = await service.applyEdits('/test/file.md', [
@@ -136,7 +136,7 @@ describe('FileManagementService', () => {
 
         it('should return error for invalid line range', async () => {
             vi.mocked(fs.stat).mockResolvedValue({ size: 100 } as Awaited<ReturnType<typeof fs.stat>>);
-            vi.mocked(fs.readFile).mockResolvedValue('line1\nline2' as unknown as string);
+            vi.mocked(fs.readFile).mockResolvedValue('line1\nline2' as never as string);
 
             const result = await service.applyEdits('/test/file.md', [
                 { startLine: 1, endLine: 5, replacement: 'x' }

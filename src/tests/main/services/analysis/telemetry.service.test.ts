@@ -40,7 +40,7 @@ describe('TelemetryService', () => {
         };
 
         service = new TelemetryService(
-            mockSettingsService as unknown as SettingsService
+            mockSettingsService as never as SettingsService
         );
     });
 
@@ -245,7 +245,7 @@ describe('TelemetryService', () => {
 
     describe('edge cases - properties validation', () => {
         it('should reject properties exceeding 100KB', () => {
-            const hugeProps: Record<string, unknown> = {
+            const hugeProps: Record<string, TestValue> = {
                 data: 'x'.repeat(100001)
             };
             const result = service.track('valid.event', hugeProps);
@@ -254,7 +254,7 @@ describe('TelemetryService', () => {
         });
 
         it('should accept properties just under 100KB', () => {
-            const props: Record<string, unknown> = {
+            const props: Record<string, TestValue> = {
                 data: 'x'.repeat(99000)
             };
             const result = service.track('valid.event', props);
@@ -262,7 +262,7 @@ describe('TelemetryService', () => {
         });
 
         it('should reject properties with circular references', () => {
-            const circular: Record<string, unknown> = { a: 1 };
+            const circular: Record<string, TestValue> = { a: 1 };
             circular['self'] = circular;
             const result = service.track('valid.event', circular);
             expect(result.success).toBe(false);

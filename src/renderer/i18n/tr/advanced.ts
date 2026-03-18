@@ -7,6 +7,7 @@ const sectionData = {
     "orchestrationFIFO": "Sıralı (FIFO)",
     "orchestrationParallel": "Paralel",
     "tokensPerSec": "Token/Saniye",
+    "tokensPerSecShort": "t/s",
     "latency": "Gecikme",
     "serviceIntervals": "Servis Aralıkları",
     "serviceIntervalsDesc": "Arka plan görevlerinin ne sıklıkla çalışacağını yapılandırın",

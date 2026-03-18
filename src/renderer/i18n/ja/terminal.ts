@@ -91,7 +91,16 @@ const sectionData = {
     "workspaceIssuesLoading": "ワークスペース診断を更新しています...",
     "workspaceIssuesNoWorkspace": "ワークスペースを開いて診断を検査します。",
     "workspaceIssuesNoIssues": "最新のスキャンでは警告やエラーは検出されませんでした。",
-    "workspaceIssuesLoadFailed": "ワークスペース診断のロードに失敗しました。"
+    "workspaceIssuesLoadFailed": "ワークスペース診断のロードに失敗しました。",
+    "splitPresetsTitle": "Split presets",
+    "renamePresetTitle": "Rename preset",
+    "deletePresetTitle": "Delete preset",
+    "syncInputTitle": "Synchronized input for split panes",
 };
 
 export default sectionData;
+
+
+
+
+

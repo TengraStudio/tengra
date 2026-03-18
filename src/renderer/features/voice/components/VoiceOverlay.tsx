@@ -7,9 +7,11 @@ import { AlertCircle, Command,Mic, MicOff } from 'lucide-react';
 import React from 'react';
 import { useSyncExternalStore } from 'react';
 
+import { useTranslation } from '@/i18n';
 import { voiceStore } from '@/store/voice.store';
 
 export const VoiceOverlay: React.FC = () => {
+    const { t } = useTranslation();
     const session = useSyncExternalStore(
         voiceStore.subscribe,
         voiceStore.getSnapshot
@@ -50,10 +52,10 @@ export const VoiceOverlay: React.FC = () => {
                         {session.error
                             ? session.error
                             : session.isProcessing
-                                ? 'Processing...'
+                                ? t('voice.status.processing')
                                 : session.isListening
-                                    ? 'Listening...'
-                                    : 'Voice Standby'}
+                                    ? t('voice.status.listening')
+                                    : t('voice.status.standby')}
                     </span>
                 </div>
 
@@ -72,7 +74,7 @@ export const VoiceOverlay: React.FC = () => {
                         {session.lastCommand && (
                             <div className="mt-2 flex items-center gap-2 text-xs font-semibold text-primary">
                                 <Command className="w-3 h-3" />
-                                <span>Executed: {session.lastCommand.description}</span>
+                                <span>{t('voice.feedback.executedPrefix')}: {session.lastCommand.description}</span>
                             </div>
                         )}
                     </div>

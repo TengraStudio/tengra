@@ -13,6 +13,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { en } from '../../../../renderer/i18n/en';
 import { tr } from '../../../../renderer/i18n/tr';
 
+interface MockHuggingFaceService {
+    searchModels: ReturnType<typeof vi.fn>;
+}
+
 vi.mock('@main/logging/logger', () => ({
     appLogger: {
         error: vi.fn(),
@@ -32,7 +36,7 @@ describe('ModelRegistryService', () => {
     let mockAuthService: Partial<AuthService>;
     let mockTokenService: Partial<TokenService>;
     let mockLocalImageService: Partial<LocalImageService>;
-    let mockHuggingFaceService: any;
+    let mockHuggingFaceService: MockHuggingFaceService;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -81,7 +85,7 @@ describe('ModelRegistryService', () => {
             authService: mockAuthService as AuthService,
             tokenService: mockTokenService as TokenService,
             localImageService: mockLocalImageService as LocalImageService,
-            huggingFaceService: mockHuggingFaceService as HuggingFaceService
+            huggingFaceService: mockHuggingFaceService as never as HuggingFaceService
         });
     });
 
@@ -118,18 +122,47 @@ describe('ModelRegistryService', () => {
             expect(mockHuggingFaceService.searchModels).not.toHaveBeenCalled();
         });
 
+        it('should dedupe concurrent cache refresh calls', async () => {
+            vi.mocked(mockProcessManager.sendRequest!).mockImplementation(async (_service, payload) => {
+                await new Promise(resolve => setTimeout(resolve, 10));
+                if (payload.provider === 'ollama') {
+                    return {
+                        success: true,
+                        models: [{ id: 'ollama/llama3:7b', name: 'llama3:7b', provider: 'ollama' }]
+                    };
+                }
+                return { success: false, models: [] };
+            });
+
+            const [first, second] = await Promise.all([
+                service.getRemoteModels(),
+                service.getRemoteModels()
+            ]);
+
+            expect(first).toEqual(second);
+            expect(mockProcessManager.sendRequest).toHaveBeenCalledTimes(8);
+        });
+
+        it('should return cached snapshot immediately and refresh stale data in background', async () => {
+            await service.getRemoteModels();
+            vi.mocked(mockProcessManager.sendRequest!).mockClear();
+
+            Object.assign(service, {
+                lastUpdate: Date.now() - 10 * 60 * 1000
+            });
+
+            const cachedModels = await service.getRemoteModels();
+
+            expect(cachedModels.length).toBeGreaterThan(0);
+            expect(mockProcessManager.sendRequest).toHaveBeenCalled();
+        });
+
         it('should NOT include HF models by default', async () => {
             const models = await service.getRemoteModels();
 
             const hfModel = models.find(m => m.provider === 'huggingface');
             expect(hfModel).toBeUndefined();
-        });
-
-        it('should keep sd-cpp fallback model available in aggregated model list', async () => {
-            const models = await service.getAllModels();
-
-            expect(models.some(model => model.provider === 'sd-cpp')).toBe(true);
-        });
+        }); 
     });
 
     describe('getInstalledModels', () => {

@@ -227,9 +227,9 @@ export function getRateLimiter(provider: string): RateLimiter {
  */
 export function rateLimited(provider: string) {
     return function (_target: object, _propertyKey: string, descriptor: PropertyDescriptor): PropertyDescriptor {
-        const original = descriptor.value as (this: unknown, ...args: unknown[]) => Promise<unknown>;
+        const original = descriptor.value as (this: RuntimeValue, ...args: RuntimeValue[]) => Promise<RuntimeValue>;
 
-        descriptor.value = async function (this: unknown, ...args: unknown[]) {
+        descriptor.value = async function (this: RuntimeValue, ...args: RuntimeValue[]) {
             const limiter = getRateLimiter(provider);
             try {
                 await limiter.acquire();

@@ -11,6 +11,22 @@ import { appLogger } from '../logging/logger';
 
 
 const execAsync = promisify(exec);
+const OLLAMA_START_MESSAGE_KEY = {
+    ALREADY_RUNNING: 'images.ollamaStartup.alreadyRunning',
+    NOT_INSTALLED: 'images.ollamaStartup.notInstalled',
+    USER_DECLINED: 'images.ollamaStartup.userDeclined',
+    START_FAILED: 'images.ollamaStartup.startFailed',
+    STARTED: 'images.ollamaStartup.started',
+    MANUAL_START_REQUIRED: 'images.ollamaStartup.manualStartRequired',
+    UNEXPECTED: 'images.ollamaStartup.unexpected',
+} as const;
+
+interface StartOllamaResponse {
+    success: boolean;
+    message: string;
+    messageKey?: string;
+    messageParams?: Record<string, string | number>;
+}
 
 // Force IPv4 fetch helper
 function fetchIPv4(url: string, options?: RequestInit): Promise<Response> {
@@ -38,7 +54,7 @@ function fetchIPv4(url: string, options?: RequestInit): Promise<Response> {
                     status: statusCode,
                     json: () => Promise.resolve(safeJsonParse(data, {})),
                     text: () => Promise.resolve(data)
-                } as unknown as Response);
+                } as RuntimeValue as Response);
             });
         });
 
@@ -84,41 +100,70 @@ async function isOllamaInstalled(): Promise<boolean> {
 export async function startOllama(
     getMainWindow: () => BrowserWindow | null,
     askPermission: boolean = false
-): Promise<{ success: boolean; message: string }> {
+): Promise<StartOllamaResponse> {
     try {
         if (await isOllamaRunning()) {
-            return { success: true, message: 'Ollama is already running' };
+            return {
+                success: true,
+                message: 'Ollama is already running',
+                messageKey: OLLAMA_START_MESSAGE_KEY.ALREADY_RUNNING
+            };
         }
 
         const installed = await isOllamaInstalled();
         if (!installed) {
-            return { success: false, message: 'Ollama is not installed. Please download it from https://ollama.com.' };
+            return {
+                success: false,
+                message: 'Ollama is not installed. Please download it from https://ollama.com.',
+                messageKey: OLLAMA_START_MESSAGE_KEY.NOT_INSTALLED
+            };
         }
 
         if (askPermission) {
             const allowed = await askUserPermission(getMainWindow);
             if (!allowed) {
-                return { success: false, message: 'User refused to start Ollama' };
+                return {
+                    success: false,
+                    message: 'User refused to start Ollama',
+                    messageKey: OLLAMA_START_MESSAGE_KEY.USER_DECLINED
+                };
             }
         }
 
         appLogger.info('Ollama', 'Attempting to start Ollama...');
         const commandSuccess = await executeStartCommand();
         if (!commandSuccess) {
-            return { success: false, message: 'Failed to start Ollama' };
+            return {
+                success: false,
+                message: 'Failed to start Ollama',
+                messageKey: OLLAMA_START_MESSAGE_KEY.START_FAILED
+            };
         }
 
         const ready = await waitForReady();
         if (ready) {
             appLogger.info('Ollama', 'Ollama started successfully');
-            return { success: true, message: 'Ollama started' };
+            return {
+                success: true,
+                message: 'Ollama started',
+                messageKey: OLLAMA_START_MESSAGE_KEY.STARTED
+            };
         }
 
-        return { success: false, message: 'Failed to start Ollama. Please start it manually.' };
+        return {
+            success: false,
+            message: 'Failed to start Ollama. Please start it manually.',
+            messageKey: OLLAMA_START_MESSAGE_KEY.MANUAL_START_REQUIRED
+        };
     } catch (error) {
         const message = getErrorMessage(error as Error);
         appLogger.error('Ollama', `Unexpected error starting Ollama: ${message}`);
-        return { success: false, message: `Ollama startup error: ${message}` };
+        return {
+            success: false,
+            message: `Ollama startup error: ${message}`,
+            messageKey: OLLAMA_START_MESSAGE_KEY.UNEXPECTED,
+            messageParams: { reason: message }
+        };
     }
 }
 

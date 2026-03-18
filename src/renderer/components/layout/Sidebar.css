@@ -82,6 +82,7 @@
 
 .sidebar-menu-item.active::before {
     content: '';
+
     @apply absolute left-0 top-1/2 -translate-y-1/2;
     @apply w-[3px] h-5 bg-primary rounded-r-full;
 }
@@ -94,18 +95,21 @@
 
 .status-indicator--online {
     @apply bg-success;
-    box-shadow: 0 0 8px hsl(var(--success) / 0.5);
+
+    box-shadow: 0 0 8px hsl(var(--success) / 50%);
 }
 
 .status-indicator--warning {
     @apply bg-warning;
-    box-shadow: 0 0 8px hsl(var(--warning) / 0.5);
+
+    box-shadow: 0 0 8px hsl(var(--warning) / 50%);
     animation: status-pulse 2s ease-in-out infinite;
 }
 
 .status-indicator--error {
     @apply bg-destructive;
-    box-shadow: 0 0 8px hsl(var(--destructive) / 0.5);
+
+    box-shadow: 0 0 8px hsl(var(--destructive) / 50%);
     animation: status-pulse 1s ease-in-out infinite;
 }
 
@@ -115,6 +119,7 @@
 
 .status-indicator--loading {
     @apply bg-info;
+
     animation: status-loading 1s linear infinite;
 }
 
@@ -195,6 +200,7 @@
 /* === Dividers === */
 .sidebar-divider {
     @apply h-px mx-4 my-2;
+
     background: linear-gradient(to right, transparent, theme('colors.border / 40%'), transparent);
 }
 
@@ -205,7 +211,9 @@
 .sidebar-divider--labeled::before,
 .sidebar-divider--labeled::after {
     content: '';
+
     @apply flex-1 h-px;
+
     background: linear-gradient(to right, theme('colors.border / 40%'), transparent);
 }
 
@@ -224,7 +232,9 @@
     @apply min-w-[220px] max-w-[280px];
     @apply bg-popover/95 backdrop-blur-xl;
     @apply border border-border/50 rounded-xl;
-    box-shadow: 0 25px 50px -12px hsl(var(--shadow-color) / 0.25);
+
+    box-shadow: 0 25px 50px -12px hsl(var(--shadow-color) / 25%);
+
     @apply overflow-hidden;
 }
 
@@ -274,6 +284,7 @@
 /* === Scrollbar === */
 .sidebar-scroll {
     @apply overflow-y-auto overflow-x-hidden;
+
     scrollbar-width: thin;
     scrollbar-color: theme('colors.border / 30%') transparent;
 }
@@ -299,8 +310,10 @@
 
 .chat-item::after {
     content: '';
+
     @apply absolute inset-0 opacity-0 transition-opacity duration-200;
-    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.05), transparent);
+
+    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 5%), transparent);
 }
 
 .chat-item:hover::after {
@@ -369,7 +382,7 @@
 }
 
 /* === Responsive Adjustments === */
-@media (max-width: 768px) {
+@media (width <= 768px) {
     .sidebar-mobile {
         @apply fixed inset-y-0 left-0 z-50;
         @apply -translate-x-full;

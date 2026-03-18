@@ -233,8 +233,94 @@ export class GitService {
         return await this.execute('branch', cwd);
     }
 
+    async getFileLog(cwd: string, filePath: string, limit: number = 20) {
+        const safeCwd = cwd?.trim();
+        if (!safeCwd || !filePath) {return [];}
+
+        const { stdout } = await this.executeArgs(
+            ['log', '-n', `${limit}`, '--pretty=format:%h|%s|%an|%ar|%cI', '--', filePath],
+            safeCwd
+        );
+        if (!stdout) {return [];}
+
+        return stdout.split('\n')
+            .filter(line => line.trim())
+            .map(line => {
+                const [hash, message, author, relativeTime, date] = line.split('|');
+                return { hash, message, author, relativeTime, date };
+            });
+    }
+
+    async compareRefs(cwd: string, base: string, head: string) {
+        const countsResult = await this.executeArgs(['rev-list', '--left-right', '--count', `${base}...${head}`], cwd);
+        const diffResult = await this.executeArgs(['diff', '--name-status', `${base}...${head}`], cwd);
+
+        let ahead = 0;
+        let behind = 0;
+        if (countsResult.success && countsResult.stdout) {
+            const parts = countsResult.stdout.trim().split(/[ \t]/).filter(Boolean);
+            behind = parseInt(parts[0] || '0', 10);
+            ahead = parseInt(parts[1] || '0', 10);
+        }
+
+        const files: Array<{ status: string; path: string }> = [];
+        if (diffResult.success && diffResult.stdout) {
+            diffResult.stdout.split('\n').filter(l => l.trim()).forEach(line => {
+                const parts = line.split('\t');
+                const status = parts[0];
+                const path = parts[1];
+                if (status && path) {files.push({ status, path });}
+            });
+        }
+
+        return { ahead, behind, files, success: true };
+    }
+
+    async getHotspots(cwd: string, limit: number = 10, days: number = 30) {
+        const result = await this.executeArgs(
+            ['log', `--since=${days} days ago`, '--pretty=format:', '--name-only'],
+            cwd
+        );
+
+        if (!result.success || !result.stdout) {return [];}
+
+        const counts: Record<string, number> = {};
+        result.stdout.split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0)
+            .forEach(file => {
+                counts[file] = (counts[file] ?? 0) + 1;
+            });
+
+        return Object.entries(counts)
+            .map(([path, count]) => ({ path, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, limit);
+    }
+
     async checkout(cwd: string, branch: string) {
         return await this.executeArgs(['checkout', branch], cwd);
+    }
+
+    async createBranch(cwd: string, name: string, startPoint?: string) {
+        const args = ['checkout', '-b', name];
+        if (startPoint) {
+            args.push(startPoint);
+        }
+        return await this.executeArgs(args, cwd);
+    }
+
+    async deleteBranch(cwd: string, name: string, force: boolean = false) {
+        const flag = force ? '-D' : '-d';
+        return await this.executeArgs(['branch', flag, name], cwd);
+    }
+
+    async renameBranch(cwd: string, oldName: string, newName: string) {
+        return await this.executeArgs(['branch', '-m', oldName, newName], cwd);
+    }
+
+    async setUpstream(cwd: string, branch: string, remote: string, upstreamBranch: string) {
+        return await this.executeArgs(['branch', '--set-upstream-to', `${remote}/${upstreamBranch}`, branch], cwd);
     }
 
     async executeRaw(cwd: string, command: string, options?: GitExecutionOptions) {

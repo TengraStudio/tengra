@@ -1,8 +1,9 @@
-import { Bot, Brain, Clock, Search, Sparkles, Star, X, Zap } from 'lucide-react';
+import { Bot, Box, Brain, Clock, Search, Sparkles, Star, X, Zap } from 'lucide-react';
 import React from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
 import { cn } from '@/lib/utils';
+import type { ClaudeQuota, CodexUsage, CopilotQuota, QuotaResponse } from '@/types/quota';
 
 import { ModelCategory, ModelListItem } from '../../types';
 import { scoreModelForMode } from '../../utils/model-selector-metadata';
@@ -54,6 +55,7 @@ interface ModelSelectorModeTabsProps {
     activeTab: 'models' | 'reasoning';
     onTabChange: (tab: 'models' | 'reasoning') => void;
     showReasoningTab: boolean;
+    t: (key: string) => string;
 }
 
 export const ModelSelectorModeTabs: React.FC<ModelSelectorModeTabsProps> = ({
@@ -63,6 +65,7 @@ export const ModelSelectorModeTabs: React.FC<ModelSelectorModeTabsProps> = ({
     activeTab,
     onTabChange,
     showReasoningTab,
+    t,
 }) => (
     <div className="px-4 py-3 border-b border-border/50 flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2">
@@ -84,7 +87,7 @@ export const ModelSelectorModeTabs: React.FC<ModelSelectorModeTabsProps> = ({
                             )}
                         >
                             <Icon className="w-3.5 h-3.5" />
-                            <span className="capitalize">{mode}</span>
+                            <span>{t(`modelSelector.modeOptions.${mode}`)}</span>
                         </button>
                     );
                 })}
@@ -102,7 +105,7 @@ export const ModelSelectorModeTabs: React.FC<ModelSelectorModeTabsProps> = ({
                             : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                     )}
                 >
-                    Models
+                    {t('modelSelector.tabs.models')}
                 </button>
                 <button
                     onClick={() => onTabChange('reasoning')}
@@ -113,7 +116,7 @@ export const ModelSelectorModeTabs: React.FC<ModelSelectorModeTabsProps> = ({
                             : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                     )}
                 >
-                    Reasoning
+                    {t('modelSelector.tabs.reasoning')}
                 </button>
             </div>
         )}
@@ -158,6 +161,147 @@ interface ModelSectionProps {
     onSelect: (provider: string, id: string, isMultiSelect: boolean) => void;
     toggleFavorite?: (modelId: string) => void;
     t: (key: string) => string;
+}
+
+function getQuotaTone(percent: number): string {
+    if (percent <= 10) { return 'stroke-red-500 text-red-400 bg-red-500/10 border-red-500/20'; }
+    if (percent <= 30) { return 'stroke-amber-500 text-amber-300 bg-amber-500/10 border-amber-500/20'; }
+    return 'stroke-blue-500 text-blue-300 bg-blue-500/10 border-blue-500/20';
+}
+
+const CircularQuota: React.FC<{ value: number; label: string }> = ({ value, label }) => {
+    const normalized = Math.max(0, Math.min(100, Math.round(value)));
+    const radius = 10;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (normalized / 100) * circumference;
+    const tone = getQuotaTone(normalized);
+
+    return (
+        <div className="flex items-center gap-1.5">
+            <div className={cn("relative flex h-7 w-7 items-center justify-center rounded-full border", tone.split(' ').slice(2).join(' '))}>
+                <svg className="absolute inset-0 -rotate-90" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r={radius} stroke="currentColor" strokeWidth="2" className="opacity-15" fill="none" />
+                    <circle
+                        cx="12"
+                        cy="12"
+                        r={radius}
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        fill="none"
+                        className={tone.split(' ').slice(0, 1).join(' ')}
+                        strokeDasharray={circumference}
+                        strokeDashoffset={offset}
+                    />
+                </svg>
+                <span className="text-[8px] font-black text-foreground/90">{normalized}</span>
+            </div>
+            <span className="text-[8px] font-black uppercase tracking-wider text-muted-foreground/70">{label}</span>
+        </div>
+    );
+};
+
+function renderProviderQuota(categoryId: string, options: {
+    copilotQuota?: { accounts: Array<CopilotQuota & { accountId?: string; email?: string; isActive?: boolean }> } | null;
+    activeCopilotAccountId?: string | null;
+    activeCopilotAccountEmail?: string | null;
+    activeClaudeQuota?: ClaudeQuota | null;
+    activeCodexUsage?: ({ usage: CodexUsage; accountId?: string; email?: string } & { isActive?: boolean }) | null;
+    t: (key: string) => string;
+}) {
+    const {
+        copilotQuota,
+        activeCopilotAccountId,
+        activeCopilotAccountEmail,
+        activeClaudeQuota,
+        activeCodexUsage,
+        t
+    } = options;
+    if (categoryId === 'copilot') {
+        const activeAccount = copilotQuota?.accounts?.find(acc => acc.accountId === activeCopilotAccountId)
+            ?? copilotQuota?.accounts?.find(acc => acc.email?.toLowerCase() === activeCopilotAccountEmail)
+            ?? copilotQuota?.accounts?.find(acc => acc.isActive === true)
+            ?? (copilotQuota?.accounts?.length === 1 ? copilotQuota.accounts[0] : null);
+
+        if (!activeAccount) {
+            return null;
+        }
+
+        const limit = activeAccount.seat_breakdown ? activeAccount.seat_breakdown.total_seats : (activeAccount.limit ?? 0);
+        const remaining = activeAccount.seat_breakdown ? (limit - activeAccount.seat_breakdown.active_seats) : (activeAccount.remaining ?? 0);
+        const creditsPercent = limit > 0 ? Math.max(0, Math.min(100, Math.round((remaining / limit) * 100))) : 0;
+        const rateLimit = activeAccount.rate_limit;
+
+        return {
+            badges: (
+                <>
+                    <span className="text-[9px] text-blue-300 font-black uppercase tracking-widest bg-blue-400/10 px-1.5 py-0.5 rounded border border-blue-400/20 leading-none">
+                        {remaining}/{limit || 0} {t('modelSelector.creditsLeft')}
+                    </span>
+                    {rateLimit && (
+                        <span className="text-[9px] text-amber-300 font-black uppercase tracking-widest bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/20 leading-none">
+                            {t('statistics.rateLimit')} {rateLimit.remaining}/{rateLimit.limit}
+                        </span>
+                    )}
+                </>
+            ),
+            progress: (
+                <div className="px-4 pb-3 bg-popover/95">
+                    <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-muted-foreground/70 mb-1.5">
+                        <span>{t('statistics.usageStatus')}</span>
+                        <span className="text-foreground/80">{creditsPercent}%</span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
+                        <div
+                            className={cn(
+                                "h-full transition-all duration-700 ease-out",
+                                creditsPercent < 20 ? "bg-red-500/60" : creditsPercent < 50 ? "bg-amber-500/60" : "bg-blue-500/70"
+                            )}
+                            style={{ width: `${creditsPercent}%` }}
+                        />
+                    </div>
+                </div>
+            )
+        };
+    }
+
+    if (categoryId === 'claude') {
+        const fiveHour = activeClaudeQuota?.fiveHour;
+        const sevenDay = activeClaudeQuota?.sevenDay;
+        if (!fiveHour && !sevenDay) {
+            return null;
+        }
+        return {
+            badges: (
+                <>
+                    {fiveHour && <CircularQuota value={100 - fiveHour.utilization} label="5H" />}
+                    {sevenDay && <CircularQuota value={100 - sevenDay.utilization} label="7D" />}
+                </>
+            )
+        };
+    }
+
+    if (categoryId === 'codex') {
+        const usage = activeCodexUsage?.usage;
+        if (!usage) {
+            return null;
+        }
+        const hasDaily = typeof usage.dailyUsedPercent === 'number';
+        const hasWeekly = typeof usage.weeklyUsedPercent === 'number';
+        if (!hasDaily && !hasWeekly) {
+            return null;
+        }
+        return {
+            badges: (
+                <>
+                    {hasDaily && <CircularQuota value={100 - (usage.dailyUsedPercent ?? 0)} label={t('modelSelector.quota.day')} />}
+                    {hasWeekly && <CircularQuota value={100 - (usage.weeklyUsedPercent ?? 0)} label={t('modelSelector.quota.week')} />}
+                </>
+            )
+        };
+    }
+
+    return null;
 }
 
 const ModelSection: React.FC<ModelSectionProps> = ({
@@ -208,6 +352,12 @@ interface ModelSelectorCategoryListProps {
     chatMode: SelectorChatMode;
     onSelect: (provider: string, id: string, isMultiSelect: boolean) => void;
     toggleFavorite?: (modelId: string) => void;
+    copilotQuota?: { accounts: Array<CopilotQuota & { accountId?: string; email?: string; isActive?: boolean }> } | null;
+    activeCopilotAccountId?: string | null;
+    activeCopilotAccountEmail?: string | null;
+    activeClaudeQuota?: ClaudeQuota | null;
+    activeCodexUsage?: ({ usage: CodexUsage; accountId?: string; email?: string } & { isActive?: boolean }) | null;
+    activeAntigravityQuota?: QuotaResponse | null;
     t: (key: string) => string;
 }
 
@@ -220,23 +370,48 @@ const CategoryRow: React.FC<{
     selectedProvider: string;
     onSelect: (provider: string, id: string, isMultiSelect: boolean) => void;
     toggleFavorite?: (modelId: string) => void;
+    copilotQuota?: { accounts: Array<CopilotQuota & { accountId?: string; email?: string; isActive?: boolean }> } | null;
+    activeCopilotAccountId?: string | null;
+    activeCopilotAccountEmail?: string | null;
+    activeClaudeQuota?: ClaudeQuota | null;
+    activeCodexUsage?: ({ usage: CodexUsage; accountId?: string; email?: string } & { isActive?: boolean }) | null;
+    activeAntigravityQuota?: QuotaResponse | null;
     t: (key: string) => string;
-}> = ({ category, collapsed, onToggleCollapse, selectedModels, selectedModel, selectedProvider, onSelect, toggleFavorite, t }) => (
+}> = ({ category, collapsed, onToggleCollapse, selectedModels, selectedModel, selectedProvider, onSelect, toggleFavorite, copilotQuota, activeCopilotAccountId, activeCopilotAccountEmail, activeClaudeQuota, activeCodexUsage, activeAntigravityQuota, t }) => {
+    const providerQuota = renderProviderQuota(category.id, {
+        copilotQuota,
+        activeCopilotAccountId,
+        activeCopilotAccountEmail,
+        activeClaudeQuota,
+        activeCodexUsage,
+        t
+    });
+
+    return (
     <div className="border-b border-border/30 last:border-b-0">
         <button
             type="button"
             onClick={() => onToggleCollapse(category.id)}
-            className="sticky top-0 z-10 w-full px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 bg-popover/95 backdrop-blur-md hover:text-foreground transition-colors"
+            className="sticky top-0 z-10 w-full px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70 flex items-center gap-2 bg-popover/95 backdrop-blur-md hover:text-foreground transition-all group/cat relative overflow-hidden"
             aria-expanded={!collapsed}
-            aria-label={`${category.name} category`}
+            aria-label={`${category.name} ${t('modelSelector.categoryLabelSuffix')}`}
         >
-            <category.icon className={cn('w-3.5 h-3.5', category.color)} />
-            <span>{category.name}</span>
-            <span className="text-muted-foreground/50 font-normal">({category.models.length})</span>
-            <span className="ml-auto">
-                {collapsed ? '+' : '-'}
+            <div className={cn(
+                "w-1.5 h-1.5 rounded-full shrink-0 animate-pulse",
+                category.color.replace('text-', 'bg-')
+            )} />
+            <span className="truncate">{category.name}</span>
+            {providerQuota?.badges && (
+                <div className="ml-2 flex items-center gap-1.5 shrink-0">
+                    {providerQuota.badges}
+                </div>
+            )}
+            <span className="text-muted-foreground/30 font-normal ml-1">({category.models.length})</span>
+            <span className="ml-auto opacity-0 group-hover/cat:opacity-100 transition-opacity">
+                {collapsed ? <Zap className="w-3 h-3" /> : <Box className="w-3 h-3" />}
             </span>
         </button>
+        {providerQuota?.progress}
         {!collapsed && (
             <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {category.models.map(model => (
@@ -253,12 +428,14 @@ const CategoryRow: React.FC<{
                         modelIndex={selectedModels.findIndex(
                             m => m.provider === model.provider && m.model === model.id
                         )}
+                        activeAntigravityQuota={activeAntigravityQuota}
                     />
                 ))}
             </div>
         )}
     </div>
-);
+    );
+};
 
 export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps> = ({
     filteredCategories,
@@ -271,6 +448,12 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
     chatMode,
     onSelect,
     toggleFavorite,
+    copilotQuota,
+    activeCopilotAccountId,
+    activeCopilotAccountEmail,
+    activeClaudeQuota,
+    activeCodexUsage,
+    activeAntigravityQuota,
     t,
 }) => {
     const [collapsedCategoryIds, setCollapsedCategoryIds] = React.useState<Set<string>>(
@@ -348,7 +531,7 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
 
             {showCuratedSections && deprecatedModels.length > 0 && (
                 <ModelSection
-                    title="Deprecated"
+                    title={t('modelSelector.deprecated')}
                     icon={<Brain className="w-3.5 h-3.5 text-warning" />}
                     models={deprecatedModels}
                     selectedModels={selectedModels}
@@ -362,7 +545,7 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
 
             {showCuratedSections && (
                 <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/20 border-b border-border/30">
-                    All Models
+                    {t('modelSelector.allModels')}
                 </div>
             )}
 
@@ -386,6 +569,12 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
                             selectedProvider={selectedProvider}
                                 onSelect={onSelect}
                                 toggleFavorite={toggleFavorite}
+                                copilotQuota={copilotQuota}
+                                activeCopilotAccountId={activeCopilotAccountId}
+                                activeCopilotAccountEmail={activeCopilotAccountEmail}
+                                activeClaudeQuota={activeClaudeQuota}
+                                activeCodexUsage={activeCodexUsage}
+                                activeAntigravityQuota={activeAntigravityQuota}
                                 t={t}
                             />
                         )}
@@ -403,6 +592,12 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
                         selectedProvider={selectedProvider}
                         onSelect={onSelect}
                         toggleFavorite={toggleFavorite}
+                        copilotQuota={copilotQuota}
+                        activeCopilotAccountId={activeCopilotAccountId}
+                        activeCopilotAccountEmail={activeCopilotAccountEmail}
+                        activeClaudeQuota={activeClaudeQuota}
+                        activeCodexUsage={activeCodexUsage}
+                        activeAntigravityQuota={activeAntigravityQuota}
                         t={t}
                     />
                 ))

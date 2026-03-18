@@ -47,29 +47,29 @@ describe('ProxyService performance instrumentation', () => {
         const mockSettingsService = {
             getSettings: vi.fn().mockReturnValue({ proxy: { key: 'mock-key' } }),
             saveSettings: vi.fn().mockResolvedValue(undefined),
-        } as unknown as SettingsService;
+        } as never as SettingsService;
 
         mockProcessManager = {
             start: vi.fn().mockResolvedValue({ running: true }),
             stop: vi.fn().mockResolvedValue(undefined),
             getStatus: vi.fn().mockReturnValue({ running: false }),
             generateConfig: vi.fn().mockResolvedValue(undefined),
-        } as unknown as ProxyProcessManager;
+        } as never as ProxyProcessManager;
 
         const mockAuthService = {
             saveToken: vi.fn(),
             getToken: vi.fn(),
             getAuthToken: vi.fn(),
-        } as unknown as AuthService;
+        } as never as AuthService;
 
         proxyService = new ProxyService({
             settingsService: mockSettingsService,
-            dataService: { getPath: vi.fn().mockReturnValue('/mock') } as unknown as DataService,
-            securityService: {} as unknown as SecurityService,
+            dataService: { getPath: vi.fn().mockReturnValue('/mock') } as never as DataService,
+            securityService: {} as never as SecurityService,
             processManager: mockProcessManager,
-            quotaService: {} as unknown as QuotaService,
+            quotaService: {} as never as QuotaService,
             authService: mockAuthService,
-            eventBus: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), emitCustom: vi.fn() } as unknown as EventBusService,
+            eventBus: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), emitCustom: vi.fn() } as never as EventBusService,
         });
     });
 

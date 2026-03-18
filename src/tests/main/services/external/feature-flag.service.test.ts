@@ -25,7 +25,7 @@ const createService = (): FeatureFlagService => {
         getPath: vi.fn().mockReturnValue('/mock/config'),
     };
 
-    return new FeatureFlagService(dataServiceMock as unknown as DataService);
+    return new FeatureFlagService(dataServiceMock as never as DataService);
 };
 
 describe('FeatureFlagService', () => {
@@ -119,9 +119,9 @@ describe('FeatureFlagService', () => {
         });
 
         it('returns false for non-string input', () => {
-            expect(service.isEnabled(123 as unknown as string)).toBe(false);
-            expect(service.isEnabled(null as unknown as string)).toBe(false);
-            expect(service.isEnabled(undefined as unknown as string)).toBe(false);
+            expect(service.isEnabled(123 as never as string)).toBe(false);
+            expect(service.isEnabled(null as never as string)).toBe(false);
+            expect(service.isEnabled(undefined as never as string)).toBe(false);
         });
 
         it('returns false for oversized featureId', () => {
@@ -165,7 +165,7 @@ describe('FeatureFlagService', () => {
         });
 
         it('throws for non-string featureId', () => {
-            expect(() => service.enable(null as unknown as string)).toThrow(FeatureFlagError);
+            expect(() => service.enable(null as never as string)).toThrow(FeatureFlagError);
         });
 
         it('throws for oversized featureId', () => {
@@ -208,7 +208,7 @@ describe('FeatureFlagService', () => {
         });
 
         it('throws for non-string featureId', () => {
-            expect(() => service.disable(undefined as unknown as string)).toThrow(FeatureFlagError);
+            expect(() => service.disable(undefined as never as string)).toThrow(FeatureFlagError);
         });
 
         it('throws for oversized featureId', () => {
@@ -451,15 +451,15 @@ describe('FeatureFlagService', () => {
         });
 
         it('returns false for non-object context (safe fallback)', () => {
-            expect(service.evaluate('eval.flag', 'bad' as unknown as EvaluationContext)).toBe(false);
+            expect(service.evaluate('eval.flag', 'bad' as never as EvaluationContext)).toBe(false);
         });
 
         it('returns false for null context (safe fallback)', () => {
-            expect(service.evaluate('eval.flag', null as unknown as EvaluationContext)).toBe(false);
+            expect(service.evaluate('eval.flag', null as never as EvaluationContext)).toBe(false);
         });
 
         it('returns false for array context (safe fallback)', () => {
-            expect(service.evaluate('eval.flag', [] as unknown as EvaluationContext)).toBe(false);
+            expect(service.evaluate('eval.flag', [] as never as EvaluationContext)).toBe(false);
         });
 
         it('returns false for empty userId (safe fallback)', () => {
@@ -480,7 +480,7 @@ describe('FeatureFlagService', () => {
 
         it('returns false when attributes is not a plain object (safe fallback)', () => {
             expect(
-                service.evaluate('eval.flag', { attributes: 'bad' as unknown as Record<string, string> })
+                service.evaluate('eval.flag', { attributes: 'bad' as never as Record<string, string> })
             ).toBe(false);
         });
 
@@ -495,7 +495,7 @@ describe('FeatureFlagService', () => {
         it('returns false for invalid attribute value type (safe fallback)', () => {
             expect(
                 service.evaluate('eval.flag', {
-                    attributes: { bad: { nested: true } as unknown as string },
+                    attributes: { bad: { nested: true } as never as string },
                 })
             ).toBe(false);
         });
@@ -537,9 +537,9 @@ describe('FeatureFlagService', () => {
         });
 
         it('throws for non-boolean override value', () => {
-            expect(() => service.setOverride('over.flag', 'yes' as unknown as boolean)).toThrow(FeatureFlagError);
-            expect(() => service.setOverride('over.flag', 1 as unknown as boolean)).toThrow(FeatureFlagError);
-            expect(() => service.setOverride('over.flag', null as unknown as boolean)).toThrow(FeatureFlagError);
+            expect(() => service.setOverride('over.flag', 'yes' as never as boolean)).toThrow(FeatureFlagError);
+            expect(() => service.setOverride('over.flag', 1 as never as boolean)).toThrow(FeatureFlagError);
+            expect(() => service.setOverride('over.flag', null as never as boolean)).toThrow(FeatureFlagError);
         });
     });
 
@@ -624,7 +624,7 @@ describe('FeatureFlagService error codes', () => {
 
         it('throws FeatureFlagError instance from setOverride() with bad value', () => {
             try {
-                service.setOverride('council.planning', 'yes' as unknown as boolean);
+                service.setOverride('council.planning', 'yes' as never as boolean);
                 expect.fail('should have thrown');
             } catch (error) {
                 expect(error).toBeInstanceOf(FeatureFlagError);
@@ -665,23 +665,23 @@ describe('FeatureFlagService error codes', () => {
         });
 
         it('never throws for null featureId', () => {
-            expect(() => service.evaluate(null as unknown as string)).not.toThrow();
-            expect(service.evaluate(null as unknown as string)).toBe(false);
+            expect(() => service.evaluate(null as never as string)).not.toThrow();
+            expect(service.evaluate(null as never as string)).toBe(false);
         });
 
         it('never throws for undefined featureId', () => {
-            expect(() => service.evaluate(undefined as unknown as string)).not.toThrow();
-            expect(service.evaluate(undefined as unknown as string)).toBe(false);
+            expect(() => service.evaluate(undefined as never as string)).not.toThrow();
+            expect(service.evaluate(undefined as never as string)).toBe(false);
         });
 
         it('never throws for numeric featureId', () => {
-            expect(() => service.evaluate(42 as unknown as string)).not.toThrow();
-            expect(service.evaluate(42 as unknown as string)).toBe(false);
+            expect(() => service.evaluate(42 as never as string)).not.toThrow();
+            expect(service.evaluate(42 as never as string)).toBe(false);
         });
 
         it('never throws for invalid context with valid featureId', () => {
-            expect(() => service.evaluate('safe.flag', 123 as unknown as EvaluationContext)).not.toThrow();
-            expect(service.evaluate('safe.flag', 123 as unknown as EvaluationContext)).toBe(false);
+            expect(() => service.evaluate('safe.flag', 123 as never as EvaluationContext)).not.toThrow();
+            expect(service.evaluate('safe.flag', 123 as never as EvaluationContext)).toBe(false);
         });
 
         it('still returns true for valid enabled flag', () => {

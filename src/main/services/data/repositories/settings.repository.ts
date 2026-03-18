@@ -50,7 +50,7 @@ export class SettingsRepository extends BaseRepository {
     }
 
     /** Insert or update a setting. The value is serialised as JSON. */
-    async set(key: string, value: unknown, category: string = 'general'): Promise<{ success: boolean; error?: string }> {
+    async set(key: string, value: RuntimeValue, category: string = 'general'): Promise<{ success: boolean; error?: string }> {
         try {
             const now = Date.now();
             const serialised = JSON.stringify(value);

@@ -45,7 +45,7 @@ describe('DataService', () => {
     });
 
     describe('getPath', () => {
-        const validTypes: DataType[] = ['auth', 'db', 'config', 'logs', 'models', 'gallery', 'galleryImages', 'galleryVideos', 'data'];
+        const validTypes: DataType[] = ['db', 'config', 'logs', 'models', 'gallery', 'galleryImages', 'galleryVideos', 'data'];
 
         it.each(validTypes)('should return a path string for valid type "%s"', (type) => {
             const result = service.getPath(type);
@@ -57,7 +57,7 @@ describe('DataService', () => {
             try {
                 service.getPath('' as DataType);
                 expect.fail('Expected error to be thrown');
-            } catch (error: unknown) {
+            } catch (error) {
                 const err = error as Error & { code?: string };
                 expect(err.code).toBe(DataServiceErrorCode.PATH_TYPE_INVALID);
             }
@@ -65,9 +65,9 @@ describe('DataService', () => {
 
         it('should throw with PATH_TYPE_INVALID code for undefined cast as DataType', () => {
             try {
-                service.getPath(undefined as unknown as DataType);
+                service.getPath(undefined as never as DataType);
                 expect.fail('Expected error to be thrown');
-            } catch (error: unknown) {
+            } catch (error) {
                 const err = error as Error & { code?: string };
                 expect(err.code).toBe(DataServiceErrorCode.PATH_TYPE_INVALID);
             }
@@ -75,9 +75,9 @@ describe('DataService', () => {
 
         it('should throw with PATH_TYPE_INVALID code for null cast as DataType', () => {
             try {
-                service.getPath(null as unknown as DataType);
+                service.getPath(null as never as DataType);
                 expect.fail('Expected error to be thrown');
-            } catch (error: unknown) {
+            } catch (error) {
                 const err = error as Error & { code?: string };
                 expect(err.code).toBe(DataServiceErrorCode.PATH_TYPE_INVALID);
             }
@@ -87,7 +87,7 @@ describe('DataService', () => {
             try {
                 service.getPath('nonexistent' as DataType);
                 expect.fail('Expected error to be thrown');
-            } catch (error: unknown) {
+            } catch (error) {
                 const err = error as Error & { code?: string };
                 expect(err.code).toBe(DataServiceErrorCode.PATH_TYPE_INVALID);
                 expect(err.message).toContain('nonexistent');
@@ -95,8 +95,8 @@ describe('DataService', () => {
         });
 
         it('should return consistent paths across multiple calls', () => {
-            const first = service.getPath('auth');
-            const second = service.getPath('auth');
+            const first = service.getPath('db');
+            const second = service.getPath('db');
             expect(first).toBe(second);
         });
     });
@@ -135,7 +135,7 @@ describe('DataService', () => {
     describe('getAllPaths', () => {
         it('should return an object containing all data type paths', () => {
             const paths = service.getAllPaths();
-            const expectedKeys: DataType[] = ['auth', 'db', 'config', 'logs', 'models', 'gallery', 'galleryImages', 'galleryVideos', 'data'];
+            const expectedKeys: DataType[] = ['db', 'config', 'logs', 'models', 'gallery', 'galleryImages', 'galleryVideos', 'data'];
             for (const key of expectedKeys) {
                 expect(paths).toHaveProperty(key);
                 expect(typeof paths[key]).toBe('string');
@@ -144,11 +144,11 @@ describe('DataService', () => {
 
         it('should return a copy that does not mutate internal state', () => {
             const paths = service.getAllPaths();
-            const originalAuth = paths.auth;
-            paths.auth = '/mutated/path';
+            const originalDb = paths.db;
+            paths.db = '/mutated/path';
 
             const freshPaths = service.getAllPaths();
-            expect(freshPaths.auth).toBe(originalAuth);
+            expect(freshPaths.db).toBe(originalDb);
         });
     });
 
@@ -223,7 +223,7 @@ describe('DataService', () => {
             try {
                 await service.initialize();
                 expect.fail('Expected error');
-            } catch (error: unknown) {
+            } catch (error) {
                 const err = error as Error & { code?: string };
                 expect(err.code).toBe(DataServiceErrorCode.DIRECTORY_CREATE_FAILED);
                 expect(err.message).toContain('EACCES');
@@ -241,60 +241,60 @@ describe('DataService', () => {
         it('should accept telemetry service via setTelemetryService', () => {
             const mockTelemetry = { track: vi.fn().mockReturnValue({ success: true }) };
             expect(() => {
-                service.setTelemetryService(mockTelemetry as unknown as TelemetryService);
+                service.setTelemetryService(mockTelemetry as never as TelemetryService);
             }).not.toThrow();
         });
 
         it('should track INITIALIZE_START and INITIALIZE_COMPLETE on success', async () => {
             const trackFn = vi.fn().mockReturnValue({ success: true });
-            service.setTelemetryService({ track: trackFn } as unknown as TelemetryService);
+            service.setTelemetryService({ track: trackFn } as never as TelemetryService);
 
             await service.initialize();
 
-            const eventNames = trackFn.mock.calls.map((c: unknown[]) => c[0]);
+            const eventNames = trackFn.mock.calls.map((c: TestValue[]) => c[0]);
             expect(eventNames).toContain(DataServiceTelemetryEvent.INITIALIZE_START);
             expect(eventNames).toContain(DataServiceTelemetryEvent.INITIALIZE_COMPLETE);
         });
 
         it('should track INITIALIZE_ERROR on failure', async () => {
             const trackFn = vi.fn().mockReturnValue({ success: true });
-            service.setTelemetryService({ track: trackFn } as unknown as TelemetryService);
+            service.setTelemetryService({ track: trackFn } as never as TelemetryService);
             vi.mocked(fsp.mkdir).mockRejectedValueOnce(new Error('fail'));
 
             await expect(service.initialize()).rejects.toThrow();
 
-            const eventNames = trackFn.mock.calls.map((c: unknown[]) => c[0]);
+            const eventNames = trackFn.mock.calls.map((c: TestValue[]) => c[0]);
             expect(eventNames).toContain(DataServiceTelemetryEvent.INITIALIZE_ERROR);
         });
 
         it('should track PATH_ACCESSED when getPath is called', () => {
             const trackFn = vi.fn().mockReturnValue({ success: true });
-            service.setTelemetryService({ track: trackFn } as unknown as TelemetryService);
+            service.setTelemetryService({ track: trackFn } as never as TelemetryService);
 
-            service.getPath('auth');
+            service.getPath('db');
 
             const pathCalls = trackFn.mock.calls.filter(
-                (c: unknown[]) => c[0] === DataServiceTelemetryEvent.PATH_ACCESSED
+                (c: TestValue[]) => c[0] === DataServiceTelemetryEvent.PATH_ACCESSED
             );
             expect(pathCalls.length).toBe(1);
-            expect((pathCalls[0][1] as Record<string, unknown>).type).toBe('auth');
+            expect((pathCalls[0][1] as Record<string, TestValue>).type).toBe('db');
         });
 
         it('should track DIRECTORY_CREATED events during initialization', async () => {
             const trackFn = vi.fn().mockReturnValue({ success: true });
-            service.setTelemetryService({ track: trackFn } as unknown as TelemetryService);
+            service.setTelemetryService({ track: trackFn } as never as TelemetryService);
 
             await service.initialize();
 
             const dirEvents = trackFn.mock.calls.filter(
-                (c: unknown[]) => c[0] === DataServiceTelemetryEvent.DIRECTORY_CREATED
+                (c: TestValue[]) => c[0] === DataServiceTelemetryEvent.DIRECTORY_CREATED
             );
             expect(dirEvents.length).toBeGreaterThan(0);
         });
 
         it('should not throw when telemetry service is not set', async () => {
             await expect(service.initialize()).resolves.toBeUndefined();
-            expect(() => service.getPath('auth')).not.toThrow();
+            expect(() => service.getPath('db')).not.toThrow();
         });
     });
 
@@ -340,19 +340,19 @@ describe('DataService', () => {
 
     describe('input validation edge cases (B-0483)', () => {
         it('should reject numeric type cast as DataType', () => {
-            expect(() => service.getPath(42 as unknown as DataType)).toThrow();
+            expect(() => service.getPath(42 as never as DataType)).toThrow();
         });
 
         it('should reject object cast as DataType', () => {
-            expect(() => service.getPath({} as unknown as DataType)).toThrow();
+            expect(() => service.getPath({} as never as DataType)).toThrow();
         });
 
         it('should reject array cast as DataType', () => {
-            expect(() => service.getPath([] as unknown as DataType)).toThrow();
+            expect(() => service.getPath([] as never as DataType)).toThrow();
         });
 
         it('should reject boolean cast as DataType', () => {
-            expect(() => service.getPath(true as unknown as DataType)).toThrow();
+            expect(() => service.getPath(true as never as DataType)).toThrow();
         });
 
         it('should reject type with trailing whitespace', () => {

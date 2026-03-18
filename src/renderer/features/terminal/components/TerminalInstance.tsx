@@ -1,12 +1,13 @@
 import { useTranslation } from '@renderer/i18n';
+import { FitAddon } from '@xterm/addon-fit';
+import { type ITheme,Terminal as XTerm } from '@xterm/xterm';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { ITheme, Terminal as XTerm } from 'xterm';
-import { FitAddon } from 'xterm-addon-fit';
 
 import { useTerminalSmartSuggestions } from '@/features/terminal/hooks/useTerminalSmartSuggestions';
 import { invokeTypedIpc } from '@/lib/ipc-client';
 import { cn } from '@/lib/utils';
 import type { TerminalTab } from '@/types';
+import { performanceMonitor } from '@/utils/performance';
 import { appLogger } from '@/utils/renderer-logger';
 
 import type {
@@ -23,7 +24,6 @@ import {
 import {
     terminalCreateResponseSchema,
     TerminalIpcContract,
-    terminalIsAvailableResponseSchema,
     terminalKillResponseSchema,
     terminalReadBufferResponseSchema,
     terminalResizeResponseSchema,
@@ -158,6 +158,16 @@ function useTerminalSession(
     const isMountedRef = useRef(true);
     const hasBootstrappedRef = useRef(false);
 
+    const waitForAnimationFrame = useCallback(
+        () =>
+            new Promise<void>(resolve => {
+                window.requestAnimationFrame(() => {
+                    resolve();
+                });
+            }),
+        []
+    );
+
     useEffect(() => {
         isMountedRef.current = true;
 
@@ -283,15 +293,6 @@ function useTerminalSession(
             if (!isMountedRef.current) {
                 return null;
             }
-            if (!(await invokeTypedIpc<TerminalIpcContract, 'terminal:isAvailable'>('terminal:isAvailable', [], { responseSchema: terminalIsAvailableResponseSchema }))) {
-                if (isMountedRef.current) {
-                    term.write('\r\n\x1b[31m[ERROR] Terminal service not available.\x1b[0m\r\n');
-                }
-                return null;
-            }
-            if (!isMountedRef.current) {
-                return null;
-            }
             const sessionId = await invokeTypedIpc<TerminalIpcContract, 'terminal:create'>('terminal:create', [{
                 id: tab.id,
                 shell: tab.type,
@@ -312,9 +313,7 @@ function useTerminalSession(
             if (isTerminalSessionInitialized(tab.id)) {
                 return;
             }
-            await new Promise(resolve => {
-                setTimeout(resolve, 50);
-            });
+            await waitForAnimationFrame();
             if (!isMountedRef.current) {
                 clearTerminalSessionFlags(tab.id);
                 return;
@@ -349,6 +348,9 @@ function useTerminalSession(
             }
             if (isMountedRef.current) {
                 setIsReady(true);
+                if (workspacePath) {
+                    performanceMonitor.mark('workspace:terminal:ready');
+                }
             }
 
             if (
@@ -357,14 +359,14 @@ function useTerminalSession(
                 tab.bootstrapCommand.trim()
             ) {
                 hasBootstrappedRef.current = true;
-                window.setTimeout(() => {
+                window.requestAnimationFrame(() => {
                     if (isMountedRef.current) {
                         void invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [
                             tab.id,
                             `${tab.bootstrapCommand?.trim() ?? ''}\r`
                         ], { responseSchema: terminalWriteResponseSchema });
                     }
-                }, 120);
+                });
             }
         };
 
@@ -405,6 +407,7 @@ function useTerminalSession(
         tab.id,
         tab.metadata,
         tab.type,
+        waitForAnimationFrame,
     ]);
 
     return { xtermRef, fitAddonRef, isReady, hasError };
@@ -539,9 +542,11 @@ export const TerminalInstance = memo(({
         if (!isVisible) {
             return;
         }
-        const timer = setTimeout(safeFit, 100);
+        const frameId = window.requestAnimationFrame(() => {
+            safeFit();
+        });
         return () => {
-            clearTimeout(timer);
+            window.cancelAnimationFrame(frameId);
         };
     }, [isVisible, safeFit]);
 

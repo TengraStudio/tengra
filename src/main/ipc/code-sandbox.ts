@@ -21,10 +21,18 @@ const CODE_SANDBOX_ERROR_CODE = {
 } as const;
 
 const CODE_SANDBOX_MESSAGE_KEY = {
-    VALIDATION_FAILED: 'errors.unexpected',
-    EXECUTION_FAILED: 'errors.unexpected',
-    SECURITY_BLOCKED: 'errors.unexpected',
-    TIMEOUT: 'errors.unexpected'
+    VALIDATION_FAILED: 'codeSandbox.errors.validationFailed',
+    EXECUTION_FAILED: 'codeSandbox.errors.executionFailed',
+    SECURITY_BLOCKED: 'codeSandbox.errors.securityBlocked',
+    TIMEOUT: 'codeSandbox.errors.timeout'
+} as const;
+
+const CODE_SANDBOX_STDERR_FALLBACK = {
+    VALIDATION_FAILED: 'Invalid code sandbox request.',
+    EXECUTION_FAILED: 'Code execution failed. Please check your code and try again.',
+    SECURITY_BLOCKED: 'Blocked by sandbox security policy',
+    TIMEOUT: 'Execution timed out.',
+    TRANSIENT_FAILURE: 'Temporary sandbox execution failure. Please retry.'
 } as const;
 
 const CODE_SANDBOX_PERFORMANCE_BUDGET_MS = {
@@ -174,6 +182,13 @@ const buildCodeSandboxErrorMetadata = (
     error: Error
 ): { errorCode: string; messageKey: string; retryable: boolean } => {
     const message = getErrorMessage(error);
+    if (message.toLowerCase().includes('timed out') || message.toLowerCase().includes('timeout')) {
+        return {
+            errorCode: CODE_SANDBOX_ERROR_CODE.TIMEOUT,
+            messageKey: CODE_SANDBOX_MESSAGE_KEY.TIMEOUT,
+            retryable: true
+        };
+    }
     if (isValidationFailureMessage(message)) {
         return {
             errorCode: CODE_SANDBOX_ERROR_CODE.VALIDATION,
@@ -193,6 +208,19 @@ const buildCodeSandboxErrorMetadata = (
         messageKey: CODE_SANDBOX_MESSAGE_KEY.EXECUTION_FAILED,
         retryable: false
     };
+};
+
+const resolveUserFacingStderr = (messageKey: string): string => {
+    if (messageKey === CODE_SANDBOX_MESSAGE_KEY.VALIDATION_FAILED) {
+        return CODE_SANDBOX_STDERR_FALLBACK.VALIDATION_FAILED;
+    }
+    if (messageKey === CODE_SANDBOX_MESSAGE_KEY.SECURITY_BLOCKED) {
+        return CODE_SANDBOX_STDERR_FALLBACK.SECURITY_BLOCKED;
+    }
+    if (messageKey === CODE_SANDBOX_MESSAGE_KEY.TIMEOUT) {
+        return CODE_SANDBOX_STDERR_FALLBACK.TIMEOUT;
+    }
+    return CODE_SANDBOX_STDERR_FALLBACK.EXECUTION_FAILED;
 };
 
 const createCodeSandboxHealthPayload = () => {
@@ -350,8 +378,8 @@ const executeJavascriptSandbox = async (
     const stderrParts: string[] = [];
     const sandbox = {
         console: {
-            log: (...args: unknown[]) => stdoutParts.push(args.map(value => String(value)).join(' ')),
-            error: (...args: unknown[]) => stderrParts.push(args.map(value => String(value)).join(' '))
+            log: (...args: RuntimeValue[]) => stdoutParts.push(args.map(value => String(value)).join(' ')),
+            error: (...args: RuntimeValue[]) => stderrParts.push(args.map(value => String(value)).join(' '))
         },
         Math,
         Date,
@@ -450,7 +478,7 @@ const executeSubprocessSandbox = async (
             finalize({
                 success: false,
                 stdout,
-                stderr: stderr ? `${stderr}\nTimed out` : 'Timed out',
+                stderr: stderr ? `${stderr}\n${CODE_SANDBOX_STDERR_FALLBACK.TIMEOUT}` : CODE_SANDBOX_STDERR_FALLBACK.TIMEOUT,
                 durationMs: Date.now() - startTime,
                 language,
                 errorCode: CODE_SANDBOX_ERROR_CODE.TIMEOUT,
@@ -520,7 +548,7 @@ const executeWithRetryPolicy = async (
         async () => {
             const result = await runExecution();
             if (!result.success && result.retryable) {
-                throw new Error(result.stderr || 'Transient sandbox execution failure');
+                throw new Error(result.stderr || CODE_SANDBOX_STDERR_FALLBACK.TRANSIENT_FAILURE);
             }
             return result;
         },
@@ -541,12 +569,12 @@ const executeWithRetryPolicy = async (
         return retryResult.result;
     }
 
-    const failure = retryResult.error ?? new Error('Code sandbox execution failed');
+    const failure = retryResult.error ?? new Error(CODE_SANDBOX_STDERR_FALLBACK.EXECUTION_FAILED);
     const metadata = buildCodeSandboxErrorMetadata(failure);
     return {
         success: false,
         stdout: '',
-        stderr: getErrorMessage(failure),
+        stderr: resolveUserFacingStderr(metadata.messageKey),
         durationMs: retryResult.totalDurationMs,
         language: payload.language,
         ...metadata,

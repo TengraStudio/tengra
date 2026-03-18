@@ -278,7 +278,7 @@ export class CopilotApiClient {
         return { id: randomUUID(), role: 'assistant', content: choice.text?.trim() ?? '', timestamp: new Date() };
     }
 
-    private handleError(error: Error | string | unknown, context: string): never {
+    private handleError(error: Error | string | RuntimeValue, context: string): never {
         const message = getErrorMessage(error as Error);
         appLogger.error(SERVICE_NAME, `Error in ${context}: ${message}`);
         if (error instanceof Error) { throw error; }

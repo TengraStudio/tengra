@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { Chat, Message } from '@/types';
+import { Chat, ChatStreamRequest, Message } from '@/types';
 import { CatchError } from '@/types/common';
 
 const mockChatStream = vi.fn();
@@ -14,7 +14,7 @@ const mockAbortChat = vi.fn();
 const mockLogError = vi.fn();
 
 vi.mock('@/lib/chat-stream', () => ({
-    chatStream: (request: unknown) => mockChatStream(request),
+    chatStream: (request: ChatStreamRequest) => mockChatStream(request),
 }));
 
 vi.mock('@/lib/identity', () => ({
@@ -181,5 +181,41 @@ describe('useChatGenerator', () => {
                 content: '',
             })
         );
+    });
+
+    it('handles empty generate_image tool responses without crashing', async () => {
+        mockExecuteTools.mockResolvedValue(undefined);
+
+        const { result } = renderHook(() => {
+            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const chatGenerator = useChatGenerator({
+                chats,
+                setChats,
+                selectedModel: 'model-a',
+                selectedProvider: 'ollama',
+                language: 'tr',
+                t: (key: string) => key,
+                handleSpeak: vi.fn(),
+                autoReadEnabled: false,
+                formatChatError: (err: CatchError) =>
+                    err instanceof Error ? err.message : String(err ?? ''),
+                systemMode: 'agent',
+            });
+
+            return {
+                ...chatGenerator,
+                chats,
+            };
+        });
+
+        await act(async () => {
+            await result.current.generateResponse('chat-1', {
+                ...createUserMessage(),
+                content: 'Bir görsel oluştur',
+            });
+        });
+
+        expect(result.current.chats[0]?.messages[0]?.content).toContain('chat.error');
+        expect(mockLogError).toHaveBeenCalled();
     });
 });

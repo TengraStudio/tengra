@@ -17,7 +17,7 @@ export function serializeToIpc(value: object | object[] | null | undefined): Jso
  * Converts a Zod-validated record to a JsonObject for database write operations.
  * The caller must ensure the value has been validated before calling this function.
  */
-export function validatedToJsonObject(value: Record<string, unknown>): JsonObject {
+export function validatedToJsonObject(value: Record<string, RuntimeValue>): JsonObject {
     const result: JsonObject = {};
     for (const [key, val] of Object.entries(value)) {
         result[key] = val as JsonObject[string];
@@ -30,6 +30,6 @@ export function validatedToJsonObject(value: Record<string, unknown>): JsonObjec
  * Performs a shallow copy to ensure a plain object, then asserts the target type.
  * The caller must ensure the value has been schema-validated before calling.
  */
-export function validatedAs<T extends object>(value: Partial<T> | Record<string, unknown>): T {
+export function validatedAs<T extends object>(value: Partial<T> | Record<string, RuntimeValue>): T {
     return { ...value } as T;
 }

@@ -8,7 +8,7 @@ export class AppError extends Error {
   /** Optional underlying cause of this error */
   public readonly cause?: Error;
   /** Optional structured context for debugging */
-  public readonly context?: Record<string, unknown>;
+  public readonly context?: Record<string, RuntimeValue>;
   /** ISO timestamp when the error was created */
   public readonly timestamp: string;
 
@@ -21,7 +21,7 @@ export class AppError extends Error {
   constructor(
     message: string,
     code: string,
-    options?: { cause?: Error; context?: Record<string, unknown> }
+    options?: { cause?: Error; context?: Record<string, RuntimeValue> }
   ) {
     super(message);
     this.name = this.constructor.name;
@@ -35,7 +35,7 @@ export class AppError extends Error {
   }
 
   /** Serializes the error to a plain object */
-  public toJSON(): Record<string, unknown> {
+  public toJSON(): Record<string, RuntimeValue> {
     return {
       name: this.name,
       message: this.message,

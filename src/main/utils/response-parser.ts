@@ -23,7 +23,7 @@ function handleStringContent(response: string): string {
 /**
  * Handle list format found in Copilot or other responses
  */
-function handleListLike(list: unknown): string | null {
+function handleListLike(list: RuntimeValue): string | null {
     if (!Array.isArray(list)) {return null;}
     return list
         .filter((item): item is JsonObject => isJsonObject(item) && (item.type === 'output_text' || !!item.text))

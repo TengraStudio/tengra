@@ -200,7 +200,7 @@ export class ProxyService extends BaseService {
 
     // Listen for token refreshes (no longer syncs files, but logs it)
     this.eventBus.on('token:refreshed', (payload) => {
-      this.logInfo(`Token refreshed for ${payload.provider}, available via Auth API`);
+      this.logDebug(`Token refreshed for ${payload.provider}, available via Auth API`);
     });
 
     await this.ensureAuthStoreKey();
@@ -590,7 +590,7 @@ export class ProxyService extends BaseService {
             try {
               workspaceId = await this.fetchAntigravityWorkspaceID(data.access_token);
               if (workspaceId) {
-                this.logInfo(`Discovered Antigravity workspace ID: ${workspaceId}`);
+                this.logDebug(`Discovered Antigravity workspace ID: ${workspaceId}`);
               }
             } catch (e) {
               this.logWarn('Failed to discover Antigravity workspace ID:', e as Error);
@@ -646,7 +646,7 @@ export class ProxyService extends BaseService {
         // Sync to file system so proxy picks it up immediately
 
 
-        this.logInfo('Claude OAuth login successful');
+        this.logDebug('Claude OAuth login successful');
       },
       (err) => {
         this.logError('Claude Auth failed:', err as Error);
@@ -658,7 +658,7 @@ export class ProxyService extends BaseService {
   async getCodexAuthUrl(): Promise<ProxyRequestResponse> {
     const response = await this.makeRequest(
       '/v0/management/codex-auth-url?is_webui=true',
-      await this.getProxyKey(),
+      await this.getManagementKey(),
       'GET',
       undefined,
       { provider: 'codex', priority: 5 }
@@ -726,7 +726,8 @@ export class ProxyService extends BaseService {
   }
 
   /**
-   * Generates proxy configuration file.
+   * Prepares embedded proxy runtime bootstrap inputs.
+   * Kept as generateConfig for backwards-compatible callers.
    * @param port - Port number
    * @throws ProxyServiceError on invalid port
    */
@@ -823,7 +824,7 @@ export class ProxyService extends BaseService {
 
   private async getProxyModels(apiKey: string): Promise<ModelItem[]> {
     try {
-      this.logInfo(`getProxyModels: Fetching from http://127.0.0.1:${this.currentPort}/v1/models`);
+      this.logDebug(`getProxyModels: Fetching from http://127.0.0.1:${this.currentPort}/v1/models`);
       const res = await this.makeRequest('/v1/models', apiKey, 'GET', undefined, { provider: 'proxy', priority: 1 });
       if ('data' in res && Array.isArray(res.data)) {
         return res.data as ModelItem[];
@@ -851,7 +852,7 @@ export class ProxyService extends BaseService {
     const usage = this.quotaService.extractCodexUsageFromWham(codexData);
     if (!usage) { return undefined; }
 
-    const usageObj = usage as Record<string, unknown>;
+    const usageObj = usage as Record<string, RuntimeValue>;
     const remaining = (usageObj.remainingRequests as number) || (usageObj.remainingTokens as number) || 0;
     const limit = (usageObj.dailyLimit as number) || (usageObj.weeklyLimit as number) || (usageObj.totalRequests as number) || 0;
     const fraction = this.determineCodexFraction(usage, remaining, limit);
@@ -989,7 +990,7 @@ export class ProxyService extends BaseService {
     path: string,
     apiKey?: string,
     method: 'GET' | 'POST' = 'GET',
-    body?: unknown,
+    body?: RuntimeValue,
     rateLimit?: { provider: string; priority?: number; isPremiumBypass?: boolean }
   ): Promise<ProxyRequestResponse> {
     const requestStart = performance.now();
@@ -1099,6 +1100,16 @@ export class ProxyService extends BaseService {
 
   /** Returns the proxy API key, generating one if needed. @returns Proxy API key string */
   async getProxyKey(): Promise<string> { return await this.ensureProxyKey(); }
+
+  /** Returns the local management key used by runtime management endpoints. */
+  private async getManagementKey(): Promise<string> {
+    const settings = this.settingsService.getSettings();
+    const managementKey = settings.proxy?.authStoreKey?.trim();
+    if (managementKey) {
+      return managementKey;
+    }
+    return await this.getProxyKey();
+  }
 
   private async ensureAuthStoreKey(): Promise<string> {
     const settings = this.settingsService.getSettings();

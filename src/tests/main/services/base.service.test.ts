@@ -24,7 +24,7 @@ class TestService extends BaseService {
         this.logInfo(message);
     }
 
-    callLogError(message: string, error?: unknown): void {
+    callLogError(message: string, error?: TestValue): void {
         this.logError(message, error);
     }
 
@@ -59,7 +59,7 @@ describe('BaseService', () => {
 
     it('should delegate logInfo to appLogger.info', () => {
         service.callLogInfo('test message');
-        expect(appLogger.info).toHaveBeenCalledWith('TestService', 'test message');
+        expect(appLogger.info).toHaveBeenCalledWith('TestService', 'test message', undefined);
     });
 
     it('should delegate logError to appLogger.error', () => {
@@ -70,12 +70,12 @@ describe('BaseService', () => {
 
     it('should delegate logWarn to appLogger.warn', () => {
         service.callLogWarn('warning');
-        expect(appLogger.warn).toHaveBeenCalledWith('TestService', 'warning');
+        expect(appLogger.warn).toHaveBeenCalledWith('TestService', 'warning', undefined);
     });
 
     it('should delegate logDebug to appLogger.debug', () => {
         service.callLogDebug('debug info');
-        expect(appLogger.debug).toHaveBeenCalledWith('TestService', 'debug info');
+        expect(appLogger.debug).toHaveBeenCalledWith('TestService', 'debug info', undefined);
     });
 
     it('should handle logError without error object', () => {

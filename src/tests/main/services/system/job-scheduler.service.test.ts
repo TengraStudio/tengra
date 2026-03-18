@@ -31,7 +31,7 @@ describe('JobSchedulerService', () => {
             getAllJobStates: vi.fn().mockResolvedValue({}),
             updateJobLastRun: vi.fn().mockResolvedValue(undefined),
             getJobState: vi.fn().mockResolvedValue(null)
-        } as unknown as DatabaseService;
+        } as never as DatabaseService;
 
         service = new JobSchedulerService(mockDatabaseService);
     });

@@ -6,6 +6,7 @@ import { StatsDashboard } from '@renderer/features/ssh/StatsDashboard';
 import { SSHProfileTestResult } from '@shared/types/ssh';
 import React, { useCallback, useEffect, useState } from 'react';
 
+import { localizeIpcValidationMessage } from '@/features/ssh/utils/ipc-validation-message';
 import {
     SSHConnectionFormInput,
     sshManagerErrorCodes,
@@ -124,9 +125,11 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                 if (result.success) {
                     return result;
                 }
-                lastErrorMessage = result.error ?? t('ssh.unknownError');
+                const serverErrorMessage = result.error ?? t('ssh.unknownError');
+                lastErrorMessage = localizeIpcValidationMessage(serverErrorMessage, t);
             } catch (error) {
-                lastErrorMessage = error instanceof Error ? error.message : t('ssh.unknownError');
+                const unexpectedMessage = error instanceof Error ? error.message : t('ssh.unknownError');
+                lastErrorMessage = localizeIpcValidationMessage(unexpectedMessage, t);
             }
 
             if (attempt < CONNECT_RETRY_ATTEMPTS - 1) {
@@ -277,7 +280,10 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                 }
 
                 if (attempt === CONNECT_RETRY_ATTEMPTS - 1) {
-                    const failedError = typedResult.error ?? t('ssh.unknownError');
+                    const failedError = localizeIpcValidationMessage(
+                        typedResult.error ?? t('ssh.unknownError'),
+                        t
+                    );
                     recordSSHManagerHealthEvent({
                         channel: 'ssh.testProfile',
                         status: 'failure',
@@ -293,7 +299,8 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                 }
             } catch (error) {
                 if (attempt === CONNECT_RETRY_ATTEMPTS - 1) {
-                    const message = error instanceof Error ? error.message : t('ssh.unknownError');
+                    const fallbackMessage = error instanceof Error ? error.message : t('ssh.unknownError');
+                    const message = localizeIpcValidationMessage(fallbackMessage, t);
                     recordSSHManagerHealthEvent({
                         channel: 'ssh.testProfile',
                         status: 'failure',

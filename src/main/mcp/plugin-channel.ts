@@ -7,7 +7,7 @@ export interface PluginMessage {
     from: string;
     to: string;
     type: string;
-    payload: Record<string, unknown>;
+    payload: Record<string, RuntimeValue>;
     timestamp: number;
     correlationId: string;
 }

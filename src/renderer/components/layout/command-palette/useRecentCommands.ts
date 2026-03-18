@@ -10,7 +10,7 @@ export function getRecentCommandIds(): string[] {
         if (!raw) {
             return [];
         }
-        const parsed: unknown = JSON.parse(raw);
+        const parsed: RendererDataValue = JSON.parse(raw);
         if (!Array.isArray(parsed)) {
             return [];
         }

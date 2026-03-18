@@ -76,8 +76,8 @@ export class LLMEmbeddingsService {
      * Wraps embedding errors in appropriate error types.
      * @param error - The caught error.
      */
-    private handleEmbeddingError(error: unknown): Error {
-        appLogger.error('LLMEmbeddingsService', `Embedding Error: ${getErrorMessage(error as Error)}`);
+    private handleEmbeddingError<T>(error: T): Error {
+        appLogger.error('LLMEmbeddingsService', `Embedding Error: ${getErrorMessage(error)}`);
         if (error instanceof ApiError) { return error; }
         return new NetworkError(
             error instanceof Error ? error.message : String(error),

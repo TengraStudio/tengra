@@ -1,14 +1,22 @@
 import { JsonValue } from '@shared/types';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { RefreshCw, Terminal } from 'lucide-react';
-import React from 'react';
+import React, { useEffect } from 'react';
 
 import { getPersistedPanelLayoutSnapshot } from '@/components/layout/panel-layout-persistence';
+import { ManagedRuntimeStatusPanel } from '@/components/runtime/ManagedRuntimeStatusPanel';
 import { setAnimationDebugEnabled, useAnimationAnalyticsStore } from '@/store/animation-analytics.store';
 import { useResponsiveAnalyticsStore } from '@/store/responsive-analytics.store';
+import {
+    loadRuntimeBootstrapStatus,
+    repairManagedRuntime,
+    useRuntimeBootstrapStore,
+} from '@/store/runtime-bootstrap.store';
 import { exportUiLayoutState } from '@/store/ui-layout.store';
 import { AppSettings } from '@/types/settings';
 import { isAppSettings } from '@/utils/app-settings.util';
+
+import { PerformanceDashboard } from './PerformanceDashboard';
 
 interface DeveloperTabProps {
     settings: AppSettings | null
@@ -16,15 +24,40 @@ interface DeveloperTabProps {
     onRefreshModels: (bypassCache?: boolean) => void
     loadSettings: () => Promise<void>
     setIsLoading: (v: boolean) => void
-    t: (key: string) => string
+    t: (key: string, options?: Record<string, string | number>) => string
 }
 
 export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusMessage, onRefreshModels, loadSettings, setIsLoading, t }) => {
     const animationStats = useAnimationAnalyticsStore(snapshot => snapshot);
     const responsiveStats = useResponsiveAnalyticsStore(snapshot => snapshot);
+    const runtimeStatus = useRuntimeBootstrapStore(snapshot => snapshot.status);
+    const runtimeIsLoading = useRuntimeBootstrapStore(snapshot => snapshot.isLoading);
+    const runtimeIsRepairing = useRuntimeBootstrapStore(snapshot => snapshot.isRepairing);
+    const runtimeError = useRuntimeBootstrapStore(snapshot => snapshot.error);
+
+    useEffect(() => {
+        if (runtimeStatus || runtimeIsLoading) {
+            return;
+        }
+
+        void loadRuntimeBootstrapStatus();
+    }, [runtimeIsLoading, runtimeStatus]);
 
     return (
         <div className="space-y-6">
+            <ManagedRuntimeStatusPanel
+                status={runtimeStatus}
+                isLoading={runtimeIsLoading}
+                isRepairing={runtimeIsRepairing}
+                error={runtimeError}
+                onRefresh={() => {
+                    void loadRuntimeBootstrapStatus(true);
+                }}
+                onRepair={() => {
+                    void repairManagedRuntime();
+                }}
+            />
+
             <div className="bg-card p-6 rounded-xl border border-border">
                 <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 rounded-xl bg-primary/10 text-primary"><Terminal className="w-5 h-5" /></div>
@@ -45,8 +78,8 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                     </div>
                     <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50">
                         <div>
-                            <div className="text-sm font-bold text-foreground">Export UI State</div>
-                            <div className="text-xs text-muted-foreground">Export window/layout/sidebar state snapshot</div>
+                            <div className="text-sm font-bold text-foreground">{t('developer.exportUiState')}</div>
+                            <div className="text-xs text-muted-foreground">{t('developer.exportUiStateDesc')}</div>
                         </div>
                         <button
                             onClick={() => {
@@ -65,58 +98,71 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                                 a.download = `Tengra-ui-state-${new Date().toISOString().split('T')[0]}.json`;
                                 a.click();
                                 URL.revokeObjectURL(url);
-                                setStatusMessage('UI state exported');
+                                setStatusMessage(t('developer.uiStateExported'));
                                 setTimeout(() => setStatusMessage(''), 3000);
                             }}
                             className="px-3 py-2 rounded-lg text-xs font-bold bg-primary/10 text-primary border border-primary/20"
                         >
-                            Export UI State
+                            {t('developer.exportUiState')}
                         </button>
                     </div>
                     <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50">
                         <div><div className="text-sm font-bold text-foreground">{t('developer.importSettings')}</div><div className="text-xs text-muted-foreground">{t('developer.importSettingsDesc')}</div></div>
-                        <label className="px-3 py-2 rounded-lg text-xs font-bold bg-muted/30 text-muted-foreground border border-border/50 cursor-pointer">{t('developer.import')}<input type="file" accept=".json" className="hidden" onChange={(e) => { void (async () => { const file = e.target.files?.[0]; if (!file) { return; } try { const imported = safeJsonParse<JsonValue | null>(await file.text(), null); if (!isAppSettings(imported)) { throw new Error('Invalid JSON'); } await window.electron.saveSettings(imported); await loadSettings(); setStatusMessage(t('developer.settingsImported')); setTimeout(() => setStatusMessage(''), 3000); } catch { window.electron.log.warn(t('developer.invalidSettingsFile')); } })(); }} /></label>
+                        <label className="px-3 py-2 rounded-lg text-xs font-bold bg-muted/30 text-muted-foreground border border-border/50 cursor-pointer">{t('developer.import')}<input type="file" accept=".json" className="hidden" onChange={(e) => { void (async () => { const file = e.target.files?.[0]; if (!file) { return; } try { const imported = safeJsonParse<JsonValue | null>(await file.text(), null); if (!isAppSettings(imported)) { throw new Error(t('developer.invalidSettingsFile')); } await window.electron.saveSettings(imported); await loadSettings(); setStatusMessage(t('developer.settingsImported')); setTimeout(() => setStatusMessage(''), 3000); } catch { window.electron.log.warn(t('developer.invalidSettingsFile')); } })(); }} /></label>
                     </div>
                     <div className="p-4 bg-muted/30 rounded-lg border border-border/50 space-y-3">
-                        <div className="text-sm font-bold text-foreground">Animation Diagnostics</div>
+                        <div className="text-sm font-bold text-foreground">{t('developer.animationDiagnostics')}</div>
                         <div className="text-xs text-muted-foreground">
-                            Plays: {animationStats.totals.played} | Reduced motion plays: {animationStats.totals.reducedMotionPlays}
+                            {t('developer.animationPlays', { played: animationStats.totals.played, reduced: animationStats.totals.reducedMotionPlays })}
                         </div>
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => {
                                     const next = !animationStats.debugEnabled;
                                     setAnimationDebugEnabled(next);
-                                    setStatusMessage(next ? 'Animation debug enabled' : 'Animation debug disabled');
+                                    setStatusMessage(next ? t('developer.animationDebugEnabled') : t('developer.animationDebugDisabled'));
                                     setTimeout(() => setStatusMessage(''), 3000);
                                 }}
                                 className="px-3 py-2 rounded-lg text-xs font-bold bg-primary/10 text-primary border border-primary/20"
                             >
-                                {animationStats.debugEnabled ? 'Disable Animation Debug' : 'Enable Animation Debug'}
+                                {animationStats.debugEnabled ? t('developer.disableAnimationDebug') : t('developer.enableAnimationDebug')}
                             </button>
                             <button
                                 onClick={() => {
                                     const current = localStorage.getItem('tengra.motion.force-reduced') === 'true';
                                     localStorage.setItem('tengra.motion.force-reduced', String(!current));
-                                    setStatusMessage(!current ? 'Forced reduced motion enabled' : 'Forced reduced motion disabled');
+                                    setStatusMessage(!current ? t('developer.forcedReducedMotionEnabled') : t('developer.forcedReducedMotionDisabled'));
                                     setTimeout(() => setStatusMessage(''), 3000);
                                 }}
                                 className="px-3 py-2 rounded-lg text-xs font-bold bg-muted/30 text-muted-foreground border border-border/50"
                             >
-                                Toggle Forced Reduced Motion
+                                {t('developer.toggleForcedReducedMotion')}
                             </button>
                         </div>
                     </div>
                     <div className="p-4 bg-muted/30 rounded-lg border border-border/50 space-y-1">
-                        <div className="text-sm font-bold text-foreground">Responsive Analytics</div>
+                        <div className="text-sm font-bold text-foreground">{t('developer.responsiveAnalytics')}</div>
                         <div className="text-xs text-muted-foreground">
-                            Current: {responsiveStats.current} ({responsiveStats.viewport.width}x{responsiveStats.viewport.height})
+                            {t('developer.responsiveCurrent', {
+                                current: responsiveStats.current,
+                                width: responsiveStats.viewport.width,
+                                height: responsiveStats.viewport.height
+                            })}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                            Mobile: {responsiveStats.counters.mobile} | Tablet: {responsiveStats.counters.tablet} | Desktop: {responsiveStats.counters.desktop} | Wide: {responsiveStats.counters.wide}
+                            {t('developer.responsiveBreakdown', {
+                                mobile: responsiveStats.counters.mobile,
+                                tablet: responsiveStats.counters.tablet,
+                                desktop: responsiveStats.counters.desktop,
+                                wide: responsiveStats.counters.wide
+                            })}
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <div className="bg-card p-6 rounded-xl border border-border">
+                <PerformanceDashboard />
             </div>
         </div>
     );

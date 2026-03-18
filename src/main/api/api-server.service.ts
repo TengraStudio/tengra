@@ -611,7 +611,7 @@ export class ApiServerService extends BaseService {
     }
 
     /** Recursively strip prototype pollution keys from parsed JSON */
-    private stripPrototypeKeys(obj: unknown): unknown {
+    private stripPrototypeKeys(obj: RuntimeValue): RuntimeValue {
         if (obj === null || typeof obj !== 'object') {
             return obj;
         }
@@ -619,7 +619,7 @@ export class ApiServerService extends BaseService {
             return obj.map(item => this.stripPrototypeKeys(item));
         }
         const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
-        const cleaned: Record<string, unknown> = {};
+        const cleaned: Record<string, RuntimeValue> = {};
         for (const [key, value] of Object.entries(obj)) {
             if (!DANGEROUS_KEYS.has(key)) {
                 cleaned[key] = this.stripPrototypeKeys(value);
@@ -1123,7 +1123,7 @@ export class ApiServerService extends BaseService {
                 throw new Error('Invalid message: must be an object');
             }
 
-            const m = msg as Record<string, unknown>;
+            const m = msg as Record<string, RuntimeValue>;
 
             if (!m.role || typeof m.role !== 'string') {
                 throw new Error('Invalid message: missing or invalid role');

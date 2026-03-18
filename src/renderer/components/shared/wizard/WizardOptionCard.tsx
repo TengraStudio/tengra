@@ -1,6 +1,8 @@
 import { ArrowRight } from 'lucide-react';
 import React from 'react';
 
+import { useTranslation } from '@/i18n';
+
 export interface WizardOption {
     id: string;
     title: string;
@@ -27,6 +29,7 @@ export const WizardOptionCard: React.FC<WizardOptionCardProps> = ({
     className = '',
 }) => {
     const Icon = option.icon;
+    const { t } = useTranslation();
 
     return (
         <button
@@ -48,7 +51,7 @@ export const WizardOptionCard: React.FC<WizardOptionCardProps> = ({
             </div>
             <div className="opacity-80">
                 <div className={`flex items-center gap-2 ${option.accentColor} font-semibold text-sm`}>
-                    <span>Next</span>
+                    <span>{t('common.next')}</span>
                     <ArrowRight className="w-4 h-4" />
                 </div>
             </div>

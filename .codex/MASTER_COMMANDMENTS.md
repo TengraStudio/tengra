@@ -21,13 +21,12 @@ As an AI Agent on Tengra, you ARE these rules. They are your core logic.
 9.  **PROCRASTINATION**: No uncommitted changes. Commit after every TODO completion.
 10. **FRIDAY FORBIDDEN**: NO COMMITS OR MAJOR DEPLOYMENTS ON FRIDAYS. Fridays are for testing, documentation, and review ONLY.
 11. **TRANSLATION OVERLOAD**: No locale updates on weekdays.
-12. **DOCS**: No changes without mirroring to `.codex/`. ทุก dökümantasyon `.codex/` altında toplanmalıdır.
-13. **IGNORANCE**: No coding without first reading ALL active rules and commandments. You MUST call `view_file` on rule files at the start of every session.
+12. **IGNORANCE**: No coding without first reading ALL active rules and commandments. You MUST call `view_file` on rule files at the start of every session.
 
 
 ## 🟢 THE DIVINE VIRTUES (ALWAYS DO)
 1.  **BOY SCOUT RULE**: Leave the code cleaner. If you edit a file, you MUST fix at least one existing lint warning or type issue in that file.
-2.  **PLANNING**: Read `docs/AI_RULES.md` and `docs/TODO.md` first.
+2.  **PLANNING**: Read `AI_RULES.md` and `TODO.md` first.
 3.  **PERFORMANCE**: Use `useMemo`, `useCallback`, and `React.lazy`. Optimize for speed.
 4.  **CLEANUP**: Strictly implement `dispose()` and React effect cleanups.
 5.  **BATCHING**: Batch IPC calls. Never call IPC in loops.

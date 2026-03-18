@@ -14,7 +14,10 @@ const sectionData = {
     "enterPrompt": "Test etmek için bir istem girin",
     "responseTime": "Yanıt süresi",
     "tokenCount": "Token sayısı",
+    "tokensUnit": "token",
     "tokensPerSecond": "Token/sn",
+    "tokensPerSecondUnit": "t/s",
+    "responseFrom": "Yanıt",
     "noModels": "Lütfen en az iki model seçin",
     "compareFailed": "Karşılaştırma başarısız oldu. Lütfen tekrar deneyin."
 };

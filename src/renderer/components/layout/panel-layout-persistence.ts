@@ -13,18 +13,18 @@ export interface PersistedPanelLayout {
 
 const PANEL_LAYOUT_VERSION = 1;
 
-function isObject(value: unknown): value is Record<string, unknown> {
+function isObject(value: RendererDataValue): value is Record<string, RendererDataValue> {
     return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
-function toBoundedSize(value: unknown): number | undefined {
+function toBoundedSize(value: RendererDataValue): number | undefined {
     if (typeof value !== 'number' || !Number.isFinite(value)) {
         return undefined;
     }
     return Math.max(120, Math.min(1600, Math.floor(value)));
 }
 
-function sanitizePanelGroup(value: unknown): PersistedPanelGroupState | null {
+function sanitizePanelGroup(value: RendererDataValue): PersistedPanelGroupState | null {
     if (!isObject(value)) {
         return null;
     }
@@ -39,7 +39,7 @@ function sanitizePanelGroup(value: unknown): PersistedPanelGroupState | null {
 }
 
 function sanitizeGroups(
-    value: unknown
+    value: RendererDataValue
 ): Record<string, PersistedPanelGroupState> {
     if (!isObject(value)) {
         return {};
@@ -55,7 +55,7 @@ function sanitizeGroups(
     return groups;
 }
 
-function migrateLegacyPanelLayout(raw: unknown): PersistedPanelLayout | null {
+function migrateLegacyPanelLayout(raw: RendererDataValue): PersistedPanelLayout | null {
     if (!isObject(raw) || !isObject(raw.groups)) {
         return null;
     }
@@ -65,7 +65,7 @@ function migrateLegacyPanelLayout(raw: unknown): PersistedPanelLayout | null {
     };
 }
 
-export function sanitizePersistedPanelLayout(raw: unknown): PersistedPanelLayout {
+export function sanitizePersistedPanelLayout(raw: RendererDataValue): PersistedPanelLayout {
     const migrated = migrateLegacyPanelLayout(raw);
     if (migrated) {
         return migrated;

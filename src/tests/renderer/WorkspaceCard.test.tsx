@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { WorkspaceCard as WorkspaceCard, WorkspaceCardSurfaceProvider as WorkspaceCardSurfaceProvider } from '@/features/workspace/components/WorkspaceCard';
+import { WorkspaceCard, WorkspaceCardSurfaceProvider } from '@/features/workspace/workspace-shell/WorkspaceCard';
 import { Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 

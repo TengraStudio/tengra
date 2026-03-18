@@ -40,8 +40,8 @@ describe('InlineSuggestionService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         service = new InlineSuggestionService({
-            llmService: mockLlmService as unknown as InlineDeps['llmService'],
-            authService: mockAuthService as unknown as InlineDeps['authService'],
+            llmService: mockLlmService as never as InlineDeps['llmService'],
+            authService: mockAuthService as never as InlineDeps['authService'],
         });
     });
 

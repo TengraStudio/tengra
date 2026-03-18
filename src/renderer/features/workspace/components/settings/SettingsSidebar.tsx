@@ -54,26 +54,26 @@ export const SettingsSidebar: React.FC<{
             active={activeSection === 'workspace'}
             onClick={() => setActiveSection('workspace')}
             icon={FolderTree}
-            label={t('workspaces.workspace') || 'Workspace'}
+            label={t('workspaces.workspace')}
         />
         <div className="h-px bg-white/10 my-2" />
         <NavButton
             active={activeSection === 'build'}
             onClick={() => setActiveSection('build')}
             icon={Code}
-            label={t('workspaces.build') || 'Build & Test'}
+            label={t('workspaces.build')}
         />
         <NavButton
             active={activeSection === 'dev'}
             onClick={() => setActiveSection('dev')}
             icon={Play}
-            label={t('workspaces.devServer') || 'Dev Server'}
+            label={t('workspaces.devServer')}
         />
         <NavButton
             active={activeSection === 'advanced'}
             onClick={() => setActiveSection('advanced')}
             icon={Cpu}
-            label={t('workspaces.advanced') || 'Advanced'}
+            label={t('workspaces.advanced')}
         />
     </div>
 );

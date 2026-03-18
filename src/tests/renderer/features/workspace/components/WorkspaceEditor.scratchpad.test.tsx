@@ -19,19 +19,19 @@ const {
     mockFilterWorkspaceSnippets: vi.fn((snippets: WorkspaceSnippet[]) => snippets),
 }));
 
-vi.mock('@/components/ui/CodeMirrorEditor', () => ({
-    CodeMirrorEditor: ({
-        content,
+vi.mock('@/components/ui/CodeEditor', () => ({
+    CodeEditor: ({
+        value,
         onChange,
     }: {
-        content: string;
+        value: string;
         language: string;
         onChange: (value?: string) => void;
         readonly: boolean;
     }) => (
         <textarea
             data-testid="code-editor-input"
-            value={content}
+            value={value}
             onChange={event => onChange(event.target.value)}
         />
     ),

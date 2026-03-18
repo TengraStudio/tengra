@@ -41,7 +41,7 @@ export const TodoAddForm = ({ isAdding, onAdd, t }: TodoAddFormProps) => {
                                 disabled={!newTaskText.trim()}
                                 className="px-3 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-md disabled:opacity-50"
                             >
-                                Add
+                                {t('common.add')}
                             </button>
                         </div>
                         <div className="text-xxs text-muted-foreground mt-2 pl-1">

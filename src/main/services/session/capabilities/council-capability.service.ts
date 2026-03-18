@@ -1,13 +1,38 @@
 import { BaseService } from '@main/services/base.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { QuotaService } from '@main/services/proxy/quota.service';
-import { AgentCollaborationService } from '@main/services/workspace/automation-workflow/agent-collaboration.service';
-import { StepModelConfig, WorkspaceStep } from '@shared/types/automation-workflow';
+import {
+    ModelRoutingRule,
+    StepModelConfig,
+    TaskType,
+    WorkspaceStep,
+} from '@shared/types/council';
+
+/** Default model routing rules based on task type */
+const DEFAULT_ROUTING_RULES: ModelRoutingRule[] = [
+    { taskType: 'code_generation', provider: 'openai', model: 'gpt-4o', priority: 100 },
+    { taskType: 'code_generation', provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', priority: 90 },
+    { taskType: 'code_review', provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', priority: 100 },
+    { taskType: 'code_review', provider: 'openai', model: 'gpt-4o', priority: 80 },
+    { taskType: 'research', provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', priority: 100 },
+    { taskType: 'research', provider: 'google', model: 'gemini-1.5-pro', priority: 85 },
+    { taskType: 'documentation', provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', priority: 95 },
+    { taskType: 'documentation', provider: 'openai', model: 'gpt-4o', priority: 90 },
+    { taskType: 'debugging', provider: 'openai', model: 'gpt-4o', priority: 100 },
+    { taskType: 'debugging', provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', priority: 90 },
+    { taskType: 'testing', provider: 'openai', model: 'gpt-4o', priority: 95 },
+    { taskType: 'testing', provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', priority: 90 },
+    { taskType: 'refactoring', provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', priority: 100 },
+    { taskType: 'refactoring', provider: 'openai', model: 'gpt-4o', priority: 85 },
+    { taskType: 'planning', provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', priority: 100 },
+    { taskType: 'planning', provider: 'openai', model: 'o1', priority: 95 },
+    { taskType: 'general', provider: 'openai', model: 'gpt-4o', priority: 90 },
+    { taskType: 'general', provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', priority: 90 },
+];
 
 export interface CouncilCapabilityDependencies {
     llm: LLMService;
     quota: QuotaService;
-    collaboration: AgentCollaborationService;
 }
 
 /**
@@ -15,6 +40,8 @@ export interface CouncilCapabilityDependencies {
  * session mode can opt into the same behavior without inheriting workflow-only names.
  */
 export class CouncilCapabilityService extends BaseService {
+    private rules: ModelRoutingRule[] = [...DEFAULT_ROUTING_RULES];
+
     constructor(private readonly deps: CouncilCapabilityDependencies) {
         super('CouncilCapabilityService');
     }
@@ -57,10 +84,8 @@ export class CouncilCapabilityService extends BaseService {
         step: WorkspaceStep
     ): Promise<StepModelConfig> {
         const availableProviders = await this.deps.llm.getAvailableProviders();
-        const defaultConfig = this.deps.collaboration.getModelForStep(
-            step,
-            availableProviders
-        );
+        const taskType = step.taskType || this.detectTaskType(step.text);
+        const defaultConfig = this.routeByTaskType(taskType, availableProviders);
 
         try {
             const provider = defaultConfig.provider.toLowerCase();
@@ -108,5 +133,49 @@ export class CouncilCapabilityService extends BaseService {
             ...defaultConfig,
             reason: defaultConfig.reason ?? 'Quota-aware selection',
         };
+    }
+
+    private routeByTaskType(taskType: TaskType, availableProviders: string[]): StepModelConfig {
+        const matchingRules = this.rules
+            .filter(rule => rule.taskType === taskType && availableProviders.includes(rule.provider))
+            .sort((left, right) => right.priority - left.priority);
+
+        if (matchingRules.length > 0) {
+            return {
+                provider: matchingRules[0].provider,
+                model: matchingRules[0].model,
+                reason: `Routed by task type: ${taskType} (priority ${matchingRules[0].priority})`
+            };
+        }
+
+        const generalRules = this.rules
+            .filter(rule => rule.taskType === 'general' && availableProviders.includes(rule.provider))
+            .sort((left, right) => right.priority - left.priority);
+
+        if (generalRules.length > 0) {
+            return {
+                provider: generalRules[0].provider,
+                model: generalRules[0].model,
+                reason: `Fallback to general routing for task type: ${taskType}`
+            };
+        }
+
+        return {
+            provider: availableProviders[0] || 'openai',
+            model: 'gpt-4o',
+            reason: 'Default fallback: No matching routing rules found'
+        };
+    }
+
+    private detectTaskType(text: string): TaskType {
+        const input = text.toLowerCase();
+        if (input.includes('fix') || input.includes('bug') || input.includes('error')) { return 'debugging'; }
+        if (input.includes('test') || input.includes('spec') || input.includes('jest')) { return 'testing'; }
+        if (input.includes('refactor') || input.includes('clean') || input.includes('reorganize')) { return 'refactoring'; }
+        if (input.includes('doc') || input.includes('readme') || input.includes('comment')) { return 'documentation'; }
+        if (input.includes('research') || input.includes('find') || input.includes('analyze')) { return 'research'; }
+        if (input.includes('plan') || input.includes('roadmap') || input.includes('structure')) { return 'planning'; }
+        if (input.includes('create') || input.includes('implement') || input.includes('add')) { return 'code_generation'; }
+        return 'general';
     }
 }

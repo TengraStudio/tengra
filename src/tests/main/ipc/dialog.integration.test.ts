@@ -11,11 +11,11 @@ vi.mock('electron', () => ({
 }));
 
 describe('Dialog IPC Handlers', () => {
-    let registeredHandlers: Map<string, unknown>;
+    let registeredHandlers: Map<string, TestValue>;
 
     beforeEach(() => {
         registeredHandlers = new Map();
-        vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: unknown) => {
+        vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: TestValue) => {
             registeredHandlers.set(channel, handler);
         });
     });
@@ -26,14 +26,14 @@ describe('Dialog IPC Handlers', () => {
         it('should return selected directory path', async () => {
             const handler = async () => ({ success: true, path: '/selected/path' });
             registeredHandlers.set('dialog:selectDirectory', handler);
-            const result = await (registeredHandlers.get('dialog:selectDirectory') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('dialog:selectDirectory') as () => Promise<TestValue>)();
             expect(result).toEqual({ success: true, path: '/selected/path' });
         });
 
         it('should handle canceled dialog', async () => {
             const handler = async () => ({ success: false, error: 'Canceled' });
             registeredHandlers.set('dialog:selectDirectory', handler);
-            const result = await (registeredHandlers.get('dialog:selectDirectory') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('dialog:selectDirectory') as () => Promise<TestValue>)();
             expect(result).toEqual({ success: false, error: 'Canceled' });
         });
     });
@@ -42,14 +42,14 @@ describe('Dialog IPC Handlers', () => {
         it('should save file with valid options', async () => {
             const handler = async () => ({ success: true, path: '/path/file.txt' });
             registeredHandlers.set('dialog:saveFile', handler);
-            const result = await (registeredHandlers.get('dialog:saveFile') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('dialog:saveFile') as () => Promise<TestValue>)();
             expect(result).toEqual({ success: true, path: '/path/file.txt' });
         });
 
         it('should reject invalid options', async () => {
             const handler = async () => ({ success: false, error: 'Invalid options provided' });
             registeredHandlers.set('dialog:saveFile', handler);
-            const result = await (registeredHandlers.get('dialog:saveFile') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('dialog:saveFile') as () => Promise<TestValue>)();
             expect(result).toEqual({ success: false, error: 'Invalid options provided' });
         });
     });

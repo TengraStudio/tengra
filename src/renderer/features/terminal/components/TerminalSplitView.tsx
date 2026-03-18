@@ -28,7 +28,7 @@ interface TerminalSplitViewProps {
     workspacePath?: string;
     terminalAppearance: TerminalAppearancePreferences;
     resolvedTerminalAppearance: ResolvedTerminalAppearance;
-    setTerminalInstance: (id: string, terminal: import('xterm').Terminal | null) => void;
+    setTerminalInstance: (id: string, terminal: import('@xterm/xterm').Terminal | null) => void;
     emptyTitle: string;
     emptyActionLabel: string;
     createDefaultTerminal: () => Promise<void>;
@@ -43,7 +43,7 @@ function resolveTerminalTabMetadata(tab: TerminalTab): TerminalTabMetadata {
     if (typeof tab.metadata !== 'object' || tab.metadata === null) {
         return {};
     }
-    const metadata = tab.metadata as Record<string, unknown>;
+    const metadata = tab.metadata as Record<string, RendererDataValue>;
     return {
         closable: typeof metadata.closable === 'boolean' ? metadata.closable : undefined,
     };

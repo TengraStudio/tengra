@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useTranslation } from '@/i18n';
+
 import type { PromptAnalysis, PromptSuggestion } from '../utils/prompt-optimizer';
 import { PromptOptimizerService } from '../utils/prompt-optimizer';
 
@@ -18,14 +20,20 @@ interface UsePromptAnalysisReturn {
  * @returns Analysis state, loading indicator, and dismiss handler.
  */
 export function usePromptAnalysis(prompt: string): UsePromptAnalysisReturn {
+    const { t } = useTranslation();
     const [analysis, setAnalysis] = useState<PromptAnalysis | null>(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const cacheRef = useRef<Map<string, PromptAnalysis>>(new Map());
-    const serviceRef = useRef<PromptOptimizerService>(new PromptOptimizerService());
+    const serviceRef = useRef<PromptOptimizerService>(new PromptOptimizerService(t));
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const scheduleStateUpdate = useCallback((update: () => void) => {
         queueMicrotask(update);
     }, []);
+
+    useEffect(() => {
+        serviceRef.current = new PromptOptimizerService(t);
+        cacheRef.current.clear();
+    }, [t]);
 
     useEffect(() => {
         const trimmed = prompt.trim();

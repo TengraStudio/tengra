@@ -15,8 +15,8 @@ describe('LazyServiceRegistry integration', () => {
         lazyServiceRegistry.register(name, async () => new FakeLazyService('ok'));
 
         const proxy = createLazyServiceProxy<FakeLazyService>(name);
-        const result1 = await (proxy.getValue() as unknown as Promise<string>);
-        const result2 = await (proxy.getValue() as unknown as Promise<string>);
+        const result1 = await (proxy.getValue() as never as Promise<string>);
+        const result2 = await (proxy.getValue() as never as Promise<string>);
 
         expect(result1).toBe('ok');
         expect(result2).toBe('ok');

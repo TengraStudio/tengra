@@ -120,3 +120,29 @@ export interface GitRepositoryStats {
     generatedAt: string;
     days: number;
 }
+
+export interface GitRemoteLinkSet {
+    provider: string;
+    remoteName: string;
+    repositoryLabel: string;
+    repositoryUrl: string;
+    issuesUrl: string | null;
+    pullRequestsUrl: string | null;
+    branchUrl: string | null;
+}
+
+export interface GitFileHistoryItem extends GitCommitInfo {
+    relativeTime: string;
+}
+
+export interface GitRefComparison {
+    ahead: number;
+    behind: number;
+    files: Array<{ status: string; path: string }>;
+    success: boolean;
+}
+
+export interface GitHotspot {
+    path: string;
+    count: number;
+}

@@ -5,7 +5,7 @@ import { SSHConnection } from '@main/services/workspace/ssh.service';
 /**
  * Validates SSH connection ID format
  */
-const validateConnectionId = (id: unknown): string => {
+const validateConnectionId = (id: RuntimeValue): string => {
     const connId = validateString(id, 100);
 
     if (!connId) {
@@ -23,7 +23,7 @@ const validateConnectionId = (id: unknown): string => {
 /**
  * Validates SSH connection parameters
  */
-const validateSSHConnection = (args: unknown): SSHConnection => {
+const validateSSHConnection = (args: RuntimeValue): SSHConnection => {
     const conn = args as SSHConnection;
 
     if (!conn || typeof conn !== 'object') {

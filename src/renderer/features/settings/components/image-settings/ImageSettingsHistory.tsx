@@ -54,14 +54,14 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                 <input
                     value={historySearchQuery}
                     onChange={event => setHistorySearchQuery(event.target.value)}
-                    placeholder={t('settings.images.searchHistory') || 'Search image history'}
+                    placeholder={t('settings.images.searchHistory')}
                     className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
                 />
                 <button
                     onClick={() => { void handleExportHistory(); }}
                     className="rounded-lg border border-white/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
                 >
-                    {t('settings.images.exportHistory') || 'Export History'}
+                    {t('settings.images.exportHistory')}
                 </button>
             </div>
             {historyEntries.length === 0 ? (
@@ -114,22 +114,22 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                     onClick={() => { void handleExportComparison(); }}
                     className="rounded-lg border border-white/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
                 >
-                    {t('settings.images.compareExport') || 'Export Compare'}
+                    {t('settings.images.compareExport')}
                 </button>
                 <button
                     onClick={() => { void handleShareComparison(); }}
                     className="rounded-lg border border-white/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
                 >
-                    {t('settings.images.compareShare') || 'Share Compare'}
+                    {t('settings.images.compareShare')}
                 </button>
             </div>
 
             <div className="mt-3 rounded-lg border border-white/10 bg-black/10 p-2 text-[11px] text-muted-foreground">
-                <div className="mb-1 font-semibold text-foreground/90">{t('settings.images.analyticsTitle') || 'Image Analytics'}</div>
-                <div>{t('settings.images.analyticsTotal') || 'Total'}: {imageAnalytics.totalGenerated}</div>
-                <div>{t('settings.images.analyticsAverageSteps') || 'Avg Steps'}: {imageAnalytics.averageSteps}</div>
+                <div className="mb-1 font-semibold text-foreground/90">{t('settings.images.analyticsTitle')}</div>
+                <div>{t('settings.images.analyticsTotal')}: {imageAnalytics.totalGenerated}</div>
+                <div>{t('settings.images.analyticsAverageSteps')}: {imageAnalytics.averageSteps}</div>
                 {typeof imageAnalytics.averageDurationMs === 'number' && (
-                    <div>{t('settings.images.analyticsAverageDuration') || 'Avg Duration (ms)'}: {imageAnalytics.averageDurationMs}</div>
+                    <div>{t('settings.images.analyticsAverageDuration')}: {imageAnalytics.averageDurationMs}</div>
                 )}
             </div>
 
@@ -139,7 +139,7 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                     <div>{comparisonResult.ids.length}</div>
                     <div>{Math.round(comparisonResult.summary.averageFileSizeBytes / 1024)} {t('common.kb')}</div>
                     {typeof comparisonResult.summary.averageBytesPerPixel === 'number' && (
-                        <div>{t('settings.images.compareQuality') || 'Avg bytes/pixel'}: {comparisonResult.summary.averageBytesPerPixel}</div>
+                        <div>{t('settings.images.compareQuality')}: {comparisonResult.summary.averageBytesPerPixel}</div>
                     )}
                     {Array.isArray(comparisonResult.entries) && comparisonResult.entries.length > 0 && (
                         <div className="mt-2 grid grid-cols-1 gap-2 xl:grid-cols-2">
@@ -147,7 +147,12 @@ export const ImageSettingsHistory: React.FC<ImageSettingsHistoryProps> = ({
                                 <div key={entry.id} className="rounded border border-white/10 bg-black/20 p-2">
                                     <div className="truncate text-[10px] font-semibold text-foreground/90">{entry.prompt}</div>
                                     <div className="text-[10px]">
-                                        {entry.width}x{entry.height} · {entry.steps} steps · cfg {entry.cfgScale}
+                                        {t('settings.images.compareEntryMeta', {
+                                            width: entry.width,
+                                            height: entry.height,
+                                            steps: entry.steps,
+                                            cfg: entry.cfgScale,
+                                        })}
                                     </div>
                                     <div className="text-[10px]">
                                         {Math.round(entry.fileSizeBytes / 1024)} {t('common.kb')} · {entry.bytesPerPixel}

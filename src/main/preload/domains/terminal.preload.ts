@@ -51,6 +51,12 @@ export interface TerminalBridge {
     ) => Promise<{ success: boolean; imported: boolean; profileId?: string; error?: string }>;
     getShells: () => Promise<{ id: string; name: string; path: string }[]>;
     getBackends: () => Promise<Array<{ id: string; name: string; available: boolean }>>;
+    getDiscoverySnapshot: (options?: { refresh?: boolean }) => Promise<{
+        terminalAvailable: boolean;
+        shells: Array<{ id: string; name: string; path: string }>;
+        backends: Array<{ id: string; name: string; available: boolean }>;
+        refreshedAt: number;
+    }>;
     getRuntimeHealth: () => Promise<{
         terminalAvailable: boolean;
         totalBackends: number;
@@ -65,7 +71,7 @@ export interface TerminalBridge {
         rows?: number;
         backendId?: string;
         title?: string;
-        metadata?: Record<string, unknown>;
+        metadata?: Record<string, RuntimeValue>;
     }) => Promise<string>;
     getDockerContainers: () => Promise<Array<{ id: string; name: string; status: string }>>;
 
@@ -148,7 +154,7 @@ export interface TerminalBridge {
         timestamp: number;
         backendId: string;
         workspaceId?: string;
-        metadata?: Record<string, unknown>;
+        metadata?: Record<string, RuntimeValue>;
     }>>;
     getSessionTemplates: () => Promise<Array<{
         id: string;
@@ -159,7 +165,7 @@ export interface TerminalBridge {
         rows: number;
         backendId: string;
         workspaceId?: string;
-        metadata?: Record<string, unknown>;
+        metadata?: Record<string, RuntimeValue>;
         createdAt: number;
         updatedAt: number;
     }>>;
@@ -176,7 +182,7 @@ export interface TerminalBridge {
         rows: number;
         backendId: string;
         workspaceId?: string;
-        metadata?: Record<string, unknown>;
+        metadata?: Record<string, RuntimeValue>;
         createdAt: number;
         updatedAt: number;
     } | null>;
@@ -259,6 +265,7 @@ export function createTerminalBridge(ipc: IpcRenderer): TerminalBridge {
             ipc.invoke('terminal:importProfileShareCode', shareCode, options),
         getShells: () => ipc.invoke('terminal:getShells'),
         getBackends: () => ipc.invoke('terminal:getBackends'),
+        getDiscoverySnapshot: options => ipc.invoke('terminal:getDiscoverySnapshot', options),
         getRuntimeHealth: () => ipc.invoke('terminal:getRuntimeHealth'),
         create: options => ipc.invoke('terminal:create', options),
         getDockerContainers: () => ipc.invoke('terminal:getDockerContainers'),

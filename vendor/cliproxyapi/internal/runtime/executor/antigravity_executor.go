@@ -1226,6 +1226,7 @@ func (e *AntigravityExecutor) buildRequest(ctx context.Context, auth *cliproxyau
 	if token == "" {
 		return nil, statusErr{code: http.StatusUnauthorized, msg: "missing access token"}
 	}
+	normalizedModelName := normalizeAntigravityRequestedModelName(modelName)
 
 	base := strings.TrimSuffix(baseURL, "/")
 	if base == "" {
@@ -1257,10 +1258,10 @@ func (e *AntigravityExecutor) buildRequest(ctx context.Context, auth *cliproxyau
 			projectID = strings.TrimSpace(pid)
 		}
 	}
-	payload = geminiToAntigravity(modelName, payload, projectID)
-	payload, _ = sjson.SetBytes(payload, "model", alias2ModelName(modelName))
+	payload = geminiToAntigravity(normalizedModelName, payload, projectID)
+	payload, _ = sjson.SetBytes(payload, "model", alias2ModelName(normalizedModelName))
 
-	if strings.Contains(modelName, "claude") {
+	if strings.Contains(normalizedModelName, "claude") {
 		strJSON := string(payload)
 		paths := make([]string, 0)
 		util.Walk(gjson.ParseBytes(payload), "", "parametersJsonSchema", &paths)
@@ -1581,6 +1582,7 @@ func modelName2Alias(modelName string) string {
 }
 
 func alias2ModelName(modelName string) string {
+	modelName = normalizeAntigravityRequestedModelName(modelName)
 	switch modelName {
 	case "gemini-2.5-computer-use-preview-10-2025":
 		return "rev19-uic3-1p"
@@ -1599,6 +1601,17 @@ func alias2ModelName(modelName string) string {
 	default:
 		return modelName
 	}
+}
+
+func normalizeAntigravityRequestedModelName(modelName string) string {
+	normalized := strings.TrimSpace(modelName)
+	if strings.HasPrefix(strings.ToLower(normalized), "antigravity/") {
+		normalized = normalized[len("antigravity/"):]
+	}
+	if strings.HasSuffix(strings.ToLower(normalized), "-antigravity") {
+		normalized = normalized[:len(normalized)-len("-antigravity")]
+	}
+	return normalized
 }
 
 // normalizeAntigravityThinking clamps or removes thinking config based on model support.

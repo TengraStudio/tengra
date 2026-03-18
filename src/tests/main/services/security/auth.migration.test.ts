@@ -1,5 +1,4 @@
 
-import { DataService } from '@main/services/data/data.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { SecurityService } from '@main/services/security/security.service';
@@ -30,7 +29,6 @@ describe('AuthService (New Multi-Account System)', () => {
     let mockSecurityService: SecurityService;
     let mockDatabaseService: DatabaseService;
     let mockEventBusService: EventBusService;
-    let mockDataService: DataService;
     let authService: AuthService;
 
     beforeEach(() => {
@@ -39,7 +37,7 @@ describe('AuthService (New Multi-Account System)', () => {
         mockSecurityService = {
             encryptSync: vi.fn((text) => `encrypted_${text}`),
             decryptSync: vi.fn((text) => text?.replace('encrypted_', ''))
-        } as unknown as SecurityService;
+        } as never as SecurityService;
 
         mockDatabaseService = {
             initialize: vi.fn().mockResolvedValue(undefined),
@@ -48,17 +46,13 @@ describe('AuthService (New Multi-Account System)', () => {
             saveLinkedAccount: vi.fn().mockResolvedValue(undefined),
             deleteLinkedAccount: vi.fn().mockResolvedValue(undefined),
             setActiveLinkedAccount: vi.fn().mockResolvedValue(undefined),
-        } as unknown as DatabaseService;
+        } as never as DatabaseService;
 
         mockEventBusService = {
             emit: vi.fn()
-        } as unknown as EventBusService;
+        } as never as EventBusService;
 
-        mockDataService = {
-            getPath: vi.fn().mockReturnValue('/mock/auth/path'),
-        } as unknown as DataService;
-
-        authService = new AuthService(mockDatabaseService, mockSecurityService, mockEventBusService, mockDataService);
+        authService = new AuthService(mockDatabaseService, mockSecurityService, mockEventBusService);
     });
 
     describe('Initialization', () => {

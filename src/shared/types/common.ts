@@ -5,7 +5,7 @@ export type JsonArray = JsonValue[];
 // IpcValue is essentially the same as JsonValue, as IPC args must be serializable
 export type IpcValue = JsonValue | undefined;
 
-export interface IpcContractEntry<Args extends readonly IpcValue[] = readonly IpcValue[], Response = unknown> {
+export interface IpcContractEntry<Args extends readonly IpcValue[] = readonly IpcValue[], Response = JsonValue | object | undefined> {
     args: Args;
     response: Response;
 }
@@ -25,7 +25,7 @@ export interface AppError {
     stack?: string;
 }
 
-export type CatchError = Error | ErrorMessageLike | AppError | JsonValue | undefined;
+export type CatchError = Error | ErrorMessageLike | AppError | JsonValue | object | undefined;
 
 export interface AuthStatus {
     authenticated?: boolean;

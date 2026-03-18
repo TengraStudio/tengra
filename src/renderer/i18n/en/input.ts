@@ -13,6 +13,8 @@ const sectionData = {
     "usePrompt": "Use prompt: {{title}}",
     "removeAttachment": "Remove {{name}}",
     "attachmentPreview": "Attachment preview",
+    "imageCountLabel": "Image count",
+    "imageCountHint": "Controls how many images to generate for the same prompt",
     "systemModes": {
         "fast": "Fast",
         "agent": "Agent",

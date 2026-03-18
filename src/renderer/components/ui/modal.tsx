@@ -201,7 +201,7 @@ const ModalBase: React.FC<ModalProps> = ({
                     {title && <h3 id={titleId} className="font-black leading-none tracking-tight text-2xl text-foreground uppercase">{title}</h3>}
                 </div>
                 <p id={descriptionId} className="sr-only">
-                    Modal content for {title}
+                    {t('modal.contentForTitle', { title: title ?? '' })}
                 </p>
                 <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 pr-2">
                     {children}

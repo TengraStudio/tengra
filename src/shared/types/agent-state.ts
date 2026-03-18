@@ -238,7 +238,7 @@ export interface LLMError {
 export interface ToolCallExecution {
     id: string;
     name: string;
-    arguments: Record<string, unknown>;
+    arguments: Record<string, RuntimeValue>;
     status: ToolExecutionStatus;
     startedAt?: Date;
     completedAt?: Date;
@@ -250,7 +250,7 @@ export interface ToolCallExecution {
  */
 export interface ToolResult {
     success: boolean;
-    data?: unknown;
+    data?: RuntimeValue;
     error?: string;
 }
 
@@ -272,7 +272,7 @@ export interface AgentError {
     state: AgentState;
     type: 'llm_error' | 'tool_error' | 'validation_error' | 'system_error';
     message: string;
-    details?: Record<string, unknown>;
+    details?: Record<string, RuntimeValue>;
     recovered: boolean;
 }
 
@@ -283,7 +283,7 @@ export interface AgentEventRecord {
     id: string;
     timestamp: Date;
     type: AgentEvent['type'];
-    payload: unknown;
+    payload: RuntimeValue;
     stateBeforeTransition: AgentState;
     stateAfterTransition: AgentState;
 }

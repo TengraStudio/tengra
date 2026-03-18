@@ -27,6 +27,7 @@ export type ThinkingLevel =
     | 'xhigh'
     | 'max'
     | string;
+type ModelFilter = 'local' | 'cloud' | 'free' | 'reasoning' | 'deprecated';
 interface ModelSelectorModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -45,16 +46,30 @@ interface ModelSelectorModalProps {
     thinkingLevel?: string;
     onThinkingLevelChange?: (modelId: string, level: string) => void;
     onConfirmSelection?: () => void;
+    copilotQuota?: { accounts: Array<import('@shared/types/quota').CopilotQuota & { accountId?: string; email?: string; isActive?: boolean }> } | null;
+    activeCopilotAccountId?: string | null;
+    activeCopilotAccountEmail?: string | null;
+    activeClaudeQuota?: import('@shared/types/quota').ClaudeQuota | null;
+    activeCodexUsage?: ({ usage: import('@shared/types/quota').CodexUsage; accountId?: string; email?: string } & { isActive?: boolean }) | null;
+    activeAntigravityQuota?: import('@shared/types/quota').QuotaResponse | null;
 }
 
-const THINKING_LEVEL_LABELS: Record<ThinkingLevel, string> = {
-    none: 'None',
-    minimal: 'Minimal',
-    low: 'Low',
-    medium: 'Medium',
-    high: 'High',
-    xhigh: 'Max',
+const THINKING_LEVEL_LABEL_KEYS: Record<ThinkingLevel, string> = {
+    none: 'modelSelector.reasoningLevels.none',
+    minimal: 'modelSelector.reasoningLevels.minimal',
+    low: 'modelSelector.reasoningLevels.low',
+    medium: 'modelSelector.reasoningLevels.medium',
+    high: 'modelSelector.reasoningLevels.high',
+    xhigh: 'modelSelector.reasoningLevels.max',
 };
+
+const MODEL_FILTER_OPTIONS: ReadonlyArray<readonly [ModelFilter, string]> = [
+    ['local', 'modelSelector.local'],
+    ['cloud', 'modelSelector.cloud'],
+    ['free', 'modelSelector.free'],
+    ['reasoning', 'modelSelector.reasoning'],
+    ['deprecated', 'modelSelector.deprecated']
+];
 
 function resolvePreferredThinkingLevel(levels: string[], currentLevel?: string): string | null {
     if (levels.length === 0) {
@@ -85,11 +100,17 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
     thinkingLevel = 'low',
     onThinkingLevelChange,
     onConfirmSelection,
+    copilotQuota,
+    activeCopilotAccountId,
+    activeCopilotAccountEmail,
+    activeClaudeQuota,
+    activeCodexUsage,
+    activeAntigravityQuota,
 }) => {
     const modalRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [activeFilters, setActiveFilters] = useState<Array<'local' | 'cloud' | 'free' | 'reasoning' | 'deprecated'>>([]);
+    const [activeFilters, setActiveFilters] = useState<ModelFilter[]>([]);
     const [internalChatMode, setInternalChatMode] = useState<SelectorChatMode>(chatMode);
     const [activeTab, setActiveTab] = useState<'models' | 'reasoning'>('models');
     const [pendingModel, setPendingModel] = useState<{ provider: string; id: string } | null>(null);
@@ -420,6 +441,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                     }}
                     activeTab={activeTab}
                     onTabChange={setActiveTab}
+                    t={t}
                     showReasoningTab={
                         !!pendingModelThinkingLevels?.length ||
                         !!currentModelThinkingLevels && currentModelThinkingLevels.length > 0
@@ -435,13 +457,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                             placeholder={t('modelSelector.searchModels')}
                         />
                         <div className="px-4 pb-2 flex flex-wrap gap-2 border-b border-border/50">
-                            {([
-                                ['local', 'Local'],
-                                ['cloud', 'Cloud'],
-                                ['free', 'Free'],
-                                ['reasoning', 'Reasoning'],
-                                ['deprecated', 'Deprecated']
-                            ] as const).map(([key, label]) => {
+                            {MODEL_FILTER_OPTIONS.map(([key, labelKey]) => {
                                 const active = activeFilters.includes(key);
                                 return (
                                     <button
@@ -460,7 +476,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                                 : 'bg-muted/30 text-muted-foreground border-border/40 hover:text-foreground'
                                         )}
                                     >
-                                        {label}
+                                        {t(labelKey)}
                                     </button>
                                 );
                             })}
@@ -509,8 +525,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                                         : 'border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/50 hover:border-border'
                                                 )}
                                             >
-                                                {THINKING_LEVEL_LABELS[level as ThinkingLevel] ??
-                                                    level}
+                                                {t(THINKING_LEVEL_LABEL_KEYS[level as ThinkingLevel] ?? '') || level}
                                             </button>
                                         );
                                     })}
@@ -569,8 +584,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                                         : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                                                 )}
                                             >
-                                                {THINKING_LEVEL_LABELS[level as ThinkingLevel] ??
-                                                    level}
+                                                {t(THINKING_LEVEL_LABEL_KEYS[level as ThinkingLevel] ?? '') || level}
                                             </button>
                                         );
                                     })}
@@ -590,6 +604,12 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                             chatMode={internalChatMode}
                             onSelect={handleSelect}
                             toggleFavorite={toggleFavorite}
+                            copilotQuota={copilotQuota}
+                            activeCopilotAccountId={activeCopilotAccountId}
+                            activeCopilotAccountEmail={activeCopilotAccountEmail}
+                            activeClaudeQuota={activeClaudeQuota}
+                            activeCodexUsage={activeCodexUsage}
+                            activeAntigravityQuota={activeAntigravityQuota}
                             t={t}
                         />
                     ) : null}
@@ -605,7 +625,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                         <span>{t('modelSelector.shiftClickMulti')}</span>
                     )}
                     <span className="text-muted-foreground/50">
-                        ESC {requiresReasoningSelection ? t('common.cancel') : t('common.toClose')}
+                        {t('common.escKey')} {requiresReasoningSelection ? t('common.cancel') : t('common.toClose')}
                     </span>
                 </div>
             </div>

@@ -48,25 +48,25 @@ function persist(): void {
     }
 }
 
-function isObject(value: unknown): value is Record<string, unknown> {
+function isObject(value: RendererDataValue): value is Record<string, RendererDataValue> {
     return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
-function toCount(value: unknown): number {
+function toCount(value: RendererDataValue): number {
     if (typeof value !== 'number' || !Number.isFinite(value)) {
         return 0;
     }
     return Math.max(0, Math.floor(value));
 }
 
-function sanitizeSide(value: unknown): 'top' | 'bottom' | 'left' | 'right' {
+function sanitizeSide(value: RendererDataValue): 'top' | 'bottom' | 'left' | 'right' {
     if (value === 'bottom' || value === 'left' || value === 'right') {
         return value;
     }
     return 'top';
 }
 
-function sanitizeSnapshot(raw: unknown): TooltipAnalyticsSnapshot {
+function sanitizeSnapshot(raw: RendererDataValue): TooltipAnalyticsSnapshot {
     if (!isObject(raw)) {
         return defaultSnapshot;
     }

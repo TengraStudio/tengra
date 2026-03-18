@@ -29,7 +29,7 @@ const MAX_NAME_LENGTH = 256;
 /**
  * Validates an ID string
  */
-function validateId(value: unknown): string | null {
+function validateId(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -43,7 +43,7 @@ function validateId(value: unknown): string | null {
 /**
  * Validates a topic string
  */
-function validateTopic(value: unknown): string | null {
+function validateTopic(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -57,7 +57,7 @@ function validateTopic(value: unknown): string | null {
 /**
  * Validates a description string
  */
-function validateDescription(value: unknown): string | null {
+function validateDescription(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -71,7 +71,7 @@ function validateDescription(value: unknown): string | null {
 /**
  * Validates a question string
  */
-function validateQuestion(value: unknown): string | null {
+function validateQuestion(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -85,7 +85,7 @@ function validateQuestion(value: unknown): string | null {
 /**
  * Validates a path string
  */
-function validatePath(value: unknown): string | null {
+function validatePath(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -99,7 +99,7 @@ function validatePath(value: unknown): string | null {
 /**
  * Validates an optional name string
  */
-function validateName(value: unknown): string | undefined {
+function validateName(value: RuntimeValue): string | undefined {
     if (value === undefined || value === null) {
         return undefined;
     }
@@ -116,7 +116,7 @@ function validateName(value: unknown): string | undefined {
 /**
  * Validates a category string
  */
-function validateCategory(value: unknown): string | null {
+function validateCategory(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -130,7 +130,7 @@ function validateCategory(value: unknown): string | null {
 /**
  * Validates an array of IDs
  */
-function validateIdArray(value: unknown): string[] {
+function validateIdArray(value: RuntimeValue): string[] {
     if (!Array.isArray(value)) {
         return [];
     }
@@ -228,7 +228,7 @@ function registerSessionHandlers(ideaGeneratorService: IdeaGeneratorService): vo
         'ideas:getSession',
         createSafeIpcHandler(
             'ideas:getSession',
-            async (_event: IpcMainInvokeEvent, idRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, idRaw: RuntimeValue) => {
                 const id = validateId(idRaw);
                 if (!id) {
                     throw new Error('Invalid session ID');
@@ -254,7 +254,7 @@ function registerSessionHandlers(ideaGeneratorService: IdeaGeneratorService): vo
     // Cancel a session
     ipcMain.handle(
         'ideas:cancelSession',
-        createIpcHandler('ideas:cancelSession', async (_event: IpcMainInvokeEvent, idRaw: unknown) => {
+        createIpcHandler('ideas:cancelSession', async (_event: IpcMainInvokeEvent, idRaw: RuntimeValue) => {
             const id = validateId(idRaw);
             if (!id) {
                 throw new Error('Invalid session ID');
@@ -288,7 +288,7 @@ function registerGenerationHandlers(ideaGeneratorService: IdeaGeneratorService):
         'ideas:startResearch',
         createIpcHandler(
             'ideas:startResearch',
-            async (_event: IpcMainInvokeEvent, sessionIdRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, sessionIdRaw: RuntimeValue) => {
                 const sessionId = validateId(sessionIdRaw);
                 if (!sessionId) {
                     throw new Error('Invalid session ID');
@@ -306,7 +306,7 @@ function registerGenerationHandlers(ideaGeneratorService: IdeaGeneratorService):
         'ideas:startGeneration',
         createIpcHandler(
             'ideas:startGeneration',
-            async (_event: IpcMainInvokeEvent, sessionIdRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, sessionIdRaw: RuntimeValue) => {
                 const sessionId = validateId(sessionIdRaw);
                 if (!sessionId) {
                     throw new Error('Invalid session ID');
@@ -322,7 +322,7 @@ function registerGenerationHandlers(ideaGeneratorService: IdeaGeneratorService):
     // Enrich a specific idea
     ipcMain.handle(
         'ideas:enrichIdea',
-        createIpcHandler('ideas:enrichIdea', async (_event: IpcMainInvokeEvent, ideaIdRaw: unknown) => {
+        createIpcHandler('ideas:enrichIdea', async (_event: IpcMainInvokeEvent, ideaIdRaw: RuntimeValue) => {
             const ideaId = validateId(ideaIdRaw);
             if (!ideaId) {
                 throw new Error('Invalid idea ID');
@@ -344,7 +344,7 @@ function registerIdeaHandlers(ideaGeneratorService: IdeaGeneratorService): void 
         'ideas:getIdea',
         createSafeIpcHandler(
             'ideas:getIdea',
-            async (_event: IpcMainInvokeEvent, idRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, idRaw: RuntimeValue) => {
                 const id = validateId(idRaw);
                 if (!id) {
                     throw new Error('Invalid idea ID');
@@ -360,7 +360,7 @@ function registerIdeaHandlers(ideaGeneratorService: IdeaGeneratorService): void 
         'ideas:getIdeas',
         createSafeIpcHandler(
             'ideas:getIdeas',
-            async (_event: IpcMainInvokeEvent, sessionIdRaw?: unknown) => {
+            async (_event: IpcMainInvokeEvent, sessionIdRaw?: RuntimeValue) => {
                 const sessionId = sessionIdRaw !== undefined ? validateId(sessionIdRaw) : undefined;
                 return await ideaGeneratorService.getIdeas(sessionId ?? undefined);
             },
@@ -373,7 +373,7 @@ function registerIdeaHandlers(ideaGeneratorService: IdeaGeneratorService): void 
         'ideas:regenerateIdea',
         createIpcHandler(
             'ideas:regenerateIdea',
-            async (_event: IpcMainInvokeEvent, ideaIdRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, ideaIdRaw: RuntimeValue) => {
                 const ideaId = validateId(ideaIdRaw);
                 if (!ideaId) {
                     throw new Error('Invalid idea ID');
@@ -398,9 +398,9 @@ function registerApprovalHandlers(ideaGeneratorService: IdeaGeneratorService): v
             'ideas:approveIdea',
             async (
                 _event: IpcMainInvokeEvent,
-                ideaIdRaw: unknown,
-                workspacePathRaw: unknown,
-                selectedNameRaw?: unknown
+                ideaIdRaw: RuntimeValue,
+                workspacePathRaw: RuntimeValue,
+                selectedNameRaw?: RuntimeValue
             ) => {
                 const ideaId = validateId(ideaIdRaw);
                 const workspacePath = validatePath(workspacePathRaw);
@@ -421,7 +421,7 @@ function registerApprovalHandlers(ideaGeneratorService: IdeaGeneratorService): v
     // Reject an idea
     ipcMain.handle(
         'ideas:rejectIdea',
-        createIpcHandler('ideas:rejectIdea', async (_event: IpcMainInvokeEvent, ideaIdRaw: unknown) => {
+        createIpcHandler('ideas:rejectIdea', async (_event: IpcMainInvokeEvent, ideaIdRaw: RuntimeValue) => {
             const ideaId = validateId(ideaIdRaw);
             if (!ideaId) {
                 throw new Error('Invalid idea ID');
@@ -455,7 +455,7 @@ function registerLogoHandlers(ideaGeneratorService: IdeaGeneratorService): void 
             'ideas:generateLogo',
             async (
                 _event: IpcMainInvokeEvent,
-                ideaIdRaw: unknown,
+                ideaIdRaw: RuntimeValue,
                 options: { prompt: string; style: string; model: string; count: number }
             ) => {
                 const ideaId = validateId(ideaIdRaw);
@@ -480,7 +480,7 @@ function registerDeepResearchHandlers(deepResearchService: DeepResearchService):
         'ideas:deepResearch',
         createIpcHandler(
             'ideas:deepResearch',
-            async (_event: IpcMainInvokeEvent, topicRaw: unknown, categoryRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, topicRaw: RuntimeValue, categoryRaw: RuntimeValue) => {
                 const topic = validateTopic(topicRaw);
                 const category = validateCategory(categoryRaw);
                 if (!topic || !category) {
@@ -516,9 +516,9 @@ function registerDeepResearchHandlers(deepResearchService: DeepResearchService):
             'ideas:validateIdea',
             async (
                 _event: IpcMainInvokeEvent,
-                titleRaw: unknown,
-                descriptionRaw: unknown,
-                categoryRaw: unknown
+                titleRaw: RuntimeValue,
+                descriptionRaw: RuntimeValue,
+                categoryRaw: RuntimeValue
             ) => {
                 const title = validateTopic(titleRaw);
                 const description = validateDescription(descriptionRaw);
@@ -562,7 +562,7 @@ function registerScoringHandlers(
     // Score a single idea
     ipcMain.handle(
         'ideas:scoreIdea',
-        createIpcHandler('ideas:scoreIdea', async (_event: IpcMainInvokeEvent, ideaIdRaw: unknown) => {
+        createIpcHandler('ideas:scoreIdea', async (_event: IpcMainInvokeEvent, ideaIdRaw: RuntimeValue) => {
             const ideaId = validateId(ideaIdRaw);
             if (!ideaId) {
                 throw new Error('Invalid idea ID');
@@ -583,7 +583,7 @@ function registerScoringHandlers(
         'ideas:rankIdeas',
         createIpcHandler(
             'ideas:rankIdeas',
-            async (_event: IpcMainInvokeEvent, ideaIdsRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, ideaIdsRaw: RuntimeValue) => {
                 const ideaIds = validateIdArray(ideaIdsRaw);
                 if (ideaIds.length === 0) {
                     throw new Error('No valid idea IDs provided');
@@ -607,7 +607,7 @@ function registerScoringHandlers(
         'ideas:compareIdeas',
         createIpcHandler(
             'ideas:compareIdeas',
-            async (_event: IpcMainInvokeEvent, ideaId1Raw: unknown, ideaId2Raw: unknown) => {
+            async (_event: IpcMainInvokeEvent, ideaId1Raw: RuntimeValue, ideaId2Raw: RuntimeValue) => {
                 const ideaId1 = validateId(ideaId1Raw);
                 const ideaId2 = validateId(ideaId2Raw);
                 if (!ideaId1 || !ideaId2) {
@@ -635,9 +635,9 @@ function registerScoringHandlers(
             'ideas:quickScore',
             async (
                 _event: IpcMainInvokeEvent,
-                titleRaw: unknown,
-                descriptionRaw: unknown,
-                categoryRaw: unknown
+                titleRaw: RuntimeValue,
+                descriptionRaw: RuntimeValue,
+                categoryRaw: RuntimeValue
             ) => {
                 const title = validateTopic(titleRaw);
                 const description = validateDescription(descriptionRaw);
@@ -664,7 +664,7 @@ function registerDataManagementHandlers(ideaGeneratorService: IdeaGeneratorServi
     // Delete a single idea
     ipcMain.handle(
         'ideas:deleteIdea',
-        createIpcHandler('ideas:deleteIdea', async (_event: IpcMainInvokeEvent, ideaIdRaw: unknown) => {
+        createIpcHandler('ideas:deleteIdea', async (_event: IpcMainInvokeEvent, ideaIdRaw: RuntimeValue) => {
             const ideaId = validateId(ideaIdRaw);
             if (!ideaId) {
                 throw new Error('Invalid idea ID');
@@ -679,7 +679,7 @@ function registerDataManagementHandlers(ideaGeneratorService: IdeaGeneratorServi
         'ideas:deleteSession',
         createIpcHandler(
             'ideas:deleteSession',
-            async (_event: IpcMainInvokeEvent, sessionIdRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, sessionIdRaw: RuntimeValue) => {
                 const sessionId = validateId(sessionIdRaw);
                 if (!sessionId) {
                     throw new Error('Invalid session ID');
@@ -695,7 +695,7 @@ function registerDataManagementHandlers(ideaGeneratorService: IdeaGeneratorServi
         'ideas:archiveIdea',
         createIpcHandler(
             'ideas:archiveIdea',
-            async (_event: IpcMainInvokeEvent, ideaIdRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, ideaIdRaw: RuntimeValue) => {
                 const ideaId = validateId(ideaIdRaw);
                 if (!ideaId) {
                     throw new Error('Invalid idea ID');
@@ -711,7 +711,7 @@ function registerDataManagementHandlers(ideaGeneratorService: IdeaGeneratorServi
         'ideas:restoreIdea',
         createIpcHandler(
             'ideas:restoreIdea',
-            async (_event: IpcMainInvokeEvent, ideaIdRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, ideaIdRaw: RuntimeValue) => {
                 const ideaId = validateId(ideaIdRaw);
                 if (!ideaId) {
                     throw new Error('Invalid idea ID');
@@ -727,7 +727,7 @@ function registerDataManagementHandlers(ideaGeneratorService: IdeaGeneratorServi
         'ideas:getArchivedIdeas',
         createSafeIpcHandler(
             'ideas:getArchivedIdeas',
-            async (_event: IpcMainInvokeEvent, sessionIdRaw?: unknown) => {
+            async (_event: IpcMainInvokeEvent, sessionIdRaw?: RuntimeValue) => {
                 const sessionId = sessionIdRaw !== undefined ? validateId(sessionIdRaw) : undefined;
                 return await ideaGeneratorService.getArchivedIdeas(sessionId ?? undefined);
             },
@@ -744,7 +744,7 @@ function registerResearchQueryHandlers(ideaGeneratorService: IdeaGeneratorServic
         'ideas:queryResearch',
         createIpcHandler(
             'ideas:queryResearch',
-            async (_event: IpcMainInvokeEvent, ideaIdRaw: unknown, questionRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, ideaIdRaw: RuntimeValue, questionRaw: RuntimeValue) => {
                 const ideaId = validateId(ideaIdRaw);
                 const question = validateQuestion(questionRaw);
                 if (!ideaId || !question) {

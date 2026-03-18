@@ -25,6 +25,9 @@ The Main process serves as the central hub. It manages the application's lifecyc
 - Proxy process management
 - Native microservice coordination
 
+### Utility Process (Background Tasks)
+Introduced for offloading CPU-intensive or long-running Node.js tasks (e.g., Log rotation, Telemetry, Heavy Data Processing) from the Main process. It runs in a separate, isolated Worker thread with its own event loop and V8 instance.
+
 ### Inter-Process Communication (IPC)
 Communication between the Renderer and Main process occurs over a secure IPC bridge.
 

@@ -460,14 +460,19 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
                         checked={watcherEnabled}
                         onChange={event => setWatcherEnabled(event.target.checked)}
                     />
-                    Watch
+                    {t('ssh.watch')}
                 </label>
             </div>
             {(watcherUnavailable || reconnectDiagnostics.state !== 'connected') && (
                 <div className="px-2 py-1 text-xs border-b border-border/40 bg-muted/20">
                     <div>
-                        Reconnect: {reconnectDiagnostics.state} | attempts: {reconnectDiagnostics.attempts}
-                        {reconnectDiagnostics.lastReconnectAt ? ` | last: ${new Date(reconnectDiagnostics.lastReconnectAt).toLocaleTimeString()}` : ''}
+                        {t('ssh.reconnectStatus', {
+                            state: reconnectDiagnostics.state,
+                            attempts: reconnectDiagnostics.attempts
+                        })}
+                        {reconnectDiagnostics.lastReconnectAt
+                            ? ` ${t('ssh.reconnectLast', { time: new Date(reconnectDiagnostics.lastReconnectAt).toLocaleTimeString() })}`
+                            : ''}
                     </div>
                     {reconnectDiagnostics.lastError && <div className="text-destructive">{reconnectDiagnostics.lastError}</div>}
                     {watcherUnavailable && (
@@ -560,7 +565,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
                     <div className="text-xs text-muted-foreground">{t('ssh.editorSelectFile')}</div>
                 )}
                 <div className="border-t border-border/40 pt-2 space-y-2">
-                    <div className="text-xs font-semibold">Transfers</div>
+                    <div className="text-xs font-semibold">{t('ssh.transfers')}</div>
                     <div className="flex gap-1">
                         <input
                             value={uploadLocalPath}
@@ -577,9 +582,9 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
                         onChange={event => setConflictPolicy(event.target.value as 'overwrite' | 'rename' | 'skip')}
                         className="w-full px-1 py-1 border border-border/40 rounded bg-background text-xs"
                     >
-                        <option value="overwrite">Conflict: overwrite</option>
-                        <option value="rename">Conflict: rename</option>
-                        <option value="skip">Conflict: skip</option>
+                        <option value="overwrite">{t('ssh.conflictOverwrite')}</option>
+                        <option value="rename">{t('ssh.conflictRename')}</option>
+                        <option value="skip">{t('ssh.conflictSkip')}</option>
                     </select>
                     <div className="max-h-28 overflow-auto space-y-1">
                         {transferItems.map(item => (
@@ -589,7 +594,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
                                 {item.error && <div className="text-destructive">{item.error}</div>}
                                 {item.status === 'failed' && (
                                     <button className="secondary-btn text-xs mt-1" onClick={() => retryTransfer(item.id)}>
-                                        Retry/Resume
+                                        {t('ssh.retryResume')}
                                     </button>
                                 )}
                             </div>

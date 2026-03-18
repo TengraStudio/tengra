@@ -6,7 +6,6 @@ import advancedMemorySection from '@renderer/i18n/ja/advancedMemory';
 import advancedTabSection from '@renderer/i18n/ja/advancedTab';
 import agentSection from '@renderer/i18n/ja/agent';
 import agentCheckpointSection from '@renderer/i18n/ja/agentCheckpoint';
-import agentCollaborationSection from '@renderer/i18n/ja/agentCollaboration';
 import agentDashboardSection from '@renderer/i18n/ja/agentDashboard';
 import agentsSection from '@renderer/i18n/ja/agents';
 import appSection from '@renderer/i18n/ja/app';
@@ -24,7 +23,6 @@ import collapseSection from '@renderer/i18n/ja/collapse';
 import commandPaletteSection from '@renderer/i18n/ja/commandPalette';
 import commonSection from '@renderer/i18n/ja/common';
 import contextRetrievalSection from '@renderer/i18n/ja/contextRetrieval';
-import councilSection from '@renderer/i18n/ja/council';
 import databaseServiceSection from '@renderer/i18n/ja/databaseService';
 import dataServiceSection from '@renderer/i18n/ja/dataService';
 import dateGroupsSection from '@renderer/i18n/ja/dateGroups';
@@ -94,7 +92,6 @@ import updateNotificationSection from '@renderer/i18n/ja/updateNotification';
 import voiceSection from '@renderer/i18n/ja/voice';
 import welcomeSection from '@renderer/i18n/ja/welcome';
 import workspaceSection from '@renderer/i18n/ja/workspace';
-import workspaceAgentSection from '@renderer/i18n/ja/workspaceAgent';
 import workspaceDashboardSection from '@renderer/i18n/ja/workspaceDashboard';
 import workspaceModalsSection from '@renderer/i18n/ja/workspaceModals';
 import workspacesSection from '@renderer/i18n/ja/workspaces';
@@ -109,7 +106,7 @@ export const ja = {
     "advancedTab": advancedTabSection,
     "agent": agentSection,
     "agentCheckpoint": agentCheckpointSection,
-    "agentCollaboration": agentCollaborationSection,
+    
     "agentDashboard": agentDashboardSection,
     "agents": agentsSection,
     "app": appSection,
@@ -127,7 +124,6 @@ export const ja = {
     "commandPalette": commandPaletteSection,
     "common": commonSection,
     "contextRetrieval": contextRetrievalSection,
-    "council": councilSection,
     "dataService": dataServiceSection,
     "databaseService": databaseServiceSection,
     "dateGroups": dateGroupsSection,
@@ -171,7 +167,6 @@ export const ja = {
     "panelLayout": panelLayoutSection,
     "personas": personasSection,
     "placeholder": placeholderSection,
-    "workspaceAgent": workspaceAgentSection,
     "workspaceDashboard": workspaceDashboardSection,
     "workspaceWizard": workspaceWizardSection,
     "workspaces": workspacesSection,

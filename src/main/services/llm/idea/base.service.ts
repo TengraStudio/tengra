@@ -43,8 +43,8 @@ export abstract class IdeaBaseService extends BaseService {
         throw lastError ?? new Error(`${operation} failed after ${maxRetries} retries`);
     }
 
-    protected isRetryableError(error: unknown): boolean {
-        const msg = getErrorMessage(error as Error).toLowerCase();
+    protected isRetryableError<T>(error: T): boolean {
+        const msg = getErrorMessage(error).toLowerCase();
         return (
             msg.includes('rate limit') ||
             msg.includes('429') ||

@@ -14,7 +14,10 @@ const sectionData = {
     "enterPrompt": "Enter a prompt to test",
     "responseTime": "Response time",
     "tokenCount": "Token count",
+    "tokensUnit": "tokens",
     "tokensPerSecond": "Tokens/sec",
+    "tokensPerSecondUnit": "t/s",
+    "responseFrom": "Response from",
     "noModels": "Please select at least two models",
     "compareFailed": "Comparison failed. Please try again."
 };

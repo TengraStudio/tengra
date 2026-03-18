@@ -1,7 +1,7 @@
 import { registerSessionConversationIpc } from '@main/ipc/session-conversation';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const ipcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
+const ipcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
 
 vi.mock('electron', () => ({
     app: {
@@ -9,7 +9,7 @@ vi.mock('electron', () => ({
     },
     ipcMain: {
         handle: vi.fn((channel, handler) => {
-            ipcMainHandlers.set(channel, handler);
+            ipcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
         }),
         removeHandler: vi.fn(),
         on: vi.fn(),
@@ -67,7 +67,7 @@ describe('Chat stream persistence', () => {
             yield { content: '{"name":"generate_image"}' };
         })());
 
-        const result = await handler?.(mockEvent, {
+        const result = await handler!(mockEvent, {
             messages: [{ role: 'user', content: 'selam' }],
             model: 'llama3.1:8b',
             tools: [],
@@ -87,4 +87,5 @@ describe('Chat stream persistence', () => {
         }));
     });
 });
+
 

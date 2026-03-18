@@ -9,6 +9,7 @@ const sectionData = {
     "unnamed": "Unnamed Account",
     "create": "Create",
     "switch": "Switch",
+    "idPrefix": "ID:",
     "loadFailed": "Failed to load accounts",
     "createSuccess": "Account \"{{name}}\" created",
     "createFailed": "Failed to create account",
@@ -16,6 +17,7 @@ const sectionData = {
     "switchFailed": "Failed to switch account",
     "categories": {
         "aiProviders": "AI Providers",
+        "aiProvidersNvidia": "AI Providers (NVIDIA)",
         "developerTools": "Developer Tools",
         "localModels": "Local Models"
     },

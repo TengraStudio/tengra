@@ -129,7 +129,13 @@ const sectionData = {
     "errors": {
         "exportFailed": "Der Speicherexport ist fehlgeschlagen",
         "importFailed": "Der Speicherimport ist fehlgeschlagen"
-    }
+    },
+    "refreshTitle": "Refresh",
 };
 
 export default sectionData;
+
+
+
+
+

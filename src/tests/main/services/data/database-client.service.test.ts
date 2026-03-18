@@ -13,12 +13,12 @@ vi.mock('@main/logging/logger', () => ({
  * The service is not initialized (no HTTP backend needed).
  */
 function createService(): DatabaseClientService {
-    const mockEventBus = { emit: vi.fn(), on: vi.fn(), off: vi.fn() } as unknown as EventBusService;
+    const mockEventBus = { emit: vi.fn(), on: vi.fn(), off: vi.fn() } as never as EventBusService;
     const mockProcessManager = {
         startService: vi.fn(),
         getServicePort: vi.fn(),
         on: vi.fn(),
-    } as unknown as ProcessManagerService;
+    } as never as ProcessManagerService;
     return new DatabaseClientService(mockEventBus, mockProcessManager);
 }
 
@@ -118,7 +118,7 @@ describe('DatabaseClientService input validation', () => {
             await expect(svc.createChat({ title: '' })).rejects.toThrow('title must be a non-empty string');
         });
         it('rejects non-string title', async () => {
-            await expect(svc.createChat({ title: 123 as unknown as string })).rejects.toThrow('title must be a non-empty string');
+            await expect(svc.createChat({ title: 123 as never as string })).rejects.toThrow('title must be a non-empty string');
         });
     });
 
@@ -175,7 +175,7 @@ describe('DatabaseClientService input validation', () => {
 
     describe('searchCodeSymbols', () => {
         it('rejects non-array embedding', async () => {
-            await expect(svc.searchCodeSymbols({ embedding: 'bad' as unknown as number[] }))
+            await expect(svc.searchCodeSymbols({ embedding: 'bad' as never as number[] }))
                 .rejects.toThrow('embedding must be an array');
         });
     });
@@ -188,14 +188,14 @@ describe('DatabaseClientService input validation', () => {
         });
         it('rejects non-array embedding', async () => {
             await expect(svc.storeSemanticFragment({
-                content: 'c', embedding: null as unknown as number[], source: 's', source_id: 'sid'
+                content: 'c', embedding: null as never as number[], source: 's', source_id: 'sid'
             })).rejects.toThrow('embedding must be an array');
         });
     });
 
     describe('searchSemanticFragments', () => {
         it('rejects non-array embedding', async () => {
-            await expect(svc.searchSemanticFragments({ embedding: 42 as unknown as number[] }))
+            await expect(svc.searchSemanticFragments({ embedding: 42 as never as number[] }))
                 .rejects.toThrow('embedding must be an array');
         });
     });
@@ -207,10 +207,10 @@ describe('DatabaseClientService input validation', () => {
             await expect(svc.executeQuery({ sql: '' })).rejects.toThrow('sql must be a non-empty string');
         });
         it('rejects non-string sql', async () => {
-            await expect(svc.executeQuery({ sql: 123 as unknown as string })).rejects.toThrow('sql must be a non-empty string');
+            await expect(svc.executeQuery({ sql: 123 as never as string })).rejects.toThrow('sql must be a non-empty string');
         });
         it('rejects non-array params', async () => {
-            await expect(svc.executeQuery({ sql: 'SELECT 1', params: 'bad' as unknown as (string | number | boolean | null)[] }))
+            await expect(svc.executeQuery({ sql: 'SELECT 1', params: 'bad' as never as (string | number | boolean | null)[] }))
                 .rejects.toThrow('params must be an array');
         });
         it('throws when the db-service query endpoint reports a failure', async () => {

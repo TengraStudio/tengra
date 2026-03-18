@@ -14,12 +14,12 @@ vi.mock('@main/logging/logger', () => ({
 
 describe('KeyRotationService', () => {
     let service: KeyRotationService;
-    let mockSettingsService: any;
+    let mockSettingsService: TestValue;
 
     beforeEach(() => {
         mockSettingsService = {
             getSettings: vi.fn().mockReturnValue({})
-        } as any;
+        } as never;
         service = new KeyRotationService(mockSettingsService);
     });
 

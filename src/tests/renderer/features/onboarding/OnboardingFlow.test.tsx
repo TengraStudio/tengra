@@ -13,7 +13,7 @@ vi.mock('@/i18n', () => ({
 vi.mock('@/lib/framer-motion-compat', () => ({
     AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
     motion: {
-        div: ({ children }: Record<string, unknown> & { children?: React.ReactNode }) => (
+        div: ({ children }: React.HTMLAttributes<HTMLDivElement>) => (
             <div data-testid="motion-div">{children}</div>
         ),
     },

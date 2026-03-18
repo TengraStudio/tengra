@@ -63,7 +63,16 @@ const sectionData = {
     "noBranchesFound": "ブランチが見つかりませんでした",
     "switchingBranch": "branch を切り替えています...",
     "branchSwitched": "{{branch}} に切り替えました。",
-    "branchSwitchFailed": "branch の切り替えに失敗しました。"
+    "branchSwitchFailed": "branch の切り替えに失敗しました。",
+    "listPresetTitle": "List preset",
+    "openTitle": "Open",
+    "todoUndoTitle": "Undo (Ctrl/Cmd+Z)",
+    "todoRedoTitle": "Redo (Ctrl/Cmd+Y)",
 };
 
 export default sectionData;
+
+
+
+
+

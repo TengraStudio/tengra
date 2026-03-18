@@ -1,6 +1,7 @@
 import { AlertCircle, RotateCcw } from 'lucide-react';
 import type { ReactNode } from 'react';
 
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 /** Props for the ErrorState component */
@@ -28,6 +29,8 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
     icon,
     className,
 }) => {
+    const { t } = useTranslation();
+
     return (
         <div
             role="alert"
@@ -54,7 +57,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
                     className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
                 >
                     <RotateCcw className="h-3 w-3" />
-                    Retry
+                    {t('common.retry')}
                 </button>
             )}
         </div>

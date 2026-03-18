@@ -4,14 +4,14 @@ import type { SessionEventEnvelope } from '@shared/types/session-engine';
 const GENERATING_STATUSES = new Set(['preparing', 'streaming']);
 
 export function toSessionConversationGenerationStatus(
-    value: unknown
+    value: RuntimeValue
 ): SessionConversationGenerationStatus | null {
     if (!value || typeof value !== 'object') {
         return null;
     }
 
     const event = value as Partial<SessionEventEnvelope> & {
-        payload?: Record<string, unknown>;
+        payload?: Record<string, RuntimeValue>;
     };
     if (
         event.type !== 'session.status.changed' ||

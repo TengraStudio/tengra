@@ -1,4 +1,3 @@
-import { Clock, RefreshCw } from 'lucide-react';
 import React from 'react';
 
 import { formatReset } from '@/lib/formatters';
@@ -7,71 +6,134 @@ import { ModelQuotaItem, QuotaResponse } from '@/types/quota';
 
 import { AccountWrapper } from '../../types';
 
-import { QuotaRing } from './QuotaRing';
+import { getQuotaColor, HorizontalProgressBar, StatusBadge } from './SharedComponents';
 
 interface AntigravityCardProps {
     t: (key: string) => string
     quotaData: AccountWrapper<QuotaResponse> | null
-    setReloadTrigger?: (v: number | ((prev: number) => number)) => void
     locale?: string
+    activeAccountId?: string | null
+    activeAccountEmail?: string | null
 }
 
-export const AntigravityCard: React.FC<AntigravityCardProps> = ({ t, quotaData, setReloadTrigger, locale = 'en-US' }) => {
+function normalizeEmail(email?: string | null): string | null {
+    if (typeof email !== 'string') {
+        return null;
+    }
+    return email.trim().toLowerCase();
+}
+
+function normalizeModelLabel(label: string): string {
+    return label.toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function dedupeAccountModels(models: ModelQuotaItem[]): ModelQuotaItem[] {
+    const deduped = new Map<string, ModelQuotaItem>();
+
+    for (const model of models) {
+        const key = normalizeModelLabel(model.name || model.id);
+        const existing = deduped.get(key);
+        if (!existing || shouldReplaceModel(existing, model)) {
+            deduped.set(key, model);
+        }
+    }
+
+    return Array.from(deduped.values());
+}
+
+function shouldReplaceModel(existing: ModelQuotaItem, candidate: ModelQuotaItem): boolean {
+    const duplicateFamilyKey = getDuplicateFamilyKey(existing.name || existing.id);
+    if (duplicateFamilyKey !== null && duplicateFamilyKey === getDuplicateFamilyKey(candidate.name || candidate.id)) {
+        if (candidate.percentage !== existing.percentage) {
+            return candidate.percentage < existing.percentage;
+        }
+    }
+
+    if (candidate.percentage !== existing.percentage) {
+        return candidate.percentage < existing.percentage;
+    }
+
+    const existingHasReset = existing.reset !== '-';
+    const candidateHasReset = candidate.reset !== '-';
+    if (candidateHasReset !== existingHasReset) {
+        return candidateHasReset;
+    }
+
+    const existingHasQuotaInfo = existing.quotaInfo !== undefined;
+    const candidateHasQuotaInfo = candidate.quotaInfo !== undefined;
+    if (candidateHasQuotaInfo !== existingHasQuotaInfo) {
+        return candidateHasQuotaInfo;
+    }
+
+    return candidate.id.localeCompare(existing.id) < 0;
+}
+
+function getDuplicateFamilyKey(label: string): string | null {
+    const normalizedLabel = normalizeModelLabel(label);
+    if (normalizedLabel.includes('gemini 3.1 pro')) {
+        return 'gemini-3.1-pro';
+    }
+    return null;
+}
+
+export const AntigravityCard: React.FC<AntigravityCardProps> = ({
+    t,
+    quotaData,
+    locale = 'en-US',
+    activeAccountId,
+    activeAccountEmail
+}) => {
     if (!quotaData?.accounts || quotaData.accounts.length === 0) { return null; }
 
     return (
-        <div className="premium-glass p-8 space-y-8 col-span-1 md:col-span-2 relative group overflow-hidden">
-            <div className="flex flex-row items-center justify-between relative z-10">
-                <div>
-                    <div className="text-base font-black text-foreground uppercase tracking-tight">{t('statistics.antigravityQuotas')}</div>
-                    <div className="text-xs font-medium text-muted-foreground/70">{t('statistics.enterpriseStatus')}</div>
-                </div>
-                {setReloadTrigger && (
-                    <button onClick={() => setReloadTrigger((p: number) => p + 1)} className="p-3 bg-primary/10 hover:bg-primary/20 rounded-2xl text-primary transition-all duration-300 border border-primary/20 shadow-lg shadow-primary/5">
-                        <RefreshCw className="w-4 h-4" />
-                    </button>
-                )}
-            </div>
+        <div className="col-span-1 h-full space-y-4 rounded-xl border border-border/40 bg-background/30 p-4">
+            <div className="text-xs font-black text-muted-foreground/60 uppercase tracking-widest">{t('statistics.antigravityQuotas')}</div>
+            <div className="space-y-8">
+                {quotaData.accounts.map((acc, idx: number) => {
+                    const isActiveAccount = acc.isActive === true
+                        || (activeAccountId !== null && acc.accountId === activeAccountId)
+                        || (activeAccountEmail !== null && normalizeEmail(acc.email) === normalizeEmail(activeAccountEmail));
+                    const status = acc.success === false 
+                        ? (acc.authExpired ? 'expired' : 'error') 
+                        : 'active';
+                    const models = dedupeAccountModels(acc.models);
+                    const statusText = acc.success === false 
+                        ? (acc.authExpired ? t('quota.authExpired') : t(`statistics.status${acc.status ?? 'Error'}`)) 
+                        : t('statistics.active');
 
-            <div className="space-y-8 relative z-10">
-                {quotaData.accounts.map((acc, idx: number) => (
-                    <div key={acc.accountId ?? idx} className={cn("space-y-6 relative", idx > 0 && "pt-8 border-t border-border/10")}>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_12px_rgba(var(--primary-rgb),0.5)] animate-pulse" />
-                                <div className="text-xs font-black text-foreground/90 uppercase tracking-widest">{acc.email ?? t('statistics.defaultAccount')}</div>
+                    return (
+                        <div key={acc.accountId ?? idx} className={cn("space-y-4 rounded-xl border border-border/40 bg-card px-4 py-3", idx > 0 && "pt-6")}>
+                            {/* Account Header */}
+                            <div className="flex flex-wrap items-center gap-4">
+                                <div className="text-sm font-black text-foreground/90 uppercase tracking-widest truncate">
+                                    {acc.email ?? t('statistics.defaultAccount')}
+                                </div>
+                                {acc.success === false && <StatusBadge status={status} text={statusText} />}
+                                {acc.success !== false && isActiveAccount && <StatusBadge status={status} text={statusText} />}
                             </div>
-                            <div className="text-[10px] font-black py-1 px-3 rounded-full bg-primary/10 text-primary border border-primary/20 uppercase tracking-widest">
-                                {acc.success === false ? t(`statistics.status${acc.status ?? 'Error'}`) : t('statistics.active')}
-                            </div>
-                        </div>
 
-                        {acc.success === false ? (
-                            <div className="text-[10px] font-medium p-3 rounded-2xl bg-destructive/5 border border-destructive/20 text-destructive flex items-center gap-3">
-                                <div className="w-1.5 h-1.5 rounded-full bg-destructive shadow-[0_0_8px_rgba(var(--destructive-rgb),0.5)]" />
-                                {acc.authExpired ? t('quota.authExpired') : t(`statistics.status${acc.status ?? 'Error'}`)}
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {acc.models.map((m: ModelQuotaItem) => (
-                                    <div key={m.id} className="flex items-center justify-between p-4 rounded-2xl bg-muted/5 border border-border/40 hover:bg-muted/10 hover:border-primary/30 transition-all duration-300 group/item">
-                                        <div className="min-w-0 flex-1">
-                                            <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest truncate group-hover/item:text-foreground transition-colors">{m.name || m.id}</div>
-                                            <div className="flex items-center gap-2 mt-1.5">
-                                                <Clock className="w-3 h-3 text-muted-foreground/40" />
-                                                <div className="text-[10px] font-medium text-muted-foreground/60 truncate">{formatReset(m.reset, locale)}</div>
+                            {/* Models */}
+                            {acc.success !== false && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6 pt-2">
+                                    {models.map((m: ModelQuotaItem) => (
+                                        <div key={m.id} className="space-y-2">
+                                            <div className="flex items-center justify-between text-[10px] uppercase tracking-widest font-bold">
+                                                <span className="text-muted-foreground truncate pr-2">{m.name || m.id}</span>
+                                                <span className="text-foreground/80 tabular-nums shrink-0">{Math.round(m.percentage || 0)}%</span>
+                                            </div>
+                                            <HorizontalProgressBar percentage={m.percentage || 0} color={getQuotaColor(m.percentage || 0)} />
+                                            <div className="text-[9px] font-medium text-muted-foreground/40 mt-1 uppercase tracking-widest">
+                                                {formatReset(m.reset, locale)}
                                             </div>
                                         </div>
-                                        <div className="ml-4">
-                                            <QuotaRing value={m.percentage || 0} color="hsl(var(--primary))" size="sm" />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                ))}
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );
 };
+

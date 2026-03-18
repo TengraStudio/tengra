@@ -28,7 +28,7 @@ export const PreviewMarketButton: React.FC<PreviewMarketButtonProps> = ({
 			className="w-full py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 bg-muted/30 hover:bg-muted/50 text-foreground border border-border/50"
 		>
 			<Eye className="w-4 h-4" />
-			{t('ideas.previewMarket') || 'Preview Market Research'}
+			{t('ideas.previewMarket')}
 		</button>
 	);
 };

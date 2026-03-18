@@ -158,7 +158,7 @@ function validateOptionalFields(m: Partial<ExtensionManifest>): string[] {
 }
 
 /** Validate extension manifest */
-export function validateManifest(manifest: unknown): { valid: boolean; errors: string[] } {
+export function validateManifest(manifest: RuntimeValue): { valid: boolean; errors: string[] } {
     if (!manifest || typeof manifest !== 'object') {
         return { valid: false, errors: ['Manifest must be an object'] };
     }

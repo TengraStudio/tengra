@@ -46,31 +46,32 @@ beforeEach(() => {
         getActiveAccountFull: vi.fn(),
         getAccountsByProviderFull: vi.fn().mockResolvedValue([]),
         updateToken: vi.fn().mockResolvedValue(undefined)
-    } as unknown as AuthService;
+    } as never as AuthService;
 
-    mockCopilotService = { setGithubToken: vi.fn(), ensureCopilotToken: vi.fn() } as unknown as CopilotService;
+    mockCopilotService = { setGithubToken: vi.fn(), ensureCopilotToken: vi.fn() } as never as CopilotService;
 
     mockSettingsService = {
         getSettings: vi.fn().mockReturnValue({
             ai: { tokenRefreshInterval: 300000, copilotRefreshInterval: 900000 }
         })
-    } as unknown as SettingsService;
+    } as never as SettingsService;
 
-    mockJobScheduler = { registerRecurringJob: vi.fn() } as unknown as JobSchedulerService;
+    mockJobScheduler = { registerRecurringJob: vi.fn() } as never as JobSchedulerService;
 
     mockProcessManager = {
         startService: vi.fn().mockResolvedValue(undefined),
         on: vi.fn((event, callback) => {
             if (event === 'token-service:ready') { setTimeout(() => callback(1234), 0); }
         }),
-        sendRequest: vi.fn().mockResolvedValue({ success: true, token: { id: 'test', accessToken: 'new-token' } })
-    } as unknown as ProcessManagerService;
+        sendRequest: vi.fn().mockResolvedValue({ success: true, token: { id: 'test', accessToken: 'new-token' } }),
+        sendGetRequest: vi.fn().mockResolvedValue({})
+    } as never as ProcessManagerService;
 
     mockEventBus = {
         emit: vi.fn(),
         on: vi.fn().mockReturnValue(() => { }), // Return unsubscribe function
         off: vi.fn()
-    } as unknown as EventBusService;
+    } as never as EventBusService;
 
     tokenService = new TokenService(
         mockSettingsService,
@@ -99,7 +100,7 @@ describe('TokenService - Lifecycle', () => {
             mockEventBus,
             {
                 processManager: mockProcessManager,
-                jobScheduler: undefined as any
+                jobScheduler: undefined as never
             }
         );
         const setIntervalSpy = vi.spyOn(global, 'setInterval');
@@ -118,7 +119,7 @@ describe('TokenService - Refresh Logic', () => {
 
 
     it('should not refresh when provider has no accounts', async () => {
-        vi.mocked(mockAuthService.getAccountsByProviderFull).mockResolvedValue([] as any);
+        vi.mocked(mockAuthService.getAccountsByProviderFull).mockResolvedValue([] as never);
         const refreshSpy = vi.spyOn(tokenService, 'refreshSingleToken');
 
         await tokenService.ensureFreshToken('google');
@@ -127,7 +128,7 @@ describe('TokenService - Refresh Logic', () => {
     });
 
     it('should refresh Google tokens when expired', async () => {
-        vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([mockToken as any]);
+        vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([mockToken as never]);
         await tokenService.initialize();
 
         const jobCallback = vi.mocked(mockJobScheduler.registerRecurringJob).mock.calls.find(call => call[0] === 'token-refresh-oauth')?.[1];
@@ -149,16 +150,23 @@ describe('TokenService - Refresh Logic', () => {
 
     it('should skip valid tokens', async () => {
         const validToken = { ...mockToken, expiresAt: Date.now() + 3600000 };
-        vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([validToken as any]);
+        vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([validToken as never]);
         await tokenService.initialize();
         await new Promise(resolve => setTimeout(resolve, 0));
-        expect(mockProcessManager.sendRequest).not.toHaveBeenCalled();
+        expect(vi.mocked(mockProcessManager.sendRequest).mock.calls).toEqual([
+            [
+                'token-service',
+                expect.objectContaining({ token: expect.objectContaining({ id: 'google_user' }) }),
+                10000,
+                '/monitor'
+            ]
+        ]);
     });
 
     it('should refresh Copilot token when expired', async () => {
         const copilotToken = { ...mockToken, provider: 'copilot', id: 'copilot_user' };
-        vi.mocked(mockAuthService.getActiveAccountFull).mockResolvedValue(copilotToken as any);
-        vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([copilotToken as any]);
+        vi.mocked(mockAuthService.getActiveAccountFull).mockResolvedValue(copilotToken as never);
+        vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([copilotToken as never]);
 
         await tokenService.initialize();
         const jobCallback = vi.mocked(mockJobScheduler.registerRecurringJob).mock.calls.find(call => call[0] === 'token-refresh-oauth')?.[1];
@@ -193,9 +201,9 @@ describe('TokenService - Refresh Logic', () => {
         // We will mock the getSettings to have very fast retry delay for this test
         vi.mocked(mockSettingsService.getSettings).mockReturnValue({
             ai: { tokenRefreshInterval: 300000, copilotRefreshInterval: 900000 }
-        } as any);
+        } as never);
 
-        const refreshPromise = tokenService.refreshSingleToken(mockToken as any, true);
+        const refreshPromise = tokenService.refreshSingleToken(mockToken as never, true);
         await expect(refreshPromise).rejects.toThrow('network outage');
 
         expect(mockEventBus.emit).toHaveBeenCalledWith(
@@ -219,6 +227,68 @@ describe('TokenService - Refresh Logic', () => {
         expect(emptyMetrics.performanceBudget.executeMs).toBeDefined();
         expect(en.serviceHealth.token.empty).toBe(emptyMetrics.messageKey);
         expect(tr.serviceHealth.token.empty).toBeTruthy();
+    });
+
+    it('should register native accounts with token-service monitor endpoint on initialize', async () => {
+        const codexToken = {
+            id: 'codex_user',
+            provider: 'codex',
+            accessToken: 'codex-access',
+            refreshToken: 'codex-refresh',
+            expiresAt: Date.now() + 60000
+        };
+        vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([codexToken as never]);
+
+        await tokenService.initialize();
+
+        expect(mockProcessManager.sendRequest).toHaveBeenCalledWith(
+            'token-service',
+            expect.objectContaining({
+                token: expect.objectContaining({ id: 'codex_user', provider: 'codex' }),
+                client_id: 'app_EMoamEEZ73f0CkXaXp7hrann',
+                client_secret: undefined
+            }),
+            10000,
+            '/monitor'
+        );
+    });
+
+    it('should sync refreshed tokens back from token-service', async () => {
+        const codexToken = {
+            id: 'codex_user',
+            provider: 'codex',
+            accessToken: 'old-access',
+            refreshToken: 'old-refresh',
+            expiresAt: 100
+        };
+        vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([codexToken as never]);
+        vi.mocked(mockProcessManager.sendGetRequest).mockResolvedValue({
+            codex_user: {
+                token: {
+                    id: 'codex_user',
+                    provider: 'codex',
+                    access_token: 'new-access',
+                    refresh_token: 'new-refresh',
+                    expires_at: 200
+                }
+            }
+        } as never);
+
+        await tokenService.initialize();
+
+        const syncJobCallback = vi.mocked(mockJobScheduler.registerRecurringJob).mock.calls.find(call => call[0] === 'token-refresh-sync')?.[1];
+        if (!syncJobCallback) {
+            throw new Error('syncJobCallback not found');
+        }
+
+        await syncJobCallback();
+
+        expect(mockAuthService.updateToken).toHaveBeenCalledWith('codex_user', {
+            accessToken: 'new-access',
+            refreshToken: 'new-refresh',
+            sessionToken: undefined,
+            expiresAt: 200
+        });
     });
 
 });

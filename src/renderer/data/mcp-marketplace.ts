@@ -77,19 +77,7 @@ export const MARKETPLACE_MCP_DATA = [
       { name: 'get_logs', description: 'Get pod logs' }
     ]
   },
-  {
-    id: 'sentry',
-    name: 'Sentry',
-    description: 'Error tracking and performance monitoring.',
-    category: 'DevOps',
-    author: 'Model Context Protocol',
-    icon: Activity,
-    command: 'npx -y @modelcontextprotocol/server-sentry',
-    tools: [
-      { name: 'list_issues', description: 'List recent issues' },
-      { name: 'get_event', description: 'Get detailed event info' }
-    ]
-  },
+
   {
     id: 'cloudflare',
     name: 'Cloudflare',

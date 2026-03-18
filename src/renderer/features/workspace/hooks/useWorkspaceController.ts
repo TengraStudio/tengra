@@ -23,7 +23,7 @@ export function useWorkspaceDetailsController({
     const wm = useWorkspaceManager({ workspace, notify, logActivity, t });
 
     useEffect(() => {
-        const handleProgress = (_event: unknown, ...args: unknown[]) => {
+        const handleProgress = (_event: RendererDataValue, ...args: RendererDataValue[]) => {
             const progress = args[0] as
                 | { workspaceId: string; status: string; current: number; total: number }
                 | undefined;
@@ -31,16 +31,16 @@ export function useWorkspaceDetailsController({
                 if (progress.status === 'Complete') {
                     ps.notify(
                         'success',
-                        t('workspaceDashboard.indexingComplete') || 'Indexing complete!'
+                        t('workspaceDashboard.indexingComplete')
                     );
                 } else if (progress.status === 'Failed') {
-                    ps.notify('error', t('workspaceDashboard.indexingFailed') || 'Indexing failed.');
+                    ps.notify('error', t('workspaceDashboard.indexingFailed'));
                 } else {
                     // Only notify at start and end
                     if (progress.current === 1) {
                         ps.notify(
                             'info',
-                            t('workspaceDashboard.indexingStarted') || 'Starting workspace indexing...'
+                            t('workspaceDashboard.indexingStarted')
                         );
                     }
                 }
@@ -60,7 +60,6 @@ export function useWorkspaceDetailsController({
         workspace,
         notify,
         t,
-        agentChatMessage: ps.agentChatMessage,
     });
 
     const [entryBusy, setEntryBusy] = useState(false);
@@ -73,7 +72,7 @@ export function useWorkspaceDetailsController({
         const name = ps.entryName.trim();
 
         if (type !== 'delete' && !name) {
-            notify('error', t('workspace.errors.emptyName') || 'Name cannot be empty');
+            notify('error', t('workspace.errors.explorer.emptyEntryName'));
             return;
         }
 
@@ -103,11 +102,17 @@ export function useWorkspaceDetailsController({
                         await wm.deleteEntry(item);
                         deletedCount++;
                     } catch (e) {
-                        notify('error', `Failed to delete ${item.name}: ${e}`);
+                        notify(
+                            'error',
+                            t('workspace.notifications.deleteEntryFailed', {
+                                name: item.name,
+                                error: String(e),
+                            })
+                        );
                     }
                 }
                 if (entriesToDelete.length > 1) {
-                    notify('success', `Deleted ${deletedCount} items.`);
+                    notify('success', t('workspace.notifications.entriesDeleted', { count: deletedCount }));
                 }
                 ps.setSelectedEntries([]);
             }

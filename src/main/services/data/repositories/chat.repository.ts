@@ -80,7 +80,7 @@ export class ChatRepository extends BaseRepository {
     async updateChat(id: string, updates: Partial<Chat>) {
         try {
             const fields: string[] = [];
-            const values: unknown[] = [];
+            const values: RuntimeValue[] = [];
 
             this.collectChatUpdates(updates, fields, values);
 
@@ -95,7 +95,7 @@ export class ChatRepository extends BaseRepository {
         }
     }
 
-    private collectChatUpdates(updates: Partial<Chat>, fields: string[], values: unknown[]) {
+    private collectChatUpdates(updates: Partial<Chat>, fields: string[], values: RuntimeValue[]) {
         this.addFieldUpdating(fields, values, 'title', updates.title);
         this.addFieldUpdating(fields, values, 'backend', updates.backend);
         this.addFieldUpdating(fields, values, 'model', updates.model);
@@ -123,7 +123,7 @@ export class ChatRepository extends BaseRepository {
         values.push(Date.now());
     }
 
-    private addFieldUpdating(fields: string[], values: unknown[], fieldName: string, value: unknown) {
+    private addFieldUpdating(fields: string[], values: RuntimeValue[], fieldName: string, value: RuntimeValue) {
         if (value !== undefined) {
             fields.push(`${fieldName} = ?`);
             values.push(value);

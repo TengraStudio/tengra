@@ -3,7 +3,7 @@
  * Centralizes UI state management for the App component
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
     dismissNotification,
@@ -15,7 +15,7 @@ import { setAppShellState, useUiLayoutStore } from '@/store/ui-layout.store';
 import { Toast } from '@/types';
 // SettingsCategory type is used by dependent modules via AppState interface
 
-export type AppView = 'chat' | 'workspace' | 'settings' | 'mcp' | 'memory' | 'ideas' | 'automation-workflow' | 'docker' | 'terminal' | 'models'
+export type AppView = 'chat' | 'workspace' | 'settings' | 'mcp' | 'memory' | 'ideas' | 'docker' | 'terminal' | 'models'
 
 export interface AppState {
     // View state
@@ -58,7 +58,7 @@ export interface AppState {
  */
 export function useAppState(): AppState {
     // View state
-    const [currentView, setCurrentView] = useState<AppView>('chat');
+    const [currentView, setCurrentViewState] = useState<AppView>('chat');
 
     // UI state
     const persistedSidebarCollapsed = useUiLayoutStore(snapshot => snapshot.appShell.sidebarCollapsed);
@@ -84,6 +84,12 @@ export function useAppState(): AppState {
         setIsSidebarCollapsedState(collapsed);
         setAppShellState({ sidebarCollapsed: collapsed });
     }, [isSidebarCollapsed]);
+
+    const setCurrentView = useCallback((view: AppView) => {
+        startTransition(() => {
+            setCurrentViewState(prev => (prev === view ? prev : view));
+        });
+    }, []);
 
     // Toast notifications (shared notification center)
     const activeNotifications = useNotificationCenterStore(snapshot => snapshot.active);
@@ -133,6 +139,7 @@ export function useAppState(): AppState {
         messagesEndRef
     }), [
         currentView,
+        setCurrentView,
         isSidebarCollapsed,
         isDragging,
         showCommandPalette,
@@ -145,7 +152,6 @@ export function useAppState(): AppState {
         addToast,
         removeToast,
         setIsSidebarCollapsed,
-        setCurrentView,
         setIsDragging,
         setShowCommandPalette,
         setShowSSHManager,

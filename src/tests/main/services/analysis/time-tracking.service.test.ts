@@ -29,7 +29,13 @@ function createMockDatabaseClient(): DatabaseClientService {
     return {
         executeQuery: vi.fn<(req: DbQueryRequest) => Promise<DbQueryResponse>>()
             .mockResolvedValue({ rows: [], affected_rows: 0 }),
-    } as unknown as DatabaseClientService;
+    } as never as DatabaseClientService;
+}
+
+function getInsertCalls(mockDbClient: DatabaseClientService) {
+    return vi.mocked(mockDbClient.executeQuery).mock.calls
+        .map(([request]) => request)
+        .filter((request) => request.sql.includes('INSERT INTO time_tracking'));
 }
 
 describe('TimeTrackingService', () => {
@@ -144,9 +150,9 @@ describe('TimeTrackingService', () => {
             await service.stopAppTracking();
 
             // Assert
-            const executeQuery = vi.mocked(mockDbClient.executeQuery);
-            expect(executeQuery).toHaveBeenCalledTimes(1);
-            const params = executeQuery.mock.calls[0][0].params as (string | number | null)[];
+            const insertCalls = getInsertCalls(mockDbClient);
+            expect(insertCalls).toHaveLength(1);
+            const params = insertCalls[0].params as (string | number | null)[];
             expect(params[1]).toBe('app_online'); // type
             expect(params[5]).toBe(10000); // durationMs
         });
@@ -169,7 +175,7 @@ describe('TimeTrackingService', () => {
 
             // Assert - calling stop again should be a no-op
             await service.stopAppTracking();
-            expect(vi.mocked(mockDbClient.executeQuery)).toHaveBeenCalledTimes(1);
+            expect(getInsertCalls(mockDbClient)).toHaveLength(1);
         });
     });
 
@@ -183,9 +189,9 @@ describe('TimeTrackingService', () => {
             await service.stopCodingTracking();
 
             // Assert
-            const executeQuery = vi.mocked(mockDbClient.executeQuery);
-            expect(executeQuery).toHaveBeenCalledTimes(1);
-            const params = executeQuery.mock.calls[0][0].params as (string | number | null)[];
+            const insertCalls = getInsertCalls(mockDbClient);
+            expect(insertCalls).toHaveLength(1);
+            const params = insertCalls[0].params as (string | number | null)[];
             expect(params[1]).toBe('coding');
             expect(params[5]).toBe(3000);
         });
@@ -200,9 +206,9 @@ describe('TimeTrackingService', () => {
             await service.stopCodingTracking(workspaceId);
 
             // Assert
-            const executeQuery = vi.mocked(mockDbClient.executeQuery);
-            expect(executeQuery).toHaveBeenCalledTimes(1);
-            const params = executeQuery.mock.calls[0][0].params as (string | number | null)[];
+            const insertCalls = getInsertCalls(mockDbClient);
+            expect(insertCalls).toHaveLength(1);
+            const params = insertCalls[0].params as (string | number | null)[];
             expect(params[1]).toBe(WORKSPACE_COMPAT_CODING_TYPE);
             expect(params[2]).toBe(workspaceId);
             expect(params[5]).toBe(7000);
@@ -220,14 +226,14 @@ describe('TimeTrackingService', () => {
             await service.stopCodingTracking('workspace-2');
 
             // Assert
-            const executeQuery = vi.mocked(mockDbClient.executeQuery);
-            expect(executeQuery).toHaveBeenCalledTimes(2);
+            const insertCalls = getInsertCalls(mockDbClient);
+            expect(insertCalls).toHaveLength(2);
 
-            const params1 = executeQuery.mock.calls[0][0].params as (string | number | null)[];
+            const params1 = insertCalls[0].params as (string | number | null)[];
             expect(params1[2]).toBe('workspace-1');
             expect(params1[5]).toBe(5000); // 2000 + 3000
 
-            const params2 = executeQuery.mock.calls[1][0].params as (string | number | null)[];
+            const params2 = insertCalls[1].params as (string | number | null)[];
             expect(params2[2]).toBe('workspace-2');
             expect(params2[5]).toBe(3000);
         });
@@ -260,7 +266,7 @@ describe('TimeTrackingService', () => {
             await service.stopCodingTracking();
 
             // Assert
-            expect(vi.mocked(mockDbClient.executeQuery)).toHaveBeenCalledTimes(1);
+            expect(getInsertCalls(mockDbClient)).toHaveLength(1);
         });
 
         it('should clear workspace state after stop', async () => {
@@ -273,7 +279,7 @@ describe('TimeTrackingService', () => {
             await service.stopCodingTracking('proj-1');
 
             // Assert
-            expect(vi.mocked(mockDbClient.executeQuery)).toHaveBeenCalledTimes(1);
+            expect(getInsertCalls(mockDbClient)).toHaveLength(1);
         });
     });
 
@@ -388,7 +394,7 @@ describe('TimeTrackingService', () => {
             await service.stopAppTracking();
 
             // Assert
-            const params = (vi.mocked(mockDbClient.executeQuery).mock.calls[0][0].params) as (string | number | null)[];
+            const params = (getInsertCalls(mockDbClient)[0].params) as (string | number | null)[];
             expect(params[5]).toBe(42000);
         });
 
@@ -402,7 +408,7 @@ describe('TimeTrackingService', () => {
             await service.stopAppTracking();
 
             // Assert
-            const params = (vi.mocked(mockDbClient.executeQuery).mock.calls[0][0].params) as (string | number | null)[];
+            const params = (getInsertCalls(mockDbClient)[0].params) as (string | number | null)[];
             expect(params[3]).toBe(startTimestamp); // startTime
             expect(params[4]).toBe(startTimestamp + 15000); // endTime
         });
@@ -416,7 +422,7 @@ describe('TimeTrackingService', () => {
             await service.stopCodingTracking();
 
             // Assert
-            const params = (vi.mocked(mockDbClient.executeQuery).mock.calls[0][0].params) as (string | number | null)[];
+            const params = (getInsertCalls(mockDbClient)[0].params) as (string | number | null)[];
             expect(params[5]).toBe(0); // durationMs = 0
         });
     });
@@ -431,9 +437,9 @@ describe('TimeTrackingService', () => {
             await service.stopAppTracking();
 
             // Assert
-            const executeQuery = vi.mocked(mockDbClient.executeQuery);
-            expect(executeQuery).toHaveBeenCalledTimes(1);
-            const call = executeQuery.mock.calls[0][0];
+            const insertCalls = getInsertCalls(mockDbClient);
+            expect(insertCalls).toHaveLength(1);
+            const call = insertCalls[0];
             expect(call.sql).toContain('INSERT INTO time_tracking');
             const params = call.params as (string | number | null)[];
             expect(params[0]).toBe('test-uuid-1234'); // id
@@ -455,7 +461,7 @@ describe('TimeTrackingService', () => {
             await service.stopCodingTracking('my-workspace');
 
             // Assert
-            const params = (vi.mocked(mockDbClient.executeQuery).mock.calls[0][0].params) as (string | number | null)[];
+            const params = (getInsertCalls(mockDbClient)[0].params) as (string | number | null)[];
             expect(params[1]).toBe(WORKSPACE_COMPAT_CODING_TYPE);
             expect(params[2]).toBe('my-workspace');
             expect(params[5]).toBe(6000);
@@ -482,7 +488,7 @@ describe('TimeTrackingService', () => {
             }
 
             // Assert
-            expect(vi.mocked(mockDbClient.executeQuery)).toHaveBeenCalledTimes(5);
+            expect(getInsertCalls(mockDbClient)).toHaveLength(5);
         });
 
         it('should handle starting workspace tracking after overwriting the same workspace', async () => {
@@ -496,14 +502,14 @@ describe('TimeTrackingService', () => {
             await service.stopCodingTracking('workspace-1');
 
             // Assert - duration should be from the second start
-            const params = (vi.mocked(mockDbClient.executeQuery).mock.calls[0][0].params) as (string | number | null)[];
+            const params = (getInsertCalls(mockDbClient)[0].params) as (string | number | null)[];
             expect(params[5]).toBe(2000);
         });
 
         it('should handle cleanup when periodic save had errors', async () => {
             // Arrange
-            vi.mocked(mockDbClient.executeQuery).mockRejectedValueOnce(new Error('periodic save error'));
             await service.initialize();
+            vi.mocked(mockDbClient.executeQuery).mockRejectedValueOnce(new Error('periodic save error'));
             vi.advanceTimersByTime(60000); // trigger periodic save
 
             // Act - cleanup should still work

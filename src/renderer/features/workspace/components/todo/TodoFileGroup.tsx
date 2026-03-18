@@ -59,6 +59,7 @@ export const TodoFileGroup = ({
                                 key={todo.id}
                                 todo={todo}
                                 onToggle={(item) => onToggleItem(item)}
+                                t={t}
                                 onUndo={onUndo}
                                 onRedo={onRedo}
                                 canUndo={canUndo}

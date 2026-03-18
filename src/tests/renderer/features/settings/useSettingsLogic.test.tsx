@@ -108,8 +108,7 @@ describe('useSettingsLogic', () => {
 
     it('rejects invalid save payload and exposes validation error code', async () => {
         const { result } = renderHook(() => useSettingsLogic());
-        const invalidPayload = { ...settingsFixture } as Record<string, unknown>;
-        delete invalidPayload.embeddings;
+        const { embeddings: _embeddings, ...invalidPayload } = settingsFixture;
 
         await act(async () => {
             await result.current.handleSave(invalidPayload as AppSettings);

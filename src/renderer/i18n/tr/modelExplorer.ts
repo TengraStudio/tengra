@@ -42,7 +42,21 @@ const sectionData = {
     "noCompatible": "Uyumlu dosya bulunamadı",
     "defaultDescription": "Açık kaynak model",
     "install": "Yükle",
-    "installed": "Yüklü"
+    "installed": "Yüklü",
+    "compareQueue": "Karşılaştırma Kuyruğu: {{count}} / {{max}}",
+    "comparing": "Karşılaştırılıyor...",
+    "runComparison": "Karşılaştırmayı Çalıştır",
+    "comparisonResult": "Karşılaştırma Sonucu",
+    "diskRam": "Disk / RAM",
+    "shardedModelSets": "Parçalı Model Setleri",
+    "fullSetDownloaded": "Tam Set İndirildi",
+    "downloadMissingParts": "Eksik Parçaları İndir",
+    "digest": "Özet",
+    "action": "Eylem",
+    "recommended": "Recommended",
+    "watchlist": "Watchlist",
+    "paramsSuffix": "params",
+    "benchmarkScore": "Benchmark Score"
 };
 
 export default sectionData;

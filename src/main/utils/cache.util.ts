@@ -383,7 +383,7 @@ export class MultiLevelCache<T = JsonValue> {
  * const fetchUser = memoize(async (id: number) => api.getUser(id), { ttl: 60000 });
  * ```
  */
-export function memoize<Args extends unknown[], Result>(
+export function memoize<Args extends RuntimeValue[], Result>(
     fn: (...args: Args) => Promise<Result>,
     options?: {
         cache?: Cache<Result>

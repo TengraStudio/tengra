@@ -45,8 +45,8 @@ describe('TerminalSmartService', () => {
         mockLlm = createMockLlm();
         mockTerminal = createMockTerminal();
         service = new TerminalSmartService(
-            mockLlm as unknown as LLMService,
-            mockTerminal as unknown as TerminalService
+            mockLlm as never as LLMService,
+            mockTerminal as never as TerminalService
         );
     });
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
     pushNotification,
@@ -20,7 +20,6 @@ export function useWorkspaceState() {
     const [showTerminal, setShowTerminal] = useState(false);
     const [terminalHeight, setTerminalHeightState] = useState(persistedWorkspaceShell.terminalHeight);
     const [showLogoModal, setShowLogoModal] = useState(false);
-    const [agentChatMessage, setAgentChatMessage] = useState('');
 
     const [showMountModal, setShowMountModal] = useState(false);
     const [entryModal, setEntryModal] = useState<{
@@ -30,7 +29,6 @@ export function useWorkspaceState() {
     const [entryName, setEntryName] = useState('');
 
     const activeNotifications = useNotificationCenterStore(snapshot => snapshot.active);
-    const recentQuotaInterruptKeysRef = useRef<Set<string>>(new Set());
     const notifications = useMemo(
         () =>
             activeNotifications.map(notification => ({
@@ -46,41 +44,6 @@ export function useWorkspaceState() {
         setAgentPanelWidthState(persistedWorkspaceShell.agentPanelWidth);
         setTerminalHeightState(persistedWorkspaceShell.terminalHeight);
     }, [persistedWorkspaceShell]);
-
-    useEffect(() => {
-        const unsubscribe = window.electron.session.council.onQuotaInterrupt(payload => {
-            const dedupeKey = payload.dedupeKey ?? payload.interruptId;
-            if (recentQuotaInterruptKeysRef.current.has(dedupeKey)) {
-                return;
-            }
-            recentQuotaInterruptKeysRef.current.add(dedupeKey);
-            if (recentQuotaInterruptKeysRef.current.size > 200) {
-                const oldest = recentQuotaInterruptKeysRef.current.values().next().value;
-                if (oldest) {
-                    recentQuotaInterruptKeysRef.current.delete(oldest);
-                }
-            }
-
-            const baseMessage = payload.message.trim();
-            const selectedInfo = payload.selectedFallback
-                ? ` (${payload.selectedFallback.provider}/${payload.selectedFallback.model})`
-                : '';
-            const finalMessage = payload.blockedByQuota
-                ? `Quota interrupt: ${baseMessage}`
-                : payload.switched
-                    ? `Quota interrupt resolved via fallback${selectedInfo}: ${baseMessage}`
-                    : `Quota interrupt: ${baseMessage}`;
-
-            pushNotification({
-                type: payload.blockedByQuota ? 'error' : 'warning',
-                title: 'Model Quota Interrupt',
-                message: finalMessage,
-                source: 'session-council',
-            });
-        });
-
-        return unsubscribe;
-    }, []);
 
     const setSidebarCollapsed = useCallback((collapsed: boolean) => {
         setSidebarCollapsedState(collapsed);
@@ -128,8 +91,6 @@ export function useWorkspaceState() {
         setTerminalHeight,
         showLogoModal,
         setShowLogoModal,
-        agentChatMessage,
-        setAgentChatMessage,
         showMountModal,
         setShowMountModal,
         entryModal,

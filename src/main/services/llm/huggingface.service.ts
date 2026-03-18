@@ -486,7 +486,7 @@ export class HuggingFaceService extends BaseService {
      * Partial GGUF header parser to extract metadata like architecture and context length.
      * Only reads the necessary bytes from the start of the file.
      */
-    async getGGUFMetadata(filePath: string): Promise<{ architecture?: string; contextLength?: number;[key: string]: unknown }> {
+    async getGGUFMetadata(filePath: string): Promise<{ architecture?: string; contextLength?: number;[key: string]: RuntimeValue }> {
         const fs = await import('fs/promises');
         try {
             const handle = await fs.open(filePath, 'r');
@@ -724,8 +724,8 @@ export class HuggingFaceService extends BaseService {
 
     async registerModelVersion(modelId: string, filePath: string, notes?: string): Promise<HFModelVersionRecord> {
         const metadataRaw = (await this.getGGUFMetadata(filePath).catch(() => ({}))) as {
-            architecture?: unknown;
-            contextLength?: unknown;
+            architecture?: RuntimeValue;
+            contextLength?: RuntimeValue;
         };
         const record: HFModelVersionRecord = {
             versionId: `v_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -834,7 +834,7 @@ export class HuggingFaceService extends BaseService {
                 .filter(Boolean)
                 .map(line => {
                     try {
-                        const parsed = JSON.parse(line) as Record<string, unknown>;
+                        const parsed = JSON.parse(line) as Record<string, RuntimeValue>;
                         return JSON.stringify(parsed);
                     } catch {
                         return JSON.stringify({ text: line });

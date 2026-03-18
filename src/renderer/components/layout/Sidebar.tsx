@@ -4,16 +4,19 @@ import { SidebarFooter } from '@renderer/components/layout/sidebar/SidebarFooter
 import { SidebarHeader } from '@renderer/components/layout/sidebar/SidebarHeader';
 import { SidebarNavigation } from '@renderer/components/layout/sidebar/SidebarNavigation';
 import { Modal } from '@renderer/components/ui/modal';
-import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useChat } from '@/context/ChatContext';
-import { useWorkspace } from '@/context/WorkspaceContext';
-import { PromptManagerModal } from '@/features/prompts/components/PromptManagerModal';
+import { useChatLibrary, useChatShell } from '@/context/ChatContext';
+import { useWorkspaceSelection } from '@/context/WorkspaceContext';
 import { SettingsCategory } from '@/features/settings/types';
 import { AppView } from '@/hooks/useAppState';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { Chat } from '@/types';
+
+const PromptManagerModal = lazy(() =>
+    import('@/features/prompts/components/PromptManagerModal').then(module => ({ default: module.PromptManagerModal }))
+);
 
 interface SidebarProps {
     isCollapsed: boolean
@@ -24,38 +27,64 @@ interface SidebarProps {
     onSearch: (query: string) => void
 }
 
-/**
- * Main application sidebar with navigation, chat list, and footer controls.
- */
-export const Sidebar = React.memo(({
-    onOpenSettings,
+const SidebarHeaderConnector: React.FC<Pick<SidebarProps, 'isCollapsed' | 'onChangeView'>> = ({
     isCollapsed,
-    toggleSidebar,
+    onChangeView,
+}) => {
+    const { t } = useTranslation();
+    const { createNewChat } = useChatShell();
+
+    return (
+        <SidebarHeader
+            isCollapsed={isCollapsed}
+            newChatLabel={t('sidebar.newChat')}
+            onClickNewChat={() => {
+                onChangeView('chat');
+                createNewChat();
+            }}
+        />
+    );
+};
+
+const SidebarNavigationConnector: React.FC<Pick<SidebarProps, 'currentView' | 'onChangeView' | 'isCollapsed'>> = ({
     currentView,
     onChangeView,
-    onSearch
-}: SidebarProps) => {
+    isCollapsed,
+}) => {
+    const { t } = useTranslation();
+    const { chatsCount } = useChatShell();
+
+    return (
+        <SidebarNavigation
+            currentView={currentView}
+            onChangeView={onChangeView}
+            isCollapsed={isCollapsed}
+            chatsCount={chatsCount}
+            t={t}
+        />
+    );
+};
+
+const SidebarChatSection: React.FC<Pick<SidebarProps, 'currentView' | 'onChangeView' | 'isCollapsed' | 'onSearch'>> = ({
+    currentView,
+    onChangeView,
+    isCollapsed,
+    onSearch,
+}) => {
     const {
-        chats, currentChatId, setCurrentChatId, createNewChat, deleteChat, updateChat,
+        chats, currentChatId, setCurrentChatId, deleteChat, updateChat,
         folders, createFolder, deleteFolder,
         prompts, createPrompt, updatePrompt, deletePrompt, togglePin, bulkDeleteChats
-    } = useChat();
-
-    // const { language: authLanguage } = useAuth() // Removed unused
-    const { selectedWorkspace: selectedWorkspace } = useWorkspace();
-    const { t, language } = useTranslation();
-
+    } = useChatLibrary();
+    const { t } = useTranslation();
     const [searchQuery, setSearchQuery] = useState('');
     const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
     const [showPrompts, setShowPrompts] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
-    // editValue state removed for performance (uncontrolled input)
-    const editRef = useRef<HTMLInputElement>(null);
-    const [showSettingsMenu, setShowSettingsMenu] = useState(false);
     const [showClearConfirm, setShowClearConfirm] = useState(false);
+    const editRef = useRef<HTMLInputElement>(null);
     const deferredSearchQuery = useDeferredValue(searchQuery);
 
-    const activeFolders = useMemo(() => folders, [folders]);
     const chatSearchIndex = useMemo(() => {
         const index = new Map<string, string>();
         for (const chat of chats) {
@@ -63,20 +92,13 @@ export const Sidebar = React.memo(({
         }
         return index;
     }, [chats]);
-    const normalizedSearchQuery = useMemo(
-        () => deferredSearchQuery.trim().toLowerCase(),
-        [deferredSearchQuery]
-    );
-
+    const normalizedSearchQuery = useMemo(() => deferredSearchQuery.trim().toLowerCase(), [deferredSearchQuery]);
     const filteredChats = useMemo(() => {
         if (normalizedSearchQuery === '') {
             return chats;
         }
-        return chats.filter(chat =>
-            (chatSearchIndex.get(chat.id) ?? '').includes(normalizedSearchQuery)
-        );
+        return chats.filter(chat => (chatSearchIndex.get(chat.id) ?? '').includes(normalizedSearchQuery));
     }, [chatSearchIndex, chats, normalizedSearchQuery]);
-
     const { pinnedChats, recentChats } = useMemo(() => {
         const pinned: Chat[] = [];
         const recent: Chat[] = [];
@@ -103,19 +125,15 @@ export const Sidebar = React.memo(({
         setSearchQuery(e.target.value);
         onSearch(e.target.value);
     }, [onSearch]);
-
     const startEdit = useCallback((id: string, _title: string) => {
         setEditingId(id);
-        // No need to set editValue, input uses defaultValue
     }, []);
-
     const saveEdit = useCallback(() => {
         if (editingId && editRef.current?.value.trim()) {
             void updateChat(editingId, { title: editRef.current.value.trim() });
         }
         setEditingId(null);
     }, [editingId, updateChat]);
-
     const renderChatItem = useCallback((chat: Chat) => (
         <SidebarChatItem
             key={chat.id}
@@ -123,105 +141,72 @@ export const Sidebar = React.memo(({
             isActive={currentView === 'chat' && currentChatId === chat.id}
             isCollapsed={isCollapsed}
             isEditing={editingId === chat.id}
-            // editValue removed
-            // setEditValue removed
             saveEdit={saveEdit}
             startEdit={startEdit}
-            togglePin={(id, p) => { void togglePin(id, p); }}
+            togglePin={(id, pinned) => { void togglePin(id, pinned); }}
             deleteChat={(id) => { void deleteChat(id); }}
             onSelect={(id) => { onChangeView('chat'); void setCurrentChatId(id); }}
             editRef={editRef}
             cancelEdit={() => setEditingId(null)}
         />
     ), [currentView, currentChatId, isCollapsed, editingId, saveEdit, startEdit, togglePin, deleteChat, onChangeView, setCurrentChatId]);
-
     const handleClearAll = useCallback(() => {
         if (chats.length > 0) {
             setShowClearConfirm(true);
         }
-    }, [chats]);
-
+    }, [chats.length]);
     const confirmClearAll = useCallback(() => {
-        const ids = chats.map(c => c.id);
+        const ids = chats.map(chat => chat.id);
         void bulkDeleteChats(ids);
         setShowClearConfirm(false);
-    }, [chats, bulkDeleteChats]);
+    }, [bulkDeleteChats, chats]);
 
     return (
         <>
-            <aside
-                data-testid="sidebar"
-                aria-label={t('aria.applicationSidebar')}
-                className={cn(
-                    "flex flex-col h-full transition-all duration-300 ease-in-out bg-background",
-                    isCollapsed ? "w-[70px]" : "w-full"
-                )}>
-                <SidebarHeader
-                    isCollapsed={isCollapsed}
-                    newChatLabel={t('sidebar.newChat')}
-                    onClickNewChat={() => { onChangeView('chat'); void createNewChat(); }}
-                />
-
-                <SidebarNavigation
-                    currentView={currentView}
-                    onChangeView={onChangeView}
-                    isCollapsed={isCollapsed}
-                    chatsCount={chats.length}
-                    t={t}
-                />
-
-                <div className="mx-3 my-2 h-px bg-border/30" />
-
-                <SidebarChatList
-                    isCollapsed={isCollapsed}
-                    searchQuery={searchQuery}
-                    onSearchChange={handleSearch}
-                    pinnedChats={pinnedChats}
-                    activeFolders={activeFolders}
-                    expandedFolders={expandedFolders}
-                    filteredChats={filteredChats}
-                    recentChats={recentChats}
-                    chatsCount={chats.length}
-                    t={t}
-                    toggleFolder={(id: string) => setExpandedFolders(prev => {
-                        const next = new Set(prev);
-                        if (next.has(id)) { next.delete(id); }
-                        else { next.add(id); }
-                        return next;
-                    })}
-                    deleteFolder={(id) => { void deleteFolder(id); }}
-                    createFolder={(name) => { void createFolder(name); }}
-                    renderChatItem={renderChatItem}
-                    onClearAll={handleClearAll}
-                />
-
-                <SidebarFooter
-                    isCollapsed={isCollapsed}
-                    selectedWorkspace={selectedWorkspace}
-                    currentView={currentView}
-                    showSettingsMenu={showSettingsMenu}
-                    toggleSettingsMenu={() => setShowSettingsMenu(!showSettingsMenu)}
-                    toggleSidebar={toggleSidebar}
-                    onOpenSettings={onOpenSettings}
-                    t={t}
-                    language={language}
-                />
-            </aside>
-
-            <PromptManagerModal
-                isOpen={showPrompts}
-                onClose={() => setShowPrompts(false)}
-                prompts={prompts}
-                onCreatePrompt={(title, content) => { void createPrompt(title, content); }}
-                onUpdatePrompt={(id, p) => { void updatePrompt(id, p); }}
-                onDeletePrompt={(id) => { void deletePrompt(id); }}
+            <SidebarChatList
+                isCollapsed={isCollapsed}
+                searchQuery={searchQuery}
+                onSearchChange={handleSearch}
+                pinnedChats={pinnedChats}
+                activeFolders={folders}
+                expandedFolders={expandedFolders}
+                filteredChats={filteredChats}
+                recentChats={recentChats}
+                chatsCount={chats.length}
+                t={t}
+                toggleFolder={(id: string) => setExpandedFolders(prev => {
+                    const next = new Set(prev);
+                    if (next.has(id)) {
+                        next.delete(id);
+                    } else {
+                        next.add(id);
+                    }
+                    return next;
+                })}
+                deleteFolder={(id) => { void deleteFolder(id); }}
+                createFolder={(name) => { void createFolder(name); }}
+                renderChatItem={renderChatItem}
+                onClearAll={handleClearAll}
             />
+
+            {showPrompts && (
+                <Suspense fallback={null}>
+                    <PromptManagerModal
+                        isOpen={showPrompts}
+                        onClose={() => setShowPrompts(false)}
+                        prompts={prompts}
+                        onCreatePrompt={(title, content) => { void createPrompt(title, content); }}
+                        onUpdatePrompt={(id, prompt) => { void updatePrompt(id, prompt); }}
+                        onDeletePrompt={(id) => { void deletePrompt(id); }}
+                    />
+                </Suspense>
+            )}
 
             <Modal
                 isOpen={showClearConfirm}
                 onClose={() => setShowClearConfirm(false)}
                 title={t('sidebar.clearHistory')}
-                footer={
+                footer={(
                     <div className="flex gap-2">
                         <button
                             onClick={() => setShowClearConfirm(false)}
@@ -236,12 +221,72 @@ export const Sidebar = React.memo(({
                             {t('common.delete')}
                         </button>
                     </div>
-                }
+                )}
             >
                 <p className="text-sm text-muted-foreground">
                     {t('sidebar.confirmClearAll')}
                 </p>
             </Modal>
+        </>
+    );
+};
+
+/**
+ * Main application sidebar with navigation, chat list, and footer controls.
+ */
+export const Sidebar = React.memo(({
+    onOpenSettings,
+    isCollapsed,
+    toggleSidebar,
+    currentView,
+    onChangeView,
+    onSearch
+}: SidebarProps) => {
+    const { selectedWorkspace } = useWorkspaceSelection();
+    const { t, language } = useTranslation();
+    const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+
+    return (
+        <>
+            <aside
+                data-testid="sidebar"
+                aria-label={t('aria.applicationSidebar')}
+                className={cn(
+                    "flex flex-col h-full transition-all duration-300 ease-in-out bg-background",
+                    isCollapsed ? "w-[70px]" : "w-full"
+                )}>
+                <SidebarHeaderConnector
+                    isCollapsed={isCollapsed}
+                    onChangeView={onChangeView}
+                />
+
+                <SidebarNavigationConnector
+                    currentView={currentView}
+                    onChangeView={onChangeView}
+                    isCollapsed={isCollapsed}
+                />
+
+                <div className="mx-3 my-2 h-px bg-border/30" />
+
+                <SidebarChatSection
+                    isCollapsed={isCollapsed}
+                    currentView={currentView}
+                    onChangeView={onChangeView}
+                    onSearch={onSearch}
+                />
+
+                <SidebarFooter
+                    isCollapsed={isCollapsed}
+                    selectedWorkspace={selectedWorkspace}
+                    currentView={currentView}
+                    showSettingsMenu={showSettingsMenu}
+                    toggleSettingsMenu={() => setShowSettingsMenu(prev => !prev)}
+                    toggleSidebar={toggleSidebar}
+                    onOpenSettings={onOpenSettings}
+                    t={t}
+                    language={language}
+                />
+            </aside>
         </>
     );
 });

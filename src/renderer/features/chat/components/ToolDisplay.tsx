@@ -236,8 +236,8 @@ const SearchResults: React.FC<{ results: JsonObject[] }> = ({ results }) => (
     </div>
 );
 
-const ImageOutput: React.FC<{ imgUrl: string }> = ({ imgUrl }) => (
-    <img src={imgUrl} className="max-w-full rounded-md border border-border shadow-sm" alt="Screenshot" />
+const ImageOutput: React.FC<{ imgUrl: string; alt: string }> = ({ imgUrl, alt }) => (
+    <img src={imgUrl} className="max-w-full rounded-md border border-border shadow-sm" alt={alt} />
 );
 
 const MarkdownOutput: React.FC<{ content: string }> = ({ content }) => (
@@ -263,7 +263,7 @@ function ToolOutput({ name, result, t }: { name: string; result: JsonValue; t: (
 
     if (name === 'capture_screenshot') {
         const imgUrl = extractImageUrl(result);
-        if (imgUrl) { return <ImageOutput imgUrl={imgUrl} />; }
+        if (imgUrl) { return <ImageOutput imgUrl={imgUrl} alt={t('chat.screenshotAlt')} />; }
     }
 
     if (typeof result === 'string') {

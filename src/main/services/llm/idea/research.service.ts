@@ -27,7 +27,7 @@ export class IdeaResearchService extends IdeaBaseService {
     /**
      * Generate a quick market preview (lightweight, fast)
      */
-    async generateMarketPreview(categories: IdeaCategory[]): Promise<Record<string, unknown>[]> {
+    async generateMarketPreview(categories: IdeaCategory[]): Promise<Record<string, RuntimeValue>[]> {
         this.logInfo(`Generating market preview for: ${categories.join(', ')}`);
 
         return await Promise.all(
@@ -42,7 +42,7 @@ export class IdeaResearchService extends IdeaBaseService {
                     'Generate market preview'
                 );
 
-                const parsed = this.parseJsonResponse<Record<string, unknown>>(response.content);
+                const parsed = this.parseJsonResponse<Record<string, RuntimeValue>>(response.content);
                 return {
                     category,
                     summary: (parsed.summary as string | undefined) ?? 'Market data unavailable',

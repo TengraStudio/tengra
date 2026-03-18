@@ -185,11 +185,11 @@ export class ExportService {
         }
 
         if (msg.toolResults) {
-            const results = typeof msg.toolResults === 'string' ? safeJsonParse<unknown[]>(msg.toolResults, []) : msg.toolResults;
+            const results = typeof msg.toolResults === 'string' ? safeJsonParse<RuntimeValue[]>(msg.toolResults, []) : msg.toolResults;
             if (Array.isArray(results) && results.length > 0) {
                 lines.push('**Tool Results:**');
                 results.forEach(result => {
-                    const res = result as { name: string; result: unknown };
+                    const res = result as { name: string; result: RuntimeValue };
                     lines.push(`- \`${res.name}\`: ${JSON.stringify(res.result).substring(0, 200)}...`);
                 });
                 lines.push('');
@@ -381,7 +381,7 @@ export class ExportService {
             messageCount: filteredMessages.length,
             exportedAt: new Date().toISOString(),
             messages: filteredMessages.map(msg => {
-                const base: Record<string, unknown> = {
+                const base: Record<string, RuntimeValue> = {
                     role: msg.role,
                     content: this.getMessageContent(msg)
                 };

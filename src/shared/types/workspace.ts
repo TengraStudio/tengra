@@ -14,7 +14,6 @@ export type WorkspaceDashboardTab =
     | 'logs'
     | 'settings'
     | 'chat'
-    | 'agent'
     | 'editor';
 
 export type WorkspaceMountType= 'local' | 'ssh';

@@ -12,7 +12,7 @@ vi.mock('@main/logging/logger', () => ({
     }
 }));
 
-function createMockSettingsService(overrides: Record<string, unknown> = {}): SettingsService {
+function createMockSettingsService(overrides: Record<string, TestValue> = {}): SettingsService {
     return {
         getSettings: vi.fn(() => ({
             mcpDisabledServers: [],
@@ -20,7 +20,7 @@ function createMockSettingsService(overrides: Record<string, unknown> = {}): Set
             ...overrides
         })),
         saveSettings: vi.fn().mockResolvedValue(undefined)
-    } as unknown as SettingsService;
+    } as never as SettingsService;
 }
 
 function createMockPluginService(overrides: Partial<McpPluginService> = {}): McpPluginService {
@@ -34,7 +34,7 @@ function createMockPluginService(overrides: Partial<McpPluginService> = {}): Mcp
         registerPlugin: vi.fn().mockResolvedValue({ success: true }),
         unregisterPlugin: vi.fn().mockResolvedValue(undefined),
         ...overrides
-    } as unknown as McpPluginService;
+    } as never as McpPluginService;
 }
 
 describe('McpDispatcher', () => {

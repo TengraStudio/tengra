@@ -57,25 +57,25 @@ function persist(): void {
     }
 }
 
-function isObject(value: unknown): value is Record<string, unknown> {
+function isObject(value: RendererDataValue): value is Record<string, RendererDataValue> {
     return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
-function toCount(value: unknown): number {
+function toCount(value: RendererDataValue): number {
     if (typeof value !== 'number' || !Number.isFinite(value)) {
         return 0;
     }
     return Math.max(0, Math.floor(value));
 }
 
-function sanitizeBreakpoint(value: unknown): BreakpointId | 'unknown' {
+function sanitizeBreakpoint(value: RendererDataValue): BreakpointId | 'unknown' {
     if (value === 'mobile' || value === 'tablet' || value === 'desktop' || value === 'wide') {
         return value;
     }
     return 'unknown';
 }
 
-function sanitizeTransition(value: unknown): BreakpointTransitionEvent | null {
+function sanitizeTransition(value: RendererDataValue): BreakpointTransitionEvent | null {
     if (!isObject(value)) {
         return null;
     }
@@ -98,7 +98,7 @@ function sanitizeTransition(value: unknown): BreakpointTransitionEvent | null {
     };
 }
 
-function sanitizeSnapshot(raw: unknown): ResponsiveAnalyticsSnapshot {
+function sanitizeSnapshot(raw: RendererDataValue): ResponsiveAnalyticsSnapshot {
     if (!isObject(raw)) {
         return defaultSnapshot;
     }
@@ -108,11 +108,11 @@ function sanitizeSnapshot(raw: unknown): ResponsiveAnalyticsSnapshot {
         current: sanitizeBreakpoint(raw.current),
         viewport: {
             width:
-                typeof (raw.viewport as Record<string, unknown> | undefined)?.width === 'number'
+                typeof (raw.viewport as Record<string, RendererDataValue> | undefined)?.width === 'number'
                     ? Math.floor((raw.viewport as Record<string, number>).width)
                     : 0,
             height:
-                typeof (raw.viewport as Record<string, unknown> | undefined)?.height === 'number'
+                typeof (raw.viewport as Record<string, RendererDataValue> | undefined)?.height === 'number'
                     ? Math.floor((raw.viewport as Record<string, number>).height)
                     : 0,
         },

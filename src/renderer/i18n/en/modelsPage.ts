@@ -22,7 +22,11 @@ const sectionData = {
     "hide": "Hide model",
     "show": "Show model",
     "showHidden": "Show Hidden",
-    "hideHidden": "Hide Hidden"
+    "hideHidden": "Hide Hidden",
+    "defaultModelSwitchedTitle": "Default model switched",
+    "defaultModelSwitchedMessage": "Previous default model is unavailable. Switched to {{model}}.",
+    "modelValidationSucceeded": "Model file validation succeeded",
+    "modelValidationFailed": "Model validation failed"
 };
 
 export default sectionData;

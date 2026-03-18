@@ -1,7 +1,7 @@
 import { registerVoiceIpc } from '@main/ipc/voice';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-type IpcHandler = (...args: unknown[]) => unknown | Promise<unknown>;
+type IpcHandler = (...args: TestValue[]) => TestValue | Promise<TestValue>;
 const ipcMainHandlers = new Map<string, IpcHandler>();
 
 vi.mock('electron', () => ({

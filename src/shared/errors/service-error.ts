@@ -19,7 +19,7 @@ export class ServiceError extends AppError {
     serviceName: string,
     message: string,
     code: string = 'SERVICE_ERROR',
-    options?: { cause?: Error; context?: Record<string, unknown> }
+    options?: { cause?: Error; context?: Record<string, RuntimeValue> }
   ) {
     super(message, code, options);
     this.serviceName = serviceName;

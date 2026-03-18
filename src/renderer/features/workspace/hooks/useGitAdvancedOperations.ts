@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-import { GitFlowStatus, GitHookInfo, GitRebasePlanCommit, GitRepositoryStats, GitSubmodule } from '../components/git/types';
+import { GitFileHistoryItem, GitFlowStatus, GitHookInfo, GitHotspot, GitRebasePlanCommit, GitRefComparison, GitRepositoryStats, GitSubmodule } from '../components/git/types';
 
 type InvokeGitFn = <T>(channel: string, ...args: (string | number | boolean)[]) => Promise<T>;
 
@@ -351,6 +351,88 @@ export function useGitAdvancedOperations(
         }
     }, [canRun, workspacePath, invokeGit]);
 
+    const createBranch = useCallback(
+        async (name: string, startPoint?: string) => {
+            if (!canRun || !workspacePath || !name.trim()) {
+                return { success: false, error: 'Invalid branch name' };
+            }
+            return await invokeGit<{ success: boolean; error?: string }>('git:createBranch', workspacePath, name, startPoint || '');
+        },
+        [canRun, workspacePath, invokeGit]
+    );
+
+    const deleteBranch = useCallback(
+        async (name: string, force: boolean = false) => {
+            if (!canRun || !workspacePath || !name.trim()) {
+                return { success: false, error: 'Invalid branch name' };
+            }
+            return await invokeGit<{ success: boolean; error?: string }>('git:deleteBranch', workspacePath, name, force);
+        },
+        [canRun, workspacePath, invokeGit]
+    );
+
+    const renameBranch = useCallback(
+        async (oldName: string, newName: string) => {
+            if (!canRun || !workspacePath || !oldName.trim() || !newName.trim()) {
+                return { success: false, error: 'Invalid branch names' };
+            }
+            return await invokeGit<{ success: boolean; error?: string }>('git:renameBranch', workspacePath, oldName, newName);
+        },
+        [canRun, workspacePath, invokeGit]
+    );
+
+    const setUpstream = useCallback(
+        async (branch: string, remote: string, upstreamBranch: string) => {
+            if (!canRun || !workspacePath || !branch.trim() || !remote.trim() || !upstreamBranch.trim()) {
+                return { success: false, error: 'Invalid parameters' };
+            }
+            return await invokeGit<{ success: boolean; error?: string }>('git:setUpstream', workspacePath, branch, remote, upstreamBranch);
+        },
+        [canRun, workspacePath, invokeGit]
+    );
+
+    const generatePrSummary = useCallback(
+        async (base: string, head: string) => {
+            if (!canRun || !workspacePath || !base.trim() || !head.trim()) {
+                return { success: false, error: 'Invalid branch names' };
+            }
+            return await invokeGit<{ success: boolean; summary?: string; error?: string }>('git:generatePrSummary', workspacePath, base, head);
+        },
+        [canRun, workspacePath, invokeGit]
+    );
+
+    const fetchFileHistory = useCallback(
+        async (filePath: string, limit?: number) => {
+            if (!canRun || !workspacePath || !filePath.trim()) {
+                return { success: false, commits: [] };
+            }
+            return await invokeGit<{ success: boolean; commits: GitFileHistoryItem[] }>('git:getFileHistory', workspacePath, filePath, limit || 20);
+        },
+        [canRun, workspacePath, invokeGit]
+    );
+
+    const compareRefs = useCallback(
+        async (base: string, head: string) => {
+            if (!canRun || !workspacePath || !base.trim() || !head.trim()) {
+                return { success: false, ahead: 0, behind: 0, files: [] };
+            }
+            return await invokeGit<GitRefComparison>('git:compareRefs', workspacePath, base, head);
+        },
+        [canRun, workspacePath, invokeGit]
+    );
+
+    const fetchHotspots = useCallback(
+        async (limit?: number, days?: number) => {
+            if (!canRun || !workspacePath) {
+                return { success: false, hotspots: [] };
+            }
+            return await invokeGit<{ success: boolean; hotspots: GitHotspot[] }>('git:getHotspots', workspacePath, limit || 10, days || 30);
+        },
+        [canRun, workspacePath, invokeGit]
+    );
+
+
+
     return {
         rebasePlan,
         submodules,
@@ -379,5 +461,13 @@ export function useGitAdvancedOperations(
         exportHooks,
         fetchStats,
         exportStats,
+        createBranch,
+        deleteBranch,
+        renameBranch,
+        setUpstream,
+        generatePrSummary,
+        fetchFileHistory,
+        compareRefs,
+        fetchHotspots,
     };
 }

@@ -8,7 +8,7 @@ import { registerGalleryIpc } from '@main/ipc/gallery';
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-type IpcHandler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
+type IpcHandler = (event: IpcMainInvokeEvent, ...args: TestValue[]) => Promise<TestValue>;
 const ipcHandlers = new Map<string, IpcHandler>();
 const GALLERY_ROOT = 'C:\\gallery';
 const TARGET_DIRECTORY = 'C:\\downloads';

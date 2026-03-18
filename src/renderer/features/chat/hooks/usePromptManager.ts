@@ -12,7 +12,7 @@ export const usePromptManager = () => {
                 const allPrompts = await window.electron.db.getPrompts();
                 setPrompts(allPrompts as Prompt[]);
             } catch (error) {
-                handleError(error, 'PromptManager.loadPrompts');
+                handleError(error as TypeAssertionValue, 'PromptManager.loadPrompts');
             }
         };
         void loadPrompts();
@@ -23,7 +23,7 @@ export const usePromptManager = () => {
             const newPrompt = await window.electron.db.createPrompt(title, content, tags);
             setPrompts(prev => [...prev, newPrompt as Prompt]);
         } catch (error) {
-            handleError(error, 'PromptManager.createPrompt');
+            handleError(error as TypeAssertionValue, 'PromptManager.createPrompt');
         }
     };
 
@@ -32,7 +32,7 @@ export const usePromptManager = () => {
             await window.electron.db.deletePrompt(id);
             setPrompts(prev => prev.filter(p => p.id !== id));
         } catch (error) {
-            handleError(error, 'PromptManager.deletePrompt');
+            handleError(error as TypeAssertionValue, 'PromptManager.deletePrompt');
         }
     };
 
@@ -41,7 +41,7 @@ export const usePromptManager = () => {
             await window.electron.db.updatePrompt(id, updates);
             setPrompts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
         } catch (error) {
-            handleError(error, 'PromptManager.updatePrompt');
+            handleError(error as TypeAssertionValue, 'PromptManager.updatePrompt');
         }
     };
 

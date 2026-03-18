@@ -14,7 +14,22 @@ const sectionData = {
     "importSettingsDesc": "Load settings from a JSON file",
     "import": "Import",
     "settingsImported": "Settings imported",
-    "invalidSettingsFile": "Invalid settings file"
+    "invalidSettingsFile": "Invalid settings file",
+    "exportUiState": "Export UI State",
+    "exportUiStateDesc": "Export window/layout/sidebar state snapshot",
+    "uiStateExported": "UI state exported",
+    "animationDiagnostics": "Animation Diagnostics",
+    "animationPlays": "Plays: {{played}} | Reduced motion plays: {{reduced}}",
+    "animationDebugEnabled": "Animation debug enabled",
+    "animationDebugDisabled": "Animation debug disabled",
+    "enableAnimationDebug": "Enable Animation Debug",
+    "disableAnimationDebug": "Disable Animation Debug",
+    "forcedReducedMotionEnabled": "Forced reduced motion enabled",
+    "forcedReducedMotionDisabled": "Forced reduced motion disabled",
+    "toggleForcedReducedMotion": "Toggle Forced Reduced Motion",
+    "responsiveAnalytics": "Responsive Analytics",
+    "responsiveCurrent": "Current: {{current}} ({{width}}x{{height}})",
+    "responsiveBreakdown": "Mobile: {{mobile}} | Tablet: {{tablet}} | Desktop: {{desktop}} | Wide: {{wide}}"
 };
 
 export default sectionData;

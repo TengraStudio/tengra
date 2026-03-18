@@ -48,12 +48,12 @@ export class HealthCheckService extends BaseService {
         this.stop();
     }
 
-    on(event: string, listener: (...args: unknown[]) => void) {
+    on(event: string, listener: (...args: RuntimeValue[]) => void) {
         this.events.on(event, listener);
         return this;
     }
 
-    emit(event: string, ...args: unknown[]) {
+    emit(event: string, ...args: RuntimeValue[]) {
         return this.events.emit(event, ...args);
     }
 
@@ -228,8 +228,8 @@ export class HealthCheckService extends BaseService {
      * @param components Dependencies needed for checks
      */
     registerCriticalChecks(components: {
-        databaseService: { getDatabase: () => { prepare: (sql: string) => { get: () => Promise<unknown> } } };
-        networkService: unknown;
+        databaseService: { getDatabase: () => { prepare: (sql: string) => { get: () => Promise<RuntimeValue> } } };
+        networkService: RuntimeValue;
     }) {
         const { databaseService } = components;
 

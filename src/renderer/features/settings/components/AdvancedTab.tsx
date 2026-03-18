@@ -89,7 +89,7 @@ const BenchmarkResults: React.FC<BenchmarkResultsProps> = ({ result, t }) => (
     <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-4">
         <div className="p-4 rounded-xl bg-muted/30 border border-border/50 flex flex-col items-center justify-center gap-1">
             <Thermometer className="w-5 h-5 text-primary" />
-            <div className="text-xl font-black text-foreground">{result.tokensPerSec} t/s</div>
+            <div className="text-xl font-black text-foreground">{result.tokensPerSec} {t('advanced.tokensPerSecShort')}</div>
             <div className="text-xxs text-muted-foreground uppercase font-bold">{t('advanced.tokensPerSec')}</div>
         </div>
         <div className="p-4 rounded-xl bg-muted/30 border border-border/50 flex flex-col items-center justify-center gap-1">
@@ -115,7 +115,8 @@ const PresetButton: React.FC<{
     preset: { id: string; name: string; temperature: number; topP: number };
     isSelected: boolean;
     onSelect: () => void;
-}> = ({ preset, isSelected, onSelect }) => (
+    t: (key: string) => string;
+}> = ({ preset, isSelected, onSelect, t }) => (
     <button
         onClick={onSelect}
         className={cn(
@@ -125,7 +126,9 @@ const PresetButton: React.FC<{
     >
         <div>
             <div className="text-xs font-bold">{preset.name}</div>
-            <div className="text-xxs opacity-60">Temp: {preset.temperature} • TopP: {preset.topP}</div>
+            <div className="text-xxs opacity-60">
+                {t('advancedTab.presetTemperature')}: {preset.temperature} • {t('advancedTab.presetTopP')}: {preset.topP}
+            </div>
         </div>
         {isSelected && <Zap className="w-4 h-4 animate-pulse" />}
     </button>
@@ -167,6 +170,7 @@ const ModelConfigSection: React.FC<ModelConfigSectionProps> = ({
                             preset={p}
                             isSelected={modelSettings.presetId === p.id}
                             onSelect={() => updateModelSetting({ presetId: p.id })}
+                            t={t}
                         />
                     ))}
                 </div>

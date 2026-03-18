@@ -14,14 +14,44 @@ vi.mock('@main/logging/logger', () => ({
 const mockSpawn = vi.fn();
 const mockExecSync = vi.fn();
 vi.mock('child_process', () => ({
-    spawn: (...args: unknown[]) => mockSpawn(...args),
-    execSync: (...args: unknown[]) => mockExecSync(...args)
+    spawn: (...args: TestValue[]) => mockSpawn(...args),
+    execSync: (...args: TestValue[]) => mockExecSync(...args)
 }));
 
 // Mock fs
 const mockExistsSync = vi.fn();
 vi.mock('fs', () => ({
     existsSync: (p: string) => mockExistsSync(p)
+}));
+
+vi.mock('@main/services/terminal/backends/backend-discovery.util', () => ({
+    findExecutableInPath: async () => {
+        try {
+            const result = mockExecSync();
+            if (typeof result !== 'string') {
+                return null;
+            }
+            const [firstPath] = result
+                .split(/\r?\n/)
+                .map(candidate => candidate.trim())
+                .filter(candidate => candidate.length > 0);
+            return firstPath ?? null;
+        } catch {
+            return null;
+        }
+    },
+    findFirstExistingPath: async (candidatePaths: readonly string[]) => {
+        for (const candidatePath of candidatePaths) {
+            try {
+                if (mockExistsSync(candidatePath)) {
+                    return candidatePath;
+                }
+            } catch {
+                // Ignore failing candidate paths so discovery can continue.
+            }
+        }
+        return null;
+    },
 }));
 
 /**

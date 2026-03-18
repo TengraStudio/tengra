@@ -150,8 +150,10 @@ export const EntityRelationshipDiagram: React.FC = () => {
                             <Database className="w-5 h-5" />
                         </div>
                         <div>
-                            <h2 className="text-sm font-bold">{t('memory.erDiagram') || 'Entity Diagram'}</h2>
-                            <p className="text-[10px] text-muted-foreground">{nodes.length} entities tracked</p>
+                            <h2 className="text-sm font-bold">{t('memory.erDiagram')}</h2>
+                            <p className="text-[10px] text-muted-foreground">
+                                {t('memory.entitiesTracked', { count: nodes.length })}
+                            </p>
                         </div>
                     </div>
                 </Panel>

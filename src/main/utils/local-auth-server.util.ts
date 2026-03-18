@@ -455,13 +455,13 @@ export class LocalAuthServer {
      * Verifies and decodes a Google id_token using JWKS, validating signature, issuer, and audience.
      * Throws on verification failure — caller must handle the error and use userinfo fallback.
      */
-    private static async verifyGoogleIdToken(token: string): Promise<Record<string, unknown>> {
+    private static async verifyGoogleIdToken(token: string): Promise<Record<string, RuntimeValue>> {
         const jwks = createRemoteJWKSet(LocalAuthServer.GOOGLE_JWKS_URL);
         const { payload } = await jwtVerify(token, jwks, {
             issuer: ['https://accounts.google.com', 'accounts.google.com'],
             audience: LocalAuthServer.CLIENT_ID,
         });
-        return payload as Record<string, unknown>;
+        return payload as Record<string, RuntimeValue>;
     }
 
     /**

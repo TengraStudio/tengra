@@ -86,7 +86,10 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                     <div className="flex gap-2 titlebar-controls px-2">
                         <div
                             className="px-2 py-1 rounded-md border border-border/60 text-xxs text-muted-foreground flex items-center gap-1"
-                            title={`Lazy services: ${lazyStatus.loaded}/${lazyStatus.registered} loaded`}
+                            title={t('titleBar.lazyServicesStatus', {
+                                loaded: lazyStatus.loaded,
+                                registered: lazyStatus.registered
+                            })}
                         >
                             {lazyStatus.loading > 0 && <Loader2 className="w-3 h-3 animate-spin" />}
                             <span>{lazyStatus.loaded}/{lazyStatus.registered}</span>

@@ -1,11 +1,20 @@
-
 import { EventEmitter } from 'events';
 import * as http from 'http';
 
 import { OllamaService } from '@main/services/llm/ollama.service';
-import { SettingsService } from '@main/services/system/settings.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
-import { beforeEach,describe, expect, it, vi } from 'vitest';
+import { SettingsService } from '@main/services/system/settings.service';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+interface MockHttpRequest extends EventEmitter {
+    write: ReturnType<typeof vi.fn>;
+    end: ReturnType<typeof vi.fn>;
+    setTimeout: ReturnType<typeof vi.fn>;
+}
+
+interface MockHttpResponse extends EventEmitter {
+    statusCode: number;
+}
 
 // Mock http
 vi.mock('http', () => ({
@@ -31,8 +40,8 @@ describe('OllamaService', () => {
             emitCustom: vi.fn()
         };
         service = new OllamaService(
-            mockSettingsService as unknown as SettingsService,
-            mockEventBusService as unknown as EventBusService
+            mockSettingsService as never as SettingsService,
+            mockEventBusService as never as EventBusService
         );
     });
 
@@ -49,21 +58,22 @@ describe('OllamaService', () => {
 
     describe('isAvailable', () => {
         it('should return true if Ollama is reachable', async () => {
-            const mockReq = new EventEmitter() as any;
+            const mockReq = new EventEmitter() as MockHttpRequest;
             mockReq.write = vi.fn();
             mockReq.end = vi.fn();
             mockReq.setTimeout = vi.fn();
 
-            const mockRes = new EventEmitter() as any;
+            const mockRes = new EventEmitter() as MockHttpResponse;
             mockRes.statusCode = 200;
 
-            (http.request as any).mockImplementation((_options: http.RequestOptions, callback: (res: http.IncomingMessage) => void) => {
-                callback(mockRes);
+            const requestMock = http.request as never as ReturnType<typeof vi.fn>;
+            requestMock.mockImplementation((_options: http.RequestOptions, callback: (res: http.IncomingMessage) => void) => {
+                callback?.(mockRes as never as http.IncomingMessage);
                 setImmediate(() => {
                     mockRes.emit('data', JSON.stringify({ status: 'ok' }));
                     mockRes.emit('end');
                 });
-                return mockReq;
+                return mockReq as never as http.ClientRequest;
             });
 
             const available = await service.isAvailable();
@@ -71,16 +81,17 @@ describe('OllamaService', () => {
         });
 
         it('should return false if Ollama request fails', async () => {
-            const mockReq = new EventEmitter() as any;
+            const mockReq = new EventEmitter() as MockHttpRequest;
             mockReq.write = vi.fn();
             mockReq.end = vi.fn();
             mockReq.setTimeout = vi.fn();
 
-            (http.request as any).mockImplementation(() => {
+            const requestMock = http.request as never as ReturnType<typeof vi.fn>;
+            requestMock.mockImplementation(() => {
                 setImmediate(() => {
                     mockReq.emit('error', new Error('Connection refused'));
                 });
-                return mockReq;
+                return mockReq as never as http.ClientRequest;
             });
 
             const available = await service.isAvailable();

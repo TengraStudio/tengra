@@ -150,7 +150,7 @@ export const MemoryGraphView: React.FC = () => {
                     id: `e-${memory.id}-${relatedId}`,
                     source: memory.id,
                     target: relatedId,
-                    label: 'related',
+                    label: t('memory.graphEdgeRelated'),
                     animated: true,
                     style: { stroke: 'rgba(255,255,255,0.2)' },
                     labelStyle: { fill: 'rgba(255,255,255,0.4)', fontSize: 8 },
@@ -165,7 +165,7 @@ export const MemoryGraphView: React.FC = () => {
                     id: `c-${memory.id}-${contradictId}`,
                     source: memory.id,
                     target: contradictId,
-                    label: 'contradicts',
+                    label: t('memory.graphEdgeContradicts'),
                     style: { stroke: '#ef4444', strokeWidth: 2 },
                     labelStyle: { fill: '#ef4444', fontSize: 8 },
                     markerEnd: { type: MarkerType.ArrowClosed, color: '#ef4444' },
@@ -175,7 +175,7 @@ export const MemoryGraphView: React.FC = () => {
 
         setNodes(newNodes);
         setEdges(newEdges);
-    }, [filteredMemories, setEdges, setNodes]);
+    }, [filteredMemories, setEdges, setNodes, t]);
 
     return (
         <div className="w-full h-full flex flex-col bg-background relative overflow-hidden rounded-2xl border border-white/5 shadow-2xl">
@@ -184,7 +184,7 @@ export const MemoryGraphView: React.FC = () => {
                     <div className="flex flex-col items-center gap-4">
                         <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                         <span className="text-sm font-medium text-muted-foreground animate-pulse">
-                            Building knowledge graph...
+                            {t('memory.graphLoading')}
                         </span>
                     </div>
                 </div>
@@ -218,8 +218,10 @@ export const MemoryGraphView: React.FC = () => {
                                 <Network className="w-5 h-5" />
                             </div>
                             <div>
-                                <h2 className="text-sm font-bold">{t('memory.graphView') || 'Memory Graph'}</h2>
-                                <p className="text-[10px] text-muted-foreground">{nodes.length} nodes, {edges.length} connections</p>
+                                <h2 className="text-sm font-bold">{t('memory.graphView')}</h2>
+                                <p className="text-[10px] text-muted-foreground">
+                                    {t('memory.graphStats', { nodes: nodes.length, edges: edges.length })}
+                                </p>
                             </div>
                         </div>
                     </Panel>
@@ -229,7 +231,7 @@ export const MemoryGraphView: React.FC = () => {
                             <button
                                 onClick={() => void loadData()}
                                 className="p-2.5 bg-background/80 backdrop-blur-xl hover:bg-white/10 rounded-xl border border-white/10 transition-all text-muted-foreground hover:text-foreground shadow-lg"
-                                title="Refresh"
+                                title={t('memory.refreshTitle')}
                             >
                                 <RotateCcw className="w-4 h-4" />
                             </button>
@@ -270,7 +272,7 @@ export const MemoryGraphView: React.FC = () => {
             {!loading && nodes.length === 0 && (
                 <div className="absolute inset-0 flex items-center justify-center bg-background/40 backdrop-blur-sm">
                     <p className="rounded-lg border border-white/10 bg-background/80 px-4 py-2 text-sm text-muted-foreground">
-                        {t('memory.emptyState') || 'No memories match the selected filters.'}
+                        {t('memory.emptyState')}
                     </p>
                 </div>
             )}

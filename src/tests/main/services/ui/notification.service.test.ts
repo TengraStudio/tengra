@@ -90,7 +90,11 @@ describe('NotificationService', () => {
             const service = new NotificationService();
             const result = service.showNotification('Title', 'Body');
 
-            expect(result).toEqual({ success: false, error: 'Notifications not supported' });
+            expect(result).toEqual({
+                success: false,
+                error: 'Notifications not supported',
+                messageKey: 'mainProcess.notificationService.notSupported'
+            });
             expect(mockConstructorCalls).toHaveLength(0);
             expect(mockShow).not.toHaveBeenCalled();
         });
@@ -166,7 +170,11 @@ describe('NotificationService', () => {
             const service = new NotificationService();
             const result = service.showNotification('Title', 'Body', true);
 
-            expect(result).toEqual({ success: false, error: 'Notifications not supported' });
+            expect(result).toEqual({
+                success: false,
+                error: 'Notifications not supported',
+                messageKey: 'mainProcess.notificationService.notSupported'
+            });
             expect(mockShow).not.toHaveBeenCalled();
         });
     });

@@ -28,7 +28,7 @@ export interface RetryOptions {
     /** Whether to add jitter to delays (default: true) */
     jitter: boolean;
     /** Custom function to determine if an error is retryable */
-    isRetryable?: (error: unknown) => boolean;
+    isRetryable?: <T>(error: T) => boolean;
     /** Operation name for logging */
     operationName?: string;
 }
@@ -158,7 +158,7 @@ function calculateDelay(attempt: number, options: RetryOptions): number {
 /**
  * Determines if an error is retryable based on its properties
  */
-export function isRetryableError(error: unknown): boolean {
+export function isRetryableError<T>(error: T): boolean {
     // Check error code first
     if (error && typeof error === 'object' && 'code' in error) {
         const code = (error as { code: string }).code;

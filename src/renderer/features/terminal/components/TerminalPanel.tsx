@@ -2,7 +2,7 @@ import type { TerminalTab } from '@/types';
 
 import { TerminalPanelContentImpl } from './TerminalPanelImpl';
 
-import 'xterm/css/xterm.css';
+import '@xterm/xterm/css/xterm.css';
 
 export interface TerminalPanelProps {
     isOpen: boolean;

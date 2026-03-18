@@ -48,7 +48,7 @@ export const DEFAULT_SPLIT_ANALYTICS: SplitAnalytics = {
 };
 
 export function sanitizeSplitPresets(
-    raw: unknown,
+    raw: RendererDataValue,
     limit: number = TERMINAL_SPLIT_PRESET_LIMIT
 ): SplitPreset[] {
     if (!Array.isArray(raw)) {
@@ -59,7 +59,7 @@ export function sanitizeSplitPresets(
             if (!item || typeof item !== 'object') {
                 return null;
             }
-            const record = item as Record<string, unknown>;
+            const record = item as Record<string, RendererDataValue>;
             const id = typeof record.id === 'string' ? record.id.trim() : '';
             const name = typeof record.name === 'string' ? record.name.trim() : '';
             const orientation = record.orientation;
@@ -90,7 +90,7 @@ export function serializeSplitPresets(
     }));
 }
 
-export function sanitizeSplitAnalytics(raw: unknown): SplitAnalytics {
+export function sanitizeSplitAnalytics(raw: RendererDataValue): SplitAnalytics {
     if (!raw || typeof raw !== 'object') {
         return DEFAULT_SPLIT_ANALYTICS;
     }
@@ -122,7 +122,7 @@ export function incrementSplitAnalytics(
 }
 
 export function sanitizeSplitLayout(
-    raw: unknown,
+    raw: RendererDataValue,
     validIds: Set<string>
 ): SplitViewState | null {
     if (!raw || typeof raw !== 'object') {

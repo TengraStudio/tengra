@@ -102,7 +102,7 @@ export function getUserErrorMessage(code: string): string {
     return ErrorMessages[code] ?? 'An unexpected error occurred.';
 }
 
-export function logModelError(error: Error, context?: Record<string, unknown>): void {
+export function logModelError(error: Error, context?: Record<string, RendererDataValue>): void {
     appLogger.error('ModelSelector', error.message, error);
     if (context) {
         appLogger.warn('ModelSelector', 'Error context', context);
@@ -112,7 +112,7 @@ export function logModelError(error: Error, context?: Record<string, unknown>): 
 export interface ErrorResponse {
     code: string;
     message: string;
-    details?: Record<string, unknown>;
+    details?: Record<string, RendererDataValue>;
     recoverable: boolean;
 }
 
@@ -127,7 +127,7 @@ export interface ErrorBoundaryFallbackProps {
 
 export const SearchDebounceConfig = { delayMs: 150, maxWaitMs: 500 } as const;
 
-export function debounce<T extends (...args: unknown[]) => void>(
+export function debounce<T extends (...args: RendererDataValue[]) => void>(
     fn: T,
     delay: number = SearchDebounceConfig.delayMs
 ): (...args: Parameters<T>) => void {
@@ -142,7 +142,7 @@ export function debounce<T extends (...args: unknown[]) => void>(
 
 export const ThrottleConfig = { intervalMs: 100 } as const;
 
-export function throttle<T extends (...args: unknown[]) => void>(
+export function throttle<T extends (...args: RendererDataValue[]) => void>(
     fn: T,
     interval: number = ThrottleConfig.intervalMs
 ): (...args: Parameters<T>) => void {

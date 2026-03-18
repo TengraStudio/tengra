@@ -15,6 +15,9 @@ const sectionData = {
     "reduceMotionDesc": "Reduces animations and transitions",
     "default": "Default",
     "system": "System Default",
+    "fontOptionJetBrainsMono": "JetBrains Mono",
+    "fontOptionRoboto": "Roboto",
+    "fontOptionOutfit": "Outfit",
     "themes": {
         "black": "Black",
         "white": "White",

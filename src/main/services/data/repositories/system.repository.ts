@@ -1,8 +1,8 @@
 import { appLogger } from '@main/logging/logger';
 import { PromptTemplate } from '@main/utils/prompt-templates.util';
 import { WORKSPACE_COMPAT_INDEX_VALUES, WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
-import { AgentProfile, AgentTemplate } from '@shared/types/automation-workflow';
 import { JsonObject } from '@shared/types/common';
+import { AgentProfile, AgentTemplate } from '@shared/types/council';
 import { DatabaseAdapter, SqlValue } from '@shared/types/database';
 import { DbDetailedStats, DbStats, DbTokenStats } from '@shared/types/db-api';
 import { v4 as uuidv4 } from 'uuid';

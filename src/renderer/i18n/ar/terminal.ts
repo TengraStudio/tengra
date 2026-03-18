@@ -91,7 +91,16 @@ const sectionData = {
     "workspaceIssuesLoading": "جارٍ تحديث تشخيصات المساحة عمل...",
     "workspaceIssuesNoWorkspace": "افتح مساحة عملًا لفحص التشخيص.",
     "workspaceIssuesNoIssues": "لم يتم اكتشاف أي تحذيرات أو أخطاء في الفحص الأخير.",
-    "workspaceIssuesLoadFailed": "فشل تحميل تشخيصات المساحة عمل."
+    "workspaceIssuesLoadFailed": "فشل تحميل تشخيصات المساحة عمل.",
+    "splitPresetsTitle": "Split presets",
+    "renamePresetTitle": "Rename preset",
+    "deletePresetTitle": "Delete preset",
+    "syncInputTitle": "Synchronized input for split panes",
 };
 
 export default sectionData;
+
+
+
+
+

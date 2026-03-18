@@ -39,14 +39,14 @@ afterEach(() => { vi.resetModules(); });
 describe('SettingsService - Initialization', () => {
     it('should use DataService path when provided', async () => {
         const { SettingsService } = await import('@main/services/system/settings.service');
-        const service = new SettingsService(mockDataService as any, mockAuthService as any);
+        const service = new SettingsService(mockDataService as never, mockAuthService as never);
         await service.initialize();
         expect(mockDataService.getPath).toHaveBeenCalledWith('config');
     });
 
     it('should load default settings when file does not exist', async () => {
         const { SettingsService } = await import('@main/services/system/settings.service');
-        const service = new SettingsService(mockDataService as any, mockAuthService as any);
+        const service = new SettingsService(mockDataService as never, mockAuthService as never);
         await service.initialize();
         expect(service.getSettings().general.language).toBe('en');
         expect(service.getHealthMetrics()).toMatchObject({
@@ -59,7 +59,7 @@ describe('SettingsService - Initialization', () => {
         vi.mocked(fs.promises.access).mockResolvedValue(undefined);
         vi.mocked(fs.promises.readFile).mockResolvedValue(JSON.stringify({ general: { language: 'tr' } }));
         const { SettingsService } = await import('@main/services/system/settings.service');
-        const service = new SettingsService(mockDataService as any, mockAuthService as any);
+        const service = new SettingsService(mockDataService as never, mockAuthService as never);
         await service.initialize();
         expect(service.getSettings().general.language).toBe('tr');
     });
@@ -68,7 +68,7 @@ describe('SettingsService - Initialization', () => {
         vi.mocked(fs.promises.access).mockResolvedValue(undefined);
         vi.mocked(fs.promises.readFile).mockResolvedValue(JSON.stringify({ general: { language: 'tr' } }));
         const { SettingsService } = await import('@main/services/system/settings.service');
-        const service = new SettingsService(mockDataService as any, mockAuthService as any);
+        const service = new SettingsService(mockDataService as never, mockAuthService as never);
 
         await service.initialize();
         await service.initialize();
@@ -81,7 +81,7 @@ describe('SettingsService - Initialization', () => {
         vi.mocked(fs.promises.access).mockResolvedValue(undefined);
         vi.mocked(fs.promises.readFile).mockResolvedValue('{"general":{"language":"fr"}}garbage');
         const { SettingsService } = await import('@main/services/system/settings.service');
-        const service = new SettingsService(mockDataService as any, mockAuthService as any);
+        const service = new SettingsService(mockDataService as never, mockAuthService as never);
         await service.initialize();
         // Note: Current implementation uses safeJsonParse which returns empty object on corrupted JSON,
         // so attemptJsonRecovery is never called. This is a known limitation.
@@ -99,7 +99,7 @@ describe('SettingsService - Initialization', () => {
             })
         );
         const { SettingsService } = await import('@main/services/system/settings.service');
-        const service = new SettingsService(mockDataService as any, mockAuthService as any);
+        const service = new SettingsService(mockDataService as never, mockAuthService as never);
         await service.initialize();
 
         expect(service.getSettings().window?.width).toBe(640);
@@ -113,9 +113,9 @@ describe('SettingsService - Initialization', () => {
 describe('SettingsService - Persistence', () => {
     it('should save settings and return updated settings', async () => {
         const { SettingsService } = await import('@main/services/system/settings.service');
-        const service = new SettingsService(mockDataService as any, mockAuthService as any);
+        const service = new SettingsService(mockDataService as never, mockAuthService as never);
         await service.initialize();
-        const result = await service.saveSettings({ general: { language: 'de' } } as any);
+        const result = await service.saveSettings({ general: { language: 'de' } } as never);
         expect(result.general.language).toBe('de');
         expect(service.getHealthMetrics()).toMatchObject({
             saveAttempts: 1,
@@ -126,17 +126,17 @@ describe('SettingsService - Persistence', () => {
 
     it('should reject non-object save payloads', async () => {
         const { SettingsService } = await import('@main/services/system/settings.service');
-        const service = new SettingsService(mockDataService as any, mockAuthService as any);
+        const service = new SettingsService(mockDataService as never, mockAuthService as never);
         await service.initialize();
 
-        await expect(service.saveSettings(null as unknown as never)).rejects.toThrow('Settings payload must be a non-array object');
+        await expect(service.saveSettings(null as never as never)).rejects.toThrow('Settings payload must be a non-array object');
     });
 
     it('should reload settings from disk', async () => {
         vi.mocked(fs.promises.access).mockResolvedValue(undefined);
         vi.mocked(fs.promises.readFile).mockResolvedValue(JSON.stringify({ general: { language: 'de' } }));
         const { SettingsService } = await import('@main/services/system/settings.service');
-        const service = new SettingsService(mockDataService as any, mockAuthService as any);
+        const service = new SettingsService(mockDataService as never, mockAuthService as never);
         await service.initialize();
         vi.mocked(fs.promises.readFile).mockResolvedValue(JSON.stringify({ general: { language: 'fr' } }));
         const reloaded = await service.reloadSettings();
@@ -146,13 +146,13 @@ describe('SettingsService - Persistence', () => {
 
     it('should return the correct settings path', async () => {
         const { SettingsService } = await import('@main/services/system/settings.service');
-        const service = new SettingsService(mockDataService as any, mockAuthService as any);
+        const service = new SettingsService(mockDataService as never, mockAuthService as never);
         expect(service.getSettingsPath()).toContain('settings.json');
     });
 
     it('should validate window values when saving settings', async () => {
         const { SettingsService } = await import('@main/services/system/settings.service');
-        const service = new SettingsService(mockDataService as any, mockAuthService as any);
+        const service = new SettingsService(mockDataService as never, mockAuthService as never);
         await service.initialize();
 
         const result = await service.saveSettings({
@@ -162,7 +162,7 @@ describe('SettingsService - Persistence', () => {
                 x: 11.7,
                 y: -8.9,
             },
-        } as any);
+        } as never);
 
         expect(result.window?.width).toBe(7680);
         expect(result.window?.height).toBe(480);
@@ -172,7 +172,7 @@ describe('SettingsService - Persistence', () => {
 
     it('should retry disk persistence once before succeeding', async () => {
         const { SettingsService } = await import('@main/services/system/settings.service');
-        const service = new SettingsService(mockDataService as unknown as never, mockAuthService as unknown as never);
+        const service = new SettingsService(mockDataService as never as never, mockAuthService as never as never);
         await service.initialize();
 
         vi.mocked(fs.promises.writeFile)
@@ -187,7 +187,7 @@ describe('SettingsService - Persistence', () => {
 
     it('should rollback in-memory settings when persistence fails after retries', async () => {
         const { SettingsService } = await import('@main/services/system/settings.service');
-        const service = new SettingsService(mockDataService as unknown as never, mockAuthService as unknown as never);
+        const service = new SettingsService(mockDataService as never as never, mockAuthService as never as never);
         await service.initialize();
 
         vi.mocked(fs.promises.writeFile).mockRejectedValue(new Error('disk unavailable'));
@@ -201,7 +201,7 @@ describe('SettingsService - Persistence', () => {
 
     it('should expose budgets, normalized ui states and i18n message keys', async () => {
         const { SettingsService } = await import('@main/services/system/settings.service');
-        const service = new SettingsService(mockDataService as unknown as never, mockAuthService as unknown as never);
+        const service = new SettingsService(mockDataService as never as never, mockAuthService as never as never);
 
         const emptyMetrics = service.getHealthMetrics();
         expect(emptyMetrics.uiState).toBe('empty');

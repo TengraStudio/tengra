@@ -24,7 +24,7 @@ function request(
     port: number,
     path: string,
     options: { method?: string; headers?: Record<string, string> } = {}
-): Promise<{ status: number; body: Record<string, unknown> }> {
+): Promise<{ status: number; body: Record<string, TestValue> }> {
     return new Promise((resolve, reject) => {
         const req = http.request(
             {
@@ -62,18 +62,18 @@ describe('ApiServerService – AUD-2026-02-27-02 hardening', () => {
         port: 0, // let OS pick a free port
         settingsService: {
             getSettings: vi.fn().mockReturnValue({ proxy: { enabled: false, url: '' } }),
-        } as unknown as ApiServerOptions['settingsService'],
+        } as never as ApiServerOptions['settingsService'],
         proxyProcessManager: {
             getStatus: vi.fn().mockReturnValue({ running: false }),
-        } as unknown as ApiServerOptions['proxyProcessManager'],
+        } as never as ApiServerOptions['proxyProcessManager'],
         toolExecutor: {
             getToolDefinitions: vi.fn().mockResolvedValue([]),
             execute: vi.fn().mockResolvedValue({ success: true }),
-        } as unknown as ApiServerOptions['toolExecutor'],
+        } as never as ApiServerOptions['toolExecutor'],
         llmService: {} as ApiServerOptions['llmService'],
         rateLimitService: {
             tryAcquire: vi.fn().mockReturnValue(true),
-        } as unknown as ApiServerOptions['rateLimitService'],
+        } as never as ApiServerOptions['rateLimitService'],
     };
 
     beforeEach(async () => {

@@ -9,6 +9,21 @@ import { JsonObject } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { WebSocketServer } from 'ws';
 
+const NETWORK_MESSAGE_KEY = {
+    INVALID_HOSTNAME_OR_IP: 'mainProcess.networkService.invalidHostnameOrIp',
+    INVALID_DOMAIN_NAME: 'mainProcess.networkService.invalidDomainName',
+    WHOIS_COMMAND_FAILED: 'mainProcess.networkService.whoisCommandFailed',
+    INVALID_HOST: 'mainProcess.networkService.invalidHost',
+    WEBSOCKET_STARTED: 'mainProcess.networkService.websocketStarted'
+} as const;
+const NETWORK_ERROR_MESSAGE = {
+    INVALID_HOSTNAME_OR_IP: 'Invalid hostname or IP address',
+    INVALID_DOMAIN_NAME: 'Invalid domain name',
+    WHOIS_COMMAND_FAILED: 'WHOIS command failed. Is it installed?',
+    INVALID_HOST: 'Invalid host',
+    WEBSOCKET_STARTED: 'WebSocket server started on port {{port}}'
+} as const;
+
 export class NetworkService implements INetworkService {
     private readonly wssInstances: WebSocketServer[] = [];
 
@@ -41,7 +56,11 @@ export class NetworkService implements INetworkService {
 
     async ping(host: string): Promise<ServiceResponse<{ output: string }>> {
         if (!this.isValidHost(host)) {
-            return { success: false, error: 'Invalid hostname or IP address' };
+            return {
+                success: false,
+                error: NETWORK_ERROR_MESSAGE.INVALID_HOSTNAME_OR_IP,
+                messageKey: NETWORK_MESSAGE_KEY.INVALID_HOSTNAME_OR_IP
+            };
         }
         try {
             const args = process.platform === 'win32' ? ['-n', '4', host] : ['-c', '4', host];
@@ -54,13 +73,21 @@ export class NetworkService implements INetworkService {
 
     async whois(domain: string): Promise<ServiceResponse<{ output: string }>> {
         if (!this.isValidHost(domain)) {
-            return { success: false, error: 'Invalid domain name' };
+            return {
+                success: false,
+                error: NETWORK_ERROR_MESSAGE.INVALID_DOMAIN_NAME,
+                messageKey: NETWORK_MESSAGE_KEY.INVALID_DOMAIN_NAME
+            };
         }
         try {
             const { stdout } = await this.runCommand('whois', [domain]);
             return { success: true, result: { output: stdout } };
         } catch {
-            return { success: false, error: 'WHOIS command failed. Is it installed?' };
+            return {
+                success: false,
+                error: NETWORK_ERROR_MESSAGE.WHOIS_COMMAND_FAILED,
+                messageKey: NETWORK_MESSAGE_KEY.WHOIS_COMMAND_FAILED
+            };
         }
     }
 
@@ -70,7 +97,11 @@ export class NetworkService implements INetworkService {
         timeout: number = 2000
     ): Promise<ServiceResponse<{ port: number; status: string }>> {
         if (!this.isValidHost(host)) {
-            return { success: false, error: 'Invalid host' };
+            return {
+                success: false,
+                error: NETWORK_ERROR_MESSAGE.INVALID_HOST,
+                messageKey: NETWORK_MESSAGE_KEY.INVALID_HOST
+            };
         }
         return new Promise(resolve => {
             const socket = new net.Socket();
@@ -93,7 +124,11 @@ export class NetworkService implements INetworkService {
 
     async traceroute(host: string): Promise<ServiceResponse<{ output: string }>> {
         if (!this.isValidHost(host)) {
-            return { success: false, error: 'Invalid hostname or IP address' };
+            return {
+                success: false,
+                error: NETWORK_ERROR_MESSAGE.INVALID_HOSTNAME_OR_IP,
+                messageKey: NETWORK_MESSAGE_KEY.INVALID_HOSTNAME_OR_IP
+            };
         }
         try {
             const command = process.platform === 'win32' ? 'tracert' : 'traceroute';
@@ -114,7 +149,12 @@ export class NetworkService implements INetworkService {
                 });
             });
             this.wssInstances.push(wsServer);
-            return { success: true, message: `WebSocket server started on port ${port}` };
+            return {
+                success: true,
+                message: NETWORK_ERROR_MESSAGE.WEBSOCKET_STARTED.replace('{{port}}', String(port)),
+                messageKey: NETWORK_MESSAGE_KEY.WEBSOCKET_STARTED,
+                messageParams: { port }
+            };
         } catch (e) {
             return { success: false, error: getErrorMessage(e as Error) };
         }

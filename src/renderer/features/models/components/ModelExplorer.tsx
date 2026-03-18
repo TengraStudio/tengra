@@ -146,7 +146,7 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                 {comparisonIds.length > 0 && (
                     <div className="rounded-xl border border-info/30 bg-info/5 px-4 py-3 flex items-center justify-between">
                         <div className="text-xs text-info font-semibold">
-                            Compare Queue: {comparisonIds.length} / 4
+                            {t('modelExplorer.compareQueue', { count: comparisonIds.length, max: 4 })}
                         </div>
                         <div className="flex items-center gap-2">
                             <button
@@ -159,20 +159,20 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                                         : 'border-info/40 bg-info/10 text-info'
                                 )}
                             >
-                                {comparisonLoading ? 'Comparing...' : 'Run Comparison'}
+                                {comparisonLoading ? t('modelExplorer.comparing') : t('modelExplorer.runComparison')}
                             </button>
                             <button
                                 onClick={clearComparison}
                                 className="px-3 py-1.5 rounded-md text-xs font-bold border border-border/40"
                             >
-                                Clear
+                                {t('common.clear')}
                             </button>
                         </div>
                     </div>
                 )}
                 {Boolean(comparisonResult) && (
                     <div className="rounded-xl border border-border/40 bg-muted/20 px-4 py-3 text-xs">
-                        <div className="font-semibold mb-2">Comparison Result</div>
+                        <div className="font-semibold mb-2">{t('modelExplorer.comparisonResult')}</div>
                         <pre className="whitespace-pre-wrap break-words text-muted-foreground">
                             {JSON.stringify(comparisonResult, null, 2)}
                         </pre>

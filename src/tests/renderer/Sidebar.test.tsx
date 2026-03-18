@@ -8,7 +8,6 @@ vi.mock('@/context/ChatContext', () => ({
         chats: [],
         currentChatId: null,
         setCurrentChatId: vi.fn(),
-        createNewChat: vi.fn(),
         deleteChat: vi.fn(),
         updateChat: vi.fn(),
         folders: [],
@@ -19,6 +18,11 @@ vi.mock('@/context/ChatContext', () => ({
         updatePrompt: vi.fn(),
         deletePrompt: vi.fn(),
         togglePin: vi.fn(),
+        bulkDeleteChats: vi.fn(),
+    }),
+    useChatShell: () => ({
+        chatsCount: 0,
+        createNewChat: vi.fn(),
     }),
 }));
 

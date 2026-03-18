@@ -75,3 +75,25 @@ export interface ProviderMetrics {
     maxLatencyMs: number
     lastRequestAt?: number
 }
+
+export interface ProcessMetric {
+    type: 'main' | 'renderer' | 'utility' | 'gpu';
+    pid: number;
+    cpu: number;
+    memory: number;
+    name?: string;
+}
+
+export interface StartupMetrics {
+    startTime: number;
+    coreServicesReadyTime?: number;
+    ipcReadyTime?: number;
+    windowCreatedTime?: number;
+    readyTime?: number;
+    loadTime?: number;
+    localImageReadyTime?: number;
+    apiServerReadyTime?: number;
+    deferredStartTime?: number;
+    deferredServicesReadyTime?: number;
+    totalTime?: number;
+}

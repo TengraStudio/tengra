@@ -44,7 +44,7 @@ export function TerminalMultiplexerPanel({
     return (
         <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 w-[420px] max-w-[95vw]">
             <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="text-xs font-semibold text-foreground">Multiplexer (tmux/screen)</div>
+                <div className="text-xs font-semibold text-foreground">{t('terminal.multiplexerTitle')}</div>
                 <button
                     onClick={closeMultiplexerPanel}
                     className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
@@ -88,7 +88,7 @@ export function TerminalMultiplexerPanel({
                     }}
                     className="h-7 px-2 rounded text-xs border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40"
                 >
-                    Refresh
+                    {t('common.refresh')}
                 </button>
             </div>
             <div className="flex items-center gap-1 mb-2">
@@ -107,7 +107,7 @@ export function TerminalMultiplexerPanel({
                     disabled={!hasActiveSession}
                     className="h-7 px-2 rounded border border-border text-xs text-muted-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                    Create/Attach
+                    {t('terminal.multiplexerCreateAttach')}
                 </button>
             </div>
             <div className="max-h-56 overflow-y-auto custom-scrollbar space-y-1">
@@ -121,7 +121,7 @@ export function TerminalMultiplexerPanel({
                 )}
                 {!isMultiplexerLoading && !multiplexerError && multiplexerSessions.length === 0 && (
                     <div className="px-2 py-2 text-xs text-muted-foreground">
-                        No active sessions found.
+                        {t('terminal.multiplexerNoSessions')}
                     </div>
                 )}
                 {!isMultiplexerLoading &&

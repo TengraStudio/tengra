@@ -13,6 +13,8 @@ const sectionData = {
     "usePrompt": "Prompt kullan: {{title}}",
     "removeAttachment": "{{name}} kaldır",
     "attachmentPreview": "Ek önizlemesi",
+    "imageCountLabel": "Gorsel sayisi",
+    "imageCountHint": "Ayni prompt icin kac gorsel uretilecegini belirler",
     "systemModes": {
         "fast": "Hızlı",
         "agent": "Ajan",

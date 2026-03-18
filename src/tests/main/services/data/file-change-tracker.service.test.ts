@@ -37,11 +37,11 @@ const createTracker = (overrides?: {
         ensureFileDiffTable: ensureFileDiffTableMock,
         storeFileDiff: storeFileDiffMock,
         getFileDiff: getFileDiffMock,
-    } as unknown as DatabaseService;
+    } as never as DatabaseService;
 
     const eventBusService = {
         emit: emitMock,
-    } as unknown as EventBusService;
+    } as never as EventBusService;
 
     return {
         tracker: new FileChangeTracker(databaseService, eventBusService),

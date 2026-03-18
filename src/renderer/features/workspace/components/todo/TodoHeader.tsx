@@ -35,14 +35,14 @@ export const TodoHeader = ({ totalStats, isAdding, onToggleAdding, onRefresh, lo
                     "p-2 rounded-lg transition-colors",
                     isAdding ? "bg-primary text-primary-foreground" : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                 )}
-                title={t('common.add') || 'Add Task'}
+                title={t('common.add')}
             >
                 <Plus className="w-4 h-4" />
             </button>
             <button
                 onClick={onRefresh}
                 className="p-2 hover:bg-muted/50 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
-                title={t('common.refresh') || 'Refresh'}
+                title={t('common.refresh')}
             >
                 <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
             </button>

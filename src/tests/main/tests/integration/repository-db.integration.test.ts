@@ -46,10 +46,10 @@ describe('Repository-DB Integration', () => {
         mockGetPath.mockReturnValue(tempDir);
 
         dataService = new DataService();
-        const mockEventBus = { emit: vi.fn(), on: vi.fn(), off: vi.fn() } as any;
+        const mockEventBus = { emit: vi.fn(), on: vi.fn(), off: vi.fn() } as never;
 
         // Create an in-memory folder store for the mock
-        const folderStore = new Map<string, any>();
+        const folderStore = new Map<string, TestValue>();
 
         const mockDatabaseClient = {
             initialize: vi.fn().mockResolvedValue(undefined),
@@ -87,7 +87,7 @@ describe('Repository-DB Integration', () => {
                 
                 return { rows: [], affected_rows: 0 };
             })
-        } as any;
+        } as never;
 
         const mockTimeTracking = {
             getTimeStats: vi.fn().mockResolvedValue({
@@ -95,7 +95,7 @@ describe('Repository-DB Integration', () => {
                 totalCodingTime: 50,
                 workspaceCodingTime: {}
             })
-        } as any;
+        } as never;
 
         dbService = new DatabaseService(dataService, mockEventBus, mockDatabaseClient, mockTimeTracking);
         await dbService.initialize();

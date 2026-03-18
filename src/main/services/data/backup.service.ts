@@ -11,6 +11,7 @@ import * as zlib from 'zlib';
 import { appLogger } from '@main/logging/logger';
 import { DataService } from '@main/services/data/data.service';
 import { Chat, ChatMessage, DatabaseService } from '@main/services/data/database.service';
+import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
@@ -106,6 +107,7 @@ const DEFAULT_AUTO_BACKUP_CONFIG: AutoBackupConfig = {
  * Supports manual and automatic scheduled backups of settings, chats, prompts, and folders.
  */
 export class BackupService {
+    private static readonly AUTO_BACKUP_JOB_ID = 'backup:auto-backup';
     private backupDir: string;
     private autoBackupTimer: ReturnType<typeof setInterval> | null = null;
     private autoBackupConfig: AutoBackupConfig = { ...DEFAULT_AUTO_BACKUP_CONFIG };
@@ -117,7 +119,8 @@ export class BackupService {
      */
     constructor(
         private dataService: DataService,
-        private databaseService: DatabaseService
+        private databaseService: DatabaseService,
+        private jobScheduler?: JobSchedulerService
     ) {
         this.backupDir = path.join(dataService.getPath('data'), 'backups');
         this.configPath = path.join(dataService.getPath('config'), 'backup-config.json');
@@ -605,7 +608,7 @@ export class BackupService {
                 const filePath = path.join(this.backupDir, file);
                 try {
                     const content = await this.readBackupPayload(filePath);
-                    const json = safeJsonParse<Record<string, unknown>>(content, {});
+                    const json = safeJsonParse<Record<string, RuntimeValue>>(content, {});
                     backups.push({
                         name: file,
                         path: filePath,
@@ -749,30 +752,47 @@ export class BackupService {
      * Start automatic backup timer
      */
     private startAutoBackup(): void {
-        if (this.autoBackupTimer) {
-            return; // Already running
+        if (this.jobScheduler) {
+            this.jobScheduler.registerRecurringJob(
+                BackupService.AUTO_BACKUP_JOB_ID,
+                async () => {
+                    await this.checkAndRunBackup();
+                },
+                () => this.getAutoBackupIntervalMs(),
+                {
+                    persistState: false,
+                    runOnStart: false,
+                }
+            );
+            void this.checkAndRunBackup();
+            return;
         }
 
-        const intervalMs = this.autoBackupConfig.intervalHours * 60 * 60 * 1000;
         appLogger.info('BackupService', `Starting auto-backup every ${this.autoBackupConfig.intervalHours} hours`);
 
-        // Check if we need to run a backup immediately (if last backup is too old)
         void this.checkAndRunBackup();
-
+        if (this.autoBackupTimer) {
+            return;
+        }
         this.autoBackupTimer = setInterval(() => {
             void this.checkAndRunBackup();
-        }, intervalMs);
+        }, this.getAutoBackupIntervalMs());
     }
 
     /**
      * Stop automatic backup timer
      */
     private stopAutoBackup(): void {
+        this.jobScheduler?.unregisterRecurringJob(BackupService.AUTO_BACKUP_JOB_ID);
         if (this.autoBackupTimer) {
             clearInterval(this.autoBackupTimer);
             this.autoBackupTimer = null;
-            appLogger.info('BackupService', 'Stopped auto-backup');
         }
+        appLogger.info('BackupService', 'Stopped auto-backup');
+    }
+
+    private getAutoBackupIntervalMs(): number {
+        return this.autoBackupConfig.intervalHours * 60 * 60 * 1000;
     }
 
     /**

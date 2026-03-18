@@ -53,7 +53,7 @@ export interface AuthIpcDependencies {
 export function registerAuthIpc(deps: AuthIpcDependencies) {
     const { proxyService, copilotService, authService, auditLogService, getMainWindow, eventBus } = deps;
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'auth operation');
-    const createValidatedIpcHandler = <T = JsonValue, Args extends unknown[] = unknown[]>(
+    const createValidatedIpcHandler = <T = JsonValue, Args extends RuntimeValue[] = RuntimeValue[]>(
         handlerName: string,
         handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>,
         options: Parameters<typeof baseCreateValidatedIpcHandler<T, Args>>[2]

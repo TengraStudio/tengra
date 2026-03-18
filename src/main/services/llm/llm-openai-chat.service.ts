@@ -167,12 +167,12 @@ export class LLMOpenAIChatService {
      * @param messages - The chat messages.
      * @param options - Build options.
      */
-    buildOpenAIBody(messages: Array<Message | ChatMessage>, options: OpenAIBodyOptions): Record<string, unknown> {
+    buildOpenAIBody(messages: Array<Message | ChatMessage>, options: OpenAIBodyOptions): Record<string, RuntimeValue> {
         const { model, tools, provider, stream = false, n = 1, temperature, systemMode, reasoningEffort } = options;
         const normalizedMessages = MessageNormalizer.normalizeOpenAIMessages(messages, model);
         const finalModel = this.getNormalizedModelName(model, provider);
 
-        const body: Record<string, unknown> = {
+        const body: Record<string, RuntimeValue> = {
             model: finalModel,
             messages: normalizedMessages,
             stream
@@ -192,7 +192,7 @@ export class LLMOpenAIChatService {
      * @param apiKey - The API key.
      * @param extraHeaders - Additional headers to include.
      */
-    createOpenAIRequest(body: unknown, apiKey: string, extraHeaders: Record<string, string> = {}): RequestInit & { dispatcher?: Agent } {
+    createOpenAIRequest(body: RuntimeValue, apiKey: string, extraHeaders: Record<string, string> = {}): RequestInit & { dispatcher?: Agent } {
         const dispatcher = this.getDispatcher();
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
@@ -314,13 +314,13 @@ export class LLMOpenAIChatService {
 
     // --- Private helpers ---
 
-    private applyStreamOptions(body: Record<string, unknown>, stream: boolean, provider?: string): void {
+    private applyStreamOptions(body: Record<string, RuntimeValue>, stream: boolean, provider?: string): void {
         if (stream && provider !== 'nvidia') {
             body.stream_options = { include_usage: true };
         }
     }
 
-    private applyOptionalOpenAIParams(body: Record<string, unknown>, n: number, provider?: string, temperature?: number): void {
+    private applyOptionalOpenAIParams(body: Record<string, RuntimeValue>, n: number, provider?: string, temperature?: number): void {
         if (temperature !== undefined) {
             body.temperature = temperature;
         }
@@ -332,14 +332,14 @@ export class LLMOpenAIChatService {
         }
     }
 
-    private applyTools(body: Record<string, unknown>, tools?: ToolDefinition[]): void {
+    private applyTools(body: Record<string, RuntimeValue>, tools?: ToolDefinition[]): void {
         if (tools && tools.length > 0) {
             body.tools = this.sanitizeTools(tools);
             body.tool_choice = 'auto';
         }
     }
 
-    private sanitizeTools(tools: ToolDefinition[]): unknown[] {
+    private sanitizeTools(tools: ToolDefinition[]): RuntimeValue[] {
         return tools.map(tool => {
             const params = tool.function.parameters ? { ...tool.function.parameters as JsonObject } : {};
             if (params.required) {

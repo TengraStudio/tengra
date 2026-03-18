@@ -23,10 +23,10 @@ describe('MarketResearchService', () => {
 
     beforeEach(() => {
         searchWebMock.mockReset();
-        const webService = { searchWeb: searchWebMock } as unknown as WebService;
+        const webService = { searchWeb: searchWebMock } as never as WebService;
         service = new MarketResearchService(webService);
         vi.spyOn(
-            service as unknown as {
+            service as never as {
                 delay: (ms: number) => Promise<void>;
             },
             'delay'

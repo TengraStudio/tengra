@@ -118,7 +118,7 @@ export async function loadSettings(): Promise<void> {
         const response = await window.electron.getSettings();
         const persisted = unwrapSettingsResponse(response);
         if (!persisted) {
-            throw new Error('Invalid settings response');
+            throw new Error('SETTINGS_INVALID_RESPONSE');
         }
         const draft = readDraft();
         const resolved = draft ?? persisted;
@@ -144,7 +144,7 @@ export async function flushSettings(): Promise<void> {
         const response = await window.electron.saveSettings(current);
         const saved = unwrapSettingsResponse(response);
         if (!saved) {
-            throw new Error('Invalid settings save response');
+            throw new Error('SETTINGS_INVALID_SAVE_RESPONSE');
         }
         setState({ originalSettings: structuredClone(saved) });
         clearDraft();

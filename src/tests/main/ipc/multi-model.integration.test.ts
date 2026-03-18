@@ -37,7 +37,7 @@ describe('Multi-Model IPC Handlers', () => {
         // Capture IPC handlers
         vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: CallableFunction) => {
             ipcMainHandlers.set(channel, handler);
-            return { channels: [channel] } as unknown as Electron.IpcMain;
+            return { channels: [channel] } as never as Electron.IpcMain;
         });
 
         // Mock comparison service
@@ -46,7 +46,7 @@ describe('Multi-Model IPC Handlers', () => {
                 results: [],
                 timing: { total: 1000 }
             })
-        } as unknown as MultiModelComparisonService;
+        } as never as MultiModelComparisonService;
 
         mockEvent = {} as IpcMainInvokeEvent;
 

@@ -17,7 +17,7 @@ vi.mock('electron', () => ({
 
 
 vi.mock('@main/utils/rate-limiter.util', () => ({
-    withRateLimit: vi.fn(async (_bucket: string, fn: () => Promise<unknown>) => await fn()),
+    withRateLimit: vi.fn(async (_bucket: string, fn: () => Promise<TestValue>) => await fn()),
 }));
 
 
@@ -28,7 +28,7 @@ const mockWindow = {
         id: 1,
         send: vi.fn()
     }
-} as unknown as BrowserWindow;
+} as never as BrowserWindow;
 
 
 
@@ -46,7 +46,7 @@ describe('Database IPC Handlers', () => {
 
     let mockEmbeddingService: MockEmbeddingService;
     let mockAuditLogService: MockAuditLogService;
-    let registeredHandlers: Map<string, (...args: unknown[]) => Promise<unknown>>;
+    let registeredHandlers: Map<string, (...args: TestValue[]) => Promise<TestValue>>;
     const mockEvent = { sender: { id: 1, send: vi.fn() } } as never;
     const createdWorkspace = {
         id: 'proj-1',
@@ -63,9 +63,9 @@ describe('Database IPC Handlers', () => {
     beforeEach(() => {
         registeredHandlers = new Map();
 
-        (vi.mocked(ipcMain.handle) as unknown as { mockImplementation: (fn: (channel: string, listener: (...args: unknown[]) => unknown) => void) => void }).mockImplementation((channel: string, listener: (...args: unknown[]) => unknown) => {
+        (vi.mocked(ipcMain.handle) as never as { mockImplementation: (fn: (channel: string, listener: (...args: TestValue[]) => TestValue) => void) => void }).mockImplementation((channel: string, listener: (...args: TestValue[]) => TestValue) => {
             if (!registeredHandlers.has(channel)) {
-                registeredHandlers.set(channel, listener as (...args: unknown[]) => Promise<unknown>);
+                registeredHandlers.set(channel, listener as (...args: TestValue[]) => Promise<TestValue>);
             }
         });
 
@@ -120,9 +120,9 @@ describe('Database IPC Handlers', () => {
 
         registerDbIpc(
             () => mockWindow,
-            mockDatabaseService as unknown as DatabaseService,
-            mockEmbeddingService as unknown as EmbeddingService,
-            mockAuditLogService as unknown as AuditLogService
+            mockDatabaseService as never as DatabaseService,
+            mockEmbeddingService as never as EmbeddingService,
+            mockAuditLogService as never as AuditLogService
         );
     });
 
@@ -134,10 +134,10 @@ describe('Database IPC Handlers', () => {
         it('should create a chat', async () => {
             const handler = registeredHandlers.get('db:createChat')!;
             const chatData = { title: 'New Chat', model: 'gpt-4' };
-            const result = await handler(mockEvent, chatData) as Record<string, unknown>;
+            const result = await handler(mockEvent, chatData) as Record<string, TestValue>;
 
 
-            expect((mockDatabaseService as unknown as Record<string, Record<string, Mock>>).chats.createChat).toHaveBeenCalled();
+            expect((mockDatabaseService as never as Record<string, Record<string, Mock>>).chats.createChat).toHaveBeenCalled();
 
             expect(result.success).toBe(true);
         });
@@ -149,9 +149,9 @@ describe('Database IPC Handlers', () => {
             // Let's see if it's also in registeredHandlers
             const handler = registeredHandlers.get('db:getChat');
             if (handler) {
-                const result = await handler(mockEvent, 'chat-1') as Record<string, unknown>;
+                const result = await handler(mockEvent, 'chat-1') as Record<string, TestValue>;
 
-                expect((mockDatabaseService as unknown as Record<string, Record<string, Mock>>).chats.getChat).toHaveBeenCalledWith('chat-1');
+                expect((mockDatabaseService as never as Record<string, Record<string, Mock>>).chats.getChat).toHaveBeenCalledWith('chat-1');
                 expect(result.id).toBe('chat-1');
             }
 
@@ -159,10 +159,10 @@ describe('Database IPC Handlers', () => {
 
         it('should delete a chat', async () => {
             const handler = registeredHandlers.get('db:deleteChat')!;
-            const result = await handler(mockEvent, 'chat-1') as Record<string, unknown>;
+            const result = await handler(mockEvent, 'chat-1') as Record<string, TestValue>;
 
 
-            expect((mockDatabaseService as unknown as Record<string, Record<string, Mock>>).chats.deleteChat).toHaveBeenCalledWith('chat-1');
+            expect((mockDatabaseService as never as Record<string, Record<string, Mock>>).chats.deleteChat).toHaveBeenCalledWith('chat-1');
 
             expect(result.success).toBe(true);
         });
@@ -170,19 +170,19 @@ describe('Database IPC Handlers', () => {
         it('should update a message through the registered db:updateMessage handler', async () => {
             const handler = registeredHandlers.get('db:updateMessage')!;
             const updates = { content: 'updated', reasoning: 'because' };
-            const result = await handler(mockEvent, 'msg-1', updates) as Record<string, unknown>;
+            const result = await handler(mockEvent, 'msg-1', updates) as Record<string, TestValue>;
 
-            expect((mockDatabaseService as unknown as Record<string, Record<string, Mock>>).chats.updateMessage)
+            expect((mockDatabaseService as never as Record<string, Record<string, Mock>>).chats.updateMessage)
                 .toHaveBeenCalledWith('msg-1', updates);
             expect(result.success).toBe(true);
         });
 
         it('should delete messages by chat id through db:deleteMessages', async () => {
             const deleteMessagesByChatId = vi.fn().mockResolvedValue({ success: true });
-            (mockDatabaseService as unknown as Record<string, Mock>).deleteMessagesByChatId = deleteMessagesByChatId;
+            (mockDatabaseService as never as Record<string, Mock>).deleteMessagesByChatId = deleteMessagesByChatId;
 
             const handler = registeredHandlers.get('db:deleteMessages')!;
-            const result = await handler(mockEvent, 'chat-1') as Record<string, unknown>;
+            const result = await handler(mockEvent, 'chat-1') as Record<string, TestValue>;
 
             expect(deleteMessagesByChatId).toHaveBeenCalledWith('chat-1');
             expect(result.success).toBe(true);
@@ -193,11 +193,11 @@ describe('Database IPC Handlers', () => {
     describe('Workspace Handlers', () => {
         it('should create a workspace', async () => {
             const handler = registeredHandlers.get('db:createWorkspace')!;
-            const result = await handler(mockEvent, { title: 'My Workspace', path: '/path', description: 'desc' }) as Record<string, unknown>;
+            const result = await handler(mockEvent, { title: 'My Workspace', path: '/path', description: 'desc' }) as Record<string, TestValue>;
 
 
 
-            expect((mockDatabaseService as unknown as Record<string, Mock>).createWorkspace).toHaveBeenCalledWith('My Workspace', '/path', 'desc', undefined, undefined);
+            expect((mockDatabaseService as never as Record<string, Mock>).createWorkspace).toHaveBeenCalledWith('My Workspace', '/path', 'desc', undefined, undefined);
 
             expect(result.id).toBe('proj-1');
             expect(result.title).toBe('My Workspace');
@@ -205,7 +205,7 @@ describe('Database IPC Handlers', () => {
 
         it('should reject duplicate local workspace mounts instead of returning a null fallback', async () => {
             const handler = registeredHandlers.get('db:createWorkspace')!;
-            (mockDatabaseService as unknown as Record<string, Mock>).getWorkspaces.mockResolvedValue([
+            (mockDatabaseService as never as Record<string, Mock>).getWorkspaces.mockResolvedValue([
                 {
                     ...createdWorkspace,
                     path: 'C:\\repos\\demo',
@@ -235,11 +235,11 @@ describe('Database IPC Handlers', () => {
     describe('Folder Handlers', () => {
         it('should create a folder', async () => {
             const handler = registeredHandlers.get('db:createFolder')!;
-            const result = await handler(mockEvent, { name: 'My Folder', color: '#ff0000' }) as Record<string, unknown>;
+            const result = await handler(mockEvent, { name: 'My Folder', color: '#ff0000' }) as Record<string, TestValue>;
 
 
 
-            expect((mockDatabaseService as unknown as Record<string, Record<string, Mock>>).system.createFolder).toHaveBeenCalledWith('My Folder', '#ff0000');
+            expect((mockDatabaseService as never as Record<string, Record<string, Mock>>).system.createFolder).toHaveBeenCalledWith('My Folder', '#ff0000');
 
             expect(result.success).toBe(true);
         });

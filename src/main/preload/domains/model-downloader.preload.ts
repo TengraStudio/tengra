@@ -1,7 +1,7 @@
 import { IpcRenderer } from 'electron';
 
 export interface ModelDownloaderBridge {
-    start: (request: unknown) => Promise<{ downloadId: string; success: boolean }>;
+    start: (request: RuntimeValue) => Promise<{ downloadId: string; success: boolean }>;
     pause: (downloadId: string) => Promise<{ success: boolean }>;
     resume: (downloadId: string) => Promise<{ success: boolean }>;
     cancel: (downloadId: string) => Promise<{ success: boolean }>;

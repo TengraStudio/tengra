@@ -7,6 +7,7 @@ const sectionData = {
     "orchestrationFIFO": "Sequential (FIFO)",
     "orchestrationParallel": "Parallel (Simultaneous)",
     "tokensPerSec": "Tokens/sec",
+    "tokensPerSecShort": "t/s",
     "latency": "Latency",
     "serviceIntervals": "Service Intervals",
     "serviceIntervalsDesc": "Configure how often background services refresh data.",

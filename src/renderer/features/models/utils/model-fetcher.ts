@@ -5,6 +5,7 @@ import type { GroupedModels, ModelInfo } from '@/types/model.types';
 
 // Simple in-memory cache for model fetches
 let modelCache: { data: ModelInfo[]; timestamp: number } | null = null;
+let inFlightModelRequest: Promise<ModelInfo[]> | null = null;
 const CACHE_DURATION_MS = 60000; // 1 minute cache
 
 function normalizeProviderId(provider: string | undefined): string {
@@ -64,34 +65,54 @@ export function getSelectableProviderId(model: Pick<ModelInfo, 'provider' | 'pro
     return normalizeProviderId(model.provider);
 }
 
+function processFetchedModels(models: ModelInfo[]): ModelInfo[] {
+    return models.map(m => {
+        const provider = normalizeProviderId(m.provider);
+        const providerCategory = normalizeProviderCategoryId(m.providerCategory, provider, m.sourceProvider);
+        return {
+            ...m,
+            provider,
+            providerCategory,
+            name: resolveDisplayName(m)
+        };
+    });
+}
+
+function isCacheFresh(): boolean {
+    return modelCache !== null && Date.now() - modelCache.timestamp < CACHE_DURATION_MS;
+}
+
+export function primeModelCache(): Promise<ModelInfo[]> {
+    return fetchModels(false);
+}
+
 export async function fetchModels(bypassCache = false): Promise<ModelInfo[]> {
     try {
         // PERF-005-1: Return cached models if still fresh
-        if (!bypassCache && modelCache && Date.now() - modelCache.timestamp < CACHE_DURATION_MS) {
+        if (!bypassCache && isCacheFresh() && modelCache) {
             return modelCache.data;
         }
 
-        // Fetch from unified source (Main Process aggregates Ollama, Copilot, Proxy/Antigravity, Llama)
-        const models = await window.electron.modelRegistry.getAllModels().catch(() => []);
+        if (inFlightModelRequest) {
+            return inFlightModelRequest;
+        }
 
-        const processedModels = models.map(m => {
-            const provider = normalizeProviderId(m.provider);
-            const providerCategory = normalizeProviderCategoryId(m.providerCategory, provider, m.sourceProvider);
-            return {
-                ...m,
-                provider,
-                providerCategory,
-                name: resolveDisplayName(m)
-            };
-        });
+        inFlightModelRequest = window.electron.modelRegistry
+            .getAllModels()
+            .catch(() => [])
+            .then(models => {
+                const processedModels = processFetchedModels(models);
+                modelCache = {
+                    data: processedModels,
+                    timestamp: Date.now()
+                };
+                return processedModels;
+            })
+            .finally(() => {
+                inFlightModelRequest = null;
+            });
 
-        // Update cache
-        modelCache = {
-            data: processedModels,
-            timestamp: Date.now()
-        };
-
-        return processedModels;
+        return await inFlightModelRequest;
     } catch (error) {
         window.electron.log.error('Failed to fetch models', error as Error);
         return [];

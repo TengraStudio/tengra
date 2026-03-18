@@ -16,18 +16,17 @@ interface ManualSessionModalProps extends ManualSessionModalState {
     onSave: (sessionKey: string, accountId?: string) => Promise<{ success: boolean; error?: string }>
 }
 
-const HeaderSection: React.FC<{ email?: string }> = ({ email }) => (
+const HeaderSection: React.FC<{ email?: string; t: (key: string, options?: Record<string, string>) => string }> = ({ email, t }) => (
     <div className="flex items-start gap-4 p-4 rounded-xl bg-primary/5 border border-primary/10">
         <div className="p-2 rounded-lg bg-primary/10 text-primary">
             <ShieldCheck className="w-5 h-5" />
         </div>
         <div className="space-y-1">
             <p className="text-sm font-medium text-foreground">
-                Complete Connection for {email ?? 'your account'}
+                {t('auth.completeConnection', { email: email ?? t('auth.yourAccount') })}
             </p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-                To enable quota tracking and direct interaction, Tengra needs your Claude session key.
-                We encrypt and store this key locally on your device.
+                {t('auth.sessionKeyDescription')}
             </p>
         </div>
     </div>
@@ -135,18 +134,18 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
         try {
             const result = await onSave(sessionKey.trim(), accountId);
             if (result.success) { handleSaveSuccess(); }
-            else { setError(result.error ?? 'Failed to save session key'); }
+            else { setError(result.error ?? t('auth.saveSessionKeyFailed')); }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+            setError(err instanceof Error ? err.message : t('common.error'));
         } finally {
             setIsSaving(false);
         }
-    }, [sessionKey, onSave, accountId, validateSessionKey, handleSaveSuccess]);
+    }, [sessionKey, onSave, accountId, validateSessionKey, handleSaveSuccess, t]);
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={t('auth.sessionKeyRequired')} size="md" preventClose={isSaving}>
             <div className="space-y-6 py-2">
-                <HeaderSection email={email} />
+                <HeaderSection email={email} t={t} />
                 <InstructionsSection t={t} />
                 <InputSection sessionKey={sessionKey} setSessionKey={setSessionKey} isSaving={isSaving} success={success} error={error} t={t} />
                 <div className="flex items-center gap-3 pt-2">

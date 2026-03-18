@@ -423,7 +423,7 @@ export class OllamaService {
                     const lines = chunk.split('\n').filter(Boolean);
                     for (const line of lines) {
                         try {
-                            const data = safeJsonParse<Record<string, unknown>>(line, {});
+                            const data = safeJsonParse<Record<string, RuntimeValue>>(line, {});
                             onProgress?.({
                                 status: (data.status as string) || 'downloading',
                                 completed: data.completed as number | undefined,
@@ -1004,7 +1004,7 @@ export class OllamaService {
             })();
         }, intervalMs);
 
-        appLogger.info('OllamaService', `GPU monitoring started with ${intervalMs}ms interval`);
+        appLogger.debug('OllamaService', `GPU monitoring started with ${intervalMs}ms interval`);
     }
 
     /**
@@ -1014,7 +1014,7 @@ export class OllamaService {
         if (this.gpuMonitoringInterval) {
             clearInterval(this.gpuMonitoringInterval);
             this.gpuMonitoringInterval = null;
-            appLogger.info('OllamaService', 'GPU monitoring stopped');
+            appLogger.debug('OllamaService', 'GPU monitoring stopped');
         }
     }
 

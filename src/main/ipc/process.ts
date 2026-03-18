@@ -18,7 +18,7 @@ const MAX_ROWS = 500;
  * @param value - Raw command input to validate
  * @returns Trimmed command string or null if invalid
  */
-function validateCommand(value: unknown): string | null {
+function validateCommand(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {return null;}
     const trimmed = value.trim();
     if (!trimmed || trimmed.length > MAX_COMMAND_LENGTH) {return null;}
@@ -32,7 +32,7 @@ function validateCommand(value: unknown): string | null {
  * @param value - Raw path input to validate
  * @returns Trimmed path string or null if invalid
  */
-function validatePath(value: unknown): string | null {
+function validatePath(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {return null;}
     const trimmed = value.trim();
     if (!trimmed || trimmed.length > MAX_PATH_LENGTH) {return null;}
@@ -44,7 +44,7 @@ function validatePath(value: unknown): string | null {
  * @param value - Raw ID input to validate
  * @returns Trimmed ID string or null if invalid
  */
-function validateId(value: unknown): string | null {
+function validateId(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {return null;}
     const trimmed = value.trim();
     if (!trimmed || trimmed.length > MAX_ID_LENGTH) {return null;}
@@ -56,7 +56,7 @@ function validateId(value: unknown): string | null {
  * @param value - Raw arguments array to validate
  * @returns Sanitized array of string arguments
  */
-function validateArgs(value: unknown): string[] {
+function validateArgs(value: RuntimeValue): string[] {
     if (!Array.isArray(value)) {return [];}
     return value
         .slice(0, MAX_ARGS)
@@ -71,7 +71,7 @@ function validateArgs(value: unknown): string[] {
  * @param max - Maximum allowed value (inclusive)
  * @returns Floored integer or null if invalid
  */
-function validateNumber(value: unknown, min: number, max: number): number | null {
+function validateNumber(value: RuntimeValue, min: number, max: number): number | null {
     if (typeof value !== 'number' || !Number.isFinite(value)) {return null;}
     if (value < min || value > max) {return null;}
     return Math.floor(value);
@@ -83,7 +83,7 @@ function validateNumber(value: unknown, min: number, max: number): number | null
 export const registerProcessIpc = (getMainWindow: () => BrowserWindow | null, processService: ProcessService) => {
     appLogger.info('ProcessIPC', 'Registering process IPC handlers');
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'process operation');
-    const createSafeIpcHandler = <T = unknown, Args extends unknown[] = unknown[]>(
+    const createSafeIpcHandler = <T = RuntimeValue, Args extends RuntimeValue[] = RuntimeValue[]>(
         handlerName: string,
         handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>,
         defaultValue: T
@@ -93,7 +93,7 @@ export const registerProcessIpc = (getMainWindow: () => BrowserWindow | null, pr
     }, defaultValue);
 
     ipcMain.handle('process:spawn', createSafeIpcHandler('process:spawn',
-        async (_event: IpcMainInvokeEvent, commandRaw: unknown, argsRaw: unknown, cwdRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, commandRaw: RuntimeValue, argsRaw: RuntimeValue, cwdRaw: RuntimeValue) => {
             const command = validateCommand(commandRaw);
             if (!command) {
                 throw new Error('Invalid command: must be a non-empty string without shell control characters');
@@ -107,7 +107,7 @@ export const registerProcessIpc = (getMainWindow: () => BrowserWindow | null, pr
     ));
 
     ipcMain.handle('process:kill', createSafeIpcHandler('process:kill',
-        async (_event: IpcMainInvokeEvent, idRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, idRaw: RuntimeValue) => {
             const id = validateId(idRaw);
             if (!id) {
                 throw new Error('Invalid process ID');
@@ -123,7 +123,7 @@ export const registerProcessIpc = (getMainWindow: () => BrowserWindow | null, pr
     ));
 
     ipcMain.handle('process:scan-scripts', createSafeIpcHandler('process:scan-scripts',
-        async (_event: IpcMainInvokeEvent, rootPathRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, rootPathRaw: RuntimeValue) => {
             const rootPath = validatePath(rootPathRaw);
             if (!rootPath) {
                 throw new Error('Invalid root path');
@@ -133,7 +133,7 @@ export const registerProcessIpc = (getMainWindow: () => BrowserWindow | null, pr
     ));
 
     ipcMain.handle('process:resize', createSafeIpcHandler('process:resize',
-        async (_event: IpcMainInvokeEvent, idRaw: unknown, colsRaw: unknown, rowsRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, idRaw: RuntimeValue, colsRaw: RuntimeValue, rowsRaw: RuntimeValue) => {
             const id = validateId(idRaw);
             if (!id) {
                 throw new Error('Invalid process ID');
@@ -151,7 +151,7 @@ export const registerProcessIpc = (getMainWindow: () => BrowserWindow | null, pr
     ));
 
     ipcMain.handle('process:write', createSafeIpcHandler('process:write',
-        async (_event: IpcMainInvokeEvent, idRaw: unknown, dataRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, idRaw: RuntimeValue, dataRaw: RuntimeValue) => {
             const id = validateId(idRaw);
             if (!id) {
                 throw new Error('Invalid process ID');

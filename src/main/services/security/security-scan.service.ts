@@ -109,7 +109,7 @@ export class SecurityScanService extends BaseService {
                 });
             }
             return result;
-        } catch (error: unknown) {
+        } catch (error) {
             const msg = getErrorMessage(error);
             const failResult: SecurityScanResult = {
                 timestamp: Date.now(),

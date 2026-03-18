@@ -2,9 +2,12 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SSHManager } from '@/features/ssh/SSHManager';
+import { SSHConfig } from '@/types';
 import { webElectronMock } from '@/web-bridge';
 
-function installManagerMocks(profiles: Array<Record<string, unknown>>) {
+type MockProfile = SSHConfig & { id: string };
+
+function installManagerMocks(profiles: MockProfile[]) {
     const connect = vi.fn().mockResolvedValue({ success: true, id: '11111111-1111-1111-1111-111111111111' });
     const saveProfile = vi.fn().mockResolvedValue(true);
     const getProfiles = vi.fn().mockResolvedValue(profiles);

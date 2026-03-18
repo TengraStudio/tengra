@@ -18,6 +18,9 @@ export const sessionConversationMessageContentPartSchema = z.union([
     sessionConversationImagePartSchema,
 ]);
 
+/**
+ * Schema for a single message in a conversation.
+ */
 export const sessionConversationMessageSchema = z.object({
     id: z.string().optional(),
     role: z.enum(['system', 'user', 'assistant', 'function', 'tool']),
@@ -25,7 +28,12 @@ export const sessionConversationMessageSchema = z.object({
         z.string(),
         z.array(sessionConversationMessageContentPartSchema),
     ]),
-    timestamp: z.union([z.string(), z.date()]).optional().transform(value => value ? new Date(value) : new Date()),
+    /**
+     * Timestamp of the message.
+     * Supports ISO string, Date object, or numeric milliseconds.
+     * Automatically transformed into a Date object.
+     */
+    timestamp: z.union([z.string(), z.date(), z.number()]).optional().transform(value => value ? new Date(value) : new Date()),
     name: z.string().optional(),
     tool_calls: z.array(z.record(z.string(), z.unknown())).optional(),
     tool_call_id: z.string().optional(),

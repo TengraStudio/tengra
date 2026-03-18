@@ -13,11 +13,11 @@ export class MemoryService {
 
     // Semantic Memory
     async rememberFact(content: string, _source: string = 'user', sourceId: string = 'global', tags: string[] = []): Promise<SemanticFragment> {
-        return this.advancedMemory.rememberExplicit(content, sourceId, 'fact', tags) as unknown as SemanticFragment;
+        return this.advancedMemory.rememberExplicit(content, sourceId, 'fact', tags) as RuntimeValue as SemanticFragment;
     }
 
     async recallRelevantFacts(query: string, limit: number = 5): Promise<SemanticFragment[]> {
-        return this.advancedMemory.recallRelevantFacts(query, limit) as unknown as SemanticFragment[];
+        return this.advancedMemory.recallRelevantFacts(query, limit) as RuntimeValue as SemanticFragment[];
     }
 
     // Episodic Memory (Conversation History)

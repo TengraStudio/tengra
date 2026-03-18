@@ -163,7 +163,17 @@ const sectionData = {
     "noIssues": "Aucun problème significatif trouvé dans l'espace de travail. Bon travail!",
     "noIssuesDesc": "L'analyse de l'espace de travail n'a pas détecté de problèmes critiques.",
     "settings": "Paramètres",
-    "updateFailed": "Échec de la mise à jour des paramètres"
+    "updateFailed": "Échec de la mise à jour des paramètres",
+    "searchMatchCaseTitle": "Match Case",
+    "searchMatchWholeWordTitle": "Match Whole Word",
+    "searchUseRegexTitle": "Use Regular Expression",
+    "searchIncludePatternPlaceholder": "e.g. *.ts, src/**",
+    "searchExcludePatternPlaceholder": "e.g. node_modules, dist",
 };
 
 export default sectionData;
+
+
+
+
+

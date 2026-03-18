@@ -137,18 +137,18 @@ function normalizeNotificationSource(source?: string): string | undefined {
     return normalizeWorkspaceCompatSource(trimmedSource) ?? trimmedSource;
 }
 
-function isObject(value: unknown): value is Record<string, unknown> {
+function isObject(value: RendererDataValue): value is Record<string, RendererDataValue> {
     return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
-function normalizeType(value: unknown): NotificationType {
+function normalizeType(value: RendererDataValue): NotificationType {
     if (value === 'success' || value === 'error' || value === 'warning') {
         return value;
     }
     return 'info';
 }
 
-function normalizeAction(value: unknown): PersistedNotificationAction | null {
+function normalizeAction(value: RendererDataValue): PersistedNotificationAction | null {
     if (!isObject(value)) {
         return null;
     }
@@ -164,7 +164,7 @@ function normalizeAction(value: unknown): PersistedNotificationAction | null {
     return { id, label, tone, autoClose };
 }
 
-function normalizeRecord(value: unknown): NotificationRecord | null {
+function normalizeRecord(value: RendererDataValue): NotificationRecord | null {
     if (!isObject(value)) {
         return null;
     }
@@ -207,7 +207,7 @@ function normalizeRecord(value: unknown): NotificationRecord | null {
     };
 }
 
-function normalizePreferences(value: unknown): NotificationPreferences {
+function normalizePreferences(value: RendererDataValue): NotificationPreferences {
     if (!isObject(value)) {
         return defaultPreferences;
     }
@@ -219,7 +219,7 @@ function normalizePreferences(value: unknown): NotificationPreferences {
     };
 }
 
-function normalizeAnalytics(value: unknown): NotificationAnalytics {
+function normalizeAnalytics(value: RendererDataValue): NotificationAnalytics {
     if (!isObject(value)) {
         return defaultAnalytics;
     }
@@ -245,14 +245,14 @@ function normalizeAnalytics(value: unknown): NotificationAnalytics {
     };
 }
 
-function toCount(value: unknown): number {
+function toCount(value: RendererDataValue): number {
     if (typeof value !== 'number' || !Number.isFinite(value)) {
         return 0;
     }
     return Math.max(0, Math.floor(value));
 }
 
-function normalizeDurationMs(value: unknown): number | null {
+function normalizeDurationMs(value: RendererDataValue): number | null {
     if (value === null) {
         return null;
     }
@@ -265,7 +265,7 @@ function normalizeDurationMs(value: unknown): number | null {
     return Math.floor(value);
 }
 
-function normalizeScheduled(value: unknown): ScheduledNotification | null {
+function normalizeScheduled(value: RendererDataValue): ScheduledNotification | null {
     if (!isObject(value)) {
         return null;
     }
@@ -310,7 +310,7 @@ function normalizeScheduled(value: unknown): ScheduledNotification | null {
     };
 }
 
-function migrateLegacyToastArray(raw: unknown): NotificationCenterSnapshot | null {
+function migrateLegacyToastArray(raw: RendererDataValue): NotificationCenterSnapshot | null {
     if (!Array.isArray(raw)) {
         return null;
     }
@@ -325,7 +325,7 @@ function migrateLegacyToastArray(raw: unknown): NotificationCenterSnapshot | nul
     };
 }
 
-export function sanitizeNotificationCenterSnapshot(raw: unknown): NotificationCenterSnapshot {
+export function sanitizeNotificationCenterSnapshot(raw: RendererDataValue): NotificationCenterSnapshot {
     const migratedArray = migrateLegacyToastArray(raw);
     if (migratedArray) {
         return migratedArray;
@@ -787,7 +787,7 @@ export function exportNotificationCenterState(): {
     };
 }
 
-export function importNotificationCenterState(raw: unknown): NotificationCenterSnapshot {
+export function importNotificationCenterState(raw: RendererDataValue): NotificationCenterSnapshot {
     snapshot = sanitizeNotificationCenterSnapshot(raw);
     restoreRuntimeStateFromSnapshot();
     persist();

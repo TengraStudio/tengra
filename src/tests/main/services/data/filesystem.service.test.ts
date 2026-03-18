@@ -43,7 +43,7 @@ describe('FileSystemService', () => {
         it('should read a text file successfully', async () => {
             const content = Buffer.from('hello world');
             vi.mocked(fs.stat).mockResolvedValue({ size: content.length } as Awaited<ReturnType<typeof fs.stat>>);
-            vi.mocked(fs.readFile).mockResolvedValue(content as unknown as string);
+            vi.mocked(fs.readFile).mockResolvedValue(content as never as string);
 
             const result = await service.readFile(path.join(allowedRoot, 'test.txt'));
             expect(result.success).toBe(true);
@@ -66,7 +66,7 @@ describe('FileSystemService', () => {
         it('should detect binary files', async () => {
             const content = Buffer.from([0x48, 0x65, 0x00, 0x6c]);
             vi.mocked(fs.stat).mockResolvedValue({ size: content.length } as Awaited<ReturnType<typeof fs.stat>>);
-            vi.mocked(fs.readFile).mockResolvedValue(content as unknown as string);
+            vi.mocked(fs.readFile).mockResolvedValue(content as never as string);
 
             const result = await service.readFile(path.join(allowedRoot, 'bin.dat'));
             expect(result.success).toBe(false);

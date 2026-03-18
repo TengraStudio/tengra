@@ -5,20 +5,20 @@ export interface ExtensionBridge {
     dismissWarning: () => Promise<void>;
     getStatus: () => Promise<{ installed: boolean }>;
     setInstalled: (installed: boolean) => Promise<void>;
-    getAll: () => Promise<unknown[]>;
-    get: (extensionId: string) => Promise<unknown | null>;
+    getAll: () => Promise<RuntimeValue[]>;
+    get: (extensionId: string) => Promise<RuntimeValue | null>;
     install: (extensionPath: string) => Promise<{ success: boolean; extensionId?: string; error?: string }>;
     uninstall: (extensionId: string) => Promise<{ success: boolean; error?: string }>;
     activate: (extensionId: string) => Promise<{ success: boolean; error?: string }>;
     deactivate: (extensionId: string) => Promise<{ success: boolean; error?: string }>;
-    devStart: (options: Record<string, unknown>) => Promise<{ success: boolean; extensionId?: string; error?: string }>;
+    devStart: (options: Record<string, RuntimeValue>) => Promise<{ success: boolean; extensionId?: string; error?: string }>;
     devStop: (extensionId: string) => Promise<{ success: boolean; error?: string }>;
     devReload: (extensionId: string) => Promise<{ success: boolean; error?: string }>;
-    test: (options: Record<string, unknown>) => Promise<unknown>;
-    publish: (options: Record<string, unknown>) => Promise<unknown>;
-    getProfile: (extensionId: string) => Promise<unknown | null>;
-    getState: (extensionId: string) => Promise<unknown | null>;
-    validate: (manifest: Record<string, unknown>) => Promise<{ valid: boolean; errors: string[] }>;
+    test: (options: Record<string, RuntimeValue>) => Promise<RuntimeValue>;
+    publish: (options: Record<string, RuntimeValue>) => Promise<RuntimeValue>;
+    getProfile: (extensionId: string) => Promise<RuntimeValue | null>;
+    getState: (extensionId: string) => Promise<RuntimeValue | null>;
+    validate: (manifest: Record<string, RuntimeValue>) => Promise<{ valid: boolean; errors: string[] }>;
 }
 
 export function createExtensionBridge(ipc: IpcRenderer): ExtensionBridge {

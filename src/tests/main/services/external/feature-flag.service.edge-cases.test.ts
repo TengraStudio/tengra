@@ -21,7 +21,7 @@ const createService = (): FeatureFlagService => {
     const mock: Pick<DataService, 'getPath'> = {
         getPath: vi.fn().mockReturnValue('/mock/config'),
     };
-    return new FeatureFlagService(mock as unknown as DataService);
+    return new FeatureFlagService(mock as never as DataService);
 };
 
 const flushMicrotasks = async (): Promise<void> => {
@@ -207,7 +207,7 @@ describe('FeatureFlagService edge-case boundaries (B-0441)', () => {
 
         it('non-boolean setOverride yields INVALID_OVERRIDE code', () => {
             try {
-                service.setOverride('council.planning', 0 as unknown as boolean);
+                service.setOverride('council.planning', 0 as never as boolean);
                 expect.fail('should have thrown');
             } catch (error) {
                 const e = error as FeatureFlagError;

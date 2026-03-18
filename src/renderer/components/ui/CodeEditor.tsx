@@ -1,4 +1,9 @@
 import type { Monaco, OnChange } from '@monaco-editor/react';
+import {
+    recordCodeEditorFailure,
+    recordCodeEditorSuccess,
+    setCodeEditorUiState,
+} from '@renderer/store/code-editor-health.store';
 import type {
     InlineSuggestionRequest,
     InlineSuggestionResponse,
@@ -15,6 +20,7 @@ import { useSettingsStore } from '@/store/settings.store';
 import type { AppSettings } from '@/types/settings';
 import { normalizeLanguage } from '@/utils/language-map';
 import { ensureMonacoInitialized } from '@/utils/monaco-loader.util';
+import { performanceMonitor } from '@/utils/performance';
 import { initTextMateSupport } from '@/utils/textmate-loader';
 
 type MonacoEditorInstance = editor.IStandaloneCodeEditor;
@@ -287,31 +293,44 @@ export interface CodeEditorProps {
     initialScrollTop?: number | null;
     onCursorPositionChange?: (position: { lineNumber: number; column: number }) => void;
     onScrollPositionChange?: (scrollTop: number) => void;
+    performanceMarkPrefix?: string;
 }
 
 let textMateInitialized = false;
 let textMateInitializing = false;
 
-const useMonacoLoader = () => {
+const useMonacoLoader = (performanceMarkPrefix?: string) => {
     const [monacoComponents, setMonacoComponents] = useState<{
         Editor: React.ComponentType<MonacoEditorComponentProps>;
         monaco: Monaco;
     } | null>(null);
     const [loading, setLoading] = useState(true);
     useEffect(() => {
+        const startedAt = performance.now();
+        setCodeEditorUiState('loading');
         loadMonaco()
             .then(({ Editor, monaco }) => {
                 setMonacoComponents({
                     Editor: Editor as React.ComponentType<MonacoEditorComponentProps>,
                     monaco,
                 });
+                if (performanceMarkPrefix) {
+                    performanceMonitor.mark(`${performanceMarkPrefix}:runtime-loaded`);
+                }
+                setCodeEditorUiState('ready');
+                recordCodeEditorSuccess(performance.now() - startedAt);
                 setLoading(false);
             })
             .catch(e => {
                 window.electron.log.error('Failed to load Monaco', toError(e instanceof Error ? e : undefined));
+                setCodeEditorUiState('failure');
+                recordCodeEditorFailure(
+                    'CODE_EDITOR_INIT_FAILED',
+                    performance.now() - startedAt
+                );
                 setLoading(false);
             });
-    }, []);
+    }, [performanceMarkPrefix]);
     return { monacoComponents, loading };
 };
 
@@ -423,7 +442,7 @@ const useInlineCompletions = (
         };
         const commandDisposable = monaco.editor.registerCommand(
             INLINE_SUGGESTION_ACCEPT_COMMAND,
-            (_accessor: unknown, payload: ActiveInlineSuggestionSession | undefined) => {
+            (_accessor: RendererDataValue, payload: ActiveInlineSuggestionSession | undefined) => {
                 if (!payload) {
                     return;
                 }
@@ -591,10 +610,10 @@ const useInlineCompletions = (
                 });
                 activeSessionRef.current = null;
             },
-            handleItemDidShow: (_completions: unknown, item: unknown) => {
+            handleItemDidShow: (_completions: RendererDataValue, item: RendererDataValue) => {
                 const commandCandidate =
                     item && typeof item === 'object' && 'command' in item
-                        ? (item as { command?: { arguments?: unknown[] } }).command
+                        ? (item as { command?: { arguments?: RendererDataValue[] } }).command
                         : undefined;
                 const session = commandCandidate?.arguments?.[0] as
                     | ActiveInlineSuggestionSession
@@ -635,12 +654,16 @@ const useEditorLifecycle = (
     initialPosition?: { lineNumber: number; column: number } | null,
     initialScrollTop?: number | null,
     onCursorPositionChange?: (position: { lineNumber: number; column: number }) => void,
-    onScrollPositionChange?: (scrollTop: number) => void
+    onScrollPositionChange?: (scrollTop: number) => void,
+    performanceMarkPrefix?: string
 ) => {
     return useCallback(
         async (editor: MonacoEditorInstance, monaco: Monaco) => {
             editorRef.current = editor;
             monacoRef.current = monaco;
+            if (performanceMarkPrefix) {
+                performanceMonitor.mark(`${performanceMarkPrefix}:ready`);
+            }
             if (!textMateInitialized && !textMateInitializing) {
                 textMateInitializing = true;
                 try {
@@ -694,6 +717,7 @@ const useEditorLifecycle = (
             initialScrollTop,
             onCursorPositionChange,
             onScrollPositionChange,
+            performanceMarkPrefix,
             updateDecorations,
             editorRef,
             monacoRef,
@@ -784,13 +808,14 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     initialScrollTop = null,
     onCursorPositionChange,
     onScrollPositionChange,
+    performanceMarkPrefix,
 }) => {
     const { isLight } = useTheme();
     const { t } = useTranslation(appLanguage);
     const editorRef = useRef<MonacoEditorInstance | null>(null);
     const monacoRef = useRef<Monaco | null>(null);
     const settings = useSettingsStore(snapshot => snapshot.settings);
-    const { monacoComponents, loading } = useMonacoLoader();
+    const { monacoComponents, loading } = useMonacoLoader(performanceMarkPrefix);
     const updateDecorations = useEditorDecorations(monacoComponents?.monaco ?? null, t);
     const normalizedLanguage = normalizeLanguage(language);
     const settingsInlineSuggestionConfig = useMemo(
@@ -821,7 +846,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         initialPosition,
         initialScrollTop,
         onCursorPositionChange,
-        onScrollPositionChange
+        onScrollPositionChange,
+        performanceMarkPrefix
     );
 
     const monacoTheme = useMemo(() => {

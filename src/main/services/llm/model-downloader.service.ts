@@ -367,7 +367,7 @@ export class ModelDownloaderService extends BaseService {
         }
     }
 
-    private isValidPersistedState(state: unknown): state is PersistedDownloadTask['state'] {
+    private isValidPersistedState(state: RuntimeValue): state is PersistedDownloadTask['state'] {
         return state === 'queued' || state === 'paused' || state === 'running';
     }
 

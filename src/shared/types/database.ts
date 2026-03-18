@@ -9,8 +9,8 @@ export interface RunResult {
 
 export interface PreparedStatement {
     run(...params: SqlValue[]): Promise<RunResult>
-    all<T = unknown>(...params: SqlValue[]): Promise<T[]>
-    get<T = unknown>(...params: SqlValue[]): Promise<T | undefined>
+    all<T = RuntimeValue>(...params: SqlValue[]): Promise<T[]>
+    get<T = RuntimeValue>(...params: SqlValue[]): Promise<T | undefined>
 }
 
 export interface DatabaseAdapter {
@@ -27,7 +27,7 @@ export interface DatabaseAdapter {
     /**
      * Execute a raw query and return rows.
      */
-    query<T = unknown>(sql: string, params?: SqlParams): Promise<{ rows: T[]; fields?: unknown[] }>
+    query<T = RuntimeValue>(sql: string, params?: SqlParams): Promise<{ rows: T[]; fields?: RuntimeValue[] }>
 
     /**
      * Execute a transaction.

@@ -5,14 +5,14 @@ export interface OllamaBridge {
     // Chat
     getModels: () => Promise<ModelDefinition[] | { antigravityError?: string }>;
     chat: (messages: Message[], model: string) => Promise<{ content: string; done: boolean }>;
-    chatOpenAI: (request: Record<string, unknown>) => Promise<{
+    chatOpenAI: (request: Record<string, RuntimeValue>) => Promise<{
         content: string;
         toolCalls?: ToolCall[];
         reasoning?: string;
         images?: string[];
         sources?: string[];
     }>;
-    chatStream: (request: Record<string, unknown>) => Promise<{ success: boolean; queued?: boolean }>;
+    chatStream: (request: Record<string, RuntimeValue>) => Promise<{ success: boolean; queued?: boolean }>;
     abortChat: () => void;
     onStreamChunk: (
         callback: (chunk: { content?: string; toolCalls?: ToolCall[]; reasoning?: string }) => void
@@ -22,7 +22,12 @@ export interface OllamaBridge {
 
     // Management
     isOllamaRunning: () => Promise<boolean>;
-    startOllama: () => Promise<{ success: boolean; message: string }>;
+    startOllama: () => Promise<{
+        success: boolean;
+        message: string;
+        messageKey?: string;
+        messageParams?: Record<string, string | number>;
+    }>;
     pullModel: (modelName: string) => Promise<{ success: boolean; error?: string }>;
     deleteModel: (modelName: string) => Promise<{ success: boolean; error?: string }>;
     getLibraryModels: () => Promise<OllamaLibraryModel[]>;
@@ -72,7 +77,7 @@ export function createOllamaBridge(ipc: IpcRenderer): OllamaBridge {
         chatStream: (request) => ipc.invoke('ollama:chat-stream', request),
         abortChat: () => ipc.send('ollama:abort-chat'),
         onStreamChunk: callback => {
-            const listener = (_event: IpcRendererEvent, chunk: Record<string, unknown>) => callback(chunk as Parameters<Parameters<OllamaBridge['onStreamChunk']>[0]>[0]);
+            const listener = (_event: IpcRendererEvent, chunk: Record<string, RuntimeValue>) => callback(chunk as Parameters<Parameters<OllamaBridge['onStreamChunk']>[0]>[0]);
             ipc.on('ollama:stream-chunk', listener);
             return () => ipc.removeListener('ollama:stream-chunk', listener);
         },
@@ -84,7 +89,7 @@ export function createOllamaBridge(ipc: IpcRenderer): OllamaBridge {
         deleteModel: modelName => ipc.invoke('ollama:delete-model', modelName),
         getLibraryModels: () => ipc.invoke('ollama:get-library-models'),
         onPullProgress: callback => {
-            const listener = (_event: IpcRendererEvent, progress: Record<string, unknown>) => callback(progress as Parameters<Parameters<OllamaBridge['onPullProgress']>[0]>[0]);
+            const listener = (_event: IpcRendererEvent, progress: Record<string, RuntimeValue>) => callback(progress as Parameters<Parameters<OllamaBridge['onPullProgress']>[0]>[0]);
             ipc.on('ollama:pull-progress', listener);
             return () => ipc.removeListener('ollama:pull-progress', listener);
         },

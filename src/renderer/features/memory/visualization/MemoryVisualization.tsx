@@ -14,9 +14,9 @@ export const MemoryVisualization: React.FC = () => {
     const [activeTab, setActiveTab] = useState<VizTab>('graph');
 
     const tabs = [
-        { id: 'graph' as VizTab, label: t('memory.graph') || 'Knowledge Graph', icon: Network, color: 'text-primary' },
-        { id: 'entities' as VizTab, label: t('memory.entities') || 'Entity Diagram', icon: Database, color: 'text-success' },
-        { id: 'timeline' as VizTab, label: t('memory.timeline') || 'Memory Timeline', icon: History, color: 'text-info' },
+        { id: 'graph' as VizTab, label: t('memory.graphView'), icon: Network, color: 'text-primary' },
+        { id: 'entities' as VizTab, label: t('memory.erDiagram'), icon: Database, color: 'text-success' },
+        { id: 'timeline' as VizTab, label: t('memory.timelineView'), icon: History, color: 'text-info' },
     ];
 
     return (
@@ -28,8 +28,8 @@ export const MemoryVisualization: React.FC = () => {
                         <Maximize2 className="w-5 h-5" />
                     </div>
                     <div>
-                        <h1 className="text-lg font-bold tracking-tight">Memory Visualization</h1>
-                        <p className="text-xs text-muted-foreground">Interactive exploration of agent knowledge</p>
+                        <h1 className="text-lg font-bold tracking-tight">{t('memory.visualization.title')}</h1>
+                        <p className="text-xs text-muted-foreground">{t('memory.visualization.subtitle')}</p>
                     </div>
                 </div>
 
@@ -64,19 +64,19 @@ export const MemoryVisualization: React.FC = () => {
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-primary" />
-                        <span>Semantic Context</span>
+                        <span>{t('memory.visualization.legend.semanticContext')}</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-success" />
-                        <span>Entity Knowledge</span>
+                        <span>{t('memory.visualization.legend.entityKnowledge')}</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-info" />
-                        <span>Episodic Experience</span>
+                        <span>{t('memory.visualization.legend.episodicExperience')}</span>
                     </div>
                 </div>
                 <div>
-                    Powered by Tengra Advanced Memory Service
+                    {t('memory.visualization.poweredBy')}
                 </div>
             </div>
         </div>

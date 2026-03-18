@@ -14,6 +14,12 @@ vi.mock('@main/utils/cache.util', () => ({
     getCacheAnalyticsSnapshot: vi.fn().mockReturnValue({ hitRate: 0.9 })
 }));
 
+vi.mock('electron', () => ({
+    app: {
+        getAppMetrics: vi.fn().mockReturnValue([]),
+    },
+}));
+
 describe('PerformanceService', () => {
     let service: PerformanceService;
 
@@ -43,8 +49,8 @@ describe('PerformanceService', () => {
         it('should return memory statistics', () => {
             const result = service.getMemoryStats();
             expect(result.success).toBe(true);
-            expect(result.result?.main).toBeDefined();
-            expect(result.result?.timestamp).toBeGreaterThan(0);
+            expect(result.data?.main).toBeDefined();
+            expect(result.data?.timestamp).toBeGreaterThan(0);
         });
 
         it('should track history and trim to max', () => {
@@ -53,7 +59,7 @@ describe('PerformanceService', () => {
             }
             // Internal history should be trimmed to maxHistoryLength (60)
             const dashboard = service.getDashboard();
-            expect(dashboard.result?.memory.sampleCount).toBeLessThanOrEqual(60);
+            expect(dashboard.data?.memory.sampleCount).toBeLessThanOrEqual(60);
         });
     });
 
@@ -61,7 +67,7 @@ describe('PerformanceService', () => {
         it('should return no leak with insufficient history', async () => {
             const result = await service.detectLeak();
             expect(result.success).toBe(true);
-            expect(result.result?.isPossibleLeak).toBe(false);
+            expect(result.data?.isPossibleLeak).toBe(false);
         });
 
         it('should detect possible leak with strictly increasing samples', async () => {
@@ -73,8 +79,8 @@ describe('PerformanceService', () => {
             }
             const result = await service.detectLeak();
             expect(result.success).toBe(true);
-            expect(result.result).toHaveProperty('isPossibleLeak');
-            expect(result.result).toHaveProperty('trend');
+            expect(result.data).toHaveProperty('isPossibleLeak');
+            expect(result.data).toHaveProperty('trend');
         });
     });
 
@@ -103,9 +109,34 @@ describe('PerformanceService', () => {
         it('should return dashboard data', () => {
             const result = service.getDashboard();
             expect(result.success).toBe(true);
-            expect(result.result?.memory).toBeDefined();
-            expect(result.result?.alerts).toBeInstanceOf(Array);
-            expect(result.result?.caches).toBeDefined();
+            expect(result.data?.memory).toBeDefined();
+            expect(result.data?.alerts).toBeInstanceOf(Array);
+            expect(result.data?.caches).toBeDefined();
+        });
+    });
+
+    describe('startup metrics', () => {
+        it('should record startup phases and compute total time from visible shell milestones', () => {
+            vi.setSystemTime(new Date('2026-03-12T10:00:00.000Z'));
+            const initialMetrics = service.getStartupMetrics().data;
+            const initialStartTime = initialMetrics?.startTime ?? 0;
+            service.recordStartupEvent('coreServicesReadyTime');
+            vi.advanceTimersByTime(25);
+            service.recordStartupEvent('ipcReadyTime');
+            vi.advanceTimersByTime(25);
+            service.recordStartupEvent('windowCreatedTime');
+            vi.advanceTimersByTime(25);
+            service.recordStartupEvent('readyTime');
+            vi.advanceTimersByTime(25);
+            service.recordStartupEvent('loadTime');
+
+            const metrics = service.getStartupMetrics().data;
+            expect(metrics?.coreServicesReadyTime).toBeDefined();
+            expect(metrics?.ipcReadyTime).toBeDefined();
+            expect(metrics?.windowCreatedTime).toBeDefined();
+            expect(metrics?.readyTime).toBeDefined();
+            expect(metrics?.loadTime).toBeDefined();
+            expect(metrics?.totalTime).toBe((metrics?.loadTime ?? 0) - initialStartTime);
         });
     });
 
@@ -114,7 +145,7 @@ describe('PerformanceService', () => {
             await service.initialize();
             vi.advanceTimersByTime(60000);
             const dashboard = service.getDashboard();
-            expect(dashboard.result?.memory.sampleCount).toBeGreaterThan(0);
+            expect(dashboard.data?.memory.sampleCount).toBeGreaterThan(0);
         });
     });
 });

@@ -1,5 +1,5 @@
+import { type Terminal as XTerm } from '@xterm/xterm';
 import { type Dispatch, type MutableRefObject, type SetStateAction, useCallback } from 'react';
-import { Terminal as XTerm } from 'xterm';
 
 import { TERMINAL_SEARCH_HISTORY_LIMIT } from '../constants/terminal-panel-constants';
 import { TerminalSemanticIssue } from '../utils/terminal-panel-types';

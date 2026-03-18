@@ -102,8 +102,10 @@ export class ModelRegistryService extends BaseService {
         maxAttempts: 2,
         delayMs: 250,
     } as const;
+    private static readonly SNAPSHOT_MAX_AGE_MS = 5 * 60 * 1000;
     private cachedModels: ModelProviderInfo[] = [];
     private lastUpdate: number = 0;
+    private cacheRefreshPromise: Promise<void> | null = null;
     private telemetry = {
         cacheUpdates: 0,
         providerFetchFailures: 0,
@@ -148,6 +150,16 @@ export class ModelRegistryService extends BaseService {
     }
 
     private async updateCache(): Promise<void> {
+        if (this.cacheRefreshPromise) {
+            return this.cacheRefreshPromise;
+        }
+        this.cacheRefreshPromise = this.performCacheUpdate().finally(() => {
+            this.cacheRefreshPromise = null;
+        });
+        return this.cacheRefreshPromise;
+    }
+
+    private async performCacheUpdate(): Promise<void> {
         this.telemetry.cacheUpdates += 1;
         this.trackTelemetry('model-registry.cache.update.started');
         appLogger.info('ModelRegistry', 'Updating remote model cache...');
@@ -177,6 +189,13 @@ export class ModelRegistryService extends BaseService {
             count: this.cachedModels.length,
             timestamp: this.lastUpdate,
         });
+    }
+
+    private isSnapshotStale(): boolean {
+        if (this.lastUpdate === 0) {
+            return true;
+        }
+        return Date.now() - this.lastUpdate > ModelRegistryService.SNAPSHOT_MAX_AGE_MS;
     }
 
     /**
@@ -346,7 +365,7 @@ export class ModelRegistryService extends BaseService {
         return [];
     }
 
-    private trackTelemetry(name: SystemEventKey, properties: Record<string, unknown> = {}): void {
+    private trackTelemetry(name: SystemEventKey, properties: Record<string, RuntimeValue> = {}): void {
         this.telemetry.lastTelemetryEventAt = Date.now();
         this.deps.eventBus.emit('telemetry:model-registry', {
             name,
@@ -564,6 +583,11 @@ export class ModelRegistryService extends BaseService {
     async getRemoteModels(): Promise<ModelProviderInfo[]> {
         if (this.cachedModels.length === 0) {
             await this.updateCache();
+            return this.cachedModels;
+        }
+
+        if (this.isSnapshotStale()) {
+            void this.updateCache();
         }
         return this.cachedModels;
     }
@@ -624,23 +648,14 @@ export class ModelRegistryService extends BaseService {
         if (openaiToken) {
             all.push(...this.getOpenAIImageModels());
         }
+        const mergedWithProxy = await this.mergeProxyRegisteredModels(all);
 
         const unique = new Map<string, ModelProviderInfo>();
-        all.forEach(m => {
+        mergedWithProxy.forEach(m => {
             const key = `${m.provider}:${m.id}`;
             unique.set(key, m);
         });
-
-        // Add SD-CPP
-        unique.set('sd-cpp:stable-diffusion-v1-5', {
-            id: 'stable-diffusion-v1-5',
-            name: 'Stable Diffusion v1.5 (Local)',
-            provider: 'sd-cpp',
-            description: 'Local image generation via stable-diffusion.cpp',
-            capabilities: { image_generation: true, text_generation: false, embedding: false },
-            tags: ['local', 'image-gen', 'sd-cpp']
-        });
-
+ 
         const allModels = Array.from(unique.values()).map(model => this.enrichModelMetadata(model));
         const missingContext = allModels.filter(
             model => (model.capabilities?.text_generation ?? true) && !model.contextWindow
@@ -747,5 +762,105 @@ export class ModelRegistryService extends BaseService {
                 capabilities: { image_generation: true },
             },
         ];
+    }
+
+    private async mergeProxyRegisteredModels(models: ModelProviderInfo[]): Promise<ModelProviderInfo[]> {
+        try {
+            const proxyModels = await this.deps.proxyService.getModels();
+            if (!Array.isArray(proxyModels.data) || proxyModels.data.length === 0) {
+                return models;
+            }
+
+            const registeredAntigravityImageIds = new Set<string>();
+            for (const proxyModel of proxyModels.data) {
+                const provider = this.resolveProxyModelProvider(proxyModel);
+                if (provider !== 'antigravity') {
+                    continue;
+                }
+                const modelId = typeof proxyModel.id === 'string' ? proxyModel.id.trim().toLowerCase() : '';
+                if (modelId.includes('image')) {
+                    registeredAntigravityImageIds.add(modelId);
+                }
+            }
+
+            const merged = models.filter(model => {
+                if (model.provider !== 'antigravity') {
+                    return true;
+                }
+                if (!this.isAntigravityImageModel(model)) {
+                    return true;
+                }
+                if (registeredAntigravityImageIds.size === 0) {
+                    return true;
+                }
+                return registeredAntigravityImageIds.has(model.id.trim().toLowerCase());
+            });
+            const existing = new Set(models.map(model => `${model.provider}:${model.id}`));
+
+            for (const proxyModel of proxyModels.data) {
+                const provider = this.resolveProxyModelProvider(proxyModel);
+                if (provider !== 'antigravity') {
+                    continue;
+                }
+
+                const modelId = typeof proxyModel.id === 'string' ? proxyModel.id.trim() : '';
+                if (modelId === '') {
+                    continue;
+                }
+
+                const key = `${provider}:${modelId}`;
+                if (existing.has(key)) {
+                    continue;
+                }
+
+                merged.push(this.enrichModelMetadata({
+                    id: modelId,
+                    name: typeof proxyModel.name === 'string' && proxyModel.name.trim() !== '' ? proxyModel.name : modelId,
+                    provider,
+                    sourceProvider: provider,
+                    description: typeof proxyModel.description === 'string' ? proxyModel.description : undefined,
+                    quotaInfo: proxyModel.quotaInfo,
+                }));
+                existing.add(key);
+            }
+
+            return merged;
+        } catch (error) {
+            appLogger.debug('ModelRegistry', `Failed to merge proxy registered models: ${getErrorMessage(error as Error)}`);
+            return models;
+        }
+    }
+
+    private isAntigravityImageModel(model: ModelProviderInfo): boolean {
+        if (model.capabilities?.image_generation === true) {
+            return true;
+        }
+
+        const searchable = `${model.id} ${model.name ?? ''} ${model.description ?? ''}`.toLowerCase();
+        return searchable.includes('image');
+    }
+
+    private resolveProxyModelProvider(model: {
+        provider?: string;
+        owned_by?: string;
+        ownedBy?: string;
+        id: string;
+    }): string {
+        const explicitProvider = typeof model.provider === 'string' ? model.provider.trim().toLowerCase() : '';
+        if (explicitProvider !== '') {
+            return this.resolveCanonicalProvider(explicitProvider, 'antigravity');
+        }
+
+        const ownedByRaw = typeof model.owned_by === 'string'
+            ? model.owned_by
+            : typeof model.ownedBy === 'string'
+                ? model.ownedBy
+                : '';
+        const ownedBy = ownedByRaw.trim().toLowerCase();
+        if (ownedBy !== '') {
+            return this.resolveCanonicalProvider(ownedBy, 'antigravity');
+        }
+
+        return this.resolveCanonicalProvider(model.id, 'antigravity');
     }
 }

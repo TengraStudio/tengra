@@ -7,7 +7,7 @@ export interface SettingsBridge {
     health: () => Promise<{
         status: 'healthy' | 'degraded';
         uiState: 'ready' | 'failure';
-        metrics: Record<string, unknown>;
+        metrics: Record<string, RuntimeValue>;
         budgets: { getMs: number; saveMs: number };
     }>;
 }

@@ -46,6 +46,8 @@ export const NETWORK_DEFAULTS = {
   GROQ_API_URL: 'https://api.groq.com/openai/v1/chat/completions',
   /** GitHub API base URL */
   GITHUB_API_BASE: 'https://api.github.com',
+  /** Default managed runtime manifest URL */
+  RUNTIME_MANIFEST_URL: 'https://github.com/TengraStudio/tengra/releases/latest/download/runtime-manifest.json',
   /** Default bind address for local servers */
   LOCALHOST: '127.0.0.1',
   /** Collaboration WebSocket URL */

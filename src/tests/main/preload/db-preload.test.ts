@@ -4,7 +4,7 @@ const mockInvoke = vi.fn();
 
 vi.mock('electron', () => ({
     ipcRenderer: {
-        invoke: (...args: unknown[]) => mockInvoke(...args),
+        invoke: (...args: TestValue[]) => mockInvoke(...args),
     },
 }));
 

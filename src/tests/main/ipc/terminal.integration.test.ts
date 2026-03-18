@@ -3,12 +3,12 @@ import { withRateLimit } from '@main/utils/rate-limiter.util';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 
-const ipcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
+const ipcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
 
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
-            ipcMainHandlers.set(channel, handler);
+        handle: vi.fn((channel: string, handler: (...args: TestValue[]) => TestValue | Promise<TestValue>) => {
+            ipcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
         }),
         setMaxListeners: vi.fn()
     },
@@ -26,7 +26,7 @@ vi.mock('@main/logging/logger', () => ({
 
 
 vi.mock('@main/utils/rate-limiter.util', () => ({
-    withRateLimit: vi.fn(async (_scope: string, fn: () => Promise<unknown>) => fn())
+    withRateLimit: vi.fn(async (_scope: string, fn: () => Promise<TestValue>) => fn())
 }));
 
 describe('Terminal IPC Integration', () => {
@@ -34,6 +34,12 @@ describe('Terminal IPC Integration', () => {
         isAvailable: vi.fn().mockReturnValue(true),
         getAvailableShells: vi.fn().mockReturnValue([{ id: 'powershell', name: 'PowerShell', path: 'pwsh.exe' }]),
         getAvailableBackends: vi.fn().mockResolvedValue([{ id: 'node-pty', name: 'Integrated Terminal', available: true }]),
+        getDiscoverySnapshot: vi.fn().mockResolvedValue({
+            terminalAvailable: true,
+            shells: [{ id: 'powershell', name: 'PowerShell', path: 'pwsh.exe' }],
+            backends: [{ id: 'node-pty', name: 'Integrated Terminal', available: true }],
+            refreshedAt: 1_700_000_000_000,
+        }),
         createSession: vi.fn().mockReturnValue(true),
         kill: vi.fn().mockReturnValue(true),
         write: vi.fn().mockResolvedValue(true),
@@ -151,6 +157,7 @@ describe('Terminal IPC Integration', () => {
         expect(ipcMainHandlers.has('terminal:isAvailable')).toBe(true);
         expect(ipcMainHandlers.has('terminal:getShells')).toBe(true);
         expect(ipcMainHandlers.has('terminal:getBackends')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:getDiscoverySnapshot')).toBe(true);
         expect(ipcMainHandlers.has('terminal:create')).toBe(true);
         expect(ipcMainHandlers.has('terminal:close')).toBe(true);
         expect(ipcMainHandlers.has('terminal:write')).toBe(true);
@@ -223,6 +230,19 @@ describe('Terminal IPC Integration', () => {
 
         expect(Array.isArray(result)).toBe(true);
         expect(mockTerminalService.getAvailableBackends).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns cached terminal discovery snapshot', async () => {
+        const handler = ipcMainHandlers.get('terminal:getDiscoverySnapshot')!;
+        const result = await handler(mockEvent, { refresh: true });
+
+        expect(result).toEqual({
+            terminalAvailable: true,
+            shells: [{ id: 'powershell', name: 'PowerShell', path: 'pwsh.exe' }],
+            backends: [{ id: 'node-pty', name: 'Integrated Terminal', available: true }],
+            refreshedAt: 1_700_000_000_000,
+        });
+        expect(mockTerminalService.getDiscoverySnapshot).toHaveBeenCalledWith({ refresh: true });
     });
 
     it('rejects invalid dimensions on create', async () => {
@@ -366,3 +386,4 @@ describe('Terminal IPC Integration', () => {
         expect(mockTerminalService.clearCommandHistory).toHaveBeenCalledTimes(1);
     });
 });
+

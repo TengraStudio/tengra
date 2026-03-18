@@ -23,7 +23,7 @@ export class ValidationError extends AppError {
   constructor(
     message: string,
     issues: ValidationIssue[] = [],
-    options?: { cause?: Error; context?: Record<string, unknown> }
+    options?: { cause?: Error; context?: Record<string, RuntimeValue> }
   ) {
     super(message, 'VALIDATION_ERROR', options);
     this.issues = issues;

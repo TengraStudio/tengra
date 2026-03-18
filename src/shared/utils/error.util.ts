@@ -1,4 +1,4 @@
-import { AppError, CatchError, JsonObject } from '@shared/types/common';
+import { AppError, JsonObject } from '@shared/types/common';
 
 /**
  * Error handling utilities
@@ -248,7 +248,7 @@ const RECOVERY_BY_CODE: Record<string, ErrorRecoveryStrategy> = {
     [AppErrorCode.PROXY_BINARY_NOT_FOUND]: { code: AppErrorCode.PROXY_BINARY_NOT_FOUND, retryable: false, userAction: 'contact-support' }
 };
 
-export function getErrorRecoveryStrategy(error: unknown): ErrorRecoveryStrategy {
+export function getErrorRecoveryStrategy<T>(error: T): ErrorRecoveryStrategy {
     const code = getErrorCode(error) ?? AppErrorCode.UNKNOWN;
     return RECOVERY_BY_CODE[code] ?? RECOVERY_BY_CODE[AppErrorCode.UNKNOWN];
 }
@@ -278,7 +278,7 @@ const getMessageFromObject = (obj: JsonObject): string | null => {
  * Safely extracts error message from any caught value
  * Usage: catch (e) { const msg = getErrorMessage(e) }
  */
-export function getErrorMessage(error: unknown): string {
+export function getErrorMessage<T>(error: T): string {
     if (error instanceof Error) {
         return error.message;
     }
@@ -300,9 +300,9 @@ export function getErrorMessage(error: unknown): string {
 /**
  * Normalizes any caught error into a structured AppError
  */
-export function toAppError(error: CatchError, defaultCode = 'UNKNOWN_ERROR'): AppError {
+export function toAppError<T>(error: T, defaultCode = 'UNKNOWN_ERROR'): AppError {
     // 1. Check if it's already an AppError
-    if (isAppError(error)) {
+    if (isAppError(error as RuntimeValue)) {
         return error as AppError;
     }
 
@@ -323,7 +323,7 @@ export function toAppError(error: CatchError, defaultCode = 'UNKNOWN_ERROR'): Ap
 /**
  * Type guard for AppError
  */
-function isAppError(error: unknown): boolean {
+function isAppError(error: RuntimeValue): error is AppError {
     return !!(
         error &&
         typeof error === 'object' &&
@@ -336,7 +336,7 @@ function isAppError(error: unknown): boolean {
 /**
  * Extracts error code from error object
  */
-function getErrorCode(error: unknown): string | null {
+function getErrorCode<T>(error: T): string | null {
     if (error && typeof error === 'object' && 'code' in error) {
         return String((error as JsonObject).code);
     }
@@ -346,28 +346,28 @@ function getErrorCode(error: unknown): string | null {
 /**
  * Type guard to check if error is an Error instance
  */
-export function isError(error: CatchError): error is Error {
+export function isError(error: RuntimeValue): error is Error {
     return error instanceof Error;
 }
 
 /**
  * Type guard for Node.js system errors (ENOENT, EACCES, etc.)
  */
-export function isNodeError(error: CatchError): error is NodeJS.ErrnoException {
+export function isNodeError(error: RuntimeValue): error is NodeJS.ErrnoException {
     return error instanceof Error && 'code' in error;
 }
 
 /**
  * Helper to check if an error is a TengraError.
  */
-export function isTengraError(error: CatchError): error is TengraError {
+export function isTengraError(error: RuntimeValue): error is TengraError {
     return error instanceof TengraError;
 }
 
 /**
  * Creates a standardized error response object
  */
-export function createErrorResponse(error: CatchError): { success: false; error: string } {
+export function createErrorResponse(error: RuntimeValue): { success: false; error: string } {
     return { success: false, error: getErrorMessage(error) };
 }
 

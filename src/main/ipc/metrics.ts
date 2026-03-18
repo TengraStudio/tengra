@@ -9,7 +9,7 @@ const MAX_PROVIDER_LENGTH = 64;
 /**
  * Validates a provider name
  */
-function validateProvider(value: unknown): string | undefined {
+function validateProvider(value: RuntimeValue): string | undefined {
     if (value === undefined || value === null) {
         return undefined;
     }
@@ -33,7 +33,7 @@ export function registerMetricsIpc(): void {
         'metrics:get-provider-stats',
         createSafeIpcHandler(
             'metrics:get-provider-stats',
-            async (_event: IpcMainInvokeEvent, providerRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, providerRaw: RuntimeValue) => {
                 const metrics = getMetricsService();
                 const provider = validateProvider(providerRaw);
                 if (provider) {

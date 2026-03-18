@@ -138,7 +138,7 @@ export class SdCppManager {
     }
 
     /** Track a telemetry metric. */
-    trackMetric(name: string, properties?: Record<string, unknown>): void {
+    trackMetric(name: string, properties?: Record<string, RuntimeValue>): void {
         if (this.deps.telemetryService) {
             this.deps.telemetryService.track(name, { provider: 'sd-cpp', ...properties });
         }

@@ -1263,10 +1263,11 @@ interface MessageBubbleInnerProps {
 
 const createToggleVisibilityFlags = (
     displayContent: string,
+    hasImages: boolean,
     isUser: boolean,
     quotaDetails: QuotaDetails | null
 ) => ({
-    showToggle: Boolean(displayContent && !isUser && !quotaDetails),
+    showToggle: Boolean(displayContent && !hasImages && !isUser && !quotaDetails),
     showActions: Boolean(!isUser && displayContent && !quotaDetails),
 });
 
@@ -1318,6 +1319,7 @@ const MessageBubbleInner = memo(
     }: MessageBubbleInnerProps) => {
         const { showToggle, showActions } = createToggleVisibilityFlags(
             displayContent,
+            contentProps.images.length > 0,
             isUser,
             quotaDetails
         );
@@ -1957,7 +1959,7 @@ const SingleMessageViewContent = memo(
                                 ))}
                             </div>
                         )}
-                        {!isUser && displayContent && !quotaDetails && (
+                        {!isUser && !quotaDetails && (displayContent || contentProps.images.length > 0) && (
                             <MessageFooter
                                 message={message}
                                 displayContent={displayContent}
@@ -2021,12 +2023,12 @@ const SingleMessageView = memo(
             if (!recovery || typeof recovery !== 'object' || Array.isArray(recovery)) {
                 return [];
             }
-            const recoveryRecord = recovery as Record<string, unknown>;
+            const recoveryRecord = recovery as Record<string, RendererDataValue>;
             if (!Array.isArray(recoveryRecord.interruptedToolNames)) {
                 return [];
             }
             return recoveryRecord.interruptedToolNames.filter(
-                (toolName: unknown): toolName is string => typeof toolName === 'string'
+                (toolName: RendererDataValue): toolName is string => typeof toolName === 'string'
             );
         }, [message.metadata]);
 

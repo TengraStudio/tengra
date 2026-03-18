@@ -15,7 +15,7 @@ describe('FolderRepository', () => {
     let repo: FolderRepository;
 
     beforeEach(() => {
-        repo = new FolderRepository(mockDb as any);
+        repo = new FolderRepository(mockDb as never);
         vi.clearAllMocks();
     });
 

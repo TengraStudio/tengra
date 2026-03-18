@@ -55,7 +55,7 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
             aliases: [],
             action: { type: 'execute', command: newCommandText.trim() },
             category: 'custom',
-            description: `Custom command: ${newCommandText}`,
+            description: t('voice.commands.customDescription', { phrase: newCommandText.trim() }),
             enabled: true,
         };
 

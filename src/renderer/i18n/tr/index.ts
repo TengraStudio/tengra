@@ -6,7 +6,6 @@ import advancedMemorySection from '@renderer/i18n/tr/advancedMemory';
 import advancedTabSection from '@renderer/i18n/tr/advancedTab';
 import agentSection from '@renderer/i18n/tr/agent';
 import agentCheckpointSection from '@renderer/i18n/tr/agentCheckpoint';
-import agentCollaborationSection from '@renderer/i18n/tr/agentCollaboration';
 import agentDashboardSection from '@renderer/i18n/tr/agentDashboard';
 import agentsSection from '@renderer/i18n/tr/agents';
 import appSection from '@renderer/i18n/tr/app';
@@ -64,6 +63,7 @@ import modelSelectorSection from '@renderer/i18n/tr/modelSelector';
 import modelsPageSection from '@renderer/i18n/tr/modelsPage';
 import monitoringSection from '@renderer/i18n/tr/monitoring';
 import navSection from '@renderer/i18n/tr/nav';
+import notificationsSection from '@renderer/i18n/tr/notifications';
 import onboardingSection from '@renderer/i18n/tr/onboarding';
 import panelLayoutSection from '@renderer/i18n/tr/panelLayout';
 import personasSection from '@renderer/i18n/tr/personas';
@@ -109,7 +109,7 @@ export const tr = {
     "advancedTab": advancedTabSection,
     "agent": agentSection,
     "agentCheckpoint": agentCheckpointSection,
-    "agentCollaboration": agentCollaborationSection,
+    
     "agentDashboard": agentDashboardSection,
     "agents": agentsSection,
     "app": appSection,
@@ -167,11 +167,11 @@ export const tr = {
     "modelsPage": modelsPageSection,
     "monitoring": monitoringSection,
     "nav": navSection,
+    "notifications": notificationsSection,
     "onboarding": onboardingSection,
     "panelLayout": panelLayoutSection,
     "personas": personasSection,
     "placeholder": placeholderSection,
-    "workspaceAgent": workspaceAgentSection,
     "workspaceDashboard": workspaceDashboardSection,
     "workspaceWizard": workspaceWizardSection,
     "workspaces": workspacesSection,
@@ -201,5 +201,7 @@ export const tr = {
     "voice": voiceSection,
     "welcome": welcomeSection,
     "workspace": workspaceSection,
-    "workspaceModals": workspaceModalsSection
+    "workspaceAgent": workspaceAgentSection,
+    "workspaceModals": workspaceModalsSection,
+    
 };

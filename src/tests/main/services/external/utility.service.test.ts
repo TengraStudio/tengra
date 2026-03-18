@@ -45,8 +45,8 @@ describe('UtilityService', () => {
         vi.useFakeTimers();
         mocks = createMockDeps();
         service = new UtilityService(
-            mocks.db as unknown as ConstructorParameters<typeof UtilityService>[0],
-            mocks.security as unknown as ConstructorParameters<typeof UtilityService>[1],
+            mocks.db as never as ConstructorParameters<typeof UtilityService>[0],
+            mocks.security as never as ConstructorParameters<typeof UtilityService>[1],
         );
     });
 

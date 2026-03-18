@@ -25,7 +25,14 @@ const sectionData = {
         "local": "Local",
         "github": "GitHub",
         "openai": "OpenAI"
-    }
+    },
+    "deprecated": "Deprecated",
+    "allModels": "All Models",
 };
 
 export default sectionData;
+
+
+
+
+

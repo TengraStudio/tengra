@@ -27,7 +27,7 @@ export function registerProxyIpc(
     eventBus?: EventBusService
 ) {
     const validateSender = createMainWindowSenderValidator(getMainWindow ?? (() => null), 'proxy operation');
-    const createSafeIpcHandler = <T = IpcValue, Args extends unknown[] = unknown[]>(
+    const createSafeIpcHandler = <T = IpcValue, Args extends RuntimeValue[] = RuntimeValue[]>(
         channel: string,
         handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>,
         defaultValue: T
@@ -35,7 +35,7 @@ export function registerProxyIpc(
         validateSender(event);
         return await handler(event, ...args);
     }, defaultValue);
-    const createValidatedIpcHandler = <T = IpcValue, Args extends unknown[] = unknown[]>(
+    const createValidatedIpcHandler = <T = IpcValue, Args extends RuntimeValue[] = RuntimeValue[]>(
         channel: string,
         handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>,
         options: Parameters<typeof baseCreateValidatedIpcHandler<T, Args>>[2]

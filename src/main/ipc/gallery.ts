@@ -13,7 +13,7 @@ const MAX_PATH_LENGTH = 4096;
 /**
  * Validates a file path string
  */
-function validateFilePath(value: unknown): string | null {
+function validateFilePath(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -158,7 +158,7 @@ export function registerGalleryIpc(galleryPath: string, databaseService?: Databa
         }
     }, []));
 
-    ipcMain.handle('gallery:delete', createSafeIpcHandler('gallery:delete', async (_event: IpcMainInvokeEvent, filePathRaw: unknown) => {
+    ipcMain.handle('gallery:delete', createSafeIpcHandler('gallery:delete', async (_event: IpcMainInvokeEvent, filePathRaw: RuntimeValue) => {
         const filePath = validateFilePath(filePathRaw);
         if (!filePath) {
             throw new Error('Invalid file path');
@@ -174,7 +174,7 @@ export function registerGalleryIpc(galleryPath: string, databaseService?: Databa
         }
     }, false));
 
-    ipcMain.handle('gallery:open', createSafeIpcHandler('gallery:open', async (_event: IpcMainInvokeEvent, filePathRaw: unknown) => {
+    ipcMain.handle('gallery:open', createSafeIpcHandler('gallery:open', async (_event: IpcMainInvokeEvent, filePathRaw: RuntimeValue) => {
         const filePath = validateFilePath(filePathRaw);
         if (!filePath) {
             throw new Error('Invalid file path');
@@ -189,7 +189,7 @@ export function registerGalleryIpc(galleryPath: string, databaseService?: Databa
         }
     }, false));
 
-    ipcMain.handle('gallery:reveal', createSafeIpcHandler('gallery:reveal', async (_event: IpcMainInvokeEvent, filePathRaw: unknown) => {
+    ipcMain.handle('gallery:reveal', createSafeIpcHandler('gallery:reveal', async (_event: IpcMainInvokeEvent, filePathRaw: RuntimeValue) => {
         const filePath = validateFilePath(filePathRaw);
         if (!filePath) {
             throw new Error('Invalid file path');
@@ -206,7 +206,7 @@ export function registerGalleryIpc(galleryPath: string, databaseService?: Databa
 
     ipcMain.handle('gallery:batch-download', createSafeIpcHandler('gallery:batch-download', async (
         _event: IpcMainInvokeEvent,
-        rawInput: unknown
+        rawInput: RuntimeValue
     ): Promise<GalleryBatchDownloadResult> => {
         if (typeof rawInput !== 'object' || rawInput === null) {
             throw new Error('Invalid batch download input');

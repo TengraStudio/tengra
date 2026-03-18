@@ -18,7 +18,6 @@ interface AnalysisTabProps {
 
 export const AnalysisTab: React.FC<AnalysisTabProps> = ({
     analysis,
-    stats,
     t
 }) => {
     return (
@@ -26,7 +25,6 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
             <WorkspaceTechStack frameworks={analysis.frameworks} t={t} />
             <WorkspaceLanguageDistribution
                 languages={analysis.languages}
-                stats={stats}
                 t={t}
             />
             <WorkspaceAnalysisTodos todos={analysis.todos} t={t} />

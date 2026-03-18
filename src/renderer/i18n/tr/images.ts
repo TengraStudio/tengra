@@ -28,7 +28,32 @@ const sectionData = {
     "reinstallHelp": "Görüntü oluşturucu takılırsa veya hata verirse, yeniden yükleme genellikle bozuk dosyaları düzeltir.",
     "downloading": "İndiriliyor...",
     "progress": "{{downloaded}} / {{total}} indirildi",
-    "pathHint": "AppData içindeki varsayılan konumları kullanmak için boş bırakın."
+    "pathHint": "AppData içindeki varsayılan konumları kullanmak için boş bırakın.",
+    "ollamaMessages": {
+        "serviceUnavailable": "Ollama servisine şu anda ulaşılamıyor."
+    },
+    "ollamaStartup": {
+        "alreadyRunning": "Ollama zaten çalışıyor.",
+        "notInstalled": "Ollama yüklü değil. Lütfen https://ollama.com adresinden indirin.",
+        "userDeclined": "Ollama başlatma işlemi iptal edildi.",
+        "startFailed": "Ollama başlatılamadı.",
+        "started": "Ollama başlatıldı.",
+        "manualStartRequired": "Ollama başlatılamadı. Lütfen manuel olarak başlatın.",
+        "unexpected": "Ollama başlatma hatası: {{reason}}"
+    },
+    "runtimeHealth": {
+        "noProbe": "{{componentId}} için harici bağımlılık denetimi kayıtlı değil.",
+        "unsupportedTarget": "Bu platform için uyumlu çalışma zamanı hedefi bulunamadı.",
+        "installPathMissing": "Bu bileşen için kurulum yolu çözümlenemedi.",
+        "fileMissing": "Çalışma zamanı dosyası eksik.",
+        "notExecutable": "Çalışma zamanı dosyası yürütülebilir değil.",
+        "fileReady": "Çalışma zamanı dosyası hazır.",
+        "ollama": {
+            "notInstalled": "Ollama yüklü değil.",
+            "notRunning": "Ollama yüklü ancak çalışmıyor.",
+            "running": "Ollama yüklü ve çalışıyor."
+        }
+    }
 };
 
 export default sectionData;

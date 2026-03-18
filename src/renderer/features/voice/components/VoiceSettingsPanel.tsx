@@ -86,7 +86,7 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
             aliases: [],
             action: { type: 'execute', command: newCommandAction },
             category: 'custom',
-            description: `Custom command: ${newCommandPhrase}`,
+            description: t('voice.commands.customDescription', { phrase: newCommandPhrase }),
             enabled: true,
         };
 

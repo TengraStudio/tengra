@@ -8,12 +8,10 @@ import { FileSearchResult } from '@shared/types/common';
 import React from 'react';
 
 import { Language } from '@/i18n';
-import type { GroupedModels } from '@/types';
-import { AgentDefinition, AppSettings, CodexUsage, QuotaResponse,Workspace, WorkspaceAnalysis, WorkspaceDashboardTab, WorkspaceStats } from '@/types';
+import { Workspace, WorkspaceAnalysis, WorkspaceDashboardTab, WorkspaceStats } from '@/types';
 
-import { OpenFile } from '../../hooks/useWorkspaceDashboard';
+import { OpenFile } from '../../hooks/useWorkspaceDashboardLogic';
 
-import { AgentTab } from './AgentTab';
 import { AnalysisTab } from './AnalysisTab';
 import { FilesTab } from './FilesTab';
 import { OverviewTab } from './OverviewTab';
@@ -54,14 +52,6 @@ interface WorkspaceDashboardTabsProps {
     setOpenFiles: (files: OpenFile[]) => void
     selectedFolder: string | null
     onUpdate: (updates: Partial<Workspace>) => Promise<void>
-    availableAgents: AgentDefinition[]
-    groupedModels?: GroupedModels
-    quotas?: { accounts: QuotaResponse[] } | null
-    codexUsage?: { accounts: { usage: CodexUsage }[] } | null
-    settings?: AppSettings | null
-    selectedProvider?: string
-    selectedModel?: string
-    onSelectModel?: (provider: string, model: string) => void
     formatBytes: (bytes: number) => string
     CodeCodeIcon: React.ComponentType<{ className?: string }>
 }
@@ -80,8 +70,7 @@ export const WorkspaceDashboardTabsContent: React.FC<WorkspaceDashboardTabsProps
         isSearching,
         handleSearch,
         searchResults,
-        handleFileSelect,
-        availableAgents
+        handleFileSelect
     } = props;
 
     // Use a record for tab content to significantly reduce cyclomatic complexity
@@ -89,7 +78,6 @@ export const WorkspaceDashboardTabsContent: React.FC<WorkspaceDashboardTabsProps
         overview: <OverviewTab {...props} />,
         files: <FilesTab {...props} />,
         analysis: <AnalysisTab {...props} />,
-        agent: <AgentTab {...props} />,
         todo: (
             <div className="h-full overflow-hidden animate-in fade-in duration-500">
                 <WorkspaceTodoTab
@@ -153,7 +141,6 @@ export const WorkspaceDashboardTabsContent: React.FC<WorkspaceDashboardTabsProps
                     workspace={workspace}
                     onUpdate={onUpdate}
                     language={language}
-                    availableAgents={availableAgents}
                     onAddMount={() => { }}
                     onRemoveMount={() => { }}
                 />

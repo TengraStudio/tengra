@@ -10,6 +10,15 @@ import { Prompt } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 const CHAT_INPUT_MAX_LENGTH = 12000;
+const IMAGE_ONLY_MODEL_PATTERNS = [
+    'gemini-3.1-flash-image',
+    'gemini-3.1-flash-image-preview',
+    'gemini-3-pro-image',
+    'gemini-3-pro-image-preview',
+    'gemini-2.5-flash-image',
+    'gemini-2.5-flash-image-preview',
+    'imagen-3.0-generate-001'
+] as const;
 const CHAT_INPUT_SCHEMA = z.string().max(CHAT_INPUT_MAX_LENGTH);
 const CHAT_INPUT_ERROR = {
     INPUT_VALIDATION: {
@@ -96,6 +105,7 @@ export function useChatInputController() {
         isLoading, handleSend: sendMessage, stopGeneration,
         prompts, isListening, startListening, stopListening,
         contextTokens,
+        imageRequestCount, setImageRequestCount,
         systemMode, setSystemMode
     } = useChat();
 
@@ -106,12 +116,17 @@ export function useChatInputController() {
         getModelReasoningLevel, setModelReasoningLevel
     } = useModel();
 
-    const { appSettings, quotas, codexUsage, claudeQuota, language } = useAuth();
+    const { appSettings, quotas, copilotQuota, codexUsage, claudeQuota, language } = useAuth();
     const { t } = useTranslation(language);
 
     const [isDragging, setIsDragging] = useState(false);
     const [isEnhancing, setIsEnhancing] = useState(false);
     const [lastError, setLastError] = useState<ChatInputErrorState>(null);
+
+    const isImageOnlyModel = useMemo(() => {
+        const normalizedModel = selectedModel.trim().toLowerCase();
+        return IMAGE_ONLY_MODEL_PATTERNS.some(pattern => normalizedModel.includes(pattern));
+    }, [selectedModel]);
 
     const clearLastError = useCallback(() => {
         setLastError(null);
@@ -207,7 +222,7 @@ export function useChatInputController() {
         try {
             const { model, provider } = await getEnhanceModel();
             if (!model) {
-                throw new Error('Enhance model unavailable');
+                throw new Error(CHAT_INPUT_ERROR.ENHANCE_FAILED.code);
             }
             let enhanced = false;
             for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -223,7 +238,7 @@ export function useChatInputController() {
                 }
             }
             if (!enhanced) {
-                throw new Error('Enhance response was empty');
+                throw new Error(CHAT_INPUT_ERROR.ENHANCE_FAILED.code);
             }
             setLastError(null);
             recordChatHealthEvent({
@@ -302,11 +317,14 @@ export function useChatInputController() {
         isLoading, sendMessage, sendMessageWithTelemetry, stopGeneration, isListening, startListening, stopListening,
         contextTokens, selectedModel, selectedProvider, selectedModels,
         handleSelectModel, removeSelectedModel, groupedModels, setIsModelMenuOpen,
-        toggleFavorite, isFavorite, appSettings, quotas, codexUsage, claudeQuota,
+        toggleFavorite, isFavorite, appSettings, quotas, copilotQuota, codexUsage, claudeQuota,
         language, t, isDragging, setIsDragging, isEnhancing, handleEnhancePrompt, onDrop,
         lastError, clearLastError,
         systemMode, setSystemMode,
         chatInputMaxLength: CHAT_INPUT_MAX_LENGTH,
+        isImageOnlyModel,
+        imageRequestCount,
+        setImageRequestCount,
         getModelReasoningLevel, setModelReasoningLevel,
         ...cmd
     };

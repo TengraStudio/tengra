@@ -4,6 +4,8 @@ export interface McpResult {
     success: boolean
     data?: JsonValue
     error?: string
+    messageKey?: string
+    messageParams?: Record<string, string | number>
 }
 
 export interface McpAction {

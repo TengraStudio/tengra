@@ -1,6 +1,7 @@
 import { detectFileType } from '@shared/utils/file-type.util';
 import { useState } from 'react';
 
+import { useTranslation } from '@/i18n';
 import { generateId } from '@/lib/utils';
 import { Attachment } from '@/types';
 
@@ -244,7 +245,16 @@ async function buildAttachmentContent(
     return { content: `[Attached file: ${file.name} (${mimeType})]` };
 }
 
-export async function validateDroppedFile(file: File): Promise<DropValidationResult> {
+export async function validateDroppedFile(
+    file: File,
+    resolveMessage?: (key: string, options?: Record<string, string | number>) => string
+): Promise<DropValidationResult> {
+    const message = (key: string, options: Record<string, string | number>, fallback: string): string => {
+        if (!resolveMessage) {
+            return fallback;
+        }
+        return resolveMessage(key, options);
+    };
     const signatureType = await detectFileType(file);
     const detectedMimeType = signatureType || detectMimeType(file);
 
@@ -252,7 +262,11 @@ export async function validateDroppedFile(file: File): Promise<DropValidationRes
     if (file.size > MAX_FILE_SIZE) {
         return {
             valid: false,
-            error: `File "${file.name}" exceeds maximum size of 10MB`,
+            error: message(
+                'attachments.validation.maxSizeExceeded',
+                { name: file.name, maxSizeMb: 10 },
+                `File "${file.name}" exceeds maximum size of 10MB`
+            ),
         };
     }
 
@@ -266,9 +280,16 @@ export async function validateDroppedFile(file: File): Promise<DropValidationRes
         fileType.startsWith('video/');
 
     if (!isAllowedType) {
+        const unknownType = resolveMessage
+            ? resolveMessage('attachments.validation.unknownType')
+            : 'unknown';
         return {
             valid: false,
-            error: `File type "${file.type || 'unknown'}" is not supported`,
+            error: message(
+                'attachments.validation.unsupportedType',
+                { type: file.type || unknownType },
+                `File type "${file.type || 'unknown'}" is not supported`
+            ),
         };
     }
 
@@ -280,7 +301,11 @@ export async function validateDroppedFile(file: File): Promise<DropValidationRes
     if (hasDangerousExtension) {
         return {
             valid: false,
-            error: `File "${file.name}" has an unsupported extension`,
+            error: message(
+                'attachments.validation.unsupportedExtension',
+                { name: file.name },
+                `File "${file.name}" has an unsupported extension`
+            ),
         };
     }
 
@@ -288,11 +313,12 @@ export async function validateDroppedFile(file: File): Promise<DropValidationRes
 }
 
 export const useAttachments = () => {
+    const { t } = useTranslation();
     const [attachments, setAttachments] = useState<Attachment[]>([]);
 
     const processFile = async (file: File): Promise<DropValidationResult> => {
         // Validate file before processing
-        const validation = await validateDroppedFile(file);
+        const validation = await validateDroppedFile(file, t);
         if (!validation.valid) {
             return validation;
         }

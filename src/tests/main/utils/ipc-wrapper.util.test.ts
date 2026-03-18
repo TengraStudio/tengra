@@ -21,7 +21,7 @@ describe('createValidatedIpcHandler', () => {
     it('rejects invalid response payload', async () => {
         const handler = createValidatedIpcHandler<{ ok: boolean }, []>(
             'test:invalid-response',
-            async () => ({ ok: 'yes' } as unknown as { ok: boolean }),
+            async () => ({ ok: 'yes' } as never as { ok: boolean }),
             {
                 responseSchema: z.object({ ok: z.boolean() }),
                 schemaVersion: 2

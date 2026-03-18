@@ -2,6 +2,7 @@ import { HFFile, HFModel, OllamaLibraryModel, UnifiedModel } from '@renderer/fea
 import { parsePulls } from '@renderer/features/models/utils/explorer-utils';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useTranslation } from '@/i18n';
 import type { ModelInfo } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -52,6 +53,7 @@ const getSortedModels = (hfResults: HFModel[], filteredOllama: OllamaLibraryMode
 };
 
 export function useModelExplorer({ onRefreshModels, installedModels }: UseModelExplorerProps) {
+    const { t } = useTranslation();
     const [query, setQuery] = useState('');
     const [activeSource, setActiveSource] = useState<'all' | 'ollama' | 'huggingface'>('all');
     const [sortBy, setSortBy] = useState<'name' | 'popularity' | 'updated'>('popularity');
@@ -63,9 +65,9 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
     const [totalHf, setTotalHf] = useState(0);
     const [recommendedIds, setRecommendedIds] = useState<Set<string>>(new Set());
     const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
-    const [modelPreview, setModelPreview] = useState<unknown>(null);
+    const [modelPreview, setModelPreview] = useState<RendererDataValue>(null);
     const [comparisonIds, setComparisonIds] = useState<string[]>([]);
-    const [comparisonResult, setComparisonResult] = useState<unknown>(null);
+    const [comparisonResult, setComparisonResult] = useState<RendererDataValue>(null);
     const [comparisonLoading, setComparisonLoading] = useState(false);
     const [lastInstallConfig, setLastInstallConfig] = useState<Record<string, HFInstallOptions>>({});
     const [installTests, setInstallTests] = useState<Record<string, { success: boolean; message: string }>>({});
@@ -209,7 +211,7 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
                         ...prev,
                         [universalPath]: {
                             success: !!test.success,
-                            message: test.success ? 'Model file validation succeeded' : (test.error || 'Model validation failed')
+                            message: test.success ? t('modelsPage.modelValidationSucceeded') : (test.error || t('modelsPage.modelValidationFailed'))
                         }
                     }));
                 }

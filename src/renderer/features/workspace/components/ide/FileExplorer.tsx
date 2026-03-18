@@ -121,7 +121,7 @@ const FileTreeItem = ({
                             try {
                                 const response = (await window.electron.files.listDirectory(
                                     node.path
-                                )) as unknown as
+                                )) as TypeAssertionValue as
                                     | {
                                           success?: boolean;
                                           data?: Array<{ name: string; isDirectory: boolean }>;
@@ -267,7 +267,7 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
             try {
                 const response = (await window.electron.files.listDirectory(
                     rootPath
-                )) as unknown as
+                )) as TypeAssertionValue as
                     | { success?: boolean; data?: Array<{ name: string; isDirectory: boolean }> }
                     | Array<{ name: string; isDirectory: boolean }>;
 

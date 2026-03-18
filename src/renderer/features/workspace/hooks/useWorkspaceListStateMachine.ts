@@ -6,6 +6,7 @@
  */
 import { useCallback, useReducer } from 'react';
 
+import { useTranslation } from '@/i18n';
 import { Workspace, WorkspaceMount } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -234,6 +235,7 @@ const useWorkspaceListOperations = (
     dispatch: React.Dispatch<WorkspaceListAction>,
     onError?: (error: string) => void
 ) => {
+    const { t } = useTranslation();
     const normalizePathKey = useCallback((value: string): string => {
         return value.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
     }, []);
@@ -250,74 +252,80 @@ const useWorkspaceListOperations = (
 
     const executeUpdate = useCallback(async (): Promise<boolean> => {
         if (state.status !== 'editing' || !state.targetWorkspace) { return false; }
-        dispatch({ type: 'OPERATION_START', message: 'Updating workspace...' });
+        dispatch({ type: 'OPERATION_START', message: t('workspace.listOps.updating') });
         try {
             await window.electron.db.updateWorkspace(state.targetWorkspace.id, state.editForm);
             dispatch({ type: 'OPERATION_SUCCESS' });
             return true;
         } catch (error) {
-            const msg = error instanceof Error ? error.message : 'Failed to update workspace';
+            const msg = error instanceof Error ? error.message : t('workspace.listOps.updateFailed');
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
             return false;
         }
-    }, [state.status, state.targetWorkspace, state.editForm, dispatch, onError]);
+    }, [state.status, state.targetWorkspace, state.editForm, dispatch, onError, t]);
 
     const executeDelete = useCallback(async (deleteFiles: boolean = false) => {
         if (state.status !== 'deleting' || !state.targetWorkspace) { return; }
-        dispatch({ type: 'OPERATION_START', message: 'Deleting workspace...' });
+        dispatch({ type: 'OPERATION_START', message: t('workspace.listOps.deleting') });
         try {
             await window.electron.db.deleteWorkspace(state.targetWorkspace.id, deleteFiles);
             dispatch({ type: 'OPERATION_SUCCESS' });
         } catch (error) {
-            const msg = error instanceof Error ? error.message : 'Failed to delete workspace';
+            const msg = error instanceof Error ? error.message : t('workspace.listOps.deleteFailed');
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
         }
-    }, [state.status, state.targetWorkspace, dispatch, onError]);
+    }, [state.status, state.targetWorkspace, dispatch, onError, t]);
 
     const executeArchive = useCallback(async () => {
         if (state.status !== 'archiving' || !state.targetWorkspace) { return; }
-        dispatch({ type: 'OPERATION_START', message: 'Archiving workspace...' });
+        dispatch({ type: 'OPERATION_START', message: t('workspace.listOps.archiving') });
         try {
             const newStatus = state.targetWorkspace.status === 'archived' ? 'active' : 'archived';
             await window.electron.db.archiveWorkspace(state.targetWorkspace.id, newStatus === 'archived');
             dispatch({ type: 'OPERATION_SUCCESS' });
         } catch (error) {
-            const msg = error instanceof Error ? error.message : 'Failed to archive workspace';
+            const msg = error instanceof Error ? error.message : t('workspace.listOps.archiveFailed');
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
         }
-    }, [state.status, state.targetWorkspace, dispatch, onError]);
+    }, [state.status, state.targetWorkspace, dispatch, onError, t]);
 
     const executeBulkDelete = useCallback(async (deleteFiles: boolean = false) => {
         if (state.status !== 'bulk_deleting' || state.selectedWorkspaceIds.size === 0) { return; }
-        dispatch({ type: 'OPERATION_START', message: `Deleting ${state.selectedWorkspaceIds.size} workspaces...` });
+        dispatch({
+            type: 'OPERATION_START',
+            message: t('workspace.listOps.bulkDeleting', { count: state.selectedWorkspaceIds.size })
+        });
         try {
             await window.electron.db.bulkDeleteWorkspaces(Array.from(state.selectedWorkspaceIds), deleteFiles);
             dispatch({ type: 'OPERATION_SUCCESS' });
         } catch (error) {
-            const msg = error instanceof Error ? error.message : 'Failed to bulk delete workspaces';
+            const msg = error instanceof Error ? error.message : t('workspace.listOps.bulkDeleteFailed');
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
         }
-    }, [state.status, state.selectedWorkspaceIds, dispatch, onError]);
+    }, [state.status, state.selectedWorkspaceIds, dispatch, onError, t]);
 
     const executeBulkArchive = useCallback(async (isArchived: boolean = true) => {
         if (state.status !== 'bulk_archiving' || state.selectedWorkspaceIds.size === 0) { return; }
-        dispatch({ type: 'OPERATION_START', message: `Archiving ${state.selectedWorkspaceIds.size} workspaces...` });
+        dispatch({
+            type: 'OPERATION_START',
+            message: t('workspace.listOps.bulkArchiving', { count: state.selectedWorkspaceIds.size })
+        });
         try {
             await window.electron.db.bulkArchiveWorkspaces(Array.from(state.selectedWorkspaceIds), isArchived);
             dispatch({ type: 'OPERATION_SUCCESS' });
         } catch (error) {
-            const msg = error instanceof Error ? error.message : 'Failed to bulk archive workspaces';
+            const msg = error instanceof Error ? error.message : t('workspace.listOps.bulkArchiveFailed');
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
         }
-    }, [state.status, state.selectedWorkspaceIds, dispatch, onError]);
+    }, [state.status, state.selectedWorkspaceIds, dispatch, onError, t]);
 
     const executeCreate = useCallback(async (path: string, name: string, description: string, userMounts?: WorkspaceMount[]): Promise<boolean> => {
-        dispatch({ type: 'OPERATION_START', message: 'Creating workspace...' });
+        dispatch({ type: 'OPERATION_START', message: t('workspace.listOps.creating') });
         try {
             const mounts = userMounts && userMounts.length > 0 ? userMounts : [{
                 id: `local-${Date.now()}`,
@@ -343,25 +351,29 @@ const useWorkspaceListOperations = (
 
             for (const mount of mounts) {
                 if (existingMounts.has(buildMountKey(mount))) {
-                    throw new Error(`A workspace already exists for ${mount.type === 'ssh' ? 'this remote path' : 'this local directory'}.`);
+                    throw new Error(
+                        mount.type === 'ssh'
+                            ? t('workspace.listOps.duplicateRemotePath')
+                            : t('workspace.listOps.duplicateLocalDirectory')
+                    );
                 }
             }
 
             const createdWorkspace = await window.electron.db.createWorkspace(name, path, description, mounts);
             if (!createdWorkspace || typeof createdWorkspace.id !== 'string' || createdWorkspace.id.trim().length === 0) {
-                throw new Error('Workspace creation did not return a saved workspace.');
+                throw new Error(t('workspace.listOps.createMissingWorkspace'));
             }
             dispatch({ type: 'OPERATION_SUCCESS' });
             return true;
         } catch (error) {
-            const msg = error instanceof Error ? error.message : 'Failed to create workspace';
+            const msg = error instanceof Error ? error.message : t('workspace.listOps.createFailed');
             const errorToReport = error instanceof Error ? error : new Error(msg);
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
             appLogger.error('useWorkspaceListStateMachine', 'executeCreate failed', errorToReport);
             throw errorToReport;
         }
-    }, [buildMountKey, dispatch, onError]);
+    }, [buildMountKey, dispatch, onError, t]);
 
     return {
         executeUpdate,

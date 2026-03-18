@@ -93,7 +93,7 @@ export class LLMAltProvidersService {
     async chatGroq(
         messages: Array<Message | ChatMessage>,
         model: string = DEFAULT_MODELS.GROQ,
-        buildOpenAIBody: (messages: Array<Message | ChatMessage>, options: { model: string; provider: string }) => Record<string, unknown>,
+        buildOpenAIBody: (messages: Array<Message | ChatMessage>, options: { model: string; provider: string }) => Record<string, RuntimeValue>,
         processOpenAIResponse: (json: JsonObject) => Promise<OpenAIResponse>
     ): Promise<OpenAIResponse> {
         const key = this.getGroqKey();
@@ -179,7 +179,7 @@ export class LLMAltProvidersService {
         model: string,
         tools: ToolDefinition[] | undefined,
         signal: AbortSignal | undefined,
-        chatOpenAIStream: (messages: Array<Message | ChatMessage>, options: Record<string, unknown>) => AsyncGenerator<AltStreamYield>
+        chatOpenAIStream: (messages: Array<Message | ChatMessage>, options: Record<string, RuntimeValue>) => AsyncGenerator<AltStreamYield>
     ): AsyncGenerator<AltStreamYield> {
         const apiKey = this.keyGetters.getOpenCodeApiKey();
         const baseUrl = 'https://opencode.ai/zen/v1';
@@ -198,7 +198,7 @@ export class LLMAltProvidersService {
     parseOpenCodeResponse(json: JsonObject): OpenAIResponse {
         const rawOutput = json['output'];
         const outputArray = Array.isArray(rawOutput) ? rawOutput : [rawOutput];
-        const output = outputArray.find((o: unknown) => o && typeof o === 'object' && (o as JsonObject).type === 'message') as JsonObject | undefined;
+        const output = outputArray.find((o: RuntimeValue) => o && typeof o === 'object' && (o as JsonObject).type === 'message') as JsonObject | undefined;
 
         if (!output) {
             throw new ApiError('Unexpected response format from OpenCode', 'opencode', 200);
@@ -287,11 +287,11 @@ export class LLMAltProvidersService {
         }
     }
 
-    private buildAnthropicBody(messages: Array<Message | ChatMessage>, model: string): Record<string, unknown> {
+    private buildAnthropicBody(messages: Array<Message | ChatMessage>, model: string): Record<string, RuntimeValue> {
         const normalized = MessageNormalizer.normalizeAnthropicMessages(messages);
         const systemMessage = messages.find(m => m.role === 'system')?.content;
 
-        const body: Record<string, unknown> = {
+        const body: Record<string, RuntimeValue> = {
             model,
             messages: normalized,
             max_tokens: 4096
@@ -318,12 +318,12 @@ export class LLMAltProvidersService {
         return { content: validatedContent, role: 'assistant' };
     }
 
-    private handleAnthropicError(error: unknown): Error {
+    private handleAnthropicError(error: RuntimeValue): Error {
         if (error instanceof ApiError || error instanceof AuthenticationError) { return error; }
         return new NetworkError(error instanceof Error ? error.message : String(error), { provider: 'anthropic' });
     }
 
-    private handleGroqError(error: unknown): Error {
+    private handleGroqError(error: RuntimeValue): Error {
         if (error instanceof ApiError || error instanceof AuthenticationError) { return error; }
         return new NetworkError(error instanceof Error ? error.message : String(error), { provider: 'groq' });
     }

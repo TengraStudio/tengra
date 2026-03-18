@@ -23,9 +23,6 @@ import {
     SharedMemorySyncResult,
 } from './advanced-memory';
 import {
-    OrchestratorState,
-} from './automation-workflow';
-import {
     AgentDefinition,
     AgentStartOptions,
     AppSettings,
@@ -60,8 +57,8 @@ import {
     SSHTunnelPreset,
     TodoItem,
     WorkspaceAnalysis,
-    WorkspaceStep,
 } from './index';
+import { RuntimeBootstrapExecutionResult } from './runtime-manifest';
 
 export interface ModelDefinition {
     id: string;
@@ -392,7 +389,12 @@ export interface ElectronAPI {
 
     // Ollama management
     isOllamaRunning: () => Promise<boolean>;
-    startOllama: () => Promise<{ success: boolean; message: string }>;
+    startOllama: () => Promise<{
+        success: boolean;
+        message: string;
+        messageKey?: string;
+        messageParams?: Record<string, string | number>;
+    }>;
     pullModel: (modelName: string) => Promise<{ success: boolean; error?: string }>;
     deleteOllamaModel: (modelName: string) => Promise<{ success: boolean; error?: string }>;
     getLibraryModels: () => Promise<OllamaLibraryModel[]>;
@@ -518,16 +520,16 @@ export interface ElectronAPI {
             height: number;
             steps: number;
             cfgScale: number;
-            provider?: 'antigravity' | 'ollama' | 'sd-webui' | 'comfyui' | 'pollinations' | 'sd-cpp';
-        }) => Promise<unknown>;
+            provider?: 'antigravity' | 'ollama' | 'sd-webui' | 'comfyui' | 'sd-cpp';
+        }) => Promise<RuntimeValue>;
         deletePreset: (id: string) => Promise<boolean>;
         exportPresetShare: (id: string) => Promise<string>;
-        importPresetShare: (code: string) => Promise<unknown>;
+        importPresetShare: (code: string) => Promise<RuntimeValue>;
         listWorkflowTemplates: () => Promise<Array<{
             id: string;
             name: string;
             description?: string;
-            workflow: Record<string, unknown>;
+            workflow: Record<string, RuntimeValue>;
             createdAt: number;
             updatedAt: number;
         }>>;
@@ -535,11 +537,11 @@ export interface ElectronAPI {
             id?: string;
             name: string;
             description?: string;
-            workflow: Record<string, unknown>;
-        }) => Promise<unknown>;
+            workflow: Record<string, RuntimeValue>;
+        }) => Promise<RuntimeValue>;
         deleteWorkflowTemplate: (id: string) => Promise<boolean>;
         exportWorkflowTemplateShare: (id: string) => Promise<string>;
-        importWorkflowTemplateShare: (code: string) => Promise<unknown>;
+        importWorkflowTemplateShare: (code: string) => Promise<RuntimeValue>;
         schedule: (payload: {
             runAt: number;
             priority?: 'low' | 'normal' | 'high';
@@ -554,10 +556,10 @@ export interface ElectronAPI {
                 seed?: number;
                 count?: number;
             };
-        }) => Promise<unknown>;
-        listSchedules: () => Promise<unknown[]>;
+        }) => Promise<RuntimeValue>;
+        listSchedules: () => Promise<RuntimeValue[]>;
         cancelSchedule: (id: string) => Promise<boolean>;
-        compare: (ids: string[]) => Promise<unknown>;
+        compare: (ids: string[]) => Promise<RuntimeValue>;
         exportComparison: (payload: { ids: string[]; format?: 'json' | 'csv' }) => Promise<string>;
         shareComparison: (ids: string[]) => Promise<string>;
         batchGenerate: (requests: Array<{
@@ -647,9 +649,9 @@ export interface ElectronAPI {
         joinSession: (sessionId: string) => Promise<boolean>;
         leaveSession: () => Promise<void>;
         sendMessage: (content: string) => Promise<void>;
-        onMessage: (callback: (message: unknown) => void) => void;
-        onUserJoin: (callback: (user: unknown) => void) => void;
-        onUserLeave: (callback: (user: unknown) => void) => void;
+        onMessage: (callback: (message: RuntimeValue) => void) => void;
+        onUserJoin: (callback: (user: RuntimeValue) => void) => void;
+        onUserLeave: (callback: (user: RuntimeValue) => void) => void;
     };
 
     modelCollaboration: {
@@ -685,7 +687,7 @@ export interface ElectronAPI {
 
     audit: {
         log: (event: string, details: Record<string, IpcValue>) => Promise<void>;
-        getLogs: (options?: { limit?: number; offset?: number }) => Promise<unknown[]>;
+        getLogs: (options?: { limit?: number; offset?: number }) => Promise<RuntimeValue[]>;
     };
 
     agent: {
@@ -703,15 +705,21 @@ export interface ElectronAPI {
         getProfiles: () => Promise<SSHConfig[]>;
         saveProfile: (profile: SSHConfig) => Promise<boolean>;
         deleteProfile: (id: string) => Promise<boolean>;
-        importProfiles: (payload: string, options: unknown) => Promise<unknown>;
-        importProfileShareCode: (shareCode: string, options: unknown) => Promise<unknown>;
-        getShells: () => Promise<string[]>;
-        getBackends: () => Promise<string[]>;
-        getRuntimeHealth: () => Promise<unknown>;
-        getDockerContainers: () => Promise<unknown[]>;
-        create: (options: unknown) => Promise<string>;
-        detach: (options: unknown) => Promise<void>;
-        getCommandHistory: (query: string, limit?: number) => Promise<unknown[]>;
+        importProfiles: (payload: string, options: RuntimeValue) => Promise<RuntimeValue>;
+        importProfileShareCode: (shareCode: string, options: RuntimeValue) => Promise<RuntimeValue>;
+        getShells: () => Promise<Array<{ id: string; name: string; path: string }>>;
+        getBackends: () => Promise<Array<{ id: string; name: string; available: boolean }>>;
+        getDiscoverySnapshot: (options?: { refresh?: boolean }) => Promise<{
+            terminalAvailable: boolean;
+            shells: Array<{ id: string; name: string; path: string }>;
+            backends: Array<{ id: string; name: string; available: boolean }>;
+            refreshedAt: number;
+        }>;
+        getRuntimeHealth: () => Promise<RuntimeValue>;
+        getDockerContainers: () => Promise<RuntimeValue[]>;
+        create: (options: RuntimeValue) => Promise<string>;
+        detach: (options: RuntimeValue) => Promise<void>;
+        getCommandHistory: (query: string, limit?: number) => Promise<RuntimeValue[]>;
         getSuggestions: (options: {
             command: string;
             shell: string;
@@ -736,28 +744,28 @@ export interface ElectronAPI {
         write: (sessionId: string, data: string) => Promise<void>;
         resize: (sessionId: string, cols: number, rows: number) => Promise<void>;
         kill: (sessionId: string) => Promise<void>;
-        getSessions: () => Promise<unknown[]>;
+        getSessions: () => Promise<RuntimeValue[]>;
         restoreAllSnapshots: () => Promise<void>;
-        exportSession: (sessionId: string, options: unknown) => Promise<string>;
-        importSession: (payload: unknown, options: unknown) => Promise<string>;
-        createSessionShareCode: (sessionId: string, options: unknown) => Promise<string>;
-        importSessionShareCode: (shareCode: string, options: unknown) => Promise<string>;
-        getSnapshotSessions: () => Promise<unknown[]>;
-        getSessionTemplates: () => Promise<unknown[]>;
-        saveSessionTemplate: (payload: unknown) => Promise<unknown>;
+        exportSession: (sessionId: string, options: RuntimeValue) => Promise<string>;
+        importSession: (payload: RuntimeValue, options: RuntimeValue) => Promise<string>;
+        createSessionShareCode: (sessionId: string, options: RuntimeValue) => Promise<string>;
+        importSessionShareCode: (shareCode: string, options: RuntimeValue) => Promise<string>;
+        getSnapshotSessions: () => Promise<RuntimeValue[]>;
+        getSessionTemplates: () => Promise<RuntimeValue[]>;
+        saveSessionTemplate: (payload: RuntimeValue) => Promise<RuntimeValue>;
         deleteSessionTemplate: (templateId: string) => Promise<boolean>;
-        createFromSessionTemplate: (templateId: string, options: unknown) => Promise<string>;
+        createFromSessionTemplate: (templateId: string, options: RuntimeValue) => Promise<string>;
         restoreSnapshotSession: (snapshotId: string) => Promise<string>;
-        searchScrollback: (sessionId: string, query: string, options: unknown) => Promise<unknown[]>;
+        searchScrollback: (sessionId: string, query: string, options: RuntimeValue) => Promise<RuntimeValue[]>;
         exportScrollback: (sessionId: string, exportPath: string) => Promise<boolean>;
-        getSessionAnalytics: (sessionId: string) => Promise<unknown>;
-        getSearchAnalytics: () => Promise<unknown>;
+        getSessionAnalytics: (sessionId: string) => Promise<RuntimeValue>;
+        getSearchAnalytics: () => Promise<RuntimeValue>;
         getSearchSuggestions: (query: string, limit?: number) => Promise<string[]>;
-        exportSearchResults: (sessionId: string, query: string, options: unknown) => Promise<boolean>;
+        exportSearchResults: (sessionId: string, query: string, options: RuntimeValue) => Promise<boolean>;
         addScrollbackMarker: (sessionId: string, label: string, lineNumber: number) => Promise<string>;
-        listScrollbackMarkers: (sessionId: string) => Promise<unknown[]>;
+        listScrollbackMarkers: (sessionId: string) => Promise<RuntimeValue[]>;
         deleteScrollbackMarker: (markerId: string) => Promise<boolean>;
-        filterScrollback: (sessionId: string, options: unknown) => Promise<unknown[]>;
+        filterScrollback: (sessionId: string, options: RuntimeValue) => Promise<RuntimeValue[]>;
         setSessionTitle: (sessionId: string, title: string) => Promise<void>;
         onData: (callback: (data: { id: string; data: string }) => void) => () => void;
         onExit: (callback: (data: { id: string; code: number }) => void) => () => void;
@@ -779,41 +787,41 @@ export interface ElectronAPI {
         getProfiles: () => Promise<SSHConfig[]>;
         saveProfile: (profile: SSHConfig) => Promise<boolean>;
         deleteProfile: (id: string) => Promise<boolean>;
-        createTunnel: (payload: unknown) => Promise<unknown>;
+        createTunnel: (payload: RuntimeValue) => Promise<RuntimeValue>;
         listTunnels: (connectionId?: string) => Promise<SSHPortForward[]>;
         closeTunnel: (forwardId: string) => Promise<boolean>;
-        saveTunnelPreset: (preset: unknown) => Promise<SSHTunnelPreset>;
+        saveTunnelPreset: (preset: RuntimeValue) => Promise<SSHTunnelPreset>;
         listTunnelPresets: () => Promise<SSHTunnelPreset[]>;
         deleteTunnelPreset: (id: string) => Promise<boolean>;
         listManagedKeys: () => Promise<SSHManagedKey[]>;
-        generateManagedKey: (payload: unknown) => Promise<unknown>;
-        importManagedKey: (payload: unknown) => Promise<SSHManagedKey>;
+        generateManagedKey: (payload: RuntimeValue) => Promise<RuntimeValue>;
+        importManagedKey: (payload: RuntimeValue) => Promise<SSHManagedKey>;
         deleteManagedKey: (id: string) => Promise<boolean>;
-        rotateManagedKey: (payload: unknown) => Promise<SSHManagedKey | null>;
-        backupManagedKey: (id: string) => Promise<unknown>;
+        rotateManagedKey: (payload: RuntimeValue) => Promise<SSHManagedKey | null>;
+        backupManagedKey: (id: string) => Promise<RuntimeValue>;
         listKnownHosts: () => Promise<SSHKnownHostEntry[]>;
         addKnownHost: (payload: SSHKnownHostEntry) => Promise<boolean>;
-        removeKnownHost: (payload: unknown) => Promise<boolean>;
-        searchRemoteFiles: (payload: unknown) => Promise<SSHRemoteSearchResult[]>;
+        removeKnownHost: (payload: RuntimeValue) => Promise<boolean>;
+        searchRemoteFiles: (payload: RuntimeValue) => Promise<SSHRemoteSearchResult[]>;
         getSearchHistory: (connectionId?: string) => Promise<SSHSearchHistoryEntry[]>;
         exportSearchHistory: () => Promise<string>;
-        reconnect: (connectionId: string, retries?: number) => Promise<unknown>;
-        acquireConnection: (connectionId: string) => Promise<unknown>;
+        reconnect: (connectionId: string, retries?: number) => Promise<RuntimeValue>;
+        acquireConnection: (connectionId: string) => Promise<RuntimeValue>;
         releaseConnection: (connectionId: string) => Promise<boolean>;
-        getConnectionPoolStats: () => Promise<unknown[]>;
+        getConnectionPoolStats: () => Promise<RuntimeValue[]>;
         enqueueTransfer: (task: SSHTransferTask) => Promise<void>;
         getTransferQueue: () => Promise<SSHTransferTask[]>;
-        runTransferBatch: (tasks: Array<unknown>, concurrency?: number) => Promise<boolean[]>;
+        runTransferBatch: (tasks: Array<RuntimeValue>, concurrency?: number) => Promise<boolean[]>;
         listRemoteContainers: (connectionId: string) => Promise<SSHDevContainer[]>;
-        runRemoteContainer: (payload: unknown) => Promise<unknown>;
+        runRemoteContainer: (payload: RuntimeValue) => Promise<RuntimeValue>;
         stopRemoteContainer: (connectionId: string, containerId: string) => Promise<boolean>;
-        saveProfileTemplate: (template: unknown) => Promise<SSHProfileTemplate>;
+        saveProfileTemplate: (template: RuntimeValue) => Promise<SSHProfileTemplate>;
         listProfileTemplates: () => Promise<SSHProfileTemplate[]>;
         deleteProfileTemplate: (id: string) => Promise<boolean>;
         exportProfiles: (ids?: string[]) => Promise<string>;
         importProfiles: (payload: string) => Promise<number>;
-        validateProfile: (profile: unknown) => Promise<unknown>;
-        testProfile: (profile: unknown) => Promise<unknown>;
+        validateProfile: (profile: RuntimeValue) => Promise<RuntimeValue>;
+        testProfile: (profile: RuntimeValue) => Promise<RuntimeValue>;
         startSessionRecording: (connectionId: string) => Promise<SSHSessionRecording>;
         stopSessionRecording: (connectionId: string) => Promise<SSHSessionRecording | null>;
         getSessionRecording: (connectionId: string) => Promise<SSHSessionRecording | null>;
@@ -828,16 +836,16 @@ export interface ElectronAPI {
         toggle: (service: string, enabled: boolean) => Promise<{ success: boolean; isEnabled: boolean }>;
         install: (config: MCPServerConfig) => Promise<{ success: boolean; error?: string }>;
         uninstall: (name: string) => Promise<{ success: boolean }>;
-        getDebugMetrics: () => Promise<unknown[]>;
-        listPermissionRequests: () => Promise<unknown[]>;
-        setActionPermission: (service: string, action: string, policy: string) => Promise<unknown>;
-        resolvePermissionRequest: (requestId: string, decision: string) => Promise<unknown>;
+        getDebugMetrics: () => Promise<RuntimeValue[]>;
+        listPermissionRequests: () => Promise<RuntimeValue[]>;
+        setActionPermission: (service: string, action: string, policy: string) => Promise<RuntimeValue>;
+        resolvePermissionRequest: (requestId: string, decision: string) => Promise<RuntimeValue>;
         onResult: (callback: (result: Record<string, IpcValue>) => void) => void;
         removeResultListener: () => void;
     };
 
     proxyEmbed: {
-        start: (options?: unknown) => Promise<Record<string, IpcValue>>;
+        start: (options?: RuntimeValue) => Promise<Record<string, IpcValue>>;
         stop: () => Promise<Record<string, IpcValue>>;
         status: () => Promise<Record<string, IpcValue>>;
     };
@@ -849,7 +857,7 @@ export interface ElectronAPI {
 
     readPdf: (path: string) => Promise<{ success: boolean; text?: string; error?: string }>;
     selectDirectory: () => Promise<{ success: boolean; path?: string }>;
-    selectFile: (options?: unknown) => Promise<{ success: boolean; path?: string }>;
+    selectFile: (options?: RuntimeValue) => Promise<{ success: boolean; path?: string }>;
     listDirectory: (path: string) => Promise<{ success: boolean; files?: FileEntry[]; error?: string }>;
     readFile: (path: string) => Promise<{ success: boolean; content?: string; error?: string }>;
     writeFile: (path: string, content: string) => Promise<{ success: boolean; error?: string }>;
@@ -874,6 +882,7 @@ export interface ElectronAPI {
 
     workspace: {
         analyze: (rootPath: string, workspaceId: string) => Promise<WorkspaceAnalysis>;
+        analyzeSummary: (rootPath: string, workspaceId?: string) => Promise<WorkspaceAnalysis>;
         analyzeIdentity: (rootPath: string) => Promise<{ suggestedPrompts: string[]; colors: string[] }>;
         generateLogo: (
             workspacePath: string,
@@ -895,6 +904,8 @@ export interface ElectronAPI {
         uploadLogo: (workspacePath: string) => Promise<string | null>;
         watch: (rootPath: string) => Promise<boolean>;
         unwatch: (rootPath: string) => Promise<boolean>;
+        setActive: (rootPath: string | null) => Promise<{ rootPath: string | null }>;
+        clearActive: (rootPath?: string) => Promise<{ rootPath: string | null }>;
         onFileChange: (callback: (event: string, path: string, rootPath: string) => void) => () => void;
     };
 
@@ -914,39 +925,39 @@ export interface ElectronAPI {
     saveSettings: (settings: AppSettings) => Promise<AppSettings>;
 
     huggingface: {
-        searchModels: (query: string, limit: number, page: number, sort?: string) => Promise<unknown>;
-        getRecommendations: (limit?: number, query?: string) => Promise<unknown[]>;
-        getFiles: (modelId: string) => Promise<unknown[]>;
-        getModelPreview: (modelId: string) => Promise<unknown>;
-        compareModels: (modelIds: string[]) => Promise<unknown>;
-        validateCompatibility: (file: unknown, availableRamGB?: number, availableVramGB?: number) => Promise<unknown>;
+        searchModels: (query: string, limit: number, page: number, sort?: string) => Promise<RuntimeValue>;
+        getRecommendations: (limit?: number, query?: string) => Promise<RuntimeValue[]>;
+        getFiles: (modelId: string) => Promise<RuntimeValue[]>;
+        getModelPreview: (modelId: string) => Promise<RuntimeValue>;
+        compareModels: (modelIds: string[]) => Promise<RuntimeValue>;
+        validateCompatibility: (file: RuntimeValue, availableRamGB?: number, availableVramGB?: number) => Promise<RuntimeValue>;
         getWatchlist: () => Promise<string[]>;
         addToWatchlist: (modelId: string) => Promise<{ success: boolean }>;
         removeFromWatchlist: (modelId: string) => Promise<{ success: boolean }>;
-        getCacheStats: () => Promise<unknown>;
+        getCacheStats: () => Promise<RuntimeValue>;
         clearCache: () => Promise<{ success: boolean; removed: number }>;
-        testDownloadedModel: (filePath: string) => Promise<unknown>;
-        getConversionPresets: () => Promise<unknown[]>;
-        getOptimizationSuggestions: (options: unknown) => Promise<string[]>;
-        validateConversion: (options: unknown) => Promise<unknown>;
-        convertModel: (options: unknown) => Promise<unknown>;
-        onConversionProgress: (callback: (progress: unknown) => void) => () => void;
-        getModelVersions: (modelId: string) => Promise<unknown[]>;
-        registerModelVersion: (modelId: string, filePath: string, notes?: string) => Promise<unknown>;
-        compareModelVersions: (modelId: string, leftVersionId: string, rightVersionId: string) => Promise<unknown>;
-        rollbackModelVersion: (modelId: string, versionId: string, targetPath: string) => Promise<unknown>;
+        testDownloadedModel: (filePath: string) => Promise<RuntimeValue>;
+        getConversionPresets: () => Promise<RuntimeValue[]>;
+        getOptimizationSuggestions: (options: RuntimeValue) => Promise<string[]>;
+        validateConversion: (options: RuntimeValue) => Promise<RuntimeValue>;
+        convertModel: (options: RuntimeValue) => Promise<RuntimeValue>;
+        onConversionProgress: (callback: (progress: RuntimeValue) => void) => () => void;
+        getModelVersions: (modelId: string) => Promise<RuntimeValue[]>;
+        registerModelVersion: (modelId: string, filePath: string, notes?: string) => Promise<RuntimeValue>;
+        compareModelVersions: (modelId: string, leftVersionId: string, rightVersionId: string) => Promise<RuntimeValue>;
+        rollbackModelVersion: (modelId: string, versionId: string, targetPath: string) => Promise<RuntimeValue>;
         pinModelVersion: (modelId: string, versionId: string, pinned: boolean) => Promise<{ success: boolean }>;
         getVersionNotifications: (modelId: string) => Promise<string[]>;
-        prepareFineTuneDataset: (inputPath: string, outputPath: string) => Promise<unknown>;
-        startFineTune: (modelId: string, datasetPath: string, outputPath: string, options?: unknown) => Promise<unknown>;
-        listFineTuneJobs: (modelId?: string) => Promise<unknown[]>;
-        getFineTuneJob: (jobId: string) => Promise<unknown>;
+        prepareFineTuneDataset: (inputPath: string, outputPath: string) => Promise<RuntimeValue>;
+        startFineTune: (modelId: string, datasetPath: string, outputPath: string, options?: RuntimeValue) => Promise<RuntimeValue>;
+        listFineTuneJobs: (modelId?: string) => Promise<RuntimeValue[]>;
+        getFineTuneJob: (jobId: string) => Promise<RuntimeValue>;
         cancelFineTuneJob: (jobId: string) => Promise<{ success: boolean }>;
-        evaluateFineTuneJob: (jobId: string) => Promise<unknown>;
+        evaluateFineTuneJob: (jobId: string) => Promise<RuntimeValue>;
         exportFineTunedModel: (jobId: string, exportPath: string) => Promise<{ success: boolean; error?: string }>;
-        onFineTuneProgress: (callback: (job: unknown) => void) => () => void;
-        downloadFile: (url: string, outputPath: string, expectedSize: number, expectedSha256: string, scheduleAtMs?: number) => Promise<unknown>;
-        onDownloadProgress: (callback: (progress: unknown) => void) => void;
+        onFineTuneProgress: (callback: (job: RuntimeValue) => void) => () => void;
+        downloadFile: (url: string, outputPath: string, expectedSize: number, expectedSha256: string, scheduleAtMs?: number) => Promise<RuntimeValue>;
+        onDownloadProgress: (callback: (progress: RuntimeValue) => void) => void;
         cancelDownload: () => void;
     };
 
@@ -959,16 +970,16 @@ export interface ElectronAPI {
     };
 
     gallery: {
-        list: () => Promise<unknown[]>;
+        list: () => Promise<RuntimeValue[]>;
         delete: (path: string) => Promise<boolean>;
         open: (path: string) => Promise<boolean>;
         reveal: (path: string) => Promise<boolean>;
-        batchDownload: (input: unknown) => Promise<unknown>;
+        batchDownload: (input: RuntimeValue) => Promise<RuntimeValue>;
     };
 
-    onAgentEvent: (callback: (payload: unknown) => void) => () => void;
-    onSdCppStatus: (callback: (data: unknown) => void) => () => void;
-    onSdCppProgress: (callback: (data: unknown) => void) => () => void;
+    onAgentEvent: (callback: (payload: RuntimeValue) => void) => () => void;
+    onSdCppStatus: (callback: (data: RuntimeValue) => void) => () => void;
+    onSdCppProgress: (callback: (data: RuntimeValue) => void) => () => void;
     getUserDataPath: () => Promise<string>;
 
     update: {
@@ -1000,18 +1011,18 @@ export interface ElectronAPI {
     hasLinkedAccount: (provider: string) => Promise<boolean>;
 
     performance: {
-        getMetrics: () => Promise<unknown>;
-        onUpdate: (callback: (metrics: unknown) => void) => () => void;
+        getMetrics: () => Promise<RuntimeValue>;
+        onUpdate: (callback: (metrics: RuntimeValue) => void) => () => void;
     };
 
     batch: {
-        invoke: (requests: unknown[]) => Promise<unknown[]>;
-        invokeSequential: (requests: unknown[]) => Promise<unknown[]>;
+        invoke: (requests: RuntimeValue[]) => Promise<RuntimeValue[]>;
+        invokeSequential: (requests: RuntimeValue[]) => Promise<RuntimeValue[]>;
         getChannels: () => Promise<string[]>;
     };
 
     lazyServices: {
-        getStatus: () => Promise<unknown>;
+        getStatus: () => Promise<RuntimeValue>;
     };
 
     ipcContract: {
@@ -1020,77 +1031,69 @@ export interface ElectronAPI {
     };
 
     backup: {
-        create: (options: unknown) => Promise<unknown>;
-        restore: (backupPath: string, options: unknown) => Promise<unknown>;
-        list: () => Promise<unknown[]>;
+        create: (options: RuntimeValue) => Promise<RuntimeValue>;
+        restore: (backupPath: string, options: RuntimeValue) => Promise<RuntimeValue>;
+        list: () => Promise<RuntimeValue[]>;
         delete: (backupPath: string) => Promise<boolean>;
         getDir: () => Promise<string>;
-        getAutoBackupStatus: () => Promise<unknown>;
-        configureAutoBackup: (config: unknown) => Promise<unknown>;
+        getAutoBackupStatus: () => Promise<RuntimeValue>;
+        configureAutoBackup: (config: RuntimeValue) => Promise<RuntimeValue>;
         cleanup: () => Promise<void>;
-        verify: (backupPath: string) => Promise<unknown>;
-        syncToCloudDir: (backupPath: string, targetDir: string) => Promise<unknown>;
-        createDisasterRecoveryBundle: (targetDir: string) => Promise<unknown>;
-        restoreDisasterRecoveryBundle: (bundlePath: string) => Promise<unknown>;
+        verify: (backupPath: string) => Promise<RuntimeValue>;
+        syncToCloudDir: (backupPath: string, targetDir: string) => Promise<RuntimeValue>;
+        createDisasterRecoveryBundle: (targetDir: string) => Promise<RuntimeValue>;
+        restoreDisasterRecoveryBundle: (bundlePath: string) => Promise<RuntimeValue>;
     };
 
     export: {
-        chat: (chat: Chat, options: unknown) => Promise<unknown>;
-        chatToMarkdown: (chat: Chat, options: unknown) => Promise<unknown>;
-        chatToHTML: (chat: Chat, options: unknown) => Promise<unknown>;
-        chatToJSON: (chat: Chat, options: unknown) => Promise<unknown>;
-        chatToText: (chat: Chat, options: unknown) => Promise<unknown>;
-        chatToPDF: (chat: Chat, options: unknown) => Promise<unknown>;
-        getContent: (chat: Chat, options: unknown) => Promise<unknown>;
+        chat: (chat: Chat, options: RuntimeValue) => Promise<RuntimeValue>;
+        chatToMarkdown: (chat: Chat, options: RuntimeValue) => Promise<RuntimeValue>;
+        chatToHTML: (chat: Chat, options: RuntimeValue) => Promise<RuntimeValue>;
+        chatToJSON: (chat: Chat, options: RuntimeValue) => Promise<RuntimeValue>;
+        chatToText: (chat: Chat, options: RuntimeValue) => Promise<RuntimeValue>;
+        chatToPDF: (chat: Chat, options: RuntimeValue) => Promise<RuntimeValue>;
+        getContent: (chat: Chat, options: RuntimeValue) => Promise<RuntimeValue>;
     };
 
     ideas: {
-        createSession: (config: unknown) => Promise<unknown>;
-        getSession: (id: string) => Promise<unknown>;
-        getSessions: () => Promise<unknown[]>;
+        createSession: (config: RuntimeValue) => Promise<RuntimeValue>;
+        getSession: (id: string) => Promise<RuntimeValue>;
+        getSessions: () => Promise<RuntimeValue[]>;
         cancelSession: (id: string) => Promise<void>;
-        generateMarketPreview: (categories: string[]) => Promise<unknown>;
+        generateMarketPreview: (categories: string[]) => Promise<RuntimeValue>;
         startResearch: (sessionId: string) => Promise<void>;
         startGeneration: (sessionId: string) => Promise<void>;
-        enrichIdea: (ideaId: string) => Promise<unknown>;
-        getIdea: (id: string) => Promise<unknown>;
-        getIdeas: (sessionId: string) => Promise<unknown[]>;
-        regenerateIdea: (ideaId: string) => Promise<unknown>;
-        approveIdea: (ideaId: string, workspacePath: string, selectedName: string) => Promise<unknown>;
+        enrichIdea: (ideaId: string) => Promise<RuntimeValue>;
+        getIdea: (id: string) => Promise<RuntimeValue>;
+        getIdeas: (sessionId: string) => Promise<RuntimeValue[]>;
+        regenerateIdea: (ideaId: string) => Promise<RuntimeValue>;
+        approveIdea: (ideaId: string, workspacePath: string, selectedName: string) => Promise<RuntimeValue>;
         rejectIdea: (ideaId: string) => Promise<void>;
         canGenerateLogo: () => Promise<boolean>;
-        generateLogo: (ideaId: string, options: unknown) => Promise<string[]>;
+        generateLogo: (ideaId: string, options: RuntimeValue) => Promise<string[]>;
         queryResearch: (ideaId: string, question: string) => Promise<string>;
-        deepResearch: (topic: string, category: string) => Promise<unknown>;
-        validateIdea: (title: string, description: string, category: string) => Promise<unknown>;
+        deepResearch: (topic: string, category: string) => Promise<RuntimeValue>;
+        validateIdea: (title: string, description: string, category: string) => Promise<RuntimeValue>;
         clearResearchCache: () => Promise<void>;
-        scoreIdea: (ideaId: string) => Promise<unknown>;
+        scoreIdea: (ideaId: string) => Promise<RuntimeValue>;
         rankIdeas: (ideaIds: string[]) => Promise<string[]>;
-        compareIdeas: (ideaId1: string, ideaId2: string) => Promise<unknown>;
-        quickScore: (title: string, description: string, category: string) => Promise<unknown>;
+        compareIdeas: (ideaId1: string, ideaId2: string) => Promise<RuntimeValue>;
+        quickScore: (title: string, description: string, category: string) => Promise<RuntimeValue>;
         deleteIdea: (ideaId: string) => Promise<void>;
         deleteSession: (sessionId: string) => Promise<void>;
         archiveIdea: (ideaId: string) => Promise<void>;
         restoreIdea: (ideaId: string) => Promise<void>;
-        getArchivedIdeas: (sessionId?: string) => Promise<unknown[]>;
-        onResearchProgress: (callback: (progress: unknown) => void) => () => void;
-        onIdeaProgress: (callback: (progress: unknown) => void) => () => void;
-        onDeepResearchProgress: (callback: (progress: unknown) => void) => () => void;
-    };
-
-    orchestrator: {
-        start: (task: string, workspaceId?: string) => Promise<string>;
-        approve: (plan: WorkspaceStep[]) => Promise<void>;
-        getState: () => Promise<OrchestratorState>;
-        stop: () => Promise<void>;
-        onUpdate: (callback: (state: OrchestratorState) => void) => () => void;
+        getArchivedIdeas: (sessionId?: string) => Promise<RuntimeValue[]>;
+        onResearchProgress: (callback: (progress: RuntimeValue) => void) => () => void;
+        onIdeaProgress: (callback: (progress: RuntimeValue) => void) => () => void;
+        onDeepResearchProgress: (callback: (progress: RuntimeValue) => void) => () => void;
     };
 
     session: {
         conversation: import('./session-conversation').SessionConversationApi;
-        automation: import('./session-domain-apis').SessionAutomationApi;
         workspace: import('./session-domain-apis').SessionWorkspaceApi;
         council: import('./session-domain-apis').SessionCouncilApi;
+        workspaceAgent: import('./session-domain-apis').SessionWorkspaceAgentApi;
         getState: (sessionId: string) => Promise<SessionState | null>;
         list: () => Promise<SessionRecoverySnapshot[]>;
         listCapabilities: () => Promise<SessionCapabilityDescriptor[]>;
@@ -1101,21 +1104,21 @@ export interface ElectronAPI {
     extension: {
         shouldShowWarning: () => Promise<boolean>;
         dismissWarning: () => Promise<void>;
-        getStatus: () => Promise<unknown>;
+        getStatus: () => Promise<RuntimeValue>;
         setInstalled: (installed: boolean) => Promise<void>;
-        getAll: () => Promise<unknown[]>;
-        get: (extensionId: string) => Promise<unknown>;
-        install: (extensionPath: string) => Promise<unknown>;
-        uninstall: (extensionId: string) => Promise<unknown>;
-        activate: (extensionId: string) => Promise<unknown>;
-        deactivate: (extensionId: string) => Promise<unknown>;
-        devStart: (options: unknown) => Promise<unknown>;
-        devStop: (extensionId: string) => Promise<unknown>;
-        devReload: (extensionId: string) => Promise<unknown>;
-        test: (options: unknown) => Promise<unknown>;
-        publish: (options: unknown) => Promise<unknown>;
-        getProfile: (extensionId: string) => Promise<unknown>;
-        validate: (manifest: unknown) => Promise<unknown>;
+        getAll: () => Promise<RuntimeValue[]>;
+        get: (extensionId: string) => Promise<RuntimeValue>;
+        install: (extensionPath: string) => Promise<RuntimeValue>;
+        uninstall: (extensionId: string) => Promise<RuntimeValue>;
+        activate: (extensionId: string) => Promise<RuntimeValue>;
+        deactivate: (extensionId: string) => Promise<RuntimeValue>;
+        devStart: (options: RuntimeValue) => Promise<RuntimeValue>;
+        devStop: (extensionId: string) => Promise<RuntimeValue>;
+        devReload: (extensionId: string) => Promise<RuntimeValue>;
+        test: (options: RuntimeValue) => Promise<RuntimeValue>;
+        publish: (options: RuntimeValue) => Promise<RuntimeValue>;
+        getProfile: (extensionId: string) => Promise<RuntimeValue>;
+        validate: (manifest: RuntimeValue) => Promise<RuntimeValue>;
     };
 
     clipboard: {
@@ -1124,20 +1127,20 @@ export interface ElectronAPI {
     };
 
     modelDownloader: {
-        start: (request: unknown) => Promise<string>;
+        start: (request: RuntimeValue) => Promise<string>;
         pause: (downloadId: string) => Promise<void>;
         resume: (downloadId: string) => Promise<void>;
         cancel: (downloadId: string) => Promise<void>;
     };
 
     promptTemplates: {
-        getAll: () => Promise<unknown[]>;
-        getByCategory: (category: string) => Promise<unknown[]>;
-        getByTag: (tag: string) => Promise<unknown[]>;
-        search: (query: string) => Promise<unknown[]>;
-        get: (id: string) => Promise<unknown>;
-        create: (template: unknown) => Promise<unknown>;
-        update: (id: string, updates: unknown) => Promise<unknown>;
+        getAll: () => Promise<RuntimeValue[]>;
+        getByCategory: (category: string) => Promise<RuntimeValue[]>;
+        getByTag: (tag: string) => Promise<RuntimeValue[]>;
+        search: (query: string) => Promise<RuntimeValue[]>;
+        get: (id: string) => Promise<RuntimeValue>;
+        create: (template: RuntimeValue) => Promise<RuntimeValue>;
+        update: (id: string, updates: RuntimeValue) => Promise<RuntimeValue>;
         delete: (id: string) => Promise<{ success: boolean }>;
         render: (templateId: string, variables: Record<string, string>) => Promise<string>;
         getCategories: () => Promise<string[]>;
@@ -1204,6 +1207,11 @@ export interface ElectronAPI {
         sendUpdate: (params: CollaborationSyncUpdate) => Promise<CollaborationResponse>;
         onSyncUpdate: (callback: (payload: { roomId: string; data: string }) => void) => () => void;
         onError: (callback: (payload: { roomId: string; error: string }) => void) => () => void;
+    };
+    runtime: {
+        getStatus: () => Promise<RuntimeBootstrapExecutionResult | null>;
+        refreshStatus: () => Promise<RuntimeBootstrapExecutionResult | null>;
+        repair: (manifestUrl?: string) => Promise<RuntimeBootstrapExecutionResult | null>;
     };
     liveCollaboration: ElectronAPI['userCollaboration'];
 }

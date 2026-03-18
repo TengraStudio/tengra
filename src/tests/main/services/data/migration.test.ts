@@ -35,14 +35,12 @@ type ReaddirResult = Awaited<ReturnType<typeof fsp.readdir>>;
 const MOCK_USER_DATA = '/mock/userData';
 const MOCK_ROOT = path.dirname(MOCK_USER_DATA);
 const MOCK_BASE_DIR = path.join(MOCK_USER_DATA, 'data');
-const MOCK_AUTH_DIR = path.join(MOCK_BASE_DIR, 'auth');
 const MOCK_DB_DIR = path.join(MOCK_USER_DATA, 'db');
 const MOCK_CONFIG_DIR = path.join(MOCK_BASE_DIR, 'config');
 
 // Old migration source paths
-const OLD_AUTH_DIR = path.join(MOCK_ROOT, 'auth');
-const OLD_AUTH_ENC = path.join(MOCK_ROOT, 'cliproxy-auth.enc');
-const NEW_AUTH_ENC = path.join(MOCK_AUTH_DIR, 'proxy-auth-token.enc');
+const OLD_MODELS_DIR = path.join(MOCK_ROOT, 'models');
+const NEW_MODELS_DIR = path.join(MOCK_BASE_DIR, 'models');
 const OLD_SETTINGS = path.join(MOCK_ROOT, 'settings.json');
 const NEW_SETTINGS = path.join(MOCK_CONFIG_DIR, 'settings.json');
 const OLD_DATABASES = path.join(MOCK_ROOT, 'databases');
@@ -75,27 +73,27 @@ describe('DataService Migration', () => {
 
     describe('forward migration', () => {
         it('should process directory entries via migrateDirectory', async () => {
-            mockPathExists(new Set([OLD_AUTH_DIR]));
+            mockPathExists(new Set([OLD_MODELS_DIR]));
             vi.mocked(fsp.readdir)
-                .mockResolvedValueOnce(['token.json'] as unknown as ReaddirResult)
+                .mockResolvedValueOnce(['model.bin'] as never as ReaddirResult)
                 .mockResolvedValueOnce([] as ReaddirResult);
 
             await service.migrate();
 
-            expect(fsp.mkdir).toHaveBeenCalledWith(MOCK_AUTH_DIR, { recursive: true });
+            expect(fsp.mkdir).toHaveBeenCalledWith(NEW_MODELS_DIR, { recursive: true });
             expect(fsp.rename).toHaveBeenCalledWith(
-                path.join(OLD_AUTH_DIR, 'token.json'),
-                path.join(MOCK_AUTH_DIR, 'token.json')
+                path.join(OLD_MODELS_DIR, 'model.bin'),
+                path.join(NEW_MODELS_DIR, 'model.bin')
             );
         });
 
         it('should process file entries via migrateFile', async () => {
-            mockPathExists(new Set([OLD_AUTH_ENC]));
+            mockPathExists(new Set([OLD_SETTINGS]));
 
             await service.migrate();
 
-            expect(fsp.mkdir).toHaveBeenCalledWith(MOCK_AUTH_DIR, { recursive: true });
-            expect(fsp.rename).toHaveBeenCalledWith(OLD_AUTH_ENC, NEW_AUTH_ENC);
+            expect(fsp.mkdir).toHaveBeenCalledWith(MOCK_CONFIG_DIR, { recursive: true });
+            expect(fsp.rename).toHaveBeenCalledWith(OLD_SETTINGS, NEW_SETTINGS);
         });
     });
 
@@ -110,12 +108,12 @@ describe('DataService Migration', () => {
         });
 
         it('should skip when target file already exists', async () => {
-            mockPathExists(new Set([OLD_AUTH_ENC, NEW_AUTH_ENC]));
+            mockPathExists(new Set([OLD_SETTINGS, NEW_SETTINGS]));
 
             await service.migrate();
 
             const fileMigrationCall = vi.mocked(fsp.rename).mock.calls.find(
-                (c) => c[0] === OLD_AUTH_ENC && c[1] === NEW_AUTH_ENC
+                (c) => c[0] === OLD_SETTINGS && c[1] === NEW_SETTINGS
             );
             expect(fileMigrationCall).toBeUndefined();
         });
@@ -125,7 +123,7 @@ describe('DataService Migration', () => {
         it('should rename each file in the source directory', async () => {
             mockPathExists(new Set([OLD_DATABASES]));
             vi.mocked(fsp.readdir)
-                .mockResolvedValueOnce(['main.db', 'cache.db'] as unknown as ReaddirResult)
+                .mockResolvedValueOnce(['main.db', 'cache.db'] as never as ReaddirResult)
                 .mockResolvedValueOnce([] as ReaddirResult);
 
             await service.migrate();
@@ -143,7 +141,7 @@ describe('DataService Migration', () => {
         it('should remove old directory when empty after migration', async () => {
             mockPathExists(new Set([OLD_DATABASES]));
             vi.mocked(fsp.readdir)
-                .mockResolvedValueOnce(['data.db'] as unknown as ReaddirResult)
+                .mockResolvedValueOnce(['data.db'] as never as ReaddirResult)
                 .mockResolvedValueOnce([] as ReaddirResult);
 
             await service.migrate();
@@ -154,8 +152,8 @@ describe('DataService Migration', () => {
         it('should not remove old directory when files remain', async () => {
             mockPathExists(new Set([OLD_DATABASES]));
             vi.mocked(fsp.readdir)
-                .mockResolvedValueOnce(['data.db'] as unknown as ReaddirResult)
-                .mockResolvedValueOnce(['leftover.db'] as unknown as ReaddirResult);
+                .mockResolvedValueOnce(['data.db'] as never as ReaddirResult)
+                .mockResolvedValueOnce(['leftover.db'] as never as ReaddirResult);
 
             await service.migrate();
 
@@ -166,7 +164,7 @@ describe('DataService Migration', () => {
             const existingNewFile = path.join(MOCK_DB_DIR, 'main.db');
             mockPathExists(new Set([OLD_DATABASES, existingNewFile]));
             vi.mocked(fsp.readdir)
-                .mockResolvedValueOnce(['main.db', 'new.db'] as unknown as ReaddirResult)
+                .mockResolvedValueOnce(['main.db', 'new.db'] as never as ReaddirResult)
                 .mockResolvedValueOnce([] as ReaddirResult);
 
             await service.migrate();
@@ -200,7 +198,7 @@ describe('DataService Migration', () => {
 
     describe('permission errors', () => {
         it('should log error and continue when rename fails with EACCES', async () => {
-            mockPathExists(new Set([OLD_AUTH_ENC]));
+            mockPathExists(new Set([OLD_SETTINGS]));
             vi.mocked(fsp.rename).mockRejectedValueOnce(new Error('EACCES: permission denied'));
 
             await expect(service.migrate()).resolves.toBeUndefined();
@@ -224,7 +222,7 @@ describe('DataService Migration', () => {
         });
 
         it('should log error when readdir fails during directory migration', async () => {
-            mockPathExists(new Set([OLD_AUTH_DIR]));
+            mockPathExists(new Set([OLD_MODELS_DIR]));
             vi.mocked(fsp.readdir).mockRejectedValueOnce(new Error('EACCES: permission denied'));
 
             await expect(service.migrate()).resolves.toBeUndefined();
@@ -244,7 +242,7 @@ describe('DataService Migration', () => {
         });
 
         it('should log individual file migrations', async () => {
-            mockPathExists(new Set([OLD_AUTH_ENC]));
+            mockPathExists(new Set([OLD_SETTINGS]));
 
             await service.migrate();
 
@@ -255,7 +253,7 @@ describe('DataService Migration', () => {
         });
 
         it('should log errors for failed migration entries', async () => {
-            mockPathExists(new Set([OLD_AUTH_DIR]));
+            mockPathExists(new Set([OLD_MODELS_DIR]));
             vi.mocked(fsp.readdir).mockRejectedValueOnce(new Error('disk error'));
 
             await service.migrate();
@@ -280,19 +278,20 @@ describe('DataService Migration', () => {
 
     describe('partial failure', () => {
         it('should continue processing entries after one migration fails', async () => {
-            // Entry 0 (auth dir) fails on readdir, entry 1 (auth enc file) succeeds
-            mockPathExists(new Set([OLD_AUTH_DIR, OLD_AUTH_ENC]));
+            // Entry 0 (lancedb) fails on access/readdir, entry 2 (settings file) succeeds
+            mockPathExists(new Set([path.join(MOCK_ROOT, 'tengra-lancedb'), OLD_SETTINGS]));
             vi.mocked(fsp.readdir).mockRejectedValueOnce(new Error('disk error'));
 
             await service.migrate();
 
-            // File migration for entry 1 should still proceed
-            expect(fsp.rename).toHaveBeenCalledWith(OLD_AUTH_ENC, NEW_AUTH_ENC);
+            // File migration for settings should still proceed
+            expect(fsp.rename).toHaveBeenCalledWith(OLD_SETTINGS, NEW_SETTINGS);
             expect(appLogger.error).toHaveBeenCalled();
         });
 
         it('should log error only for the failed entry', async () => {
-            mockPathExists(new Set([OLD_AUTH_DIR, OLD_AUTH_ENC]));
+            const lancedbPath = path.join(MOCK_ROOT, 'tengra-lancedb');
+            mockPathExists(new Set([lancedbPath, OLD_SETTINGS]));
             vi.mocked(fsp.readdir).mockRejectedValueOnce(new Error('disk error'));
 
             await service.migrate();
@@ -301,53 +300,53 @@ describe('DataService Migration', () => {
                 (c) => typeof c[1] === 'string' && c[1].includes('Failed to migrate')
             );
             expect(errorCalls.length).toBeGreaterThanOrEqual(1);
-            expect(errorCalls[0][1]).toContain(OLD_AUTH_DIR);
+            expect(errorCalls[0][1]).toContain(lancedbPath);
         });
     });
 
     describe('empty directory', () => {
         it('should create target directory and remove empty source', async () => {
-            mockPathExists(new Set([OLD_AUTH_DIR]));
+            mockPathExists(new Set([OLD_MODELS_DIR]));
             vi.mocked(fsp.readdir)
                 .mockResolvedValueOnce([] as ReaddirResult)
                 .mockResolvedValueOnce([] as ReaddirResult);
 
             await service.migrate();
 
-            expect(fsp.mkdir).toHaveBeenCalledWith(MOCK_AUTH_DIR, { recursive: true });
-            expect(fsp.rmdir).toHaveBeenCalledWith(OLD_AUTH_DIR);
+            expect(fsp.mkdir).toHaveBeenCalledWith(NEW_MODELS_DIR, { recursive: true });
+            expect(fsp.rmdir).toHaveBeenCalledWith(OLD_MODELS_DIR);
 
             // No rename calls for files within this directory
-            const authRenames = vi.mocked(fsp.rename).mock.calls.filter(
-                (c) => (c[0] as string).startsWith(OLD_AUTH_DIR)
+            const modelsRenames = vi.mocked(fsp.rename).mock.calls.filter(
+                (c) => (c[0] as string).startsWith(OLD_MODELS_DIR)
             );
-            expect(authRenames).toHaveLength(0);
+            expect(modelsRenames).toHaveLength(0);
         });
     });
 
     describe('symlink handling', () => {
         it('should attempt rename for all directory entries including symlinks', async () => {
-            mockPathExists(new Set([OLD_AUTH_DIR]));
+            mockPathExists(new Set([OLD_MODELS_DIR]));
             vi.mocked(fsp.readdir)
-                .mockResolvedValueOnce(['regular.txt', 'symlink.txt'] as unknown as ReaddirResult)
+                .mockResolvedValueOnce(['regular.txt', 'symlink.txt'] as never as ReaddirResult)
                 .mockResolvedValueOnce([] as ReaddirResult);
 
             await service.migrate();
 
             expect(fsp.rename).toHaveBeenCalledWith(
-                path.join(OLD_AUTH_DIR, 'regular.txt'),
-                path.join(MOCK_AUTH_DIR, 'regular.txt')
+                path.join(OLD_MODELS_DIR, 'regular.txt'),
+                path.join(NEW_MODELS_DIR, 'regular.txt')
             );
             expect(fsp.rename).toHaveBeenCalledWith(
-                path.join(OLD_AUTH_DIR, 'symlink.txt'),
-                path.join(MOCK_AUTH_DIR, 'symlink.txt')
+                path.join(OLD_MODELS_DIR, 'symlink.txt'),
+                path.join(NEW_MODELS_DIR, 'symlink.txt')
             );
         });
 
         it('should handle rename failure for symlinks gracefully', async () => {
-            mockPathExists(new Set([OLD_AUTH_DIR]));
+            mockPathExists(new Set([OLD_MODELS_DIR]));
             vi.mocked(fsp.readdir)
-                .mockResolvedValueOnce(['symlink.txt'] as unknown as ReaddirResult);
+                .mockResolvedValueOnce(['symlink.txt'] as never as ReaddirResult);
             vi.mocked(fsp.rename).mockRejectedValueOnce(
                 new Error('EPERM: operation not permitted, rename symlink')
             );

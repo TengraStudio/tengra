@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock electron
-const mockIpcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
+const mockIpcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
-            mockIpcMainHandlers.set(channel, handler);
+        handle: vi.fn((channel: string, handler: (...args: TestValue[]) => TestValue | Promise<TestValue>) => {
+            mockIpcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
         }),
         removeHandler: vi.fn((channel: string) => {
             mockIpcMainHandlers.delete(channel);
@@ -24,12 +24,12 @@ vi.mock('@main/logging/logger', () => ({
 
 // Mock rate limiter
 vi.mock('@main/utils/rate-limiter.util', () => ({
-    withRateLimit: vi.fn(async (_key: string, fn: () => unknown) => await fn()),
+    withRateLimit: vi.fn((_key: string, fn: () => TestValue | Promise<TestValue>) => Promise.resolve(fn())),
 }));
 
 // Mock error util
 vi.mock('@shared/utils/error.util', () => ({
-    getErrorMessage: vi.fn((error: unknown) => (error as Record<string, unknown>)?.message || String(error)),
+    getErrorMessage: vi.fn((error: TestValue) => (error as Record<string, TestValue>)?.message || String(error)),
 }));
 
 // Mock services
@@ -74,9 +74,9 @@ describe('Usage IPC Integration', () => {
         };
 
         registerUsageIpc(
-            mockUsageTrackingService as unknown as Parameters<typeof registerUsageIpc>[0],
-            mockSettingsService as unknown as Parameters<typeof registerUsageIpc>[1],
-            mockProxyService as unknown as Parameters<typeof registerUsageIpc>[2]
+            mockUsageTrackingService as never as Parameters<typeof registerUsageIpc>[0],
+            mockSettingsService as never as Parameters<typeof registerUsageIpc>[1],
+            mockProxyService as never as Parameters<typeof registerUsageIpc>[2]
         );
     });
 
@@ -266,3 +266,4 @@ describe('Usage IPC Integration', () => {
         });
     });
 });
+

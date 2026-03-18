@@ -91,7 +91,16 @@ const sectionData = {
     "workspaceIssuesLoading": "Auffrischende Arbeitsbereichdiagnose...",
     "workspaceIssuesNoWorkspace": "Öffnen Sie ein Arbeitsbereich, um die Diagnose zu überprüfen.",
     "workspaceIssuesNoIssues": "Beim letzten Scan wurden keine Warnungen oder Fehler erkannt.",
-    "workspaceIssuesLoadFailed": "Die Arbeitsbereichdiagnose konnte nicht geladen werden."
+    "workspaceIssuesLoadFailed": "Die Arbeitsbereichdiagnose konnte nicht geladen werden.",
+    "splitPresetsTitle": "Split presets",
+    "renamePresetTitle": "Rename preset",
+    "deletePresetTitle": "Delete preset",
+    "syncInputTitle": "Synchronized input for split panes",
 };
 
 export default sectionData;
+
+
+
+
+

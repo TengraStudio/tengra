@@ -41,6 +41,13 @@ interface ExtensionServiceState {
     extensionsPath: string;
 }
 
+interface ExtensionActionResult {
+    success: boolean;
+    error?: string;
+    messageKey?: string;
+    messageParams?: Record<string, string | number>;
+}
+
 const ALLOWED_PERMISSIONS: ReadonlySet<ExtensionPermission> = new Set([
     'filesystem',
     'network',
@@ -53,6 +60,23 @@ const ALLOWED_PERMISSIONS: ReadonlySet<ExtensionPermission> = new Set([
     'ai',
 ]);
 const MAX_EXTENSION_SCRIPT_BYTES = 1024 * 1024;
+const EXTENSION_MESSAGE_KEY = {
+    SANDBOX_SIZE_LIMIT: 'errors.extension.sandboxSizeLimit',
+    PATH_NOT_ALLOWED: 'mainProcess.extensionService.pathNotAllowed',
+    PACKAGE_JSON_NOT_FOUND: 'mainProcess.extensionService.packageJsonNotFound',
+    NO_TENGRA_CONFIGURATION: 'mainProcess.extensionService.noTengraConfiguration',
+    EXTENSION_NOT_FOUND: 'mainProcess.extensionService.extensionNotFound',
+    ENTRY_POINT_OUTSIDE_ROOT: 'mainProcess.extensionService.entryPointOutsideRoot',
+    ACTIVATE_FUNCTION_MISSING: 'mainProcess.extensionService.activateFunctionMissing'
+} as const;
+const EXTENSION_ERROR_MESSAGE = {
+    PATH_NOT_ALLOWED: 'Extension path is not allowed',
+    PACKAGE_JSON_NOT_FOUND: 'package.json not found',
+    NO_TENGRA_CONFIGURATION: 'No tengra configuration found in package.json',
+    EXTENSION_NOT_FOUND: 'Extension not found',
+    ENTRY_POINT_OUTSIDE_ROOT: 'Extension entry point resolves outside extension root',
+    ACTIVATE_FUNCTION_MISSING: 'Extension module must export an activate function'
+} as const;
 
 /**
  * Extension Service
@@ -192,7 +216,7 @@ export class ExtensionService extends BaseService {
         }
     }
 
-    private async handleActivate(_event: Electron.IpcMainInvokeEvent, extensionId: string): Promise<{ success: boolean; error?: string }> {
+    private async handleActivate(_event: Electron.IpcMainInvokeEvent, extensionId: string): Promise<ExtensionActionResult> {
         try {
             return await this.activateExtension(extensionId);
         } catch (error) {
@@ -252,18 +276,18 @@ export class ExtensionService extends BaseService {
         return { success: true, profile: instance.profileData };
     }
 
-    private handleGetState(_event: Electron.IpcMainInvokeEvent, extensionId: string): { success: boolean; state?: { global: Record<string, unknown>, workspace: Record<string, unknown> } } {
+    private handleGetState(_event: Electron.IpcMainInvokeEvent, extensionId: string): { success: boolean; state?: { global: Record<string, RuntimeValue>, workspace: Record<string, RuntimeValue> } } {
         const instance = this.state.extensions.get(extensionId);
         if (!instance) {
             return { success: false };
         }
 
-        const globalState: Record<string, unknown> = {};
+        const globalState: Record<string, RuntimeValue> = {};
         for (const key of instance.context.globalState.keys()) {
             globalState[key] = instance.context.globalState.get(key);
         }
 
-        const workspaceState: Record<string, unknown> = {};
+        const workspaceState: Record<string, RuntimeValue> = {};
         for (const key of instance.context.workspaceState.keys()) {
             workspaceState[key] = instance.context.workspaceState.get(key);
         }
@@ -271,7 +295,7 @@ export class ExtensionService extends BaseService {
         return { success: true, state: { global: globalState, workspace: workspaceState } };
     }
 
-    private handleValidate(_event: Electron.IpcMainInvokeEvent, manifest: unknown): { valid: boolean; errors: string[] } {
+    private handleValidate(_event: Electron.IpcMainInvokeEvent, manifest: RuntimeValue): { valid: boolean; errors: string[] } {
         return validateManifest(manifest);
     }
 
@@ -296,15 +320,25 @@ export class ExtensionService extends BaseService {
     }
 
     /** Validate manifest */
-    validateManifest(manifest: unknown): { valid: boolean; errors: string[] } {
+    validateManifest(manifest: RuntimeValue): { valid: boolean; errors: string[] } {
         return validateManifest(manifest);
     }
 
     /** Install an extension from a path */
-    async installExtension(extensionPath: string): Promise<{ success: boolean; extensionId?: string; error?: string }> {
+    async installExtension(extensionPath: string): Promise<{
+        success: boolean;
+        extensionId?: string;
+        error?: string;
+        messageKey?: string;
+        messageParams?: Record<string, string | number>;
+    }> {
         const resolvedExtensionPath = this.resolveAndValidateExtensionPath(extensionPath);
         if (!resolvedExtensionPath) {
-            return { success: false, error: 'Extension path is not allowed' };
+            return {
+                success: false,
+                error: EXTENSION_ERROR_MESSAGE.PATH_NOT_ALLOWED,
+                messageKey: EXTENSION_MESSAGE_KEY.PATH_NOT_ALLOWED
+            };
         }
 
         const manifestPath = path.join(resolvedExtensionPath, 'package.json');
@@ -312,7 +346,11 @@ export class ExtensionService extends BaseService {
         try {
             await fs.promises.access(manifestPath, fs.constants.F_OK);
         } catch {
-            return { success: false, error: 'package.json not found' };
+            return {
+                success: false,
+                error: EXTENSION_ERROR_MESSAGE.PACKAGE_JSON_NOT_FOUND,
+                messageKey: EXTENSION_MESSAGE_KEY.PACKAGE_JSON_NOT_FOUND
+            };
         }
 
         const manifestContent = await fs.promises.readFile(manifestPath, 'utf-8');
@@ -320,7 +358,11 @@ export class ExtensionService extends BaseService {
         const manifest = packageJson.tengra as ExtensionManifest;
 
         if (!manifest) {
-            return { success: false, error: 'No tengra configuration found in package.json' };
+            return {
+                success: false,
+                error: EXTENSION_ERROR_MESSAGE.NO_TENGRA_CONFIGURATION,
+                messageKey: EXTENSION_MESSAGE_KEY.NO_TENGRA_CONFIGURATION
+            };
         }
 
         const validation = validateManifest(manifest);
@@ -376,7 +418,7 @@ export class ExtensionService extends BaseService {
     }
 
     /** Helper to stream logs via IPC */
-    private streamLog(extensionId: string, level: string, message: string, ...args: unknown[]): void {
+    private streamLog(extensionId: string, level: string, message: string, ...args: RuntimeValue[]): void {
         const fullMessage = `[Extension: ${extensionId}] ${message}`;
         switch (level) {
             case 'info': this.logInfo(fullMessage, ...args as []); break;
@@ -396,10 +438,19 @@ export class ExtensionService extends BaseService {
     }
 
     /** Uninstall an extension */
-    async uninstallExtension(extensionId: string): Promise<{ success: boolean; error?: string }> {
+    async uninstallExtension(extensionId: string): Promise<{
+        success: boolean;
+        error?: string;
+        messageKey?: string;
+        messageParams?: Record<string, string | number>;
+    }> {
         const instance = this.state.extensions.get(extensionId);
         if (!instance) {
-            return { success: false, error: 'Extension not found' };
+            return {
+                success: false,
+                error: EXTENSION_ERROR_MESSAGE.EXTENSION_NOT_FOUND,
+                messageKey: EXTENSION_MESSAGE_KEY.EXTENSION_NOT_FOUND
+            };
         }
 
         // Deactivate first if active
@@ -430,10 +481,14 @@ export class ExtensionService extends BaseService {
     }
 
     /** Activate an extension */
-    async activateExtension(extensionId: string): Promise<{ success: boolean; error?: string }> {
+    async activateExtension(extensionId: string): Promise<ExtensionActionResult> {
         const instance = this.state.extensions.get(extensionId);
         if (!instance) {
-            return { success: false, error: 'Extension not found' };
+            return {
+                success: false,
+                error: EXTENSION_ERROR_MESSAGE.EXTENSION_NOT_FOUND,
+                messageKey: EXTENSION_MESSAGE_KEY.EXTENSION_NOT_FOUND
+            };
         }
 
         if (instance.status === 'active') {
@@ -448,7 +503,7 @@ export class ExtensionService extends BaseService {
             const modulePath = path.join(instance.context.extensionPath, instance.manifest.main);
             const resolvedModulePath = this.resolveSafeChildPath(instance.context.extensionPath, modulePath);
             if (!resolvedModulePath) {
-                throw new Error('Extension entry point resolves outside extension root');
+                throw new Error(EXTENSION_ERROR_MESSAGE.ENTRY_POINT_OUTSIDE_ROOT);
             }
             await fs.promises.access(resolvedModulePath, fs.constants.F_OK);
             const loadedModule = await this.loadSandboxedExtensionModule(extensionId, resolvedModulePath);
@@ -462,19 +517,49 @@ export class ExtensionService extends BaseService {
             this.logInfo(`Extension activated: ${extensionId} (${instance.profileData.activationTime}ms)`);
             return { success: true };
         } catch (error) {
+            const maxSizeKb = Math.floor(MAX_EXTENSION_SCRIPT_BYTES / 1024);
+            const isSandboxSizeLimitError = (error as Error).message === EXTENSION_MESSAGE_KEY.SANDBOX_SIZE_LIMIT;
+            const isEntryPointOutsideRootError = (error as Error).message === EXTENSION_ERROR_MESSAGE.ENTRY_POINT_OUTSIDE_ROOT;
+            const isActivateFunctionMissingError = (error as Error).message === EXTENSION_ERROR_MESSAGE.ACTIVATE_FUNCTION_MISSING;
             instance.status = 'error';
             instance.profileData.errorCount++;
             instance.profileData.lastError = (error as Error).message;
             this.logError(`Failed to activate ${extensionId}`, error as Error);
-            return { success: false, error: (error as Error).message };
+            return {
+                success: false,
+                error: isSandboxSizeLimitError
+                    ? `Extension script exceeds sandbox size limit (${maxSizeKb} KB)`
+                    : isEntryPointOutsideRootError
+                        ? EXTENSION_ERROR_MESSAGE.ENTRY_POINT_OUTSIDE_ROOT
+                        : isActivateFunctionMissingError
+                            ? EXTENSION_ERROR_MESSAGE.ACTIVATE_FUNCTION_MISSING
+                    : (error as Error).message,
+                messageKey: isSandboxSizeLimitError
+                    ? EXTENSION_MESSAGE_KEY.SANDBOX_SIZE_LIMIT
+                    : isEntryPointOutsideRootError
+                        ? EXTENSION_MESSAGE_KEY.ENTRY_POINT_OUTSIDE_ROOT
+                        : isActivateFunctionMissingError
+                            ? EXTENSION_MESSAGE_KEY.ACTIVATE_FUNCTION_MISSING
+                            : undefined,
+                messageParams: isSandboxSizeLimitError ? { maxSizeKb } : undefined
+            };
         }
     }
 
     /** Deactivate an extension */
-    async deactivateExtension(extensionId: string): Promise<{ success: boolean; error?: string }> {
+    async deactivateExtension(extensionId: string): Promise<{
+        success: boolean;
+        error?: string;
+        messageKey?: string;
+        messageParams?: Record<string, string | number>;
+    }> {
         const instance = this.state.extensions.get(extensionId);
         if (!instance) {
-            return { success: false, error: 'Extension not found' };
+            return {
+                success: false,
+                error: EXTENSION_ERROR_MESSAGE.EXTENSION_NOT_FOUND,
+                messageKey: EXTENSION_MESSAGE_KEY.EXTENSION_NOT_FOUND
+            };
         }
 
         if (instance.status !== 'active') {
@@ -509,11 +594,21 @@ export class ExtensionService extends BaseService {
     }
 
     /** Start development server (Hot Reload) */
-    async startDevServer(options: ExtensionDevOptions): Promise<{ success: boolean; error?: string }> {
+    async startDevServer(options: ExtensionDevOptions): Promise<{
+        success: boolean;
+        error?: string;
+        messageKey?: string;
+        messageParams?: Record<string, string | number>;
+    }> {
         // Install extension first
         const installResult = await this.installExtension(options.extensionPath);
         if (!installResult.success || !installResult.extensionId) {
-            return { success: false, error: installResult.error };
+            return {
+                success: false,
+                error: installResult.error,
+                messageKey: installResult.messageKey,
+                messageParams: installResult.messageParams
+            };
         }
 
         const extensionId = installResult.extensionId;
@@ -521,7 +616,12 @@ export class ExtensionService extends BaseService {
         // Activate extension
         const activateResult = await this.activateExtension(extensionId);
         if (!activateResult.success) {
-            return { success: false, error: activateResult.error };
+            return {
+                success: false,
+                error: activateResult.error,
+                messageKey: activateResult.messageKey,
+                messageParams: activateResult.messageParams
+            };
         }
 
         // Start file watcher
@@ -558,7 +658,12 @@ export class ExtensionService extends BaseService {
     }
 
     /** Reload extension */
-    async reloadExtension(extensionId: string): Promise<{ success: boolean; error?: string }> {
+    async reloadExtension(extensionId: string): Promise<{
+        success: boolean;
+        error?: string;
+        messageKey?: string;
+        messageParams?: Record<string, string | number>;
+    }> {
         await this.deactivateExtension(extensionId);
         const result = await this.activateExtension(extensionId);
         this.logInfo(`Extension reloaded: ${extensionId}`);
@@ -597,7 +702,7 @@ export class ExtensionService extends BaseService {
     }
 
     /** Get state data */
-    getState(extensionId: string): { success: boolean; state?: { global: Record<string, unknown>, workspace: Record<string, unknown> } } {
+    getState(extensionId: string): { success: boolean; state?: { global: Record<string, RuntimeValue>, workspace: Record<string, RuntimeValue> } } {
         return this.handleGetState({} as Electron.IpcMainInvokeEvent, extensionId);
     }
 
@@ -650,17 +755,17 @@ export class ExtensionService extends BaseService {
     private async loadSandboxedExtensionModule(extensionId: string, modulePath: string): Promise<ExtensionModule> {
         const source = await fs.promises.readFile(modulePath, 'utf8');
         if (Buffer.byteLength(source, 'utf8') > MAX_EXTENSION_SCRIPT_BYTES) {
-            throw new Error('Extension script exceeds sandbox size limit');
+            throw new Error(EXTENSION_MESSAGE_KEY.SANDBOX_SIZE_LIMIT);
         }
 
-        const sandboxModule: { exports: unknown } = { exports: {} };
+        const sandboxModule: { exports: RuntimeValue } = { exports: {} };
         const sandbox = {
             module: sandboxModule,
             exports: sandboxModule.exports,
             console: Object.freeze({
-                log: (...args: unknown[]) => this.streamLog(extensionId, 'info', args.map(String).join(' ')),
-                warn: (...args: unknown[]) => this.streamLog(extensionId, 'warn', args.map(String).join(' ')),
-                error: (...args: unknown[]) => this.streamLog(extensionId, 'error', args.map(String).join(' ')),
+                log: (...args: RuntimeValue[]) => this.streamLog(extensionId, 'info', args.map(String).join(' ')),
+                warn: (...args: RuntimeValue[]) => this.streamLog(extensionId, 'warn', args.map(String).join(' ')),
+                error: (...args: RuntimeValue[]) => this.streamLog(extensionId, 'error', args.map(String).join(' ')),
             }),
             setTimeout,
             clearTimeout,
@@ -675,7 +780,7 @@ export class ExtensionService extends BaseService {
 
         const loaded = sandboxModule.exports as Partial<ExtensionModule>;
         if (typeof loaded.activate !== 'function') {
-            throw new Error('Extension module must export an activate function');
+            throw new Error(EXTENSION_ERROR_MESSAGE.ACTIVATE_FUNCTION_MISSING);
         }
 
         return loaded as ExtensionModule;
@@ -690,7 +795,7 @@ export class ExtensionService extends BaseService {
                 // This would read from actual configuration
                 return defaultValue;
             },
-            async update(_section: string, _value: unknown): Promise<void> {
+            async update(_section: string, _value: RuntimeValue): Promise<void> {
                 void _section;
                 void _value;
                 // This would update actual configuration

@@ -42,7 +42,21 @@ const sectionData = {
     "noCompatible": "No compatible files found",
     "defaultDescription": "Open-source model",
     "install": "Install",
-    "installed": "Installed"
+    "installed": "Installed",
+    "compareQueue": "Compare Queue: {{count}} / {{max}}",
+    "comparing": "Comparing...",
+    "runComparison": "Run Comparison",
+    "comparisonResult": "Comparison Result",
+    "diskRam": "Disk / RAM",
+    "shardedModelSets": "Sharded Model Sets",
+    "fullSetDownloaded": "Full Set Downloaded",
+    "downloadMissingParts": "Download Missing Parts",
+    "digest": "Digest",
+    "action": "Action",
+    "recommended": "Recommended",
+    "watchlist": "Watchlist",
+    "paramsSuffix": "params",
+    "benchmarkScore": "Benchmark Score"
 };
 
 export default sectionData;

@@ -19,7 +19,7 @@ const WORKSPACE_COMPAT_PATH_FIELD = WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN;
 /**
  * Standard API response wrapper
  */
-export interface DbApiResponse<T = unknown> {
+export interface DbApiResponse<T = RuntimeValue> {
     success: boolean
     data?: T
     error?: string

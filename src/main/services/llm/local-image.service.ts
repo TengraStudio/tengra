@@ -132,7 +132,7 @@ export class LocalImageService extends BaseService {
 
     /**
      * Generate an image using available providers.
-     * Priority: Antigravity (with quota) > Pollinations > Other local providers
+     * Priority: Antigravity (with quota) > selected local provider
      */
     async generateImage(
         options: ImageGenerationOptions,
@@ -148,20 +148,20 @@ export class LocalImageService extends BaseService {
         generatedPath = await this.providers.tryGenerateWithAntigravity(normalizedOptions);
 
         if (!generatedPath) {
-            this.logInfo(`Falling back to ${preferredProvider === 'antigravity' ? 'pollinations' : preferredProvider}`);
+            this.logInfo(`Falling back to ${preferredProvider}`);
             try {
                 generatedPath = await this.generateWithProvider(preferredProvider, normalizedOptions);
             } catch (error) {
                 if (preferredProvider === 'sd-cpp') {
-                    this.logWarn('SD-CPP generation failed, falling back to Pollinations', error as Error);
+                    this.logWarn('SD-CPP generation failed', error as Error);
                     this.trackSdCppMetric('sd-cpp-fallback-triggered', {
                         errorCode: LocalImageService.ERROR_CODES.SDCPP_FALLBACK_TRIGGERED,
                         error: getErrorMessage(error as Error),
                     });
-                    generatedPath = await this.generateWithPollinations(normalizedOptions);
                 } else {
                     throw error;
                 }
+                throw error;
             }
         }
 
@@ -295,7 +295,7 @@ export class LocalImageService extends BaseService {
 
     /** Save or update a ComfyUI workflow template. */
     async saveComfyWorkflowTemplate(input: {
-        id?: string; name: string; description?: string; workflow: Record<string, unknown>;
+        id?: string; name: string; description?: string; workflow: Record<string, RuntimeValue>;
     }): Promise<ComfyWorkflowTemplate> {
         this.assertNonEmptyText(input.name, 'Workflow template name');
         if (!input.workflow || Object.keys(input.workflow).length === 0) {
@@ -323,7 +323,7 @@ export class LocalImageService extends BaseService {
     /** Import a workflow template from a share code. */
     async importComfyWorkflowTemplateShareCode(code: string): Promise<ComfyWorkflowTemplate> {
         this.assertNonEmptyText(code, 'Workflow template share code');
-        let parsed: { template?: { id?: string; name: string; description?: string; workflow: Record<string, unknown> } };
+        let parsed: { template?: { id?: string; name: string; description?: string; workflow: Record<string, RuntimeValue> } };
         try {
             parsed = JSON.parse(Buffer.from(code, 'base64').toString('utf-8')) as typeof parsed;
         } catch (error) {
@@ -427,10 +427,10 @@ export class LocalImageService extends BaseService {
             case 'sd-webui':
             case 'comfyui':
                 return this.providers.generateWithProvider(provider, options);
-            case 'pollinations':
             case 'antigravity':
+                return this.providers.generateWithProvider('antigravity', options);
             default:
-                return this.generateWithPollinations(options);
+                throw new Error(`Unsupported image provider: ${provider}`);
         }
     }
 
@@ -438,11 +438,7 @@ export class LocalImageService extends BaseService {
         return this.sdcpp.generate(options);
     }
 
-    private async generateWithPollinations(options: ImageGenerationOptions): Promise<string> {
-        return this.providers.generateWithPollinations(options);
-    }
-
-    private trackSdCppMetric(name: string, properties?: Record<string, unknown>): void {
+    private trackSdCppMetric(name: string, properties?: Record<string, RuntimeValue>): void {
         this.sdcpp.trackMetric(name, properties);
     }
 
@@ -462,7 +458,7 @@ export class LocalImageService extends BaseService {
     }
 
     private getMaxPixelBudget(): number {
-        const imagesSettings = this.settingsSvc.getSettings().images as Record<string, unknown> | undefined;
+        const imagesSettings = this.settingsSvc.getSettings().images as Record<string, RuntimeValue> | undefined;
         const configured = imagesSettings?.maxPixels;
         if (typeof configured === 'number' && Number.isFinite(configured) && configured > 100_000) {
             return configured;

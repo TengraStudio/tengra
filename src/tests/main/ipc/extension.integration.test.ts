@@ -9,11 +9,11 @@ vi.mock('electron', () => ({
 }));
 
 describe('Extension IPC Handlers', () => {
-    let registeredHandlers: Map<string, unknown>;
+    let registeredHandlers: Map<string, TestValue>;
 
     beforeEach(() => {
         registeredHandlers = new Map();
-        vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: unknown) => {
+        vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: TestValue) => {
             registeredHandlers.set(channel, handler);
         });
     });
@@ -24,7 +24,7 @@ describe('Extension IPC Handlers', () => {
         it('should return warning status', async () => {
             const handler = async () => true;
             registeredHandlers.set('extension:shouldShowWarning', handler);
-            const result = await (registeredHandlers.get('extension:shouldShowWarning') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('extension:shouldShowWarning') as () => Promise<TestValue>)();
             expect(result).toBe(true);
         });
     });
@@ -33,7 +33,7 @@ describe('Extension IPC Handlers', () => {
         it('should dismiss warning', async () => {
             const handler = async () => ({ success: true });
             registeredHandlers.set('extension:dismissWarning', handler);
-            const result = await (registeredHandlers.get('extension:dismissWarning') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('extension:dismissWarning') as () => Promise<TestValue>)();
             expect(result).toEqual({ success: true });
         });
     });
@@ -42,7 +42,7 @@ describe('Extension IPC Handlers', () => {
         it('should return extension status', async () => {
             const handler = async () => ({ installed: false, shouldShowWarning: true });
             registeredHandlers.set('extension:getStatus', handler);
-            const result = await (registeredHandlers.get('extension:getStatus') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('extension:getStatus') as () => Promise<TestValue>)();
             expect(result).toEqual({ installed: false, shouldShowWarning: true });
         });
     });
@@ -51,7 +51,7 @@ describe('Extension IPC Handlers', () => {
         it('should set installed status', async () => {
             const handler = async () => ({ success: true });
             registeredHandlers.set('extension:setInstalled', handler);
-            const result = await (registeredHandlers.get('extension:setInstalled') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('extension:setInstalled') as () => Promise<TestValue>)();
             expect(result).toEqual({ success: true });
         });
     });

@@ -64,7 +64,7 @@ export const ErrorFallback = ({
                             </button>
                             {showStack && (
                                 <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
-                                    <pre className="text-[11px] bg-black/20 p-4 rounded-lg overflow-auto max-h-60 whitespace-pre font-mono text-muted-foreground leading-relaxed">
+                                    <pre className="text-[11px] bg-muted/50 p-4 rounded-lg overflow-auto max-h-60 whitespace-pre font-mono text-muted-foreground leading-relaxed">
                                         {error.stack}
                                     </pre>
                                 </div>

@@ -6,13 +6,13 @@ interface MockIpcEvent {
     sender: {
         id: number;
         isDestroyed: Mock<() => boolean>;
-        send: Mock<(channel: string, ...args: unknown[]) => void>;
+        send: Mock<(channel: string, ...args: TestValue[]) => void>;
     };
 }
 
 
 // Mock Electron ipcMain
-const ipcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
+const ipcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
 
 vi.mock('electron', () => ({
     app: {
@@ -20,7 +20,7 @@ vi.mock('electron', () => ({
     },
     ipcMain: {
         handle: vi.fn((channel, handler) => {
-            ipcMainHandlers.set(channel, handler);
+            ipcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
         }),
         removeHandler: vi.fn(),
         on: vi.fn(),
@@ -72,7 +72,7 @@ describe('Session conversation IPC integration', () => {
     });
 
 
-    const initIPC = (overrides?: Record<string, unknown>) => {
+    const initIPC = (overrides?: Record<string, TestValue>) => {
         registerSessionConversationIpc({
             getMainWindow: () => mockMainWindow as never,
             settingsService: mockSettingsService as never,
@@ -86,7 +86,7 @@ describe('Session conversation IPC integration', () => {
         });
     };
 
-    const createStreamRequest = (overrides?: Record<string, unknown>) => ({
+    const createStreamRequest = (overrides?: Record<string, TestValue>) => ({
         messages: [{ role: 'user', content: 'test' }],
         model: 'gpt-4o',
         tools: [],
@@ -98,10 +98,10 @@ describe('Session conversation IPC integration', () => {
         ...(overrides ?? {})
     });
 
-    const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void) | undefined => {
+    const getCancelHandler = (): ((_: TestValue, payload: { chatId: string }) => void) | undefined => {
         const calls = vi.mocked(ipcMain.on).mock.calls;
         const call = calls.find(entry => entry[0] === 'session:conversation:cancel');
-        return call?.[1] as ((_: unknown, payload: { chatId: string }) => void) | undefined;
+        return call?.[1] as ((_: TestValue, payload: { chatId: string }) => void) | undefined;
     };
 
     it('should register expected handlers', () => {
@@ -121,7 +121,7 @@ describe('Session conversation IPC integration', () => {
             role: 'assistant'
         });
 
-        const result = await handler?.(mockEvent, {
+        const result = await handler!(mockEvent, {
             messages: [{ role: 'user', content: 'test' }],
             model: 'gpt-4o',
             tools: [],
@@ -151,7 +151,7 @@ describe('Session conversation IPC integration', () => {
             role: 'assistant'
         });
 
-        const result = await handler?.(mockEvent, {
+        const result = await handler!(mockEvent, {
             messages: [{ role: 'user', content: 'test' }],
             model: 'gpt-4o',
             tools: [],
@@ -173,7 +173,7 @@ describe('Session conversation IPC integration', () => {
         initIPC();
         const handler = ipcMainHandlers.get('session:conversation:complete');
 
-        const result = await handler?.(
+        const result = await handler!(
             mockEvent,
             [{ role: 'user', content: 'test' }],
             'gpt-4o',
@@ -189,7 +189,7 @@ describe('Session conversation IPC integration', () => {
         initIPC();
         const handler = ipcMainHandlers.get('session:conversation:complete');
 
-        const result = await handler?.(mockEvent, {
+        const result = await handler!(mockEvent, {
             messages: [{ role: 'user', content: 'test' }],
             model: 'gpt-4o',
             tools: [],
@@ -209,7 +209,7 @@ describe('Session conversation IPC integration', () => {
             content: 'Copilot Response'
         });
 
-        const result = await handler?.(mockEvent, {
+        const result = await handler!(mockEvent, {
             messages: [{ role: 'user', content: 'test' }],
             model: 'gpt-4o',
             tools: [],
@@ -234,7 +234,7 @@ describe('Session conversation IPC integration', () => {
 
         mockLLMService.chat.mockRejectedValue(new Error('Simulated Fail'));
 
-        const result = await handler?.(mockEvent, {
+        const result = await handler!(mockEvent, {
             messages: [{ role: 'user', content: 'test' }],
             model: 'gpt-4o',
             tools: [],
@@ -259,7 +259,7 @@ describe('Session conversation IPC integration', () => {
         initIPC();
         const handler = ipcMainHandlers.get('session:conversation:stream');
 
-        const result = await handler?.(
+        const result = await handler!(
             mockEvent,
             [{ role: 'user', content: 'test' }],
             'gpt-4o',
@@ -278,9 +278,9 @@ describe('Session conversation IPC integration', () => {
         initIPC();
         const handler = ipcMainHandlers.get('session:conversation:stream');
         const payload = createStreamRequest();
-        const payloadWithoutChatId = { ...payload } as Record<string, unknown>;
+        const payloadWithoutChatId = { ...payload } as Record<string, TestValue>;
         delete payloadWithoutChatId.chatId;
-        const result = await handler?.(mockEvent, payloadWithoutChatId);
+        const result = await handler!(mockEvent, payloadWithoutChatId);
 
         expect(result).toMatchObject({ success: false });
     });
@@ -292,7 +292,7 @@ describe('Session conversation IPC integration', () => {
             yield { content: 'Hello' };
         })());
 
-        const result = await handler?.(mockEvent, createStreamRequest());
+        const result = await handler!(mockEvent, createStreamRequest());
 
         expect(result).toMatchObject({ success: true });
         expect(mockEvent.sender.send).toHaveBeenCalledWith(
@@ -310,7 +310,7 @@ describe('Session conversation IPC integration', () => {
         const handler = ipcMainHandlers.get('session:conversation:stream');
         mockLLMService.chatStream.mockReturnValue((async function* () { })());
 
-        const result = await handler?.(mockEvent, createStreamRequest({ systemMode: 'thinking' }));
+        const result = await handler!(mockEvent, createStreamRequest({ systemMode: 'thinking' }));
 
         expect(result).toMatchObject({ success: true });
     });
@@ -320,7 +320,7 @@ describe('Session conversation IPC integration', () => {
         const handler = ipcMainHandlers.get('session:conversation:stream');
         mockLLMService.chatStream.mockReturnValue((async function* () { })());
 
-        const result = await handler?.(mockEvent, createStreamRequest({ systemMode: 'agent' }));
+        const result = await handler!(mockEvent, createStreamRequest({ systemMode: 'agent' }));
 
         expect(result).toMatchObject({ success: true });
     });
@@ -330,7 +330,7 @@ describe('Session conversation IPC integration', () => {
         const handler = ipcMainHandlers.get('session:conversation:stream');
         mockLLMService.chatStream.mockReturnValue((async function* () { })());
 
-        const result = await handler?.(mockEvent, createStreamRequest({ systemMode: 'fast' }));
+        const result = await handler!(mockEvent, createStreamRequest({ systemMode: 'fast' }));
 
         expect(result).toMatchObject({ success: true });
     });
@@ -339,7 +339,7 @@ describe('Session conversation IPC integration', () => {
         initIPC();
         const handler = ipcMainHandlers.get('session:conversation:stream');
 
-        const result = await handler?.(mockEvent, createStreamRequest({ systemMode: 'default' }));
+        const result = await handler!(mockEvent, createStreamRequest({ systemMode: 'default' }));
 
         expect(result).toMatchObject({ success: false });
     });
@@ -352,7 +352,7 @@ describe('Session conversation IPC integration', () => {
             yield null;
         })());
 
-        const result = await handler?.(mockEvent, createStreamRequest());
+        const result = await handler!(mockEvent, createStreamRequest());
 
         expect(result).toMatchObject({ success: true });
         expect(mockEvent.sender.send).toHaveBeenCalledWith(
@@ -370,7 +370,7 @@ describe('Session conversation IPC integration', () => {
         initIPC({ rateLimitService: mockRateLimitService });
         const handler = ipcMainHandlers.get('session:conversation:stream');
 
-        const result = await handler?.(mockEvent, createStreamRequest());
+        const result = await handler!(mockEvent, createStreamRequest());
 
         expect(result).toMatchObject({ success: true });
         expect(mockEvent.sender.send).toHaveBeenCalledWith(
@@ -389,7 +389,7 @@ describe('Session conversation IPC integration', () => {
         initIPC({ rateLimitService: mockRateLimitService });
         const handler = ipcMainHandlers.get('session:conversation:stream');
 
-        await handler?.(mockEvent, createStreamRequest());
+        await handler!(mockEvent, createStreamRequest());
 
         expect(ipcMain.on).not.toHaveBeenCalledWith('session:conversation:cancel', expect.any(Function));
         expect(ipcMain.removeListener).not.toHaveBeenCalledWith('session:conversation:cancel', expect.any(Function));
@@ -400,7 +400,7 @@ describe('Session conversation IPC integration', () => {
         const handler = ipcMainHandlers.get('session:conversation:stream');
         mockLLMService.chatStream.mockReturnValue((async function* () { })());
 
-        await handler?.(mockEvent, createStreamRequest());
+        await handler!(mockEvent, createStreamRequest());
 
         expect(mockRateLimitService.waitForToken).not.toHaveBeenCalled();
         expect(mockLLMService.chatStream).toHaveBeenCalled();
@@ -411,7 +411,7 @@ describe('Session conversation IPC integration', () => {
         const handler = ipcMainHandlers.get('session:conversation:stream');
         mockLLMService.chatStream.mockReturnValue((async function* () { })());
 
-        await handler?.(mockEvent, createStreamRequest({ optionsJson: { reasoningEffort: 'high' } }));
+        await handler!(mockEvent, createStreamRequest({ optionsJson: { reasoningEffort: 'high' } }));
 
         expect(mockLLMService.chatStream).toHaveBeenCalled();
         expect(mockLLMService.chatStream.mock.calls[0][4]).toEqual(
@@ -424,7 +424,7 @@ describe('Session conversation IPC integration', () => {
         const handler = ipcMainHandlers.get('session:conversation:stream');
         mockLLMService.chatStream.mockReturnValue((async function* () { })());
 
-        await handler?.(mockEvent, createStreamRequest({ optionsJson: { reasoningEffort: 42 } }));
+        await handler!(mockEvent, createStreamRequest({ optionsJson: { reasoningEffort: 42 } }));
 
         expect(mockLLMService.chatStream).toHaveBeenCalled();
         expect(mockLLMService.chatStream.mock.calls[0][4]).toEqual(
@@ -437,7 +437,7 @@ describe('Session conversation IPC integration', () => {
         const handler = ipcMainHandlers.get('session:conversation:stream');
         mockLLMService.chatStream.mockReturnValue((async function* () { })());
 
-        await handler?.(mockEvent, createStreamRequest({ systemMode: 'agent' }));
+        await handler!(mockEvent, createStreamRequest({ systemMode: 'agent' }));
 
         expect(mockLLMService.chatStream).toHaveBeenCalled();
         expect(mockLLMService.chatStream.mock.calls[0][4]).toEqual(
@@ -450,7 +450,7 @@ describe('Session conversation IPC integration', () => {
         const handler = ipcMainHandlers.get('session:conversation:stream');
         mockLLMService.chatStream.mockReturnValue((async function* () { })());
 
-        await handler?.(mockEvent, createStreamRequest());
+        await handler!(mockEvent, createStreamRequest());
 
         expect(ipcMain.on).toHaveBeenCalledWith('session:conversation:cancel', expect.any(Function));
         expect(ipcMain.removeListener).toHaveBeenCalledWith('session:conversation:cancel', expect.any(Function));
@@ -464,7 +464,7 @@ describe('Session conversation IPC integration', () => {
             yield { content: 'Hidden' };
         })());
 
-        const result = await handler?.(mockEvent, createStreamRequest());
+        const result = await handler!(mockEvent, createStreamRequest());
 
         expect(result).toMatchObject({ success: true });
         expect(mockEvent.sender.send).not.toHaveBeenCalled();
@@ -476,7 +476,7 @@ describe('Session conversation IPC integration', () => {
         mockRateLimitService.waitForToken.mockResolvedValue(undefined);
         mockLLMService.chatStream.mockReturnValue((async function* () { })());
 
-        await handler?.(mockEvent, createStreamRequest());
+        await handler!(mockEvent, createStreamRequest());
 
         expect(mockRateLimitService.waitForToken).toHaveBeenCalledWith('session:conversation:stream');
         expect(mockLLMService.chatStream).toHaveBeenCalled();
@@ -487,7 +487,7 @@ describe('Session conversation IPC integration', () => {
         const handler = ipcMainHandlers.get('session:conversation:stream');
         mockCopilotService.streamChat.mockResolvedValue(null);
 
-        const result = await handler?.(mockEvent, createStreamRequest({ provider: 'copilot' }));
+        const result = await handler!(mockEvent, createStreamRequest({ provider: 'copilot' }));
 
         expect(result).toMatchObject({ success: true });
         expect(mockEvent.sender.send).toHaveBeenCalledWith(
@@ -505,7 +505,7 @@ describe('Session conversation IPC integration', () => {
         const handler = ipcMainHandlers.get('session:conversation:stream');
         mockLLMService.chatOpenCodeStream.mockReturnValue((async function* () { })());
 
-        const result = await handler?.(mockEvent, createStreamRequest({ provider: 'opencode' }));
+        const result = await handler!(mockEvent, createStreamRequest({ provider: 'opencode' }));
 
         expect(result).toMatchObject({ success: true });
         expect(mockLLMService.chatOpenCodeStream).toHaveBeenCalled();
@@ -516,7 +516,7 @@ describe('Session conversation IPC integration', () => {
         const handler = ipcMainHandlers.get('session:conversation:stream');
         mockLLMService.chatStream.mockReturnValue((async function* () { })());
 
-        await handler?.(mockEvent, createStreamRequest({ workspaceId: 'proj-1' }));
+        await handler!(mockEvent, createStreamRequest({ workspaceId: 'proj-1' }));
 
         expect(mockLLMService.chatStream).toHaveBeenCalled();
         expect(mockLLMService.chatStream.mock.calls[0][4]).toEqual(
@@ -529,7 +529,7 @@ describe('Session conversation IPC integration', () => {
         const handler = ipcMainHandlers.get('session:conversation:stream');
         mockLLMService.chatStream.mockReturnValue((async function* () { })());
 
-        await handler?.(mockEvent, createStreamRequest({ workspaceId: undefined }));
+        await handler!(mockEvent, createStreamRequest({ workspaceId: undefined }));
 
         expect(mockLLMService.chatStream).toHaveBeenCalled();
         expect(mockLLMService.chatStream.mock.calls[0][4]).toEqual(
@@ -547,10 +547,10 @@ describe('Session conversation IPC integration', () => {
             yield null;
         })());
 
-        const result = await handler?.(mockEvent, createStreamRequest());
-        const hasErrorChunk = mockEvent.sender.send.mock.calls.some((call: unknown[]) => {
+        const result = await handler!(mockEvent, createStreamRequest());
+        const hasErrorChunk = mockEvent.sender.send.mock.calls.some((call: TestValue[]) => {
             const channel = call[0] as string;
-            const payload = call[1] as Record<string, unknown>;
+            const payload = call[1] as Record<string, TestValue>;
             return channel === 'session:conversation:stream-chunk' && payload?.type === 'error';
         });
 
@@ -566,10 +566,10 @@ describe('Session conversation IPC integration', () => {
         initIPC();
         const handler = ipcMainHandlers.get('session:conversation:stream');
         mockLLMService.chatStream.mockImplementation(async function* (
-            _messages: unknown,
-            _model: unknown,
-            _tools: unknown,
-            _provider: unknown,
+            _messages: TestValue,
+            _model: TestValue,
+            _tools: TestValue,
+            _provider: TestValue,
             options: { signal?: AbortSignal }
         ) {
             const cancelHandler = getCancelHandler();
@@ -584,9 +584,9 @@ describe('Session conversation IPC integration', () => {
             yield { content: 'unexpected-content' };
         });
 
-        const result = await handler?.(mockEvent, createStreamRequest());
-        const hasUnexpectedContent = mockEvent.sender.send.mock.calls.some((call: unknown[]) => {
-            const payload = call[1] as Record<string, unknown>;
+        const result = await handler!(mockEvent, createStreamRequest());
+        const hasUnexpectedContent = mockEvent.sender.send.mock.calls.some((call: TestValue[]) => {
+            const payload = call[1] as Record<string, TestValue>;
             return payload?.content === 'unexpected-content';
         });
 
@@ -602,10 +602,10 @@ describe('Session conversation IPC integration', () => {
         initIPC();
         const handler = ipcMainHandlers.get('session:conversation:stream');
         mockLLMService.chatStream.mockImplementation(async function* (
-            _messages: unknown,
-            _model: unknown,
-            _tools: unknown,
-            _provider: unknown,
+            _messages: TestValue,
+            _model: TestValue,
+            _tools: TestValue,
+            _provider: TestValue,
             options: { signal?: AbortSignal }
         ) {
             const cancelHandler = getCancelHandler();
@@ -620,7 +620,7 @@ describe('Session conversation IPC integration', () => {
             yield { content: 'kept-content' };
         });
 
-        const result = await handler?.(mockEvent, createStreamRequest());
+        const result = await handler!(mockEvent, createStreamRequest());
 
         expect(result).toMatchObject({ success: true });
         expect(mockEvent.sender.send).toHaveBeenCalledWith(
@@ -629,5 +629,6 @@ describe('Session conversation IPC integration', () => {
         );
     });
 });
+
 
 

@@ -55,18 +55,224 @@ export interface WorkspaceAnalysis {
     issues?: WorkspaceIssue[]
 }
 
+const SPECIAL_FILE_LANGUAGE_MAP: Record<string, string> = {
+    'dockerfile': 'Dockerfile',
+    'containerfile': 'Containerfile',
+    'makefile': 'Makefile',
+    'cmakelists.txt': 'CMake',
+    'gemfile': 'Ruby',
+    'rakefile': 'Ruby',
+    'brewfile': 'Ruby',
+    'vagrantfile': 'Ruby',
+    'procfile': 'Procfile',
+    'jenkinsfile': 'Groovy',
+    'gradlew': 'Shell',
+    'mvnw': 'Shell',
+};
+
+const EXTENSION_LANGUAGE_MAP: Record<string, string> = {
+    js: 'JavaScript',
+    mjs: 'JavaScript',
+    cjs: 'JavaScript',
+    jsx: 'JavaScript',
+    ts: 'TypeScript',
+    mts: 'TypeScript',
+    cts: 'TypeScript',
+    tsx: 'TypeScript',
+    py: 'Python',
+    pyi: 'Python',
+    pyx: 'Python',
+    pyd: 'Python',
+    go: 'Go',
+    rs: 'Rust',
+    java: 'Java',
+    kt: 'Kotlin',
+    kts: 'Kotlin',
+    groovy: 'Groovy',
+    gradle: 'Groovy',
+    scala: 'Scala',
+    sc: 'Scala',
+    cs: 'C#',
+    csx: 'C#',
+    fs: 'F#',
+    fsx: 'F#',
+    vb: 'Visual Basic .NET',
+    c: 'C',
+    h: 'C/C++ Header',
+    i: 'C',
+    ii: 'C++',
+    cpp: 'C++',
+    cxx: 'C++',
+    cc: 'C++',
+    'c++': 'C++',
+    hpp: 'C/C++ Header',
+    hxx: 'C/C++ Header',
+    hh: 'C/C++ Header',
+    m: 'Objective-C',
+    mm: 'Objective-C++',
+    swift: 'Swift',
+    php: 'PHP',
+    phtml: 'PHP',
+    php3: 'PHP',
+    php4: 'PHP',
+    php5: 'PHP',
+    phpt: 'PHP',
+    rb: 'Ruby',
+    erb: 'Ruby',
+    rake: 'Ruby',
+    lua: 'Lua',
+    pl: 'Perl',
+    pm: 'Perl',
+    t: 'Perl',
+    pod: 'Perl POD',
+    r: 'R',
+    rmd: 'R Markdown',
+    jl: 'Julia',
+    dart: 'Dart',
+    elm: 'Elm',
+    ex: 'Elixir',
+    exs: 'Elixir',
+    erl: 'Erlang',
+    hrl: 'Erlang',
+    hrl2: 'Erlang',
+    clj: 'Clojure',
+    cljs: 'Clojure',
+    cljc: 'Clojure',
+    edn: 'EDN',
+    hs: 'Haskell',
+    lhs: 'Haskell',
+    ml: 'OCaml',
+    mli: 'OCaml',
+    zig: 'Zig',
+    nim: 'Nim',
+    nims: 'Nim',
+    pas: 'Pascal',
+    pp: 'Pascal',
+    dpr: 'Pascal',
+    f: 'Fortran',
+    f90: 'Fortran',
+    f95: 'Fortran',
+    f03: 'Fortran',
+    f08: 'Fortran',
+    cob: 'COBOL',
+    cbl: 'COBOL',
+    asm: 'Assembly',
+    s: 'Assembly',
+    sx: 'Assembly',
+    v: 'Verilog',
+    sv: 'SystemVerilog',
+    vh: 'Verilog Header',
+    vhd: 'VHDL',
+    vhdl: 'VHDL',
+    sol: 'Solidity',
+    move: 'Move',
+    cairo: 'Cairo',
+    html: 'HTML',
+    htm: 'HTML',
+    xhtml: 'HTML',
+    css: 'CSS',
+    scss: 'SCSS',
+    sass: 'Sass',
+    less: 'Less',
+    styl: 'Stylus',
+    pcss: 'PostCSS',
+    vue: 'Vue',
+    svelte: 'Svelte',
+    astro: 'Astro',
+    md: 'Markdown',
+    markdown: 'Markdown',
+    mdx: 'MDX',
+    txt: 'Text',
+    rst: 'reStructuredText',
+    adoc: 'AsciiDoc',
+    tex: 'TeX',
+    bib: 'BibTeX',
+    json: 'JSON',
+    json5: 'JSON5',
+    jsonc: 'JSONC',
+    yaml: 'YAML',
+    yml: 'YAML',
+    toml: 'TOML',
+    ini: 'INI',
+    cfg: 'INI',
+    conf: 'Config',
+    env: 'Environment',
+    xml: 'XML',
+    xsd: 'XML Schema',
+    xsl: 'XSLT',
+    xslt: 'XSLT',
+    svg: 'SVG',
+    graphql: 'GraphQL',
+    gql: 'GraphQL',
+    proto: 'Protocol Buffers',
+    sql: 'SQL',
+    psql: 'SQL',
+    ddl: 'SQL',
+    sh: 'Shell',
+    bash: 'Shell',
+    zsh: 'Shell',
+    fish: 'Shell',
+    ksh: 'Shell',
+    ps1: 'PowerShell',
+    psm1: 'PowerShell',
+    psd1: 'PowerShell',
+    bat: 'Batch',
+    cmd: 'Batch',
+    awk: 'Awk',
+    sed: 'Sed',
+    dockerignore: 'Docker Ignore',
+    gitignore: 'Git Ignore',
+    gitattributes: 'Git Attributes',
+    gitmodules: 'Git Config',
+    npmrc: 'NPM Config',
+    editorconfig: 'EditorConfig',
+    lock: 'Lockfile',
+    pem: 'PEM',
+    crt: 'Certificate',
+    cer: 'Certificate',
+    key: 'Key',
+    pub: 'Public Key',
+    asc: 'ASCII Armor',
+    csr: 'Certificate Request',
+    diff: 'Diff',
+    patch: 'Patch',
+    csv: 'CSV',
+    tsv: 'TSV',
+    log: 'Log',
+    wasm: 'WebAssembly',
+};
+
+const LANGUAGE_DISTRIBUTION_EXCLUDED_SEGMENTS = new Set([
+    'vendor', 'vendors', 'third_party', 'third-party', 'external', 'extern',
+    'deps', 'dependencies', 'vcpkg_installed'
+]);
+
+const LANGUAGE_DISTRIBUTION_EXCLUDED_LANGUAGES = new Set([
+    'Text', 'Log', 'Markdown', 'MDX', 'reStructuredText', 'AsciiDoc', 'TeX', 'BibTeX',
+    'PEM', 'Certificate', 'Key', 'Public Key', 'ASCII Armor', 'Certificate Request',
+    'CSV', 'TSV', 'Diff', 'Patch', 'Docker Ignore', 'Git Ignore', 'Git Attributes',
+    'Git Config', 'NPM Config', 'EditorConfig', 'Lockfile', 'Environment', 'Config',
+    'INI', 'JSON', 'JSON5', 'JSONC', 'YAML', 'TOML', 'XML', 'XML Schema', 'XSLT', 'SVG'
+]);
+
 const LOG_CONTEXT = 'WorkspaceService';
+type WorkspaceChangeCallback = (event: string, path: string) => void;
 
 export class WorkspaceService extends BaseService {
     private watchers: Map<string, import('fs').FSWatcher> = new Map();
+    private watchCallbacks: Map<string, Set<WorkspaceChangeCallback>> = new Map();
     private analysisCache: Map<string, { data: WorkspaceAnalysis; timestamp: number }> = new Map();
+    private analysisSummaryCache: Map<string, { data: WorkspaceAnalysis; timestamp: number }> =
+        new Map();
+    private analysisInFlight: Map<string, Promise<WorkspaceAnalysis>> = new Map();
+    private analysisSummaryInFlight: Map<string, Promise<WorkspaceAnalysis>> = new Map();
     private fileListCache: Map<string, { files: string[]; timestamp: number; complete: boolean }> = new Map();
     private changedPathSets: Map<string, Set<string>> = new Map();
     private backgroundScansInProgress: Set<string> = new Set();
+    private activeWorkspaceRootPath: string | null = null;
     private readonly ANALYSIS_CACHE_TTL_MS = 300000;
     private readonly WORKSPACE_FILES_PAGE_SIZE = 1000;
     private readonly INITIAL_SCAN_BUDGET_MS = 1200;
-    private readonly INITIAL_SCAN_FILE_LIMIT = 5000;//TODO: Make it configurable
     private readonly INITIAL_STATS_SAMPLE_LIMIT = 400;
 
     constructor() {
@@ -82,41 +288,16 @@ export class WorkspaceService extends BaseService {
         rootPath = this.resolveAndValidateRootPath(rootPath);
         this.logInfo(`Starting watch on ${rootPath}`);
 
-        // Stop existing watcher if any
-        if (this.watchers.has(rootPath)) {
-            this.watchers.get(rootPath)?.close();
-            this.watchers.delete(rootPath);
+        const callbacks = this.watchCallbacks.get(rootPath) ?? new Set<WorkspaceChangeCallback>();
+        callbacks.add(onChange);
+        this.watchCallbacks.set(rootPath, callbacks);
+
+        if (!this.shouldRunActiveWorkspaceWork(rootPath)) {
+            this.logInfo(`Deferring watcher for inactive workspace ${rootPath}`);
+            return;
         }
 
-        try {
-            const { watch } = await import('fs');
-            const eventThrottleMap = new Map<string, number>();
-            const EVENT_THROTTLE_MS = 150;
-
-            // Recursive native watcher
-            const watcher = watch(rootPath, { recursive: true }, (event, filename) => {
-                if (!filename) { return; }
-                // Simple debounce/filter could be added here
-                if (filename.includes('node_modules') || filename.includes('.git')) { return; }
-                const fileName = filename.toString();
-                const absolutePath = path.join(rootPath, fileName);
-                const throttleKey = `${event}:${absolutePath}`;
-                const now = Date.now();
-                const lastEmittedAt = eventThrottleMap.get(throttleKey) ?? 0;
-                if (now - lastEmittedAt < EVENT_THROTTLE_MS) {
-                    return;
-                }
-                eventThrottleMap.set(throttleKey, now);
-                this.trackChangedPath(rootPath, absolutePath);
-                onChange(event, absolutePath);
-            });
-
-            watcher.on('error', (err) => this.logError(`Error on ${rootPath}:`, err));
-            this.watchers.set(rootPath, watcher);
-
-        } catch (e) {
-            this.logWarn(`Failed to watch ${rootPath}:`, getErrorMessage(e as Error));
-        }
+        await this.ensureWorkspaceWatcher(rootPath);
     }
 
     /** Closes all file watchers and clears caches. */
@@ -131,8 +312,13 @@ export class WorkspaceService extends BaseService {
         }
         this.watchers.clear();
         this.analysisCache.clear();
+        this.analysisSummaryCache.clear();
+        this.analysisInFlight.clear();
+        this.analysisSummaryInFlight.clear();
         this.fileListCache.clear();
         this.changedPathSets.clear();
+        this.watchCallbacks.clear();
+        this.activeWorkspaceRootPath = null;
     }
 
     /**
@@ -141,12 +327,10 @@ export class WorkspaceService extends BaseService {
      */
     async stopWatch(rootPath: string) {
         rootPath = this.resolveAndValidateRootPath(rootPath);
-        if (this.watchers.has(rootPath)) {
-            this.watchers.get(rootPath)?.close();
-            this.watchers.delete(rootPath);
-            this.changedPathSets.delete(rootPath);
-            this.logInfo(`Stopped watching ${rootPath}`);
-        }
+        this.closeWorkspaceWatcher(rootPath);
+        this.watchCallbacks.delete(rootPath);
+        this.changedPathSets.delete(rootPath);
+        this.logInfo(`Stopped watching ${rootPath}`);
     }
 
     /**
@@ -166,7 +350,42 @@ export class WorkspaceService extends BaseService {
      * Gets all currently open (watched) workspace root paths.
      */
     getOpenWorkspaces(): string[] {
-        return Array.from(this.watchers.keys());
+        return Array.from(this.watchCallbacks.keys());
+    }
+
+    async setActiveWorkspace(rootPath: string | null): Promise<void> {
+        appLogger.debug(LOG_CONTEXT, 'Setting active workspace', { rootPath });
+        const nextRootPath = rootPath ? this.resolveAndValidateRootPath(rootPath) : null;
+        
+        if (nextRootPath === this.activeWorkspaceRootPath && this.activeWorkspaceRootPath !== null) {
+            appLogger.debug(LOG_CONTEXT, 'Workspace already active', { rootPath: nextRootPath });
+            return;
+        }
+
+        const previousRootPath = this.activeWorkspaceRootPath;
+        this.activeWorkspaceRootPath = nextRootPath;
+
+        if (previousRootPath) {
+            this.closeWorkspaceWatcher(previousRootPath);
+        }
+
+        if (nextRootPath && this.watchCallbacks.has(nextRootPath)) {
+            await this.ensureWorkspaceWatcher(nextRootPath);
+        }
+    }
+
+    async clearActiveWorkspace(rootPath?: string): Promise<void> {
+        if (rootPath) {
+            const normalizedRootPath = this.resolveAndValidateRootPath(rootPath);
+            if (normalizedRootPath !== this.activeWorkspaceRootPath) {
+                return;
+            }
+        }
+        await this.setActiveWorkspace(null);
+    }
+
+    getActiveWorkspace(): string | null {
+        return this.activeWorkspaceRootPath;
     }
 
     private trackChangedPath(rootPath: string, changedPath: string): void {
@@ -203,12 +422,41 @@ export class WorkspaceService extends BaseService {
                 nextFiles.delete(changedPath);
             }
         }
+        this.updateFileList(rootPath, nextFiles, cachedFileList.complete);
+    }
 
+    private updateFileList(rootPath: string, nextFiles: Set<string>, complete: boolean) {
+        if (!nextFiles || !(nextFiles instanceof Set)) {
+            appLogger.error(LOG_CONTEXT, 'updateFileList called with invalid nextFiles', { type: typeof nextFiles });
+            return;
+        }
         const updatedFiles = Array.from(nextFiles).sort();
         const timestamp = Date.now();
-        this.fileListCache.set(rootPath, { files: updatedFiles, timestamp, complete: cachedFileList.complete });
+        this.fileListCache.set(rootPath, { files: updatedFiles, timestamp, complete: complete });
         const cachedAnalysis = this.analysisCache.get(rootPath);
         if (!cachedAnalysis) {
+            const cachedSummary = this.analysisSummaryCache.get(rootPath);
+            if (!cachedSummary) {
+                return;
+            }
+            const summaryFilePage = this.paginateFiles(updatedFiles, 0, this.WORKSPACE_FILES_PAGE_SIZE);
+            this.analysisSummaryCache.set(rootPath, {
+                timestamp,
+                data: {
+                    ...cachedSummary.data,
+                    files: summaryFilePage.files,
+                    filesPage: {
+                        offset: summaryFilePage.offset,
+                        limit: summaryFilePage.limit,
+                        total: summaryFilePage.total,
+                        hasMore: summaryFilePage.hasMore,
+                    },
+                    stats: {
+                        ...cachedSummary.data.stats,
+                        fileCount: updatedFiles.length,
+                    },
+                },
+            });
             return;
         }
         const initialFilePage = this.paginateFiles(updatedFiles, 0, this.WORKSPACE_FILES_PAGE_SIZE);
@@ -229,6 +477,88 @@ export class WorkspaceService extends BaseService {
                 },
             },
         });
+        const cachedSummary = this.analysisSummaryCache.get(rootPath);
+        if (!cachedSummary) {
+            return;
+        }
+        this.analysisSummaryCache.set(rootPath, {
+            timestamp,
+            data: {
+                ...cachedSummary.data,
+                files: initialFilePage.files,
+                filesPage: {
+                    offset: initialFilePage.offset,
+                    limit: initialFilePage.limit,
+                    total: initialFilePage.total,
+                    hasMore: initialFilePage.hasMore,
+                },
+                stats: {
+                    ...cachedSummary.data.stats,
+                    fileCount: updatedFiles.length,
+                },
+            },
+        });
+    }
+
+    private async buildWorkspaceAnalysis(
+        rootPath: string,
+        options?: { includeIssues?: boolean }
+    ): Promise<{ analysis: WorkspaceAnalysis; scanComplete: boolean; files: string[] }> {
+        this.logInfo('Analyzing workspace at (normalized):', { rootPath });
+        const runStart = Date.now();
+        const includeIssues = options?.includeIssues !== false;
+
+        const scanResult = await this.scanFiles(rootPath, {
+            budgetMs: this.INITIAL_SCAN_BUDGET_MS,
+        });
+        const files = scanResult.files;
+        this.logDebug(`Found ${files.length} files`);
+        const type = await this.detectType(files);
+        const { frameworks, dependencies, devDependencies } = await this.analyzeDependencies(
+            rootPath,
+            type,
+            files
+        );
+        const stats = await this.calculateStats(
+            files,
+            scanResult.complete ? files.length : this.INITIAL_STATS_SAMPLE_LIMIT
+        );
+        this.logDebug('Stats calculated', {
+            fileCount: stats.fileCount,
+            totalSize: stats.totalSize,
+            loc: stats.loc,
+            lastModified: stats.lastModified,
+            partialScan: !scanResult.complete,
+        });
+        const languages = await this.calculateLanguages(files);
+        const monorepo = await this.detectMonorepo(rootPath, files);
+        const initialFilePage = this.paginateFiles(files, 0, this.WORKSPACE_FILES_PAGE_SIZE);
+        const issues = includeIssues ? await this.findIssues(rootPath, files) : undefined;
+
+        this.logDebug(`Analysis complete in ${Date.now() - runStart}ms`);
+
+        return {
+            analysis: {
+                type,
+                frameworks,
+                dependencies,
+                devDependencies,
+                stats,
+                languages,
+                files: initialFilePage.files,
+                filesPage: {
+                    offset: initialFilePage.offset,
+                    limit: initialFilePage.limit,
+                    total: initialFilePage.total,
+                    hasMore: initialFilePage.hasMore
+                },
+                monorepo,
+                todos: [],
+                issues
+            },
+            scanComplete: scanResult.complete,
+            files,
+        };
     }
 
     /**
@@ -248,63 +578,68 @@ export class WorkspaceService extends BaseService {
             return cached.data;
         }
 
-        this.logInfo('Analyzing workspace at (normalized):', { rootPath });
-        const runStart = Date.now();
-
-        const scanResult = await this.scanFiles(rootPath, {
-            budgetMs: this.INITIAL_SCAN_BUDGET_MS,
-            maxFiles: this.INITIAL_SCAN_FILE_LIMIT,
-        });
-        const files = scanResult.files;
-        this.logDebug(`Found ${files.length} files`);
-        const type = await this.detectType(files);
-        const { frameworks, dependencies, devDependencies } = await this.analyzeDependencies(rootPath, type, files);
-        const stats = await this.calculateStats(
-            files,
-            runStart,
-            scanResult.complete ? files.length : this.INITIAL_STATS_SAMPLE_LIMIT
-        );
-        this.logDebug('Stats calculated', {
-            fileCount: stats.fileCount,
-            totalSize: stats.totalSize,
-            loc: stats.loc,
-            lastModified: stats.lastModified,
-            partialScan: !scanResult.complete,
-        });
-        const languages = this.calculateLanguages(files);
-        const monorepo = await this.detectMonorepo(rootPath, files);
-        const todos: string[] = [];
-        const issues = await this.findIssues(rootPath, files);
-        const initialFilePage = this.paginateFiles(files, 0, this.WORKSPACE_FILES_PAGE_SIZE);
-
-        this.logDebug(`Analysis complete in ${Date.now() - runStart}ms`);
-
-        const analysis: WorkspaceAnalysis = {
-            type,
-            frameworks,
-            dependencies,
-            devDependencies,
-            stats,
-            languages,
-            files: initialFilePage.files,
-            filesPage: {
-                offset: initialFilePage.offset,
-                limit: initialFilePage.limit,
-                total: initialFilePage.total,
-                hasMore: initialFilePage.hasMore
-            },
-            monorepo,
-            todos,
-            issues
-        };
-
-        const timestamp = Date.now();
-        this.analysisCache.set(rootPath, { data: analysis, timestamp });
-        this.fileListCache.set(rootPath, { files, timestamp, complete: scanResult.complete });
-        if (!scanResult.complete) {
-            this.startBackgroundWorkspaceScan(rootPath);
+        const existingRequest = this.analysisInFlight.get(rootPath);
+        if (existingRequest) {
+            this.logDebug('Joining in-flight workspace analysis for:', rootPath);
+            return existingRequest;
         }
-        return analysis;
+
+        const analysisRequest = (async (): Promise<WorkspaceAnalysis> => {
+            const { analysis, scanComplete, files } = await this.buildWorkspaceAnalysis(rootPath);
+
+            const timestamp = Date.now();
+            this.analysisCache.set(rootPath, { data: analysis, timestamp });
+            this.fileListCache.set(rootPath, { files, timestamp, complete: scanComplete });
+            this.analysisSummaryCache.set(rootPath, { data: analysis, timestamp });
+            if (!scanComplete && this.shouldRunActiveWorkspaceWork(rootPath)) {
+                this.startBackgroundWorkspaceScan(rootPath);
+            }
+            return analysis;
+        })();
+
+        this.analysisInFlight.set(rootPath, analysisRequest);
+        try {
+            return await analysisRequest;
+        } finally {
+            this.analysisInFlight.delete(rootPath);
+        }
+    }
+
+    async analyzeWorkspaceSummary(rootPath: string): Promise<WorkspaceAnalysis> {
+        rootPath = this.resolveAndValidateRootPath(rootPath);
+        await this.applyIncrementalInvalidation(rootPath);
+
+        const cachedSummary = this.analysisSummaryCache.get(rootPath);
+        if (
+            cachedSummary !== undefined &&
+            Date.now() - cachedSummary.timestamp < this.ANALYSIS_CACHE_TTL_MS
+        ) {
+            this.logDebug('Returning cached workspace analysis summary for:', rootPath);
+            return cachedSummary.data;
+        }
+
+        const existingRequest = this.analysisSummaryInFlight.get(rootPath);
+        if (existingRequest) {
+            this.logDebug('Joining in-flight workspace analysis summary for:', rootPath);
+            return existingRequest;
+        }
+
+        const summaryRequest = (async (): Promise<WorkspaceAnalysis> => {
+            const { analysis, scanComplete, files } = await this.buildWorkspaceAnalysis(rootPath, {
+                includeIssues: false,
+            });
+            const timestamp = Date.now();
+            this.analysisSummaryCache.set(rootPath, { data: analysis, timestamp });
+            this.fileListCache.set(rootPath, { files, timestamp, complete: scanComplete });
+            return analysis;
+        })();
+
+        this.analysisSummaryInFlight.set(rootPath, summaryRequest);
+        try {
+            return await summaryRequest;
+        } finally {
+            this.analysisSummaryInFlight.delete(rootPath);
+        }
     }
 
     /**
@@ -326,7 +661,7 @@ export class WorkspaceService extends BaseService {
             const scanResult = await this.scanFiles(rootPath);
             files = scanResult.files;
             this.fileListCache.set(rootPath, { files, timestamp: Date.now(), complete: scanResult.complete });
-        } else if (!cachedFiles.complete) {
+        } else if (!cachedFiles.complete && this.shouldRunActiveWorkspaceWork(rootPath)) {
             this.startBackgroundWorkspaceScan(rootPath);
         }
 
@@ -334,6 +669,9 @@ export class WorkspaceService extends BaseService {
     }
 
     private startBackgroundWorkspaceScan(rootPath: string): void {
+        if (!this.shouldRunActiveWorkspaceWork(rootPath)) {
+            return;
+        }
         if (this.backgroundScansInProgress.has(rootPath)) {
             return;
         }
@@ -349,8 +687,8 @@ export class WorkspaceService extends BaseService {
                     type,
                     fullScan.files
                 );
-                const stats = await this.calculateStats(fullScan.files, timestamp);
-                const languages = this.calculateLanguages(fullScan.files);
+                const stats = await this.calculateStats(fullScan.files);
+                const languages = await this.calculateLanguages(fullScan.files);
                 const monorepo = await this.detectMonorepo(rootPath, fullScan.files);
                 const issues = await this.findIssues(rootPath, fullScan.files);
                 this.fileListCache.set(rootPath, {
@@ -388,6 +726,34 @@ export class WorkspaceService extends BaseService {
                         },
                     });
                 }
+                const cachedSummary = this.analysisSummaryCache.get(rootPath);
+                if (cachedSummary) {
+                    const initialFilePage = this.paginateFiles(
+                        fullScan.files,
+                        0,
+                        this.WORKSPACE_FILES_PAGE_SIZE
+                    );
+                    this.analysisSummaryCache.set(rootPath, {
+                        timestamp,
+                        data: {
+                            ...cachedSummary.data,
+                            type,
+                            frameworks,
+                            dependencies,
+                            devDependencies,
+                            stats,
+                            languages,
+                            files: initialFilePage.files,
+                            filesPage: {
+                                offset: initialFilePage.offset,
+                                limit: initialFilePage.limit,
+                                total: initialFilePage.total,
+                                hasMore: initialFilePage.hasMore,
+                            },
+                            monorepo,
+                        },
+                    });
+                }
             } catch (error) {
                 this.logWarn('Background workspace scan failed:', getErrorMessage(error as Error));
             } finally {
@@ -396,7 +762,78 @@ export class WorkspaceService extends BaseService {
         })();
     }
 
+    private async ensureWorkspaceWatcher(rootPath: string): Promise<void> {
+        this.closeWorkspaceWatcher(rootPath);
+
+        try {
+            const { watch } = await import('fs');
+            const eventThrottleMap = new Map<string, number>();
+            const EVENT_THROTTLE_MS = 150;
+
+            const watcher = watch(rootPath, { recursive: true }, (event, filename) => {
+                if (!filename || filename.includes('node_modules') || filename.includes('.git')) {
+                    return;
+                }
+                const fileName = filename.toString();
+                const absolutePath = path.join(rootPath, fileName);
+                if (!this.shouldEmitWorkspaceEvent(eventThrottleMap, event, absolutePath, EVENT_THROTTLE_MS)) {
+                    return;
+                }
+                this.trackChangedPath(rootPath, absolutePath);
+                this.emitWorkspaceChange(rootPath, event, absolutePath);
+            });
+
+            watcher.on('error', (err) => this.logError(`Error on ${rootPath}:`, err));
+            this.watchers.set(rootPath, watcher);
+        } catch (error) {
+            this.logWarn(`Failed to watch ${rootPath}:`, getErrorMessage(error as Error));
+        }
+    }
+
+    private shouldEmitWorkspaceEvent(
+        eventThrottleMap: Map<string, number>,
+        event: string,
+        absolutePath: string,
+        throttleMs: number
+    ): boolean {
+        const throttleKey = `${event}:${absolutePath}`;
+        const now = Date.now();
+        const lastEmittedAt = eventThrottleMap.get(throttleKey) ?? 0;
+        if (now - lastEmittedAt < throttleMs) {
+            return false;
+        }
+        eventThrottleMap.set(throttleKey, now);
+        return true;
+    }
+
+    private emitWorkspaceChange(rootPath: string, event: string, absolutePath: string): void {
+        const callbacks = this.watchCallbacks.get(rootPath);
+        if (!callbacks || callbacks.size === 0) {
+            return;
+        }
+        for (const callback of callbacks) {
+            callback(event, absolutePath);
+        }
+    }
+
+    private closeWorkspaceWatcher(rootPath: string): void {
+        const watcher = this.watchers.get(rootPath);
+        if (!watcher) {
+            return;
+        }
+        watcher.close();
+        this.watchers.delete(rootPath);
+    }
+
+    private shouldRunActiveWorkspaceWork(rootPath: string): boolean {
+        return this.activeWorkspaceRootPath === null || this.activeWorkspaceRootPath === rootPath;
+    }
+
     private paginateFiles(files: string[], offset: number, limit: number): WorkspaceFilesPageResult {
+        if (!Array.isArray(files)) {
+            appLogger.debug(LOG_CONTEXT, 'paginateFiles called with non-array', { type: typeof files });
+            return { files: [], offset: 0, limit, total: 0, hasMore: false };
+        }
         const safeOffset = Math.max(0, Math.floor(offset));
         const safeLimit = Math.max(1, Math.floor(limit));
         const pagedFiles = files.slice(safeOffset, safeOffset + safeLimit);
@@ -552,91 +989,70 @@ export class WorkspaceService extends BaseService {
             this.logWarn(`Failed to read directory ${dirPath}:`, getErrorMessage(error as Error));
         }
 
-        const stats = await this.calculateStats(files, Date.now());
+        const stats = await this.calculateStats(files);
 
         return { hasPackageJson, pkg, readme, stats };
     }
 
-    private calculateLanguages(files: string[]): Record<string, number> {
+    private resolveLanguageName(filePath: string): string | null {
+        const fileName = path.basename(filePath).toLowerCase();
+        const specialLanguage = SPECIAL_FILE_LANGUAGE_MAP[fileName];
+        if (specialLanguage) {
+            return specialLanguage;
+        }
+
+        const ext = path.extname(filePath).slice(1).toLowerCase();
+        if (!ext) {
+            return null;
+        }
+
+        return EXTENSION_LANGUAGE_MAP[ext] ?? null;
+    }
+
+    private shouldIncludeLanguageInDistribution(filePath: string, languageName: string): boolean {
+        if (LANGUAGE_DISTRIBUTION_EXCLUDED_LANGUAGES.has(languageName)) {
+            return false;
+        }
+
+        const normalizedPath = filePath.toLowerCase();
+        if (normalizedPath.includes('.min.')) {
+            return false;
+        }
+
+        const pathSegments = normalizedPath.split(/[\\/]+/);
+        for (const segment of pathSegments) {
+            if (LANGUAGE_DISTRIBUTION_EXCLUDED_SEGMENTS.has(segment)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private async readLanguageWeight(filePath: string): Promise<number> {
+        try {
+            const stat = await fs.stat(filePath);
+            return Math.max(1, Math.trunc(stat.size));
+        } catch (error) {
+            appLogger.debug(LOG_CONTEXT, `Failed to stat language file ${filePath}:`, getErrorMessage(error as Error));
+            return 1;
+        }
+    }
+
+    private async calculateLanguages(files: string[]): Promise<Record<string, number>> {
         const langMap: Record<string, number> = {};
-        const commonExts: Record<string, string> = {
-            'js': 'JavaScript',
-            'mjs': 'JavaScript',
-            'cjs': 'JavaScript',
-            'ts': 'TypeScript',
-            'mts': 'TypeScript',
-            'cts': 'TypeScript',
-            'tsx': 'React (TS)',
-            'jsx': 'React (JS)',
-            'py': 'Python',
-            'go': 'Go',
-            'rs': 'Rust',
-            'java': 'Java',
-            'c': 'C',
-            'cpp': 'C++',
-            'cc': 'C++',
-            'cs': 'C#',
-            'php': 'PHP',
-            'rb': 'Ruby',
-            'lua': 'Lua',
-            'swift': 'Swift',
-            'kt': 'Kotlin',
-            'dart': 'Dart',
-            'html': 'HTML',
-            'vue': 'Vue',
-            'svelte': 'Svelte',
-            'css': 'CSS',
-            'scss': 'SCSS',
-            'sass': 'Sass',
-            'less': 'Less',
-            'json': 'JSON',
-            'md': 'Markdown',
-            'yaml': 'YAML',
-            'yml': 'YAML',
-            'xml': 'XML',
-            'svg': 'SVG',
-            'sql': 'SQL',
-            'sh': 'Shell',
-            'bash': 'Shell',
-            'zsh': 'Shell',
-            'fish': 'Shell',
-            'ps1': 'PowerShell',
-            'bat': 'Batch',
-            'cmd': 'Batch',
-            'pl': 'Perl',
-            'pm': 'Perl',
-            'scala': 'Scala',
-            'hs': 'Haskell',
-            'ex': 'Elixir',
-            'exs': 'Elixir',
-            'clj': 'Clojure',
-            'm': 'Objective-C',
-            'mm': 'Objective-C',
-            'graphql': 'GraphQL',
-            'gql': 'GraphQL',
-            'proto': 'Protobuf',
-            'sol': 'Solidity',
-            'toml': 'TOML',
-            'ini': 'INI',
-            'dockerfile': 'Dockerfile',
-            'makefile': 'Makefile',
-            'hbs': 'Handlebars',
-            'pug': 'Pug',
-            'jade': 'Pug',
-            'coffee': 'CoffeeScript',
-            'fs': 'F#',
-            'pas': 'Pascal',
-            'f': 'Fortran',
-            'v': 'Verilog',
-            'vhd': 'VHDL'
-        };
 
         for (const file of files) {
-            const ext = path.extname(file).slice(1).toLowerCase();
-            if (!ext) { continue; }
+            const languageName = this.resolveLanguageName(file);
+            if (!languageName) {
+                continue;
+            }
+            if (!this.shouldIncludeLanguageInDistribution(file, languageName)) {
+                continue;
+            }
 
-            const lang = commonExts[ext] ?? ext.toUpperCase();
-            langMap[lang] = (langMap[lang] ?? 0) + 1;
+            const weight = await this.readLanguageWeight(file);
+            langMap[languageName] = (langMap[languageName] ?? 0) + weight;
         }
 
         return langMap;
@@ -715,7 +1131,9 @@ export class WorkspaceService extends BaseService {
             '.pyc', '.pyo', '.pyd', '.class', '.jar', '.war', '.ear',
             '.zip', '.tar', '.gz', '.7z', '.rar',
             '.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.svg',
-            '.mp3', '.mp4', '.wav', '.mov', '.pdf', '.doc', '.docx'
+            '.mp3', '.mp4', '.wav', '.mov', '.pdf', '.doc', '.docx',
+            '.pdb', '.ilk', '.tlog', '.idb', '.ipdb', '.iobj', '.pch', '.sdf',
+            '.opensdf', '.cache', '.bmp', '.depend'
         ];
         return ignoredExtensions.some(ext => lowerName.endsWith(ext));
     }
@@ -1064,11 +1482,11 @@ export class WorkspaceService extends BaseService {
 
     private async calculateStats(
         files: string[],
-        runStart: number,
-        maxSampleCount = files.length
+        maxSampleCount = 100
     ): Promise<WorkspaceStats> {
-        if (runStart % 100 === 0) {
-            appLogger.info(LOG_CONTEXT, 'Calculate stats sample', { filesCount: files.length });
+        if (!Array.isArray(files)) {
+            appLogger.error(LOG_CONTEXT, 'calculateStats called with non-array files', { type: typeof files });
+            return { fileCount: 0, totalSize: 0, loc: 0, lastModified: 0 };
         }
         let totalSize = 0;
         let lastModified = 0;
@@ -1186,9 +1604,15 @@ export class WorkspaceService extends BaseService {
     }
 
     private resolveAndValidateRootPath(inputPath: string): string {
+        if (typeof inputPath !== 'string' || !inputPath) {
+            appLogger.debug(LOG_CONTEXT, 'Invalid input path type or empty', { type: typeof inputPath, value: inputPath });
+            throw new ValidationError('Workspace root path must be a non-empty string');
+        }
         const sanitizedInput = process.platform === 'win32' && inputPath.startsWith('/') && inputPath.charAt(2) === ':'
             ? inputPath.slice(1)
             : inputPath;
+        
+        appLogger.debug(LOG_CONTEXT, 'Validating sanitized path', { sanitizedInput });
         const parsedPath = WorkspaceRootPathSchema.safeParse(sanitizedInput);
         if (!parsedPath.success) {
             throw new ValidationError(`Invalid workspace root path: ${parsedPath.error.issues[0]?.message ?? 'unknown validation issue'}`);

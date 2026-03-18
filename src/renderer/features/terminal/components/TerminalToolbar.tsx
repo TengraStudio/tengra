@@ -424,7 +424,11 @@ export function TerminalToolbar({
                     </button>
                 </div>
                 <div className={cn('ml-2 text-[10px]', healthTone)}>
-                    {t('terminal.healthSummary')}: {healthSummary.uiState} | {healthSummary.avgDurationMs}ms/{healthSummary.budgetMs}ms
+                    {t('terminal.healthSummary', {
+                        state: healthSummary.uiState,
+                        avg: healthSummary.avgDurationMs,
+                        budget: healthSummary.budgetMs,
+                    })}
                 </div>
             </div>
         </div>

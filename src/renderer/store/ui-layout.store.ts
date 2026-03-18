@@ -56,16 +56,16 @@ function persist(): void {
     }
 }
 
-function isObject(value: unknown): value is Record<string, unknown> {
+function isObject(value: RendererDataValue): value is Record<string, RendererDataValue> {
     return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
-function toBoolean(value: unknown, fallback: boolean): boolean {
+function toBoolean(value: RendererDataValue, fallback: boolean): boolean {
     return typeof value === 'boolean' ? value : fallback;
 }
 
 function toBoundedNumber(
-    value: unknown,
+    value: RendererDataValue,
     fallback: number,
     min: number,
     max: number
@@ -76,7 +76,7 @@ function toBoundedNumber(
     return Math.max(min, Math.min(max, Math.floor(value)));
 }
 
-function sanitizeActivityBar(value: unknown): UiLayoutState['activityBar'] {
+function sanitizeActivityBar(value: RendererDataValue): UiLayoutState['activityBar'] {
     if (!isObject(value)) {
         return defaultState.activityBar;
     }
@@ -87,7 +87,7 @@ function sanitizeActivityBar(value: unknown): UiLayoutState['activityBar'] {
     };
 }
 
-function sanitizeAppShell(value: unknown): UiLayoutState['appShell'] {
+function sanitizeAppShell(value: RendererDataValue): UiLayoutState['appShell'] {
     if (!isObject(value)) {
         return defaultState.appShell;
     }
@@ -96,7 +96,7 @@ function sanitizeAppShell(value: unknown): UiLayoutState['appShell'] {
     };
 }
 
-function sanitizeworkspaceShell(value: unknown): UiLayoutState['workspaceShell'] {
+function sanitizeworkspaceShell(value: RendererDataValue): UiLayoutState['workspaceShell'] {
     if (!isObject(value)) {
         return defaultState.workspaceShell;
     }
@@ -120,7 +120,7 @@ function sanitizeworkspaceShell(value: unknown): UiLayoutState['workspaceShell']
     };
 }
 
-function migrateLegacyUiLayout(raw: unknown): UiLayoutState | null {
+function migrateLegacyUiLayout(raw: RendererDataValue): UiLayoutState | null {
     if (!isObject(raw)) {
         return null;
     }
@@ -135,7 +135,7 @@ function migrateLegacyUiLayout(raw: unknown): UiLayoutState | null {
     };
 }
 
-export function sanitizeUiLayoutState(raw: unknown): UiLayoutState {
+export function sanitizeUiLayoutState(raw: RendererDataValue): UiLayoutState {
     const migratedLegacy = migrateLegacyUiLayout(raw);
     if (migratedLegacy) {
         return migratedLegacy;
@@ -239,7 +239,7 @@ export function setWorkspaceShellState(update: Partial<UiLayoutState['workspaceS
     emit();
 }
 
-export function importUiLayoutState(raw: unknown): UiLayoutState {
+export function importUiLayoutState(raw: RendererDataValue): UiLayoutState {
     state = sanitizeUiLayoutState(raw);
     persist();
     emit();

@@ -9,11 +9,11 @@ vi.mock('electron', () => ({
 }));
 
 describe('File-Diff IPC Handlers', () => {
-    let registeredHandlers: Map<string, unknown>;
+    let registeredHandlers: Map<string, TestValue>;
 
     beforeEach(() => {
         registeredHandlers = new Map();
-        vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: unknown) => {
+        vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: TestValue) => {
             registeredHandlers.set(channel, handler);
         });
     });
@@ -24,7 +24,7 @@ describe('File-Diff IPC Handlers', () => {
         it('should return file diff history', async () => {
             const handler = async () => ({ success: true, data: [] });
             registeredHandlers.set('diff:getFileHistory', handler);
-            const result = await (registeredHandlers.get('diff:getFileHistory') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('diff:getFileHistory') as () => Promise<TestValue>)();
             expect(result).toHaveProperty('success');
         });
     });
@@ -33,7 +33,7 @@ describe('File-Diff IPC Handlers', () => {
         it('should return recent changes', async () => {
             const handler = async () => ({ success: true, data: [] });
             registeredHandlers.set('diff:getRecentChanges', handler);
-            const result = await (registeredHandlers.get('diff:getRecentChanges') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('diff:getRecentChanges') as () => Promise<TestValue>)();
             expect(result).toHaveProperty('success');
         });
     });
@@ -42,7 +42,7 @@ describe('File-Diff IPC Handlers', () => {
         it('should return session changes', async () => {
             const handler = async () => ({ success: true, data: [] });
             registeredHandlers.set('diff:getSessionChanges', handler);
-            const result = await (registeredHandlers.get('diff:getSessionChanges') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('diff:getSessionChanges') as () => Promise<TestValue>)();
             expect(result).toHaveProperty('success');
         });
     });
@@ -51,7 +51,7 @@ describe('File-Diff IPC Handlers', () => {
         it('should revert a file change', async () => {
             const handler = async () => ({ success: true });
             registeredHandlers.set('diff:revertChange', handler);
-            const result = await (registeredHandlers.get('diff:revertChange') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('diff:revertChange') as () => Promise<TestValue>)();
             expect(result).toEqual({ success: true });
         });
     });
@@ -60,7 +60,7 @@ describe('File-Diff IPC Handlers', () => {
         it('should return diff statistics', async () => {
             const handler = async () => ({ success: true, data: { additions: 10, deletions: 5 } });
             registeredHandlers.set('diff:getStats', handler);
-            const result = await (registeredHandlers.get('diff:getStats') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('diff:getStats') as () => Promise<TestValue>)();
             expect(result).toHaveProperty('success');
         });
     });
@@ -69,7 +69,7 @@ describe('File-Diff IPC Handlers', () => {
         it('should cleanup old diffs', async () => {
             const handler = async () => ({ success: true, data: { completed: true } });
             registeredHandlers.set('diff:cleanup', handler);
-            const result = await (registeredHandlers.get('diff:cleanup') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('diff:cleanup') as () => Promise<TestValue>)();
             expect(result).toHaveProperty('success');
         });
     });

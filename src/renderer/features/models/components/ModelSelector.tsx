@@ -1,9 +1,10 @@
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useDebounce } from '@/hooks/useDebounce';
-import { Language, useTranslation } from '@/i18n';
+import type { Language } from '@/i18n';
+import { useTranslation } from '@/i18n';
 import type { GroupedModels } from '@/types';
-import { AppSettings, ClaudeQuota, CodexUsage, QuotaResponse } from '@/types';
+import { AppSettings, ClaudeQuota, CodexUsage, CopilotQuota, QuotaResponse } from '@/types';
 
 import { useModelCategories } from '../hooks/useModelCategories';
 import { useModelSelectorLogic } from '../hooks/useModelSelectorLogic';
@@ -21,6 +22,7 @@ interface ModelSelectorProps {
     quotas?: { accounts: QuotaResponse[] } | null;
     codexUsage?: { accounts: { usage: CodexUsage }[] } | null;
     claudeQuota?: { accounts: ClaudeQuota[] } | null;
+    copilotQuota?: { accounts: Array<CopilotQuota & { accountId?: string; email?: string; isActive?: boolean }> } | null;
     onOpenChange?: (isOpen: boolean) => void;
     contextTokens?: number;
     language?: Language;
@@ -44,6 +46,7 @@ export const ModelSelector = memo(({
     quotas = null,
     codexUsage = null,
     claudeQuota = null,
+    copilotQuota = null,
     onOpenChange,
     contextTokens = 0,
     language = 'en',
@@ -59,12 +62,33 @@ export const ModelSelector = memo(({
     const { t } = useTranslation(language);
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery] = useState('');
+    const [activeCopilotAccountId, setActiveCopilotAccountId] = useState<string | null>(null);
+    const [activeCopilotAccountEmail, setActiveCopilotAccountEmail] = useState<string | null>(null);
+    const [resolvedCopilotQuota, setResolvedCopilotQuota] = useState(copilotQuota);
+    const [resolvedClaudeQuota, setResolvedClaudeQuota] = useState(claudeQuota);
+    const [resolvedCodexUsage, setResolvedCodexUsage] = useState(codexUsage);
+    const [resolvedAntigravityQuota, setResolvedAntigravityQuota] = useState(quotas);
+    const [activeClaudeAccountId, setActiveClaudeAccountId] = useState<string | null>(null);
+    const [activeClaudeAccountEmail, setActiveClaudeAccountEmail] = useState<string | null>(null);
+    const [activeCodexAccountId, setActiveCodexAccountId] = useState<string | null>(null);
+    const [activeCodexAccountEmail, setActiveCodexAccountEmail] = useState<string | null>(null);
+    const [activeAntigravityAccountId, setActiveAntigravityAccountId] = useState<string | null>(null);
+    const [activeAntigravityAccountEmail, setActiveAntigravityAccountEmail] = useState<string | null>(null);
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
+    const onOpenChangeRef = useRef(onOpenChange);
+    const lastReportedOpenStateRef = useRef(isOpen);
 
-    useEffect(() => { onOpenChange?.(isOpen); }, [isOpen, onOpenChange]);
+    useEffect(() => {
+        onOpenChangeRef.current = onOpenChange;
+    }, [onOpenChange]);
 
-    const { isModelDisabled } = useModelSelectorLogic({ settings, groupedModels, quotas, codexUsage, claudeQuota });
-    const categories = useModelCategories({ groupedModels, debouncedSearchQuery, settings, selectedModel, isModelDisabled, t });
+    useEffect(() => {
+        if (lastReportedOpenStateRef.current === isOpen) {
+            return;
+        }
+        lastReportedOpenStateRef.current = isOpen;
+        onOpenChangeRef.current?.(isOpen);
+    }, [isOpen]);
 
     const normalizeProvider = useCallback((provider?: string) => {
         const p = (provider ?? '').toLowerCase();
@@ -77,20 +101,168 @@ export const ModelSelector = memo(({
         return normalizeProvider(selectedProvider);
     }, [selectedProvider, normalizeProvider]);
 
+    const handleModelSelect = useCallback((p: string, id: string, m?: boolean, keepOpen?: boolean) => {
+        onSelect(p, id, m);
+        if (!m && !keepOpen) { setIsOpen(false); }
+    }, [onSelect]);
+
+
+    const handleClose = useCallback(() => {
+        setIsOpen(false);
+    }, []);
+
+    useEffect(() => {
+        setResolvedCopilotQuota(copilotQuota);
+    }, [copilotQuota]);
+
+    useEffect(() => {
+        setResolvedClaudeQuota(claudeQuota);
+    }, [claudeQuota]);
+
+    useEffect(() => {
+        setResolvedCodexUsage(codexUsage);
+    }, [codexUsage]);
+
+    useEffect(() => {
+        setResolvedAntigravityQuota(quotas);
+    }, [quotas]);
+
+    useEffect(() => {
+        if (!isOpen) {
+            return;
+        }
+
+        void (async () => {
+            const [
+                copilotQuotaResult,
+                claudeQuotaResult,
+                codexUsageResult,
+                antigravityQuotaResult,
+                copilotAccount,
+                githubAccount,
+                claudeAccount,
+                anthropicAccount,
+                codexAccount,
+                openaiAccount,
+                antigravityAccount,
+                googleAccount
+            ] = await Promise.all([
+                window.electron.getCopilotQuota().catch(() => ({ accounts: [] })),
+                window.electron.getClaudeQuota().catch(() => ({ accounts: [] })),
+                window.electron.getCodexUsage().catch(() => ({ accounts: [] })),
+                window.electron.getQuota().catch(() => null),
+                window.electron.getActiveLinkedAccount('copilot').catch(() => null),
+                window.electron.getActiveLinkedAccount('github').catch(() => null),
+                window.electron.getActiveLinkedAccount('claude').catch(() => null),
+                window.electron.getActiveLinkedAccount('anthropic').catch(() => null),
+                window.electron.getActiveLinkedAccount('codex').catch(() => null),
+                window.electron.getActiveLinkedAccount('openai').catch(() => null),
+                window.electron.getActiveLinkedAccount('antigravity').catch(() => null),
+                window.electron.getActiveLinkedAccount('google').catch(() => null)
+            ]);
+
+            const activeCopilotAccount = copilotAccount ?? githubAccount;
+            const activeClaudeAccount = claudeAccount ?? anthropicAccount;
+            const activeCodexAccount = codexAccount ?? openaiAccount;
+            const activeAntigravityAccount = antigravityAccount ?? googleAccount;
+
+            setResolvedCopilotQuota(copilotQuotaResult);
+            setResolvedClaudeQuota(claudeQuotaResult);
+            setResolvedCodexUsage(codexUsageResult);
+            setResolvedAntigravityQuota(antigravityQuotaResult);
+            setActiveCopilotAccountId(activeCopilotAccount?.id ?? null);
+            setActiveCopilotAccountEmail(activeCopilotAccount?.email?.toLowerCase() ?? null);
+            setActiveClaudeAccountId(activeClaudeAccount?.id ?? null);
+            setActiveClaudeAccountEmail(activeClaudeAccount?.email?.toLowerCase() ?? null);
+            setActiveCodexAccountId(activeCodexAccount?.id ?? null);
+            setActiveCodexAccountEmail(activeCodexAccount?.email?.toLowerCase() ?? null);
+            setActiveAntigravityAccountId(activeAntigravityAccount?.id ?? null);
+            setActiveAntigravityAccountEmail(activeAntigravityAccount?.email?.toLowerCase() ?? null);
+        })().catch(() => {
+            setResolvedCopilotQuota(copilotQuota);
+            setResolvedClaudeQuota(claudeQuota);
+            setResolvedCodexUsage(codexUsage);
+            setResolvedAntigravityQuota(quotas);
+        });
+    }, [isOpen, copilotQuota, claudeQuota, codexUsage, quotas]);
+
+    const activeClaudeQuota = useMemo(() => {
+        if (!resolvedClaudeQuota?.accounts || resolvedClaudeQuota.accounts.length === 0) {
+            return null;
+        }
+        return resolvedClaudeQuota.accounts.find(account => account.accountId === activeClaudeAccountId)
+            ?? resolvedClaudeQuota.accounts.find(account => account.email?.toLowerCase() === activeClaudeAccountEmail)
+            ?? resolvedClaudeQuota.accounts.find(account => account.isActive === true)
+            ?? (resolvedClaudeQuota.accounts.length === 1 ? resolvedClaudeQuota.accounts[0] : null);
+    }, [resolvedClaudeQuota, activeClaudeAccountId, activeClaudeAccountEmail]);
+
+    const activeCodexUsage = useMemo(() => {
+        if (!resolvedCodexUsage?.accounts || resolvedCodexUsage.accounts.length === 0) {
+            return null;
+        }
+        return resolvedCodexUsage.accounts.find(account => 'accountId' in account && account.accountId === activeCodexAccountId)
+            ?? resolvedCodexUsage.accounts.find(account =>
+                'email' in account &&
+                typeof account.email === 'string' &&
+                account.email.toLowerCase() === activeCodexAccountEmail
+            )
+            ?? resolvedCodexUsage.accounts.find(account => 'isActive' in account && account.isActive === true)
+            ?? (resolvedCodexUsage.accounts.length === 1 ? resolvedCodexUsage.accounts[0] : null);
+    }, [resolvedCodexUsage, activeCodexAccountId, activeCodexAccountEmail]);
+
+    const activeAntigravityQuota = useMemo(() => {
+        if (!resolvedAntigravityQuota?.accounts || resolvedAntigravityQuota.accounts.length === 0) {
+            return null;
+        }
+        return resolvedAntigravityQuota.accounts.find(account => account.accountId === activeAntigravityAccountId)
+            ?? resolvedAntigravityQuota.accounts.find(account => account.email?.toLowerCase() === activeAntigravityAccountEmail)
+            ?? resolvedAntigravityQuota.accounts.find(account => account.isActive === true)
+            ?? (resolvedAntigravityQuota.accounts.length === 1 ? resolvedAntigravityQuota.accounts[0] : null);
+    }, [resolvedAntigravityQuota, activeAntigravityAccountId, activeAntigravityAccountEmail]);
+
+    const activeCopilotQuota = useMemo(() => {
+        if (!resolvedCopilotQuota?.accounts || resolvedCopilotQuota.accounts.length === 0) {
+            return null;
+        }
+        return resolvedCopilotQuota.accounts.find(account => account.accountId === activeCopilotAccountId)
+            ?? resolvedCopilotQuota.accounts.find(account => account.email?.toLowerCase() === activeCopilotAccountEmail)
+            ?? resolvedCopilotQuota.accounts.find(account => account.isActive === true)
+            ?? (resolvedCopilotQuota.accounts.length === 1 ? resolvedCopilotQuota.accounts[0] : null);
+    }, [resolvedCopilotQuota, activeCopilotAccountId, activeCopilotAccountEmail]);
+
+    const { isModelDisabled } = useModelSelectorLogic({
+        settings,
+        groupedModels,
+        quotas,
+        codexUsage,
+        claudeQuota,
+        copilotQuota,
+        activeCodexUsage,
+        activeClaudeQuota,
+        activeCopilotQuota,
+        activeAntigravityQuota
+    });
+    const categories = useModelCategories({ groupedModels, debouncedSearchQuery, settings, selectedModel, isModelDisabled, t });
+    const currentCat = categories.find(category => category.models.some(model =>
+        model.id === selectedModel &&
+        (!normalizedSelectedProvider || normalizeProvider(model.provider) === normalizedSelectedProvider)
+    )) ?? categories.find(category => category.models.some(model => model.id === selectedModel))
+        ?? categories.find(category => category.id === normalizedSelectedProvider);
+
     const currentModelInfo = useMemo(() => {
         const normalized = selectedModel.toLowerCase();
         if (normalizedSelectedProvider) {
             for (const cat of categories) {
-                const m = cat.models.find(m =>
-                    (m.id === selectedModel || m.id.toLowerCase() === normalized) &&
-                    normalizeProvider(m.provider) === normalizedSelectedProvider
+                const model = cat.models.find(item =>
+                    (item.id === selectedModel || item.id.toLowerCase() === normalized) &&
+                    normalizeProvider(item.provider) === normalizedSelectedProvider
                 );
-                if (m) { return m; }
+                if (model) { return model; }
             }
         }
         for (const cat of categories) {
-            const m = cat.models.find(m => m.id === selectedModel || m.id.toLowerCase() === normalized);
-            if (m) { return m; }
+            const model = cat.models.find(item => item.id === selectedModel || item.id.toLowerCase() === normalized);
+            if (model) { return model; }
         }
         return null;
     }, [categories, selectedModel, normalizedSelectedProvider, normalizeProvider]);
@@ -113,21 +285,6 @@ export const ModelSelector = memo(({
         if (levels.includes('low')) { return 'low'; }
         return levels[0];
     }, [currentModelInfo, thinkingLevel]);
-
-    const handleModelSelect = useCallback((p: string, id: string, m?: boolean, keepOpen?: boolean) => {
-        onSelect(p, id, m);
-        if (!m && !keepOpen) { setIsOpen(false); }
-    }, [onSelect]);
-
-
-    const handleClose = useCallback(() => {
-        setIsOpen(false);
-    }, []);
-
-    const currentCat = categories.find(c => c.models.some(m =>
-        m.id === selectedModel &&
-        (!normalizedSelectedProvider || normalizeProvider(m.provider) === normalizedSelectedProvider)
-    )) ?? categories.find(c => c.models.some(m => m.id === selectedModel)) ?? categories.find(c => c.id === normalizedSelectedProvider);
 
     // Get recent models from settings
     const recentModels = settings?.general?.recentModels ?? [];
@@ -162,9 +319,15 @@ export const ModelSelector = memo(({
                 t={t}
                 chatMode={chatMode}
                 onChatModeChange={onChatModeChange}
-            thinkingLevel={effectiveThinkingLevel}
-            onThinkingLevelChange={onThinkingLevelChange}
-        />
+                thinkingLevel={effectiveThinkingLevel}
+                onThinkingLevelChange={onThinkingLevelChange}
+                copilotQuota={resolvedCopilotQuota}
+                activeCopilotAccountId={activeCopilotAccountId}
+                activeCopilotAccountEmail={activeCopilotAccountEmail}
+                activeClaudeQuota={activeClaudeQuota}
+                activeCodexUsage={activeCodexUsage}
+                activeAntigravityQuota={activeAntigravityQuota}
+            />
         </div>
     );
 });

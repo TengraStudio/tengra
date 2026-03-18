@@ -163,7 +163,17 @@ const sectionData = {
     "linesDeleted": "Zeilen gelöscht",
     "noIssuesDesc": "Bei der Arbeitsbereichanalyse wurden keine kritischen Probleme festgestellt.",
     "settings": "Einstellungen",
-    "updateFailed": "Die Einstellungen konnten nicht aktualisiert werden"
+    "updateFailed": "Die Einstellungen konnten nicht aktualisiert werden",
+    "searchMatchCaseTitle": "Match Case",
+    "searchMatchWholeWordTitle": "Match Whole Word",
+    "searchUseRegexTitle": "Use Regular Expression",
+    "searchIncludePatternPlaceholder": "e.g. *.ts, src/**",
+    "searchExcludePatternPlaceholder": "e.g. node_modules, dist",
 };
 
 export default sectionData;
+
+
+
+
+

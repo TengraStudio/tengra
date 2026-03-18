@@ -18,6 +18,21 @@ import { AppErrorCode, ProxyServiceError } from '@shared/utils/error.util';
 import { net } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+interface MockProxyRequest {
+    on: ReturnType<typeof vi.fn>;
+    setHeader: ReturnType<typeof vi.fn>;
+    write: ReturnType<typeof vi.fn>;
+    end: ReturnType<typeof vi.fn>;
+}
+
+interface MockProxyResponse {
+    statusCode?: number;
+    on: ReturnType<typeof vi.fn>;
+}
+
+type ResponseCallback = (response: MockProxyResponse) => void;
+type ResponseEventCallback = (chunk?: Buffer) => void;
+
 // Mock electron
 vi.mock('electron', () => ({
     app: { getPath: vi.fn().mockReturnValue('/mock/user/path') },
@@ -59,20 +74,20 @@ describe('ProxyService', () => {
         mockSettingsService = {
             getSettings: vi.fn().mockReturnValue({ proxy: { key: 'mock-key' } }),
             saveSettings: vi.fn().mockResolvedValue(undefined),
-        } as unknown as SettingsService;
+        } as never as SettingsService;
 
-        mockDataService = { getPath: vi.fn().mockReturnValue('/mock/auth/path') } as unknown as DataService;
+        mockDataService = { getPath: vi.fn().mockReturnValue('/mock/auth/path') } as never as DataService;
         mockSecurityService = {
             encryptSync: vi.fn().mockReturnValue('encrypted'),
             decryptSync: vi.fn().mockReturnValue('{"decrypted": true}'),
-        } as unknown as SecurityService;
+        } as never as SecurityService;
 
         mockProcessManager = {
             start: vi.fn().mockResolvedValue({ running: true }),
             stop: vi.fn().mockResolvedValue(undefined),
             getStatus: vi.fn().mockReturnValue({ running: false }),
             generateConfig: vi.fn().mockResolvedValue(undefined),
-        } as unknown as ProxyProcessManager;
+        } as never as ProxyProcessManager;
 
         mockQuotaService = {
             getQuota: vi.fn(),
@@ -81,16 +96,16 @@ describe('ProxyService', () => {
             getClaudeQuota: vi.fn().mockResolvedValue({ accounts: [] }),
             fetchCodexUsage: vi.fn().mockResolvedValue({}),
             extractCodexUsageFromWham: vi.fn().mockReturnValue({}),
-        } as unknown as QuotaService;
+        } as never as QuotaService;
 
         mockEventBus = {
             on: vi.fn(),
             off: vi.fn(),
             emit: vi.fn(),
             emitCustom: vi.fn(),
-        } as unknown as EventBusService;
+        } as never as EventBusService;
 
-        const mockAuthService = { saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn() } as unknown as AuthService;
+        const mockAuthService = { saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn() } as never as AuthService;
 
         proxyService = new ProxyService({
             settingsService: mockSettingsService,
@@ -109,23 +124,24 @@ describe('ProxyService', () => {
 
     describe('GitHub Auth', () => {
         it('should initiate GitHub auth', async () => {
-            const mockReq = {
+            const mockReq: MockProxyRequest = {
                 on: vi.fn().mockReturnThis(),
                 setHeader: vi.fn().mockReturnThis(),
                 write: vi.fn().mockReturnThis(),
                 end: vi.fn().mockReturnThis()
-            } as any;
+            };
 
-            vi.mocked(net.request).mockReturnValue(mockReq);
+            vi.mocked(net.request).mockReturnValue(mockReq as never);
 
-            mockReq.on.mockImplementation((event: string, cb: any) => {
+            mockReq.on.mockImplementation((event: string, cb: ResponseCallback) => {
                 if (event === 'response') {
-                    cb({
-                        on: vi.fn().mockImplementation((ev: string, evCb: any) => {
+                    const response: MockProxyResponse = {
+                        on: vi.fn().mockImplementation((ev: string, evCb: ResponseEventCallback) => {
                             if (ev === 'data') { evCb(Buffer.from(JSON.stringify({ device_code: '123' }))); }
                             if (ev === 'end') { evCb(); }
                         })
-                    });
+                    };
+                    cb(response);
                 }
                 return mockReq;
             });
@@ -137,24 +153,25 @@ describe('ProxyService', () => {
 
     describe('getModels', () => {
         it('should fetch and merge models', async () => {
-            const mockReq = {
+            const mockReq: MockProxyRequest = {
                 on: vi.fn().mockReturnThis(),
                 setHeader: vi.fn().mockReturnThis(),
                 write: vi.fn().mockReturnThis(),
                 end: vi.fn().mockReturnThis()
-            } as any;
+            };
 
-            vi.mocked(net.request).mockReturnValue(mockReq);
+            vi.mocked(net.request).mockReturnValue(mockReq as never);
 
-            mockReq.on.mockImplementation((event: string, cb: any) => {
+            mockReq.on.mockImplementation((event: string, cb: ResponseCallback) => {
                 if (event === 'response') {
-                    cb({
+                    const response: MockProxyResponse = {
                         statusCode: 200,
-                        on: vi.fn().mockImplementation((ev: string, evCb: any) => {
+                        on: vi.fn().mockImplementation((ev: string, evCb: ResponseEventCallback) => {
                             if (ev === 'data') { evCb(Buffer.from(JSON.stringify({ data: [{ id: 'gpt-4', provider: 'openai' }] }))); }
                             if (ev === 'end') { evCb(); }
                         })
-                    });
+                    };
+                    cb(response);
                 }
                 return mockReq;
             });
@@ -240,25 +257,25 @@ describe('ProxyService input validation', () => {
         const mockSettingsService = {
             getSettings: vi.fn().mockReturnValue({ proxy: { key: 'mock-key' } }),
             saveSettings: vi.fn().mockResolvedValue(undefined),
-        } as unknown as SettingsService;
+        } as never as SettingsService;
 
         mockProcessManager = {
             start: vi.fn().mockResolvedValue({ running: true }),
             stop: vi.fn().mockResolvedValue(undefined),
             getStatus: vi.fn().mockReturnValue({ running: false }),
             generateConfig: vi.fn().mockResolvedValue(undefined),
-        } as unknown as ProxyProcessManager;
+        } as never as ProxyProcessManager;
 
-        const mockAuthService = { saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn() } as unknown as AuthService;
+        const mockAuthService = { saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn() } as never as AuthService;
 
         proxyService = new ProxyService({
             settingsService: mockSettingsService,
-            dataService: { getPath: vi.fn().mockReturnValue('/mock') } as unknown as DataService,
-            securityService: {} as unknown as SecurityService,
+            dataService: { getPath: vi.fn().mockReturnValue('/mock') } as never as DataService,
+            securityService: {} as never as SecurityService,
             processManager: mockProcessManager,
-            quotaService: {} as unknown as QuotaService,
+            quotaService: {} as never as QuotaService,
             authService: mockAuthService,
-            eventBus: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), emitCustom: vi.fn() } as unknown as EventBusService,
+            eventBus: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), emitCustom: vi.fn() } as never as EventBusService,
         });
     });
 

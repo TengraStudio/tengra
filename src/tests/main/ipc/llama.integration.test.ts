@@ -37,7 +37,7 @@ describe('Llama IPC Handlers', () => {
         // Capture IPC handlers
         vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: CallableFunction) => {
             ipcMainHandlers.set(channel, handler);
-            return { channels: [channel] } as unknown as Electron.IpcMain;
+            return { channels: [channel] } as never as Electron.IpcMain;
         });
 
         // Mock Llama service
@@ -53,7 +53,7 @@ describe('Llama IPC Handlers', () => {
             setConfig: vi.fn(),
             getGpuInfo: vi.fn().mockResolvedValue({ hasGpu: true }),
             getModelsDir: vi.fn().mockReturnValue('/path/to/models')
-        } as unknown as LlamaService;
+        } as never as LlamaService;
 
         mockEvent = {} as IpcMainInvokeEvent;
 

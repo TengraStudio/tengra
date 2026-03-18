@@ -7,6 +7,8 @@ const RUNTIME_ROOT_FOLDER = 'runtime';
 const RUNTIME_BIN_FOLDER = 'bin';
 const RUNTIME_MODELS_FOLDER = 'models';
 const RUNTIME_TEMP_FOLDER = 'temp';
+const RUNTIME_DOWNLOADS_FOLDER = 'downloads';
+const RUNTIME_MANIFESTS_FOLDER = 'manifests';
 const APP_FOLDER_NAME = 'Tengra';
 
 function getManagedAppRoot(): string {
@@ -44,7 +46,14 @@ export function getManagedRuntimeTempDir(): string {
     return ensureDirectory(path.join(getManagedRuntimeRoot(), RUNTIME_TEMP_FOLDER));
 }
 
+export function getManagedRuntimeDownloadsDir(): string {
+    return ensureDirectory(path.join(getManagedRuntimeRoot(), RUNTIME_DOWNLOADS_FOLDER));
+}
+
+export function getManagedRuntimeManifestsDir(): string {
+    return ensureDirectory(path.join(getManagedRuntimeRoot(), RUNTIME_MANIFESTS_FOLDER));
+}
+
 export function getManagedRuntimeBinaryPath(executable: string): string {
     return path.join(getManagedRuntimeBinDir(), normalizeExecutableName(executable));
 }
-

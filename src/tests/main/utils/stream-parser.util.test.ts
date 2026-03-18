@@ -11,7 +11,7 @@ describe('StreamParser', () => {
                 controller.close();
             }
         });
-        const mockResponse = { body: stream } as any;
+        const mockResponse = { body: stream } as never;
 
         const chunks = [];
         for await (const chunk of StreamParser.parseChatStream(mockResponse)) {
@@ -31,7 +31,7 @@ describe('StreamParser', () => {
                 controller.close();
             }
         });
-        const mockResponse = { body: stream } as any;
+        const mockResponse = { body: stream } as never;
 
         const chunks = [];
         for await (const chunk of StreamParser.parseChatStream(mockResponse)) {
@@ -49,7 +49,7 @@ describe('StreamParser', () => {
                 controller.close();
             }
         });
-        const mockResponse = { body: stream } as any;
+        const mockResponse = { body: stream } as never;
 
         const chunks = [];
         for await (const chunk of StreamParser.parseChatStream(mockResponse)) {

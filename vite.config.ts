@@ -154,34 +154,35 @@ export default defineConfig(({ mode }) => {
                     // CODE SPLITTING: Sadece lazy-loadable büyük kütüphaneleri ayır
                     // NOT: React/React-DOM AYRILMAMALI - internal state paylaşımı bozulur
                     manualChunks: (id: string) => {
-                        // Monaco Editor (lazy loaded, çok büyük ~4MB)
                         if (id.includes('node_modules/monaco-editor')) {
                             return 'monaco';
                         }
-                        // React Flow (lazy loaded, canvas için)
                         if (id.includes('node_modules/@xyflow') || id.includes('node_modules/reactflow')) {
                             return 'react-flow';
                         }
-                        // Code highlighting (lazy loaded)
-                        if (id.includes('node_modules/prismjs') || id.includes('node_modules/highlight.js')) {
+                        if (id.includes('node_modules/prismjs') || id.includes('node_modules/highlight.js') || id.includes('node_modules/prism-react-renderer')) {
                             return 'syntax';
                         }
-                        // Math rendering (KaTeX çok büyük)
-                        if (id.includes('node_modules/katex')) {
+                        if (id.includes('node_modules/katex') || id.includes('node_modules/rehype-katex')) {
                             return 'katex';
                         }
-                        // Math rendering (lazy loaded, KaTeX çok büyük)
-                        if (id.includes('node_modules/katex')) {
-                            return 'katex';
-                        }
-                        // xterm (lazy loaded, terminal için)
                         if (id.includes('node_modules/@xterm') || id.includes('node_modules/xterm')) {
                             return 'xterm';
                         }
-                        // Diğer tüm node_modules -> vendor (React dahil, birlikte kalmalı)
-                        if (id.includes('node_modules')) {
-                            return 'vendor';
+                        if (id.includes('node_modules/mermaid')) {
+                            return 'mermaid';
                         }
+                        if (id.includes('node_modules/lucide-react')) {
+                            return 'icons';
+                        }
+                        if (id.includes('node_modules/@dnd-kit')) {
+                            return 'dnd';
+                        }
+                        if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/scheduler')) {
+                            return 'react-vendor';
+                        }
+                        
+                        // Let Rollup/Vite handle the rest naturally for better dynamic chunking
                     },
                     // UZAY OPTİMİZASYONU: Dosya isimlerini hash'le (cache için)
                     entryFileNames: 'assets/[name]-[hash].js',
@@ -193,19 +194,29 @@ export default defineConfig(({ mode }) => {
             // 500k uyarı eşiği yerine gerçekçi bir eşik kullanıyoruz.
             chunkSizeWarningLimit: 5000,
             // AGRESIF MİNİFİCATION: esbuild kullan (terser'den 10-20 kat daha hızlı)
-            minify: 'esbuild',
+            minify: 'terser',
             terserOptions: {
                 compress: {
                     drop_console: true, // console.log'ları production'da kaldır
                     drop_debugger: true,
-                    pure_funcs: ['console.log', 'console.info', 'console.debug'], // Belirli fonksiyonları kaldır
-                    passes: 2 // İki kez optimize et
+                    pure_funcs: [
+                        'console.log',
+                        'console.info',
+                        'console.debug',
+                        'console.trace',
+                        'performanceMonitor.mark'
+                    ],
+                    passes: 2,
+                    global_defs: {
+                        'process.env.NODE_ENV': JSON.stringify('production')
+                    }
                 },
                 mangle: {
-                    safari10: true // Safari uyumluluğu
+                    safari10: true,
+                    toplevel: true
                 },
                 format: {
-                    comments: false // Yorumları kaldır
+                    comments: false
                 }
             },
             // CommonJS interop

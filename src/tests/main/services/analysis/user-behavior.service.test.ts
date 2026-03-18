@@ -38,8 +38,8 @@ describe('UserBehaviorService', () => {
             on: vi.fn().mockReturnValue(() => { /* unsubscribe */ })
         };
         service = new UserBehaviorService(
-            mockDatabase as unknown as DatabaseService,
-            mockEventBus as unknown as EventBusService
+            mockDatabase as never as DatabaseService,
+            mockEventBus as never as EventBusService
         );
     });
 
@@ -109,8 +109,8 @@ describe('UserBehaviorService', () => {
         it('should track feature usage on event', async () => {
             await service.initialize();
             const handler = mockEventBus.on.mock.calls.find(
-                (c: unknown[]) => c[0] === 'user:feature-used'
-            )?.[1] as (payload: { featureId: string; metadata?: Record<string, unknown> }) => Promise<void>;
+                (c: TestValue[]) => c[0] === 'user:feature-used'
+            )?.[1] as (payload: { featureId: string; metadata?: Record<string, TestValue> }) => Promise<void>;
 
             await handler({ featureId: 'chat', metadata: {} });
             expect(mockDatabase.userBehavior.trackInteraction).toHaveBeenCalledWith(
@@ -121,7 +121,7 @@ describe('UserBehaviorService', () => {
         it('should track model selection on event', async () => {
             await service.initialize();
             const handler = mockEventBus.on.mock.calls.find(
-                (c: unknown[]) => c[0] === 'user:model-selected'
+                (c: TestValue[]) => c[0] === 'user:model-selected'
             )?.[1] as (payload: { provider: string; modelId: string }) => Promise<void>;
 
             await handler({ provider: 'openai', modelId: 'gpt-4' });
@@ -133,7 +133,7 @@ describe('UserBehaviorService', () => {
         it('should track chat sent on event', async () => {
             await service.initialize();
             const handler = mockEventBus.on.mock.calls.find(
-                (c: unknown[]) => c[0] === 'user:chat-sent'
+                (c: TestValue[]) => c[0] === 'user:chat-sent'
             )?.[1] as (payload: { modelId: string; messageLength: number }) => Promise<void>;
 
             await handler({ modelId: 'gpt-4', messageLength: 100 });
@@ -145,7 +145,7 @@ describe('UserBehaviorService', () => {
         it('should track shortcut usage on event', async () => {
             await service.initialize();
             const handler = mockEventBus.on.mock.calls.find(
-                (c: unknown[]) => c[0] === 'user:shortcut-used'
+                (c: TestValue[]) => c[0] === 'user:shortcut-used'
             )?.[1] as (payload: { shortcut: string }) => Promise<void>;
 
             await handler({ shortcut: 'ctrl+k' });

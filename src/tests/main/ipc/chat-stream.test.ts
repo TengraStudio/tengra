@@ -7,15 +7,15 @@ import { ipcMain } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock Electron ipcMain
-const ipcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
+const ipcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
 
 vi.mock('electron', () => ({
     app: {
         getPath: vi.fn().mockReturnValue('C:\\mock-user-data')
     },
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
-            ipcMainHandlers.set(channel, handler);
+        handle: vi.fn((channel: string, handler: (...args: TestValue[]) => TestValue | Promise<TestValue>) => {
+            ipcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
         }),
         removeHandler: vi.fn(),
         on: vi.fn(),
@@ -54,7 +54,7 @@ const mockEvent = {
     }
 } as never;
 
-const typedEvent = mockEvent as unknown as {
+const typedEvent = mockEvent as never as {
     sender: {
         id: number;
         isDestroyed: ReturnType<typeof vi.fn>;
@@ -72,7 +72,7 @@ const mockMainWindow = {
     webContents: { id: 1 }
 };
 
-const initIPC = (overrides?: Record<string, unknown>) => {
+const initIPC = (overrides?: Record<string, TestValue>) => {
     registerSessionConversationIpc({
         getMainWindow: () => mockMainWindow as never,
         settingsService: mockSettingsService as never,
@@ -86,7 +86,7 @@ const initIPC = (overrides?: Record<string, unknown>) => {
     });
 };
 
-const createStreamRequest = (overrides?: Record<string, unknown>) => ({
+const createStreamRequest = (overrides?: Record<string, TestValue>) => ({
     messages: [{ role: 'user', content: 'Hello AI' }],
     model: 'gpt-4o',
     tools: [],
@@ -98,16 +98,16 @@ const createStreamRequest = (overrides?: Record<string, unknown>) => ({
     ...(overrides ?? {})
 });
 
-const getStreamChunkCalls = (): Record<string, unknown>[] => {
+const getStreamChunkCalls = (): Record<string, TestValue>[] => {
     return typedEvent.sender.send.mock.calls
-        .filter((call: unknown[]) => call[0] === 'session:conversation:stream-chunk')
-        .map((call: unknown[]) => call[1] as Record<string, unknown>);
+        .filter((call: TestValue[]) => call[0] === 'session:conversation:stream-chunk')
+        .map((call: TestValue[]) => call[1] as Record<string, TestValue>);
 };
 
-const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void) | undefined => {
+const getCancelHandler = (): ((_: TestValue, payload: { chatId: string }) => void) | undefined => {
     const calls = vi.mocked(ipcMain.on).mock.calls;
     const call = calls.find(entry => entry[0] === 'session:conversation:cancel');
-    return call?.[1] as ((_: unknown, payload: { chatId: string }) => void) | undefined;
+    return call?.[1] as ((_: TestValue, payload: { chatId: string }) => void) | undefined;
 };
 
     // ─── Full Lifecycle: start → chunks → done ───────────────────────
@@ -122,7 +122,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: 'chunk-3' };
             })());
 
-            const result = await handler?.(mockEvent, createStreamRequest());
+            const result = await handler!(mockEvent, createStreamRequest());
 
             expect(result).toMatchObject({ success: true });
             const chunks = getStreamChunkCalls();
@@ -142,7 +142,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
             const handler = ipcMainHandlers.get('session:conversation:stream');
             mockLLMService.chatStream.mockReturnValue((async function* () { /* empty */ })());
 
-            await handler?.(mockEvent, createStreamRequest());
+            await handler!(mockEvent, createStreamRequest());
 
             const chunks = getStreamChunkCalls();
             expect(chunks.some(c => c.done === true)).toBe(true);
@@ -155,7 +155,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: 'answer', reasoning: 'because logic' };
             })());
 
-            await handler?.(mockEvent, createStreamRequest());
+            await handler!(mockEvent, createStreamRequest());
 
             const chunks = getStreamChunkCalls();
             expect(chunks).toEqual(
@@ -172,7 +172,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: 'data' };
             })());
 
-            await handler?.(mockEvent, createStreamRequest());
+            await handler!(mockEvent, createStreamRequest());
 
             expect(ipcMain.on).toHaveBeenCalledWith('session:conversation:cancel', expect.any(Function));
             expect(ipcMain.removeListener).toHaveBeenCalledWith('session:conversation:cancel', expect.any(Function));
@@ -186,10 +186,10 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
             initIPC();
             const handler = ipcMainHandlers.get('session:conversation:stream');
             mockLLMService.chatStream.mockImplementation(async function* (
-                _messages: unknown,
-                _model: unknown,
-                _tools: unknown,
-                _provider: unknown,
+                _messages: TestValue,
+                _model: TestValue,
+                _tools: TestValue,
+                _provider: TestValue,
                 options: { signal?: AbortSignal }
             ) {
                 yield { content: 'before-cancel' };
@@ -205,7 +205,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: 'after-cancel-should-not-appear' };
             });
 
-            await handler?.(mockEvent, createStreamRequest());
+            await handler!(mockEvent, createStreamRequest());
 
             const chunks = getStreamChunkCalls();
             const hasAfterCancel = chunks.some(c => c.content === 'after-cancel-should-not-appear');
@@ -223,7 +223,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield null;
             })());
 
-            await handler?.(mockEvent, createStreamRequest());
+            await handler!(mockEvent, createStreamRequest());
 
             const chunks = getStreamChunkCalls();
             const errorChunks = chunks.filter(c => c.type === 'error');
@@ -235,10 +235,10 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
             initIPC();
             const handler = ipcMainHandlers.get('session:conversation:stream');
             mockLLMService.chatStream.mockImplementation(async function* (
-                _messages: unknown,
-                _model: unknown,
-                _tools: unknown,
-                _provider: unknown,
+                _messages: TestValue,
+                _model: TestValue,
+                _tools: TestValue,
+                _provider: TestValue,
                 options: { signal?: AbortSignal }
             ) {
                 const cancelHandler = getCancelHandler();
@@ -253,7 +253,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: 'still-streaming' };
             });
 
-            await handler?.(mockEvent, createStreamRequest());
+            await handler!(mockEvent, createStreamRequest());
 
             const chunks = getStreamChunkCalls();
             expect(chunks.some(c => c.content === 'still-streaming')).toBe(true);
@@ -271,7 +271,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield null;
             })());
 
-            await handler?.(mockEvent, createStreamRequest());
+            await handler!(mockEvent, createStreamRequest());
 
             const chunks = getStreamChunkCalls();
             const errorChunks = chunks.filter(c => c.type === 'error');
@@ -288,7 +288,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 throw new Error('Timeout: request exceeded 30s');
             })());
 
-            await handler?.(mockEvent, createStreamRequest());
+            await handler!(mockEvent, createStreamRequest());
 
             const chunks = getStreamChunkCalls();
             expect(chunks.some(c => c.content === 'partial-data')).toBe(true);
@@ -304,7 +304,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: 'ghost-data' };
             })());
 
-            await handler?.(mockEvent, createStreamRequest());
+            await handler!(mockEvent, createStreamRequest());
 
             expect(typedEvent.sender.send).not.toHaveBeenCalled();
         });
@@ -314,7 +314,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
             const handler = ipcMainHandlers.get('session:conversation:stream');
             mockCopilotService.streamChat.mockResolvedValue(null);
 
-            await handler?.(mockEvent, createStreamRequest({ provider: 'copilot' }));
+            await handler!(mockEvent, createStreamRequest({ provider: 'copilot' }));
 
             const chunks = getStreamChunkCalls();
             expect(chunks.some(c => c.type === 'error' && (c.content as string).includes('Copilot stream'))).toBe(true);
@@ -330,7 +330,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
             initIPC({ rateLimitService: mockRateLimitService });
             const handler = ipcMainHandlers.get('session:conversation:stream');
 
-            await handler?.(mockEvent, createStreamRequest());
+            await handler!(mockEvent, createStreamRequest());
 
             const chunks = getStreamChunkCalls();
             expect(chunks.some(c => c.type === 'error' && (c.content as string).includes('Rate limit'))).toBe(true);
@@ -343,7 +343,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
             initIPC({ rateLimitService: mockRateLimitService });
             const handler = ipcMainHandlers.get('session:conversation:stream');
 
-            await handler?.(mockEvent, createStreamRequest());
+            await handler!(mockEvent, createStreamRequest());
 
             expect(ipcMain.on).not.toHaveBeenCalledWith('session:conversation:cancel', expect.any(Function));
         });
@@ -356,7 +356,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: 'allowed' };
             })());
 
-            await handler?.(mockEvent, createStreamRequest());
+            await handler!(mockEvent, createStreamRequest());
 
             expect(mockRateLimitService.waitForToken).toHaveBeenCalledWith('session:conversation:stream');
             expect(mockLLMService.chatStream).toHaveBeenCalled();
@@ -369,7 +369,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
             const handler = ipcMainHandlers.get('session:conversation:stream');
             mockLLMService.chatStream.mockReturnValue((async function* () { })());
 
-            await handler?.(mockEvent, createStreamRequest());
+            await handler!(mockEvent, createStreamRequest());
 
             expect(mockRateLimitService.waitForToken).not.toHaveBeenCalled();
             expect(mockLLMService.chatStream).toHaveBeenCalled();
@@ -386,7 +386,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: 'opencode-reply' };
             })());
 
-            await handler?.(mockEvent, createStreamRequest({ provider: 'opencode' }));
+            await handler!(mockEvent, createStreamRequest({ provider: 'opencode' }));
 
             expect(mockLLMService.chatOpenCodeStream).toHaveBeenCalled();
         });
@@ -399,7 +399,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
             })();
             mockCopilotService.streamChat.mockResolvedValue(mockStream);
 
-            await handler?.(mockEvent, createStreamRequest({ provider: 'copilot' }));
+            await handler!(mockEvent, createStreamRequest({ provider: 'copilot' }));
 
             expect(mockCopilotService.streamChat).toHaveBeenCalled();
         });
@@ -409,7 +409,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
             const handler = ipcMainHandlers.get('session:conversation:stream');
             mockLLMService.chatStream.mockReturnValue((async function* () { })());
 
-            await handler?.(mockEvent, createStreamRequest({ provider: 'ollama' }));
+            await handler!(mockEvent, createStreamRequest({ provider: 'ollama' }));
 
             expect(mockLLMService.chatStream).toHaveBeenCalled();
         });
@@ -422,10 +422,10 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
             initIPC();
             const handler = ipcMainHandlers.get('session:conversation:stream');
             const payload = createStreamRequest();
-            const incomplete = { ...payload } as Record<string, unknown>;
+            const incomplete = { ...payload } as Record<string, TestValue>;
             delete incomplete.chatId;
 
-            const result = await handler?.(mockEvent, incomplete);
+            const result = await handler!(mockEvent, incomplete);
 
             expect(result).toMatchObject({ success: false });
         });
@@ -434,7 +434,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
             initIPC();
             const handler = ipcMainHandlers.get('session:conversation:stream');
 
-            const result = await handler?.(
+            const result = await handler!(
                 mockEvent,
                 [{ role: 'user', content: 'test' }],
                 'gpt-4o',
@@ -461,7 +461,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: 'World' };
             })());
 
-            await handler?.(mockEvent, createStreamRequest());
+            await handler!(mockEvent, createStreamRequest());
 
             expect(mockDatabaseService.chats.addMessage).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -481,7 +481,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: 'data', usage: { prompt_tokens: 100, completion_tokens: 50 } };
             })());
 
-            await handler?.(mockEvent, createStreamRequest());
+            await handler!(mockEvent, createStreamRequest());
 
             expect(mockDatabaseService.system.addTokenUsage).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -501,7 +501,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { usage: { prompt_tokens: 0, completion_tokens: 0 } };
             })());
 
-            await handler?.(mockEvent, createStreamRequest());
+            await handler!(mockEvent, createStreamRequest());
 
             expect(mockDatabaseService.chats.addMessage).not.toHaveBeenCalled();
         });
@@ -514,7 +514,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: ' part2', reasoning: 'step-2' };
             })());
 
-            await handler?.(mockEvent, createStreamRequest());
+            await handler!(mockEvent, createStreamRequest());
 
             expect(mockDatabaseService.chats.addMessage).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -532,7 +532,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: 'reply' };
             })());
 
-            await handler?.(mockEvent, createStreamRequest());
+            await handler!(mockEvent, createStreamRequest());
 
             expect(mockDatabaseService.system.addTokenUsage).not.toHaveBeenCalled();
         });
@@ -545,7 +545,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 throw new Error('Connection reset');
             })());
 
-            await handler?.(mockEvent, createStreamRequest());
+            await handler!(mockEvent, createStreamRequest());
 
             expect(mockDatabaseService.chats.addMessage).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -570,7 +570,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: 'response' };
             })());
 
-            await handler?.(mockEvent, createStreamRequest({
+            await handler!(mockEvent, createStreamRequest({
                 workspaceId: 'proj-rag',
                 provider: 'ollama'
             }));
@@ -592,7 +592,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: 'no-rag' };
             })());
 
-            await handler?.(mockEvent, createStreamRequest({ workspaceId: undefined }));
+            await handler!(mockEvent, createStreamRequest({ workspaceId: undefined }));
 
             expect(mockContextRetrievalService.retrieveContext).not.toHaveBeenCalled();
         });
@@ -607,7 +607,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: 'still-works' };
             })());
 
-            await handler?.(mockEvent, createStreamRequest({ workspaceId: 'proj-broken-rag' }));
+            await handler!(mockEvent, createStreamRequest({ workspaceId: 'proj-broken-rag' }));
 
             const chunks = getStreamChunkCalls();
             expect(chunks.some(c => c.content === 'still-works')).toBe(true);
@@ -634,12 +634,12 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: 'chunk-3-should-be-skipped' };
             })());
 
-            await handler?.(mockEvent, createStreamRequest());
+            await handler!(mockEvent, createStreamRequest());
 
             const sendCalls = typedEvent.sender.send.mock.calls;
             const contentCalls = sendCalls.filter(
-                (call: unknown[]) => call[0] === 'session:conversation:stream-chunk' &&
-                    (call[1] as Record<string, unknown>).content === 'chunk-2-should-be-skipped'
+                (call: TestValue[]) => call[0] === 'session:conversation:stream-chunk' &&
+                    (call[1] as Record<string, TestValue>).content === 'chunk-2-should-be-skipped'
             );
             expect(contentCalls).toHaveLength(0);
         });
@@ -655,7 +655,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: 'oc-answer', reasoning: 'oc-think' };
             })());
 
-            await handler?.(mockEvent, createStreamRequest({ provider: 'opencode' }));
+            await handler!(mockEvent, createStreamRequest({ provider: 'opencode' }));
 
             expect(mockDatabaseService.addMessage).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -676,7 +676,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: 'reply', usage: { prompt_tokens: 200, completion_tokens: 80 } };
             })());
 
-            await handler?.(mockEvent, createStreamRequest({ provider: 'opencode' }));
+            await handler!(mockEvent, createStreamRequest({ provider: 'opencode' }));
 
             expect(mockDatabaseService.addTokenUsage).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -696,7 +696,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: 'tagged' };
             })());
 
-            await handler?.(mockEvent, createStreamRequest({ provider: 'opencode' }));
+            await handler!(mockEvent, createStreamRequest({ provider: 'opencode' }));
 
             const chunks = getStreamChunkCalls();
             expect(chunks).toEqual(
@@ -721,7 +721,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
             })();
             mockCopilotService.streamChat.mockResolvedValue(mockStream);
 
-            await handler?.(mockEvent, createStreamRequest({ provider: 'copilot' }));
+            await handler!(mockEvent, createStreamRequest({ provider: 'copilot' }));
 
             expect(mockDatabaseService.addMessage).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -742,7 +742,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
             })();
             mockCopilotService.streamChat.mockResolvedValue(mockStream);
 
-            await handler?.(mockEvent, createStreamRequest({ provider: 'copilot' }));
+            await handler!(mockEvent, createStreamRequest({ provider: 'copilot' }));
 
             const chunks = getStreamChunkCalls();
             expect(chunks.some(c => c.content === 'cp-data')).toBe(true);
@@ -765,8 +765,8 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
             })());
 
             await Promise.all([
-                handler?.(mockEvent, createStreamRequest({ chatId: 'chat-A' })),
-                handler?.(mockEvent, createStreamRequest({ chatId: 'chat-B' }))
+                handler!(mockEvent, createStreamRequest({ chatId: 'chat-A' })),
+                handler!(mockEvent, createStreamRequest({ chatId: 'chat-B' }))
             ]);
 
             const chunks = getStreamChunkCalls();
@@ -788,8 +788,8 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
             })());
 
             await Promise.all([
-                handler?.(mockEvent, createStreamRequest({ chatId: 'done-A' })),
-                handler?.(mockEvent, createStreamRequest({ chatId: 'done-B' }))
+                handler!(mockEvent, createStreamRequest({ chatId: 'done-A' })),
+                handler!(mockEvent, createStreamRequest({ chatId: 'done-B' }))
             ]);
 
             const chunks = getStreamChunkCalls();
@@ -810,7 +810,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { usage: { prompt_tokens: 50, completion_tokens: 0 } };
             })());
 
-            await handler?.(mockEvent, createStreamRequest());
+            await handler!(mockEvent, createStreamRequest());
 
             const chunks = getStreamChunkCalls();
             expect(chunks.some(c => c.done === true)).toBe(true);
@@ -824,7 +824,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
                 yield { content: 'deep-thought' };
             })());
 
-            await handler?.(mockEvent, createStreamRequest({
+            await handler!(mockEvent, createStreamRequest({
                 optionsJson: { reasoningEffort: 'high' }
             }));
 
@@ -841,7 +841,7 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
             initIPC();
             const handler = ipcMainHandlers.get('session:conversation:stream');
 
-            const result = await handler?.(mockEvent, createStreamRequest({ messages: [] }));
+            const result = await handler!(mockEvent, createStreamRequest({ messages: [] }));
 
             expect(result).toMatchObject({ success: false });
         });
@@ -850,9 +850,10 @@ const getCancelHandler = (): ((_: unknown, payload: { chatId: string }) => void)
             initIPC();
             const handler = ipcMainHandlers.get('session:conversation:stream');
 
-            const result = await handler?.(mockEvent, createStreamRequest({ model: '' }));
+            const result = await handler!(mockEvent, createStreamRequest({ model: '' }));
 
             expect(result).toMatchObject({ success: false });
         });
     });
+
 

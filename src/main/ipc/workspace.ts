@@ -16,6 +16,8 @@ import {
 import {
     DirectoryAnalysisSchema,
     GenerateLogoOptionsSchema,
+    WorkspaceActiveRootPathSchema,
+    WorkspaceActiveStateSchema,
     WorkspaceAnalysisSchema,
     WorkspaceEnvVarsSchema,
     WorkspaceIdentitySchema,
@@ -64,6 +66,13 @@ export const registerWorkspaceIpc = (
         auditLogService,
     } = deps;
     const resolvedWorkspaceService = workspaceService;
+
+    const getActiveWorkspaceState = (): z.infer<typeof WorkspaceActiveStateSchema> => {
+        const activeWorkspaceRootPath = resolvedWorkspaceService.getActiveWorkspace();
+        return {
+            rootPath: typeof activeWorkspaceRootPath === 'string' ? activeWorkspaceRootPath : null,
+        };
+    };
 
     /**
      * Internal utility for audit logging sensitive file system operations.
@@ -166,6 +175,68 @@ export const registerWorkspaceIpc = (
             {
                 argsSchema: z.tuple([WorkspaceRootPathSchema]),
                 responseSchema: z.object({ success: z.boolean() }),
+                wrapResponse: true
+            }
+        )
+    );
+
+    ipcMain.handle(
+        'workspace:analyzeSummary',
+        createValidatedIpcHandler<
+            z.infer<typeof WorkspaceAnalysisSchema>,
+            [string, string | undefined]
+        >(
+            'workspace:analyzeSummary',
+            async (
+                event,
+                rootPath: string,
+                workspaceId: string | undefined
+            ): Promise<z.infer<typeof WorkspaceAnalysisSchema>> => {
+                validateSender(event);
+                appLogger.info(
+                    'WorkspaceIPC',
+                    `Summary analysis requested for ${rootPath} (ID: ${workspaceId})`
+                );
+                const results = await resolvedWorkspaceService.analyzeWorkspaceSummary(rootPath);
+                return results;
+            },
+            {
+                argsSchema: z.tuple([WorkspaceRootPathSchema, WorkspaceIdSchema.optional()]),
+                responseSchema: WorkspaceAnalysisSchema,
+                wrapResponse: true
+            }
+        )
+    );
+
+    ipcMain.handle(
+        'workspace:setActive',
+        createValidatedIpcHandler(
+            'workspace:setActive',
+            async (event, rootPath: string | null) => {
+                validateSender(event);
+                await resolvedWorkspaceService.setActiveWorkspace(rootPath);
+                return getActiveWorkspaceState();
+            },
+            {
+                argsSchema: z.tuple([WorkspaceActiveRootPathSchema]),
+                responseSchema: WorkspaceActiveStateSchema,
+                wrapResponse: true
+            }
+        )
+    );
+
+    ipcMain.handle(
+        'workspace:clearActive',
+        createValidatedIpcHandler(
+            'workspace:clearActive',
+            async (event, rootPath: string | undefined) => {
+                validateSender(event);
+                await resolvedWorkspaceService.clearActiveWorkspace(rootPath);
+                return getActiveWorkspaceState();
+            },
+            {
+                argsSchema: z.tuple([WorkspaceRootPathSchema.optional()]),
+                responseSchema: WorkspaceActiveStateSchema,
                 wrapResponse: true
             }
         )

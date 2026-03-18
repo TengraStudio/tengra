@@ -2,13 +2,22 @@ import { registerBackupIpc } from '@main/ipc/backup';
 import { IpcMainInvokeEvent } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+interface IpcSuccessEnvelope<TData> {
+    success: true;
+    data: TData;
+}
+
+interface BackupRestoreResult {
+    success: boolean;
+}
+
 // Mock Electron ipcMain
-const ipcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
+const ipcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
 
 vi.mock('electron', () => ({
     ipcMain: {
         handle: vi.fn((channel, handler) => {
-            ipcMainHandlers.set(channel, handler);
+            ipcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
         }),
         removeHandler: vi.fn()
     }
@@ -61,7 +70,7 @@ describe('Backup IPC Integration', () => {
                 size: 1024
             });
 
-            const result = await handler?.({} as IpcMainInvokeEvent);
+            const result = await handler!({} as IpcMainInvokeEvent);
 
             expect(mockBackupService.createBackup).toHaveBeenCalledWith(undefined);
             expect(result).toMatchObject({
@@ -90,7 +99,7 @@ describe('Backup IPC Integration', () => {
                 includePrompts: true
             };
 
-            const result = await handler?.({} as IpcMainInvokeEvent, options);
+            const result = await handler!({} as IpcMainInvokeEvent, options);
 
             expect(mockBackupService.createBackup).toHaveBeenCalledWith(options);
             expect(result).toMatchObject({
@@ -112,7 +121,7 @@ describe('Backup IPC Integration', () => {
                 restoredItems: ['chats', 'settings']
             });
 
-            const result = await handler?.({} as IpcMainInvokeEvent, '/backups/backup.zip');
+            const result = await handler!({} as IpcMainInvokeEvent, '/backups/backup.zip');
 
             expect(mockBackupService.restoreBackup).toHaveBeenCalledWith('/backups/backup.zip', undefined);
             expect(result).toMatchObject({
@@ -138,7 +147,11 @@ describe('Backup IPC Integration', () => {
                 mergeChats: true
             };
 
-            const result = await handler?.({} as IpcMainInvokeEvent, '/backups/backup.zip', options) as { success: boolean; data: any };
+            const result = await handler!(
+                {} as IpcMainInvokeEvent,
+                '/backups/backup.zip',
+                options
+            ) as IpcSuccessEnvelope<BackupRestoreResult>;
 
             expect(mockBackupService.restoreBackup).toHaveBeenCalledWith('/backups/backup.zip', options);
             expect(result.data.success).toBe(true);
@@ -148,7 +161,7 @@ describe('Backup IPC Integration', () => {
             initIPC();
             const handler = ipcMainHandlers.get('backup:restore');
 
-            const result = await handler?.({} as IpcMainInvokeEvent, '');
+            const result = await handler!({} as IpcMainInvokeEvent, '');
 
             expect(result).toMatchObject({
                 success: false,
@@ -161,7 +174,7 @@ describe('Backup IPC Integration', () => {
             initIPC();
             const handler = ipcMainHandlers.get('backup:restore');
 
-            const result = await handler?.({} as IpcMainInvokeEvent, 123);
+            const result = await handler!({} as IpcMainInvokeEvent, 123);
 
             expect(result).toMatchObject({
                 success: false,
@@ -174,7 +187,7 @@ describe('Backup IPC Integration', () => {
             initIPC();
             const handler = ipcMainHandlers.get('backup:restore');
 
-            const result = await handler?.({} as IpcMainInvokeEvent, '   ');
+            const result = await handler!({} as IpcMainInvokeEvent, '   ');
 
             expect(result).toMatchObject({
                 success: false,
@@ -191,7 +204,7 @@ describe('Backup IPC Integration', () => {
 
             mockBackupService.deleteBackup.mockResolvedValue(true);
 
-            const result = await handler?.({} as IpcMainInvokeEvent, '/backups/old-backup.zip');
+            const result = await handler!({} as IpcMainInvokeEvent, '/backups/old-backup.zip');
 
             expect(mockBackupService.deleteBackup).toHaveBeenCalledWith('/backups/old-backup.zip');
             expect(result).toEqual({ success: true, data: true });
@@ -201,7 +214,7 @@ describe('Backup IPC Integration', () => {
             initIPC();
             const handler = ipcMainHandlers.get('backup:delete');
 
-            const result = await handler?.({} as IpcMainInvokeEvent, '');
+            const result = await handler!({} as IpcMainInvokeEvent, '');
 
             expect(result).toMatchObject({
                 success: false,
@@ -214,7 +227,7 @@ describe('Backup IPC Integration', () => {
             initIPC();
             const handler = ipcMainHandlers.get('backup:delete');
 
-            const result = await handler?.({} as IpcMainInvokeEvent, null);
+            const result = await handler!({} as IpcMainInvokeEvent, null);
 
             expect(result).toMatchObject({
                 success: false,
@@ -236,7 +249,7 @@ describe('Backup IPC Integration', () => {
 
             mockBackupService.listBackups.mockResolvedValue(backupList);
 
-            const result = await handler?.({} as IpcMainInvokeEvent);
+            const result = await handler!({} as IpcMainInvokeEvent);
 
             expect(mockBackupService.listBackups).toHaveBeenCalled();
             expect(result).toMatchObject({
@@ -251,7 +264,7 @@ describe('Backup IPC Integration', () => {
 
             mockBackupService.listBackups.mockResolvedValue([]);
 
-            const result = await handler?.({} as IpcMainInvokeEvent);
+            const result = await handler!({} as IpcMainInvokeEvent);
 
             expect(result).toMatchObject({
                 success: true,
@@ -267,7 +280,7 @@ describe('Backup IPC Integration', () => {
 
             mockBackupService.getBackupDir.mockReturnValue('/home/user/backups');
 
-            const result = await handler?.({} as IpcMainInvokeEvent);
+            const result = await handler!({} as IpcMainInvokeEvent);
 
             expect(mockBackupService.getBackupDir).toHaveBeenCalled();
             expect(result).toEqual({ success: true, data: '/home/user/backups' });
@@ -288,7 +301,7 @@ describe('Backup IPC Integration', () => {
 
             mockBackupService.getAutoBackupStatus.mockResolvedValue(status);
 
-            const result = await handler?.({} as IpcMainInvokeEvent);
+            const result = await handler!({} as IpcMainInvokeEvent);
 
             expect(mockBackupService.getAutoBackupStatus).toHaveBeenCalled();
             expect(result).toMatchObject({
@@ -310,7 +323,7 @@ describe('Backup IPC Integration', () => {
 
             mockBackupService.getAutoBackupStatus.mockResolvedValue(status);
 
-            const result = await handler?.({} as IpcMainInvokeEvent);
+            const result = await handler!({} as IpcMainInvokeEvent);
 
             expect(result).toMatchObject({
                 success: true,
@@ -332,7 +345,7 @@ describe('Backup IPC Integration', () => {
                 maxBackups: 10
             };
 
-            const result = await handler?.({} as IpcMainInvokeEvent, config);
+            const result = await handler!({} as IpcMainInvokeEvent, config);
 
             expect(mockBackupService.configureAutoBackup).toHaveBeenCalledWith(config);
             expect(result).toEqual({ success: true, data: undefined });
@@ -346,7 +359,7 @@ describe('Backup IPC Integration', () => {
 
             const config = { enabled: false };
 
-            const result = await handler?.({} as IpcMainInvokeEvent, config);
+            const result = await handler!({} as IpcMainInvokeEvent, config);
 
             expect(mockBackupService.configureAutoBackup).toHaveBeenCalledWith(config);
             expect(result).toEqual({ success: true, data: undefined });
@@ -360,7 +373,7 @@ describe('Backup IPC Integration', () => {
 
             mockBackupService.cleanupOldBackups.mockResolvedValue(3);
 
-            const result = await handler?.({} as IpcMainInvokeEvent);
+            const result = await handler!({} as IpcMainInvokeEvent);
 
             expect(mockBackupService.cleanupOldBackups).toHaveBeenCalled();
             expect(result).toEqual({ success: true, data: 3 });
@@ -372,9 +385,10 @@ describe('Backup IPC Integration', () => {
 
             mockBackupService.cleanupOldBackups.mockResolvedValue(0);
 
-            const result = await handler?.({} as IpcMainInvokeEvent);
+            const result = await handler!({} as IpcMainInvokeEvent);
 
             expect(result).toEqual({ success: true, data: 0 });
         });
     });
 });
+

@@ -20,7 +20,7 @@ const MAX_FIELD_LENGTH = 256;
 /**
  * Validates a string ID
  */
-function validateId(value: unknown): string | null {
+function validateId(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -34,7 +34,7 @@ function validateId(value: unknown): string | null {
 /**
  * Validates content string
  */
-function validateContent(value: unknown): string | null {
+function validateContent(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -48,7 +48,7 @@ function validateContent(value: unknown): string | null {
 /**
  * Validates a query string
  */
-function validateQuery(value: unknown): string | null {
+function validateQuery(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -62,7 +62,7 @@ function validateQuery(value: unknown): string | null {
 /**
  * Validates a field name
  */
-function validateField(value: unknown): string | null {
+function validateField(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -76,7 +76,7 @@ function validateField(value: unknown): string | null {
 /**
  * Validates and sanitizes tags array
  */
-function validateTags(value: unknown): string[] {
+function validateTags(value: RuntimeValue): string[] {
     if (!Array.isArray(value)) {
         return [];
     }
@@ -110,7 +110,7 @@ export function registerMemoryIpc(getMainWindow: () => BrowserWindow | null, mem
         'memory:deleteFact',
         createSafeIpcHandler(
             'memory:deleteFact',
-            async (event: IpcMainInvokeEvent, factIdRaw: unknown) => {
+            async (event: IpcMainInvokeEvent, factIdRaw: RuntimeValue) => {
                 validateSender(event);
                 const factId = validateId(factIdRaw);
                 if (!factId) {
@@ -127,7 +127,7 @@ export function registerMemoryIpc(getMainWindow: () => BrowserWindow | null, mem
         'memory:deleteEntity',
         createSafeIpcHandler(
             'memory:deleteEntity',
-            async (event: IpcMainInvokeEvent, entityIdRaw: unknown) => {
+            async (event: IpcMainInvokeEvent, entityIdRaw: RuntimeValue) => {
                 validateSender(event);
                 const entityId = validateId(entityIdRaw);
                 if (!entityId) {
@@ -144,7 +144,7 @@ export function registerMemoryIpc(getMainWindow: () => BrowserWindow | null, mem
         'memory:addFact',
         createSafeIpcHandler(
             'memory:addFact',
-            async (event: IpcMainInvokeEvent, contentRaw: unknown, tagsRaw: unknown) => {
+            async (event: IpcMainInvokeEvent, contentRaw: RuntimeValue, tagsRaw: RuntimeValue) => {
                 validateSender(event);
                 const content = validateContent(contentRaw);
                 if (!content) {
@@ -164,10 +164,10 @@ export function registerMemoryIpc(getMainWindow: () => BrowserWindow | null, mem
             'memory:setEntityFact',
             async (
                 event: IpcMainInvokeEvent,
-                entityTypeRaw: unknown,
-                entityNameRaw: unknown,
-                keyRaw: unknown,
-                valueRaw: unknown
+                entityTypeRaw: RuntimeValue,
+                entityNameRaw: RuntimeValue,
+                keyRaw: RuntimeValue,
+                valueRaw: RuntimeValue
             ) => {
                 validateSender(event);
                 const entityType = validateField(entityTypeRaw);
@@ -190,7 +190,7 @@ export function registerMemoryIpc(getMainWindow: () => BrowserWindow | null, mem
         'memory:search',
         createSafeIpcHandler(
             'memory:search',
-            async (event: IpcMainInvokeEvent, queryRaw: unknown) => {
+            async (event: IpcMainInvokeEvent, queryRaw: RuntimeValue) => {
                 validateSender(event);
                 const query = validateQuery(queryRaw);
                 if (!query) {

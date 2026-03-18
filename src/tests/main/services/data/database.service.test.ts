@@ -11,8 +11,8 @@ vi.mock('@main/logging/logger', () => ({
 }));
 
 // Mock query implementation
-const mockQuery = vi.fn().mockImplementation(async (sql: string, _params: any[]) => {
-    const rows: any[] = [];
+const mockQuery = vi.fn().mockImplementation(async (sql: string, _params: TestValue[]) => {
+    const rows: TestValue[] = [];
     const normalizedSql = typeof sql === 'string' ? sql.replace(/\s+/g, ' ').trim() : '';
 
     if (normalizedSql.includes('SELECT') && normalizedSql.includes(WORKSPACE_COMPAT_SCHEMA_VALUES.TABLE) && (normalizedSql.includes('id = $1') || normalizedSql.includes('id = ?'))) {
@@ -34,6 +34,18 @@ const mockQuery = vi.fn().mockImplementation(async (sql: string, _params: any[])
 
 import { DatabaseClientService } from '@main/services/data/database-client.service';
 
+interface WorkspaceRepositoryMock {
+    updateWorkspace: ReturnType<typeof vi.fn>;
+}
+
+interface SystemRepositoryMock {
+    getDetailedStats: ReturnType<typeof vi.fn>;
+}
+
+interface DatabaseClientMock {
+    searchSemanticFragments: ReturnType<typeof vi.fn>;
+}
+
 describe('DatabaseService', () => {
     let service: DatabaseService;
     let mockDataService: DataService;
@@ -43,12 +55,12 @@ describe('DatabaseService', () => {
         vi.clearAllMocks();
         mockDataService = {
             getPath: vi.fn().mockReturnValue('/mock/db/path')
-        } as unknown as DataService;
+        } as never as DataService;
         mockEventBus = {
             emit: vi.fn(),
             on: vi.fn(),
             off: vi.fn()
-        } as unknown as EventBusService;
+        } as never as EventBusService;
 
         const mockDatabaseClient = {
             initialize: vi.fn().mockResolvedValue(undefined),
@@ -96,7 +108,7 @@ describe('DatabaseService', () => {
             recycleConnectionPool: vi.fn().mockResolvedValue(undefined),
             testConnection: vi.fn().mockResolvedValue({ healthy: true, latencyMs: 1 }),
             getHealth: vi.fn().mockResolvedValue({ success: true })
-        } as unknown as DatabaseClientService;
+        } as never as DatabaseClientService;
 
         const mockTimeTracking = {
             getTimeStats: vi.fn().mockResolvedValue({
@@ -104,7 +116,7 @@ describe('DatabaseService', () => {
                 totalCodingTime: 50,
                 workspaceCodingTime: {}
             })
-        } as unknown as TimeTrackingService;
+        } as never as TimeTrackingService;
 
         service = new DatabaseService(mockDataService, mockEventBus, mockDatabaseClient, mockTimeTracking);
         await service.initialize();
@@ -117,7 +129,7 @@ describe('DatabaseService', () => {
         });
 
         it('should expose advanced memory table bootstrap on the knowledge repository', () => {
-            const knowledgeRepository = Reflect.get(service, '_knowledge') as { ensureMemoryTables?: unknown } | undefined;
+            const knowledgeRepository = Reflect.get(service, '_knowledge') as { ensureMemoryTables?: TestValue } | undefined;
             expect(typeof knowledgeRepository?.ensureMemoryTables).toBe('function');
         });
     });
@@ -139,7 +151,8 @@ describe('DatabaseService', () => {
         });
 
         it('should archive a workspace', async () => {
-            const updateSpy = vi.spyOn((service as any)._workspaces, 'updateWorkspace').mockResolvedValue({
+            const workspaceRepository = Reflect.get(service, '_workspaces') as WorkspaceRepositoryMock;
+            const updateSpy = vi.spyOn(workspaceRepository, 'updateWorkspace').mockResolvedValue({
                 id: '1',
                 title: 'ToArchive',
                 path: '/path',
@@ -161,7 +174,8 @@ describe('DatabaseService', () => {
         });
 
         it('should get detailed stats', async () => {
-            vi.spyOn((service as any)._system, 'getDetailedStats').mockResolvedValue({
+            const systemRepository = Reflect.get(service, '_system') as SystemRepositoryMock;
+            vi.spyOn(systemRepository, 'getDetailedStats').mockResolvedValue({
                 chatCount: 3,
                 messageCount: 5,
                 dbSize: 0,
@@ -203,7 +217,7 @@ describe('DatabaseService', () => {
 
     describe('DBSVC vector search', () => {
         it('should cache semantic vector search results and track analytics', async () => {
-            const dbClient = (service as any).dbClient;
+            const dbClient = Reflect.get(service, 'dbClient') as DatabaseClientMock;
             dbClient.searchSemanticFragments.mockResolvedValue([
                 {
                     id: 'frag-1',
@@ -246,13 +260,13 @@ describe('DatabaseService', () => {
         });
 
         it('should reject non-string input', async () => {
-            await expect(service.analyzeQueryPlan(123 as unknown as string)).rejects.toThrow(DatabaseServiceErrorCode.INVALID_QUERY);
+            await expect(service.analyzeQueryPlan(123 as never as string)).rejects.toThrow(DatabaseServiceErrorCode.INVALID_QUERY);
         });
     });
 
     describe('executeBatch validation', () => {
         it('should reject non-array input', async () => {
-            await expect(service.executeBatch('not-array' as unknown as Array<{ sql: string }>)).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
+            await expect(service.executeBatch('not-array' as never as Array<{ sql: string }>)).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
         });
 
         it('should return empty results for empty array', async () => {
@@ -263,7 +277,7 @@ describe('DatabaseService', () => {
 
     describe('bulkDeleteChats validation', () => {
         it('should reject non-array input', async () => {
-            await expect(service.bulkDeleteChats('not-array' as unknown as string[])).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
+            await expect(service.bulkDeleteChats('not-array' as never as string[])).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
         });
 
         it('should reject array with invalid id', async () => {
@@ -273,7 +287,7 @@ describe('DatabaseService', () => {
 
     describe('bulkDeleteWorkspaces validation', () => {
         it('should reject non-array input', async () => {
-            await expect(service.bulkDeleteWorkspaces('not-array' as unknown as string[])).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
+            await expect(service.bulkDeleteWorkspaces('not-array' as never as string[])).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
         });
 
         it('should reject array with invalid id', async () => {
@@ -292,7 +306,7 @@ describe('DatabaseService', () => {
                     createdAt: new Date(now - 20_000),
                     updatedAt: new Date(now - 10_000),
                     metadata: {}
-                } as any,
+                } as never,
                 {
                     id: 'new-chat',
                     title: 'New',
@@ -300,9 +314,9 @@ describe('DatabaseService', () => {
                     createdAt: new Date(now),
                     updatedAt: new Date(now),
                     metadata: {}
-                } as any
+                } as never
             ]);
-            const archiveSpy = vi.spyOn(service, 'archiveChat').mockResolvedValue({ success: true } as any);
+            const archiveSpy = vi.spyOn(service, 'archiveChat').mockResolvedValue({ success: true } as never);
 
             const result = await service.archiveOldChats(now - 5_000);
 
@@ -317,7 +331,7 @@ describe('DatabaseService', () => {
         });
 
         it('query rejects non-string SQL', async () => {
-            await expect(service.query(42 as unknown as string)).rejects.toThrow(DatabaseServiceErrorCode.INVALID_QUERY);
+            await expect(service.query(42 as never as string)).rejects.toThrow(DatabaseServiceErrorCode.INVALID_QUERY);
         });
 
         it('exec rejects empty SQL', async () => {
@@ -335,7 +349,7 @@ describe('DatabaseService', () => {
 
     describe('bulkArchiveChats validation', () => {
         it('rejects non-array input', async () => {
-            await expect(service.bulkArchiveChats('bad' as unknown as string[], true)).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
+            await expect(service.bulkArchiveChats('bad' as never as string[], true)).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
         });
 
         it('rejects array with empty id', async () => {
@@ -345,7 +359,7 @@ describe('DatabaseService', () => {
 
     describe('bulkArchiveWorkspaces validation', () => {
         it('rejects non-array input', async () => {
-            await expect(service.bulkArchiveWorkspaces('bad' as unknown as string[], false)).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
+            await expect(service.bulkArchiveWorkspaces('bad' as never as string[], false)).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
         });
 
         it('rejects array with empty id', async () => {
@@ -355,7 +369,7 @@ describe('DatabaseService', () => {
 
     describe('deleteMessages validation', () => {
         it('rejects non-array input', async () => {
-            await expect(service.deleteMessages('bad' as unknown as string[])).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
+            await expect(service.deleteMessages('bad' as never as string[])).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
         });
 
         it('rejects array with empty id', async () => {
@@ -365,7 +379,7 @@ describe('DatabaseService', () => {
 
     describe('unarchiveChats validation', () => {
         it('rejects non-array input', async () => {
-            await expect(service.unarchiveChats('bad' as unknown as string[])).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
+            await expect(service.unarchiveChats('bad' as never as string[])).rejects.toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
         });
 
         it('rejects array with empty id', async () => {
@@ -375,15 +389,15 @@ describe('DatabaseService', () => {
 
     describe('setConnectionPoolConfig validation', () => {
         it('rejects null config', () => {
-            expect(() => service.setConnectionPoolConfig(null as unknown as { maxSockets?: number })).toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
+            expect(() => service.setConnectionPoolConfig(null as never as { maxSockets?: number })).toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
         });
 
         it('rejects non-object config', () => {
-            expect(() => service.setConnectionPoolConfig('bad' as unknown as { maxSockets?: number })).toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
+            expect(() => service.setConnectionPoolConfig('bad' as never as { maxSockets?: number })).toThrow(DatabaseServiceErrorCode.OPERATION_FAILED);
         });
 
         it('accepts valid config', () => {
-            const mockClient = (service as unknown as { dbClient: { setPoolLimits: ReturnType<typeof vi.fn> } }).dbClient;
+            const mockClient = (service as never as { dbClient: { setPoolLimits: ReturnType<typeof vi.fn> } }).dbClient;
             mockClient.setPoolLimits = vi.fn();
             expect(() => service.setConnectionPoolConfig({ maxSockets: 5 })).not.toThrow();
         });
@@ -474,7 +488,7 @@ describe('DatabaseService', () => {
     // B-0491: Connection health proxy
     describe('connection health', () => {
         it('delegates to dbClient.testConnection', async () => {
-            const dbClient = (service as unknown as { dbClient: { testConnection: ReturnType<typeof vi.fn> } }).dbClient;
+            const dbClient = (service as never as { dbClient: { testConnection: ReturnType<typeof vi.fn> } }).dbClient;
             dbClient.testConnection = vi.fn().mockResolvedValue({ healthy: true, latencyMs: 5 });
             const result = await service.getConnectionHealth(3_000);
             expect(dbClient.testConnection).toHaveBeenCalledWith(3_000);

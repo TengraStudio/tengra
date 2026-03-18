@@ -7,12 +7,12 @@ import { WorkspaceService } from '@main/services/workspace/workspace.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock Electron ipcMain
-const ipcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
+const ipcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
 
 vi.mock('electron', () => ({
     ipcMain: {
         handle: vi.fn((channel, handler) => {
-            ipcMainHandlers.set(channel, handler);
+            ipcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
         }),
         removeHandler: vi.fn()
     }
@@ -28,6 +28,31 @@ let mockInlineSuggestionService: InlineSuggestionService;
 let mockCodeIntelligenceService: CodeIntelligenceService;
 let mockAuditLogService: AuditLogService;
 
+function createWorkspaceAnalysisResult() {
+    return {
+        type: 'typescript',
+        frameworks: ['vite'],
+        dependencies: {
+            react: '^18.2.0',
+        },
+        devDependencies: {
+            vitest: '^4.0.0',
+        },
+        stats: {
+            fileCount: 3,
+            totalSize: 1024,
+            loc: 120,
+            lastModified: 1_700_000_000_000,
+        },
+        languages: {
+            TypeScript: 120,
+        },
+        files: ['src/index.ts'],
+        todos: [],
+        issues: [],
+    };
+}
+
 describe('Workspace IPC Integration', () => {
     const mockEvent = { sender: { id: 1 } } as never;
 
@@ -39,32 +64,36 @@ describe('Workspace IPC Integration', () => {
 
         mockWorkspaceService = {
             analyzeWorkspace: vi.fn(),
+            analyzeWorkspaceSummary: vi.fn(),
             analyzeDirectory: vi.fn(),
             watchWorkspace: vi.fn(),
             stopWatch: vi.fn(),
+            setActiveWorkspace: vi.fn(),
+            clearActiveWorkspace: vi.fn(),
+            getActiveWorkspace: vi.fn(),
             saveEnvVars: vi.fn(),
             getAuditContext: vi.fn((rootPath: string) => ({ rootPath, workspaceName: 'workspace' }))
-        } as unknown as WorkspaceService;
+        } as never as WorkspaceService;
 
         mockLogoService = {
             generateLogo: vi.fn(),
             analyzeWorkspaceIdentity: vi.fn(),
             applyLogo: vi.fn(),
             improveLogoPrompt: vi.fn()
-        } as unknown as LogoService;
+        } as never as LogoService;
 
         mockInlineSuggestionService = {
             getCompletion: vi.fn(),
             getInlineSuggestion: vi.fn(),
-        } as unknown as InlineSuggestionService;
+        } as never as InlineSuggestionService;
 
         mockCodeIntelligenceService = {
             indexWorkspace: vi.fn().mockResolvedValue(undefined)
-        } as unknown as CodeIntelligenceService;
+        } as never as CodeIntelligenceService;
 
         mockAuditLogService = {
             logFileSystemOperation: vi.fn().mockResolvedValue(undefined)
-        } as unknown as AuditLogService;
+        } as never as AuditLogService;
     });
 
     it('should register workspace handlers', () => {
@@ -78,6 +107,7 @@ describe('Workspace IPC Integration', () => {
             auditLogService: mockAuditLogService
         });
         expect(ipcMainHandlers.has('workspace:analyze')).toBe(true);
+        expect(ipcMainHandlers.has('workspace:analyzeSummary')).toBe(true);
         expect(ipcMainHandlers.has('workspace:generateLogo')).toBe(true);
         expect(ipcMainHandlers.has('workspace:analyzeIdentity')).toBe(true);
     });
@@ -97,14 +127,41 @@ describe('Workspace IPC Integration', () => {
         });
         const handler = ipcMainHandlers.get('workspace:analyze');
 
-        const mockResult = { files: [], symbols: [] };
+        const mockResult = createWorkspaceAnalysisResult();
         analyzeWorkspaceMock.mockResolvedValue(mockResult);
 
         // handler(event, rootPath, workspaceId)
-        const result = await handler?.(mockEvent, '/root', 'proj-1');
+        const result = await handler!(mockEvent, '/root', 'proj-1');
 
         expect(analyzeWorkspaceMock).toHaveBeenCalledWith('/root');
         expect(vi.mocked(mockCodeIntelligenceService.indexWorkspace)).not.toHaveBeenCalled();
+        expect(result).toMatchObject({
+            success: true,
+            data: mockResult
+        });
+    });
+
+    it('should handle workspace:analyzeSummary successfully', async () => {
+        const analyzeWorkspaceSummaryMock = vi.fn();
+        mockWorkspaceService.analyzeWorkspaceSummary = analyzeWorkspaceSummaryMock;
+
+        registerWorkspaceIpc(() => null, {
+            workspaceService: mockWorkspaceService,
+            logoService: mockLogoService,
+            inlineSuggestionService: mockInlineSuggestionService,
+            codeIntelligenceService: mockCodeIntelligenceService,
+            jobSchedulerService: {} as never,
+            databaseService: {} as never,
+            auditLogService: mockAuditLogService
+        });
+        const handler = ipcMainHandlers.get('workspace:analyzeSummary');
+
+        const mockResult = createWorkspaceAnalysisResult();
+        analyzeWorkspaceSummaryMock.mockResolvedValue(mockResult);
+
+        const result = await handler!(mockEvent, '/root', 'proj-1');
+
+        expect(analyzeWorkspaceSummaryMock).toHaveBeenCalledWith('/root');
         expect(result).toMatchObject({
             success: true,
             data: mockResult
@@ -128,7 +185,7 @@ describe('Workspace IPC Integration', () => {
 
         generateLogoMock.mockResolvedValue('/path/to/logo.png');
 
-        const result = await handler?.(mockEvent, '/root', { prompt: 'prompt', style: 'style', model: 'dall-e-3', count: 1 });
+        const result = await handler!(mockEvent, '/root', { prompt: 'prompt', style: 'style', model: 'dall-e-3', count: 1 });
 
         // Handler destructures the options object before calling logoService
         expect(generateLogoMock).toHaveBeenCalledWith('/root', 'prompt', 'style', 'dall-e-3', 1);
@@ -155,7 +212,7 @@ describe('Workspace IPC Integration', () => {
 
         analyzeWorkspaceMock.mockRejectedValue(new Error('Analysis Failed'));
 
-        const result = await handler?.(mockEvent, '/root', 'proj-1');
+        const result = await handler!(mockEvent, '/root', 'proj-1');
 
         expect(result).toEqual({
             success: false,
@@ -179,7 +236,7 @@ describe('Workspace IPC Integration', () => {
         });
         const handler = ipcMainHandlers.get('workspace:saveEnv');
 
-        const result = await handler?.(mockEvent, '/root', { TOKEN: 'x' });
+        const result = await handler!(mockEvent, '/root', { TOKEN: 'x' });
         expect(result).toMatchObject({
             success: true,
             data: { success: true }
@@ -190,4 +247,33 @@ describe('Workspace IPC Integration', () => {
             expect.objectContaining({ rootPath: '/root', variableCount: 1 })
         );
     });
+
+    it('returns null-safe active workspace state for setActive and clearActive', async () => {
+        vi.mocked(mockWorkspaceService.setActiveWorkspace).mockResolvedValue(undefined);
+        vi.mocked(mockWorkspaceService.clearActiveWorkspace).mockResolvedValue(undefined);
+        vi.mocked(mockWorkspaceService.getActiveWorkspace).mockReturnValue(undefined as never);
+
+        registerWorkspaceIpc(() => null, {
+            workspaceService: mockWorkspaceService,
+            logoService: mockLogoService,
+            inlineSuggestionService: mockInlineSuggestionService,
+            codeIntelligenceService: mockCodeIntelligenceService,
+            jobSchedulerService: {} as never,
+            databaseService: {} as never,
+            auditLogService: mockAuditLogService
+        });
+
+        const setActiveHandler = ipcMainHandlers.get('workspace:setActive');
+        const clearActiveHandler = ipcMainHandlers.get('workspace:clearActive');
+
+        await expect(setActiveHandler?.(mockEvent, '/root')).resolves.toMatchObject({
+            success: true,
+            data: { rootPath: null }
+        });
+        await expect(clearActiveHandler?.(mockEvent)).resolves.toMatchObject({
+            success: true,
+            data: { rootPath: null }
+        });
+    });
 });
+

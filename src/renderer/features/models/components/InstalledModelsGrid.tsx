@@ -45,7 +45,7 @@ interface ProviderConfig {
     color: string;
     bgColor: string;
     borderColor: string;
-    label: string;
+    labelKey: string;
 }
 
 const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
@@ -54,70 +54,70 @@ const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
         color: 'text-blue-500',
         bgColor: 'bg-blue-500/10',
         borderColor: 'border-blue-500/20',
-        label: 'GitHub Copilot'
+        labelKey: 'providerLabels.githubCopilot'
     },
     openai: {
         icon: Brain,
         color: 'text-emerald-500',
         bgColor: 'bg-emerald-500/10',
         borderColor: 'border-emerald-500/20',
-        label: 'OpenAI'
+        labelKey: 'providerLabels.openai'
     },
     anthropic: {
         icon: Zap,
         color: 'text-orange-500',
         bgColor: 'bg-orange-500/10',
         borderColor: 'border-orange-500/20',
-        label: 'Anthropic'
+        labelKey: 'providerLabels.anthropic'
     },
     claude: {
         icon: Zap,
         color: 'text-orange-500',
         bgColor: 'bg-orange-500/10',
         borderColor: 'border-orange-500/20',
-        label: 'Claude'
+        labelKey: 'providerLabels.claude'
     },
     ollama: {
         icon: Cpu,
         color: 'text-purple-500',
         bgColor: 'bg-purple-500/10',
         borderColor: 'border-purple-500/20',
-        label: 'Ollama'
+        labelKey: 'providerLabels.ollama'
     },
     codex: {
         icon: Globe,
         color: 'text-cyan-500',
         bgColor: 'bg-cyan-500/10',
         borderColor: 'border-cyan-500/20',
-        label: 'Codex'
+        labelKey: 'providerLabels.codex'
     },
     antigravity: {
         icon: Cloud,
         color: 'text-pink-500',
         bgColor: 'bg-pink-500/10',
         borderColor: 'border-pink-500/20',
-        label: 'Google AI'
+        labelKey: 'providerLabels.googleAi'
     },
     nvidia: {
         icon: Cpu,
         color: 'text-green-500',
         bgColor: 'bg-green-500/10',
         borderColor: 'border-green-500/20',
-        label: 'NVIDIA'
+        labelKey: 'providerLabels.nvidia'
     },
     opencode: {
         icon: Globe,
         color: 'text-indigo-500',
         bgColor: 'bg-indigo-500/10',
         borderColor: 'border-indigo-500/20',
-        label: 'OpenCode'
+        labelKey: 'providerLabels.openCode'
     },
     custom: {
         icon: AlertCircle,
         color: 'text-muted-foreground',
         bgColor: 'bg-muted/30',
         borderColor: 'border-border/50',
-        label: 'Custom'
+        labelKey: 'providerLabels.custom'
     }
 };
 
@@ -507,7 +507,7 @@ const ProviderSection = memo(({
                     </div>
                     <div>
                         <h2 className="font-bold text-base text-foreground group-hover:text-primary transition-colors">
-                            {config.label}
+                            {t(config.labelKey)}
                         </h2>
                         <p className="text-xs text-muted-foreground">
                             {visibleModels.length} {t('modelsPage.modelsCount')}

@@ -28,7 +28,7 @@ describe('FeatureFlagService Integration', () => {
     let service: FeatureFlagService;
     const mockDataService = {
         getPath: vi.fn().mockReturnValue('/mock/config'),
-    } as unknown as DataService;
+    } as never as DataService;
 
     beforeEach(async () => {
         vi.restoreAllMocks();
@@ -90,7 +90,7 @@ describe('FeatureFlagService lifecycle flows (B-0442)', () => {
     let service: FeatureFlagService;
     const mockDataService = {
         getPath: vi.fn().mockReturnValue('/mock/config'),
-    } as unknown as DataService;
+    } as never as DataService;
 
     beforeEach(async () => {
         vi.restoreAllMocks();
@@ -180,7 +180,7 @@ describe('FeatureFlagService regression tests (B-0442)', () => {
     let service: FeatureFlagService;
     const mockDataService = {
         getPath: vi.fn().mockReturnValue('/mock/config'),
-    } as unknown as DataService;
+    } as never as DataService;
 
     beforeEach(async () => {
         vi.restoreAllMocks();
@@ -202,8 +202,8 @@ describe('FeatureFlagService regression tests (B-0442)', () => {
             'a'.repeat(300), 'flag!@#', NaN, Infinity,
         ];
         for (const input of badInputs) {
-            expect(() => service.evaluate(input as unknown as string)).not.toThrow();
-            expect(service.evaluate(input as unknown as string)).toBe(false);
+            expect(() => service.evaluate(input as never as string)).not.toThrow();
+            expect(service.evaluate(input as never as string)).toBe(false);
         }
     });
 
@@ -218,7 +218,7 @@ describe('FeatureFlagService regression tests (B-0442)', () => {
         ];
         for (const ctx of badContexts) {
             expect(() =>
-                service.evaluate('council.planning', ctx as unknown as never)
+                service.evaluate('council.planning', ctx as never as never)
             ).not.toThrow();
         }
     });
@@ -229,7 +229,7 @@ describe('FeatureFlagService regression tests (B-0442)', () => {
             () => service.disable(''),
             () => service.setOverride('', true),
             () => service.clearOverride(''),
-            () => service.setOverride('valid.id', 'yes' as unknown as boolean),
+            () => service.setOverride('valid.id', 'yes' as never as boolean),
         ];
         for (const fn of mutations) {
             try {

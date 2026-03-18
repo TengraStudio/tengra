@@ -34,9 +34,9 @@ export function registerServiceGroups(registrations: ServiceGroupRegistrations):
     registrations.registerDataServices();
     registrations.registerSecurityServices();
     registrations.registerLLMServices();
-    const registerWorkspaceLikeServices =
-        registrations.registerWorkspaceServices ?? registrations.registerWorkspaceServices;
-    registerWorkspaceLikeServices?.();
+    registrations.registerWorkspaceServices?.(); // Simplified
+
+
     registrations.registerAnalysisServices();
     registrations.registerMcpServices();
     registrations.registerLazyServices();
@@ -76,7 +76,7 @@ const DEFERRED_SERVICE_NAMES: string[] = [
     'auditLogService',
     'performanceService',
     'monitoringService',
-    'sentryService',
+
     'collaborationService',
     // Export & screenshot
     'exportService',
@@ -93,12 +93,6 @@ const DEFERRED_SERVICE_NAMES: string[] = [
     'promptTemplatesService',
     // Agent services
     'agentService',
-    'agentRegistryService',
-    'agentPersistenceService',
-    'agentCheckpointService',
-    'agentPerformanceService',
-    'automationWorkflowService',
-    'multiAgentOrchestratorService',
     // Workspace & external
     'marketResearchService',
     'ideaGeneratorService',
@@ -106,10 +100,10 @@ const DEFERRED_SERVICE_NAMES: string[] = [
     'backupService',
 ];
 
-export function startCriticalHealthChecks(deps: { databaseService: unknown; networkService: unknown }): void {
+export function startCriticalHealthChecks(deps: { databaseService: RuntimeValue; networkService: RuntimeValue }): void {
     const health = getHealthCheckService();
     health.registerCriticalChecks({
-        databaseService: deps.databaseService as { getDatabase: () => { prepare: (sql: string) => { get: () => Promise<unknown> } } },
+        databaseService: deps.databaseService as { getDatabase: () => { prepare: (sql: string) => { get: () => Promise<RuntimeValue> } } },
         networkService: deps.networkService,
     });
     health.start();

@@ -12,7 +12,7 @@ export function parseOpenCodeResponse(json: JsonObject): OpenAIResponse {
     const rawOutput = json['output'];
     const outputArray = Array.isArray(rawOutput) ? rawOutput : [rawOutput];
     const output = outputArray.find(
-        (o: unknown) => o && typeof o === 'object' && (o as JsonObject).type === 'message'
+        (o: RuntimeValue) => o && typeof o === 'object' && (o as JsonObject).type === 'message'
     ) as JsonObject | undefined;
 
     if (!output) {

@@ -49,7 +49,7 @@ const agentEventEnvelopeSchema = z.object({
 
 export type NormalizedAgentEvent = z.infer<typeof agentEventEnvelopeSchema>;
 
-export const normalizeAgentEventPayload = (payload: unknown): NormalizedAgentEvent | null => {
+export const normalizeAgentEventPayload = (payload: RendererDataValue): NormalizedAgentEvent | null => {
     const parsed = agentEventEnvelopeSchema.safeParse(payload);
     return parsed.success ? parsed.data : null;
 };

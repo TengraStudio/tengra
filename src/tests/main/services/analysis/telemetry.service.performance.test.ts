@@ -44,10 +44,10 @@ describe('TelemetryService Performance Instrumentation', () => {
         };
 
         service = new TelemetryService(
-            mockSettingsService as unknown as ConstructorParameters<typeof TelemetryService>[0]
+            mockSettingsService as never as ConstructorParameters<typeof TelemetryService>[0]
         );
 
-        warnSpy = appLogger.warn as unknown as MockInstance;
+        warnSpy = appLogger.warn as never as MockInstance;
     });
 
     afterEach(() => {
@@ -79,7 +79,7 @@ describe('TelemetryService Performance Instrumentation', () => {
             service.track('fast.event');
 
             const budgetWarnings = warnSpy.mock.calls.filter(
-                (call: unknown[]) =>
+                (call: TestValue[]) =>
                     call[0] === 'TelemetryService' &&
                     typeof call[1] === 'string' &&
                     call[1].includes('Performance budget exceeded for track')
@@ -99,7 +99,7 @@ describe('TelemetryService Performance Instrumentation', () => {
             service.track('slow.event');
 
             const budgetWarnings = warnSpy.mock.calls.filter(
-                (call: unknown[]) =>
+                (call: TestValue[]) =>
                     call[0] === 'TelemetryService' &&
                     typeof call[1] === 'string' &&
                     call[1].includes('Performance budget exceeded for track')
@@ -117,7 +117,7 @@ describe('TelemetryService Performance Instrumentation', () => {
             await service.flush();
 
             const budgetWarnings = warnSpy.mock.calls.filter(
-                (call: unknown[]) =>
+                (call: TestValue[]) =>
                     call[0] === 'TelemetryService' &&
                     typeof call[1] === 'string' &&
                     call[1].includes('Performance budget exceeded for flush')
@@ -137,7 +137,7 @@ describe('TelemetryService Performance Instrumentation', () => {
             await service.flush();
 
             const budgetWarnings = warnSpy.mock.calls.filter(
-                (call: unknown[]) =>
+                (call: TestValue[]) =>
                     call[0] === 'TelemetryService' &&
                     typeof call[1] === 'string' &&
                     call[1].includes('Performance budget exceeded for flush')
@@ -152,7 +152,7 @@ describe('TelemetryService Performance Instrumentation', () => {
             await service.initialize();
 
             const budgetWarnings = warnSpy.mock.calls.filter(
-                (call: unknown[]) =>
+                (call: TestValue[]) =>
                     call[0] === 'TelemetryService' &&
                     typeof call[1] === 'string' &&
                     call[1].includes('Performance budget exceeded for initialize')
@@ -170,7 +170,7 @@ describe('TelemetryService Performance Instrumentation', () => {
             await service.initialize();
 
             const budgetWarnings = warnSpy.mock.calls.filter(
-                (call: unknown[]) =>
+                (call: TestValue[]) =>
                     call[0] === 'TelemetryService' &&
                     typeof call[1] === 'string' &&
                     call[1].includes('Performance budget exceeded for initialize')
@@ -188,7 +188,7 @@ describe('TelemetryService Performance Instrumentation', () => {
             await service.cleanup();
 
             const budgetWarnings = warnSpy.mock.calls.filter(
-                (call: unknown[]) =>
+                (call: TestValue[]) =>
                     call[0] === 'TelemetryService' &&
                     typeof call[1] === 'string' &&
                     call[1].includes('Performance budget exceeded for cleanup')
@@ -213,7 +213,7 @@ describe('TelemetryService Performance Instrumentation', () => {
             await service.cleanup();
 
             const budgetWarnings = warnSpy.mock.calls.filter(
-                (call: unknown[]) =>
+                (call: TestValue[]) =>
                     call[0] === 'TelemetryService' &&
                     typeof call[1] === 'string' &&
                     call[1].includes('Performance budget exceeded for cleanup')
@@ -231,7 +231,7 @@ describe('TelemetryService Performance Instrumentation', () => {
             ]);
 
             const budgetWarnings = warnSpy.mock.calls.filter(
-                (call: unknown[]) =>
+                (call: TestValue[]) =>
                     call[0] === 'TelemetryService' &&
                     typeof call[1] === 'string' &&
                     call[1].includes('Performance budget exceeded for trackBatch')
@@ -254,7 +254,7 @@ describe('TelemetryService Performance Instrumentation', () => {
             service.trackBatch(events);
 
             const budgetWarnings = warnSpy.mock.calls.filter(
-                (call: unknown[]) =>
+                (call: TestValue[]) =>
                     call[0] === 'TelemetryService' &&
                     typeof call[1] === 'string' &&
                     call[1].includes('Performance budget exceeded for trackBatch')
@@ -274,7 +274,7 @@ describe('TelemetryService Performance Instrumentation', () => {
             service.track('test.event');
 
             const budgetWarning = warnSpy.mock.calls.find(
-                (call: unknown[]) =>
+                (call: TestValue[]) =>
                     call[0] === 'TelemetryService' &&
                     typeof call[1] === 'string' &&
                     call[1].includes('Performance budget exceeded')

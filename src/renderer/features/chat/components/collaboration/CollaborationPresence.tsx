@@ -59,12 +59,12 @@ export const CollaborationPresence = memo(({
                         </span>
                         {participant.role === 'owner' && (
                             <span className="text-[9px] uppercase font-black bg-primary/10 text-primary px-1.5 py-0.5 rounded tracking-tighter">
-                                Host
+                                {t('chat.collaboration.host')}
                             </span>
                         )}
                         {participant.role === 'ai' && (
                             <span className="text-[9px] uppercase font-black bg-secondary/10 text-secondary px-1.5 py-0.5 rounded tracking-tighter">
-                                AI
+                                {t('chat.collaboration.ai')}
                             </span>
                         )}
                     </div>

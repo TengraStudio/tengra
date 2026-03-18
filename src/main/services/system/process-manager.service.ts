@@ -382,7 +382,7 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
 
     async sendRequest<T>(
         name: string,
-        data: Record<string, unknown>,
+        data: Record<string, RuntimeValue>,
         _timeoutMs = 10000,
         endpointOverride?: string
     ): Promise<T> {

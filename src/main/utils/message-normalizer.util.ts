@@ -276,7 +276,7 @@ export class MessageNormalizer {
      * @param content - The content (string or array).
      * @param role - The role of the message sender.
      */
-    private static addContentToOpenCodeParts(parts: OpenCodeContentPart[], content: string | Message['content'] | unknown[], role: 'user' | 'assistant'): void {
+    private static addContentToOpenCodeParts(parts: OpenCodeContentPart[], content: string | Message['content'] | RuntimeValue[], role: 'user' | 'assistant'): void {
         const text = typeof content === 'string' ? content : '';
         const textType = role === 'assistant' ? 'output_text' : 'input_text';
 

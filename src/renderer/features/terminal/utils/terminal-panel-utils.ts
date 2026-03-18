@@ -10,7 +10,7 @@ import type {
  * @param value - Value to convert
  * @returns Display string
  */
-export function toDisplayString(value: unknown): string {
+export function toDisplayString(value: RendererDataValue): string {
     return typeof value === 'string' ? value.trim() : '';
 }
 
@@ -48,7 +48,7 @@ export function clamp(value: number, min: number, max: number): number {
  * @param raw - Raw data
  * @returns Normalized SSH profiles
  */
-export function normalizeSshProfiles(raw: unknown): RemoteSshProfile[] {
+export function normalizeSshProfiles(raw: RendererDataValue): RemoteSshProfile[] {
     if (!Array.isArray(raw)) {
         return [];
     }
@@ -58,7 +58,7 @@ export function normalizeSshProfiles(raw: unknown): RemoteSshProfile[] {
         if (!item || typeof item !== 'object') {
             return;
         }
-        const record = item as Record<string, unknown>;
+        const record = item as Record<string, RendererDataValue>;
         const host = toDisplayString(record.host);
         const username = toDisplayString(record.username);
         if (!host || !username) {
@@ -88,7 +88,7 @@ export function normalizeSshProfiles(raw: unknown): RemoteSshProfile[] {
  * @returns Normalized container or null
  */
 function parseDockerContainerRecord(
-    record: Record<string, unknown>,
+    record: Record<string, RendererDataValue>,
     index: number
 ): RemoteDockerContainer | null {
     const id =
@@ -125,7 +125,7 @@ function parseDockerContainerRecord(
  * @param raw - Raw data
  * @returns Normalized Docker containers
  */
-export function normalizeDockerContainers(raw: unknown): RemoteDockerContainer[] {
+export function normalizeDockerContainers(raw: RendererDataValue): RemoteDockerContainer[] {
     if (!Array.isArray(raw)) {
         return [];
     }
@@ -135,7 +135,7 @@ export function normalizeDockerContainers(raw: unknown): RemoteDockerContainer[]
         if (!item || typeof item !== 'object') {
             return;
         }
-        const container = parseDockerContainerRecord(item as Record<string, unknown>, index);
+        const container = parseDockerContainerRecord(item as Record<string, RendererDataValue>, index);
         if (container) {
             containers.push(container);
         }

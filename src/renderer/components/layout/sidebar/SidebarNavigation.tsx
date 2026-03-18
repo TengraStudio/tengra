@@ -1,7 +1,8 @@
-import { Bot, Brain, Lightbulb, MessageSquare, Rocket } from 'lucide-react';
+import { Brain, Lightbulb, MessageSquare, Rocket } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 
 import { AppView } from '@/hooks/useAppState';
+import { preloadViewResources } from '@/views/view-manager/view-loaders';
 
 import { SidebarItem } from './SidebarItem';
 
@@ -24,10 +25,13 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
         { view: 'chat' as const, icon: MessageSquare, label: t('sidebar.chats'), badge: chatsCount > 0 ? chatsCount : undefined },
         { view: 'workspace' as const, icon: Rocket, label: t('sidebar.workspaces') },
         { view: 'memory' as const, icon: Brain, label: t('sidebar.memory') },
-        { view: 'ideas' as const, icon: Lightbulb, label: t('sidebar.ideas') },
-        { view: 'automation-workflow' as const, icon: Bot, label: t('sidebar.automationWorkflow') }
+        { view: 'ideas' as const, icon: Lightbulb, label: t('sidebar.ideas') }
     ]), [chatsCount, t]);
     const [focusedIndex, setFocusedIndex] = useState(0);
+
+    const preloadView = (view: AppView) => {
+        void preloadViewResources(view);
+    };
 
     const handleRovingNav = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
         if (event.key === 'ArrowDown') {
@@ -60,10 +64,15 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                     label={item.label}
                     active={currentView === item.view}
                     onClick={() => onChangeView(item.view)}
+                    onMouseEnter={() => preloadView(item.view)}
+                    onPointerDown={() => preloadView(item.view)}
                     badge={item.badge}
                     isCollapsed={isCollapsed}
                     tabIndex={focusedIndex === index ? 0 : -1}
-                    onFocus={() => setFocusedIndex(index)}
+                    onFocus={() => {
+                        setFocusedIndex(index);
+                        preloadView(item.view);
+                    }}
                     onKeyDown={(event) => handleRovingNav(event, index)}
                 />
             ))}

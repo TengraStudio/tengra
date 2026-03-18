@@ -2,10 +2,27 @@ import { ChatEventService } from '@main/services/data/chat-event.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+interface MockRunStatement {
+    run: ReturnType<typeof vi.fn>;
+}
+
+interface MockAllStatement {
+    all: ReturnType<typeof vi.fn>;
+}
+
+interface MockDatabase {
+    prepare: ReturnType<typeof vi.fn>;
+    exec: ReturnType<typeof vi.fn>;
+}
+
+interface ChatEventDatabaseServiceMock {
+    getDatabase: ReturnType<typeof vi.fn>;
+}
+
 describe('ChatEventService', () => {
     let service: ChatEventService;
-    let mockDb: any;
-    let mockDatabaseService: any;
+    let mockDb: MockDatabase;
+    let mockDatabaseService: DatabaseService;
 
     beforeEach(() => {
         // Mock SQLite Database
@@ -15,15 +32,16 @@ describe('ChatEventService', () => {
         };
 
         // Mock DatabaseService
-        mockDatabaseService = {
+        const dbServiceMock: ChatEventDatabaseServiceMock = {
             getDatabase: vi.fn().mockReturnValue(mockDb)
-        } as unknown as DatabaseService;
+        };
+        mockDatabaseService = dbServiceMock as never as DatabaseService;
 
         service = new ChatEventService(mockDatabaseService);
     });
 
     it('should append an event successfully', async () => {
-        const stmtMock = { run: vi.fn().mockResolvedValue({}) };
+        const stmtMock: MockRunStatement = { run: vi.fn().mockResolvedValue({}) };
         mockDb.prepare.mockReturnValue(stmtMock);
 
         const threadId = 'thread-123';
@@ -48,7 +66,7 @@ describe('ChatEventService', () => {
             metadata: '{}'
         };
 
-        const stmtMock = { all: vi.fn().mockResolvedValue([mockRow]) };
+        const stmtMock: MockAllStatement = { all: vi.fn().mockResolvedValue([mockRow]) };
         mockDb.prepare.mockReturnValue(stmtMock);
 
         const events = await service.getEvents('thread-123');
@@ -83,7 +101,7 @@ describe('ChatEventService', () => {
             }
         ];
 
-        const stmtMock = { all: vi.fn().mockResolvedValue(mockRows) };
+        const stmtMock: MockAllStatement = { all: vi.fn().mockResolvedValue(mockRows) };
         mockDb.prepare.mockReturnValue(stmtMock);
 
         const state = await service.rebuildThreadState('1');

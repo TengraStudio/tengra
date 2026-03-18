@@ -8,7 +8,6 @@ import { QuotaModel, QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { getManagedRuntimeTempDir } from '@main/services/system/runtime-path.service';
 import { SettingsService } from '@main/services/system/settings.service';
-import { withRetry } from '@main/utils/retry.util';
 import { getErrorMessage } from '@shared/utils/error.util';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
@@ -30,17 +29,19 @@ interface ProviderDeps {
     quotaService?: QuotaService;
 }
 
-const RETRY_POLICY = {
-    networkAttempts: 2,
-    networkDelayMs: 300,
-} as const;
-
-const ERROR_CODES = {
-    POLLINATIONS_FAILURE: 'LOCAL_IMAGE_POLLINATIONS_FAILURE',
-} as const;
-
 /** Routes image generation to the appropriate provider. */
 export class LocalImageProviders {
+    private static readonly IMAGE_MODEL_KEYS = [
+        'gemini-3.1-flash-image',
+        'gemini-3-pro-image',
+        'gemini-3-pro-image-preview',
+        'imagen-3.0-generate-001',
+        'imagen',
+        'image'
+    ] as const;
+
+    private static readonly ANTIGRAVITY_IMAGE_MODEL_ID = 'gemini-3.1-flash-image';
+
     private readonly deps: ProviderDeps;
     private comfyWorkflowTemplates: ComfyWorkflowTemplate[] = [];
 
@@ -56,16 +57,16 @@ export class LocalImageProviders {
     /** Dispatch generation to the correct provider. */
     async generateWithProvider(provider: string, options: ImageGenerationOptions): Promise<string> {
         switch (provider) {
+            case 'antigravity':
+                return this.generateWithExplicitAntigravity(options);
             case 'ollama':
                 return this.generateWithOllama(options);
             case 'sd-webui':
                 return this.generateWithSDWebUI(options);
             case 'comfyui':
                 return this.generateWithComfyUI(options);
-            case 'pollinations':
-            case 'antigravity':
             default:
-                return this.generateWithPollinations(options);
+                throw new Error(`Unsupported image provider: ${provider}`);
         }
     }
 
@@ -79,29 +80,11 @@ export class LocalImageProviders {
             }
             appLogger.info('LocalImageProviders', 'No Antigravity accounts with available quota');
         } catch (error) {
-            appLogger.warn('LocalImageProviders', `Antigravity failed, falling back: ${getErrorMessage(error as Error)}`);
+            const formattedError = this.normalizeAntigravityError(error);
+            appLogger.warn('LocalImageProviders', `Antigravity generation failed: ${formattedError.message}`);
+            throw formattedError;
         }
         return null;
-    }
-
-    /** Generate using Pollinations API. */
-    async generateWithPollinations(options: ImageGenerationOptions): Promise<string> {
-        const { prompt, width = 1024, height = 1024, seed = Math.floor(Math.random() * 1000000) } = options;
-        const model = 'flux';
-        const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=true`;
-
-        try {
-            const response = await this.executeWithRetry(
-                () => axios.get(url, { responseType: 'arraybuffer' }),
-                RETRY_POLICY.networkAttempts
-            );
-            return this.saveTempImage(Buffer.from(response.data));
-        } catch (error) {
-            appLogger.error('LocalImageProviders', `Pollinations generation failed: ${getErrorMessage(error as Error)}`);
-            throw new Error(
-                `[${ERROR_CODES.POLLINATIONS_FAILURE}] Pollinations failure: ${getErrorMessage(error as Error)}`
-            );
-        }
     }
 
     /** Edit an image using the configured provider. */
@@ -131,14 +114,15 @@ export class LocalImageProviders {
     }
 
     private async generateWithAntigravity(options: ImageGenerationOptions, account: AntigravityAccount): Promise<string> {
-        if (!this.deps.llmService) {
+        if (!this.deps.llmService || !this.deps.authService) {
             throw new Error('LLMService not available for Antigravity generation');
         }
         try {
+            await this.deps.authService.setActiveAccount('antigravity', account.id);
             appLogger.info('LocalImageProviders', `Calling Antigravity image generation with account ${account.email ?? account.id}`);
             const response = await this.deps.llmService.chat(
                 [{ role: 'user', content: options.prompt }],
-                'antigravity-gemini-3-pro-image',
+                LocalImageProviders.ANTIGRAVITY_IMAGE_MODEL_ID,
                 [],
                 'antigravity'
             );
@@ -153,6 +137,14 @@ export class LocalImageProviders {
         }
     }
 
+    private async generateWithExplicitAntigravity(options: ImageGenerationOptions): Promise<string> {
+        const account = await this.getAntigravityAccountWithQuota();
+        if (!account) {
+            throw new Error('No Antigravity accounts with available quota');
+        }
+        return this.generateWithAntigravity(options, account);
+    }
+
     private async generateWithOllama(options: ImageGenerationOptions): Promise<string> {
         const settings = this.deps.settingsService.getSettings();
         const model = settings.images?.ollamaModel ?? 'stable-diffusion-v1-5';
@@ -164,7 +156,7 @@ export class LocalImageProviders {
                 prompt: options.prompt,
                 stream: false
             });
-            throw new Error('Ollama dedicated image generation is still in experimental community support. Please use SD-WebUI or Pollinations.');
+            throw new Error('Ollama dedicated image generation is still in experimental community support. Please use SD-WebUI.');
         } catch (error) {
             appLogger.error('LocalImageProviders', `Ollama generation failed: ${getErrorMessage(error as Error)}`);
             throw error;
@@ -190,7 +182,7 @@ export class LocalImageProviders {
         }
     }
 
-    private buildSDRequestBody(options: ImageGenerationOptions): Record<string, unknown> {
+    private buildSDRequestBody(options: ImageGenerationOptions): Record<string, RuntimeValue> {
         return {
             prompt: options.prompt,
             negative_prompt: options.negativePrompt ?? 'text, watermark, low quality',
@@ -229,8 +221,8 @@ export class LocalImageProviders {
         return this.saveTempImage(Buffer.from(imageResponse.data));
     }
 
-    private resolveComfyWorkflow(options: ImageGenerationOptions): Record<string, unknown> {
-        const settingsImages = this.deps.settingsService.getSettings().images as Record<string, unknown> | undefined;
+    private resolveComfyWorkflow(options: ImageGenerationOptions): Record<string, RuntimeValue> {
+        const settingsImages = this.deps.settingsService.getSettings().images as Record<string, RuntimeValue> | undefined;
         const selectedTemplateId =
             typeof settingsImages?.comfyUIWorkflowTemplateId === 'string'
                 ? settingsImages.comfyUIWorkflowTemplateId
@@ -245,7 +237,7 @@ export class LocalImageProviders {
 
         if (typeof settingsImages?.comfyUIWorkflowJson === 'string' && settingsImages.comfyUIWorkflowJson.trim()) {
             try {
-                const parsed = JSON.parse(settingsImages.comfyUIWorkflowJson) as Record<string, unknown>;
+                const parsed = JSON.parse(settingsImages.comfyUIWorkflowJson) as Record<string, RuntimeValue>;
                 return this.applyComfyWorkflowPlaceholders(parsed, options);
             } catch (error) {
                 appLogger.warn('LocalImageProviders', `Invalid custom ComfyUI workflow JSON: ${getErrorMessage(error as Error)}`);
@@ -256,9 +248,9 @@ export class LocalImageProviders {
     }
 
     private applyComfyWorkflowPlaceholders(
-        workflow: Record<string, unknown>,
+        workflow: Record<string, RuntimeValue>,
         options: ImageGenerationOptions
-    ): Record<string, unknown> {
+    ): Record<string, RuntimeValue> {
         const seed = typeof options.seed === 'number' ? options.seed : Math.floor(Math.random() * 1_000_000);
         const replacements: Record<string, string | number> = {
             prompt: options.prompt,
@@ -270,14 +262,14 @@ export class LocalImageProviders {
             seed,
             batch_size: Math.max(1, Math.min(options.count ?? 1, 8))
         };
-        const clone = JSON.parse(JSON.stringify(workflow)) as Record<string, unknown>;
-        return this.replaceWorkflowTokens(clone, replacements) as Record<string, unknown>;
+        const clone = JSON.parse(JSON.stringify(workflow)) as Record<string, RuntimeValue>;
+        return this.replaceWorkflowTokens(clone, replacements) as Record<string, RuntimeValue>;
     }
 
     private replaceWorkflowTokens(
-        value: unknown,
+        value: RuntimeValue,
         replacements: Record<string, string | number>
-    ): unknown {
+    ): RuntimeValue {
         if (typeof value === 'string') {
             const exact = value.match(/^{{([a-z_]+)}}$/);
             if (exact?.[1] && replacements[exact[1]] !== undefined) {
@@ -293,8 +285,8 @@ export class LocalImageProviders {
             return value.map(item => this.replaceWorkflowTokens(item, replacements));
         }
         if (value && typeof value === 'object') {
-            const objectValue = value as Record<string, unknown>;
-            const next: Record<string, unknown> = {};
+            const objectValue = value as Record<string, RuntimeValue>;
+            const next: Record<string, RuntimeValue> = {};
             Object.entries(objectValue).forEach(([key, nestedValue]) => {
                 next[key] = this.replaceWorkflowTokens(nestedValue, replacements);
             });
@@ -303,7 +295,7 @@ export class LocalImageProviders {
         return value;
     }
 
-    private buildComfyWorkflow(options: ImageGenerationOptions): Record<string, unknown> {
+    private buildComfyWorkflow(options: ImageGenerationOptions): Record<string, RuntimeValue> {
         const width = options.width ?? 1024;
         const height = options.height ?? 1024;
         const steps = options.steps ?? 24;
@@ -412,7 +404,7 @@ export class LocalImageProviders {
         const initImage = await this.readImageAsBase64(options.sourceImage);
         const maskImage = options.maskImage ? await this.readImageAsBase64(options.maskImage) : undefined;
 
-        const payload: Record<string, unknown> = {
+        const payload: Record<string, RuntimeValue> = {
             prompt: options.prompt,
             negative_prompt: options.negativePrompt ?? 'text, watermark, artifacts',
             init_images: [initImage],
@@ -532,19 +524,58 @@ export class LocalImageProviders {
     }
 
     private extractImageModel(models: Record<string, QuotaModel>): QuotaModel | null {
-        if ('gemini-3-pro-image' in models) { return models['gemini-3-pro-image']; }
-        if ('imagen-3.0-generate-001' in models) { return models['imagen-3.0-generate-001']; }
-        return null;
+        let bestMatch: QuotaModel | null = null;
+        let bestScore = -1;
+
+        for (const [key, model] of Object.entries(models)) {
+            const score = this.scoreImageModel(key, model);
+            if (score <= bestScore) {
+                continue;
+            }
+            bestScore = score;
+            bestMatch = model;
+        }
+
+        return bestMatch;
     }
 
-    private async executeWithRetry<T>(operation: () => Promise<T>, maxAttempts: number): Promise<T> {
-        return withRetry(operation, {
-            maxRetries: maxAttempts - 1,
-            baseDelayMs: RETRY_POLICY.networkDelayMs,
-            maxDelayMs: RETRY_POLICY.networkDelayMs,
-            jitterFactor: 0,
-            shouldRetry: () => true,
-        });
+    private scoreImageModel(key: string, model: QuotaModel): number {
+        const normalizedKey = this.normalizeImageModelToken(key);
+        const normalizedName = this.normalizeImageModelToken(model.displayName);
+        const combined = `${normalizedKey} ${normalizedName}`.trim();
+
+        if (combined.length === 0) {
+            return -1;
+        }
+
+        let score = -1;
+        for (const token of LocalImageProviders.IMAGE_MODEL_KEYS) {
+            if (!combined.includes(token)) {
+                continue;
+            }
+            score = Math.max(score, token.length);
+        }
+
+        if (score < 0) {
+            return -1;
+        }
+
+        if (model.quotaInfo) {
+            score += 100;
+        }
+
+        return score;
+    }
+
+    private normalizeImageModelToken(value?: string): string {
+        if (!value) {
+            return '';
+        }
+        return value
+            .toLowerCase()
+            .replace(/[._]+/g, '-')
+            .replace(/\s+/g, '-')
+            .trim();
     }
 
     private saveTempImage(buffer: Buffer): string {
@@ -559,5 +590,59 @@ export class LocalImageProviders {
 
     private async delay(ms: number): Promise<void> {
         await new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    private normalizeAntigravityError<T>(error: T): Error {
+        const fallbackMessage = getErrorMessage(error);
+        if (!(error instanceof Error)) {
+            return new Error(fallbackMessage);
+        }
+
+        const parsed = this.parseAntigravityErrorPayload(error.message);
+        if (!parsed) {
+            return error;
+        }
+
+        const validationInfo = parsed.details.find(detail =>
+            detail?.['@type'] === 'type.googleapis.com/google.rpc.ErrorInfo'
+                && detail.metadata?.validation_error_message
+        );
+        const validationMessage = validationInfo?.metadata?.validation_error_message;
+        const validationUrl = validationInfo?.metadata?.validation_url;
+        if (parsed.status === 'PERMISSION_DENIED' && validationMessage) {
+            const parts = [validationMessage.trim()];
+            if (validationUrl) {
+                parts.push(validationUrl.trim());
+            }
+            return new Error(parts.join(' '));
+        }
+
+        return new Error(parsed.message || fallbackMessage);
+    }
+
+    private parseAntigravityErrorPayload(message: string): {
+        message?: string;
+        status?: string;
+        details: Array<{ '@type'?: string; metadata?: Record<string, string> }>;
+    } | null {
+        try {
+            const parsed = JSON.parse(message) as {
+                error?: {
+                    message?: string;
+                    status?: string;
+                    details?: Array<{ '@type'?: string; metadata?: Record<string, string> }>;
+                };
+            };
+            if (!parsed.error) {
+                return null;
+            }
+            return {
+                message: parsed.error.message,
+                status: parsed.error.status,
+                details: Array.isArray(parsed.error.details) ? parsed.error.details : [],
+            };
+        } catch {
+            return null;
+        }
     }
 }

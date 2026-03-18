@@ -1,12 +1,35 @@
 
 import { FileSearchResult } from '@shared/types/common';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useVisibilityAwareInterval } from '@/hooks/useAppVisibility';
 import { Language, useTranslation } from '@/i18n';
-import type { AgentDefinition, Workspace, WorkspaceAnalysis, WorkspaceDashboardTab, WorkspaceStats } from '@/types';
+import type { Workspace, WorkspaceAnalysis, WorkspaceDashboardTab, WorkspaceStats } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 const WORKSPACE_ANALYSIS_REFRESH_INTERVAL_MS = 90_000;
+const SUMMARY_REQUEST_CACHE_TTL_MS = 5_000;
+
+interface SummaryRequestCacheEntry {
+    startedAt: number;
+    request: Promise<WorkspaceAnalysis>;
+}
+
+const summaryRequestCache = new Map<string, SummaryRequestCacheEntry>();
+
+function getSummaryRequest(cacheKey: string, workspacePath: string, workspaceId: string): Promise<WorkspaceAnalysis> {
+    const cachedRequest = summaryRequestCache.get(cacheKey);
+    if (cachedRequest && Date.now() - cachedRequest.startedAt < SUMMARY_REQUEST_CACHE_TTL_MS) {
+        return cachedRequest.request;
+    }
+
+    const request = window.electron.workspace.analyzeSummary(workspacePath, workspaceId);
+    summaryRequestCache.set(cacheKey, {
+        startedAt: Date.now(),
+        request,
+    });
+    return request;
+}
 
 interface UseWorkspaceDashboardLogicProps {
     workspace: Workspace;
@@ -26,11 +49,29 @@ function normalizeSearchResults(value: FileSearchResult[] | null | undefined): F
     return Array.isArray(value) ? value : [];
 }
 
+function normalizeWorkspaceAnalysis(value: WorkspaceAnalysis): WorkspaceAnalysis {
+    return {
+        ...value,
+        frameworks: Array.isArray(value.frameworks) ? value.frameworks : [],
+        dependencies:
+            value.dependencies && typeof value.dependencies === 'object' ? value.dependencies : {},
+        devDependencies:
+            value.devDependencies && typeof value.devDependencies === 'object'
+                ? value.devDependencies
+                : {},
+        languages:
+            value.languages && typeof value.languages === 'object' ? value.languages : {},
+        files: Array.isArray(value.files) ? value.files : [],
+        todos: Array.isArray(value.todos) ? value.todos : [],
+        issues: Array.isArray(value.issues) ? value.issues : [],
+    };
+}
+
 export function useWorkspaceDashboardLogic({ workspace, activeTab: externalTab, onTabChange, selectedEntry, onOpenFile, onUpdate, language = 'en' }: UseWorkspaceDashboardLogicProps) {
     const { t } = useTranslation(language);
     const [stats, setStats] = useState<WorkspaceStats | null>(null);
     const [analysis, setAnalysis] = useState<WorkspaceAnalysis | null>(null);
-    const [loading, setLoading] = useState(true); // Start with loading state to prevent empty state flash
+    const [loading, setLoading] = useState(false);
     const [internalTab, setInternalTab] = useState<WorkspaceDashboardTab>('overview');
     const activeTab = externalTab ?? internalTab;
     const setActiveTab = (onTabChange ?? setInternalTab) as (tab: WorkspaceDashboardTab) => void;
@@ -45,13 +86,23 @@ export function useWorkspaceDashboardLogic({ workspace, activeTab: externalTab, 
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<FileSearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
-    const [availableAgents, setAvailableAgents] = useState<AgentDefinition[]>([]);
+    const analysisRef = useRef<WorkspaceAnalysis | null>(null);
+
+    const summaryCacheKey = `${workspace.id}:${workspace.path}`;
 
     useEffect(() => {
-        window.electron.agent.getAll()
-            .then(a => setAvailableAgents(a as AgentDefinition[]))
-            .catch(e => appLogger.error('WorkspaceDashboard', 'Failed to fetch agents', e as Error));
-    }, []);
+        setWorkspaceRoot(workspace.path);
+        setEditName(workspace.title);
+        setEditDesc(workspace.description || '');
+        setAnalysis(null);
+        setStats(null);
+        setLoading(false);
+        analysisRef.current = null;
+    }, [workspace.description, workspace.id, workspace.path, workspace.title]);
+
+    useEffect(() => {
+        analysisRef.current = analysis;
+    }, [analysis]);
 
     useEffect(() => {
         setSelectedFolder(selectedEntry?.isDirectory ? selectedEntry.path : null);
@@ -71,12 +122,35 @@ export function useWorkspaceDashboardLogic({ workspace, activeTab: externalTab, 
         }
     };
 
+    const loadWorkspaceSummary = useCallback(async () => {
+        const shouldShowLoading = analysisRef.current === null;
+        if (shouldShowLoading) {
+            setLoading(true);
+        }
+        try {
+            if (workspace.path) {
+                const data = normalizeWorkspaceAnalysis(
+                    await getSummaryRequest(summaryCacheKey, workspace.path, workspace.id)
+                );
+                setAnalysis(data);
+                setStats(data.stats);
+            }
+        } catch (error) {
+            appLogger.error('WorkspaceDashboard', 'Workspace summary failed', error as Error);
+        } finally {
+            if (shouldShowLoading) {
+                setLoading(false);
+            }
+        }
+    }, [summaryCacheKey, workspace.path, workspace.id]);
+
     const analyzeWorkspace = useCallback(async () => {
         setLoading(true);
         try {
             if (workspace.path) {
-                setWorkspaceRoot(workspace.path);
-                const data = await window.electron.workspace.analyze(workspace.path, workspace.id);
+                const data = normalizeWorkspaceAnalysis(
+                    await window.electron.workspace.analyze(workspace.path, workspace.id)
+                );
                 setAnalysis(data);
                 setStats(data.stats);
             }
@@ -97,19 +171,18 @@ export function useWorkspaceDashboardLogic({ workspace, activeTab: externalTab, 
         setIsEditingDesc(false);
     };
 
-    useEffect(() => { void analyzeWorkspace(); }, [workspace.path, workspace.id, analyzeWorkspace]);
-
     useEffect(() => {
-        const timer = window.setInterval(() => {
-            if (document.hidden) {
-                return;
-            }
-            void analyzeWorkspace();
-        }, WORKSPACE_ANALYSIS_REFRESH_INTERVAL_MS);
-        return () => {
-            window.clearInterval(timer);
-        };
-    }, [analyzeWorkspace]);
+        if (activeTab !== 'overview' || analysis) {
+            return;
+        }
+        void loadWorkspaceSummary();
+    }, [activeTab, analysis, loadWorkspaceSummary]);
+
+    useVisibilityAwareInterval(() => {
+        if (activeTab === 'overview') {
+            void loadWorkspaceSummary();
+        }
+    }, WORKSPACE_ANALYSIS_REFRESH_INTERVAL_MS);
 
     const handleFileSelect = async (path: string, line?: number) => {
         if (onOpenFile) { return onOpenFile(path, line); }
@@ -122,7 +195,7 @@ export function useWorkspaceDashboardLogic({ workspace, activeTab: externalTab, 
         try {
             const content = await window.electron.files.readFile(path);
             const name = path.split(/[\\/]/).pop() ?? 'file';
-            setOpenFiles([...openFiles, { path, name, content, isDirty: false, initialLine: line }]);
+            setOpenFiles(prev => [...prev, { path, name, content, isDirty: false, initialLine: line }]);
             setActiveFile(path);
             setActiveTab('files');
         } catch (error) {
@@ -141,8 +214,8 @@ export function useWorkspaceDashboardLogic({ workspace, activeTab: externalTab, 
 
     return {
         t,
-        state: { stats, analysis, loading, activeTab, workspaceRoot, openFiles, activeFile, selectedFolder, searchQuery, searchResults, isSearching, availableAgents, activeFileObj },
-        actions: { setActiveTab, setOpenFiles, setActiveFile, setSearchQuery, handleSearch, analyzeWorkspace, handleFileSelect, closeFile },
+        state: { stats, analysis, loading, activeTab, workspaceRoot, openFiles, activeFile, selectedFolder, searchQuery, searchResults, isSearching, activeFileObj },
+        actions: { setActiveTab, setOpenFiles, setActiveFile, setSearchQuery, handleSearch, analyzeWorkspace, loadWorkspaceSummary, handleFileSelect, closeFile },
         editing: { isEditingName, setIsEditingName, editName, setEditName, handleSaveName, isEditingDesc, setIsEditingDesc, editDesc, setEditDesc, handleSaveDesc }
     };
 }

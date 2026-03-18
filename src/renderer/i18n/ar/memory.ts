@@ -129,7 +129,13 @@ const sectionData = {
     "errors": {
         "exportFailed": "فشل تصدير الذاكرة",
         "importFailed": "فشل استيراد الذاكرة"
-    }
+    },
+    "refreshTitle": "Refresh",
 };
 
 export default sectionData;
+
+
+
+
+

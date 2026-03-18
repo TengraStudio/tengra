@@ -48,19 +48,19 @@ function buildService() {
         settingsService: {
             getSettings: vi.fn().mockReturnValue({ proxy: { key: 'test-key' } }),
             saveSettings: vi.fn().mockResolvedValue(undefined),
-        } as unknown as SettingsService,
+        } as never as SettingsService,
         processManager: {
             start: vi.fn().mockResolvedValue({ running: true, port: 8317 }),
             stop: vi.fn().mockResolvedValue(undefined),
             getStatus: vi.fn().mockReturnValue({ running: false }),
             generateConfig: vi.fn().mockResolvedValue(undefined),
-        } as unknown as ProxyProcessManager,
+        } as never as ProxyProcessManager,
         eventBus: {
             on: vi.fn(), off: vi.fn(), emit: vi.fn(), emitCustom: vi.fn(),
-        } as unknown as EventBusService,
+        } as never as EventBusService,
         authService: {
             saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn(),
-        } as unknown as AuthService,
+        } as never as AuthService,
         quotaService: {
             getQuota: vi.fn().mockResolvedValue(null),
             getAntigravityAvailableModels: vi.fn().mockResolvedValue([]),
@@ -68,13 +68,13 @@ function buildService() {
             getClaudeQuota: vi.fn().mockResolvedValue({ accounts: [] }),
             fetchCodexUsage: vi.fn().mockResolvedValue({}),
             extractCodexUsageFromWham: vi.fn().mockReturnValue(null),
-        } as unknown as QuotaService,
+        } as never as QuotaService,
     };
 
     const service = new ProxyService({
         ...mocks,
-        dataService: { getPath: vi.fn().mockReturnValue('/mock') } as unknown as DataService,
-        securityService: {} as unknown as SecurityService,
+        dataService: { getPath: vi.fn().mockReturnValue('/mock') } as never as DataService,
+        securityService: {} as never as SecurityService,
     });
 
     return { service, ...mocks };

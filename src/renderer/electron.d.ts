@@ -4,12 +4,10 @@ import type {
     InlineSuggestionResponse,
     InlineSuggestionTelemetry,
 } from '@shared/schemas/inline-suggestions.schema';
-import type { AppSettings } from '@shared/types';
 import type { IpcRendererEvent } from 'electron';
 
 import {
     AgentDefinition,
-    AgentStartOptions,
     AppSettings,
     Chat,
     ClaudeQuota,
@@ -49,8 +47,6 @@ import {
     Workspace,
     WorkspaceAnalysis,
     WorkspaceIdea,
-    WorkspaceState,
-    WorkspaceStep,
 } from '@/shared/types';
 import {
     AdvancedSemanticFragment,
@@ -62,6 +58,7 @@ import {
     PendingMemory,
     RecallContext,
 } from '@/shared/types/advanced-memory';
+import type { RuntimeBootstrapExecutionResult } from '@/shared/types/runtime-manifest';
 import {
     VoiceCommand,
     VoiceInfo,
@@ -84,11 +81,6 @@ export interface ProcessInfo {
     cmd: string;
     cpu: number;
     memory: number;
-}
-
-export interface OrchestratorStateView extends WorkspaceState {
-    activeAgentId?: string;
-    assignments: Record<string, string>;
 }
 
 export interface ModelDefinition {
@@ -379,7 +371,12 @@ export interface ElectronAPI {
 
     // Ollama management
     isOllamaRunning: () => Promise<boolean>;
-    startOllama: () => Promise<{ success: boolean; message: string }>;
+    startOllama: () => Promise<{
+      success: boolean;
+      message: string;
+      messageKey?: string;
+      messageParams?: Record<string, string | number>;
+    }>;
     pullModel: (modelName: string) => Promise<{ success: boolean; error?: string }>;
     deleteOllamaModel: (modelName: string) => Promise<{ success: boolean; error?: string }>;
     getLibraryModels: () => Promise<{ name: string; description: string; tags: string[] }[]>;
@@ -399,9 +396,9 @@ export interface ElectronAPI {
     forceOllamaHealthCheck: () => Promise<{ status: 'ok' | 'error' }>;
     checkCuda: () => Promise<{ hasCuda: boolean; detail?: string }>;
     onOllamaStatusChange: (callback: (status: { status: string }) => void) => void;
-    onAgentEvent: (callback: (payload: unknown) => void) => () => void;
-    onSdCppStatus: (callback: (data: unknown) => void) => () => void;
-    onSdCppProgress: (callback: (data: unknown) => void) => () => void;
+    onAgentEvent: (callback: (payload: RendererDataValue) => void) => () => void;
+    onSdCppStatus: (callback: (data: RendererDataValue) => void) => () => void;
+    onSdCppProgress: (callback: (data: RendererDataValue) => void) => () => void;
     modelDownloader: ElectronApiModelsMemoryDomain['modelDownloader'];
     llama: ElectronApiModelsMemoryDomain['llama'];
     sdCpp: ElectronApiModelsMemoryDomain['sdCpp'];
@@ -415,7 +412,8 @@ export interface ElectronAPI {
     executeTools: (
         toolName: string,
         args: Record<string, IpcValue>,
-        toolCallId?: string
+        toolCallId?: string,
+        workspaceAgentSessionId?: string
     ) => Promise<ToolResult>;
     killTool: (toolCallId: string) => Promise<boolean>;
     getToolDefinitions: () => Promise<ToolDefinition[]>;
@@ -495,7 +493,6 @@ export interface ElectronAPI {
         listener: (event: IpcRendererEvent, ...args: IpcValue[]) => void
     ) => () => void;
 
-    orchestrator: ElectronApiIntegrationsDomain['orchestrator'];
     session: ElectronApiIntegrationsDomain['session'];
     metrics: ElectronApiIntegrationsDomain['metrics'];
     usage: ElectronApiIntegrationsDomain['usage'];
@@ -504,6 +501,11 @@ export interface ElectronAPI {
     codeSandbox: ElectronApiIntegrationsDomain['codeSandbox'];
     promptTemplates: ElectronApiIntegrationsDomain['promptTemplates'];
     sharedPrompts: ElectronApiIntegrationsDomain['sharedPrompts'];
+    runtime: {
+        getStatus: () => Promise<RuntimeBootstrapExecutionResult | null>;
+        refreshStatus: () => Promise<RuntimeBootstrapExecutionResult | null>;
+        repair: (manifestUrl?: string) => Promise<RuntimeBootstrapExecutionResult | null>;
+    };
     userCollaboration: ElectronApiIntegrationsDomain['userCollaboration'];
     liveCollaboration: ElectronApiIntegrationsDomain['liveCollaboration'];
 }

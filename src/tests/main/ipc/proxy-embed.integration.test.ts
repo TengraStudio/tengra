@@ -9,11 +9,11 @@ vi.mock('electron', () => ({
 }));
 
 describe('Proxy-Embed IPC Handlers', () => {
-    let registeredHandlers: Map<string, unknown>;
+    let registeredHandlers: Map<string, TestValue>;
 
     beforeEach(() => {
         registeredHandlers = new Map();
-        vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: unknown) => {
+        vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: TestValue) => {
             registeredHandlers.set(channel, handler);
         });
     });
@@ -24,7 +24,7 @@ describe('Proxy-Embed IPC Handlers', () => {
         it('should start embedded proxy', async () => {
             const handler = async () => ({ success: true, port: 8080 });
             registeredHandlers.set('proxy:embed:start', handler);
-            const result = await (registeredHandlers.get('proxy:embed:start') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('proxy:embed:start') as () => Promise<TestValue>)();
             expect(result).toHaveProperty('success');
         });
     });
@@ -33,7 +33,7 @@ describe('Proxy-Embed IPC Handlers', () => {
         it('should stop embedded proxy', async () => {
             const handler = async () => undefined;
             registeredHandlers.set('proxy:embed:stop', handler);
-            const result = await (registeredHandlers.get('proxy:embed:stop') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('proxy:embed:stop') as () => Promise<TestValue>)();
             expect(result).toBeUndefined();
         });
     });
@@ -42,7 +42,7 @@ describe('Proxy-Embed IPC Handlers', () => {
         it('should return proxy status', async () => {
             const handler = async () => ({ running: true, port: 8080 });
             registeredHandlers.set('proxy:embed:status', handler);
-            const result = await (registeredHandlers.get('proxy:embed:status') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('proxy:embed:status') as () => Promise<TestValue>)();
             expect(result).toHaveProperty('running');
         });
     });

@@ -130,10 +130,10 @@ export function TerminalAppearanceModals({
                             lineHeight: terminalAppearance.lineHeight,
                         }}
                     >
-                        <div>$ echo &quot;Theme Preview&quot;</div>
-                        <div style={{ color: resolvedTerminalAppearance.theme.green }}>✓ Success</div>
-                        <div style={{ color: resolvedTerminalAppearance.theme.red }}>✗ Error</div>
-                        <div style={{ color: resolvedTerminalAppearance.theme.yellow }}>⚠ Warning</div>
+                        <div>{t('terminal.previewCommand')}</div>
+                        <div style={{ color: resolvedTerminalAppearance.theme.green }}>{t('terminal.previewSuccess')}</div>
+                        <div style={{ color: resolvedTerminalAppearance.theme.red }}>{t('terminal.previewError')}</div>
+                        <div style={{ color: resolvedTerminalAppearance.theme.yellow }}>{t('terminal.previewWarning')}</div>
                     </div>
                     <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
                         {t('terminal.font')}
@@ -238,6 +238,7 @@ export function TerminalAppearanceModals({
                         </span>
                     </label>
                     <TerminalShortcutModals
+                        t={t}
                         inputRef={shortcutInputRef}
                         onImport={onShortcutImport}
                         shortcutPreset={shortcutPreset}
@@ -296,7 +297,7 @@ export function TerminalAppearanceModals({
                                     }}
                                     className="w-5 h-5 rounded border border-border cursor-pointer"
                                 />
-                                <span className="text-muted-foreground">Background</span>
+                                <span className="text-muted-foreground">{t('terminal.colorBackground')}</span>
                             </label>
                             <label className="flex items-center gap-1.5 text-[11px]">
                                 <input
@@ -312,7 +313,7 @@ export function TerminalAppearanceModals({
                                     }}
                                     className="w-5 h-5 rounded border border-border cursor-pointer"
                                 />
-                                <span className="text-muted-foreground">Foreground</span>
+                                <span className="text-muted-foreground">{t('terminal.colorForeground')}</span>
                             </label>
                             <label className="flex items-center gap-1.5 text-[11px]">
                                 <input
@@ -328,7 +329,7 @@ export function TerminalAppearanceModals({
                                     }}
                                     className="w-5 h-5 rounded border border-border cursor-pointer"
                                 />
-                                <span className="text-muted-foreground">Cursor</span>
+                                <span className="text-muted-foreground">{t('terminal.colorCursor')}</span>
                             </label>
                             <label className="flex items-center gap-1.5 text-[11px]">
                                 <input
@@ -347,7 +348,7 @@ export function TerminalAppearanceModals({
                                     }}
                                     className="w-5 h-5 rounded border border-border cursor-pointer"
                                 />
-                                <span className="text-muted-foreground">Selection</span>
+                                <span className="text-muted-foreground">{t('terminal.colorSelection')}</span>
                             </label>
                         </div>
                         {terminalAppearance.customTheme && (

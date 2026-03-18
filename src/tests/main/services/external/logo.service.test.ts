@@ -45,29 +45,29 @@ const createService = (): LogoTestContext => {
         .mockResolvedValue([]);
 
     const deps: ConstructorParameters<typeof LogoService>[0] = {
-        llmService: { chat: chatMock } as unknown as LLMService,
+        llmService: { chat: chatMock } as never as LLMService,
         workspaceService: {
             analyzeWorkspace: vi.fn<WorkspaceService['analyzeWorkspace']>().mockResolvedValue(WORKSPACE_ANALYSIS),
-        } as unknown as WorkspaceService,
+        } as never as WorkspaceService,
         localImageService: {
             generateImage: vi.fn<LocalImageService['generateImage']>().mockResolvedValue(''),
-        } as unknown as LocalImageService,
+        } as never as LocalImageService,
         imagePersistenceService: {
             saveImage: vi.fn<ImagePersistenceService['saveImage']>().mockResolvedValue('safe-file:///mock.png'),
-        } as unknown as ImagePersistenceService,
+        } as never as ImagePersistenceService,
         authService: {
             getAllAccounts: vi.fn<AuthService['getAllAccounts']>().mockResolvedValue([]),
             setActiveAccount: vi.fn<AuthService['setActiveAccount']>().mockResolvedValue(undefined),
             getAccountsByProvider: vi.fn<AuthService['getAccountsByProvider']>().mockResolvedValue([]),
-        } as unknown as AuthService,
+        } as never as AuthService,
         quotaService: {
             getQuota: vi.fn<QuotaService['getQuota']>().mockResolvedValue({ accounts: [] }),
             getCopilotQuota: vi.fn<QuotaService['getCopilotQuota']>().mockResolvedValue({ accounts: [] }),
             getClaudeQuota: vi.fn<QuotaService['getClaudeQuota']>().mockResolvedValue({ accounts: [] }),
-        } as unknown as QuotaService,
+        } as never as QuotaService,
         modelRegistryService: {
             getAllModels: getAllModelsMock,
-        } as unknown as ModelRegistryService,
+        } as never as ModelRegistryService,
     };
 
     return {
@@ -95,7 +95,7 @@ describe('LogoService generation model fallback', () => {
         ];
         context.getAllModelsMock.mockResolvedValue(registryModels);
         const saveSpy = vi
-            .spyOn(context.service as unknown as LogoServicePrivate, 'saveGeneratedImage')
+            .spyOn(context.service as never as LogoServicePrivate, 'saveGeneratedImage')
             .mockResolvedValue('/tmp/logo-registry.png');
 
         const result = await context.service.generateLogo(
@@ -122,7 +122,7 @@ describe('LogoService generation model fallback', () => {
 
     it('uses explicit provider-prefixed model names without registry lookup', async () => {
         const saveSpy = vi
-            .spyOn(context.service as unknown as LogoServicePrivate, 'saveGeneratedImage')
+            .spyOn(context.service as never as LogoServicePrivate, 'saveGeneratedImage')
             .mockResolvedValue('/tmp/logo-prefixed.png');
 
         const result = await context.service.generateLogo(
@@ -151,7 +151,7 @@ describe('LogoService generation model fallback', () => {
     it('falls back to model-only generation when registry lookup fails', async () => {
         context.getAllModelsMock.mockRejectedValue(new Error('registry unavailable'));
         const saveSpy = vi
-            .spyOn(context.service as unknown as LogoServicePrivate, 'saveGeneratedImage')
+            .spyOn(context.service as never as LogoServicePrivate, 'saveGeneratedImage')
             .mockResolvedValue('/tmp/logo-fallback.png');
 
         const result = await context.service.generateLogo(

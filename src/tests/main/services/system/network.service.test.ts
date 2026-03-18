@@ -60,10 +60,10 @@ describe('NetworkService', () => {
 
         it('should call spawn with valid host', async () => {
             // Simulate successful close
-            mockSpawnChild.on.mockImplementation((event: string, cb: (...args: unknown[]) => void) => {
+            mockSpawnChild.on.mockImplementation((event: string, cb: (...args: TestValue[]) => void) => {
                 if (event === 'close') {cb(0);}
             });
-            mockSpawnChild.stdout.on.mockImplementation((event: string, cb: (...args: unknown[]) => void) => {
+            mockSpawnChild.stdout.on.mockImplementation((event: string, cb: (...args: TestValue[]) => void) => {
                 if (event === 'data') {cb('Reply from 8.8.8.8');}
             });
             mockSpawnChild.stderr.on.mockImplementation(() => {});
@@ -131,10 +131,10 @@ describe('NetworkService', () => {
 
     describe('whois with valid domain', () => {
         it('should call spawn for valid domain', async () => {
-            mockSpawnChild.on.mockImplementation((event: string, cb: (...args: unknown[]) => void) => {
+            mockSpawnChild.on.mockImplementation((event: string, cb: (...args: TestValue[]) => void) => {
                 if (event === 'close') {cb(0);}
             });
-            mockSpawnChild.stdout.on.mockImplementation((event: string, cb: (...args: unknown[]) => void) => {
+            mockSpawnChild.stdout.on.mockImplementation((event: string, cb: (...args: TestValue[]) => void) => {
                 if (event === 'data') {cb('Domain Name: example.com');}
             });
             mockSpawnChild.stderr.on.mockImplementation(() => {});
@@ -146,10 +146,10 @@ describe('NetworkService', () => {
 
     describe('traceroute with valid host', () => {
         it('should call spawn for valid host', async () => {
-            mockSpawnChild.on.mockImplementation((event: string, cb: (...args: unknown[]) => void) => {
+            mockSpawnChild.on.mockImplementation((event: string, cb: (...args: TestValue[]) => void) => {
                 if (event === 'close') {cb(0);}
             });
-            mockSpawnChild.stdout.on.mockImplementation((event: string, cb: (...args: unknown[]) => void) => {
+            mockSpawnChild.stdout.on.mockImplementation((event: string, cb: (...args: TestValue[]) => void) => {
                 if (event === 'data') {cb('1  router  1ms');}
             });
             mockSpawnChild.stderr.on.mockImplementation(() => {});
@@ -162,7 +162,7 @@ describe('NetworkService', () => {
 
     describe('ping error handling', () => {
         it('should handle spawn error', async () => {
-            mockSpawnChild.on.mockImplementation((event: string, cb: (...args: unknown[]) => void) => {
+            mockSpawnChild.on.mockImplementation((event: string, cb: (...args: TestValue[]) => void) => {
                 if (event === 'error') {cb(new Error('spawn failed'));}
             });
             mockSpawnChild.stdout.on.mockImplementation(() => {});
@@ -180,10 +180,10 @@ describe('NetworkService', () => {
         });
 
         it('should accept valid IP address', async () => {
-            mockSpawnChild.on.mockImplementation((event: string, cb: (...args: unknown[]) => void) => {
+            mockSpawnChild.on.mockImplementation((event: string, cb: (...args: TestValue[]) => void) => {
                 if (event === 'close') {cb(0);}
             });
-            mockSpawnChild.stdout.on.mockImplementation((event: string, cb: (...args: unknown[]) => void) => {
+            mockSpawnChild.stdout.on.mockImplementation((event: string, cb: (...args: TestValue[]) => void) => {
                 if (event === 'data') {cb('ok');}
             });
             mockSpawnChild.stderr.on.mockImplementation(() => {});

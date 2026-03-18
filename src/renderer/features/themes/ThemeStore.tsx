@@ -30,9 +30,9 @@ interface Theme {
 const BUILT_IN_THEMES: Theme[] = [
     {
         id: 'black',
-        name: 'Tengra Black',
-        author: 'Tengra Team',
-        description: 'The default pure black theme',
+        name: 'themeStore.themes.black.name',
+        author: 'themeStore.authorTengraTeam',
+        description: 'themeStore.themes.black.description',
         preview: '#000000',
         colors: { primary: '#0ea5e9', background: '#000000', foreground: 'white', accent: '#0c4a6e' },
         downloads: 0,
@@ -41,9 +41,9 @@ const BUILT_IN_THEMES: Theme[] = [
     },
     {
         id: 'white',
-        name: 'Tengra White',
-        author: 'Tengra Team',
-        description: 'Clean and minimal white theme',
+        name: 'themeStore.themes.white.name',
+        author: 'themeStore.authorTengraTeam',
+        description: 'themeStore.themes.white.description',
         preview: 'white',
         colors: { primary: '#4f46e5', background: 'white', foreground: '#000000', accent: '#eef2ff' },
         downloads: 0,
@@ -113,7 +113,7 @@ const ThemePreviewModal: React.FC<{
                     <h2 className="text-xl font-bold">{theme.name}</h2>
                     <div className="flex items-center gap-1 text-warning"><Star className="w-4 h-4 fill-current" /><span>{theme.rating}</span></div>
                 </div>
-                <p className="text-sm text-muted-foreground mb-3">by {theme.author}</p>
+                <p className="text-sm text-muted-foreground mb-3">{t('themeStore.by')} {theme.author}</p>
                 <p className="text-sm mb-4">{theme.description}</p>
                 <div className="flex gap-2 mb-4">
                     {Object.entries(theme.colors).map(([name, color]) => (
@@ -140,8 +140,9 @@ const useThemeStoreLogic = (language: Language) => {
 
     const builtInThemes = useMemo(() => BUILT_IN_THEMES.map(theme => ({
         ...theme,
-        name: t(`themeStore.themes.${theme.id}.name`),
-        description: t(`themeStore.themes.${theme.id}.description`)
+        name: t(theme.name),
+        author: t(theme.author),
+        description: t(theme.description)
     })), [t]);
 
     const filteredThemes = useMemo(() => {

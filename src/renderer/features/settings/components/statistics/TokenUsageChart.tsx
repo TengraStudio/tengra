@@ -15,35 +15,27 @@ interface TokenUsageChartProps {
 }
 
 export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline, t, period }) => {
-    // 1. Calculate Max for scaling
     const maxTokens = useMemo(() => Math.max(...tokenTimeline.map(d => d.promptTokens + d.completionTokens), 100), [tokenTimeline]);
-
-    // 2. Sort Data
     const sortedData = useMemo(() => [...tokenTimeline].sort((a, b) => a.timestamp - b.timestamp), [tokenTimeline]);
-
-    // 3. Calculate Totals & Cost
     const totalPrompt = useMemo(() => sortedData.reduce((acc, curr) => acc + curr.promptTokens, 0), [sortedData]);
     const totalCompletion = useMemo(() => sortedData.reduce((acc, curr) => acc + curr.completionTokens, 0), [sortedData]);
-
-    // Rough estimate: $2.50/1M input, $10.00/1M output (Avg of GPT-4o / Claude 3.5 Sonnet mixed)
     const estimatedCost = useMemo(() => {
         return ((totalPrompt / 1_000_000) * 2.5) + ((totalCompletion / 1_000_000) * 10);
     }, [totalPrompt, totalCompletion]);
 
     return (
         <div className="space-y-6">
-            {/* Header Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pb-4 border-b border-border/40">
+            <div className="grid grid-cols-2 gap-4 border-b border-border/40 pb-4 md:grid-cols-4">
                 <div className="space-y-1">
-                    <span className="text-xxs font-bold text-muted-foreground uppercase tracking-widest">{t('statistics.totalPrompt')}</span>
-                    <div className="text-2xl font-black tabular-nums text-primary">{formatNumber(totalPrompt)}</div>
+                    <span className="text-xxs font-bold uppercase tracking-widest text-muted-foreground">{t('statistics.totalPrompt')}</span>
+                    <div className="text-2xl font-black tabular-nums text-foreground">{formatNumber(totalPrompt)}</div>
                 </div>
                 <div className="space-y-1">
-                    <span className="text-xxs font-bold text-muted-foreground uppercase tracking-widest">{t('statistics.totalCompletion')}</span>
-                    <div className="text-2xl font-black tabular-nums text-success">{formatNumber(totalCompletion)}</div>
+                    <span className="text-xxs font-bold uppercase tracking-widest text-muted-foreground">{t('statistics.totalCompletion')}</span>
+                    <div className="text-2xl font-black tabular-nums text-foreground">{formatNumber(totalCompletion)}</div>
                 </div>
                 <div className="space-y-1">
-                    <span className="text-xxs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                    <span className="flex items-center gap-1 text-xxs font-bold uppercase tracking-widest text-muted-foreground">
                         <Coins className="w-3 h-3 text-warning" />
                         {t('statistics.cost')}
                     </span>
@@ -52,7 +44,7 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                     </div>
                 </div>
                 <div className="space-y-1">
-                    <span className="text-xxs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                    <span className="flex items-center gap-1 text-xxs font-bold uppercase tracking-widest text-muted-foreground">
                         <Activity className="w-3 h-3 text-info" />
                         {t('statistics.activity')}
                     </span>
@@ -62,21 +54,18 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                 </div>
             </div>
 
-            {/* Chart Area */}
             <div className="relative h-[240px] w-full pt-4">
-                {/* Legend Overlay */}
-                <div className="absolute top-0 right-0 flex items-center gap-4 z-10">
-                    <div className="flex items-center gap-2 px-2 py-1 rounded-full bg-background/50 backdrop-blur border border-border/30">
-                        <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-primary/80 to-primary shadow-primary/20 glow-primary" />
+                <div className="absolute right-0 top-0 z-10 flex items-center gap-4">
+                    <div className="flex items-center gap-2 rounded-full border border-border/30 bg-background px-2 py-1">
+                        <div className="h-2.5 w-2.5 rounded-full bg-primary" />
                         <span className="text-xxs font-bold uppercase tracking-wider text-muted-foreground">{t('statistics.input')}</span>
                     </div>
-                    <div className="flex items-center gap-2 px-2 py-1 rounded-full bg-background/50 backdrop-blur border border-border/30">
-                        <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-success/80 to-success glow-success" />
+                    <div className="flex items-center gap-2 rounded-full border border-border/30 bg-background px-2 py-1">
+                        <div className="h-2.5 w-2.5 rounded-full bg-success" />
                         <span className="text-xxs font-bold uppercase tracking-wider text-muted-foreground">{t('statistics.output')}</span>
                     </div>
                 </div>
 
-                {/* Grid Lines */}
                 <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20">
                     <div className="w-full h-px bg-border/50 border-t border-dashed border-border" />
                     <div className="w-full h-px bg-border/50 border-t border-dashed border-border" />
@@ -85,28 +74,23 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                     <div className="w-full h-px bg-border/50 border-t border-dashed border-border" />
                 </div>
 
-                {/* Bars Container */}
                 <div className="absolute inset-0 flex items-end justify-between gap-1 pt-6 pb-6 pl-1 pr-1 overflow-visible">
                     {sortedData.length === 0 ? (
                         <div className="w-full h-full flex items-center justify-center">
                             <span className="text-muted-foreground/30 italic font-medium">{t('statistics.noDataForPeriod')}</span>
                         </div>
                     ) : (
-                        sortedData.map((data, idx) => {
+                        sortedData.map((data) => {
                             const promptHeight = (data.promptTokens / maxTokens) * 100;
                             const completionHeight = (data.completionTokens / maxTokens) * 100;
 
-                            // Animation delay
-                            const delay = Math.min(idx * 0.05, 1.5); // Cap max delay
-
                             return (
                                 <div
-                                    key={idx}
-                                    className="relative flex-1 group flex flex-col justify-end h-full min-w-[4px] rounded-t-sm hover:bg-white/5 transition-colors duration-200"
+                                    key={data.timestamp}
+                                    className="group relative flex h-full min-w-[4px] flex-1 flex-col justify-end rounded-t-sm transition-colors duration-200 hover:bg-white/5"
                                 >
-                                    {/* Tooltip */}
                                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50">
-                                        <div className="bg-popover/90 backdrop-blur-xl border border-border/50 rounded-xl p-3 shadow-[0_8px_30px_rgb(0,0,0,0.12)] min-w-[140px] animate-in zoom-in-95 duration-200">
+                                        <div className="min-w-[140px] rounded-xl border border-border/50 bg-popover p-3 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
                                             <div className="text-xs font-bold text-foreground mb-2 pb-2 border-b border-border/30 text-center">
                                                 {new Date(data.timestamp).toLocaleDateString()}
                                                 <span className="block text-xxxs font-normal text-muted-foreground capitalize mt-0.5 opacity-70">
@@ -134,33 +118,26 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                                                 )}
                                             </div>
                                         </div>
-                                        {/* Tooltip Arrow */}
-                                        <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-popover/80 absolute left-1/2 -translate-x-1/2 -bottom-1.5 backdrop-blur-xl" />
+                                        <div className="absolute -bottom-1.5 left-1/2 h-0 w-0 -translate-x-1/2 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-popover" />
                                     </div>
 
-                                    {/* Stacks */}
-                                    <div className="w-full px-[1px] flex flex-col justify-end h-full relative group-hover:scale-y-[1.02] transition-transform origin-bottom duration-300">
+                                    <div className="relative flex h-full w-full flex-col justify-end px-[1px]">
                                         <div
-                                            className="w-full rounded-t-[2px] bg-gradient-to-tr from-success/80 to-success shadow-success/20"
+                                            className="w-full rounded-t-[2px] bg-success/85"
                                             style={{
                                                 height: `${completionHeight}%`,
-                                                minHeight: data.completionTokens > 0 ? '2px' : '0',
-                                                opacity: 0,
-                                                animation: `growUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards ${delay}s`
+                                                minHeight: data.completionTokens > 0 ? '2px' : '0'
                                             }}
                                         />
                                         <div
-                                            className="w-full rounded-b-[1px] bg-gradient-to-tr from-primary/80 to-primary shadow-primary/20 mt-[1px]"
+                                            className="mt-[1px] w-full rounded-b-[1px] bg-primary/85"
                                             style={{
                                                 height: `${promptHeight}%`,
-                                                minHeight: data.promptTokens > 0 ? '2px' : '0',
-                                                opacity: 0,
-                                                animation: `growUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards ${delay + 0.1}s`
+                                                minHeight: data.promptTokens > 0 ? '2px' : '0'
                                             }}
                                         />
                                     </div>
 
-                                    {/* X-Axis Label (Sparse) */}
                                     <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 text-xxxs font-medium text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity">
                                         {getSimpleLabel(data.timestamp, period)}
                                     </div>
@@ -170,14 +147,6 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                     )}
                 </div>
             </div>
-
-            {/* Custom Styles for Animation */}
-            <style>{`
-                @keyframes growUp {
-                    from { height: 0; opacity: 0; }
-                    to { opacity: 1; }
-                }
-            `}</style>
         </div>
     );
 };

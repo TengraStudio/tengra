@@ -5,12 +5,9 @@ import {
     randomBytes,
     scryptSync
 } from 'crypto';
-import * as fs from 'fs';
-import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
-import { DataService } from '@main/services/data/data.service';
 import { DatabaseService, LinkedAccount } from '@main/services/data/database.service';
 import { SecurityService } from '@main/services/security/security.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
@@ -159,8 +156,7 @@ export class AuthService extends BaseService {
     constructor(
         private databaseService: DatabaseService,
         private securityService: SecurityService,
-        private eventBus: EventBusService,
-        private dataService: DataService
+        private eventBus: EventBusService
     ) {
         super('AuthService');
     }
@@ -168,9 +164,6 @@ export class AuthService extends BaseService {
     override async initialize(): Promise<void> {
         await this.databaseService.initialize();
         appLogger.info('AuthService', 'Initialized with new multi-account system');
-
-        // Migrate legacy files to database if any
-        await this.migrateLegacyFiles();
 
         // Proactively migrate all tokens in DB to new encryption format
         await this.migrateExistingTokens();
@@ -189,90 +182,6 @@ export class AuthService extends BaseService {
         appLogger.info('AuthService', 'Authentication service cleanup complete');
     }
 
-    /**
-     * Scans for legacy authentication files and migrates them to the database.
-     */
-    private async migrateLegacyFiles(): Promise<void> {
-        try {
-            const authDir = this.dataService.getPath('auth');
-            const authDirExists = await fs.promises.access(authDir).then(() => true).catch(() => false);
-            if (!authDirExists) { return; }
-
-            const files = await fs.promises.readdir(authDir);
-            let migrateCount = 0;
-
-            for (const file of files) {
-                const filePath = path.join(authDir, file);
-
-                // Case 1: Legacy proxy-auth-token.enc
-                if (file === 'proxy-auth-token.enc') {
-                    await this.migrateEncryptedFile(filePath);
-                    migrateCount++;
-                    continue;
-                }
-
-                // Case 2: Legacy *.json files
-                if (file.endsWith('.json') && file !== 'settings.json') {
-                    await this.migrateJsonFile(filePath);
-                    migrateCount++;
-                    continue;
-                }
-            }
-
-            if (migrateCount > 0) {
-                appLogger.info('AuthService', `Legacy auth migration complete: Imported ${migrateCount} files.`);
-            }
-        } catch (error) {
-            appLogger.error('AuthService', `Legacy migration failed: ${getErrorMessage(error)}`);
-        }
-    }
-
-    private async migrateEncryptedFile(filePath: string): Promise<void> {
-        try {
-            const encrypted = await fs.promises.readFile(filePath, 'utf8');
-            const token = this.decrypt(encrypted);
-
-            if (token) {
-                await this.linkAccount('proxy_key', { accessToken: token });
-                appLogger.info('AuthService', 'Migrated proxy-auth-token.enc to database.');
-            }
-
-            await fs.promises.unlink(filePath);
-        } catch (error) {
-            appLogger.error('AuthService', `Failed to migrate encrypted file ${filePath}: ${getErrorMessage(error)}`);
-        }
-    }
-
-    private async migrateJsonFile(filePath: string): Promise<void> {
-        try {
-            const content = await fs.promises.readFile(filePath, 'utf8');
-            const data = JSON.parse(content) as JsonObject;
-
-            const provider = (data.type as string) || (data.provider as string) || 'unknown';
-            const tokenData = this.mapJsonToTokenData(data);
-
-            if (tokenData.accessToken || tokenData.sessionToken) {
-                await this.linkAccount(provider, tokenData);
-                appLogger.info('AuthService', `Migrated legacy JSON file ${path.basename(filePath)} to database.`);
-            }
-
-            await fs.promises.unlink(filePath);
-        } catch (error) {
-            appLogger.error('AuthService', `Failed to migrate JSON file ${filePath}: ${getErrorMessage(error)}`);
-        }
-    }
-
-    private mapJsonToTokenData(data: JsonObject): TokenData {
-        return {
-            accessToken: (data.access_token ?? data.accessToken) as string | undefined,
-            refreshToken: (data.refresh_token ?? data.refreshToken) as string | undefined,
-            sessionToken: (data.session_token ?? data.sessionToken) as string | undefined,
-            expiresAt: (data.expires_at ?? data.expiresAt) as number | undefined,
-            email: (data.email) as string | undefined,
-            displayName: (data.label ?? data.displayName) as string | undefined,
-            metadata: data.metadata as JsonObject | undefined
-        };
-    }
 
     /**
      * Proactively migrates all tokens in the database to the new secure encryption format.
@@ -321,10 +230,7 @@ export class AuthService extends BaseService {
 
         return this.toPublicAccount(account);
     }
-
-    /**
-     * Get the active account's token for a provider.
-     */
+ 
     /**
      * Get the active account's token for a provider.
      */
@@ -441,9 +347,10 @@ export class AuthService extends BaseService {
         }
 
         const existing = await this.getLinkedAccountCached(accountId);
-        const resolvedProvider = existing?.provider ?? normalized;
-        if (existing?.provider && existing.provider !== normalized) {
-            appLogger.warn('AuthService', `Provider mismatch for account ${accountId}: ${existing.provider} vs ${normalized}. Keeping existing.`);
+        const existingProvider = existing?.provider ? this.normalizeProvider(existing.provider) : undefined;
+        const resolvedProvider = existingProvider ?? normalized;
+        if (existing?.provider && existingProvider !== normalized) {
+            appLogger.warn('AuthService', `Provider mismatch for account ${accountId}: ${existing.provider} vs ${normalized}. Using canonical ${resolvedProvider}.`);
         }
 
         const account = this.createNewAccountObject({
@@ -495,7 +402,7 @@ export class AuthService extends BaseService {
             sessionToken: this.encryptIfPresent(tokenData.sessionToken),
             expiresAt: tokenData.expiresAt,
             scope: tokenData.scope,
-            isActive: false,
+            isActive: existing?.isActive ?? false,
             metadata: tokenData.metadata,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now
@@ -589,7 +496,7 @@ export class AuthService extends BaseService {
 
         await this.databaseService.saveLinkedAccount(updatedAccount);
         this.upsertLinkedAccountCache(updatedAccount);
-        appLogger.info('AuthService', `Updated token and profile for account: ${accountId}`);
+        appLogger.debug('AuthService', `Updated token and profile for account: ${accountId}`);
         this.eventBus.emit('account:updated', { accountId: account.id, provider: account.provider });
     }
 
@@ -1157,7 +1064,7 @@ export class AuthService extends BaseService {
     }
 
     private parseCredentialExportPackage(payloadText: string): CredentialExportPackage {
-        let parsed: unknown;
+        let parsed: RuntimeValue;
         try {
             parsed = JSON.parse(payloadText);
         } catch (error) {
@@ -1185,7 +1092,7 @@ export class AuthService extends BaseService {
     }
 
     private parseCredentialExportPayload(serializedPayload: string): CredentialExportPayload {
-        let parsed: unknown;
+        let parsed: RuntimeValue;
         try {
             parsed = JSON.parse(serializedPayload);
         } catch (error) {
@@ -1357,6 +1264,8 @@ export class AuthService extends BaseService {
             'copilot_token': 'copilot',
             'antigravity': 'antigravity',
             'antigravity_token': 'antigravity',
+            'google': 'antigravity',
+            'google_token': 'antigravity',
             'anthropic': 'claude',
             'anthropic_key': 'claude',
             'claude': 'claude',

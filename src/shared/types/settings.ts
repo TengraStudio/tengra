@@ -33,7 +33,6 @@ export type AppSettings = {
         | 'ollama'
         | 'sd-webui'
         | 'comfyui'
-        | 'pollinations'
         | 'sd-cpp';
         ollamaModel?: string;
         sdWebUIUrl?: string;
@@ -43,9 +42,7 @@ export type AppSettings = {
         sdCppExtraArgs?: string;
     };
     activeAccountId?: string;
-    crashReporting?: {
-        enabled: boolean;
-    };
+
     general: {
         language: 'tr' | 'en' | 'de' | 'fr' | 'es' | 'ja' | 'zh' | 'ar';
         theme: string;

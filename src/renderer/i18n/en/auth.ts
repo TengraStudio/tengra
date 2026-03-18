@@ -5,6 +5,7 @@ const sectionData = {
     "logout": "Log out",
     "sessionKeyRequired": "Claude Session Key Required",
     "completeConnection": "Complete Connection for {{email}}",
+    "yourAccount": "your account",
     "sessionKeyDescription": "To enable quota tracking and direct interaction, Tengra needs your Claude session key. We encrypt and store this key locally on your device.",
     "howToFindKey": "How to find your session key",
     "sessionKeyInstructions": {
@@ -19,6 +20,7 @@ const sectionData = {
     "enterSessionKey": "Please enter a session key",
     "invalidSessionFormat": "Invalid format. Key must start with \"sk-ant-sid\"",
     "saveSessionKey": "Save Session Key",
+    "saveSessionKeyFailed": "Failed to save session key",
     "validatedAndSaved": "Validated & Saved",
     "connectProvider": "Connect {{provider}}",
     "enterCodeOnGithub": "Enter the following code on GitHub to complete the connection:",

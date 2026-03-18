@@ -1,6 +1,5 @@
 import { CouncilCapabilityService } from '@main/services/session/capabilities/council-capability.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
-import { AgentCollaborationService } from '@main/services/workspace/automation-workflow/agent-collaboration.service';
 import {
     SessionMode,
     SessionState,
@@ -15,12 +14,11 @@ export class CouncilSessionModule implements SessionRuntimeModule {
 
     constructor(
         private readonly eventBus: EventBusService,
-        private readonly collaborationService: AgentCollaborationService,
         private readonly councilCapabilityService: CouncilCapabilityService
     ) {}
 
     supportsMode(mode: SessionMode): boolean {
-        return ['chat', 'workspace', 'automation'].includes(mode);
+        return ['chat', 'workspace'].includes(mode);
     }
 
     async onAttach(state: SessionState): Promise<void> {
@@ -39,14 +37,7 @@ export class CouncilSessionModule implements SessionRuntimeModule {
         const preview = options.message.content.slice(0, 160);
         const taskId = state.metadata.taskId;
 
-        if (taskId) {
-            this.collaborationService.recordAgentTaskProgress({
-                agentId: state.model.model,
-                status: 'in_progress',
-                taskId,
-                reason: `Council capability observed message: ${preview}`,
-            });
-        }
+
 
         this.eventBus.emitCustom('session:capability:council', {
             phase: 'message',

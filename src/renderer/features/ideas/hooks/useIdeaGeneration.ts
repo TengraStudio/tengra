@@ -9,6 +9,8 @@ import {
     WorkspaceIdea} from '@shared/types/ideas';
 import { useCallback, useEffect, useState } from 'react';
 
+import { useTranslation } from '@/i18n';
+
 interface UseIdeaGenerationReturn {
     // Research state
     researchStage: ResearchStage
@@ -34,6 +36,7 @@ interface UseIdeaGenerationReturn {
 }
 
 export function useIdeaGeneration(): UseIdeaGenerationReturn {
+    const { t } = useTranslation();
     // Research state
     const [researchStage, setResearchStage] = useState<ResearchStage>('idle');
     const [researchProgress, setResearchProgress] = useState(0);
@@ -48,6 +51,21 @@ export function useIdeaGeneration(): UseIdeaGenerationReturn {
 
     // Error state
     const [error, setError] = useState<string | null>(null);
+    const resolveErrorMessage = useCallback((err: Error | { messageKey?: string; messageParams?: Record<string, string | number> } | null | undefined, fallbackKey: string): string => {
+        const errorWithI18n = err as {
+            messageKey?: string;
+            messageParams?: Record<string, string | number>;
+        };
+        if (typeof errorWithI18n.messageKey === 'string' && errorWithI18n.messageKey.length > 0) {
+            return t(errorWithI18n.messageKey, errorWithI18n.messageParams);
+        }
+        if (err instanceof Error) {
+            return err.message.startsWith('ideas.') || err.message.startsWith('errors.')
+                ? t(err.message)
+                : err.message;
+        }
+        return t(fallbackKey);
+    }, [t]);
 
     // Set up event listeners for progress updates
     useEffect(() => {
@@ -78,7 +96,7 @@ export function useIdeaGeneration(): UseIdeaGenerationReturn {
             unsubscribeResearch();
             unsubscribeIdea();
         };
-    }, []);
+    }, [t]);
 
     const startResearch = useCallback(async (sessionId: string): Promise<ResearchData | null> => {
         setIsResearching(true);
@@ -95,16 +113,16 @@ export function useIdeaGeneration(): UseIdeaGenerationReturn {
                 setResearchProgress(100);
                 return result.data;
             }
-            throw new Error('Research failed');
+            throw new Error(t('ideas.errors.researchFailed'));
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Research failed';
+            const message = resolveErrorMessage(err as Error | { messageKey?: string; messageParams?: Record<string, string | number> }, 'ideas.errors.researchFailed');
             setError(message);
             setResearchStage('idle');
             return null;
         } finally {
             setIsResearching(false);
         }
-    }, []);
+    }, [resolveErrorMessage, t]);
 
     const startGeneration = useCallback(async (sessionId: string): Promise<void> => {
         setIsGenerating(true);
@@ -115,15 +133,15 @@ export function useIdeaGeneration(): UseIdeaGenerationReturn {
         try {
             const result = await window.electron.ideas.startGeneration(sessionId);
             if (!result.success) {
-                throw new Error('Generation failed');
+                throw new Error(t('ideas.errors.generationFailed'));
             }
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Generation failed';
+            const message = resolveErrorMessage(err as Error | { messageKey?: string; messageParams?: Record<string, string | number> }, 'ideas.errors.generationFailed');
             setError(message);
         } finally {
             setIsGenerating(false);
         }
-    }, []);
+    }, [resolveErrorMessage, t]);
 
     const enrichIdea = useCallback(async (ideaId: string): Promise<WorkspaceIdea | null> => {
         setError(null);
@@ -134,13 +152,13 @@ export function useIdeaGeneration(): UseIdeaGenerationReturn {
                 setIdeas(prev => prev.map(i => i.id === ideaId ? enrichedIdea : i));
                 return enrichedIdea;
             }
-            throw new Error('Enrichment failed');
+            throw new Error(t('ideas.errors.enrichmentFailed'));
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Enrichment failed';
+            const message = resolveErrorMessage(err as Error | { messageKey?: string; messageParams?: Record<string, string | number> }, 'ideas.errors.enrichmentFailed');
             setError(message);
             return null;
         }
-    }, []);
+    }, [resolveErrorMessage, t]);
 
     const loadIdeas = useCallback(async (sessionId?: string): Promise<void> => {
         setError(null);
@@ -148,10 +166,10 @@ export function useIdeaGeneration(): UseIdeaGenerationReturn {
             const loadedIdeas = await window.electron.ideas.getIdeas(sessionId);
             setIdeas(loadedIdeas);
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Failed to load ideas';
+            const message = resolveErrorMessage(err as Error | { messageKey?: string; messageParams?: Record<string, string | number> }, 'ideas.errors.loadIdeasFailed');
             setError(message);
         }
-    }, []);
+    }, [resolveErrorMessage]);
 
     const clearError = useCallback(() => {
         setError(null);

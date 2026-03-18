@@ -1,6 +1,6 @@
 import { useTranslation } from '@renderer/i18n';
+import { type Terminal as XTerm } from '@xterm/xterm';
 import { useCallback, useMemo, useRef } from 'react';
-import { Terminal as XTerm } from 'xterm';
 
 import { useTheme } from '@/hooks/useTheme';
 import type { TerminalTab } from '@/types';
@@ -205,6 +205,7 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
     });
 
     const splitActions = useTerminalSplitActions({
+        t,
         tabsRef, activeTabIdRef,
         availableShells: backends.availableShells,
         availableBackends: backends.availableBackends,

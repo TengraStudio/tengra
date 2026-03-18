@@ -163,7 +163,17 @@ const sectionData = {
             "fri": "Vie",
             "sun": "Sol"
         }
-    }
+    },
+    "searchMatchCaseTitle": "Match Case",
+    "searchMatchWholeWordTitle": "Match Whole Word",
+    "searchUseRegexTitle": "Use Regular Expression",
+    "searchIncludePatternPlaceholder": "e.g. *.ts, src/**",
+    "searchExcludePatternPlaceholder": "e.g. node_modules, dist",
 };
 
 export default sectionData;
+
+
+
+
+

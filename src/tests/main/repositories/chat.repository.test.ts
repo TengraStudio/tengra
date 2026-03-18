@@ -37,8 +37,8 @@ class InMemoryAdapter implements DatabaseAdapter {
     prepare(sql: string): PreparedStatement {
         return {
             run: async (...params: SqlValue[]) => this.run(sql, params),
-            all: async <T = unknown>(...params: SqlValue[]) => this.all<T>(sql, params),
-            get: async <T = unknown>(...params: SqlValue[]) => this.get<T>(sql, params),
+            all: async <T = TestValue>(...params: SqlValue[]) => this.all<T>(sql, params),
+            get: async <T = TestValue>(...params: SqlValue[]) => this.get<T>(sql, params),
         };
     }
 
@@ -46,7 +46,7 @@ class InMemoryAdapter implements DatabaseAdapter {
         return undefined;
     }
 
-    async query<T = unknown>(): Promise<{ rows: T[]; fields?: unknown[] }> {
+    async query<T = TestValue>(): Promise<{ rows: T[]; fields?: TestValue[] }> {
         return { rows: [] };
     }
 

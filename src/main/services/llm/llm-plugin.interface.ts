@@ -49,7 +49,7 @@ export interface LLMProviderConfig {
     organizationId?: string;
     timeout?: number;
     maxRetries?: number;
-    [key: string]: unknown;
+    [key: string]: RuntimeValue;
 }
 
 /**

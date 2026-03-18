@@ -44,7 +44,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                 <input
                     value={schedulePrompt}
                     onChange={event => setSchedulePrompt(event.target.value)}
-                    placeholder={t('settings.images.schedulePrompt') || 'Schedule Prompt'}
+                    placeholder={t('settings.images.schedulePrompt')}
                     className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
                 />
                 <input
@@ -58,18 +58,18 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                     onChange={event => setSchedulePriority(event.target.value as 'low' | 'normal' | 'high')}
                     className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
                 >
-                    <option value="low">{t('settings.images.priorityLow') || 'Priority: Low'}</option>
-                    <option value="normal">{t('settings.images.priorityNormal') || 'Priority: Normal'}</option>
-                    <option value="high">{t('settings.images.priorityHigh') || 'Priority: High'}</option>
+                    <option value="low">{t('settings.images.priorityLow')}</option>
+                    <option value="normal">{t('settings.images.priorityNormal')}</option>
+                    <option value="high">{t('settings.images.priorityHigh')}</option>
                 </select>
                 <select
                     value={scheduleResourceProfile}
                     onChange={event => setScheduleResourceProfile(event.target.value as 'balanced' | 'quality' | 'speed')}
                     className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
                 >
-                    <option value="balanced">{t('settings.images.resourceBalanced') || 'Resource: Balanced'}</option>
-                    <option value="quality">{t('settings.images.resourceQuality') || 'Resource: Quality'}</option>
-                    <option value="speed">{t('settings.images.resourceSpeed') || 'Resource: Speed'}</option>
+                    <option value="balanced">{t('settings.images.resourceBalanced')}</option>
+                    <option value="quality">{t('settings.images.resourceQuality')}</option>
+                    <option value="speed">{t('settings.images.resourceSpeed')}</option>
                 </select>
             </div>
             <button
@@ -81,11 +81,15 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
 
             <div className="mt-3 rounded-lg border border-white/10 bg-black/10 p-2 text-[11px] text-muted-foreground">
                 <div className="font-semibold text-foreground/90">{t('settings.images.queueTitle')}</div>
-                <div>{t('settings.images.queueStatus')}: {queueStats.running ? t('settings.images.queueRunning') || 'Running' : t('settings.images.queueIdle') || 'Idle'}</div>
+                <div>{t('settings.images.queueStatus')}: {queueStats.running ? t('settings.images.queueRunning') : t('settings.images.queueIdle')}</div>
                 <div>{queueStats.queued} {t('common.pending')}</div>
                 {queueStats.byPriority && (
                     <div className="text-[10px]">
-                        high: {queueStats.byPriority.high ?? 0} · normal: {queueStats.byPriority.normal ?? 0} · low: {queueStats.byPriority.low ?? 0}
+                        {t('settings.images.queuePrioritySummary', {
+                            high: queueStats.byPriority.high ?? 0,
+                            normal: queueStats.byPriority.normal ?? 0,
+                            low: queueStats.byPriority.low ?? 0,
+                        })}
                     </div>
                 )}
             </div>

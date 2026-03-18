@@ -12,7 +12,7 @@ export interface TerminalTab {
     isRunning?: boolean;
     cwd?: string;
     backendId?: string;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, RuntimeValue>;
     bootstrapCommand?: string;
 }
 

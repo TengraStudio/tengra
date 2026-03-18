@@ -63,32 +63,32 @@ function persist(): void {
     }
 }
 
-function isObject(value: unknown): value is Record<string, unknown> {
+function isObject(value: RendererDataValue): value is Record<string, RendererDataValue> {
     return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
-function toCount(value: unknown): number {
+function toCount(value: RendererDataValue): number {
     if (typeof value !== 'number' || !Number.isFinite(value)) {
         return 0;
     }
     return Math.max(0, Math.floor(value));
 }
 
-function toProgress(value: unknown): number {
+function toProgress(value: RendererDataValue): number {
     if (typeof value !== 'number' || !Number.isFinite(value)) {
         return 0;
     }
     return Math.max(0, Math.min(100, value));
 }
 
-function sanitizeStatus(value: unknown): LoadingOperationStatus {
+function sanitizeStatus(value: RendererDataValue): LoadingOperationStatus {
     if (value === 'completed' || value === 'cancelled' || value === 'failed') {
         return value;
     }
     return 'running';
 }
 
-function sanitizeRecord(raw: unknown): LoadingOperationRecord | null {
+function sanitizeRecord(raw: RendererDataValue): LoadingOperationRecord | null {
     if (!isObject(raw)) {
         return null;
     }
@@ -119,7 +119,7 @@ function sanitizeRecord(raw: unknown): LoadingOperationRecord | null {
     };
 }
 
-function sanitizeSnapshot(raw: unknown): LoadingAnalyticsSnapshot {
+function sanitizeSnapshot(raw: RendererDataValue): LoadingAnalyticsSnapshot {
     if (!isObject(raw)) {
         return defaultSnapshot;
     }

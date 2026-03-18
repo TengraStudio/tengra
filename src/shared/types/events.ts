@@ -1,6 +1,6 @@
 import { SESSION_RUNTIME_EVENTS } from '@shared/constants/session-runtime-events';
-import { OrchestratorState, PlanCostBreakdown, WorkspaceStep, WorkspaceStepStatus } from '@shared/types/automation-workflow';
 import { JsonValue } from '@shared/types/common';
+import { CouncilStepStatus,PlanCostBreakdown, WorkspaceStep } from '@shared/types/council';
 import { IdeaProgress, ResearchProgress } from '@shared/types/ideas';
 
 export interface ModelUpdateEvent {
@@ -21,6 +21,7 @@ export interface SystemEvents {
     'config:updated': { path: string; key: string; value: JsonValue }
     'process:started': { id: string; name: string }
     'process:exited': { id: string; code: number }
+    'power:state-changed': { isLowPowerMode: boolean }
     // New events for Phase 5
     'db:ready': { timestamp: number }
     'db:error': { error: string }
@@ -44,7 +45,7 @@ export interface SystemEvents {
     // Automation session runtime events
     [SESSION_RUNTIME_EVENTS.AUTOMATION_STEP_UPDATE]: {
         index: number;
-        status: WorkspaceStepStatus;
+        status: CouncilStepStatus;
         message?: string;
         taskId?: string;
     }
@@ -68,7 +69,6 @@ export interface SystemEvents {
         reason: string;
         taskId?: string;
     }
-    'orchestrator:update': OrchestratorState
     'sd-cpp:progress': { downloaded: number; total: number; filename: string }
     'sd-cpp:status': { state: 'installing' | 'ready' | 'failed'; error?: string }
     'image:schedule-alert': { taskId: string; status: 'completed' | 'failed' | 'canceled'; prompt: string; error?: string; timestamp: number }
@@ -76,10 +76,10 @@ export interface SystemEvents {
     'model-registry.cache.update.started': { provider?: string }
     'model-registry.cache.update.completed': { provider?: string; count: number }
     'model-registry.provider.fetch.failed': { provider: string; error: string }
-    'telemetry:model-registry': { name: SystemEventKey;[key: string]: unknown; timestamp: number }
+    'telemetry:model-registry': { name: SystemEventKey;[key: string]: RuntimeValue; timestamp: number }
     'security:vulnerabilities-found': { critical: number; high: number; timestamp: number }
     // User behavior tracking events
-    'user:feature-used': { featureId: string; metadata?: Record<string, unknown> }
+    'user:feature-used': { featureId: string; metadata?: Record<string, RuntimeValue> }
     'user:model-selected': { provider: string; modelId: string }
     'user:chat-sent': { modelId: string; messageLength: number }
     'user:shortcut-used': { shortcut: string }
@@ -91,4 +91,3 @@ export interface SystemEvents {
 }
 
 export type SystemEventKey = keyof SystemEvents
-

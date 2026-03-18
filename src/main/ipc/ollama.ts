@@ -16,6 +16,9 @@ import { z } from 'zod';
 
 /** Maximum model name length */
 const MAX_MODEL_LENGTH = 256;
+const OLLAMA_MESSAGE_KEY = {
+    SERVICE_UNAVAILABLE: 'images.ollamaMessages.serviceUnavailable',
+} as const;
 
 interface ModelDefinition {
     id: string;
@@ -40,7 +43,7 @@ interface ModelDefinition {
 /**
  * Validates a model name
  */
-function validateModel(value: unknown): string | null {
+function validateModel(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -56,7 +59,7 @@ type MessageRole = 'system' | 'user' | 'assistant';
 /**
  * Validates a messages array
  */
-function validateMessages(value: unknown): Array<{ role: MessageRole; content: string }> {
+function validateMessages(value: RuntimeValue): Array<{ role: MessageRole; content: string }> {
     if (!Array.isArray(value)) {
         return [];
     }
@@ -151,7 +154,7 @@ export function registerOllamaIpc(options: {
     }
 
     ipcMain.handle('ollama:chat', createSafeIpcHandler('ollama:chat',
-        async (event: IpcMainInvokeEvent, messagesRaw: unknown, modelRaw: unknown) => {
+        async (event: IpcMainInvokeEvent, messagesRaw: RuntimeValue, modelRaw: RuntimeValue) => {
             validateSender(event);
             const messages = validateMessages(messagesRaw);
             const model = validateModel(modelRaw);
@@ -174,7 +177,7 @@ export function registerOllamaIpc(options: {
     ));
 
     ipcMain.handle('ollama:chatStream', createSafeIpcHandler('ollama:chatStream',
-        async (event: IpcMainInvokeEvent, messagesRaw: unknown, modelRaw: unknown) => {
+        async (event: IpcMainInvokeEvent, messagesRaw: RuntimeValue, modelRaw: RuntimeValue) => {
             validateSender(event);
             const messages = validateMessages(messagesRaw);
             const model = validateModel(modelRaw);
@@ -225,7 +228,7 @@ export function registerOllamaIpc(options: {
     ));
 
     ipcMain.handle('ollama:pull', createSafeIpcHandler('ollama:pull',
-        async (event: IpcMainInvokeEvent, modelNameRaw: unknown) => {
+        async (event: IpcMainInvokeEvent, modelNameRaw: RuntimeValue) => {
             validateSender(event);
             const modelName = validateModel(modelNameRaw);
             if (!modelName) {
@@ -287,7 +290,7 @@ export function registerOllamaIpc(options: {
             const win = BrowserWindow.getAllWindows()[0];
             const getWin = () => win as (BrowserWindow | null);
             return await startOllama(getWin, true);
-        }, { success: false, message: 'Service unavailable' }
+        }, { success: false, message: 'Service unavailable', messageKey: OLLAMA_MESSAGE_KEY.SERVICE_UNAVAILABLE }
     ));
 
     // ========================================
@@ -326,7 +329,7 @@ export function registerOllamaIpc(options: {
     ));
 
     ipcMain.handle('ollama:getModelRecommendations', createSafeIpcHandler('ollama:getModelRecommendations',
-        async (event: IpcMainInvokeEvent, categoryRaw: unknown) => {
+        async (event: IpcMainInvokeEvent, categoryRaw: RuntimeValue) => {
             validateSender(event);
             if (!ollamaService) {
                 throw new Error('Ollama service unavailable');
@@ -339,7 +342,7 @@ export function registerOllamaIpc(options: {
     ));
 
     ipcMain.handle('ollama:getRecommendedModelForTask', createSafeIpcHandler('ollama:getRecommendedModelForTask',
-        async (event: IpcMainInvokeEvent, taskRaw: unknown) => {
+        async (event: IpcMainInvokeEvent, taskRaw: RuntimeValue) => {
             validateSender(event);
             if (!ollamaService) {
                 throw new Error('Ollama service unavailable');

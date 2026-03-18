@@ -63,7 +63,16 @@ const sectionData = {
     "noBranchesFound": "No se encontraron sucursales",
     "switchingBranch": "Cambiando branch...",
     "branchSwitched": "Cambiado a {{branch}}.",
-    "branchSwitchFailed": "No se pudo cambiar branch."
+    "branchSwitchFailed": "No se pudo cambiar branch.",
+    "listPresetTitle": "List preset",
+    "openTitle": "Open",
+    "todoUndoTitle": "Undo (Ctrl/Cmd+Z)",
+    "todoRedoTitle": "Redo (Ctrl/Cmd+Y)",
 };
 
 export default sectionData;
+
+
+
+
+

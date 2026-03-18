@@ -121,36 +121,36 @@ export const DatabaseSizeDashboard: React.FC = () => {
                     color="primary"
                 />
                 <StatCard
-                    icon={<MessageSquare className="w-3.5 h-3.5 text-blue-500" />}
+                    icon={<MessageSquare className="w-3.5 h-3.5 text-info" />}
                     label={t('settings.databaseSizeDashboard.chats')}
                     value={String(stats.chatCount)}
                     ratio={stats.chatCount / Math.max(totalRecords, 1)}
-                    color="blue-500"
+                    color="info"
                 />
                 <StatCard
-                    icon={<Database className="w-3.5 h-3.5 text-green-500" />}
+                    icon={<Database className="w-3.5 h-3.5 text-success" />}
                     label={t('settings.databaseSizeDashboard.messages')}
                     value={String(stats.messageCount)}
                     ratio={stats.messageCount / Math.max(totalRecords, 1)}
-                    color="green-500"
+                    color="success"
                 />
                 <StatCard
-                    icon={<FolderOpen className="w-3.5 h-3.5 text-yellow-500" />}
+                    icon={<FolderOpen className="w-3.5 h-3.5 text-warning" />}
                     label={t('settings.databaseSizeDashboard.workspaces')}
                     value={String(stats.workspaceCount)}
-                    color="yellow-500"
+                    color="warning"
                 />
                 <StatCard
-                    icon={<Layers className="w-3.5 h-3.5 text-purple-500" />}
+                    icon={<Layers className="w-3.5 h-3.5 text-purple" />}
                     label={t('settings.databaseSizeDashboard.folders')}
                     value={String(stats.folderCount)}
-                    color="purple-500"
+                    color="purple"
                 />
                 <StatCard
-                    icon={<FileText className="w-3.5 h-3.5 text-orange-500" />}
+                    icon={<FileText className="w-3.5 h-3.5 text-orange" />}
                     label={t('settings.databaseSizeDashboard.prompts')}
                     value={String(stats.promptCount)}
-                    color="orange-500"
+                    color="orange"
                 />
             </div>
         </div>

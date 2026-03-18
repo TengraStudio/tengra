@@ -1,9 +1,9 @@
-import { ChildProcess, execSync, spawn } from 'child_process';
-import * as fs from 'fs';
+import { ChildProcess, spawn } from 'child_process';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 
+import { findExecutableInPath, findFirstExistingPath } from './backend-discovery.util';
 import { ITerminalBackend, ITerminalProcess, TerminalCreateOptions } from './terminal-backend.interface';
 
 /**
@@ -95,21 +95,15 @@ export class AlacrittyBackend implements ITerminalBackend {
     }
 
     private async discoverAlacrittyPath(): Promise<string | null> {
-        const isWin = process.platform === 'win32';
-        const cmd = isWin ? 'where alacritty' : 'which alacritty';
-
-        try {
-            const result = execSync(cmd, { encoding: 'utf8' }).trim();
-            if (result) {
-                const pathResult = result.split('\n')[0].trim();
-                appLogger.info('AlacrittyBackend', `Found Alacritty at: ${pathResult}`);
-                return pathResult;
-            }
-        } catch {
-            appLogger.debug('AlacrittyBackend', 'Alacritty not found in PATH');
+        const discoveredPath = await findExecutableInPath('alacritty');
+        if (discoveredPath) {
+            appLogger.info('AlacrittyBackend', `Found Alacritty at: ${discoveredPath}`);
+            return discoveredPath;
         }
 
-        const commonPaths = isWin
+        appLogger.debug('AlacrittyBackend', 'Alacritty not found in PATH');
+
+        const commonPaths = process.platform === 'win32'
             ? [
                 'C:\\Program Files\\Alacritty\\alacritty.exe',
                 path.join(process.env.LOCALAPPDATA ?? '', 'Alacritty', 'alacritty.exe')
@@ -120,16 +114,10 @@ export class AlacrittyBackend implements ITerminalBackend {
                 '/usr/bin/alacritty'
             ];
 
-        for (const p of commonPaths) {
-            try {
-                // Sync I/O acceptable: one-time shell detection at backend init
-                if (fs.existsSync(p)) {
-                    appLogger.info('AlacrittyBackend', `Found Alacritty at common location: ${p}`);
-                    return p;
-                }
-            } catch {
-                // Ignore
-            }
+        const commonPath = await findFirstExistingPath(commonPaths);
+        if (commonPath) {
+            appLogger.info('AlacrittyBackend', `Found Alacritty at common location: ${commonPath}`);
+            return commonPath;
         }
 
         return null;

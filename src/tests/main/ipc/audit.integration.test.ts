@@ -2,12 +2,12 @@ import { registerAuditIpc } from '@main/ipc/audit';
 import { IpcMainInvokeEvent } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const ipcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
+const ipcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
 
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
-            ipcMainHandlers.set(channel, handler);
+        handle: vi.fn((channel: string, handler: (...args: TestValue[]) => TestValue | Promise<TestValue>) => {
+            ipcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
         }),
         setMaxListeners: vi.fn()
     }
@@ -62,7 +62,7 @@ describe('Audit IPC Integration', () => {
         const result = await handler({} as IpcMainInvokeEvent, { category: 'security' });
 
         expect(result).toHaveLength(1);
-        expect((result as Record<string, unknown>[])[0].category).toBe('security');
+        expect((result as Record<string, TestValue>[])[0].category).toBe('security');
         expect(mockAuditLogService.getLogs).toHaveBeenCalledWith({ category: 'security' });
     });
 
@@ -146,3 +146,4 @@ describe('Audit IPC Integration', () => {
         expect(mockAuditLogService.clearLogs).toHaveBeenCalledTimes(1);
     });
 });
+

@@ -64,7 +64,12 @@ export interface McpDeps {
     workspace: WorkspaceService;
 }
 
-export type McpHandlerResult = JsonValue | ServiceResponse<JsonValue | void> | void | unknown;
+export type McpHandlerResult = JsonValue | ServiceResponse<JsonValue | void> | void | RuntimeValue;
+
+interface LocalizedMcpError {
+    messageKey?: string;
+    messageParams?: Record<string, string | number>;
+}
 
 export function wrap(
     handler: (args: JsonObject) => McpHandlerResult | Promise<McpHandlerResult>,
@@ -101,6 +106,7 @@ export function wrap(
             return result;
         } catch (error) {
             const errorMsg = getErrorMessage(error);
+            const localizedError = error as LocalizedMcpError;
 
             // Audit log failed operation
             if (auditLog) {
@@ -122,7 +128,12 @@ export function wrap(
                     });
             }
 
-            return { success: false, error: errorMsg };
+            return {
+                success: false,
+                error: errorMsg,
+                messageKey: localizedError.messageKey,
+                messageParams: localizedError.messageParams
+            };
         }
     };
 }
@@ -134,13 +145,18 @@ export function normalizeResult(rawResult: McpHandlerResult): McpResult {
     return { success: true, data: (rawResult ?? null) as JsonValue };
 }
 
-export function isServiceResponse(result: unknown): result is ServiceResponse<unknown> {
+export function isServiceResponse(result: RuntimeValue): result is ServiceResponse<RuntimeValue> {
     return !!(result && typeof result === 'object' && 'success' in result);
 }
 
-export function normalizeServiceResponse(res: ServiceResponse<unknown>): McpResult {
+export function normalizeServiceResponse(res: ServiceResponse<RuntimeValue>): McpResult {
     if (res.success === false) {
-        return { success: false, error: res.error ?? res.message ?? 'Unknown error' };
+        return {
+            success: false,
+            error: res.error ?? res.message ?? 'Unknown error',
+            messageKey: res.messageKey,
+            messageParams: res.messageParams
+        };
     }
     const data = res.data ?? res.result ?? res.content ?? res;
     return { success: true, data: data as JsonValue };
@@ -251,7 +267,7 @@ export const withTimeout = <T>(handler: () => Promise<T>, timeoutMs = 30000): Pr
  * @param maxLength - Maximum allowed length (default: 1MB)
  * @returns The validated string
  */
-export const validateString = (value: unknown, maxLength = 1048576): string => {
+export const validateString = (value: RuntimeValue, maxLength = 1048576): string => {
     if (typeof value !== 'string') {
         throw new Error('Value must be a string');
     }
@@ -268,7 +284,7 @@ export const validateString = (value: unknown, maxLength = 1048576): string => {
  * @param max - Maximum allowed value
  * @returns The validated number
  */
-export const validateNumber = (value: unknown, min?: number, max?: number): number => {
+export const validateNumber = (value: RuntimeValue, min?: number, max?: number): number => {
     const num = Number(value);
     if (isNaN(num)) {
         throw new Error('Value must be a valid number');
@@ -288,7 +304,7 @@ export const validateNumber = (value: unknown, min?: number, max?: number): numb
  * @param allowedProtocols - Allowed protocols (default: ['http:', 'https:'])
  * @returns The validated URL string
  */
-export const validateUrl = (value: unknown, allowedProtocols = ['http:', 'https:']): string => {
+export const validateUrl = (value: RuntimeValue, allowedProtocols = ['http:', 'https:']): string => {
     const urlString = validateString(value, 2000);
 
     try {
@@ -310,7 +326,7 @@ export const validateUrl = (value: unknown, allowedProtocols = ['http:', 'https:
  * @param value - The hostname to validate
  * @returns The validated hostname
  */
-export const validateHostname = (value: unknown): string => {
+export const validateHostname = (value: RuntimeValue): string => {
     const hostname = validateString(value, 253);
 
     // Basic hostname validation (alphanumeric, dots, hyphens)
@@ -326,7 +342,7 @@ export const validateHostname = (value: unknown): string => {
  * @param value - The command to validate
  * @returns The validated command
  */
-export const validateCommand = (value: unknown): string => {
+export const validateCommand = (value: RuntimeValue): string => {
     const cmd = validateString(value, 10000).trim();
 
     if (!cmd) {

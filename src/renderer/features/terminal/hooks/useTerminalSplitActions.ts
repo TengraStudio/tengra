@@ -23,6 +23,7 @@ interface SplitView {
 }
 
 interface UseTerminalSplitActionsParams {
+    t: (key: string, options?: Record<string, string | number>) => string;
     tabsRef: MutableRefObject<TerminalTab[]>;
     activeTabIdRef: MutableRefObject<string | null>;
     availableShells: { id: string; name: string }[];
@@ -46,6 +47,7 @@ interface UseTerminalSplitActionsParams {
 }
 
 export function useTerminalSplitActions({
+    t,
     tabsRef,
     activeTabIdRef,
     availableShells,
@@ -120,13 +122,16 @@ export function useTerminalSplitActions({
         if (!splitView) {
             return;
         }
-        const name = promptDialog('Preset name', `Split ${splitPresets.length + 1}`)?.trim();
+        const name = promptDialog(
+            t('terminal.splitPresetNamePrompt'),
+            t('terminal.splitPresetDefaultName', { index: splitPresets.length + 1 })
+        )?.trim();
         if (!name) {
             return;
         }
         const preset = createCustomSplitPreset(name, splitView.orientation);
         setSplitPresets(prev => [preset, ...prev].slice(0, TERMINAL_SPLIT_PRESET_LIMIT));
-    }, [splitPresets.length, splitView, setSplitPresets]);
+    }, [splitPresets.length, splitView, setSplitPresets, t]);
 
     const renameSplitPreset = useCallback((presetId: string) => {
         setSplitPresets(prev => {
@@ -134,7 +139,7 @@ export function useTerminalSplitActions({
             if (!target) {
                 return prev;
             }
-            const nextName = promptDialog('Rename preset', target.name)?.trim();
+            const nextName = promptDialog(t('terminal.renamePresetPrompt'), target.name)?.trim();
             if (!nextName || nextName === target.name) {
                 return prev;
             }
@@ -142,7 +147,7 @@ export function useTerminalSplitActions({
                 item.id === presetId ? { ...item, name: nextName, updatedAt: Date.now() } : item
             );
         });
-    }, [setSplitPresets]);
+    }, [setSplitPresets, t]);
 
     const deleteSplitPreset = useCallback((presetId: string) => {
         setSplitPresets(prev => prev.filter(item => item.id !== presetId));

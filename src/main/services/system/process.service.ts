@@ -149,7 +149,7 @@ export class ProcessService extends EventEmitter {
 
             if (pkgExists) {
                 const content = await fs.readFile(pkgPath, 'utf-8');
-                const pkg = safeJsonParse<Record<string, unknown>>(content, {});
+                const pkg = safeJsonParse<Record<string, RuntimeValue>>(content, {});
                 if (pkg.scripts && typeof pkg.scripts === 'object') {
                     Object.assign(scripts, pkg.scripts);
                 }

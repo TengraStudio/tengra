@@ -60,7 +60,7 @@ export function TerminalRecordingPanel({
     return (
         <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 w-[460px] max-w-[95vw]">
             <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="text-xs font-semibold text-foreground">Session Recordings</div>
+                <div className="text-xs font-semibold text-foreground">{t('terminal.recordingsTitle')}</div>
                 <button
                     onClick={() => {
                         setIsRecordingPanelOpen(false);
@@ -83,7 +83,7 @@ export function TerminalRecordingPanel({
                             : 'border-border text-muted-foreground hover:text-foreground hover:bg-accent/40'
                     )}
                 >
-                    {activeRecordingTabId ? 'Stop Recording' : 'Start Recording'}
+                    {activeRecordingTabId ? t('terminal.stopRecording') : t('terminal.startRecording')}
                 </button>
                 <button
                     onClick={() => {
@@ -95,7 +95,7 @@ export function TerminalRecordingPanel({
                     className="h-7 px-2 rounded text-xs border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
                 >
                     <Play className="w-3 h-3" />
-                    Replay
+                    {t('terminal.replay')}
                 </button>
                 <button
                     onClick={stopReplay}
@@ -103,7 +103,7 @@ export function TerminalRecordingPanel({
                     className="h-7 px-2 rounded text-xs border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
                 >
                     <Square className="w-3 h-3" />
-                    Stop
+                    {t('common.stop')}
                 </button>
                 <button
                     onClick={() => {
@@ -115,17 +115,17 @@ export function TerminalRecordingPanel({
                     className="h-7 px-2 rounded text-xs border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
                 >
                     <Download className="w-3 h-3" />
-                    Export
+                    {t('terminal.exportRecording')}
                 </button>
             </div>
             {activeRecordingTabId && (
                 <div className="mb-2 px-2 py-1 rounded border border-destructive/30 bg-destructive/5 text-[10px] text-destructive">
-                    Recording active: {activeRecordingLabel ?? activeRecordingTabId}
+                    {t('terminal.recordingActive')}: {activeRecordingLabel ?? activeRecordingTabId}
                 </div>
             )}
             <div className="max-h-32 overflow-y-auto custom-scrollbar space-y-1 mb-2">
                 {recordings.length === 0 && (
-                    <div className="px-2 py-2 text-xs text-muted-foreground">No recordings yet.</div>
+                    <div className="px-2 py-2 text-xs text-muted-foreground">{t('terminal.noRecordingsYet')}</div>
                 )}
                 {recordings.map(recording => (
                     <button
@@ -146,7 +146,7 @@ export function TerminalRecordingPanel({
                         <div className="text-[10px] text-muted-foreground truncate">
                             {new Date(recording.startedAt).toLocaleString()} -{' '}
                             {(recording.durationMs / 1000).toFixed(1)}s - {recording.events.length}{' '}
-                            events
+                            {t('terminal.eventsLabel')}
                         </div>
                     </button>
                 ))}
@@ -154,7 +154,7 @@ export function TerminalRecordingPanel({
             {selectedRecording && (
                 <div className="rounded border border-border/60 bg-background/70">
                     <div className="px-2 py-1 border-b border-border/60 text-[10px] text-muted-foreground">
-                        Replay Preview
+                        {t('terminal.replayPreview')}
                     </div>
                     <pre className="p-2 text-[11px] leading-4 text-foreground max-h-44 overflow-auto whitespace-pre-wrap break-words">
                         {isReplayRunning || replayText ? replayText : selectedRecordingText}

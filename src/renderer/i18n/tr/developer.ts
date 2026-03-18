@@ -14,7 +14,22 @@ const sectionData = {
     "importSettingsDesc": "Bir JSON dosyasından ayarları yükleyin",
     "import": "İçe Aktar",
     "settingsImported": "Ayarlar içe aktarıldı",
-    "invalidSettingsFile": "Geçersiz ayar dosyası"
+    "invalidSettingsFile": "Geçersiz ayar dosyası",
+    "exportUiState": "UI Durumunu Dışa Aktar",
+    "exportUiStateDesc": "Pencere/yerleşim/kenar çubuğu durum anlık görüntüsünü dışa aktar",
+    "uiStateExported": "UI durumu dışa aktarıldı",
+    "animationDiagnostics": "Animasyon Tanılama",
+    "animationPlays": "Oynatmalar: {{played}} | Azaltılmış hareket oynatmaları: {{reduced}}",
+    "animationDebugEnabled": "Animasyon hata ayıklama etkinleştirildi",
+    "animationDebugDisabled": "Animasyon hata ayıklama devre dışı bırakıldı",
+    "enableAnimationDebug": "Animasyon Hata Ayıklamayı Etkinleştir",
+    "disableAnimationDebug": "Animasyon Hata Ayıklamayı Devre Dışı Bırak",
+    "forcedReducedMotionEnabled": "Zorunlu azaltılmış hareket etkinleştirildi",
+    "forcedReducedMotionDisabled": "Zorunlu azaltılmış hareket devre dışı bırakıldı",
+    "toggleForcedReducedMotion": "Zorunlu Azaltılmış Hareketi Değiştir",
+    "responsiveAnalytics": "Duyarlı Analitik",
+    "responsiveCurrent": "Mevcut: {{current}} ({{width}}x{{height}})",
+    "responsiveBreakdown": "Mobil: {{mobile}} | Tablet: {{tablet}} | Masaüstü: {{desktop}} | Geniş: {{wide}}"
 };
 
 export default sectionData;

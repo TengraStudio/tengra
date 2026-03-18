@@ -11,11 +11,11 @@ vi.mock('electron', () => ({
 }));
 
 
-type IpcHandler = (event: unknown, ...args: unknown[]) => Promise<unknown>;
+type IpcHandler = (event: TestValue, ...args: TestValue[]) => Promise<TestValue>;
 
 const setupHandlers = (): Map<string, IpcHandler> => {
     const handlers = new Map<string, IpcHandler>();
-    vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: unknown) => {
+    vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: TestValue) => {
         handlers.set(channel, handler as IpcHandler);
     });
     return handlers;
@@ -54,7 +54,7 @@ describe('Missing IPC TODO coverage (behavior)', () => {
         registerAdvancedMemoryIpc(service as never);
 
         const handler = handlers.get('advancedMemory:confirmAll');
-        const result = await handler?.({} as unknown);
+        const result = await handler?.({} as never);
 
         expect(result).toMatchObject({ success: true, confirmed: 1, uiState: 'ready' });
         expect(service.confirmPendingMemory).toHaveBeenCalledTimes(1);
@@ -66,9 +66,13 @@ describe('Missing IPC TODO coverage (behavior)', () => {
         registerDialogIpc(() => ({}) as never);
 
         const handler = handlers.get('dialog:saveFile');
-        const result = await handler?.({} as unknown, { filename: '', content: 'x' });
+        const result = await handler?.({} as never, { filename: '', content: 'x' });
 
-        expect(result).toEqual({ success: false, error: 'Invalid options provided' });
+        expect(result).toEqual({
+            success: false,
+            error: 'Invalid options provided',
+            messageKey: 'mainProcess.dialog.invalidOptionsProvided'
+        });
         expect(dialog.showSaveDialog).not.toHaveBeenCalled();
     });
 

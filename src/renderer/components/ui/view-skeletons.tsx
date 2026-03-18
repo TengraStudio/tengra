@@ -10,7 +10,6 @@ export type ViewSkeletonId =
     | 'memory'
     | 'ideas'
     | 'agent'
-    | 'automation-workflow'
     | 'models'
     | 'docker'
     | 'terminal';

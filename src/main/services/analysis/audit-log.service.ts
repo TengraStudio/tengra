@@ -15,7 +15,7 @@ export interface AuditLogEntry {
     action: string
     category: 'security' | 'settings' | 'authentication' | 'data' | 'system'
     userId?: string | undefined
-    details?: Record<string, unknown> | undefined
+    details?: Record<string, RuntimeValue> | undefined
     ipAddress?: string | undefined
     userAgent?: string | undefined
     success: boolean
@@ -93,7 +93,7 @@ export class AuditLogService extends BaseService {
      */
     async log(entry: Omit<AuditLogEntry, 'timestamp'>): Promise<void> {
         try {
-            const details = (entry.details ?? {}) as Record<string, unknown>;
+            const details = (entry.details ?? {}) as Record<string, RuntimeValue>;
             const prevHash = this.lastIntegrityHash || 'genesis';
             const timestamp = Date.now();
             const integrityInput = JSON.stringify({
@@ -158,7 +158,7 @@ export class AuditLogService extends BaseService {
         this.lastIntegrityHash = '';
     }
 
-    async logAuthenticationEvent(action: string, success: boolean, details?: Record<string, unknown>): Promise<void> {
+    async logAuthenticationEvent(action: string, success: boolean, details?: Record<string, RuntimeValue>): Promise<void> {
         await this.log({
             action,
             category: 'authentication',
@@ -167,7 +167,7 @@ export class AuditLogService extends BaseService {
         });
     }
 
-    async logApiKeyAccess(action: string, success: boolean, details?: Record<string, unknown>): Promise<void> {
+    async logApiKeyAccess(action: string, success: boolean, details?: Record<string, RuntimeValue>): Promise<void> {
         await this.log({
             action,
             category: 'security',
@@ -176,7 +176,7 @@ export class AuditLogService extends BaseService {
         });
     }
 
-    async logFileSystemOperation(action: string, success: boolean, details?: Record<string, unknown>): Promise<void> {
+    async logFileSystemOperation(action: string, success: boolean, details?: Record<string, RuntimeValue>): Promise<void> {
         await this.log({
             action,
             category: 'data',
@@ -192,15 +192,15 @@ export class AuditLogService extends BaseService {
         for (let i = logs.length - 1; i >= 0; i--) {
             const entry = logs[i];
             if (!entry) { continue; }
-            const integrity = (entry.details as Record<string, unknown> | undefined)?.integrity as
+            const integrity = (entry.details as Record<string, RuntimeValue> | undefined)?.integrity as
                 | { prevHash?: string; hash?: string }
                 | undefined;
             if (!integrity?.hash || !integrity?.prevHash) {
                 return { ok: false, checked: logs.length - i, firstInvalidAt: entry.timestamp };
             }
 
-            const details = { ...((entry.details as Record<string, unknown>) ?? {}) };
-            delete (details as Record<string, unknown>).integrity;
+            const details = { ...((entry.details as Record<string, RuntimeValue>) ?? {}) };
+            delete (details as Record<string, RuntimeValue>).integrity;
             const digest = createHash('sha256').update(JSON.stringify({
                 action: entry.action,
                 category: entry.category,

@@ -41,7 +41,7 @@ describe('TelemetryService Meta-Telemetry', () => {
         };
 
         service = new TelemetryService(
-            mockSettingsService as unknown as SettingsService
+            mockSettingsService as never as SettingsService
         );
     });
 
@@ -68,7 +68,7 @@ describe('TelemetryService Meta-Telemetry', () => {
         });
 
         it('should increment validationRejects on invalid properties', () => {
-            const circular: Record<string, unknown> = { a: 1 };
+            const circular: Record<string, TestValue> = { a: 1 };
             circular['self'] = circular;
             service.track('valid.event', circular);
             expect(service.getMetaTelemetry().validationRejects).toBe(1);

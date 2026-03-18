@@ -1,11 +1,11 @@
 import { FileCode, X } from 'lucide-react';
 import React from 'react';
 
-import { CodeMirrorEditor } from '@/components/ui/CodeMirrorEditor';
+import { CodeEditor } from '@/components/ui/CodeEditor';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-import { OpenFile } from '../../hooks/useWorkspaceDashboard';
+import { OpenFile } from '../../hooks/useWorkspaceDashboardLogic';
 import { FolderInspector } from '../ide/FolderInspector';
 
 interface FilesTabProps {
@@ -72,9 +72,14 @@ export const FilesTab: React.FC<FilesTabProps> = ({
                 <div className="flex-1 relative">
                     {activeFileObj ? (
                         <div className="absolute inset-0">
-                            <CodeMirrorEditor
-                                content={activeFileObj.content}
+                            <CodeEditor
+                                value={activeFileObj.content}
                                 language={activeFileObj.name.split('.').pop() ?? 'typescript'}
+                                initialLine={activeFileObj.initialLine}
+                                showMinimap={false}
+                                enableCodeLens={false}
+                                enableInlayHints={false}
+                                performanceMode={true}
                                 onChange={newContent => {
                                     const newFiles = openFiles.map(f =>
                                         f.path === activeFileObj.path

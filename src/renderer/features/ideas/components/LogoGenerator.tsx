@@ -12,7 +12,10 @@ interface LogoGeneratorProps {
     onClose: () => void;
 }
 
-const LogoGallery: React.FC<{ logoPaths: string[] }> = ({ logoPaths }) => {
+const STYLE_OPTIONS = ['minimalist', 'corporate', 'playful', 'abstract'] as const;
+type LogoStyle = (typeof STYLE_OPTIONS)[number];
+
+const LogoGallery: React.FC<{ logoPaths: string[]; t: (key: string, params?: Record<string, string | number>) => string }> = ({ logoPaths, t }) => {
     if (logoPaths.length === 0) {
         return null;
     }
@@ -25,7 +28,7 @@ const LogoGallery: React.FC<{ logoPaths: string[] }> = ({ logoPaths }) => {
                 >
                     <img
                         src={`safe-file://${path}`}
-                        alt={`Generated logo ${idx + 1}`}
+                        alt={t('ideas.logo.generatedAlt', { index: idx + 1 })}
                         className="max-w-full max-h-[120px] object-contain drop-shadow-lg"
                     />
                 </div>
@@ -48,8 +51,8 @@ const LogoError: React.FC<{ error: string | null }> = ({ error }) => {
 
 export const LogoGenerator: React.FC<LogoGeneratorProps> = ({ ideaId, ideaTitle, onClose }) => {
     const { t } = useTranslation();
-    const [prompt, setPrompt] = useState(`Modern minimalist logo for ${ideaTitle}`);
-    const [style, setStyle] = useState('Minimalist');
+    const [prompt, setPrompt] = useState(t('ideas.logo.defaultPrompt', { title: ideaTitle }));
+    const [style, setStyle] = useState<LogoStyle>('minimalist');
     const { isGenerating, logoPaths, error, generateLogo } = useLogoGeneration();
 
     const handleGenerate = async () => {
@@ -74,6 +77,7 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({ ideaId, ideaTitle,
                 <button
                     type="button"
                     onClick={onClose}
+                    aria-label={t('common.close')}
                     className="p-1 rounded-lg hover:bg-muted/30 text-muted-foreground/60 hover:text-foreground transition-colors"
                 >
                     <X className="w-4 h-4" />
@@ -93,7 +97,7 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({ ideaId, ideaTitle,
                     )}
                 />
                 <div className="flex gap-2">
-                    {['Minimalist', 'Corporate', 'Playful', 'Abstract'].map(s => (
+                    {STYLE_OPTIONS.map(s => (
                         <button
                             key={s}
                             type="button"
@@ -105,13 +109,13 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({ ideaId, ideaTitle,
                                     : 'bg-muted/10 border-border/50 text-muted-foreground hover:bg-muted/20'
                             )}
                         >
-                            {s}
+                            {t(`ideas.logo.styles.${s}`)}
                         </button>
                     ))}
                 </div>
             </div>
 
-            <LogoGallery logoPaths={logoPaths} />
+            <LogoGallery logoPaths={logoPaths} t={t} />
             <LogoError error={error} />
 
             <button

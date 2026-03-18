@@ -110,7 +110,7 @@ export class DatabaseClientService extends BaseService {
     }
 
     /** Validates that a value is a non-empty string safe for URL path segments. */
-    private validatePathId(value: unknown, label: string): asserts value is string {
+    private validatePathId(value: RuntimeValue, label: string): asserts value is string {
         if (typeof value !== 'string' || value.trim().length === 0) {
             throw new Error(`${label} must be a non-empty string`);
         }
@@ -120,14 +120,14 @@ export class DatabaseClientService extends BaseService {
     }
 
     /** Validates that a value is a non-empty string. */
-    private validateRequiredString(value: unknown, label: string): asserts value is string {
+    private validateRequiredString(value: RuntimeValue, label: string): asserts value is string {
         if (typeof value !== 'string' || value.trim().length === 0) {
             throw new Error(`${label} must be a non-empty string`);
         }
     }
 
     /** Validates that a value is an array. */
-    private validateArray(value: unknown, label: string): asserts value is unknown[] {
+    private validateArray(value: RuntimeValue, label: string): asserts value is RuntimeValue[] {
         if (!Array.isArray(value)) {
             throw new Error(`${label} must be an array`);
         }
@@ -316,7 +316,7 @@ export class DatabaseClientService extends BaseService {
     private async apiCall<T>(
         method: 'GET' | 'POST' | 'PUT' | 'DELETE',
         path: string,
-        data?: unknown,
+        data?: RuntimeValue,
         isRetry = false
     ): Promise<DbApiResponse<T>> {
         if (!this.servicePort) {

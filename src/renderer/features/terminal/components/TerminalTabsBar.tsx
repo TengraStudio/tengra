@@ -26,7 +26,7 @@ function resolveTerminalTabMetadata(tab: TerminalTab): TerminalTabMetadata {
     if (typeof tab.metadata !== 'object' || tab.metadata === null) {
         return {};
     }
-    const metadata = tab.metadata as Record<string, unknown>;
+    const metadata = tab.metadata as Record<string, RendererDataValue>;
     return {
         panelType: typeof metadata.panelType === 'string' ? metadata.panelType : undefined,
         closable: typeof metadata.closable === 'boolean' ? metadata.closable : undefined,

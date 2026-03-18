@@ -8,6 +8,7 @@ import { IpcRenderer, IpcRendererEvent } from 'electron';
 
 export interface WorkspaceBridge {
     analyze: (rootPath: string, workspaceId: string) => Promise<WorkspaceAnalysis>;
+    analyzeSummary: (rootPath: string, workspaceId?: string) => Promise<WorkspaceAnalysis>;
     analyzeIdentity: (
         rootPath: string
     ) => Promise<{ suggestedPrompts: string[]; colors: string[] }>;
@@ -31,6 +32,8 @@ export interface WorkspaceBridge {
     uploadLogo: (workspacePath: string) => Promise<string | null>;
     watch: (rootPath: string) => Promise<boolean>;
     unwatch: (rootPath: string) => Promise<boolean>;
+    setActive: (rootPath: string | null) => Promise<{ rootPath: string | null }>;
+    clearActive: (rootPath?: string) => Promise<{ rootPath: string | null }>;
     getEnv: (rootPath: string) => Promise<Record<string, string>>;
     saveEnv: (rootPath: string, vars: Record<string, string>) => Promise<{ success: boolean }>;
     onFileChange: (
@@ -47,12 +50,24 @@ interface WrappedWorkspaceResponse<T> {
 }
 
 function isWrappedWorkspaceResponse<T>(
-    value: T | WrappedWorkspaceResponse<T>
+    value: T | WrappedWorkspaceResponse<T> | null | undefined
 ): value is WrappedWorkspaceResponse<T> {
-    return typeof value === 'object' && value !== null && 'success' in value;
+    if (typeof value !== 'object' || value === null) {
+        return false;
+    }
+    const candidate = value as Partial<WrappedWorkspaceResponse<T>>;
+    return typeof candidate.success === 'boolean';
 }
 
-function unwrapWorkspaceResponse<T>(value: T | WrappedWorkspaceResponse<T>): T {
+function unwrapWorkspaceResponse<T>(
+    value: T | WrappedWorkspaceResponse<T> | null | undefined
+): T {
+    if (value === undefined) {
+        throw new Error('Workspace IPC request returned no response');
+    }
+    if (value === null) {
+        throw new Error('Workspace IPC request returned null response');
+    }
     if (!isWrappedWorkspaceResponse(value)) {
         return value;
     }
@@ -65,13 +80,19 @@ function unwrapWorkspaceResponse<T>(value: T | WrappedWorkspaceResponse<T>): T {
         throw new Error('Workspace IPC request completed without data');
     }
 
-    throw new Error(value.error?.message ?? 'Workspace IPC request failed');
+    const message =
+        value.error && typeof value.error.message === 'string'
+            ? value.error.message
+            : 'Workspace IPC request failed';
+    throw new Error(message);
 }
 
 export function createWorkspaceBridge(ipc: IpcRenderer): WorkspaceBridge {
     return {
         analyze: (rootPath, workspaceId) =>
             ipc.invoke('workspace:analyze', rootPath, workspaceId).then(unwrapWorkspaceResponse),
+        analyzeSummary: (rootPath, workspaceId) =>
+            ipc.invoke('workspace:analyzeSummary', rootPath, workspaceId).then(unwrapWorkspaceResponse),
         analyzeIdentity: rootPath =>
             ipc.invoke('workspace:analyzeIdentity', rootPath).then(unwrapWorkspaceResponse),
         generateLogo: (workspacePath, options) =>
@@ -90,6 +111,8 @@ export function createWorkspaceBridge(ipc: IpcRenderer): WorkspaceBridge {
         uploadLogo: workspacePath => ipc.invoke('workspace:uploadLogo', workspacePath).then(unwrapWorkspaceResponse),
         watch: rootPath => ipc.invoke('workspace:watch', rootPath).then(unwrapWorkspaceResponse),
         unwatch: rootPath => ipc.invoke('workspace:unwatch', rootPath).then(unwrapWorkspaceResponse),
+        setActive: rootPath => ipc.invoke('workspace:setActive', rootPath).then(unwrapWorkspaceResponse),
+        clearActive: rootPath => ipc.invoke('workspace:clearActive', rootPath).then(unwrapWorkspaceResponse),
         getEnv: rootPath => ipc.invoke('workspace:getEnv', rootPath).then(unwrapWorkspaceResponse),
         saveEnv: (rootPath, vars) => ipc.invoke('workspace:saveEnv', rootPath, vars).then(unwrapWorkspaceResponse),
         onFileChange: callback => {
@@ -103,4 +126,4 @@ export function createWorkspaceBridge(ipc: IpcRenderer): WorkspaceBridge {
             return () => ipc.removeListener('workspace:file-change', listener);
         },
     };
-}
+}

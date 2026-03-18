@@ -27,6 +27,7 @@ const sectionData = {
     "create": "Oluştur",
     "connect": "Bağlan",
     "selectFolder": "Klasörü Seç",
+    "defaultWorkspaceName": "Çalışma Alanı",
     "alreadyExists": "Zaten var",
     "alreadyExistsDesc": "Bilgisayarınızdaki mevcut bir çalışma alanı klasörünü bağlayın.",
     "sshTodo": "SSH (Yakında)",
@@ -39,6 +40,9 @@ const sectionData = {
     "connectionFailed": "Bağlantı başarısız",
     "connectionIdNotFound": "Bağlantı kuruldu fakat ID bulunamadı.",
     "listFailed": "Dizin listeleme başarısız",
+    "selectFailed": "Dizin seçilemedi",
+    "createFailed": "Çalışma alanı oluşturulamadı",
+    "optional": "(Optional)",
     "categories": {
         "web": "Web Uygulaması",
         "backend": "Backend Servisi",

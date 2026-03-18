@@ -8,7 +8,7 @@ describe('ContentService', () => {
     beforeEach(() => {
         service = new ContentService();
         fetchMock.mockReset();
-        vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch);
+        vi.stubGlobal('fetch', fetchMock as never as typeof fetch);
     });
 
     afterEach(() => {

@@ -20,6 +20,9 @@ describe('TodoItemCard', () => {
                     relativePath: 'TODO.md',
                 }}
                 onToggle={onToggle}
+                t={(key: string) =>
+                    key === 'workspace.todoUndoTitle' ? 'Undo (Ctrl/Cmd+Z)' : 'Redo (Ctrl/Cmd+Y)'
+                }
                 onUndo={onUndo}
                 onRedo={onRedo}
                 canUndo

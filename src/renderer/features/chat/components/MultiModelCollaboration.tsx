@@ -336,9 +336,9 @@ function useCollaborationState(
     const [sharedMemoryNote, setSharedMemoryNote] = useState('');
     const [sharedMemory, setSharedMemory] = useState<string[]>([]);
     const [presence, setPresence] = useState<PresenceParticipant[]>([
-        { id: 'owner', name: 'You', role: 'owner', isOnline: true },
-        { id: 'guest', name: 'Guest Reviewer', role: 'guest', isOnline: true },
-        { id: 'ai', name: 'AI Partner', role: 'ai', isOnline: true }
+        { id: 'owner', name: t('chat.collaboration.ownerDisplayName'), role: 'owner', isOnline: true },
+        { id: 'guest', name: t('chat.collaboration.guestReviewerName'), role: 'guest', isOnline: true },
+        { id: 'ai', name: t('chat.collaboration.aiPartnerName'), role: 'ai', isOnline: true }
     ]);
     const [cursorMarkers, setCursorMarkers] = useState<CursorMarker[]>([]);
     const [annotations, setAnnotations] = useState<ChangeAnnotation[]>([]);
@@ -388,7 +388,7 @@ function useCollaborationState(
     const addAnnotation = useCallback((note: string): void => {
         const entry: ChangeAnnotation = {
             id: `${Date.now()}-${Math.round(Math.random() * 1000)}`,
-            author: 'You', note, timestamp: Date.now()
+            author: t('chat.collaboration.ownerDisplayName'), note, timestamp: Date.now()
         };
         setAnnotations((cur) => [entry, ...cur].slice(0, 10));
         appendRecordingEvent(`${t('chat.collaboration.annotationRecorded')}: ${note}`);
@@ -425,7 +425,7 @@ function useCollaborationState(
             });
             setResults(result);
             addAnnotation(t('chat.collaboration.responseSynchronized'));
-            addCursorMarker('AI Partner', t('chat.collaboration.latestResponse'));
+            addCursorMarker(t('chat.collaboration.aiPartnerName'), t('chat.collaboration.latestResponse'));
             appendRecordingEvent(t('chat.collaboration.collaborationRunFinished'));
             if (result.response) { onResult?.(result.response); }
         } catch (err) {
@@ -449,7 +449,7 @@ function useCollaborationState(
     }, []);
 
     const handleAddCursorMarkerClick = useCallback(() => {
-        addCursorMarker('Guest Reviewer', t('chat.collaboration.promptArea'));
+        addCursorMarker(t('chat.collaboration.guestReviewerName'), t('chat.collaboration.promptArea'));
     }, [addCursorMarker, t]);
 
     const handleAnnotateClick = useCallback(() => {

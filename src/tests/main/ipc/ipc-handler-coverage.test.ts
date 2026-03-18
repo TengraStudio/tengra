@@ -7,11 +7,11 @@ vi.mock('electron', () => ({
     ipcMain: { handle: vi.fn() }
 }));
 
-type IpcHandler = (event: unknown, ...args: unknown[]) => Promise<unknown>;
+type IpcHandler = (event: TestValue, ...args: TestValue[]) => Promise<TestValue>;
 
 const getRegisteredHandlers = (): Map<string, IpcHandler> => {
     const handlers = new Map<string, IpcHandler>();
-    vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: unknown) => {
+    vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: TestValue) => {
         handlers.set(channel, handler as IpcHandler);
     });
     return handlers;
@@ -36,13 +36,13 @@ describe('IPC Handler Coverage', () => {
 
         const mockWin = {
             webContents: { id: 1 }
-        } as any;
+        } as never;
 
         const mockEvent = {
             sender: { id: 1 }
-        } as any;
+        } as never;
 
-        registerProcessIpc(() => mockWin, processService as any);
+        registerProcessIpc(() => mockWin, processService as never);
 
         const spawn = handlers.get('process:spawn');
         expect(spawn).toBeDefined();
@@ -76,9 +76,9 @@ describe('IPC Handler Coverage', () => {
 
         const mockEvent = {
             sender: { id: 1 }
-        } as any;
+        } as never;
 
-        registerCodeIntelligenceIpc(service as any);
+        registerCodeIntelligenceIpc(service as never);
 
 
         const findSymbols = handlers.get('code:findSymbols');

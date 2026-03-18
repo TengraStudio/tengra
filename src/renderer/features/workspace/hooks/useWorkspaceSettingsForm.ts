@@ -170,7 +170,7 @@ export const useWorkspaceSettingsForm = (
         setFormData(prev => ({
             ...prev,
             councilMembers: prev.councilMembers.includes(id)
-                ? prev.councilMembers.filter(m => m !== id)
+                ? prev.councilMembers.filter(memberId => memberId !== id)
                 : [...prev.councilMembers, id],
         }));
     }, []);

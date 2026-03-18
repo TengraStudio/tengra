@@ -17,6 +17,12 @@ import {
 } from '@main/services/workspace/terminal-smart.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
+import {
+    terminalGetBackendsResponseSchema,
+    terminalGetDiscoverySnapshotArgsSchema,
+    terminalGetDiscoverySnapshotResponseSchema,
+    terminalGetShellsResponseSchema,
+} from '@shared/schemas/terminal.schema';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
@@ -51,7 +57,7 @@ const createOptionsSchema = z.object({
     backendId: z.string().trim().optional(),
     workspaceId: z.string().optional(),
     title: z.string().trim().max(120).optional(),
-    metadata: z.record(z.string(), z.unknown()).optional()
+    metadata: z.record(z.string(), z.custom<RuntimeValue>(() => true)).optional()
 }).optional();
 
 const searchOptionsSchema = z.object({
@@ -117,21 +123,47 @@ const fixErrorOptionsSchema = z.object({
 
 // --- Types ---
 type CreateOptions = z.infer<typeof createOptionsSchema>;
+type TerminalCreateOptions = NonNullable<CreateOptions>;
 type SearchOptions = z.infer<typeof searchOptionsSchema>;
 type ScrollbackFilter = z.infer<typeof scrollbackFilterSchema>;
 type ImportSessionOptions = z.infer<typeof importSessionOptionsSchema>;
 type TemplateSavePayload = z.infer<typeof templateSavePayloadSchema>;
+
+function normalizeTerminalMetadata(
+    metadata: TerminalCreateOptions['metadata']
+): Record<string, RuntimeValue> | undefined {
+    if (!metadata) {
+        return undefined;
+    }
+
+    const normalized: Record<string, RuntimeValue> = {};
+    for (const [key, value] of Object.entries(metadata)) {
+        if (
+            value === null ||
+            value === undefined ||
+            typeof value === 'string' ||
+            typeof value === 'number' ||
+            typeof value === 'boolean' ||
+            typeof value === 'bigint' ||
+            typeof value === 'symbol' ||
+            typeof value === 'object'
+        ) {
+            normalized[key] = value;
+        }
+    }
+    return normalized;
+}
 
 // --- Helpers ---
 let terminalWindowGetter: (() => BrowserWindow | null) | null = null;
 const terminalDataBuffers = new Map<string, string[]>();
 const terminalFlushTimers = new Map<string, NodeJS.Timeout>();
 
-function secureHandle(
+function secureHandle<Args extends readonly RuntimeValue[], Result extends RuntimeValue>(
     channel: string,
-    handler: (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>
-) {
-    ipcMain.handle(channel, async (event, ...args) => {
+    handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<Result>
+): void {
+    ipcMain.handle(channel, async (event, ...args: Args) => {
         const getWindow = terminalWindowGetter;
         if (!getWindow) {
             throw new Error('Terminal window getter not initialized');
@@ -155,7 +187,7 @@ function secureHandle(
 function broadcastTerminalEvent(
     getWindow: () => BrowserWindow | null,
     channel: string,
-    payload: unknown
+    payload: RuntimeValue
 ) {
     const windows = BrowserWindow.getAllWindows();
     if (windows.length > 0) {
@@ -357,6 +389,7 @@ function registerSessionLifecycleIpc(getWindow: () => BrowserWindow | null, term
                 const success = await terminalService.createSession({
                     ...options,
                     id: sessionId,
+                    metadata: normalizeTerminalMetadata(options.metadata),
                     onData: (data: string) => {
                         queueTerminalData(sessionId, data);
                     },
@@ -1023,7 +1056,10 @@ export function registerTerminalIpc(
             async () => {
                 return terminalService.getAvailableShells();
             },
-            { defaultValue: [] }
+            {
+                defaultValue: [],
+                responseSchema: terminalGetShellsResponseSchema,
+            }
         )
     );
 
@@ -1034,7 +1070,30 @@ export function registerTerminalIpc(
             async () => {
                 return terminalService.getAvailableBackends();
             },
-            { defaultValue: [] }
+            {
+                defaultValue: [],
+                responseSchema: terminalGetBackendsResponseSchema,
+            }
+        )
+    );
+
+    secureHandle(
+        'terminal:getDiscoverySnapshot',
+        createValidatedIpcHandler(
+            'terminal:getDiscoverySnapshot',
+            async (_event, options?: { refresh?: boolean }) => {
+                return terminalService.getDiscoverySnapshot(options);
+            },
+            {
+                argsSchema: terminalGetDiscoverySnapshotArgsSchema,
+                defaultValue: {
+                    terminalAvailable: false,
+                    shells: [],
+                    backends: [],
+                    refreshedAt: 0,
+                },
+                responseSchema: terminalGetDiscoverySnapshotResponseSchema,
+            }
         )
     );
 

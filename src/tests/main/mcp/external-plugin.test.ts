@@ -215,7 +215,7 @@ describe('ExternalMcpPlugin', () => {
             await plugin.initialize();
 
             // Fill the queue with 100 pending requests
-            const promises: Promise<unknown>[] = [];
+            const promises: Promise<TestValue>[] = [];
             for (let i = 0; i < 100; i++) {
                 promises.push(plugin.dispatch(`action-${i}`, {}));
             }

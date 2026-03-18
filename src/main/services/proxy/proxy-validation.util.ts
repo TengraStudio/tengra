@@ -17,7 +17,7 @@ const MAX_TOKEN_LENGTH = 8192;
  * @param port - The port number to validate
  * @returns An error message string if invalid, or undefined if valid
  */
-export function validatePort(port: unknown): string | undefined {
+export function validatePort(port: RuntimeValue): string | undefined {
     if (port === undefined || port === null) {
         return 'Port is required';
     }
@@ -38,7 +38,7 @@ export function validatePort(port: unknown): string | undefined {
  * @param url - The URL string to validate
  * @returns An error message string if invalid, or undefined if valid
  */
-export function validateProxyUrl(url: unknown): string | undefined {
+export function validateProxyUrl(url: RuntimeValue): string | undefined {
     if (url === undefined || url === null) {
         return 'URL is required';
     }
@@ -66,7 +66,7 @@ export function validateProxyUrl(url: unknown): string | undefined {
  * @param label - Human-readable label for error messages (e.g. "Access token")
  * @returns An error message string if invalid, or undefined if valid
  */
-export function validateToken(token: unknown, label = 'Token'): string | undefined {
+export function validateToken(token: RuntimeValue, label = 'Token'): string | undefined {
     if (token === undefined || token === null) {
         return `${label} is required`;
     }
@@ -87,7 +87,7 @@ export function validateToken(token: unknown, label = 'Token'): string | undefin
  * @param interval - The interval in seconds
  * @returns An error message string if invalid, or undefined if valid
  */
-export function validateInterval(interval: unknown): string | undefined {
+export function validateInterval(interval: RuntimeValue): string | undefined {
     if (interval === undefined || interval === null) {
         return 'Interval is required';
     }
@@ -105,7 +105,7 @@ export function validateInterval(interval: unknown): string | undefined {
  * @param provider - The provider identifier
  * @returns An error message string if invalid, or undefined if valid
  */
-export function validateProvider(provider: unknown): string | undefined {
+export function validateProvider(provider: RuntimeValue): string | undefined {
     if (provider === undefined || provider === null) {
         return 'Provider is required';
     }

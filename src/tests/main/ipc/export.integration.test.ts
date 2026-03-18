@@ -3,12 +3,12 @@ import { IpcMainInvokeEvent } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock Electron ipcMain
-const ipcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
+const ipcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
 
 vi.mock('electron', () => ({
     ipcMain: {
         handle: vi.fn((channel, handler) => {
-            ipcMainHandlers.set(channel, handler);
+            ipcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
         }),
         removeHandler: vi.fn()
     }
@@ -59,7 +59,7 @@ describe('Export IPC Integration', () => {
             const content = '# Hello World\n\nThis is markdown content.';
             const filePath = '/exports/document.md';
 
-            const result = await handler?.({} as IpcMainInvokeEvent, content, filePath);
+            const result = await handler!({} as IpcMainInvokeEvent, content, filePath);
 
             expect(mockExportService.exportToMarkdown).toHaveBeenCalledWith(content, filePath);
             expect(result).toMatchObject({
@@ -75,7 +75,7 @@ describe('Export IPC Integration', () => {
             initIPC();
             const handler = ipcMainHandlers.get('export:markdown');
 
-            const result = await handler?.({} as IpcMainInvokeEvent, 123, '/exports/document.md');
+            const result = await handler!({} as IpcMainInvokeEvent, 123, '/exports/document.md');
 
             expect(mockExportService.exportToMarkdown).not.toHaveBeenCalled();
             expect(result).toMatchObject({
@@ -90,7 +90,7 @@ describe('Export IPC Integration', () => {
 
             const content = '# Hello World';
 
-            const result = await handler?.({} as IpcMainInvokeEvent, content, 123);
+            const result = await handler!({} as IpcMainInvokeEvent, content, 123);
 
             expect(mockExportService.exportToMarkdown).not.toHaveBeenCalled();
             expect(result).toMatchObject({
@@ -106,7 +106,7 @@ describe('Export IPC Integration', () => {
             const MAX_CONTENT_SIZE = 50 * 1024 * 1024;
             const oversizedContent = 'a'.repeat(MAX_CONTENT_SIZE + 1);
 
-            const result = await handler?.({} as IpcMainInvokeEvent, oversizedContent, '/exports/document.md');
+            const result = await handler!({} as IpcMainInvokeEvent, oversizedContent, '/exports/document.md');
 
             expect(mockExportService.exportToMarkdown).not.toHaveBeenCalled();
             expect(result).toMatchObject({
@@ -121,7 +121,7 @@ describe('Export IPC Integration', () => {
 
             const content = '# Hello World';
 
-            const result = await handler?.({} as IpcMainInvokeEvent, content, '');
+            const result = await handler!({} as IpcMainInvokeEvent, content, '');
 
             expect(mockExportService.exportToMarkdown).not.toHaveBeenCalled();
             expect(result).toMatchObject({
@@ -136,7 +136,7 @@ describe('Export IPC Integration', () => {
 
             const content = '# Hello World';
 
-            const result = await handler?.({} as IpcMainInvokeEvent, content, '   ');
+            const result = await handler!({} as IpcMainInvokeEvent, content, '   ');
 
             expect(mockExportService.exportToMarkdown).not.toHaveBeenCalled();
             expect(result).toMatchObject({
@@ -153,7 +153,7 @@ describe('Export IPC Integration', () => {
             const longPath = '/exports/' + 'a'.repeat(MAX_PATH_LENGTH);
             const content = '# Hello World';
 
-            const result = await handler?.({} as IpcMainInvokeEvent, content, longPath);
+            const result = await handler!({} as IpcMainInvokeEvent, content, longPath);
 
             expect(mockExportService.exportToMarkdown).not.toHaveBeenCalled();
             expect(result).toMatchObject({
@@ -174,10 +174,10 @@ describe('Export IPC Integration', () => {
             const content = '# Hello World';
             const filePath = '  /exports/document.md  ';
 
-            const result = await handler?.({} as IpcMainInvokeEvent, content, filePath);
+            const result = await handler!({} as IpcMainInvokeEvent, content, filePath);
 
             expect(mockExportService.exportToMarkdown).toHaveBeenCalledWith(content, '/exports/document.md');
-            expect((result as Record<string, unknown>).success).toBe(true);
+            expect((result as Record<string, TestValue>).success).toBe(true);
         });
     });
 
@@ -194,7 +194,7 @@ describe('Export IPC Integration', () => {
             const htmlContent = '<html><body><h1>Hello World</h1></body></html>';
             const filePath = '/exports/document.pdf';
 
-            const result = await handler?.({} as IpcMainInvokeEvent, htmlContent, filePath);
+            const result = await handler!({} as IpcMainInvokeEvent, htmlContent, filePath);
 
             expect(mockExportService.exportToPDF).toHaveBeenCalledWith(htmlContent, filePath);
             expect(result).toMatchObject({
@@ -210,7 +210,7 @@ describe('Export IPC Integration', () => {
             initIPC();
             const handler = ipcMainHandlers.get('export:pdf');
 
-            const result = await handler?.({} as IpcMainInvokeEvent, { html: 'invalid' }, '/exports/document.pdf');
+            const result = await handler!({} as IpcMainInvokeEvent, { html: 'invalid' }, '/exports/document.pdf');
 
             expect(mockExportService.exportToPDF).not.toHaveBeenCalled();
             expect(result).toMatchObject({
@@ -225,7 +225,7 @@ describe('Export IPC Integration', () => {
 
             const htmlContent = '<html><body><h1>Test</h1></body></html>';
 
-            const result = await handler?.({} as IpcMainInvokeEvent, htmlContent, null);
+            const result = await handler!({} as IpcMainInvokeEvent, htmlContent, null);
 
             expect(mockExportService.exportToPDF).not.toHaveBeenCalled();
             expect(result).toMatchObject({
@@ -241,7 +241,7 @@ describe('Export IPC Integration', () => {
             const MAX_CONTENT_SIZE = 50 * 1024 * 1024;
             const oversizedContent = '<html><body>' + 'a'.repeat(MAX_CONTENT_SIZE) + '</body></html>';
 
-            const result = await handler?.({} as IpcMainInvokeEvent, oversizedContent, '/exports/document.pdf');
+            const result = await handler!({} as IpcMainInvokeEvent, oversizedContent, '/exports/document.pdf');
 
             expect(mockExportService.exportToPDF).not.toHaveBeenCalled();
             expect(result).toMatchObject({
@@ -256,7 +256,7 @@ describe('Export IPC Integration', () => {
 
             const htmlContent = '<html><body><h1>Test</h1></body></html>';
 
-            const result = await handler?.({} as IpcMainInvokeEvent, htmlContent, '');
+            const result = await handler!({} as IpcMainInvokeEvent, htmlContent, '');
 
             expect(mockExportService.exportToPDF).not.toHaveBeenCalled();
             expect(result).toMatchObject({
@@ -273,7 +273,7 @@ describe('Export IPC Integration', () => {
             const longPath = '/exports/' + 'a'.repeat(MAX_PATH_LENGTH);
             const htmlContent = '<html><body><h1>Test</h1></body></html>';
 
-            const result = await handler?.({} as IpcMainInvokeEvent, htmlContent, longPath);
+            const result = await handler!({} as IpcMainInvokeEvent, htmlContent, longPath);
 
             expect(mockExportService.exportToPDF).not.toHaveBeenCalled();
             expect(result).toMatchObject({
@@ -294,10 +294,10 @@ describe('Export IPC Integration', () => {
             const htmlContent = '<html><body><h1>Test</h1></body></html>';
             const filePath = '  /exports/document.pdf  ';
 
-            const result = await handler?.({} as IpcMainInvokeEvent, htmlContent, filePath);
+            const result = await handler!({} as IpcMainInvokeEvent, htmlContent, filePath);
 
             expect(mockExportService.exportToPDF).toHaveBeenCalledWith(htmlContent, '/exports/document.pdf');
-            expect((result as Record<string, unknown>).success).toBe(true);
+            expect((result as Record<string, TestValue>).success).toBe(true);
         });
 
         it('should handle export service errors', async () => {
@@ -309,7 +309,7 @@ describe('Export IPC Integration', () => {
             const htmlContent = '<html><body><h1>Test</h1></body></html>';
             const filePath = '/exports/document.pdf';
 
-            const result = await handler?.({} as IpcMainInvokeEvent, htmlContent, filePath);
+            const result = await handler!({} as IpcMainInvokeEvent, htmlContent, filePath);
 
             expect(result).toMatchObject({
                 success: false,
@@ -318,3 +318,4 @@ describe('Export IPC Integration', () => {
         });
     });
 });
+

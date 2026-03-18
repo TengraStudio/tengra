@@ -3,8 +3,8 @@
  * Used to safely validate IPC data before casting to typed interfaces
  */
 
-import { AgentStartOptions, WorkspaceState, WorkspaceStep } from '../types/automation-workflow';
 import { Message } from '../types/chat';
+import { AgentStartOptions, WorkspaceState, WorkspaceStep } from '../types/council';
 
 /**
  * Valid status values for agent state
@@ -27,49 +27,49 @@ const SYSTEM_MODES = new Set(['fast', 'thinking', 'architect']);
 /**
  * Checks if a value is a non-null object
  */
-function isObject(value: unknown): value is Record<string, unknown> {
+function isObject(value: RuntimeValue): value is Record<string, RuntimeValue> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /**
  * Checks if a value is a string
  */
-function isString(value: unknown): value is string {
+function isString(value: RuntimeValue): value is string {
     return typeof value === 'string';
 }
 
 /**
  * Checks if an optional string field is valid
  */
-function isOptionalString(value: unknown): boolean {
+function isOptionalString(value: RuntimeValue): boolean {
     return value === undefined || isString(value);
 }
 
 /**
  * Checks if all items in an array pass a type guard
  */
-function arrayOf<T>(arr: unknown[], guard: (item: unknown) => item is T): arr is T[] {
+function arrayOf<T extends RuntimeValue>(arr: RuntimeValue[], guard: (item: RuntimeValue) => item is T): arr is T[] {
     return arr.every(guard);
 }
 
 /**
  * Validates model field in AgentStartOptions
  */
-function isValidModel(model: unknown): boolean {
+function isValidModel(model: RuntimeValue): boolean {
     return isObject(model) && isString(model.provider) && isString(model.model);
 }
 
 /**
  * Validates systemMode field in AgentStartOptions
  */
-function isValidSystemMode(mode: unknown): boolean {
+function isValidSystemMode(mode: RuntimeValue): boolean {
     return isString(mode) && SYSTEM_MODES.has(mode);
 }
 
 /**
  * Type guard for agent step (WorkspaceStep)
  */
-export function isWorkspaceStep(value: unknown): value is WorkspaceStep {
+export function isWorkspaceStep(value: RuntimeValue): value is WorkspaceStep {
     if (!isObject(value)) {
         return false;
     }
@@ -85,7 +85,7 @@ export function isWorkspaceStep(value: unknown): value is WorkspaceStep {
 /**
  * Type guard for Message (basic check)
  */
-export function isMessage(value: unknown): value is Message {
+export function isMessage(value: RuntimeValue): value is Message {
     if (!isObject(value)) {
         return false;
     }
@@ -100,7 +100,7 @@ export function isMessage(value: unknown): value is Message {
 /**
  * Type guard for AgentStartOptions
  */
-export function isAgentStartOptions(value: unknown): value is AgentStartOptions {
+export function isAgentStartOptions(value: RuntimeValue): value is AgentStartOptions {
     if (!isObject(value)) {
         return false;
     }
@@ -133,7 +133,7 @@ export function isAgentStartOptions(value: unknown): value is AgentStartOptions 
 /**
  * Validates required fields of agent state
  */
-function hasValidRequiredFields(value: Record<string, unknown>): boolean {
+function hasValidRequiredFields(value: Record<string, RuntimeValue>): boolean {
     // status must be valid
     if (!isString(value.status) || !WORKSPACE_STATE_STATUSES.has(value.status)) {
         return false;
@@ -160,7 +160,7 @@ function hasValidRequiredFields(value: Record<string, unknown>): boolean {
 /**
  * Validates optional fields of agent state
  */
-function hasValidOptionalFields(value: Record<string, unknown>): boolean {
+function hasValidOptionalFields(value: Record<string, RuntimeValue>): boolean {
     // lastError must be string if present
     if (!isOptionalString(value.lastError)) {
         return false;
@@ -183,7 +183,7 @@ function hasValidOptionalFields(value: Record<string, unknown>): boolean {
  * Type guard for agent state (WorkspaceState)
  * Validates the structure of incoming IPC data before casting
  */
-export function isWorkspaceState(value: unknown): value is WorkspaceState {
+export function isWorkspaceState(value: RuntimeValue): value is WorkspaceState {
     if (!isObject(value)) {
         return false;
     }
@@ -200,7 +200,7 @@ export function isWorkspaceState(value: unknown): value is WorkspaceState {
  * @returns The validated state
  * @throws Error if validation fails
  */
-export function assertWorkspaceState(value: unknown, context?: string): WorkspaceState {
+export function assertWorkspaceState(value: RuntimeValue, context?: string): WorkspaceState {
     if (isWorkspaceState(value)) {
         return value;
     }
@@ -216,7 +216,7 @@ export function assertWorkspaceState(value: unknown, context?: string): Workspac
  * @param value - The value to convert
  * @returns agent state or undefined
  */
-export function toWorkspaceState(value: unknown): WorkspaceState | undefined {
+export function toWorkspaceState(value: RuntimeValue): WorkspaceState | undefined {
     if (isWorkspaceState(value)) {
         return value;
     }

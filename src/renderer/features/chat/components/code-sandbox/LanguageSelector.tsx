@@ -10,12 +10,7 @@ interface LanguageSelectorProps {
     disabled?: boolean;
 }
 
-const LANGUAGE_OPTIONS: ReadonlyArray<{ value: SandboxLanguage; label: string }> = [
-    { value: 'javascript', label: 'JavaScript' },
-    { value: 'typescript', label: 'TypeScript' },
-    { value: 'python', label: 'Python' },
-    { value: 'shell', label: 'Shell' },
-];
+const LANGUAGE_OPTIONS: ReadonlyArray<SandboxLanguage> = ['javascript', 'typescript', 'python', 'shell'];
 
 /** Language selector dropdown for the code sandbox */
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
@@ -39,8 +34,8 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                 className="rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-1 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-primary)]"
             >
                 {LANGUAGE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                        {opt.label}
+                    <option key={opt} value={opt}>
+                        {t(`codeSandbox.languages.${opt}`)}
                     </option>
                 ))}
             </select>

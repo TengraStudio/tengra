@@ -23,13 +23,13 @@ function createMockAdvancedMemory() {
             sourceId: 'global',
             tags: [],
             createdAt: Date.now(),
-        }) as unknown as SemanticFragment),
+        }) as never as SemanticFragment),
         recallRelevantFacts: vi.fn(async (): Promise<SemanticFragment[]> => []),
         summarizeChat: vi.fn(async (): Promise<SummarizationResult> => ({
             summary: 'test summary',
             messageCount: 5,
             success: true,
-        }) as unknown as SummarizationResult),
+        }) as never as SummarizationResult),
         summarizeSession: vi.fn(async (): Promise<EpisodicMemory | null> => null),
         recallEpisodes: vi.fn(async (): Promise<EpisodicMemory[]> => []),
         setEntityFact: vi.fn(async (): Promise<EntityKnowledge> => ({
@@ -38,7 +38,7 @@ function createMockAdvancedMemory() {
             entityName: 'Alice',
             key: 'role',
             value: 'developer',
-        }) as unknown as EntityKnowledge),
+        }) as never as EntityKnowledge),
         getEntityFacts: vi.fn(async (): Promise<EntityKnowledge[]> => []),
         gatherContext: vi.fn(async () => 'context text'),
         deleteMemory: vi.fn(async () => true),
@@ -55,7 +55,7 @@ describe('MemoryService', () => {
     beforeEach(() => {
         vi.restoreAllMocks();
         mockAdvanced = createMockAdvancedMemory();
-        service = new MemoryService(mockAdvanced as unknown as AdvancedMemoryService);
+        service = new MemoryService(mockAdvanced as never as AdvancedMemoryService);
     });
 
     describe('initialize', () => {
@@ -159,7 +159,7 @@ describe('MemoryService', () => {
         });
 
         it('updatePersonality delegates to advancedMemory', async () => {
-            const personality = { tone: 'friendly' } as unknown as PersonalitySettings;
+            const personality = { tone: 'friendly' } as never as PersonalitySettings;
             await service.updatePersonality(personality);
             expect(mockAdvanced.updatePersonality).toHaveBeenCalledWith(personality);
         });

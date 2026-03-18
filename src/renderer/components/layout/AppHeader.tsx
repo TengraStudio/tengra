@@ -13,12 +13,13 @@ import {
 } from 'lucide-react';
 import React from 'react';
 
-import { useAuth } from '@/context/AuthContext';
-import { useChat } from '@/context/ChatContext';
+import { useAuthLanguage } from '@/context/AuthContext';
+import { useChatHeader } from '@/context/ChatContext';
+import { AppView } from '@/hooks/useAppState';
 import { useTranslation } from '@/i18n';
 
 interface AppHeaderProps {
-    currentView: string;
+    currentView: AppView;
     settingsSearchQuery?: string;
     setSettingsSearchQuery?: (query: string) => void;
     onExtensionClick?: () => void;
@@ -30,18 +31,20 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     setSettingsSearchQuery,
     onExtensionClick,
 }) => {
-    const { chats, currentChatId, clearMessages } = useChat();
-    const { language } = useAuth();
+    const { currentChatId, currentChatTitle, clearMessages } = useChatHeader();
+    const { language } = useAuthLanguage();
     const { t } = useTranslation(language);
 
-    const currentChat = chats.find(c => c.id === currentChatId);
-
-    const viewIcons: Record<string, React.ElementType> = {
+    const viewIcons: Record<AppView, React.ElementType> = {
         chat: MessageSquare,
-        workspaces: LayoutGrid,
+        workspace: LayoutGrid,
         settings: SettingsIcon,
-
         mcp: Container,
+        memory: MessageSquare,
+        ideas: MessageSquare,
+        docker: Container,
+        terminal: MessageSquare,
+        models: MessageSquare,
     };
 
     const Icon = viewIcons[currentView] ?? MessageSquare;
@@ -66,8 +69,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                     </div>
                     <div>
                         <h1 className="text-sm font-bold uppercase tracking-widest text-foreground/90 flex items-center gap-2">
-                            {currentView === 'chat' && currentChat
-                                ? currentChat.title
+                            {currentView === 'chat' && currentChatTitle
+                                ? currentChatTitle
                                 : t(`nav.${currentView}`)}
                         </h1>
                     </div>

@@ -12,7 +12,7 @@ export type CodeEditorErrorCode =
     | 'CODE_EDITOR_INVALID_LANGUAGE'
     | 'CODE_EDITOR_INIT_FAILED';
 
-export function sanitizeCodeEditorLanguage(raw: unknown): string {
+export function sanitizeCodeEditorLanguage(raw: RendererDataValue): string {
     if (typeof raw !== 'string') {
         return 'javascript';
     }

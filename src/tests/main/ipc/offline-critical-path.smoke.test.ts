@@ -4,12 +4,12 @@ import { registerOllamaIpc } from '@main/ipc/ollama';
 import { registerSessionConversationIpc } from '@main/ipc/session-conversation';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const ipcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
+const ipcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
 
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
-            ipcMainHandlers.set(channel, handler);
+        handle: vi.fn((channel: string, handler: (...args: TestValue[]) => TestValue | Promise<TestValue>) => {
+            ipcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
         }),
         removeHandler: vi.fn(),
         on: vi.fn(),
@@ -141,4 +141,5 @@ describe('Offline critical path smoke', () => {
         expect(options.proxyService.getProxyKey).not.toHaveBeenCalled();
     });
 });
+
 

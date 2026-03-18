@@ -35,9 +35,9 @@ describe('Missing service TODO coverage (functional)', () => {
         const svc = new TestBaseService();
         svc.exerciseLogs();
 
-        expect(infoSpy).toHaveBeenCalledWith('TestBaseService', 'info');
-        expect(warnSpy).toHaveBeenCalledWith('TestBaseService', 'warn');
-        expect(debugSpy).toHaveBeenCalledWith('TestBaseService', 'debug');
+        expect(infoSpy).toHaveBeenCalledWith('TestBaseService', 'info', undefined);
+        expect(warnSpy).toHaveBeenCalledWith('TestBaseService', 'warn', undefined);
+        expect(debugSpy).toHaveBeenCalledWith('TestBaseService', 'debug', undefined);
         expect(errorSpy).toHaveBeenCalledWith('TestBaseService', 'error', undefined);
     });
 
@@ -46,7 +46,6 @@ describe('Missing service TODO coverage (functional)', () => {
         await dataService.initialize();
 
         expect(dataService.getPath('data')).toContain('data');
-        expect(dataService.getPath('auth')).toContain('auth');
         expect(dataService.getPath('logs')).toContain('logs');
     });
 
@@ -75,7 +74,7 @@ describe('Missing service TODO coverage (functional)', () => {
             {
                 getLinkedAccounts: vi.fn(async (provider?: string) =>
                     provider === 'github'
-                        ? [{ id: 'a1', provider: 'github', isActive: true, createdAt: 1 }]
+                        ? [{ id: 'a1', provider: 'github', isActive: true }]
                         : []
                 ),
                 getActiveLinkedAccount: vi.fn(async () => null),
@@ -87,9 +86,6 @@ describe('Missing service TODO coverage (functional)', () => {
             } as never,
             {
                 emit: vi.fn(),
-            } as never,
-            {
-                getPath: vi.fn(() => 'C:/tmp/auth'),
             } as never
         );
 

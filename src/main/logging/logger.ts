@@ -35,7 +35,7 @@ type LogPayload = {
     /** Context or service name */
     context: string;
     /** Optional metadata or error */
-    data?: JsonValue | Error | AppError;
+    data?: RuntimeValue;
     /** Optional timestamp */
     timestamp?: string;
 };
@@ -68,22 +68,22 @@ class AppLogger {
     private config: LoggerConfig = { ...DEFAULT_CONFIG };
     private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
-    private isBrokenPipeError(error: unknown): boolean {
+    private isBrokenPipeError<T>(error: T): boolean {
         if (!error || typeof error !== 'object') {
             return false;
         }
         const maybeCode = 'code' in error ? (error as { code?: string }).code : undefined;
-        const maybeMessage = 'message' in error ? String((error as { message?: unknown }).message ?? '') : '';
+        const maybeMessage = 'message' in error ? String((error as { message?: RuntimeValue }).message ?? '') : '';
         return maybeCode === 'EPIPE' || maybeMessage.toLowerCase().includes('broken pipe');
     }
 
-    private safeConsoleCall(method: 'debug' | 'info' | 'log' | 'warn' | 'error', ...args: unknown[]) {
+    private safeConsoleCall(method: 'debug' | 'info' | 'log' | 'warn' | 'error', ...args: RuntimeValue[]) {
         const original = this.originalConsole?.[method];
         if (!original) {
             return;
         }
         try {
-            (original as (...items: unknown[]) => void)(...args);
+            (original as (...items: RuntimeValue[]) => void)(...args);
         } catch (error) {
             if (!this.isBrokenPipeError(error)) {
                 // Do not rethrow; logger should never crash the app process.
@@ -136,9 +136,9 @@ class AppLogger {
      * @param message - The log message.
      * @param data - Optional metadata or error.
      */
-    trace(context: string, message: string, data?: JsonValue | Error | AppError) {
+    trace<T>(context: string, message: string, data?: T) {
         if (this.currentLevel <= LogLevel.TRACE) {
-            this.write({ level: LogLevel.TRACE, message, context, data });
+            this.write({ level: LogLevel.TRACE, message, context, data: data as RuntimeValue });
         }
     }
 
@@ -261,9 +261,9 @@ class AppLogger {
      * @param message - The log message.
      * @param data - Optional metadata or error.
      */
-    debug(context: string, message: string, data?: JsonValue | Error | AppError) {
+    debug<T>(context: string, message: string, data?: T) {
         if (this.currentLevel <= LogLevel.DEBUG && this.showDebugLogs) {
-            this.write({ level: LogLevel.DEBUG, message, context, data });
+            this.write({ level: LogLevel.DEBUG, message, context, data: data as RuntimeValue });
         }
     }
 
@@ -273,9 +273,9 @@ class AppLogger {
      * @param message - The log message.
      * @param data - Optional metadata or error.
      */
-    info(context: string, message: string, data?: JsonValue | Error | AppError) {
+    info<T>(context: string, message: string, data?: T) {
         if (this.currentLevel <= LogLevel.INFO) {
-            this.write({ level: LogLevel.INFO, message, context, data });
+            this.write({ level: LogLevel.INFO, message, context, data: data as RuntimeValue });
         }
     }
 
@@ -285,9 +285,9 @@ class AppLogger {
      * @param message - The log message.
      * @param data - Optional metadata or error.
      */
-    warn(context: string, message: string, data?: JsonValue | Error | AppError) {
+    warn<T>(context: string, message: string, data?: T) {
         if (this.currentLevel <= LogLevel.WARN) {
-            this.write({ level: LogLevel.WARN, message, context, data });
+            this.write({ level: LogLevel.WARN, message, context, data: data as RuntimeValue });
         }
     }
 
@@ -297,9 +297,9 @@ class AppLogger {
      * @param message - The log message.
      * @param data - Optional metadata or error.
      */
-    error(context: string, message: string, data?: JsonValue | Error | AppError) {
+    error<T>(context: string, message: string, data?: T) {
         if (this.currentLevel <= LogLevel.ERROR) {
-            this.write({ level: LogLevel.ERROR, message, context, data });
+            this.write({ level: LogLevel.ERROR, message, context, data: data as RuntimeValue });
         }
     }
 
@@ -309,15 +309,33 @@ class AppLogger {
      * @param message - The log message.
      * @param data - Optional metadata or error.
      */
-    fatal(context: string, message: string, data?: JsonValue | Error | AppError) {
+    fatal<T>(context: string, message: string, data?: T) {
         if (this.currentLevel <= LogLevel.FATAL) {
-            this.write({ level: LogLevel.FATAL, message, context, data });
+            this.write({ level: LogLevel.FATAL, message, context, data: data as RuntimeValue });
         }
     }
+
+    private sampleCounters = new Map<string, number>();
+    private readonly NOISY_CONTEXTS = new Set([
+        'TerminalService', 'FileWatcherService', 'TelemetryService', 
+        'code-intelligence.service', 'AdvancedMemoryService', 'WorkspaceService'
+    ]);
 
     private write(payload: LogPayload) {
         if (!this.initialized) {
             this.init();
+        }
+
+        // Sampling for very noisy contexts in production environments to reduce CPU+I/O load
+        const isProd = process.env.NODE_ENV !== 'development';
+        if (isProd && payload.level <= LogLevel.INFO && this.NOISY_CONTEXTS.has(payload.context)) {
+            const currentCount = (this.sampleCounters.get(payload.context) ?? 0) + 1;
+            this.sampleCounters.set(payload.context, currentCount);
+            
+            // Only log 1 out of every 20 info/debug messages for these noisy contexts in production
+            if (currentCount % 20 !== 0) {
+                return;
+            }
         }
 
         const line = this.config.jsonFormat ? formatLineJson(payload) : formatLine(payload);
@@ -651,7 +669,7 @@ export class Logger {
      * @param message - Log message.
      * @param data - Optional data.
      */
-    static debug(context: string, message: string, data?: JsonValue | Error | AppError) {
+    static debug<T>(context: string, message: string, data?: T) {
         appLogger.debug(context, message, data);
     }
     /**
@@ -660,7 +678,7 @@ export class Logger {
      * @param message - Log message.
      * @param data - Optional data.
      */
-    static info(context: string, message: string, data?: JsonValue | Error | AppError) {
+    static info<T>(context: string, message: string, data?: T) {
         appLogger.info(context, message, data);
     }
     /**
@@ -669,7 +687,7 @@ export class Logger {
      * @param message - Log message.
      * @param data - Optional data.
      */
-    static warn(context: string, message: string, data?: JsonValue | Error | AppError) {
+    static warn<T>(context: string, message: string, data?: T) {
         appLogger.warn(context, message, data);
     }
     /**
@@ -678,7 +696,7 @@ export class Logger {
      * @param message - Log message.
      * @param data - Optional data.
      */
-    static error(context: string, message: string, data?: JsonValue | Error | AppError) {
+    static error<T>(context: string, message: string, data?: T) {
         appLogger.error(context, message, data);
     }
     /**
@@ -687,7 +705,7 @@ export class Logger {
      * @param message - Log message.
      * @param data - Optional data.
      */
-    static fatal(context: string, message: string, data?: JsonValue | Error | AppError) {
+    static fatal<T>(context: string, message: string, data?: T) {
         appLogger.fatal(context, message, data);
     }
 }
@@ -718,7 +736,7 @@ function formatLineJson(payload: LogPayload): string {
     return JSON.stringify(entry) + '\n';
 }
 
-function formatValueForJson(value: JsonValue | Error | AppError | object): JsonValue {
+function formatValueForJson(value: RuntimeValue): JsonValue {
     if (value instanceof Error) {
         return {
             error: value.message,
@@ -738,14 +756,17 @@ function formatValueForJson(value: JsonValue | Error | AppError | object): JsonV
             stack: ae.stack,
         };
     }
+    if (value === undefined || typeof value === 'symbol' || typeof value === 'bigint') {
+        return String(value);
+    }
     return value as JsonValue;
 }
 
-function formatArgs(args: Array<JsonValue | Error | object>): string {
+function formatArgs(args: RuntimeValue[]): string {
     return args.map(formatValue).join(' ');
 }
 
-function formatValue(value: JsonValue | Error | AppError | object): string {
+function formatValue(value: RuntimeValue): string {
     if (value instanceof Error) {
         return value.stack ? `${value.message} | ${value.stack}` : value.message;
     }
@@ -764,6 +785,9 @@ function formatValue(value: JsonValue | Error | AppError | object): string {
     if (typeof value === 'string') {
         return value;
     }
+    if (typeof value === 'symbol' || typeof value === 'bigint') {
+        return String(value);
+    }
 
     try {
         return JSON.stringify(value);
@@ -772,7 +796,7 @@ function formatValue(value: JsonValue | Error | AppError | object): string {
     }
 }
 
-function isAppError(value: unknown): value is AppError {
+function isAppError(value: RuntimeValue): value is AppError {
     return (
         value !== null &&
         typeof value === 'object' &&

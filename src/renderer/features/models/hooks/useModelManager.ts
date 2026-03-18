@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useTranslation } from '@/i18n';
 import { pushNotification } from '@/store/notification-center.store';
 import type { GroupedModels, ModelInfo } from '@/types';
 import { AppSettings } from '@/types';
@@ -48,10 +49,25 @@ function pickLocalePreferredModel(models: ModelInfo[], locale: string): { provid
         : null;
 }
 
+function areSelectionsEqual(
+    currentSelection: Array<{ provider: string; model: string }>,
+    nextSelection: Array<{ provider: string; model: string }>
+): boolean {
+    if (currentSelection.length !== nextSelection.length) {
+        return false;
+    }
+
+    return currentSelection.every((selection, index) => {
+        const nextItem = nextSelection[index];
+        return nextItem?.provider === selection.provider && nextItem.model === selection.model;
+    });
+}
+
 export function useModelManager(
     appSettings: AppSettings | null,
     setAppSettings: (settings: AppSettings) => void
 ) {
+    const { t } = useTranslation();
     const [models, setModels] = useState<ModelInfo[]>([]);
     const [groupedModels, setGroupedModels] = useState<GroupedModels | null>(null);
     const [proxyModels, setProxyModels] = useState<ModelInfo[]>([]);
@@ -130,18 +146,35 @@ export function useModelManager(
         const persistedPairExists = availableModels.some(m =>
             m.id?.toLowerCase() === defaultModel?.toLowerCase() && getSelectableProviderId(m) === persistedProvider
         );
-        // const selectedMeta = availableModels.find(m => m.id === defaultModel && m.provider === persistedProvider);
-        // const lifecycleMeta = selectedMeta ? getModelLifecycleMeta(selectedMeta) : { lifecycle: 'active' as const };
+        const syncedSelection = defaultModel && persistedProvider
+            ? [{ provider: persistedProvider, model: defaultModel }]
+            : [];
+        const isSelectionSynced =
+            selectedModel === defaultModel &&
+            selectedProvider === persistedProvider &&
+            areSelectionsEqual(selectedModels, syncedSelection);
 
         if (defaultModel && persistedProvider && !persistedPairExists) {
             const fallback = resolveFallback();
             if (!fallback) {
                 return;
             }
-            setSelectedModel(fallback.model);
-            setSelectedProvider(fallback.provider);
-            setSelectedModels([fallback]);
-            if (appSettings) {
+            if (
+                selectedModel !== fallback.model ||
+                selectedProvider !== fallback.provider ||
+                !areSelectionsEqual(selectedModels, [fallback])
+            ) {
+                setSelectedModel(fallback.model);
+                setSelectedProvider(fallback.provider);
+                setSelectedModels([fallback]);
+            }
+            if (
+                appSettings &&
+                (
+                    appSettings.general.defaultModel !== fallback.model ||
+                    appSettings.general.lastProvider !== fallback.provider
+                )
+            ) {
                 setAppSettings({
                     ...appSettings,
                     general: {
@@ -153,8 +186,8 @@ export function useModelManager(
             }
             pushNotification({
                 type: 'warning',
-                title: 'Default model switched',
-                message: `Previous default model is unavailable. Switched to ${fallback.model}.`,
+                title: t('modelsPage.defaultModelSwitchedTitle'),
+                message: t('modelsPage.defaultModelSwitchedMessage', { model: fallback.model }),
                 source: 'models',
             });
             return;
@@ -170,19 +203,13 @@ export function useModelManager(
                     }
                 });
             }
-            // Priority 1: Use persisted state if present
-            if (selectedModel && selectedModel === defaultModel && selectedProvider === persistedProvider) {
-                // Already in sync
-                if (selectedModels.length === 0) {
-                    setSelectedModels([{ provider: persistedProvider, model: defaultModel }]);
-                }
+            if (isSelectionSynced) {
                 return;
             }
 
-            // Priority 2: Sync state with appSettings
             setSelectedModel(defaultModel);
             setSelectedProvider(persistedProvider);
-            setSelectedModels([{ provider: persistedProvider, model: defaultModel }]);
+            setSelectedModels(syncedSelection);
             return;
         }
 
@@ -216,11 +243,12 @@ export function useModelManager(
         models,
         selectedModel,
         selectedProvider,
-        selectedModels.length,
+        selectedModels,
         setSelectedModel,
         setSelectedProvider,
         setSelectedModels,
-        setAppSettings
+        setAppSettings,
+        t
     ]);
 
     const persistLastSelection = useCallback((provider: string, model: string) => {

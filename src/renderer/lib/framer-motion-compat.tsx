@@ -7,15 +7,15 @@ import React, { FC, ForwardRefExoticComponent, memo, RefAttributes } from 'react
 
 // Type definitions matching framer-motion's API
 export interface MotionProps extends React.HTMLAttributes<HTMLElement> {
-    initial?: Record<string, unknown>
-    animate?: Record<string, unknown>
-    exit?: Record<string, unknown>
-    transition?: Record<string, unknown>
-    whileHover?: Record<string, unknown>
-    whileTap?: Record<string, unknown>
+    initial?: Record<string, RendererDataValue>
+    animate?: Record<string, RendererDataValue>
+    exit?: Record<string, RendererDataValue>
+    transition?: Record<string, RendererDataValue>
+    whileHover?: Record<string, RendererDataValue>
+    whileTap?: Record<string, RendererDataValue>
     layout?: boolean
-    variants?: Record<string, unknown>
-    custom?: unknown
+    variants?: Record<string, RendererDataValue>
+    custom?: RendererDataValue
     children?: React.ReactNode
     style?: React.CSSProperties
     className?: string
@@ -56,9 +56,12 @@ const motionComponentCache: Record<string, ForwardRefExoticComponent<MotionProps
 
 // Motion proxy that creates components on demand
 export const motion = new Proxy({} as Record<string, ForwardRefExoticComponent<MotionProps & RefAttributes<HTMLElement>>>, {
-    get: (_, tag: string) => {
+    get: (_, tag: string | symbol) => {
+        if (typeof tag !== 'string') {
+            return undefined;
+        }
         if (!(tag in motionComponentCache)) {
-            motionComponentCache[tag] = createMotionComponent(tag) as unknown as ForwardRefExoticComponent<MotionProps & RefAttributes<HTMLElement>>;
+            motionComponentCache[tag] = createMotionComponent(tag) as TypeAssertionValue as ForwardRefExoticComponent<MotionProps & RefAttributes<HTMLElement>>;
         }
         return motionComponentCache[tag];
     }

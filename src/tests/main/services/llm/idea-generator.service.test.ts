@@ -52,14 +52,14 @@ type IdeaGenDeps = ConstructorParameters<typeof IdeaGeneratorService>[0];
 
 function createService(): IdeaGeneratorService {
     return new IdeaGeneratorService({
-        databaseService: mockDatabaseService as unknown as IdeaGenDeps['databaseService'],
-        llmService: mockLlmService as unknown as IdeaGenDeps['llmService'],
-        marketResearchService: mockMarketResearchService as unknown as IdeaGenDeps['marketResearchService'],
-        workspaceScaffoldService: mockWorkspaceScaffoldService as unknown as IdeaGenDeps['workspaceScaffoldService'],
-        authService: mockAuthService as unknown as IdeaGenDeps['authService'],
-        eventBus: mockEventBus as unknown as IdeaGenDeps['eventBus'],
-        localImageService: mockLocalImageService as unknown as IdeaGenDeps['localImageService'],
-        brainService: mockBrainService as unknown as IdeaGenDeps['brainService'],
+        databaseService: mockDatabaseService as never as IdeaGenDeps['databaseService'],
+        llmService: mockLlmService as never as IdeaGenDeps['llmService'],
+        marketResearchService: mockMarketResearchService as never as IdeaGenDeps['marketResearchService'],
+        workspaceScaffoldService: mockWorkspaceScaffoldService as never as IdeaGenDeps['workspaceScaffoldService'],
+        authService: mockAuthService as never as IdeaGenDeps['authService'],
+        eventBus: mockEventBus as never as IdeaGenDeps['eventBus'],
+        localImageService: mockLocalImageService as never as IdeaGenDeps['localImageService'],
+        brainService: mockBrainService as never as IdeaGenDeps['brainService'],
     });
 }
 

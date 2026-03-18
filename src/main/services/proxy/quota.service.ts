@@ -109,19 +109,19 @@ export class QuotaService {
     // --- Validation helpers ---
 
     /** Validates that a port number is a safe positive integer. */
-    private static isValidPort(port: unknown): port is number {
+    private static isValidPort(port: RuntimeValue): port is number {
         return typeof port === 'number' && Number.isFinite(port) && Number.isInteger(port) && port > 0 && port <= 65535;
     }
 
     /** Validates that a value is a non-empty string after trimming. */
-    private static isNonEmptyString(value: unknown): value is string {
+    private static isNonEmptyString(value: RuntimeValue): value is string {
         return typeof value === 'string' && value.trim().length > 0;
     }
 
     /** Validates a LinkedAccount has the minimum required fields. */
-    private static isValidAccount(account: unknown): account is LinkedAccount {
+    private static isValidAccount(account: RuntimeValue): account is LinkedAccount {
         if (!account || typeof account !== 'object') { return false; }
-        const acc = account as Record<string, unknown>;
+        const acc = account as Record<string, RuntimeValue>;
         return QuotaService.isNonEmptyString(acc.id) && QuotaService.isNonEmptyString(acc.provider);
     }
 
@@ -153,7 +153,7 @@ export class QuotaService {
             for (const account of antigravityAccounts) {
                 const quota = await this.fetchAntigravityQuotaForToken(account);
                 if (quota) {
-                    results.push({ ...quota, accountId: account.id, email: account.email });
+                    results.push({ ...quota, accountId: account.id, email: account.email, isActive: account.isActive });
                 }
             }
             appLogger.debug('QuotaService', `${QuotaTelemetryEvent.QUOTA_FETCHED}: ${results.length} accounts`);
@@ -180,7 +180,7 @@ export class QuotaService {
      * Fetches upstream model data for a specific antigravity account.
      * @param account - A valid LinkedAccount with id and provider.
      */
-    public async fetchAntigravityUpstreamForToken(account: LinkedAccount): Promise<unknown> {
+    public async fetchAntigravityUpstreamForToken(account: LinkedAccount): Promise<RuntimeValue> {
         if (!QuotaService.isValidAccount(account)) {
             appLogger.warn('QuotaService', 'fetchAntigravityUpstreamForToken: invalid account');
             return null;
@@ -256,7 +256,7 @@ export class QuotaService {
             const usage = await this.codexHandler.fetchCodexUsage();
             if (usage) {
                 const parsed = this.codexHandler.extractCodexUsageFromWham(usage);
-                results.push({ usage: parsed ?? { error: 'Failed to parse usage' }, accountId: account.id, email: account.email });
+                results.push({ usage: parsed ?? { error: 'Failed to parse usage' }, accountId: account.id, email: account.email, isActive: account.isActive });
             }
         }
         return { accounts: results };
@@ -288,7 +288,7 @@ export class QuotaService {
         for (const account of claudeAccounts) {
             const quota = await this.fetchClaudeQuotaForToken(account);
             if (quota) {
-                results.push({ ...quota, accountId: account.id, email: account.email });
+                results.push({ ...quota, accountId: account.id, email: account.email, isActive: account.isActive });
             }
         }
         appLogger.debug('QuotaService', `${QuotaTelemetryEvent.CLAUDE_QUOTA_FETCHED}: ${results.length} accounts`);
@@ -330,7 +330,7 @@ export class QuotaService {
         for (const account of uniqueAccounts) {
             const quota = await this.fetchCopilotQuotaForToken(account);
             if (quota) {
-                results.push({ ...quota, accountId: account.id, email: account.email });
+                results.push({ ...quota, accountId: account.id, email: account.email, isActive: account.isActive });
             }
         }
         appLogger.debug('QuotaService', `${QuotaTelemetryEvent.COPILOT_QUOTA_FETCHED}: ${results.length} accounts`);

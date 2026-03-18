@@ -34,7 +34,7 @@ export const DeleteFilesCheckbox: React.FC<DeleteFilesCheckboxProps> = ({ checke
             </span>
             {checked && (
                 <span className="text-xxs text-destructive font-bold uppercase animate-pulse">
-                    ⚠️ Permanent Deletion
+                    {t('workspaceModals.permanentDeletionWarning')}
                 </span>
             )}
         </div>

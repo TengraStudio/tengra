@@ -31,6 +31,15 @@ const sectionData = {
     "stopLabel": "Stop",
     "planAction": "Plan",
     "executeAction": "Execute",
+    "councilMode": "Council",
+    "reviewQueue": "Review Queue",
+    "assistQueue": "Assist Queue",
+    "filesCount": "{{count}} files",
+    "activity": "Activity",
+    "chairmanFallback": "Chairman",
+    "sessionFallback": "session",
+    "boardView": "Board",
+    "mapView": "Map",
     "thinkingOn": "Thinking on",
     "thinkingOff": "Thinking off",
     "selectAction": "Select action",
@@ -75,6 +84,27 @@ const sectionData = {
             "failed": "Failed",
             "error": "Error"
         }
+    },
+    "permissions": {
+        "title": "Agent Permission Settings",
+        "subtitle": "Manage access levels",
+        "profile": "Agent Profile",
+        "commands": "Command Permission",
+        "files": "File Access",
+        "policy": {
+            "blocked": "Blocked",
+            "ask-every-time": "Ask Every Time",
+            "allowlist": "Allowlist Only",
+            "full-access": "Full Access",
+            "workspace-root-only": "Workspace Root Only",
+            "restricted-off-dangerous": "Restricted (Safe Mode)"
+        },
+        "allowedCommands": "Allowed Commands",
+        "allowedPaths": "Allowed Paths",
+        "addCommand": "Add Command",
+        "addPath": "Add Path",
+        "noCommands": "No commands defined",
+        "noPaths": "No paths defined"
     }
 };
 

@@ -6,11 +6,13 @@ import { usePromptManager } from '@renderer/features/chat/hooks/usePromptManager
 import { useSpeechRecognition } from '@renderer/features/chat/hooks/useSpeechRecognition';
 import { useSessionState } from '@renderer/hooks/useSessionState';
 import type { SessionConversationGenerationStatus } from '@shared/types/session-conversation';
+import { WORKSPACE_AGENT_CHAT_TYPE } from '@shared/types/workspace-agent-session';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 
 import { generateId } from '@/lib/utils';
 import { AppSettings, Chat, Message } from '@/types';
-import { CatchError } from '@/types/common'; // Force update
+import { CatchError } from '@/types/common';
+import { appLogger } from '@/utils/renderer-logger';
 
 /** Maximum messages to keep in memory per chat to prevent memory leaks */
 const MAX_MESSAGES_IN_MEMORY = 100;
@@ -60,6 +62,26 @@ function trimChats(chats: Chat[]): Chat[] {
         .slice(0, MAX_CHATS_IN_MEMORY);
 }
 
+function isWorkspaceAgentChat(chat: Chat): boolean {
+    return (
+        chat.metadata?.chatType === WORKSPACE_AGENT_CHAT_TYPE ||
+        chat.metadata?.workspaceAgentSession !== undefined
+    );
+}
+
+function isImageOnlyModel(modelId: string): boolean {
+    const normalizedModelId = modelId.trim().toLowerCase();
+    return [
+        'gemini-3.1-flash-image',
+        'gemini-3.1-flash-image-preview',
+        'gemini-3-pro-image',
+        'gemini-3-pro-image-preview',
+        'gemini-2.5-flash-image',
+        'gemini-2.5-flash-image-preview',
+        'imagen-3.0-generate-001'
+    ].some(pattern => normalizedModelId.includes(pattern));
+}
+
 function toTextContent(content: Message['content']): string {
     if (typeof content === 'string') {
         return content;
@@ -98,14 +120,22 @@ function buildAttachmentPromptContext(attachments: ReturnType<typeof useAttachme
 function useChatInitialization(loadFolders: () => Promise<void>, setChats: React.Dispatch<React.SetStateAction<Chat[]>>): void {
     useEffect(() => {
         const load = async () => {
-            const allChats = await window.electron.db.getAllChats();
-            // Load chat metadata first; message bodies are loaded lazily per chat selection.
-            const trimmedChats = trimChats((allChats as Chat[]).map(chat => ({
-                ...chat,
-                messages: []
-            })));
-            setChats(trimmedChats);
-            await loadFolders();
+            try {
+                const allChats = await window.electron.db.getAllChats();
+                const visibleChats = (allChats as Chat[]).filter(
+                    chat => !isWorkspaceAgentChat(chat)
+                );
+                const trimmedChats = trimChats(
+                    visibleChats.map(chat => ({
+                        ...chat,
+                        messages: []
+                    }))
+                );
+                setChats(trimmedChats);
+                await loadFolders();
+            } catch (error) {
+                appLogger.error('ChatManager', 'Failed to initialize chats', error as Error);
+            }
         };
         void load();
 
@@ -125,16 +155,19 @@ function useLazyMessageLoader(currentChatId: string | null, chats: Chat[], setCh
         const fetchMessages = async () => {
             try {
                 const messages = await window.electron.db.getMessages(currentChatId);
-                // Trim messages to prevent memory bloat
                 const trimmedMessages = trimMessages(messages as Message[]);
-                setChats(prev => prev.map(c => c.id === currentChatId ? { ...c, messages: trimmedMessages } : c));
+                setChats(prev => prev.map(c => {
+                    if (c.id !== currentChatId || c.messages.length > 0) {
+                        return c;
+                    }
+                    return { ...c, messages: trimmedMessages };
+                }));
             } catch (e) {
-                window.electron.log.error(`Failed to load messages for ${currentChatId}`, e as Error);
+                appLogger.error('ChatManager', `Failed to load messages for ${currentChatId}`, e as Error);
             }
         };
         void fetchMessages();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentChatId]);
+    }, [currentChatId, chats, setChats]);
 }
 
 export function useChatManager(options: UseChatManagerOptions) {
@@ -146,8 +179,8 @@ export function useChatManager(options: UseChatManagerOptions) {
     const [input, setInput] = useState('');
     const [contextTokens] = useState(0);
     const [systemMode, setSystemMode] = useState<'thinking' | 'agent' | 'fast'>('agent');
+    const [imageRequestCount, setImageRequestCount] = useState(1);
 
-    // Track previous chat ID for cleanup
     const prevChatIdRef = useRef<string | null>(null);
 
     const { prompts, createPrompt, deletePrompt, updatePrompt } = usePromptManager();
@@ -164,10 +197,8 @@ export function useChatManager(options: UseChatManagerOptions) {
     useChatInitialization(loadFolders, setChats);
     useLazyMessageLoader(currentChatId, chats, setChats);
 
-    // Cleanup: Trim messages in non-active chats when switching chats
     useEffect(() => {
         if (prevChatIdRef.current !== null && prevChatIdRef.current !== currentChatId) {
-            // Switched away from a chat - trim its messages to prevent memory bloat
             setChats(prev => prev.map(c =>
                 c.id === prevChatIdRef.current && c.messages.length > MAX_MESSAGES_IN_MEMORY
                     ? { ...c, messages: trimMessages(c.messages) }
@@ -232,7 +263,7 @@ export function useChatManager(options: UseChatManagerOptions) {
             const newChatDb = { id: newChatId, title: content.slice(0, 50), model: selectedModel, backend: selectedProvider as string, createdAt: timestamp, updatedAt: timestamp, isGenerating: true };
             const createResult = await window.electron.db.createChat(newChatDb);
             if (!createResult.success) {
-                window.electron.log.error('[useChatManager] Failed to create chat', createResult);
+                appLogger.error('ChatManager', '[useChatManager] Failed to create chat');
                 setChats(prev => prev.map(c => c.id === currentChatId ? { ...c, isGenerating: false } : c));
                 return;
             }
@@ -260,9 +291,12 @@ export function useChatManager(options: UseChatManagerOptions) {
             role: 'user',
             content: mergedContent,
             timestamp: new Date(timestamp),
-            images: imageInputs.length > 0 ? imageInputs : undefined
+            images: imageInputs.length > 0 ? imageInputs : undefined,
+            metadata: isImageOnlyModel(selectedModel)
+                ? { imageRequestCount }
+                : undefined
         };
-        if (!chatId) { throw new Error('Chat ID creation failed'); }
+        if (!chatId) { throw new Error('CHAT_ID_CREATION_FAILED'); }
         await window.electron.db.addMessage({ ...userMessage, chatId, timestamp, provider: selectedProvider, model: selectedModel });
         setChats(prev =>
             prev.map((c: Chat) =>
@@ -277,7 +311,7 @@ export function useChatManager(options: UseChatManagerOptions) {
         );
         setAttachments([]);
         void generateResponse(chatId, userMessage);
-    }, [input, attachments, selectedModel, isLoading, currentChatId, selectedProvider, generateResponse, setChats, setAttachments]);
+    }, [input, attachments, selectedModel, isLoading, currentChatId, selectedProvider, generateResponse, imageRequestCount, setChats, setAttachments]);
 
     const regenerateMessage = useCallback(
         async (assistantMessageId: string) => {
@@ -314,9 +348,9 @@ export function useChatManager(options: UseChatManagerOptions) {
         streamingReasoning, streamingSpeed, chatError, clearChatError, contextTokens, handleSend, stopGeneration, createNewChat, deleteChat, clearMessages,
         folders, createFolder, updateFolder, deleteFolder, moveChatToFolder, addMessage, prompts, createPrompt, deletePrompt, updatePrompt,
         isListening, startListening, stopListening, updateChat, togglePin, toggleFavorite, attachments, setAttachments, processFile, removeAttachment,
-        t, handleSpeak, systemMode, setSystemMode, regenerateMessage, bulkDeleteChats
+        t, handleSpeak, systemMode, setSystemMode, imageRequestCount, setImageRequestCount, regenerateMessage, bulkDeleteChats
     }), [chats, currentChatId, messages, displayMessages, searchTerm, input, isLoading, streamingReasoning, streamingSpeed, chatError, clearChatError, contextTokens,
         handleSend, stopGeneration, createNewChat, deleteChat, clearMessages, folders, createFolder, updateFolder, deleteFolder, moveChatToFolder,
         addMessage, prompts, createPrompt, deletePrompt, updatePrompt, isListening, startListening, stopListening, updateChat, togglePin, toggleFavorite,
-        attachments, setAttachments, processFile, removeAttachment, t, handleSpeak, systemMode, regenerateMessage, bulkDeleteChats]);
+        attachments, setAttachments, processFile, removeAttachment, t, handleSpeak, systemMode, imageRequestCount, regenerateMessage, bulkDeleteChats]);
 }

@@ -48,7 +48,7 @@ function normalizeWorkspaceCompatLookup(value?: string | null): string | undefin
 export const WORKSPACE_COMPAT_TARGET_VALUES = {
     RELATED_WORKSPACES: 'related-workspaces',
     WORKSPACE: 'workspace',
-    AUTOMATION_WORKFLOW: 'automation-workflow',
+    COUNCIL: 'council',
 } as const;
 
 /** Prior alias values still supported by compatibility layers. */
@@ -58,16 +58,11 @@ export const WORKSPACE_COMPAT_ALIAS_VALUES = {
     RELATED_PLURAL: joinSegments('-', RELATED_SEGMENT, LEGACY_PLURAL)
 } as const;
 
-/** Prior source values still seen in persisted state and compatibility tests. */
-export const WORKSPACE_COMPAT_SOURCE_VALUES = {
-    AUTOMATION_WORKFLOW: 'automation-workflow',
-} as const;
-
 /** Prior channel values still referenced by compatibility checks. */
 export const WORKSPACE_COMPAT_CHANNEL_VALUES = {
     SINGULAR_UPDATED: joinSegments(':', LEGACY_SINGULAR, UPDATED_SEGMENT),
-    AUTOMATION_WORKFLOW_HEALTH: joinSegments(':', WORKSPACE_COMPAT_SOURCE_VALUES.AUTOMATION_WORKFLOW, HEALTH_SEGMENT),
-    AUTOMATION_WORKFLOW_START_TASK: joinSegments(':', WORKSPACE_COMPAT_SOURCE_VALUES.AUTOMATION_WORKFLOW, START_TASK_SEGMENT),
+    COUNCIL_HEALTH: joinSegments(':', WORKSPACE_COMPAT_TARGET_VALUES.COUNCIL, HEALTH_SEGMENT),
+    COUNCIL_START_TASK: joinSegments(':', WORKSPACE_COMPAT_TARGET_VALUES.COUNCIL, START_TASK_SEGMENT),
 } as const;
 
 /** Prior schema/table/column/value literals retained for runtime compatibility. */
@@ -166,9 +161,8 @@ export function normalizeWorkspaceCompatSource(value?: string | null): string | 
         return undefined;
     }
 
-    return lookupValue === WORKSPACE_COMPAT_SOURCE_VALUES.AUTOMATION_WORKFLOW
-        || lookupValue === WORKSPACE_COMPAT_TARGET_VALUES.AUTOMATION_WORKFLOW
-        ? WORKSPACE_COMPAT_TARGET_VALUES.AUTOMATION_WORKFLOW
+    return lookupValue === WORKSPACE_COMPAT_TARGET_VALUES.COUNCIL
+        ? WORKSPACE_COMPAT_TARGET_VALUES.COUNCIL
         : trimmedValue;
 }
 

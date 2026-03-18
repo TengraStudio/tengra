@@ -85,7 +85,6 @@ describe('WorkspaceSettingsPanel', () => {
                 workspace={workspace}
                 onUpdate={vi.fn(async () => {})}
                 language={'en'}
-                availableAgents={[]}
                 onAddMount={vi.fn()}
                 onRemoveMount={vi.fn()}
             />

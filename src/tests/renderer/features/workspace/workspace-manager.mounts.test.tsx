@@ -1,5 +1,5 @@
 import { SSHProfileTestResult } from '@shared/types/ssh';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import React, { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -182,5 +182,59 @@ describe('useWorkspaceManager mount flows', () => {
             expect(screen.getByTestId('test-success').textContent).toBe('true');
         });
         expect(testProfile).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not emit render-phase update warnings when workspace props change', () => {
+        mountElectronMock();
+        const notify = vi.fn<(type: 'success' | 'error' | 'info', message: string) => void>();
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+        const { rerender } = renderHook(
+            ({ workspace }) =>
+                useWorkspaceManager({
+                    workspace,
+                    notify,
+                    logActivity: () => undefined,
+                    t: key => key,
+                }),
+            {
+                initialProps: {
+                    workspace: workspaceFixture,
+                },
+            }
+        );
+
+        rerender({
+            workspace: {
+                ...workspaceFixture,
+                mounts: [
+                    ...workspaceFixture.mounts,
+                    {
+                        id: 'mount-ssh',
+                        name: 'Remote',
+                        type: 'ssh',
+                        rootPath: '/srv/app',
+                        ssh: {
+                            host: '10.0.0.2',
+                            port: 22,
+                            username: 'agnes',
+                            authType: 'password',
+                            password: 'pw',
+                            privateKey: '',
+                            passphrase: '',
+                        },
+                    },
+                ],
+            },
+        });
+
+        const errorOutput = consoleErrorSpy.mock.calls
+            .flatMap(call => call.map(value => String(value)))
+            .join(' ');
+
+        expect(errorOutput).not.toContain('Cannot update a component');
+        expect(errorOutput).not.toContain('Too many re-renders');
+
+        consoleErrorSpy.mockRestore();
     });
 });

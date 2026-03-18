@@ -5,32 +5,37 @@ import { Workspace } from '@/types';
 export type WorkspaceSystemSeverity = 'error' | 'warning' | 'info';
 export type WorkspaceSystemSource = 'mount' | 'git' | 'task' | 'analysis' | 'terminal' | 'policy' | 'security' | 'toolchain';
 
+export interface LocalizedText {
+    key: string;
+    params?: Record<string, string | number>;
+}
+
 export interface WorkspaceStartupPreflightIssue {
     id: string;
     source: WorkspaceSystemSource;
     severity: WorkspaceSystemSeverity;
-    message: string;
-    fixAction: string;
+    message: LocalizedText;
+    fixAction: LocalizedText;
     blocking: boolean;
 }
 
 export interface WorkspaceRunbook {
     id: 'setup' | 'build' | 'test' | 'release';
-    label: string;
+    label: LocalizedText;
     command: string;
-    rollbackHint: string;
+    rollbackHint: LocalizedText;
 }
 
 export interface WorkspaceRunbookExecutionResult {
     success: boolean;
-    timeline: string[];
+    timeline: LocalizedText[];
     output: string;
-    rollbackHint: string;
+    rollbackHint: LocalizedText;
 }
 
 export interface WorkspaceSecurityPosture {
     risk: 'low' | 'medium' | 'high';
-    findings: string[];
+    findings: LocalizedText[];
     remediatedCount: number;
 }
 
@@ -51,8 +56,8 @@ interface ToolCheckDefinition {
     id: string;
     command: string;
     requiredWhen: (workspacePath: string) => Promise<boolean>;
-    missingMessage: string;
-    fixAction: string;
+    missingMessage: LocalizedText;
+    fixAction: LocalizedText;
 }
 
 const PYTHON_WORKSPACE_FILES = [
@@ -121,29 +126,29 @@ function getToolDefinitions(): ToolCheckDefinition[] {
             id: 'node',
             command: 'node',
             requiredWhen: async (workspacePath: string) => isToolRequiredForPath(workspacePath, 'package.json'),
-            missingMessage: 'Node.js is required for this workspace.',
-            fixAction: 'Install Node.js and ensure "node --version" works in your terminal.',
+            missingMessage: { key: 'workspace.issueBanner.preflightIssues.toolchain.nodeMissing.message' },
+            fixAction: { key: 'workspace.issueBanner.preflightIssues.toolchain.nodeMissing.fixAction' },
         },
         {
             id: 'npm',
             command: 'npm',
             requiredWhen: async (workspacePath: string) => isToolRequiredForPath(workspacePath, 'package.json'),
-            missingMessage: 'npm is required for this workspace.',
-            fixAction: 'Install npm (usually with Node.js) and ensure "npm --version" works.',
+            missingMessage: { key: 'workspace.issueBanner.preflightIssues.toolchain.npmMissing.message' },
+            fixAction: { key: 'workspace.issueBanner.preflightIssues.toolchain.npmMissing.fixAction' },
         },
         {
             id: 'python',
             command: 'python',
             requiredWhen: hasPythonWorkspaceFiles,
-            missingMessage: 'Python is required for this workspace.',
-            fixAction: 'Install Python and ensure "python --version" works in your terminal.',
+            missingMessage: { key: 'workspace.issueBanner.preflightIssues.toolchain.pythonMissing.message' },
+            fixAction: { key: 'workspace.issueBanner.preflightIssues.toolchain.pythonMissing.fixAction' },
         },
         {
             id: 'go',
             command: 'go',
             requiredWhen: async (workspacePath: string) => isToolRequiredForPath(workspacePath, 'go.mod'),
-            missingMessage: 'Go is required for this workspace.',
-            fixAction: 'Install Go and ensure "go version" works in your terminal.',
+            missingMessage: { key: 'workspace.issueBanner.preflightIssues.toolchain.goMissing.message' },
+            fixAction: { key: 'workspace.issueBanner.preflightIssues.toolchain.goMissing.fixAction' },
         },
     ];
 }
@@ -176,8 +181,8 @@ async function checkRequiredTools(workspacePath: string): Promise<WorkspaceStart
             id: 'toolchain-node-unpinned',
             source: 'toolchain',
             severity: 'warning',
-            message: 'Node runtime is not pinned for this workspace.',
-            fixAction: 'Add .nvmrc or .tool-versions to lock the Node version per workspace.',
+            message: { key: 'workspace.issueBanner.preflightIssues.toolchain.nodeUnpinned.message' },
+            fixAction: { key: 'workspace.issueBanner.preflightIssues.toolchain.nodeUnpinned.fixAction' },
             blocking: false,
         });
     }
@@ -190,15 +195,15 @@ async function checkRequiredTools(workspacePath: string): Promise<WorkspaceStart
             id: 'toolchain-python-unpinned',
             source: 'toolchain',
             severity: 'warning',
-            message: 'Python runtime is not pinned for this workspace.',
-            fixAction: 'Add .python-version or .tool-versions to avoid environment drift.',
+            message: { key: 'workspace.issueBanner.preflightIssues.toolchain.pythonUnpinned.message' },
+            fixAction: { key: 'workspace.issueBanner.preflightIssues.toolchain.pythonUnpinned.fixAction' },
             blocking: false,
         });
     }
     return issues;
 }
 
-function toRisk(findings: string[]): 'low' | 'medium' | 'high' {
+function toRisk(findings: LocalizedText[]): 'low' | 'medium' | 'high' {
     if (findings.length >= 3) {
         return 'high';
     }
@@ -224,25 +229,40 @@ async function buildRunbooks(workspacePath: string, workspace: Workspace): Promi
     if (setupCommand) {
         runbooks.push({
             id: 'setup',
-            label: 'Setup',
+            label: { key: 'workspace.issueBanner.runbookLabels.setup' },
             command: setupCommand,
-            rollbackHint: 'Delete generated dependencies and lock updates if setup introduced regressions.',
+            rollbackHint: { key: 'workspace.issueBanner.runbookRollbackHints.setup' },
         });
     }
     if (workspace.buildConfig?.buildCommand) {
-        runbooks.push({ id: 'build', label: 'Build', command: workspace.buildConfig.buildCommand, rollbackHint: 'Revert build config or generated artifacts to the last known good commit.' });
+        runbooks.push({
+            id: 'build',
+            label: { key: 'workspace.issueBanner.runbookLabels.build' },
+            command: workspace.buildConfig.buildCommand,
+            rollbackHint: { key: 'workspace.issueBanner.runbookRollbackHints.build' }
+        });
     }
     if (workspace.buildConfig?.testCommand) {
-        runbooks.push({ id: 'test', label: 'Test', command: workspace.buildConfig.testCommand, rollbackHint: 'Rollback recent source/config changes that introduced failing tests.' });
+        runbooks.push({
+            id: 'test',
+            label: { key: 'workspace.issueBanner.runbookLabels.test' },
+            command: workspace.buildConfig.testCommand,
+            rollbackHint: { key: 'workspace.issueBanner.runbookRollbackHints.test' }
+        });
     }
     if (workspace.devServer?.command) {
-        runbooks.push({ id: 'release', label: 'Release Prep', command: workspace.devServer.command, rollbackHint: 'Stop release workflow, restore previous deployment config, and rerun validation checks.' });
+        runbooks.push({
+            id: 'release',
+            label: { key: 'workspace.issueBanner.runbookLabels.release' },
+            command: workspace.devServer.command,
+            rollbackHint: { key: 'workspace.issueBanner.runbookRollbackHints.release' }
+        });
     }
     return runbooks;
 }
 
 async function collectSecurityPosture(workspacePath: string): Promise<WorkspaceSecurityPosture> {
-    const findings: string[] = [];
+    const findings: LocalizedText[] = [];
     const hasEnv = await isToolRequiredForPath(workspacePath, '.env');
     const hasEnvLocal = await isToolRequiredForPath(workspacePath, '.env.local');
     const hasPackageJson = await isToolRequiredForPath(workspacePath, 'package.json');
@@ -250,10 +270,10 @@ async function collectSecurityPosture(workspacePath: string): Promise<WorkspaceS
         || await isToolRequiredForPath(workspacePath, 'pnpm-lock.yaml')
         || await isToolRequiredForPath(workspacePath, 'yarn.lock');
     if (hasEnv || hasEnvLocal) {
-        findings.push('Environment files detected. Ensure sensitive keys are excluded from VCS.');
+        findings.push({ key: 'workspace.issueBanner.securityFindings.envFilesDetected' });
     }
     if (hasPackageJson && !hasLock) {
-        findings.push('Dependency lock file is missing; dependency supply chain risk is higher.');
+        findings.push({ key: 'workspace.issueBanner.securityFindings.lockFileMissing' });
     }
     return {
         risk: toRisk(findings),
@@ -267,15 +287,19 @@ export async function runWorkspaceStartupPreflight(
     options?: WorkspaceStartupPreflightOptions
 ): Promise<WorkspaceStartupPreflightResult> {
     const issues: WorkspaceStartupPreflightIssue[] = [];
-    const fallbackPosture: WorkspaceSecurityPosture = { risk: 'medium', findings: ['Security posture could not be fully evaluated.'], remediatedCount: 0 };
+    const fallbackPosture: WorkspaceSecurityPosture = {
+        risk: 'medium',
+        findings: [{ key: 'workspace.issueBanner.securityFindings.evaluationUnavailable' }],
+        remediatedCount: 0
+    };
     const includeNonBlockingChecks = options?.includeNonBlockingChecks ?? true;
     if (!workspace.path) {
         issues.push({
             id: 'missing-path',
             source: 'mount',
             severity: 'error',
-            message: 'Workspace path is missing.',
-            fixAction: 'Update workspace settings and set a valid root path before opening.',
+            message: { key: 'workspace.issueBanner.preflightIssues.mount.missingPath.message' },
+            fixAction: { key: 'workspace.issueBanner.preflightIssues.mount.missingPath.fixAction' },
             blocking: true,
         });
         return {
@@ -295,8 +319,11 @@ export async function runWorkspaceStartupPreflight(
             id: 'path-not-found',
             source: 'mount',
             severity: 'error',
-            message: `Workspace path does not exist: ${workspace.path}`,
-            fixAction: 'Reconnect the drive or update the workspace path in workspace settings.',
+            message: {
+                key: 'workspace.issueBanner.preflightIssues.mount.pathNotFound.message',
+                params: { path: workspace.path }
+            },
+            fixAction: { key: 'workspace.issueBanner.preflightIssues.mount.pathNotFound.fixAction' },
             blocking: true,
         });
     }
@@ -305,8 +332,8 @@ export async function runWorkspaceStartupPreflight(
             id: 'multi-root-label-missing',
             source: 'mount',
             severity: 'warning',
-            message: 'One or more mounts are missing labels.',
-            fixAction: 'Set a distinct name for each mount to keep multi-root explorer labels clear.',
+            message: { key: 'workspace.issueBanner.preflightIssues.mount.multiRootLabelMissing.message' },
+            fixAction: { key: 'workspace.issueBanner.preflightIssues.mount.multiRootLabelMissing.fixAction' },
             blocking: false,
         });
     }
@@ -317,8 +344,8 @@ export async function runWorkspaceStartupPreflight(
             id: 'terminal-unavailable',
             source: 'terminal',
             severity: 'error',
-            message: 'No terminal backend is available.',
-            fixAction: 'Install or enable a terminal backend (PowerShell, cmd, or other supported shell).',
+            message: { key: 'workspace.issueBanner.preflightIssues.terminal.unavailable.message' },
+            fixAction: { key: 'workspace.issueBanner.preflightIssues.terminal.unavailable.fixAction' },
             blocking: true,
         });
     }
@@ -335,8 +362,8 @@ export async function runWorkspaceStartupPreflight(
                 id: 'indexing-disabled',
                 source: 'analysis',
                 severity: 'warning',
-                message: 'Background indexing is disabled.',
-                fixAction: 'Enable indexing in workspace settings for workspace intelligence and navigation.',
+                message: { key: 'workspace.issueBanner.preflightIssues.analysis.indexingDisabled.message' },
+                fixAction: { key: 'workspace.issueBanner.preflightIssues.analysis.indexingDisabled.fixAction' },
                 blocking: false,
             });
         }
@@ -346,8 +373,8 @@ export async function runWorkspaceStartupPreflight(
                 id: 'git-repo-missing',
                 source: 'git',
                 severity: 'warning',
-                message: 'This folder is not a Git repository.',
-                fixAction: 'Run "git init" or clone the repository before opening workspace workflows.',
+                message: { key: 'workspace.issueBanner.preflightIssues.git.repositoryMissing.message' },
+                fixAction: { key: 'workspace.issueBanner.preflightIssues.git.repositoryMissing.fixAction' },
                 blocking: false,
             });
         } else {
@@ -358,8 +385,11 @@ export async function runWorkspaceStartupPreflight(
                     id: 'policy-main-dirty',
                     source: 'policy',
                     severity: 'warning',
-                    message: `Policy warning: working tree is dirty on protected branch ${branchInfo.branch}.`,
-                    fixAction: 'Commit to a feature branch, then merge through review.',
+                    message: {
+                        key: 'workspace.issueBanner.preflightIssues.policy.mainDirty.message',
+                        params: { branch: branchInfo.branch }
+                    },
+                    fixAction: { key: 'workspace.issueBanner.preflightIssues.policy.mainDirty.fixAction' },
                     blocking: false,
                 });
             }
@@ -389,21 +419,36 @@ export async function executeWorkspaceRunbook(
     workspace: Workspace,
     runbook: WorkspaceRunbook
 ): Promise<WorkspaceRunbookExecutionResult> {
-    const timeline = [`Queued ${runbook.label} runbook`];
+    const timeline: LocalizedText[] = [{
+        key: 'workspace.issueBanner.runbookTimelineMessages.queued'
+    }];
     const { command, args } = splitCommand(runbook.command);
     if (!workspace.path || !command) {
         return {
             success: false,
-            timeline: [...timeline, 'Failed before execution'],
-            output: 'Invalid workspace path or runbook command.',
+            timeline: [
+                ...timeline,
+                { key: 'workspace.issueBanner.runbookTimelineMessages.failedBeforeExecution' },
+                { key: 'workspace.issueBanner.runbookTimelineMessages.invalidPathOrCommand' }
+            ],
+            output: '',
             rollbackHint: runbook.rollbackHint,
         };
     }
     return workspaceOperationsOrchestrator.enqueue(async () => {
-        timeline.push(`Started command: ${runbook.command}`);
+        timeline.push({
+            key: 'workspace.issueBanner.runbookTimelineMessages.startedCommand',
+            params: { command: runbook.command }
+        });
         const result = await window.electron.runCommand(command, args, workspace.path);
         const success = result.code === 0;
-        timeline.push(success ? 'Completed successfully' : `Failed with code ${result.code}`);
+        timeline.push(success
+            ? { key: 'workspace.issueBanner.runbookTimelineMessages.completedSuccessfully' }
+            : {
+                key: 'workspace.issueBanner.runbookTimelineMessages.failedWithCode',
+                params: { code: result.code }
+            }
+        );
         return {
             success,
             timeline,

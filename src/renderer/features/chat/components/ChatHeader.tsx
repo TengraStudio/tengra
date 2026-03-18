@@ -42,14 +42,14 @@ export const ChatHeader = memo(({
                         placeholder={t('chat.searchMessages')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-white/5 border border-white/5 rounded-xl pl-10 pr-4 py-1.5 text-sm focus:outline-none focus:border-primary/30 transition-all placeholder:text-muted-foreground/30"
+                        className="w-full bg-foreground/5 border border-border/10 rounded-xl pl-10 pr-4 py-1.5 text-sm focus:outline-none focus:border-primary/30 transition-all placeholder:text-muted-foreground/30"
                         aria-label={t('chat.searchMessages')}
                     />
                     {searchTerm && (
                         <button
                             onClick={() => setSearchTerm('')}
                             className="absolute right-3 top-1/2 -translate-y-1/2 hover:text-foreground text-muted-foreground/40"
-                            aria-label={t('common.clear') || 'Clear search'}
+                            aria-label={t('common.clear')}
                         >
                             <X className="w-3.5 h-3.5" />
                         </button>
@@ -59,7 +59,7 @@ export const ChatHeader = memo(({
                     <button
                         onClick={onExport}
                         className="text-muted-foreground/50 hover:text-foreground transition-colors p-2"
-                        title={t('export.title') || 'Export Chat'}
+                        title={t('chat.exportChat')}
                     >
                         <Download className="w-5 h-5" />
                     </button>

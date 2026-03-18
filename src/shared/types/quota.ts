@@ -45,6 +45,7 @@ export interface QuotaResponse {
     planType?: string;
     accountId?: string;
     email?: string;
+    isActive?: boolean;
     usageSource?: 'openai' | 'anthropic' | 'copilot' | 'local' | 'none' | 'chatgpt';
     copilot?: CopilotQuota;
     claudeQuota?: ClaudeQuota;
@@ -56,6 +57,7 @@ export interface ClaudeQuota {
     sevenDay?: { utilization: number; resetsAt: string };
     accountId?: string;
     email?: string;
+    isActive?: boolean;
     error?: string;
 }
 

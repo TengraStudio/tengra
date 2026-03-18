@@ -252,7 +252,7 @@ const OllamaSection = React.memo(({
             <div className="rounded-xl border border-border bg-card overflow-hidden">
                 <div className="p-4 flex items-center gap-4">
                     <div className="h-12 w-12 rounded-xl bg-muted/50 flex items-center justify-center overflow-hidden shrink-0">
-                        <img src={ollamaLogo} alt="Ollama" className="h-7 w-7 object-contain theme-logo-invert" />
+                        <img src={ollamaLogo} alt={t('accounts.providers.ollama.name')} className="h-7 w-7 object-contain theme-logo-invert" />
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="text-sm font-bold text-foreground">{t('accounts.providers.ollama.name')}</div>
@@ -338,7 +338,7 @@ const NvidiaSection = React.memo(({
     return (
         <section className="space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                {t('accounts.categories.aiProviders')} (NVIDIA)
+                {t('accounts.categories.aiProvidersNvidia')}
             </h3>
             <div className="rounded-xl border border-border bg-card overflow-hidden">
                 <div className="p-4 flex items-center gap-4">

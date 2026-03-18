@@ -13,7 +13,7 @@ const mockExecCallback = vi.fn();
 const mockSpawn = vi.fn();
 
 vi.mock('child_process', () => ({
-    exec: vi.fn((_cmd: string, _opts: unknown, cb?: (...args: unknown[]) => void) => {
+    exec: vi.fn((_cmd: string, _opts: TestValue, cb?: (...args: TestValue[]) => void) => {
         if (cb) {
             mockExecCallback(cb);
         }

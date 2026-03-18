@@ -1,6 +1,10 @@
 import { Container, Scope } from '@main/core/container';
 import { beforeEach,describe, expect, it, vi } from 'vitest';
 
+interface NamedDependency {
+    name: string;
+}
+
 describe('Container', () => {
     let container: Container;
 
@@ -31,7 +35,12 @@ describe('Container', () => {
 
     it('should resolve dependencies', () => {
         const depFactory = () => ({ name: 'dependency' });
-        const serviceFactory = (dep: any) => ({ depName: dep.name });
+        const serviceFactory = (dep: RuntimeValue) => {
+            if (typeof dep === 'object' && dep && 'name' in dep) {
+                return { depName: (dep as NamedDependency).name };
+            }
+            throw new Error('Dependency name is missing');
+        };
 
         container.register('dep', depFactory);
         container.register('service', serviceFactory, ['dep']);

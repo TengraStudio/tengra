@@ -131,11 +131,11 @@ export function isTypingElement(target: EventTarget | null): boolean {
     );
 }
 
-export function sanitizeShortcutBindings(raw: unknown): Partial<TerminalShortcutBindings> {
+export function sanitizeShortcutBindings(raw: RendererDataValue): Partial<TerminalShortcutBindings> {
     if (!raw || typeof raw !== 'object') {
         return {};
     }
-    const candidate = raw as Record<string, unknown>;
+    const candidate = raw as Record<string, RendererDataValue>;
     const sanitized: Partial<TerminalShortcutBindings> = {};
     Object.entries(candidate).forEach(([key, value]) => {
         if (!isTerminalShortcutAction(key) || typeof value !== 'string') {
@@ -159,8 +159,8 @@ export function parseShortcutStorage(raw: string | null): {
     }
     try {
         const parsed = JSON.parse(raw) as {
-            preset?: unknown;
-            bindings?: unknown;
+            preset?: RendererDataValue;
+            bindings?: RendererDataValue;
         };
         const preset =
             typeof parsed.preset === 'string' && parsed.preset in TERMINAL_SHORTCUT_PRESETS

@@ -1,7 +1,7 @@
 import { Language } from '@renderer/i18n';
 import { terminalGetBackendsResponseSchema } from '@shared/schemas/terminal.schema';
 import type { TerminalIpcContract } from '@shared/terminal-ipc';
-import { Activity, Database, Download, Globe, RefreshCw } from 'lucide-react';
+import { Database, Download, Globe, RefreshCw } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { SelectDropdown } from '@/components/ui/SelectDropdown';
@@ -100,19 +100,19 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
             terminalBackends.length > 0
                 ? terminalBackends
                 : [
-                    { id: 'node-pty', name: 'Integrated Terminal', available: true },
-                    { id: 'windows-terminal', name: 'Windows Terminal', available: true },
-                    { id: 'kitty', name: 'Kitty', available: true },
-                    { id: 'ghostty', name: 'Ghostty', available: true },
-                    { id: 'alacritty', name: 'Alacritty', available: true },
-                    { id: 'warp', name: 'Warp', available: true },
+                    { id: 'node-pty', name: t('general.terminalBackendIntegrated'), available: true },
+                    { id: 'windows-terminal', name: t('general.terminalBackendWindowsTerminal'), available: true },
+                    { id: 'kitty', name: t('general.terminalBackendKitty'), available: true },
+                    { id: 'ghostty', name: t('general.terminalBackendGhostty'), available: true },
+                    { id: 'alacritty', name: t('general.terminalBackendAlacritty'), available: true },
+                    { id: 'warp', name: t('general.terminalBackendWarp'), available: true },
                 ];
 
         return options.map(backend => ({
             value: backend.id,
-            label: backend.available ? backend.name : `${backend.name} (Unavailable)`,
+            label: backend.available ? backend.name : `${backend.name} ${t('general.terminalBackendUnavailable')}`,
         }));
-    }, [terminalBackends]);
+    }, [t, terminalBackends]);
 
     const updateAutoUpdate = (patch: Partial<AppSettings['autoUpdate']>) => {
         if (!settings) {
@@ -226,7 +226,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                     </div>
                     <div className="space-y-2 md:col-span-2">
                         <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
-                            {t('workspaceDashboard.terminal')} Backend
+                            {t('general.terminalBackend')}
                         </label>
                         <SelectDropdown
                             value={settings?.general.defaultTerminalBackend ?? 'node-pty'}
@@ -484,40 +484,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                 </div>
             </div>
 
-            {/* Privacy & Safety */}
-            <div className="premium-glass p-8 space-y-8">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-2xl bg-destructive/10 text-destructive border border-destructive/20 shadow-lg shadow-rose-500/10">
-                        <Activity className="w-6 h-6" />
-                    </div>
-                    <div>
-                        <div className="text-base font-black text-foreground uppercase tracking-tight">
-                            {t('general.privacySafety')}
-                        </div>
-                        <div className="text-xs font-medium text-muted-foreground/70">
-                            {t('general.privacySafetyDesc')}
-                        </div>
-                    </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <ToggleSwitch
-                        enabled={settings?.crashReporting?.enabled ?? false}
-                        onToggle={() => {
-                            if (!settings) {
-                                return;
-                            }
-                            const current = settings.crashReporting ?? { enabled: false };
-                            void handleSave({
-                                ...settings,
-                                crashReporting: { enabled: !current.enabled },
-                            });
-                        }}
-                        title={t('general.crashReporting')}
-                        description={t('general.crashReportingDesc')}
-                    />
-                </div>
-            </div>
         </div>
     );
 };

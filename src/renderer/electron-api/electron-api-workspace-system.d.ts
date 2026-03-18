@@ -133,6 +133,7 @@ export interface ElectronApiWorkspaceSystemDomain {
     // Workspace System
     workspace: {
         analyze: (rootPath: string, workspaceId: string) => Promise<WorkspaceAnalysis>;
+        analyzeSummary: (rootPath: string, workspaceId?: string) => Promise<WorkspaceAnalysis>;
         generateLogo: (
             workspacePath: string,
             options: { prompt: string; style: string; model: string; count: number }
@@ -156,6 +157,8 @@ export interface ElectronApiWorkspaceSystemDomain {
         }>;
         watch: (rootPath: string) => Promise<boolean>;
         unwatch: (rootPath: string) => Promise<boolean>;
+        setActive: (rootPath: string | null) => Promise<{ rootPath: string | null }>;
+        clearActive: (rootPath?: string) => Promise<{ rootPath: string | null }>;
         getEnv: (rootPath: string) => Promise<Record<string, string>>;
         saveEnv: (rootPath: string, vars: Record<string, string>) => Promise<{ success: boolean }>;
         onFileChange: (
@@ -166,6 +169,7 @@ export interface ElectronApiWorkspaceSystemDomain {
     // Workspace System
     workspace: {
         analyze: (rootPath: string, workspaceId: string) => Promise<WorkspaceAnalysis>;
+        analyzeSummary: (rootPath: string, workspaceId?: string) => Promise<WorkspaceAnalysis>;
         generateLogo: (
             workspacePath: string,
             options: { prompt: string; style: string; model: string; count: number }
@@ -189,6 +193,8 @@ export interface ElectronApiWorkspaceSystemDomain {
         }>;
         watch: (rootPath: string) => Promise<boolean>;
         unwatch: (rootPath: string) => Promise<boolean>;
+        setActive: (rootPath: string | null) => Promise<{ rootPath: string | null }>;
+        clearActive: (rootPath?: string) => Promise<{ rootPath: string | null }>;
         getEnv: (rootPath: string) => Promise<Record<string, string>>;
         saveEnv: (rootPath: string, vars: Record<string, string>) => Promise<{ success: boolean }>;
         onFileChange: (
@@ -229,6 +235,8 @@ export interface ElectronApiWorkspaceSystemDomain {
     // Proxy
     performance: {
         getMemoryStats: () => Promise<IpcValue>;
+        getProcessMetrics: () => Promise<IpcValue>;
+        getStartupMetrics: () => Promise<IpcValue>;
         detectLeak: () => Promise<IpcValue>;
         triggerGC: () => Promise<IpcValue>;
         getDashboard: () => Promise<IpcValue>;

@@ -1,6 +1,5 @@
 import { LifecycleAware } from '@main/core/container';
 import { appLogger } from '@main/logging/logger';
-import { AppError, JsonValue } from '@shared/types/common';
 
 /**
  * Abstract base class for all application services.
@@ -31,8 +30,9 @@ export abstract class BaseService implements LifecycleAware {
      * @param message - The log message.
      * @param args - Additional context values or errors.
      */
-    protected logInfo(message: string, ...args: (JsonValue | Error | AppError | undefined)[]): void {
-        appLogger.info(this.name, message, ...args);
+    protected logInfo<T>(message: string, ...args: readonly T[]): void {
+        const payload = args.length <= 1 ? args[0] : args;
+        appLogger.info(this.name, message, payload);
     }
 
     /**
@@ -40,8 +40,8 @@ export abstract class BaseService implements LifecycleAware {
      * @param message - The log message.
      * @param error - Optional error object for stack trace context.
      */
-    protected logError(message: string, error?: unknown): void {
-        appLogger.error(this.name, message, error as Error);
+    protected logError<T>(message: string, error?: T): void {
+        appLogger.error(this.name, message, error);
     }
 
     /**
@@ -49,8 +49,9 @@ export abstract class BaseService implements LifecycleAware {
      * @param message - The log message.
      * @param args - Additional context values or errors.
      */
-    protected logWarn(message: string, ...args: (JsonValue | Error | AppError | undefined)[]): void {
-        appLogger.warn(this.name, message, ...args);
+    protected logWarn<T>(message: string, ...args: readonly T[]): void {
+        const payload = args.length <= 1 ? args[0] : args;
+        appLogger.warn(this.name, message, payload);
     }
 
     /**
@@ -58,7 +59,8 @@ export abstract class BaseService implements LifecycleAware {
      * @param message - The log message.
      * @param args - Additional context values or errors.
      */
-    protected logDebug(message: string, ...args: (JsonValue | Error | AppError | undefined)[]): void {
-        appLogger.debug(this.name, message, ...args);
+    protected logDebug<T>(message: string, ...args: readonly T[]): void {
+        const payload = args.length <= 1 ? args[0] : args;
+        appLogger.debug(this.name, message, payload);
     }
 }

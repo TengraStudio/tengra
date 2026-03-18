@@ -43,7 +43,7 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
         displayMessages, searchTerm, setSearchTerm, setInput,
         streamingReasoning, streamingSpeed, isLoading,
         speakingMessageId, handleSpeak, handleStopSpeak, regenerateMessage,
-        chatError, clearChatError
+        chatError, clearChatError, chats, currentChatId, handleSend
     } = useChat();
 
     const { language } = useAuth();
@@ -53,7 +53,6 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
     const virtuosoRef = useRef<VirtuosoHandle>(null);
 
     const [showExportModal, setShowExportModal] = React.useState(false);
-    const { chats, currentChatId, handleSend } = useChat();
     const activeChat = React.useMemo(() => chats.find(c => c.id === currentChatId), [chats, currentChatId]);
 
     const handleErrorRetry = useCallback(() => {
@@ -74,11 +73,7 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
     };
 
     return (
-        <motion.div
-            key="chat"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+        <div
             data-testid="chat-view"
             className="h-full flex flex-col overflow-hidden"
         >
@@ -160,7 +155,7 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
                     messages={displayMessages}
                 />
             )}
-        </motion.div>
+        </div>
     );
 });
 

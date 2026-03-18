@@ -24,10 +24,10 @@ import type {
 
 export interface ElectronApiModelsMemoryDomain {
     modelDownloader: {
-        start: (request: Record<string, unknown>) => Promise<unknown>;
-        pause: (downloadId: string) => Promise<unknown>;
-        resume: (downloadId: string) => Promise<unknown>;
-        cancel: (downloadId: string) => Promise<unknown>;
+        start: (request: Record<string, RendererDataValue>) => Promise<RendererDataValue>;
+        pause: (downloadId: string) => Promise<RendererDataValue>;
+        resume: (downloadId: string) => Promise<RendererDataValue>;
+        cancel: (downloadId: string) => Promise<RendererDataValue>;
     };
 
     // llama.cpp
@@ -115,16 +115,16 @@ export interface ElectronApiModelsMemoryDomain {
             height: number;
             steps: number;
             cfgScale: number;
-            provider?: 'antigravity' | 'ollama' | 'sd-webui' | 'comfyui' | 'pollinations' | 'sd-cpp';
-        }) => Promise<unknown>;
+            provider?: 'antigravity' | 'ollama' | 'sd-webui' | 'comfyui' | 'sd-cpp';
+        }) => Promise<RendererDataValue>;
         deletePreset: (id: string) => Promise<boolean>;
         exportPresetShare: (id: string) => Promise<string>;
-        importPresetShare: (code: string) => Promise<unknown>;
+        importPresetShare: (code: string) => Promise<RendererDataValue>;
         listWorkflowTemplates: () => Promise<Array<{
             id: string;
             name: string;
             description?: string;
-            workflow: Record<string, unknown>;
+            workflow: Record<string, RendererDataValue>;
             createdAt: number;
             updatedAt: number;
         }>>;
@@ -132,11 +132,11 @@ export interface ElectronApiModelsMemoryDomain {
             id?: string;
             name: string;
             description?: string;
-            workflow: Record<string, unknown>;
-        }) => Promise<unknown>;
+            workflow: Record<string, RendererDataValue>;
+        }) => Promise<RendererDataValue>;
         deleteWorkflowTemplate: (id: string) => Promise<boolean>;
         exportWorkflowTemplateShare: (id: string) => Promise<string>;
-        importWorkflowTemplateShare: (code: string) => Promise<unknown>;
+        importWorkflowTemplateShare: (code: string) => Promise<RendererDataValue>;
         schedule: (payload: {
             runAt: number;
             priority?: 'low' | 'normal' | 'high';
@@ -151,10 +151,10 @@ export interface ElectronApiModelsMemoryDomain {
                 seed?: number;
                 count?: number;
             };
-        }) => Promise<unknown>;
-        listSchedules: () => Promise<unknown[]>;
+        }) => Promise<RendererDataValue>;
+        listSchedules: () => Promise<RendererDataValue[]>;
         cancelSchedule: (id: string) => Promise<boolean>;
-        compare: (ids: string[]) => Promise<unknown>;
+        compare: (ids: string[]) => Promise<RendererDataValue>;
         exportComparison: (payload: { ids: string[]; format?: 'json' | 'csv' }) => Promise<string>;
         shareComparison: (ids: string[]) => Promise<string>;
         batchGenerate: (requests: Array<{
@@ -231,8 +231,8 @@ export interface ElectronApiModelsMemoryDomain {
         getFiles: (
             modelId: string
         ) => Promise<{ path: string; size: number; oid: string; quantization: string }[]>;
-        getModelPreview: (modelId: string) => Promise<unknown>;
-        compareModels: (modelIds: string[]) => Promise<unknown>;
+        getModelPreview: (modelId: string) => Promise<RendererDataValue>;
+        compareModels: (modelIds: string[]) => Promise<RendererDataValue>;
         validateCompatibility: (
             file: { path: string; size: number; oid?: string; quantization: string },
             availableRamGB?: number,
@@ -297,8 +297,8 @@ export interface ElectronApiModelsMemoryDomain {
             pinned?: boolean;
             metadata?: { architecture?: string; contextLength?: number };
         }>>;
-        registerModelVersion: (modelId: string, filePath: string, notes?: string) => Promise<unknown>;
-        compareModelVersions: (modelId: string, leftVersionId: string, rightVersionId: string) => Promise<unknown>;
+        registerModelVersion: (modelId: string, filePath: string, notes?: string) => Promise<RendererDataValue>;
+        compareModelVersions: (modelId: string, leftVersionId: string, rightVersionId: string) => Promise<RendererDataValue>;
         rollbackModelVersion: (modelId: string, versionId: string, targetPath: string) => Promise<{ success: boolean; error?: string }>;
         pinModelVersion: (modelId: string, versionId: string, pinned: boolean) => Promise<{ success: boolean }>;
         getVersionNotifications: (modelId: string) => Promise<string[]>;
@@ -313,13 +313,13 @@ export interface ElectronApiModelsMemoryDomain {
             datasetPath: string,
             outputPath: string,
             options?: { epochs?: number; learningRate?: number }
-        ) => Promise<unknown>;
-        listFineTuneJobs: (modelId?: string) => Promise<unknown[]>;
-        getFineTuneJob: (jobId: string) => Promise<unknown>;
+        ) => Promise<RendererDataValue>;
+        listFineTuneJobs: (modelId?: string) => Promise<RendererDataValue[]>;
+        getFineTuneJob: (jobId: string) => Promise<RendererDataValue>;
         cancelFineTuneJob: (jobId: string) => Promise<{ success: boolean }>;
-        evaluateFineTuneJob: (jobId: string) => Promise<unknown>;
+        evaluateFineTuneJob: (jobId: string) => Promise<RendererDataValue>;
         exportFineTunedModel: (jobId: string, exportPath: string) => Promise<{ success: boolean; error?: string }>;
-        onFineTuneProgress: (callback: (job: unknown) => void) => () => void;
+        onFineTuneProgress: (callback: (job: RendererDataValue) => void) => () => void;
         downloadFile: (
             url: string,
             outputPath: string,

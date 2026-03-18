@@ -15,7 +15,7 @@ interface UseWorkspaceManagerProps {
     workspace: Workspace;
     notify: (type: 'success' | 'error' | 'info', message: string) => void;
     logActivity: (title: string, detail?: string) => void;
-    t: (key: string) => string;
+    t: (key: string, options?: Record<string, string | number>) => string;
 }
 
 interface FileOpenEntry {
@@ -26,55 +26,36 @@ interface FileOpenEntry {
     initialLine?: number;
 }
 
+function buildWorkspaceMounts(workspace: Workspace): WorkspaceMount[] {
+    if (Array.isArray(workspace.mounts) && workspace.mounts.length > 0) {
+        return workspace.mounts;
+    }
+    return workspace.path
+        ? [{ id: `local-${workspace.id}`, name: 'Local', type: 'local', rootPath: workspace.path }]
+        : [];
+}
+
+function areMountListsEqual(left: WorkspaceMount[], right: WorkspaceMount[]): boolean {
+    return JSON.stringify(left) === JSON.stringify(right);
+}
+
 // Helper hook for mount state initialization and sync
 function useMountState(workspace: Workspace): [WorkspaceMount[], (mounts: WorkspaceMount[]) => void] {
-    const [mounts, setMounts] = useState<WorkspaceMount[]>(() => {
-        if (Array.isArray(workspace.mounts) && workspace.mounts.length > 0) {
-            return workspace.mounts;
-        }
-        return workspace.path
-            ? [{ id: `local-${workspace.id}`, name: 'Local', type: 'local', rootPath: workspace.path }]
-            : [];
-    });
-    const [prevWorkspaceData, setPrevWorkspaceData] = useState({
-        id: workspace.id,
-        mounts: workspace.mounts,
-        path: workspace.path,
-    });
-
-    // Adjust state during render when props change (React recommended pattern)
-    if (
-        workspace.id !== prevWorkspaceData.id ||
-        workspace.mounts !== prevWorkspaceData.mounts ||
-        workspace.path !== prevWorkspaceData.path
-    ) {
-        setPrevWorkspaceData({ id: workspace.id, mounts: workspace.mounts, path: workspace.path });
-        const nextMounts: WorkspaceMount[] =
-            Array.isArray(workspace.mounts) && workspace.mounts.length > 0
-                ? workspace.mounts
-                : workspace.path
-                    ? [
-                        {
-                            id: `local-${workspace.id}`,
-                            name: 'Local',
-                            type: 'local',
-                            rootPath: workspace.path,
-                        },
-                    ]
-                    : [];
-
-        if (JSON.stringify(nextMounts) !== JSON.stringify(mounts)) {
-            setMounts(nextMounts);
-        }
-    }
-
-    return [mounts, setMounts];
+    const [mounts, setMounts] = useState<WorkspaceMount[]>(() => buildWorkspaceMounts(workspace));
+    return [
+        mounts,
+        nextMounts => {
+            setMounts(currentMounts =>
+                areMountListsEqual(currentMounts, nextMounts) ? currentMounts : nextMounts
+            );
+        },
+    ];
 }
 
 // Helper hook for SSH operations
 function useSSHOperations(
     notify: (type: 'success' | 'error' | 'info', message: string) => void,
-    t: (key: string) => string
+    t: (key: string, options?: Record<string, string | number>) => string
 ) {
     const MAX_CONNECT_RETRIES = 3;
     const INITIAL_BACKOFF_MS = 400;
@@ -129,7 +110,7 @@ function useSSHOperations(
                 });
                 if (result.success) {
                     if (attempt > 1) {
-                        notify('info', `SSH connected after ${attempt} attempts.`);
+                        notify('info', t('workspace.notifications.sshConnectedAfterAttempts', { count: attempt }));
                     }
                     return true;
                 }
@@ -139,7 +120,10 @@ function useSSHOperations(
                     ? `${result.error ?? t('errors.unexpected')} ${diagnosticHint}`
                     : result.error ?? t('errors.unexpected');
                 if (attempt < MAX_CONNECT_RETRIES) {
-                    notify('info', `SSH connect retry ${attempt}/${MAX_CONNECT_RETRIES - 1}...`);
+                    notify('info', t('workspace.notifications.sshConnectRetry', {
+                        attempt,
+                        max: MAX_CONNECT_RETRIES - 1
+                    }));
                     await waitFor(backoffMs);
                     backoffMs *= 2;
                 }
@@ -168,7 +152,8 @@ function extractContentFromResult(result: ServiceResponse<string>): string {
 async function readImageFile(
     mount: WorkspaceMount,
     filePath: string,
-    notify: (type: 'success' | 'error' | 'info', message: string) => void
+    notify: (type: 'success' | 'error' | 'info', message: string) => void,
+    t: (key: string, options?: Record<string, string | number>) => string
 ): Promise<{
     content: string;
     type: 'code' | 'image';
@@ -181,7 +166,7 @@ async function readImageFile(
         }
         return { content: '', type: 'code', result };
     }
-    notify('info', 'SSH image preview not supported yet.');
+    notify('info', t('workspace.notifications.sshImagePreviewNotSupported'));
     return { content: '', type: 'code', result: undefined };
 }
 
@@ -214,14 +199,15 @@ async function readCodeFile(
 async function readFileContent(
     mount: WorkspaceMount,
     filePath: string,
-    notify: (type: 'success' | 'error' | 'info', message: string) => void
+    notify: (type: 'success' | 'error' | 'info', message: string) => void,
+    t: (key: string, options?: Record<string, string | number>) => string
 ): Promise<{
     content: string;
     type: 'code' | 'image';
     result: ServiceResponse<string> | undefined;
 }> {
     if (isImageFile(filePath)) {
-        return readImageFile(mount, filePath, notify);
+        return readImageFile(mount, filePath, notify, t);
     }
     return readCodeFile(mount, filePath);
 }
@@ -269,7 +255,8 @@ function getDirectoryPath(filePath: string): string {
 function useFileOperations(
     mounts: WorkspaceMount[],
     notify: (type: 'success' | 'error' | 'info', message: string) => void,
-    logActivity: (title: string, detail?: string) => void
+    logActivity: (title: string, detail?: string) => void,
+    t: (key: string, options?: Record<string, string | number>) => string
 ) {
     const [refreshSignal, setRefreshSignal] = useState(0);
 
@@ -286,12 +273,12 @@ function useFileOperations(
             if (result.success) {
                 setRefreshSignal(s => s + 1);
                 logActivity('Created file', path);
-                notify('success', 'File created.');
+                notify('success', t('workspace.notifications.fileCreated'));
             } else {
-                notify('error', result.error ?? 'Failed to create file.');
+                notify('error', result.error ?? t('workspace.errors.fileOps.create'));
             }
         },
-        [mounts, logActivity, notify]
+        [mounts, logActivity, notify, t]
     );
 
     const createFolder = useCallback(
@@ -307,12 +294,12 @@ function useFileOperations(
             if (result.success) {
                 setRefreshSignal(s => s + 1);
                 logActivity('Created folder', path);
-                notify('success', 'Folder created.');
+                notify('success', t('workspace.notifications.folderCreated'));
             } else {
-                notify('error', result.error ?? 'Failed to create folder.');
+                notify('error', result.error ?? t('workspace.errors.fileOps.create'));
             }
         },
-        [mounts, logActivity, notify]
+        [mounts, logActivity, notify, t]
     );
 
     const renameEntry = useCallback(
@@ -335,12 +322,12 @@ function useFileOperations(
             if (result.success) {
                 setRefreshSignal(s => s + 1);
                 logActivity('Renamed entry', `${entry.name} -> ${newName}`);
-                notify('success', 'Entry renamed.');
+                notify('success', t('workspace.notifications.entryRenamed'));
             } else {
-                notify('error', result.error ?? 'Failed to rename.');
+                notify('error', result.error ?? t('workspace.errors.fileOps.rename'));
             }
         },
-        [mounts, logActivity, notify]
+        [mounts, logActivity, notify, t]
     );
 
     const deleteEntry = useCallback(
@@ -360,12 +347,12 @@ function useFileOperations(
             if (result.success) {
                 setRefreshSignal(s => s + 1);
                 logActivity('Deleted entry', entry.path);
-                notify('success', 'Entry deleted.');
+                notify('success', t('workspace.notifications.entryDeleted'));
             } else {
-                notify('error', result.error ?? 'Failed to delete.');
+                notify('error', result.error ?? t('workspace.errors.fileOps.delete'));
             }
         },
-        [mounts, logActivity, notify]
+        [mounts, logActivity, notify, t]
     );
 
     const moveEntry = useCallback(
@@ -390,12 +377,12 @@ function useFileOperations(
             if (result.success) {
                 setRefreshSignal(s => s + 1);
                 logActivity('Moved entry', `${entry.path} -> ${newPath}`);
-                notify('success', 'Entry moved.');
+                notify('success', t('workspace.notifications.entryMoved'));
             } else {
-                notify('error', result.error ?? 'Failed to move.');
+                notify('error', result.error ?? t('workspace.errors.fileOps.move'));
             }
         },
-        [mounts, logActivity, notify]
+        [mounts, logActivity, notify, t]
     );
 
     return {
@@ -449,15 +436,9 @@ function useTabManagement(workspaceId: string) {
     const persistedTabsState = useMemo(() => loadPersistedTabsState(workspaceId), [workspaceId]);
     const [openTabs, setOpenTabs] = useState<EditorTab[]>(persistedTabsState.openTabs);
     const [activeTabId, setActiveEditorTabId] = useState<string | null>(persistedTabsState.activeTabId);
-    const [dashboardTab, setDashboardTab] = useState<WorkspaceDashboardTab>('overview');
-    const [activeWorkspaceId, setActiveWorkspaceId] = useState(workspaceId);
-
-    if (activeWorkspaceId !== workspaceId) {
-        setActiveWorkspaceId(workspaceId);
-        setOpenTabs(persistedTabsState.openTabs);
-        setActiveEditorTabId(persistedTabsState.activeTabId);
-        setDashboardTab(persistedTabsState.activeTabId ? 'editor' : 'overview');
-    }
+    const [dashboardTab, setDashboardTab] = useState<WorkspaceDashboardTab>(
+        persistedTabsState.activeTabId ? 'editor' : 'overview'
+    );
 
     const activeTab = useMemo(
         () => openTabs.find(t => t.id === activeTabId) ?? null,
@@ -605,7 +586,7 @@ export function useWorkspaceManager({ workspace, notify, logActivity, t }: UseWo
         moveEntry,
         refreshSignal,
         setRefreshSignal,
-    } = useFileOperations(mounts, notify, logActivity);
+    } = useFileOperations(mounts, notify, logActivity, t);
     const {
         openTabs,
         activeTabId,
@@ -666,10 +647,10 @@ export function useWorkspaceManager({ workspace, notify, logActivity, t }: UseWo
                 return;
             }
 
-            const { content, type, result } = await readFileContent(mount, entry.path, notify);
+            const { content, type, result } = await readFileContent(mount, entry.path, notify, t);
 
             if (!result?.success) {
-                notify('error', result?.error ?? 'Failed to read file.');
+                notify('error', result?.error ?? t('workspace.errors.fileOps.read'));
                 return;
             }
 
@@ -694,6 +675,7 @@ export function useWorkspaceManager({ workspace, notify, logActivity, t }: UseWo
             openTabs,
             ensureMountReady,
             notify,
+            t,
             setOpenTabs,
             setActiveEditorTabId,
             setDashboardTab,
@@ -724,15 +706,15 @@ export function useWorkspaceManager({ workspace, notify, logActivity, t }: UseWo
                 );
 
         if (!result.success) {
-            notify('error', result.error ?? 'Save failed.');
+            notify('error', result.error ?? t('workspace.notifications.saveFailed'));
             return;
         }
         setOpenTabs(prev =>
             prev.map(t => (t.id === activeTabData.id ? { ...t, savedContent: t.content } : t))
         );
         logActivity('Saved file', activeTabData.path);
-        notify('success', 'File saved.');
-    }, [activeTabId, openTabs, mounts, ensureMountReady, notify, logActivity, setOpenTabs]);
+        notify('success', t('workspace.notifications.fileSaved'));
+    }, [activeTabId, openTabs, mounts, ensureMountReady, notify, logActivity, setOpenTabs, t]);
 
     const copyTabAbsolutePath = useCallback(
         async (tabId: string) => {

@@ -181,6 +181,35 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                     t={ctrl.t}
                 />
 
+                {ctrl.isImageOnlyModel && (
+                    <div className="mb-3 flex items-center gap-3 rounded-xl border border-border/50 bg-muted/20 px-3 py-2.5">
+                        <div className="flex min-w-0 flex-col">
+                            <span className="text-xxs font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
+                                {ctrl.t('input.imageCountLabel')}
+                            </span>
+                            <span className="text-xs text-muted-foreground/80">
+                                {ctrl.t('input.imageCountHint')}
+                            </span>
+                        </div>
+                        <input
+                            type="number"
+                            min={1}
+                            max={5}
+                            value={ctrl.imageRequestCount}
+                            onChange={event => {
+                                const nextValue = Number.parseInt(event.target.value, 10);
+                                if (!Number.isFinite(nextValue)) {
+                                    ctrl.setImageRequestCount(1);
+                                    return;
+                                }
+                                ctrl.setImageRequestCount(Math.max(1, Math.min(5, nextValue)));
+                            }}
+                            className="ml-auto h-10 w-20 rounded-lg border border-border/60 bg-background/80 px-3 text-sm font-semibold text-foreground outline-none transition-colors focus:border-primary/60"
+                            aria-label={ctrl.t('input.imageCountLabel')}
+                        />
+                    </div>
+                )}
+
                 <div className="relative flex items-end gap-2 bg-muted/30 border border-border/50 rounded-xl p-2 shadow-sm focus-within:ring-1 focus-within:ring-primary/50 focus-within:border-primary/50 transition-all">
                     <div className="flex items-center justify-center gap-1.5 px-1 py-0.5">
                         <div className="relative">

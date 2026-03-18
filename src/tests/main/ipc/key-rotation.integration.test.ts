@@ -21,6 +21,17 @@ vi.mock('electron', () => ({
 import { registerKeyRotationIpc } from '@main/ipc/key-rotation';
 import type { KeyRotationService } from '@main/services/security/key-rotation.service';
 
+interface KeyRotationStatusPayload {
+    provider: string;
+    hasKey: boolean;
+    currentKey: string | null;
+}
+
+interface KeyRotationStatusResponse {
+    success: boolean;
+    data: KeyRotationStatusPayload;
+}
+
 describe('Key Rotation IPC Handlers', () => {
     const ipcMainHandlers = new Map<string, CallableFunction>();
     let mockKeyRotationService: KeyRotationService;
@@ -33,7 +44,7 @@ describe('Key Rotation IPC Handlers', () => {
         // Capture IPC handlers
         vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: CallableFunction) => {
             ipcMainHandlers.set(channel, handler);
-            return { channels: [channel] } as unknown as Electron.IpcMain;
+            return { channels: [channel] } as never as Electron.IpcMain;
         });
 
         // Mock key rotation service
@@ -41,7 +52,7 @@ describe('Key Rotation IPC Handlers', () => {
             getCurrentKey: vi.fn().mockReturnValue('sk-test123'),
             rotateKey: vi.fn().mockReturnValue(true),
             initializeProviderKeys: vi.fn()
-        } as unknown as KeyRotationService;
+        } as never as KeyRotationService;
 
         mockEvent = {} as IpcMainInvokeEvent;
 
@@ -273,7 +284,7 @@ describe('Key Rotation IPC Handlers', () => {
             const handler = ipcMainHandlers.get('key-rotation:getStatus');
             vi.mocked(mockKeyRotationService.getCurrentKey).mockReturnValue('sk-verylongkeythatshouldbemask');
 
-            const result = await handler!(mockEvent, 'openai') as { success: boolean, data: any };
+            const result = await handler!(mockEvent, 'openai') as KeyRotationStatusResponse;
 
             expect(result.data.currentKey).toBe('sk-veryl...');
             expect(result.data.currentKey).not.toContain('verylongkeythatshouldbemask');

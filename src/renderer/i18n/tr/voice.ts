@@ -10,13 +10,15 @@ const sectionData = {
         "idle": "Hazır",
         "listening": "Dinleniyor...",
         "processing": "İşleniyor...",
+        "standby": "Ses Beklemede",
         "speaking": "Konuşuyor...",
         "error": "Hata"
     },
     "feedback": {
         "navigating": "{{target}} hedefine gidiliyor",
         "commandExecuted": "Komut yürütüldü",
-        "notRecognized": "Komut tanınmadı"
+        "notRecognized": "Komut tanınmadı",
+        "executedPrefix": "Çalıştırıldı"
     },
     "settings": {
         "enableVoice": "Ses Kontrolünü Etkinleştir",
@@ -41,6 +43,7 @@ const sectionData = {
     "commands": {
         "title": "Ses Komutları",
         "aliases": "Takma adlar",
+        "customDescription": "Custom command: {{phrase}}",
         "categories": {
             "navigation": "Gezinme",
             "actions": "Eylemler",

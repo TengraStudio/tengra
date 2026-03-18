@@ -86,7 +86,15 @@ const sectionData = {
         "generate": "Logo Oluştur",
         "generating": "Logo oluşturuluyor...",
         "requiresAntigravity": "Logo oluşturma için Antigravity bağlantısı gereklidir",
-        "promptPlaceholder": "Logo konseptinizi tanımlayın..."
+        "promptPlaceholder": "Logo konseptinizi tanımlayın...",
+        "generatedAlt": "Oluşturulan logo {{index}}",
+        "defaultPrompt": "{{title}} için modern minimalist logo",
+        "styles": {
+            "minimalist": "Minimalist",
+            "corporate": "Kurumsal",
+            "playful": "Eğlenceli",
+            "abstract": "Soyut"
+        }
     },
     "status": {
         "active": "Aktif",
@@ -105,7 +113,24 @@ const sectionData = {
         "researchFailed": "Araştırma başarısız. Lütfen tekrar deneyin.",
         "generationFailed": "Fikir üretimi başarısız. Lütfen tekrar deneyin.",
         "approvalFailed": "Çalışma Alanı oluşturulamadı. Lütfen tekrar deneyin.",
-        "logoFailed": "Logo oluşturma başarısız. Lütfen tekrar deneyin."
+        "logoFailed": "Logo oluşturma başarısız. Lütfen tekrar deneyin.",
+        "logoUnavailable": "Logo oluşturma şu anda kullanılamıyor.",
+        "enrichmentFailed": "Fikir zenginleştirme başarısız. Lütfen tekrar deneyin.",
+        "loadIdeasFailed": "Fikirler yüklenemedi. Lütfen tekrar deneyin.",
+        "loadSessionsFailed": "Oturumlar yüklenemedi. Lütfen tekrar deneyin.",
+        "createSessionFailed": "Oturum oluşturulamadı. Lütfen tekrar deneyin.",
+        "loadSessionFailed": "Oturum yüklenemedi. Lütfen tekrar deneyin.",
+        "cancelSessionFailed": "Oturum iptal edilemedi. Lütfen tekrar deneyin.",
+        "rejectFailed": "Fikir reddedilemedi. Lütfen tekrar deneyin.",
+        "archiveFailed": "Fikir arşivlenemedi. Lütfen tekrar deneyin.",
+        "maxIdeasReached": "Bu oturum için azami fikir sayısı zaten üretildi.",
+        "logoNoImageGenerated": "Seçilen sağlayıcı tarafından logo görseli üretilemedi.",
+        "ideaNotFound": "Fikir bulunamadı."
+    },
+    "categorySelector": {
+        "incompatibleWith": "{{category}} ile uyumlu değil",
+        "maxCategories": "En fazla 3 kategori",
+        "selectedCount": "{{count}}/3 kategori seçildi"
     },
     "empty": {
         "noSessions": "Henüz fikir oturumu yok",

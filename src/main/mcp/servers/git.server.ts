@@ -4,7 +4,7 @@ import { McpService } from '@main/mcp/types';
 /**
  * Validates git branch name format
  */
-const validateBranchName = (branch: unknown): string => {
+const validateBranchName = (branch: RuntimeValue): string => {
     const name = validateString(branch, 255).trim();
 
     // Git branch name validation rules
@@ -28,7 +28,7 @@ const validateBranchName = (branch: unknown): string => {
 /**
  * Validates git commit message
  */
-const validateCommitMessage = (message: unknown): string => {
+const validateCommitMessage = (message: RuntimeValue): string => {
     const msg = validateString(message, 10000).trim();
 
     if (!msg) {
@@ -49,7 +49,7 @@ const validateCommitMessage = (message: unknown): string => {
 /**
  * Validates file path for git operations
  */
-const validateFilePath = (file: unknown): string => {
+const validateFilePath = (file: RuntimeValue): string => {
     const filePath = validateString(file, 1000);
 
     // Prevent path traversal

@@ -25,7 +25,7 @@ const metricsStore = new Map<string, ChannelStats>();
  * @param handler - The original handler function
  * @returns A wrapped handler that records metrics before delegating
  */
-export function withIpcMetrics<TArgs extends unknown[], TResult>(
+export function withIpcMetrics<TArgs extends RuntimeValue[], TResult>(
   channel: string,
   handler: (event: IpcMainInvokeEvent, ...args: TArgs) => Promise<TResult>
 ): (event: IpcMainInvokeEvent, ...args: TArgs) => Promise<TResult> {

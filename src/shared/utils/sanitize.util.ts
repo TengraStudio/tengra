@@ -197,7 +197,7 @@ export function sanitizeObject<T extends JsonObject>(
     }
 
     if (Array.isArray(obj)) {
-        const sanitizedArray: unknown = obj.map(item => {
+        const sanitizedArray: RuntimeValue = obj.map(item => {
             if (typeof item === 'object' && item !== null) {
                 return sanitizeObject(item as JsonObject, options);
             }

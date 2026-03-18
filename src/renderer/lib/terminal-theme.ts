@@ -1,4 +1,4 @@
-import { ITheme } from 'xterm';
+import { type ITheme } from '@xterm/xterm';
 
 /**
  * Unified Terminal Theme

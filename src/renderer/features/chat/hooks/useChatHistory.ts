@@ -4,7 +4,7 @@
  */
 
 import { ChatId, isChatId, toChatId } from '@shared/types/ids';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Chat } from '@/types';
 
@@ -33,7 +33,7 @@ const MAX_MESSAGES_PER_HISTORY_CHAT = 30;
  * Trims messages in a chat to limit memory usage in history states.
  * Only keeps the most recent messages.
  */
-function trimMessagesForHistory<T extends { messages: unknown[] }>(chat: T): T {
+function trimMessagesForHistory<T extends { messages: RendererDataValue[] }>(chat: T): T {
     if (chat.messages.length <= MAX_MESSAGES_PER_HISTORY_CHAT) {
         return chat;
     }
@@ -51,9 +51,20 @@ export function useChatHistory(): ChatHistoryManager {
     const [historyIndex, setHistoryIndex] = useState(-1);
     const isSavingRef = useRef(false);
 
+    // Use refs to break circular dependency: saveState previously depended
+    // on [historyIndex], causing it to get a new identity each time
+    // setHistoryIndex was called. This led to an infinite re-render loop:
+    // saveState → setHistoryIndex → new saveState → useHistorySync re-runs → saveState.
+    const historyIndexRef = useRef(historyIndex);
+    const historyRef = useRef(history);
+    useEffect(() => { historyIndexRef.current = historyIndex; }, [historyIndex]);
+    useEffect(() => { historyRef.current = history; }, [history]);
+
     const saveState = useCallback((chats: Chat[], currentChatId: string | null) => {
         // Prevent saving during undo/redo operations
         if (isSavingRef.current) { return; }
+
+        const currentIndex = historyIndexRef.current;
 
         // PERF-005-4: Use shallow copy instead of deep copy for messages
         // Messages are immutable in our architecture, so deep copy is unnecessary
@@ -69,7 +80,7 @@ export function useChatHistory(): ChatHistoryManager {
 
         setHistory(prev => {
             // Remove any states after current index (when undoing then making new changes)
-            const newHistory = prev.slice(0, historyIndex + 1);
+            const newHistory = prev.slice(0, currentIndex + 1);
 
             // Add new state
             newHistory.push(newState);
@@ -88,43 +99,47 @@ export function useChatHistory(): ChatHistoryManager {
             // If we're adding after an undo, limit to max size
             return Math.min(newIndex, MAX_HISTORY_SIZE - 1);
         });
-    }, [historyIndex]);
+    }, []); // No deps on historyIndex — use ref instead to break the cycle
 
     const undo = useCallback((): ChatHistoryState | null => {
-        if (historyIndex <= 0) { return null; }
+        const currentIndex = historyIndexRef.current;
+        const currentHistory = historyRef.current;
+        if (currentIndex <= 0) { return null; }
 
         isSavingRef.current = true;
-        const newIndex = historyIndex - 1;
+        const newIndex = currentIndex - 1;
         setHistoryIndex(newIndex);
-        const state = history[newIndex];
+        const state = currentHistory[newIndex];
         isSavingRef.current = false;
 
-        return { ...state };
-    }, [history, historyIndex]);
+        return state ? { ...state } : null;
+    }, []);
 
     const redo = useCallback((): ChatHistoryState | null => {
-        if (historyIndex >= history.length - 1) { return null; }
+        const currentIndex = historyIndexRef.current;
+        const currentHistory = historyRef.current;
+        if (currentIndex >= currentHistory.length - 1) { return null; }
 
         isSavingRef.current = true;
-        const newIndex = historyIndex + 1;
+        const newIndex = currentIndex + 1;
         setHistoryIndex(newIndex);
-        const state = history[newIndex];
+        const state = currentHistory[newIndex];
         isSavingRef.current = false;
 
-        return { ...state };
-    }, [history, historyIndex]);
+        return state ? { ...state } : null;
+    }, []);
 
     const clearHistory = useCallback(() => {
         setHistory([]);
         setHistoryIndex(-1);
     }, []);
 
-    return {
+    return useMemo(() => ({
         canUndo: historyIndex > 0,
         canRedo: historyIndex < history.length - 1,
         undo,
         redo,
         saveState,
         clearHistory
-    };
+    }), [historyIndex, history.length, undo, redo, saveState, clearHistory]);
 }

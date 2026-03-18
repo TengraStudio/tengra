@@ -4,7 +4,10 @@ import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
+import { EventBusService } from '@main/services/system/event-bus.service';
+import { SettingsService } from '@main/services/system/settings.service';
 import { AlacrittyBackend } from '@main/services/terminal/backends/alacritty.backend';
+import { pathExists } from '@main/services/terminal/backends/backend-discovery.util';
 import { GhosttyBackend } from '@main/services/terminal/backends/ghostty.backend';
 import { KittyBackend } from '@main/services/terminal/backends/kitty.backend';
 import { NodePtyBackend } from '@main/services/terminal/backends/node-pty.backend';
@@ -14,6 +17,7 @@ import {
 } from '@main/services/terminal/backends/terminal-backend.interface';
 import { WarpBackend } from '@main/services/terminal/backends/warp.backend';
 import { WindowsTerminalBackend } from '@main/services/terminal/backends/windows-terminal.backend';
+import { BatchedEventEmitter } from '@shared/utils/batched-event-emitter.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { app } from 'electron';
 
@@ -21,6 +25,20 @@ const MAX_COMMAND_HISTORY_SIZE = 2000;
 const MAX_COMMAND_LENGTH = 2000;
 const MAX_SEARCH_HISTORY_SIZE = 500;
 const MAX_SEARCH_QUERY_LENGTH = 512;
+
+// OPT-007 Terminal Lifecycle Constants
+const MAX_SESSIONS = 15;
+const MAX_LOG_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+const LOG_TRIM_SIZE_BYTES = 2 * 1024 * 1024; // Trim to 2MB
+const SESSION_INACTIVITY_TIMEOUT_MS = 4 * 60 * 60 * 1000; // 4 hours
+const CLEANUP_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+const TERMINAL_DISCOVERY_CACHE_TTL_MS = 5 * 60 * 1000;
+
+export interface TerminalShellInfo {
+    id: string;
+    name: string;
+    path: string;
+}
 
 export interface TerminalCommandHistoryEntry {
     command: string;
@@ -36,6 +54,13 @@ export interface TerminalBackendInfo {
     available: boolean;
 }
 
+export interface TerminalDiscoverySnapshot {
+    terminalAvailable: boolean;
+    shells: TerminalShellInfo[];
+    backends: TerminalBackendInfo[];
+    refreshedAt: number;
+}
+
 interface TerminalSession {
     id: string;
     process: ITerminalProcess | null; // Null if restored but not yet spawned (zombie state) or finished
@@ -48,7 +73,7 @@ interface TerminalSession {
     lastActive: number;
     backendId: string;
     workspaceId?: string;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, RuntimeValue>;
 }
 
 interface TerminalSnapshot {
@@ -61,7 +86,7 @@ interface TerminalSnapshot {
     timestamp: number;
     backendId: string;
     workspaceId?: string;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, RuntimeValue>;
 }
 
 interface TerminalSessionTemplate {
@@ -73,7 +98,7 @@ interface TerminalSessionTemplate {
     rows: number;
     backendId: string;
     workspaceId?: string;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, RuntimeValue>;
     createdAt: number;
     updatedAt: number;
 }
@@ -148,6 +173,8 @@ interface ImportTerminalSessionResult {
 export class TerminalService extends BaseService {
     private sessions: Map<string, TerminalSession> = new Map();
     private backends: Map<string, ITerminalBackend> = new Map();
+    private readonly eventBus: EventBusService;
+    private readonly settingsService: SettingsService;
     private persistencePath: string;
     private historyPath: string;
     private markersPath: string;
@@ -157,6 +184,7 @@ export class TerminalService extends BaseService {
     private templates: Map<string, TerminalSessionTemplate> = new Map();
     private commandHistory: TerminalCommandHistoryEntry[] = [];
     private lineBuffers: Map<string, string> = new Map();
+    private dataEmitters: Map<string, BatchedEventEmitter<string>> = new Map();
     private scrollbackMarkers: TerminalScrollbackMarker[] = [];
     private searchHistory: string[] = [];
     private searchAnalytics: TerminalSearchAnalytics = {
@@ -165,9 +193,14 @@ export class TerminalService extends BaseService {
         plainSearches: 0,
         lastSearchAt: 0,
     };
+    private discoverySnapshot: TerminalDiscoverySnapshot | null = null;
+    private cleanupTimer: NodeJS.Timeout | null = null;
+    private powerStateUnsubscribe: (() => void) | null = null;
 
-    constructor() {
+    constructor(eventBus?: EventBusService, settingsService?: SettingsService) {
         super('TerminalService');
+        this.eventBus = eventBus ?? new EventBusService();
+        this.settingsService = settingsService ?? new SettingsService();
 
         // Register default backends
         const nodePtyBackend = new NodePtyBackend();
@@ -218,6 +251,7 @@ export class TerminalService extends BaseService {
     addBackend(backend: ITerminalBackend): void {
         this.logInfo(`Registering terminal backend: ${backend.id}`);
         this.backends.set(backend.id, backend);
+        this.discoverySnapshot = null;
     }
 
     async initialize(): Promise<void> {
@@ -227,26 +261,101 @@ export class TerminalService extends BaseService {
         await this.loadScrollbackMarkers();
         await this.loadSessionTemplates();
         await this.loadSearchState();
+        const currentSettings = this.settingsService.getSettings();
+        this.handlePowerStateChange(currentSettings.window?.lowPowerMode ?? false);
+
+        // Subscribe to power state changes for adaptive throttling
+        this.powerStateUnsubscribe?.();
+        this.powerStateUnsubscribe = this.eventBus.on('power:state-changed', (payload) => {
+            this.handlePowerStateChange(payload.isLowPowerMode);
+        });
+
+        // Start periodic cleanup
+        if (this.cleanupTimer) {
+            clearInterval(this.cleanupTimer);
+        }
+        this.cleanupTimer = setInterval(() => {
+            void this.performPeriodicCleanup();
+        }, CLEANUP_INTERVAL_MS);
+    }
+
+    private handlePowerStateChange(isLowPowerMode: boolean) {
+        this.logInfo(`Throttling terminal updates (Low Power Mode: ${isLowPowerMode})`);
+
+        // Update all active emitters with new frequency
+        const maxWaitMs = isLowPowerMode ? 150 : 30; // 6Hz vs 33Hz
+        for (const emitter of this.dataEmitters.values()) {
+            emitter.updateOptions({ maxWaitMs });
+        }
+    }
+
+    private async performPeriodicCleanup() {
+        this.logInfo('Performing periodic terminal cleanup...');
+        this.enforceSessionLimits();
+        await this.trimAllLogs();
+        this.pruneInactiveSessions();
+    }
+
+    private enforceSessionLimits() {
+        if (this.sessions.size <= MAX_SESSIONS) {
+            return;
+        }
+
+        // Kill oldest sessions first
+        const sortedSessions = Array.from(this.sessions.values())
+            .sort((a, b) => a.lastActive - b.lastActive);
+
+        const toKill = sortedSessions.slice(0, this.sessions.size - MAX_SESSIONS);
+        for (const session of toKill) {
+            this.logInfo(`Killing session ${session.id} due to session limit`);
+            this.kill(session.id);
+        }
+    }
+
+    private pruneInactiveSessions() {
+        const now = Date.now();
+        for (const session of this.sessions.values()) {
+            if (now - session.lastActive > SESSION_INACTIVITY_TIMEOUT_MS) {
+                this.logInfo(`Pruning inactive session ${session.id}`);
+                this.kill(session.id);
+            }
+        }
+    }
+
+    private async trimAllLogs() {
+        for (const sessionId of this.sessions.keys()) {
+            await this.trimLogFile(sessionId);
+        }
+    }
+
+    private async trimLogFile(sessionId: string) {
+        const logPath = this.getLogPath(sessionId);
+        try {
+            const stats = await fs.promises.stat(logPath);
+            if (stats.size > MAX_LOG_SIZE_BYTES) {
+                this.logInfo(`Trimming log file for ${sessionId} (${stats.size} bytes)`);
+                const content = await this.readLogTail(sessionId, LOG_TRIM_SIZE_BYTES);
+                await fs.promises.writeFile(logPath, content, 'utf-8');
+            }
+        } catch {
+            // Silently ignore if file doesn't exist
+        }
     }
 
     /**
      * Check if terminal service is available
      */
     async isAvailable(): Promise<boolean> {
-        // At least one backend must be available
-        for (const backend of this.backends.values()) {
-            if (await backend.isAvailable()) {
-                return true;
-            }
-        }
-        return false;
+        const snapshot = await this.getDiscoverySnapshot();
+        return snapshot.terminalAvailable;
     }
 
     /**
      * Get available shells for the current platform
      */
-    getAvailableShells(): { id: string; name: string; path: string }[] {
-        return process.platform === 'win32' ? this.getWindowsShells() : this.getUnixShells();
+    async getAvailableShells(): Promise<TerminalShellInfo[]> {
+        const snapshot = await this.getDiscoverySnapshot();
+        return snapshot.shells;
     }
 
     /**
@@ -254,6 +363,35 @@ export class TerminalService extends BaseService {
      * @returns A list of terminal backends with their availability status.
      */
     async getAvailableBackends(): Promise<TerminalBackendInfo[]> {
+        const snapshot = await this.getDiscoverySnapshot();
+        return snapshot.backends;
+    }
+
+    async getDiscoverySnapshot(options?: { refresh?: boolean }): Promise<TerminalDiscoverySnapshot> {
+        const refresh = options?.refresh === true;
+        if (
+            !refresh &&
+            this.discoverySnapshot &&
+            Date.now() - this.discoverySnapshot.refreshedAt < TERMINAL_DISCOVERY_CACHE_TTL_MS
+        ) {
+            return this.discoverySnapshot;
+        }
+
+        const [shells, backends] = await Promise.all([
+            this.detectAvailableShells(),
+            this.detectAvailableBackends(),
+        ]);
+        const snapshot: TerminalDiscoverySnapshot = {
+            terminalAvailable: backends.some(backend => backend.available),
+            shells,
+            backends,
+            refreshedAt: Date.now(),
+        };
+        this.discoverySnapshot = snapshot;
+        return snapshot;
+    }
+
+    private async detectAvailableBackends(): Promise<TerminalBackendInfo[]> {
         const backendNames: Record<string, string> = {
             'node-pty': 'Integrated Terminal',
             ghostty: 'Ghostty',
@@ -264,15 +402,13 @@ export class TerminalService extends BaseService {
         };
 
         const backends = Array.from(this.backends.values());
-        const info = await Promise.all(
+        return Promise.all(
             backends.map(async backend => ({
                 id: backend.id,
                 name: backendNames[backend.id] ?? backend.id,
                 available: await backend.isAvailable(),
             }))
         );
-
-        return info;
     }
 
     async getRuntimeHealth(): Promise<{
@@ -281,18 +417,25 @@ export class TerminalService extends BaseService {
         availableBackends: number;
         backends: TerminalBackendInfo[];
     }> {
-        const backends = await this.getAvailableBackends();
+        const snapshot = await this.getDiscoverySnapshot();
+        const backends = snapshot.backends;
         const availableBackends = backends.filter(backend => backend.available).length;
         return {
-            terminalAvailable: availableBackends > 0,
+            terminalAvailable: snapshot.terminalAvailable,
             totalBackends: backends.length,
             availableBackends,
             backends,
         };
     }
 
-    private getWindowsShells(): { id: string; name: string; path: string }[] {
-        const shells: { id: string; name: string; path: string }[] = [];
+    private async detectAvailableShells(): Promise<TerminalShellInfo[]> {
+        return process.platform === 'win32'
+            ? this.getWindowsShells()
+            : this.getUnixShells();
+    }
+
+    private async getWindowsShells(): Promise<TerminalShellInfo[]> {
+        const shells: TerminalShellInfo[] = [];
         const systemRoot = process.env.SystemRoot ?? 'C:\\Windows';
 
         shells.push({
@@ -321,7 +464,7 @@ export class TerminalService extends BaseService {
             ),
         ];
         for (const pwshPath of pwshPaths) {
-            if (fs.existsSync(pwshPath)) {
+            if (await pathExists(pwshPath)) {
                 shells.unshift({ id: 'pwsh', name: 'PowerShell 7', path: pwshPath });
                 break;
             }
@@ -333,15 +476,15 @@ export class TerminalService extends BaseService {
             'bin',
             'bash.exe'
         );
-        if (fs.existsSync(gitBashPath)) {
+        if (await pathExists(gitBashPath)) {
             shells.push({ id: 'gitbash', name: 'Git Bash', path: gitBashPath });
         }
 
         return shells;
     }
 
-    private getUnixShells(): { id: string; name: string; path: string }[] {
-        const shells: { id: string; name: string; path: string }[] = [];
+    private async getUnixShells(): Promise<TerminalShellInfo[]> {
+        const shells: TerminalShellInfo[] = [];
         const commonPaths = [
             { id: 'bash', name: 'Bash', path: '/bin/bash' },
             { id: 'zsh', name: 'Zsh', path: '/bin/zsh' },
@@ -349,15 +492,15 @@ export class TerminalService extends BaseService {
             { id: 'fish', name: 'Fish', path: '/usr/bin/fish' },
         ];
         for (const s of commonPaths) {
-            if (fs.existsSync(s.path)) {
+            if (await pathExists(s.path)) {
                 shells.push(s);
             }
         }
         return shells;
     }
 
-    private getDefaultShell(): string {
-        const shells = this.getAvailableShells();
+    private async getDefaultShell(): Promise<string> {
+        const shells = await this.detectAvailableShells();
         return shells.length > 0
             ? shells[0].path
             : process.platform === 'win32'
@@ -379,18 +522,27 @@ export class TerminalService extends BaseService {
         title?: string;
         onData: (data: string) => void;
         onExit: (code: number) => void;
-        metadata?: Record<string, unknown>;
+        metadata?: Record<string, RuntimeValue>;
     }): Promise<boolean> {
+        const discoverySnapshot = await this.getDiscoverySnapshot();
+        const availableBackendIds = new Set(
+            discoverySnapshot.backends
+                .filter(backend => backend.available)
+                .map(backend => backend.id)
+        );
         let backendId = options.backendId ?? 'node-pty';
         let backend = this.backends.get(backendId);
 
-        if (!backend || !(await backend.isAvailable())) {
+        if (!backend || !availableBackendIds.has(backendId)) {
             this.logInfo(`Backend ${backendId} is not available, trying fallback backend`);
             backend = undefined;
-            for (const [candidateId, candidateBackend] of this.backends.entries()) {
-                if (await candidateBackend.isAvailable()) {
-                    backendId = candidateId;
-                    backend = candidateBackend;
+            for (const backendInfo of discoverySnapshot.backends) {
+                if (!backendInfo.available) {
+                    continue;
+                }
+                backendId = backendInfo.id;
+                backend = this.backends.get(backendId);
+                if (backend) {
                     break;
                 }
             }
@@ -409,8 +561,8 @@ export class TerminalService extends BaseService {
         const snapshot = this.snapshots.get(options.id);
         const isRestoring = !!snapshot;
 
-        const { shell, args } = this.getShellConfig(options, snapshot);
-        const cwd = this.getCwdConfig(options, snapshot);
+        const { shell, args } = await this.getShellConfig(options, snapshot);
+        const cwd = await this.getCwdConfig(options, snapshot);
         const cols = options.cols ?? snapshot?.cols ?? 80;
         const rows = options.rows ?? snapshot?.rows ?? 24;
 
@@ -435,10 +587,24 @@ export class TerminalService extends BaseService {
                         session.lastActive = Date.now();
                     }
                     this.captureCommandInput(options.id, data);
-                    options.onData(data);
+                    
+                    // Use batched emitter for UI updates
+                    const emitter = this.dataEmitters.get(options.id);
+                    if (emitter) {
+                        emitter.emitBatched(data);
+                    } else {
+                        options.onData(data);
+                    }
                 },
                 onExit: code => {
                     this.logInfo(`Session ${options.id} exited with code ${code}`);
+
+                    const emitter = this.dataEmitters.get(options.id);
+                    if (emitter) {
+                        emitter.flush();
+                        emitter.dispose();
+                        this.dataEmitters.delete(options.id);
+                    }
 
                     const session = this.sessions.get(options.id);
                     // Close log stream
@@ -480,6 +646,17 @@ export class TerminalService extends BaseService {
 
             this.sessions.set(options.id, session);
 
+            // Initialize batched emitter for the new session
+            const dataEmitter = new BatchedEventEmitter<string>({
+                maxWaitMs: 30, // 33Hz max update frequency
+                maxBatchSize: 100, // Or 100 chunks
+                merger: (batch) => batch.join('')
+            });
+            dataEmitter.on('batch', (mergedData: string) => {
+                options.onData(mergedData);
+            });
+            this.dataEmitters.set(options.id, dataEmitter);
+
             if (isRestoring || snapshot) {
                 // Read tail of log file
                 try {
@@ -500,15 +677,15 @@ export class TerminalService extends BaseService {
         }
     }
 
-    private getShellConfig(
+    private async getShellConfig(
         options: { shell?: string },
         snapshot?: TerminalSnapshot
-    ): { shell: string; args: string[] } {
-        const availableShells = this.getAvailableShells();
+    ): Promise<{ shell: string; args: string[] }> {
+        const availableShells = await this.getAvailableShells();
         const selectedShell = availableShells.find(s => s.id === options.shell);
         const shell = selectedShell
             ? selectedShell.path
-            : (options.shell ?? snapshot?.shell ?? this.getDefaultShell());
+            : (options.shell ?? snapshot?.shell ?? await this.getDefaultShell());
 
         const args: string[] = [];
         if (process.platform === 'win32') {
@@ -524,9 +701,12 @@ export class TerminalService extends BaseService {
         return { shell, args };
     }
 
-    private getCwdConfig(options: { cwd?: string }, snapshot?: TerminalSnapshot): string {
+    private async getCwdConfig(
+        options: { cwd?: string },
+        snapshot?: TerminalSnapshot
+    ): Promise<string> {
         let cwd = options.cwd ?? snapshot?.cwd ?? os.homedir();
-        if (!fs.existsSync(cwd)) {
+        if (!(await pathExists(cwd))) {
             cwd = os.homedir();
         }
         return cwd;
@@ -593,6 +773,11 @@ export class TerminalService extends BaseService {
                 } catch (error) {
                     appLogger.warn('TerminalService', `Failed to close log stream for session ${sessionId}: ${error instanceof Error ? error.message : String(error)}`);
                 }
+            }
+            const emitter = this.dataEmitters.get(sessionId);
+            if (emitter) {
+                emitter.dispose();
+                this.dataEmitters.delete(sessionId);
             }
             this.sessions.delete(sessionId);
             this.snapshots.delete(sessionId);
@@ -1395,6 +1580,12 @@ export class TerminalService extends BaseService {
      */
     async cleanup(): Promise<void> {
         this.logInfo('Cleaning up TerminalService...');
+        this.powerStateUnsubscribe?.();
+        this.powerStateUnsubscribe = null;
+        if (this.cleanupTimer) {
+            clearInterval(this.cleanupTimer);
+            this.cleanupTimer = null;
+        }
         await this.saveSnapshots(); // Last save
         await this.saveCommandHistory();
         await this.saveScrollbackMarkers();
@@ -1410,6 +1601,7 @@ export class TerminalService extends BaseService {
         }
         this.sessions.clear();
         this.lineBuffers.clear();
+        this.discoverySnapshot = null;
     }
 
     private getLogPath(sessionId: string): string {

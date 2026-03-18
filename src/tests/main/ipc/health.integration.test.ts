@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock electron
-const mockIpcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
+const mockIpcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
-            mockIpcMainHandlers.set(channel, handler);
+        handle: vi.fn((channel: string, handler: (...args: TestValue[]) => TestValue | Promise<TestValue>) => {
+            mockIpcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
         }),
         removeHandler: vi.fn((channel: string) => {
             mockIpcMainHandlers.delete(channel);
@@ -44,7 +44,7 @@ describe('Health IPC Integration', () => {
             checkNow: vi.fn(),
         };
 
-        registerHealthIpc(mockHealthCheckService as unknown as Parameters<typeof registerHealthIpc>[0]);
+        registerHealthIpc(mockHealthCheckService as never as Parameters<typeof registerHealthIpc>[0]);
     });
 
     it('should register expected handlers', () => {
@@ -90,7 +90,7 @@ describe('Health IPC Integration', () => {
             const handler = mockIpcMainHandlers.get('health:status');
             const result = await handler!({});
 
-            expect((result as Record<string, unknown>).overall).toBe('degraded');
+            expect((result as Record<string, TestValue>).overall).toBe('degraded');
         });
 
         it('should return unhealthy fallback on error', async () => {
@@ -101,8 +101,8 @@ describe('Health IPC Integration', () => {
             const handler = mockIpcMainHandlers.get('health:status');
             const result = await handler!({});
 
-            expect((result as Record<string, unknown>).overall).toBe('unhealthy');
-            expect((result as Record<string, unknown>).services).toEqual([]);
+            expect((result as Record<string, TestValue>).overall).toBe('unhealthy');
+            expect((result as Record<string, TestValue>).services).toEqual([]);
         });
     });
 
@@ -267,3 +267,4 @@ describe('Health IPC Integration', () => {
         });
     });
 });
+

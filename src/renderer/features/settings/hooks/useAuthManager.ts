@@ -18,6 +18,7 @@ export function useAuthManager() {
         appSettings: logic.settings,
         setAppSettings: logic.setSettings,
         quotas: logic.quotaData,
+        copilotQuota: logic.copilotQuota,
         codexUsage: logic.codexUsage,
         claudeQuota: logic.claudeQuota,
         refresh: logic.refreshAuthStatus

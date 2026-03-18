@@ -25,7 +25,7 @@ export const ResultsList: React.FC<ResultsListProps> = ({
 }) => {
     return (
         <div
-            className="flex-1 overflow-y-auto py-2 border-r border-white/5 custom-scrollbar"
+            className="flex-1 overflow-y-auto py-2 border-r border-border/10 custom-scrollbar"
             role="listbox"
             aria-label={t('commandPalette.results')}
         >
@@ -47,7 +47,7 @@ export const ResultsList: React.FC<ResultsListProps> = ({
                                     'w-full flex items-center gap-3 px-4 py-2 text-left transition-all duration-150',
                                     isSelected
                                         ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-                                        : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
+                                        : 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground'
                                 )}
                                 role="option"
                                 aria-selected={isSelected}
@@ -55,7 +55,7 @@ export const ResultsList: React.FC<ResultsListProps> = ({
                                 <span
                                     className={cn(
                                         'p-1.5 rounded-lg transition-colors',
-                                        isSelected ? 'bg-white/20' : 'bg-muted/10'
+                                        isSelected ? 'bg-primary-foreground/20' : 'bg-muted/10'
                                     )}
                                 >
                                     {cmd.icon}
@@ -82,8 +82,8 @@ export const ResultsList: React.FC<ResultsListProps> = ({
                                         className={cn(
                                             'px-1.5 py-0.5 text-xxxs font-bold rounded border',
                                             isSelected
-                                                ? 'bg-white/20 border-white/20 text-foreground'
-                                                : 'bg-white/5 border-white/10 text-foreground/30'
+                                                ? 'bg-primary-foreground/20 border-primary-foreground/20 text-primary-foreground'
+                                                : 'bg-foreground/5 border-border/20 text-muted-foreground/50'
                                         )}
                                     >
                                         {cmd.shortcut}

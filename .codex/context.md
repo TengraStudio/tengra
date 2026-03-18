@@ -17,7 +17,6 @@ Tengra is a high-performance desktop AI assistant built with Electron, React, an
 - `@codex`: `.codex/` (AI-optimized context)
 
 ## Recent Shifts
-- Documentation is now strictly mirrored to `.codex/`.
 - Termination warnings have been added to all rule files to ensure absolute compliance.
 - `LINT_ISSUES.md` introduced for systematic technical debt reduction.
 

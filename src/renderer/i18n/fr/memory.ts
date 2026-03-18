@@ -129,7 +129,13 @@ const sectionData = {
     "errors": {
         "exportFailed": "Échec de l'exportation de la mémoire",
         "importFailed": "L'importation de mémoire a échoué"
-    }
+    },
+    "refreshTitle": "Refresh",
 };
 
 export default sectionData;
+
+
+
+
+

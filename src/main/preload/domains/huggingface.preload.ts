@@ -14,8 +14,8 @@ export interface HuggingFaceBridge {
     getFiles: (
         modelId: string
     ) => Promise<{ path: string; size: number; oid: string; quantization: string }[]>;
-    getModelPreview: (modelId: string) => Promise<unknown>;
-    compareModels: (modelIds: string[]) => Promise<unknown>;
+    getModelPreview: (modelId: string) => Promise<RuntimeValue>;
+    compareModels: (modelIds: string[]) => Promise<RuntimeValue>;
     validateCompatibility: (
         file: { path: string; size: number; oid?: string; quantization: string },
         availableRamGB?: number,
@@ -80,8 +80,8 @@ export interface HuggingFaceBridge {
         pinned?: boolean;
         metadata?: { architecture?: string; contextLength?: number };
     }>>;
-    registerModelVersion: (modelId: string, filePath: string, notes?: string) => Promise<unknown>;
-    compareModelVersions: (modelId: string, leftVersionId: string, rightVersionId: string) => Promise<unknown>;
+    registerModelVersion: (modelId: string, filePath: string, notes?: string) => Promise<RuntimeValue>;
+    compareModelVersions: (modelId: string, leftVersionId: string, rightVersionId: string) => Promise<RuntimeValue>;
     rollbackModelVersion: (modelId: string, versionId: string, targetPath: string) => Promise<{ success: boolean; error?: string }>;
     pinModelVersion: (modelId: string, versionId: string, pinned: boolean) => Promise<{ success: boolean }>;
     getVersionNotifications: (modelId: string) => Promise<string[]>;
@@ -96,13 +96,13 @@ export interface HuggingFaceBridge {
         datasetPath: string,
         outputPath: string,
         options?: { epochs?: number; learningRate?: number }
-    ) => Promise<unknown>;
-    listFineTuneJobs: (modelId?: string) => Promise<unknown[]>;
-    getFineTuneJob: (jobId: string) => Promise<unknown>;
+    ) => Promise<RuntimeValue>;
+    listFineTuneJobs: (modelId?: string) => Promise<RuntimeValue[]>;
+    getFineTuneJob: (jobId: string) => Promise<RuntimeValue>;
     cancelFineTuneJob: (jobId: string) => Promise<{ success: boolean }>;
-    evaluateFineTuneJob: (jobId: string) => Promise<unknown>;
+    evaluateFineTuneJob: (jobId: string) => Promise<RuntimeValue>;
     exportFineTunedModel: (jobId: string, exportPath: string) => Promise<{ success: boolean; error?: string }>;
-    onFineTuneProgress: (callback: (job: unknown) => void) => () => void;
+    onFineTuneProgress: (callback: (job: RuntimeValue) => void) => () => void;
     downloadFile: (
         url: string,
         outputPath: string,
@@ -180,7 +180,7 @@ export function createHuggingFaceBridge(ipc: IpcRenderer): HuggingFaceBridge {
         exportFineTunedModel: (jobId, exportPath) =>
             ipc.invoke('huggingface:export-fine-tuned-model', { jobId, exportPath }),
         onFineTuneProgress: (callback) => {
-            const listener = (_event: IpcRendererEvent, job: unknown) => callback(job);
+            const listener = (_event: IpcRendererEvent, job: RuntimeValue) => callback(job);
             ipc.on('huggingface:fine-tune-progress', listener);
             return () => ipc.removeListener('huggingface:fine-tune-progress', listener);
         },

@@ -48,7 +48,7 @@ function subscribe(listener: Listener): () => void {
 
 /** Safely invokes the IPC bridge if available */
 function invokeIpc(featureId: string): Promise<boolean> {
-    const api = (window as unknown as Record<string, unknown>).api as
+    const api = (window as TypeAssertionValue as Record<string, RendererDataValue>).api as
         | { invoke?: (channel: string, ...args: string[]) => Promise<boolean> }
         | undefined;
 
@@ -70,7 +70,7 @@ function fetchFlag(featureId: string): void {
             flagState.set(featureId, { isEnabled: enabled, isLoading: false, error: null });
             emit();
         })
-        .catch((err: unknown) => {
+        .catch((err: RendererDataValue) => {
             const msg = err instanceof Error ? err.message : String(err);
             flagState.set(featureId, { isEnabled: false, isLoading: false, error: msg });
             emit();

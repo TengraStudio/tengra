@@ -93,6 +93,11 @@ module.exports = {
                     light: 'hsl(var(--neutral-light))',
                     dark: 'hsl(var(--neutral-dark))',
                 },
+                indigo: 'hsl(var(--indigo))',
+                purple: 'hsl(var(--purple))',
+                cyan: 'hsl(var(--cyan))',
+                orange: 'hsl(var(--orange))',
+                fuchsia: 'hsl(var(--fuchsia))',
                 /* Brand/Icon Colors */
                 brand: {
                     typescript: '#3178C6',

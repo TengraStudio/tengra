@@ -37,7 +37,7 @@ export interface BatchResult {
     /** Whether the call succeeded */
     success: boolean;
     /** The return data on success */
-    data?: IpcValue;
+    data?: RuntimeValue;
     /** Error message on failure */
     error?: string;
 }
@@ -62,7 +62,7 @@ export interface BatchResponse {
 /**
  * Type definition for a handler that can be included in an IPC batch.
  */
-type BatchableHandler = (event: IpcMainInvokeEvent, ...args: IpcValue[]) => Promise<unknown>;
+type BatchableHandler = (event: IpcMainInvokeEvent, args: IpcValue[]) => Promise<RuntimeValue>;
 
 /** Registry of handlers that can be batched */
 const batchableHandlers = new Map<string, BatchableHandler>();
@@ -75,16 +75,17 @@ const batchableHandlers = new Map<string, BatchableHandler>();
  * @param channel - The IPC channel name
  * @param handler - The async function to handle the request
  */
-export function registerBatchableHandler(
+export function registerBatchableHandler<Args extends IpcValue[], Result extends RuntimeValue>(
     channel: string,
-    handler: BatchableHandler
+    handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<Result>
 ): void {
-    batchableHandlers.set(channel, handler);
+    const wrappedHandler: BatchableHandler = (event, args) => handler(event, ...(args as Args));
+    batchableHandlers.set(channel, wrappedHandler);
 
     // Also register as a regular handler so it can be called directly
     try {
         // We use .handle which will throw if already registered
-        ipcMain.handle(channel, handler);
+        ipcMain.handle(channel, (event, ...args: IpcValue[]) => handler(event, ...(args as Args)));
     } catch {
         // If already registered (e.g. by a specialized handler in another file), that's fine
     }
@@ -140,11 +141,11 @@ async function executeBatchRequest(
     }
 
     try {
-        const result = await handler(event, ...request.args);
+        const result = await handler(event, request.args);
         return {
             channel: request.channel,
             success: true,
-            data: result as IpcValue
+            data: result
         };
     } catch (error) {
         return {
@@ -261,7 +262,7 @@ export function registerBatchIpc(): void {
  * Helper to register multiple handlers at once
  */
 export function registerBatchableHandlers(
-    handlers: Record<string, BatchableHandler>
+    handlers: Record<string, (event: IpcMainInvokeEvent, ...args: IpcValue[]) => Promise<RuntimeValue>>
 ): void {
     for (const [channel, handler] of Object.entries(handlers)) {
         registerBatchableHandler(channel, handler);
@@ -279,5 +280,5 @@ export function makeBatchable<T extends IpcValue>(
     channel: string,
     handler: (event: IpcMainInvokeEvent, ...args: IpcValue[]) => Promise<T>
 ): void {
-    registerBatchableHandler(channel, handler as BatchableHandler);
+    registerBatchableHandler(channel, handler);
 }

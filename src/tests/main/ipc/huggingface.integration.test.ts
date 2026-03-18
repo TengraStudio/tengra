@@ -39,13 +39,13 @@ describe('HuggingFace IPC Handlers', () => {
         // Capture IPC handlers
         vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: CallableFunction) => {
             ipcMainHandlers.set(channel, handler);
-            return { channels: [channel] } as unknown as Electron.IpcMain;
+            return { channels: [channel] } as never as Electron.IpcMain;
         });
 
         // Mock services
         mockLLMService = {
             searchHFModels: vi.fn().mockResolvedValue({ models: [], total: 0 })
-        } as unknown as LLMService;
+        } as never as LLMService;
 
         mockHFService = {
             getModelFiles: vi.fn().mockResolvedValue([]),
@@ -61,13 +61,13 @@ describe('HuggingFace IPC Handlers', () => {
             getCacheStats: vi.fn().mockResolvedValue({ size: 0, maxSize: 200, ttlMs: 600000, oldestAgeMs: 0, watchlistSize: 0 }),
             clearCache: vi.fn().mockResolvedValue({ success: true, removed: 1 }),
             testDownloadedModel: vi.fn().mockResolvedValue({ success: true, metadata: {} })
-        } as unknown as HuggingFaceService;
+        } as never as HuggingFaceService;
 
         mockEvent = {
             sender: {
                 send: vi.fn()
             }
-        } as unknown as IpcMainInvokeEvent;
+        } as never as IpcMainInvokeEvent;
 
         registerHFModelIpc(mockLLMService, mockHFService);
     });

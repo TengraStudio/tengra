@@ -12,12 +12,12 @@ const MAX_CHAT_ID_LENGTH = 128;
 /**
  * Validates a comparison request
  */
-function validateComparisonRequest(value: unknown): ComparisonRequest | null {
+function validateComparisonRequest(value: RuntimeValue): ComparisonRequest | null {
     if (!value || typeof value !== 'object') {
         return null;
     }
 
-    const raw = value as Record<string, unknown>;
+    const raw = value as Record<string, RuntimeValue>;
 
     // Validate chatId
     if (typeof raw.chatId !== 'string' || !raw.chatId.trim() || raw.chatId.length > MAX_CHAT_ID_LENGTH) {
@@ -42,7 +42,7 @@ function validateComparisonRequest(value: unknown): ComparisonRequest | null {
         if (!model || typeof model !== 'object') {
             return false;
         }
-        const m = model as Record<string, unknown>;
+        const m = model as Record<string, RuntimeValue>;
         return typeof m.provider === 'string' && typeof m.model === 'string';
     });
 
@@ -67,7 +67,7 @@ export function registerMultiModelIpc(comparisonService: MultiModelComparisonSer
         'llm:compare-models',
         createIpcHandler(
             'llm:compare-models',
-            async (_event: IpcMainInvokeEvent, requestRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, requestRaw: RuntimeValue) => {
                 const request = validateComparisonRequest(requestRaw);
                 if (!request) {
                     throw new Error('Invalid comparison request');

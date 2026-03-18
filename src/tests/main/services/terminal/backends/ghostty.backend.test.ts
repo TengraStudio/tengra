@@ -10,8 +10,8 @@ const mockSpawn = vi.fn();
 const mockExecSync = vi.fn();
 
 vi.mock('child_process', () => ({
-    spawn: (...args: unknown[]) => mockSpawn(...args),
-    execSync: (...args: unknown[]) => mockExecSync(...args),
+    spawn: (...args: TestValue[]) => mockSpawn(...args),
+    execSync: (...args: TestValue[]) => mockExecSync(...args),
 }));
 
 vi.mock('electron', () => ({
@@ -26,11 +26,41 @@ const mockAppendFile = vi.fn().mockResolvedValue(undefined);
 const mockExistsSync = vi.fn().mockReturnValue(false);
 
 vi.mock('fs', () => ({
-    existsSync: (...args: unknown[]) => mockExistsSync(...args),
+    existsSync: (...args: TestValue[]) => mockExistsSync(...args),
     promises: {
-        mkdir: (...args: unknown[]) => mockMkdir(...args),
-        writeFile: (...args: unknown[]) => mockWriteFile(...args),
-        appendFile: (...args: unknown[]) => mockAppendFile(...args),
+        mkdir: (...args: TestValue[]) => mockMkdir(...args),
+        writeFile: (...args: TestValue[]) => mockWriteFile(...args),
+        appendFile: (...args: TestValue[]) => mockAppendFile(...args),
+    },
+}));
+
+vi.mock('@main/services/terminal/backends/backend-discovery.util', () => ({
+    findExecutableInPath: async () => {
+        try {
+            const result = mockExecSync();
+            if (typeof result !== 'string') {
+                return null;
+            }
+            const [firstPath] = result
+                .split(/\r?\n/)
+                .map(candidate => candidate.trim())
+                .filter(candidate => candidate.length > 0);
+            return firstPath ?? null;
+        } catch {
+            return null;
+        }
+    },
+    findFirstExistingPath: async (candidatePaths: readonly string[]) => {
+        for (const candidatePath of candidatePaths) {
+            try {
+                if (mockExistsSync(candidatePath)) {
+                    return candidatePath;
+                }
+            } catch {
+                // Ignore failing candidate paths so discovery can continue.
+            }
+        }
+        return null;
     },
 }));
 
@@ -46,17 +76,17 @@ vi.mock('@main/logging/logger', () => ({
 // --- Helpers ---
 
 function createMockChildProcess(overrides?: Partial<ChildProcess>): ChildProcess {
-    const listeners = new Map<string, ((...args: unknown[]) => void)[]>();
+    const listeners = new Map<string, ((...args: TestValue[]) => void)[]>();
     return {
         killed: false,
         kill: vi.fn(),
         unref: vi.fn(),
-        on: vi.fn((event: string, handler: (...args: unknown[]) => void) => {
+        on: vi.fn((event: string, handler: (...args: TestValue[]) => void) => {
             const existing = listeners.get(event) ?? [];
             existing.push(handler);
             listeners.set(event, existing);
         }),
-        emit: (event: string, ...args: unknown[]) => {
+        emit: (event: string, ...args: TestValue[]) => {
             const handlers = listeners.get(event) ?? [];
             for (const handler of handlers) {
                 handler(...args);
@@ -64,7 +94,7 @@ function createMockChildProcess(overrides?: Partial<ChildProcess>): ChildProcess
             return true;
         },
         ...overrides,
-    } as unknown as ChildProcess;
+    } as never as ChildProcess;
 }
 
 function createDefaultOptions(overrides?: Partial<TerminalCreateOptions>): TerminalCreateOptions {
@@ -179,7 +209,7 @@ describe('GhosttyBackend', () => {
             await backend.create(options);
 
             expect(mockSpawn).toHaveBeenCalledTimes(1);
-            const [spawnPath, spawnArgs, spawnOpts] = mockSpawn.mock.calls[0] as [string, string[], Record<string, unknown>];
+            const [spawnPath, spawnArgs, spawnOpts] = mockSpawn.mock.calls[0] as [string, string[], Record<string, TestValue>];
             expect(spawnPath).toBe('/usr/bin/ghostty');
             expect(spawnArgs).toContain('--working-directory');
             expect(spawnArgs).toContain(options.cwd);

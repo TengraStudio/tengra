@@ -94,7 +94,7 @@ export class WorkspaceRepository extends BaseRepository {
 
     async updateWorkspace(id: string, updates: Partial<Workspace>): Promise<Workspace | undefined> {
         const fields: string[] = [];
-        const values: unknown[] = [];
+        const values: RuntimeValue[] = [];
         const currentWorkspace = await this.getWorkspace(id);
 
         this.collectWorkspaceUpdates(updates, fields, values, currentWorkspace ?? undefined);
@@ -116,7 +116,7 @@ export class WorkspaceRepository extends BaseRepository {
     private collectWorkspaceUpdates(
         updates: Partial<Workspace>,
         fields: string[],
-        values: unknown[],
+        values: RuntimeValue[],
         currentWorkspace?: Workspace
     ) {
         if (updates.title !== undefined) {
@@ -233,7 +233,7 @@ export class WorkspaceRepository extends BaseRepository {
         };
     }
 
-    private parseRowJsonObjectField(value: unknown): JsonObject | undefined {
+    private parseRowJsonObjectField(value: RuntimeValue): JsonObject | undefined {
         if (typeof value === 'string') {
             const parsed = this.parseJsonField(value, {});
             return this.isObject(parsed) ? (parsed as JsonObject) : undefined;
@@ -244,12 +244,12 @@ export class WorkspaceRepository extends BaseRepository {
         return undefined;
     }
 
-    private normalizeMounts(value: unknown): Workspace['mounts'] {
+    private normalizeMounts(value: RuntimeValue): Workspace['mounts'] {
         if (Array.isArray(value)) {
             return value as Workspace['mounts'];
         }
         if (typeof value === 'string') {
-            const parsed = this.parseJsonField<unknown>(value, []);
+            const parsed = this.parseJsonField<RuntimeValue>(value, []);
             return Array.isArray(parsed) ? (parsed as Workspace['mounts']) : [];
         }
         return [];
@@ -285,23 +285,23 @@ export class WorkspaceRepository extends BaseRepository {
         if (hasWorkspaceSettings) {
             const workspaceSettings: JsonObject = {};
             if (nextBuildConfig) {
-                workspaceSettings.buildConfig = nextBuildConfig as unknown as JsonObject;
+                workspaceSettings.buildConfig = nextBuildConfig as RuntimeValue as JsonObject;
             }
             if (nextDevServer) {
-                workspaceSettings.devServer = nextDevServer as unknown as JsonObject;
+                workspaceSettings.devServer = nextDevServer as RuntimeValue as JsonObject;
             }
             if (nextAdvancedOptions) {
-                workspaceSettings.advancedOptions = nextAdvancedOptions as unknown as JsonObject;
+                workspaceSettings.advancedOptions = nextAdvancedOptions as RuntimeValue as JsonObject;
             }
             baseMetadata.workspaceSettings = workspaceSettings;
         } else {
-            delete (baseMetadata as Record<string, unknown>).workspaceSettings;
+            delete (baseMetadata as Record<string, RuntimeValue>).workspaceSettings;
         }
 
         // Remove legacy top-level keys to keep metadata shape stable.
-        delete (baseMetadata as Record<string, unknown>).buildConfig;
-        delete (baseMetadata as Record<string, unknown>).devServer;
-        delete (baseMetadata as Record<string, unknown>).advancedOptions;
+        delete (baseMetadata as Record<string, RuntimeValue>).buildConfig;
+        delete (baseMetadata as Record<string, RuntimeValue>).devServer;
+        delete (baseMetadata as Record<string, RuntimeValue>).advancedOptions;
 
         return baseMetadata;
     }
@@ -316,10 +316,10 @@ export class WorkspaceRepository extends BaseRepository {
         }
 
         const settingsContainer = this.isObject(
-            (metadata as Record<string, unknown>).workspaceSettings
+            (metadata as Record<string, RuntimeValue>).workspaceSettings
         )
-            ? ((metadata as Record<string, unknown>).workspaceSettings as Record<string, unknown>)
-            : (metadata as Record<string, unknown>);
+            ? ((metadata as Record<string, RuntimeValue>).workspaceSettings as Record<string, RuntimeValue>)
+            : (metadata as Record<string, RuntimeValue>);
 
         return {
             buildConfig: this.normalizeBuildConfig(settingsContainer.buildConfig),
@@ -328,11 +328,11 @@ export class WorkspaceRepository extends BaseRepository {
         };
     }
 
-    private normalizeBuildConfig(value: unknown): Workspace['buildConfig'] | undefined {
+    private normalizeBuildConfig(value: RuntimeValue): Workspace['buildConfig'] | undefined {
         if (!this.isObject(value)) {
             return undefined;
         }
-        const v = value as Record<string, unknown>;
+        const v = value as Record<string, RuntimeValue>;
         const result: Workspace['buildConfig'] = {
             ...(typeof v.buildCommand === 'string' ? { buildCommand: v.buildCommand } : {}),
             ...(typeof v.testCommand === 'string' ? { testCommand: v.testCommand } : {}),
@@ -343,11 +343,11 @@ export class WorkspaceRepository extends BaseRepository {
         return Object.keys(result).length > 0 ? result : undefined;
     }
 
-    private normalizeDevServer(value: unknown): Workspace['devServer'] | undefined {
+    private normalizeDevServer(value: RuntimeValue): Workspace['devServer'] | undefined {
         if (!this.isObject(value)) {
             return undefined;
         }
-        const v = value as Record<string, unknown>;
+        const v = value as Record<string, RuntimeValue>;
         const normalizedPort =
             typeof v.port === 'number'
                 ? v.port
@@ -362,11 +362,11 @@ export class WorkspaceRepository extends BaseRepository {
         return Object.keys(result).length > 0 ? result : undefined;
     }
 
-    private normalizeAdvancedOptions(value: unknown): Workspace['advancedOptions'] | undefined {
+    private normalizeAdvancedOptions(value: RuntimeValue): Workspace['advancedOptions'] | undefined {
         if (!this.isObject(value)) {
             return undefined;
         }
-        const v = value as Record<string, unknown>;
+        const v = value as Record<string, RuntimeValue>;
         const result: Workspace['advancedOptions'] = {
             ...(typeof v.fileWatchEnabled === 'boolean'
                 ? { fileWatchEnabled: v.fileWatchEnabled }
@@ -385,12 +385,12 @@ export class WorkspaceRepository extends BaseRepository {
         return Object.keys(result).length > 0 ? result : undefined;
     }
 
-    private normalizeStringArray(value: unknown): string[] {
+    private normalizeStringArray(value: RuntimeValue): string[] {
         if (Array.isArray(value)) {
             return value.filter(item => typeof item === 'string') as string[];
         }
         if (typeof value === 'string') {
-            const parsed = this.parseJsonField<unknown>(value, []);
+            const parsed = this.parseJsonField<RuntimeValue>(value, []);
             return Array.isArray(parsed)
                 ? (parsed.filter(item => typeof item === 'string') as string[])
                 : [];
@@ -398,20 +398,20 @@ export class WorkspaceRepository extends BaseRepository {
         return [];
     }
 
-    private normalizeCouncilConfig(value: unknown): Workspace['councilConfig'] {
+    private normalizeCouncilConfig(value: RuntimeValue): Workspace['councilConfig'] {
         const defaultConfig: Workspace['councilConfig'] = {
             enabled: false,
             members: [],
             consensusThreshold: 0.7,
         };
-        let record: Record<string, unknown> | undefined;
+        let record: Record<string, RuntimeValue> | undefined;
 
         if (this.isObject(value)) {
-            record = value as Record<string, unknown>;
+            record = value as Record<string, RuntimeValue>;
         } else if (typeof value === 'string') {
-            const parsed = this.parseJsonField<unknown>(value, defaultConfig as unknown);
+            const parsed = this.parseJsonField<RuntimeValue>(value, defaultConfig as RuntimeValue);
             if (this.isObject(parsed)) {
-                record = parsed as Record<string, unknown>;
+                record = parsed as Record<string, RuntimeValue>;
             }
         }
 
@@ -431,7 +431,7 @@ export class WorkspaceRepository extends BaseRepository {
         };
     }
 
-    private isObject(value: unknown): value is Record<string, unknown> {
+    private isObject(value: RuntimeValue): value is Record<string, RuntimeValue> {
         return typeof value === 'object' && value !== null && !Array.isArray(value);
     }
 }

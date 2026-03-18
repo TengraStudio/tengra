@@ -63,7 +63,16 @@ const sectionData = {
     "noBranchesFound": "没有找到分支机构",
     "switchingBranch": "正在切换 branch...",
     "branchSwitched": "切换到 {{branch}}。",
-    "branchSwitchFailed": "无法切换 branch。"
+    "branchSwitchFailed": "无法切换 branch。",
+    "listPresetTitle": "List preset",
+    "openTitle": "Open",
+    "todoUndoTitle": "Undo (Ctrl/Cmd+Z)",
+    "todoRedoTitle": "Redo (Ctrl/Cmd+Y)",
 };
 
 export default sectionData;
+
+
+
+
+

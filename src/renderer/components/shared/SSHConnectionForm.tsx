@@ -112,7 +112,7 @@ export const SSHConnectionForm: React.FC<SSHConnectionFormProps> = ({
                         value={sshForm.password}
                         onChange={e => setSshForm(p => ({ ...p, password: e.target.value }))}
                         className={inputClass}
-                        placeholder="••••••••"
+                        placeholder={t('common.password')}
                     />
                 </div>
             ) : (
@@ -130,14 +130,14 @@ export const SSHConnectionForm: React.FC<SSHConnectionFormProps> = ({
                     </div>
                     <div>
                         <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">
-                            {t('common.passphrase')} ({t('common.optional') ?? 'Optional'})
+                            {t('common.passphrase')} ({t('common.optional')})
                         </label>
                         <input
                             type="password"
                             value={sshForm.passphrase}
                             onChange={e => setSshForm(p => ({ ...p, passphrase: e.target.value }))}
                             className={inputClass}
-                            placeholder="••••••••"
+                            placeholder={t('common.passphrase')}
                         />
                     </div>
                 </div>

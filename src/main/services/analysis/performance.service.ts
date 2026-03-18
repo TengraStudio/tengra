@@ -1,19 +1,45 @@
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
+import { EventBusService } from '@main/services/system/event-bus.service';
+import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
+import { PowerManagerService } from '@main/services/system/power-manager.service';
+import { SettingsService } from '@main/services/system/settings.service';
 import { IPerformanceService } from '@main/types/services';
 import { getCacheAnalyticsSnapshot } from '@main/utils/cache.util';
-import { ServiceResponse } from '@shared/types';
+import { ProcessMetric, ServiceResponse, StartupMetrics } from '@shared/types';
 import { getErrorMessage } from '@shared/utils/error.util';
+import { app } from 'electron';
 
 export class PerformanceService extends BaseService implements IPerformanceService {
+    private static readonly MEMORY_MONITOR_JOB_ID = 'performance:memory-monitor';
     private memoryHistory: number[] = [];
     private maxHistoryLength = 60; // 1 hour if sampled every minute
-    private monitoringInterval?: NodeJS.Timeout;
+    private monitoringInterval: NodeJS.Timeout | null = null;
     private alerts: Array<{ timestamp: number; level: 'info' | 'warn' | 'error'; message: string }> = [];
     private readonly memoryPressureBytes = 800 * 1024 * 1024;
+    private readonly eventBus: EventBusService;
+    private readonly jobScheduler?: JobSchedulerService;
+    private readonly powerManager: PowerManagerService;
+    private startupMetrics: StartupMetrics = {
+        startTime: Date.now()
+    };
 
-    constructor() {
+    constructor(
+        powerManager?: PowerManagerService,
+        eventBus?: EventBusService,
+        jobScheduler?: JobSchedulerService
+    ) {
         super('PerformanceService');
+        this.eventBus = eventBus ?? new EventBusService();
+        this.powerManager = powerManager ?? this.createFallbackPowerManager();
+        this.jobScheduler = jobScheduler;
+    }
+
+    private createFallbackPowerManager(): PowerManagerService {
+        const fallbackSettings = {
+            getSettings: () => ({ window: {} }),
+        } as SettingsService;
+        return new PowerManagerService(fallbackSettings, this.eventBus);
     }
 
     /**
@@ -21,8 +47,6 @@ export class PerformanceService extends BaseService implements IPerformanceServi
      */
     async initialize(): Promise<void> {
         appLogger.info(this.name, 'Initializing performance service...');
-        
-        // Start memory monitoring
         this.startMemoryMonitoring();
         
         appLogger.info(this.name, `Performance monitoring started (${this.maxHistoryLength} sample history)`);
@@ -33,14 +57,12 @@ export class PerformanceService extends BaseService implements IPerformanceServi
      */
     async cleanup(): Promise<void> {
         appLogger.info(this.name, 'Cleaning up performance service...');
-        
-        // Stop memory monitoring
+        this.jobScheduler?.unregisterRecurringJob(PerformanceService.MEMORY_MONITOR_JOB_ID);
         if (this.monitoringInterval) {
             clearInterval(this.monitoringInterval);
-            this.monitoringInterval = undefined;
+            this.monitoringInterval = null;
         }
         
-        // Clear history
         this.memoryHistory = [];
         
         appLogger.info(this.name, 'Performance service cleaned up');
@@ -50,33 +72,56 @@ export class PerformanceService extends BaseService implements IPerformanceServi
      * Start automatic memory monitoring
      */
     private startMemoryMonitoring(): void {
-        // Sample memory every 60 seconds
-        this.monitoringInterval = setInterval(() => {
-            const stats = process.memoryUsage();
-            this.memoryHistory.push(stats.heapUsed);
-            
-            if (this.memoryHistory.length > this.maxHistoryLength) {
-                this.memoryHistory.shift();
-            }
-            
-            // Log memory leaks if detected
-            if (this.memoryHistory.length >= 5) {
-                const leak = this.detectLeakSync();
-                if (leak.isPossibleLeak) {
-                    appLogger.warn(this.name, 'Possible memory leak detected');
-                    this.pushAlert('warn', 'Possible memory leak detected from heap trend');
+        if (this.jobScheduler) {
+            this.jobScheduler.registerRecurringJob(
+                PerformanceService.MEMORY_MONITOR_JOB_ID,
+                async () => {
+                    this.sampleMemoryUsage();
+                },
+                () => this.getMonitoringIntervalMs(),
+                {
+                    persistState: false,
+                    runOnStart: false,
                 }
-            }
+            );
+            return;
+        }
 
-            // Memory pressure monitoring and automatic GC hint
-            if (stats.rss > this.memoryPressureBytes) {
-                this.pushAlert('warn', `Memory pressure detected (rss=${Math.round(stats.rss / 1024 / 1024)}MB)`);
-                const gc = this.triggerGC();
-                if (!gc.success) {
-                    this.pushAlert('info', 'GC hint skipped (global.gc unavailable)');
-                }
+        if (this.monitoringInterval) {
+            clearInterval(this.monitoringInterval);
+        }
+        this.monitoringInterval = setInterval(() => {
+            this.sampleMemoryUsage();
+        }, this.getMonitoringIntervalMs());
+    }
+
+    private getMonitoringIntervalMs(): number {
+        return this.powerManager.isLowPowerMode() ? 300000 : 60000;
+    }
+
+    private sampleMemoryUsage(): void {
+        const stats = process.memoryUsage();
+        this.memoryHistory.push(stats.heapUsed);
+
+        if (this.memoryHistory.length > this.maxHistoryLength) {
+            this.memoryHistory.shift();
+        }
+
+        if (this.memoryHistory.length >= 5) {
+            const leak = this.detectLeakSync();
+            if (leak.isPossibleLeak) {
+                appLogger.warn(this.name, 'Possible memory leak detected');
+                this.pushAlert('warn', 'Possible memory leak detected from heap trend');
             }
-        }, 60000); // 60 seconds
+        }
+
+        if (stats.rss > this.memoryPressureBytes) {
+            this.pushAlert('warn', `Memory pressure detected (rss=${Math.round(stats.rss / 1024 / 1024)}MB)`);
+            const gc = this.triggerGC();
+            if (!gc.success) {
+                this.pushAlert('info', 'GC hint skipped (global.gc unavailable)');
+            }
+        }
     }
 
     private pushAlert(level: 'info' | 'warn' | 'error', message: string): void {
@@ -125,14 +170,14 @@ export class PerformanceService extends BaseService implements IPerformanceServi
             this.memoryHistory.shift();
         }
 
-        return { success: true, result: stats };
+        return { success: true, data: stats };
     }
 
     async detectLeak(): Promise<ServiceResponse<{ isPossibleLeak: boolean; trend: number[] }>> {
         if (this.memoryHistory.length < 5) {
             return {
                 success: true,
-                result: { isPossibleLeak: false, trend: this.memoryHistory }
+                data: { isPossibleLeak: false, trend: this.memoryHistory }
             };
         }
 
@@ -155,7 +200,7 @@ export class PerformanceService extends BaseService implements IPerformanceServi
 
         return {
             success: true,
-            result: { isPossibleLeak, trend: lastSamples }
+            data: { isPossibleLeak, trend: lastSamples }
         };
     }
 
@@ -164,7 +209,7 @@ export class PerformanceService extends BaseService implements IPerformanceServi
             if (global.gc) {
                 global.gc();
                 this.pushAlert('info', 'Manual garbage collection triggered');
-                return { success: true, result: { success: true } };
+                return { success: true, data: { success: true } };
             }
             return {
                 success: false,
@@ -175,24 +220,68 @@ export class PerformanceService extends BaseService implements IPerformanceServi
         }
     }
 
+    async getProcessMetrics(): Promise<ServiceResponse<ProcessMetric[]>> {
+        try {
+            const metrics = app.getAppMetrics();
+            const processMetrics: ProcessMetric[] = metrics.map(m => ({
+                type: m.type as 'main' | 'renderer' | 'utility' | 'gpu',
+                pid: m.pid,
+                cpu: m.cpu.percentCPUUsage,
+                memory: m.memory.workingSetSize * 1024, // KB to Bytes
+                name: m.name
+            }));
+            return { success: true, data: processMetrics };
+        } catch (e) {
+            return { success: false, error: getErrorMessage(e) };
+        }
+    }
+
+    getStartupMetrics(): ServiceResponse<StartupMetrics> {
+        return { success: true, data: { ...this.startupMetrics } };
+    }
+
+    recordStartupEvent(event: keyof StartupMetrics): void {
+        if (event === 'startTime') {return;} // Cannot override
+        this.startupMetrics[event] = Date.now();
+        
+        if (this.startupMetrics.startTime && this.startupMetrics.readyTime && 
+            this.startupMetrics.loadTime && !this.startupMetrics.totalTime) {
+            this.startupMetrics.totalTime = this.startupMetrics.loadTime - this.startupMetrics.startTime;
+            appLogger.info(this.name, `Startup complete in ${this.startupMetrics.totalTime}ms`);
+        }
+    }
+
     getDashboard(): ServiceResponse<{
         memory: {
             latestRss: number;
             latestHeapUsed: number;
             sampleCount: number;
         };
+        processes: ProcessMetric[];
+        startup: StartupMetrics;
         alerts: Array<{ timestamp: number; level: 'info' | 'warn' | 'error'; message: string }>;
-        caches?: Record<string, unknown>;
+        caches?: Record<string, RuntimeValue>;
     }> {
         const usage = process.memoryUsage();
+        const metrics = app.getAppMetrics();
+        const processes: ProcessMetric[] = metrics.map(m => ({
+            type: m.type as 'main' | 'renderer' | 'utility' | 'gpu',
+            pid: m.pid,
+            cpu: m.cpu.percentCPUUsage,
+            memory: m.memory.workingSetSize * 1024,
+            name: m.name
+        }));
+
         return {
             success: true,
-            result: {
+            data: {
                 memory: {
                     latestRss: usage.rss,
                     latestHeapUsed: usage.heapUsed,
                     sampleCount: this.memoryHistory.length
                 },
+                processes,
+                startup: { ...this.startupMetrics },
                 alerts: [...this.alerts],
                 caches: getCacheAnalyticsSnapshot()
             }

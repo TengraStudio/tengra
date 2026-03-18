@@ -6,9 +6,9 @@ import {
 } from '@shared/schemas/terminal.schema';
 import type { TerminalIpcContract } from '@shared/terminal-ipc';
 import { toTerminalSessionId,toWorkspaceId, WorkspaceId } from '@shared/types/ids';
+import { FitAddon } from '@xterm/addon-fit';
+import { Terminal } from '@xterm/xterm';
 import { useCallback, useEffect, useRef } from 'react';
-import { Terminal } from 'xterm';
-import { FitAddon } from 'xterm-addon-fit';
 
 import { invokeTypedIpc } from '@/lib/ipc-client';
 import { getTerminalTheme } from '@/lib/terminal-theme';
@@ -230,7 +230,7 @@ export function useTerminal(cwd?: string, workspaceId?: string, t?: (key: string
 
                 cleanupsRef.current = { data: cleanupData, exit: cleanupExit };
 
-                term.onData((data) => {
+                term.onData((data: string) => {
                     if (!pidRef.current) { return; }
 
                     if (data === KEY_CODES.ARROW_UP) {
@@ -258,7 +258,7 @@ export function useTerminal(cwd?: string, workspaceId?: string, t?: (key: string
                     }
                 });
 
-                term.onResize(({ cols, rows }) => {
+                term.onResize(({ cols, rows }: { cols: number; rows: number }) => {
                     if (pidRef.current) {
                         invokeTypedIpc<TerminalIpcContract, 'terminal:resize'>('terminal:resize', [pidRef.current, cols, rows], { responseSchema: terminalResizeResponseSchema }).catch(error => {
                             appLogger.warn('WorkspaceUseTerminal', 'Failed to resize terminal', error as Error);

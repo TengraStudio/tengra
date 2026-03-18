@@ -4,6 +4,23 @@
 import { SecurityService } from '@main/services/security/security.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+interface FsPromisesMock {
+    access: ReturnType<typeof vi.fn>;
+    copyFile: ReturnType<typeof vi.fn>;
+    readFile: ReturnType<typeof vi.fn>;
+    unlink: ReturnType<typeof vi.fn>;
+    writeFile: ReturnType<typeof vi.fn>;
+}
+
+interface FsModuleMock {
+    existsSync: ReturnType<typeof vi.fn>;
+    readFileSync: ReturnType<typeof vi.fn>;
+    writeFileSync: ReturnType<typeof vi.fn>;
+    mkdirSync: ReturnType<typeof vi.fn>;
+    statSync: ReturnType<typeof vi.fn>;
+    promises: FsPromisesMock;
+}
+
 // Mock electron safeStorage
 vi.mock('electron', () => ({
     safeStorage: {
@@ -45,11 +62,11 @@ vi.mock('fs/promises', () => ({
 }));
 
 let service: SecurityService;
-let fsMock: any;
+let fsMock: FsModuleMock;
 
 beforeEach(async () => {
     vi.clearAllMocks();
-    fsMock = await import('fs');
+    fsMock = await import('fs') as never as FsModuleMock;
 
     // Default setup: Key file does not exist, safeStorage available
     fsMock.existsSync.mockReturnValue(false);
@@ -59,7 +76,7 @@ beforeEach(async () => {
 
     const mockDataService = {
         getPath: vi.fn().mockReturnValue('/tmp')
-    } as any;
+    } as never;
     service = new SecurityService(mockDataService);
 });
 

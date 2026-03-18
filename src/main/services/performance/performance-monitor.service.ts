@@ -285,7 +285,7 @@ export class PerformanceMonitorService extends BaseService {
         this.recordCPUUsage();
 
         // File descriptor count (handle count)
-        type ProcessWithHandles = NodeJS.Process & { _getActiveHandles?: () => unknown[] };
+        type ProcessWithHandles = NodeJS.Process & { _getActiveHandles?: () => RuntimeValue[] };
         const processWithHandles = process as ProcessWithHandles;
         const handleCount = processWithHandles._getActiveHandles?.().length ?? 0;
 

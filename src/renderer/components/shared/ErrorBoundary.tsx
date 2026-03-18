@@ -6,7 +6,7 @@ interface Props {
     children: ReactNode;
     fallback?: ReactNode;
     fallbackRender?: (props: { error: Error; resetErrorBoundary: () => void }) => ReactNode;
-    resetKeys?: unknown[];
+    resetKeys?: RendererDataValue[];
 }
 
 interface State {
@@ -52,11 +52,21 @@ class ErrorBoundaryBase extends Component<ErrorBoundaryBaseProps, State> {
 
     public render() {
         if (this.state.hasError) {
-            if (this.props.fallbackRender && this.state.error) {
-                return this.props.fallbackRender({
-                    error: this.state.error,
-                    resetErrorBoundary: this.resetErrorBoundary
-                });
+            const resolvedError = this.state.error ?? new Error('Unknown render error');
+            if (this.props.fallbackRender) {
+                try {
+                    return this.props.fallbackRender({
+                        error: resolvedError,
+                        resetErrorBoundary: this.resetErrorBoundary
+                    });
+                } catch (fallbackError) {
+                    window.electron.log.error(
+                        'Error boundary fallback render failed',
+                        fallbackError instanceof Error
+                            ? fallbackError
+                            : new Error('Unknown fallback render error')
+                    );
+                }
             }
             return this.props.fallback ?? this.props.defaultFallback;
         }

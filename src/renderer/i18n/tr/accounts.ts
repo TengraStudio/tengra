@@ -9,6 +9,7 @@ const sectionData = {
     "unnamed": "Adsız Hesap",
     "create": "Oluştur",
     "switch": "Değiştir",
+    "idPrefix": "ID:",
     "loadFailed": "Hesaplar yüklenemedi",
     "createSuccess": "\"{{name}}\" hesabı oluşturuldu",
     "createFailed": "Hesap oluşturulamadı",
@@ -16,6 +17,7 @@ const sectionData = {
     "switchFailed": "Hesap değiştirilemedi",
     "categories": {
         "aiProviders": "AI Sağlayıcılar",
+        "aiProvidersNvidia": "AI Sağlayıcılar (NVIDIA)",
         "developerTools": "Geliştirici Araçları",
         "localModels": "Yerel Modeller"
     },

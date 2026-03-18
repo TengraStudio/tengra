@@ -3,7 +3,7 @@
  * Manages shared prompts with CRUD, search, import/export.
  */
 
-import * as fs from 'fs';
+import * as fsPromises from 'fs/promises';
 
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
@@ -55,14 +55,28 @@ interface SharedPromptRow {
 const MAX_SEARCH_LIMIT = 500;
 
 export class SharedPromptsService extends BaseService {
+    private initPromise: Promise<void> | null = null;
+
     constructor(private readonly db: DatabaseService) {
         super('SharedPromptsService');
     }
 
     /** Initialize the service and ensure the database table exists. */
-    async initialize(): Promise<void> {
+    override async initialize(): Promise<void> {
+        if (this.initPromise) {
+            return this.initPromise;
+        }
+
         this.logInfo('Initializing shared prompts service...');
-        await this.ensureTable();
+        this.initPromise = this.ensureTable().catch((error: RuntimeValue) => {
+            this.initPromise = null;
+            throw error;
+        });
+        await this.initPromise;
+    }
+
+    private async ensureReady(): Promise<void> {
+        await this.initialize();
     }
 
     /** Ensure the shared_prompts table exists. */
@@ -83,6 +97,7 @@ export class SharedPromptsService extends BaseService {
 
     /** Create a new shared prompt. */
     async create(input: SharedPromptInput): Promise<SharedPrompt> {
+        await this.ensureReady();
         const now = Date.now();
         const prompt: SharedPrompt = {
             id: uuidv4(),
@@ -106,6 +121,7 @@ export class SharedPromptsService extends BaseService {
 
     /** Get a shared prompt by ID. */
     async getById(id: string): Promise<SharedPrompt | undefined> {
+        await this.ensureReady();
         const stmt = await this.db.prepare(
             `SELECT * FROM shared_prompts WHERE id = $1`
         );
@@ -115,6 +131,7 @@ export class SharedPromptsService extends BaseService {
 
     /** List shared prompts with optional filtering. */
     async list(filter?: SharedPromptFilter): Promise<SharedPrompt[]> {
+        await this.ensureReady();
         const conditions: string[] = [];
         const params: (string | number)[] = [];
         let paramIndex = 1;
@@ -149,6 +166,7 @@ export class SharedPromptsService extends BaseService {
 
     /** Update an existing shared prompt. */
     async update(id: string, input: Partial<SharedPromptInput>): Promise<SharedPrompt | undefined> {
+        await this.ensureReady();
         const existing = await this.getById(id);
         if (!existing) {return undefined;}
 
@@ -172,6 +190,7 @@ export class SharedPromptsService extends BaseService {
 
     /** Delete a shared prompt by ID. */
     async delete(id: string): Promise<boolean> {
+        await this.ensureReady();
         const stmt = await this.db.prepare(`DELETE FROM shared_prompts WHERE id = $1`);
         const result = await stmt.run(id);
         const deleted = (result.rowsAffected ?? 0) > 0;
@@ -181,13 +200,15 @@ export class SharedPromptsService extends BaseService {
 
     /** Export all shared prompts as a JSON string. */
     async exportToJson(): Promise<string> {
+        await this.ensureReady();
         const prompts = await this.list({ limit: MAX_SEARCH_LIMIT });
         return JSON.stringify(prompts, null, 2);
     }
 
     /** Import shared prompts from a JSON string. */
     async importFromJson(jsonString: string): Promise<number> {
-        let data: unknown;
+        await this.ensureReady();
+        let data: RuntimeValue;
         try {
             data = JSON.parse(jsonString);
         } catch {
@@ -198,7 +219,7 @@ export class SharedPromptsService extends BaseService {
         }
         let imported = 0;
         for (const item of data) {
-            const record = item as Record<string, unknown>;
+            const record = item as Record<string, RuntimeValue>;
             if (typeof record.title === 'string' && typeof record.content === 'string') {
                 await this.create({
                     title: record.title,
@@ -216,14 +237,14 @@ export class SharedPromptsService extends BaseService {
 
     /** Import shared prompts from a JSON file path. */
     async importFromFile(filePath: string): Promise<number> {
-        const content = fs.readFileSync(filePath, 'utf-8');
+        const content = await fsPromises.readFile(filePath, 'utf-8');
         return this.importFromJson(content);
     }
 
     /** Export shared prompts to a JSON file. */
     async exportToFile(filePath: string): Promise<void> {
         const json = await this.exportToJson();
-        fs.writeFileSync(filePath, json, 'utf-8');
+        await fsPromises.writeFile(filePath, json, 'utf-8');
         this.logInfo(`Exported shared prompts to: ${filePath}`);
     }
 
@@ -247,7 +268,8 @@ export class SharedPromptsService extends BaseService {
         };
     }
 
-    async cleanup(): Promise<void> {
+    override async cleanup(): Promise<void> {
+        this.initPromise = null;
         this.logInfo('Cleaning up shared prompts service');
     }
 }

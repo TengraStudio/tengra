@@ -57,12 +57,12 @@ describe('BackupService', () => {
         vi.mocked(fs.readdirSync).mockReturnValue([]);
 
         // Setup default async mock implementations
-        (fs.promises.mkdir as any).mockResolvedValue(undefined);
-        (fs.promises.writeFile as any).mockResolvedValue(undefined);
-        (fs.promises.readFile as any).mockResolvedValue('{}');
-        (fs.promises.readdir as any).mockResolvedValue([]);
-        (fs.promises.access as any).mockResolvedValue(undefined);
-        (fs.promises.unlink as any).mockResolvedValue(undefined);
+        (fs.promises.mkdir as TestLooseMock).mockResolvedValue(undefined);
+        (fs.promises.writeFile as TestLooseMock).mockResolvedValue(undefined);
+        (fs.promises.readFile as TestLooseMock).mockResolvedValue('{}');
+        (fs.promises.readdir as TestLooseMock).mockResolvedValue([]);
+        (fs.promises.access as TestLooseMock).mockResolvedValue(undefined);
+        (fs.promises.unlink as TestLooseMock).mockResolvedValue(undefined);
     });
 
     afterEach(() => {
@@ -72,7 +72,7 @@ describe('BackupService', () => {
     describe('constructor', () => {
         it('should create backup directory if it does not exist', async () => {
             const { BackupService } = await import('@main/services/data/backup.service');
-            new BackupService(mockDataService as any, mockDatabaseService as any);
+            new BackupService(mockDataService as never, mockDatabaseService as never);
 
             // Wait for async constructor operations
             await new Promise(resolve => setTimeout(resolve, 0));
@@ -87,7 +87,7 @@ describe('BackupService', () => {
     describe('createBackup', () => {
         it('should create a backup with default options', async () => {
             // Setup specific mocks
-            (fs.promises.readFile as any).mockImplementation(async (p: string) => {
+            (fs.promises.readFile as TestLooseMock).mockImplementation(async (p: string) => {
                 if (p.includes('settings.json')) {
                     return JSON.stringify({ general: { theme: 'dark' } });
                 }
@@ -96,7 +96,7 @@ describe('BackupService', () => {
             mockDatabaseService.getAllChats.mockResolvedValue([{ id: '1', title: 'Test Chat' }]);
 
             const { BackupService } = await import('@main/services/data/backup.service');
-            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+            const service = new BackupService(mockDataService as never, mockDatabaseService as never);
             const result = await service.createBackup();
 
             expect(result.success).toBe(true);
@@ -109,7 +109,7 @@ describe('BackupService', () => {
 
         it('should respect includeChats option', async () => {
             const { BackupService } = await import('@main/services/data/backup.service');
-            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+            const service = new BackupService(mockDataService as never, mockDatabaseService as never);
 
             await service.createBackup({ includeChats: false });
 
@@ -125,11 +125,11 @@ describe('BackupService', () => {
                 chats: [{ id: '1', title: 'Restored Chat' }]
             };
 
-            (fs.promises.readFile as any).mockResolvedValue(JSON.stringify(backupData));
-            (fs.promises.access as any).mockResolvedValue(undefined);
+            (fs.promises.readFile as TestLooseMock).mockResolvedValue(JSON.stringify(backupData));
+            (fs.promises.access as TestLooseMock).mockResolvedValue(undefined);
 
             const { BackupService } = await import('@main/services/data/backup.service');
-            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+            const service = new BackupService(mockDataService as never, mockDatabaseService as never);
 
             const result = await service.restoreBackup('/path/to/backup.json');
 
@@ -145,10 +145,10 @@ describe('BackupService', () => {
 
         it('should return error if backup file does not exist', async () => {
             const errorMsg = 'ENOENT: no such file or directory';
-            (fs.promises.readFile as any).mockRejectedValue(new Error(errorMsg));
+            (fs.promises.readFile as TestLooseMock).mockRejectedValue(new Error(errorMsg));
 
             const { BackupService } = await import('@main/services/data/backup.service');
-            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+            const service = new BackupService(mockDataService as never, mockDatabaseService as never);
 
             const result = await service.restoreBackup('/path/to/missing.json');
 
@@ -159,13 +159,13 @@ describe('BackupService', () => {
 
     describe('listBackups', () => {
         it('should list available backups', async () => {
-            (fs.promises.readdir as any).mockResolvedValue(['backup-1.json', 'other.txt']);
-            (fs.promises.readFile as any).mockResolvedValue(JSON.stringify({
+            (fs.promises.readdir as TestLooseMock).mockResolvedValue(['backup-1.json', 'other.txt']);
+            (fs.promises.readFile as TestLooseMock).mockResolvedValue(JSON.stringify({
                 _metadata: { createdAt: '2023-01-01' }
             }));
 
             const { BackupService } = await import('@main/services/data/backup.service');
-            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+            const service = new BackupService(mockDataService as never, mockDatabaseService as never);
 
             const backups = await service.listBackups();
 
@@ -176,10 +176,10 @@ describe('BackupService', () => {
 
     describe('deleteBackup', () => {
         it('should delete a backup file', async () => {
-            (fs.promises.unlink as any).mockResolvedValue(undefined);
+            (fs.promises.unlink as TestLooseMock).mockResolvedValue(undefined);
 
             const { BackupService } = await import('@main/services/data/backup.service');
-            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+            const service = new BackupService(mockDataService as never, mockDatabaseService as never);
 
             const result = await service.deleteBackup('/path/to/backup.json');
 
@@ -188,10 +188,10 @@ describe('BackupService', () => {
         });
 
         it('should return false if delete fails', async () => {
-            (fs.promises.unlink as any).mockRejectedValue(new Error('Delete failed'));
+            (fs.promises.unlink as TestLooseMock).mockRejectedValue(new Error('Delete failed'));
 
             const { BackupService } = await import('@main/services/data/backup.service');
-            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+            const service = new BackupService(mockDataService as never, mockDatabaseService as never);
 
             const result = await service.deleteBackup('/path/to/backup.json');
 
@@ -202,7 +202,7 @@ describe('BackupService', () => {
     describe('getBackupDir', () => {
         it('should return the backup directory path', async () => {
             const { BackupService } = await import('@main/services/data/backup.service');
-            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+            const service = new BackupService(mockDataService as never, mockDatabaseService as never);
 
             const backupDir = service.getBackupDir();
 
@@ -213,7 +213,7 @@ describe('BackupService', () => {
     describe('getAutoBackupStatus', () => {
         it('should return auto-backup configuration', async () => {
             const { BackupService } = await import('@main/services/data/backup.service');
-            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+            const service = new BackupService(mockDataService as never, mockDatabaseService as never);
 
             const status = service.getAutoBackupStatus();
 
@@ -225,11 +225,11 @@ describe('BackupService', () => {
 
     describe('configureAutoBackup', () => {
         it('should enable auto-backup', async () => {
-            (fs.promises.mkdir as any).mockResolvedValue(undefined);
-            (fs.promises.writeFile as any).mockResolvedValue(undefined);
+            (fs.promises.mkdir as TestLooseMock).mockResolvedValue(undefined);
+            (fs.promises.writeFile as TestLooseMock).mockResolvedValue(undefined);
 
             const { BackupService } = await import('@main/services/data/backup.service');
-            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+            const service = new BackupService(mockDataService as never, mockDatabaseService as never);
 
             service.configureAutoBackup({ enabled: true, intervalHours: 12 });
 
@@ -240,7 +240,7 @@ describe('BackupService', () => {
 
         it('should enforce minimum interval of 1 hour', async () => {
             const { BackupService } = await import('@main/services/data/backup.service');
-            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+            const service = new BackupService(mockDataService as never, mockDatabaseService as never);
 
             service.configureAutoBackup({ enabled: true, intervalHours: 0 });
 
@@ -254,18 +254,18 @@ describe('BackupService', () => {
             const backups = Array.from({ length: 15 }, (_, i) => ({
                 name: `backup-${i}.json`,
                 path: `/mock/backups/backup-${i}.json`,
-                metadata: { createdAt: new Date(Date.now() - i * 1000).toISOString() } as any
+                metadata: { createdAt: new Date(Date.now() - i * 1000).toISOString() } as never
             }));
 
-            (fs.promises.readdir as any).mockResolvedValue(backups.map(b => b.name));
-            (fs.promises.readFile as any).mockImplementation(async (path: string) => {
+            (fs.promises.readdir as TestLooseMock).mockResolvedValue(backups.map(b => b.name));
+            (fs.promises.readFile as TestLooseMock).mockImplementation(async (path: string) => {
                 const backup = backups.find(b => path.includes(b.name));
                 return JSON.stringify({ _metadata: backup?.metadata });
             });
-            (fs.promises.unlink as any).mockResolvedValue(undefined);
+            (fs.promises.unlink as TestLooseMock).mockResolvedValue(undefined);
 
             const { BackupService } = await import('@main/services/data/backup.service');
-            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+            const service = new BackupService(mockDataService as never, mockDatabaseService as never);
             service.configureAutoBackup({ enabled: true, maxBackups: 10 });
 
             const deleted = await service.cleanupOldBackups();
@@ -274,13 +274,13 @@ describe('BackupService', () => {
         });
 
         it('should not delete backups if under limit', async () => {
-            (fs.promises.readdir as any).mockResolvedValue(['backup-1.json']);
-            (fs.promises.readFile as any).mockResolvedValue(JSON.stringify({
+            (fs.promises.readdir as TestLooseMock).mockResolvedValue(['backup-1.json']);
+            (fs.promises.readFile as TestLooseMock).mockResolvedValue(JSON.stringify({
                 _metadata: { createdAt: '2023-01-01' }
             }));
 
             const { BackupService } = await import('@main/services/data/backup.service');
-            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+            const service = new BackupService(mockDataService as never, mockDatabaseService as never);
 
             const deleted = await service.cleanupOldBackups();
 
@@ -291,7 +291,7 @@ describe('BackupService', () => {
     describe('dispose', () => {
         it('should stop auto-backup timer', async () => {
             const { BackupService } = await import('@main/services/data/backup.service');
-            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+            const service = new BackupService(mockDataService as never, mockDatabaseService as never);
 
             service.configureAutoBackup({ enabled: true });
             service.dispose();

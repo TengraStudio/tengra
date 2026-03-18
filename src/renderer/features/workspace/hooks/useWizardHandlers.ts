@@ -25,6 +25,7 @@ interface SSHConnectOptions {
     setStep: (step: 'selection' | 'details' | 'ssh-connection' | 'ssh-browser' | 'creating') => void;
     setSshConnectionId: (id: string | null) => void;
     loadRemoteDirectory: (connId: string, path: string) => Promise<void>;
+    t: (key: string) => string;
 }
 
 interface CreateWorkspaceOptions {
@@ -34,6 +35,7 @@ interface CreateWorkspaceOptions {
     setStep: (step: 'selection' | 'details' | 'ssh-connection' | 'ssh-browser' | 'creating') => void;
     onWorkspaceCreated: (path: string, name: string, description: string, mounts?: WorkspaceMount[]) => Promise<boolean>;
     onClose: () => void;
+    t: (key: string) => string;
 }
 
 interface SSHBrowserNextOptions {
@@ -45,13 +47,23 @@ interface SSHBrowserNextOptions {
     setIsLoading: (loading: boolean) => void;
     onWorkspaceCreated: (path: string, name: string, description: string, mounts?: WorkspaceMount[]) => Promise<boolean>;
     onClose: () => void;
+    t: (key: string) => string;
+}
+
+interface ImportLocalOptions {
+    formData: FormData;
+    setIsLoading: (loading: boolean) => void;
+    setError: (error: string | null) => void;
+    onWorkspaceCreated: (path: string, name: string, description: string, mounts?: WorkspaceMount[]) => Promise<boolean>;
+    onClose: () => void;
+    t: (key: string) => string;
 }
 
 export const useSSHConnectHandler = (options: SSHConnectOptions) => {
-    const { sshForm, setIsLoading, setError, setStep, setSshConnectionId, loadRemoteDirectory } = options;
+    const { sshForm, setIsLoading, setError, setStep, setSshConnectionId, loadRemoteDirectory, t } = options;
     const handleSSHConnect = async () => {
         if (!sshForm.host.trim() || !sshForm.username.trim()) {
-            setError('Invalid input');
+            setError(t('workspace.errors.wizard.invalidInput'));
             return;
         }
         setIsLoading(true);
@@ -67,7 +79,7 @@ export const useSSHConnectHandler = (options: SSHConnectOptions) => {
                 passphrase: sshForm.authType === 'key' ? sshForm.passphrase : undefined
             });
             if (!testResult.success) {
-                setError(testResult.error ?? 'Connection failed');
+                setError(testResult.error ?? t('workspace.errors.wizard.connectionFailed'));
                 return;
             }
 
@@ -85,10 +97,10 @@ export const useSSHConnectHandler = (options: SSHConnectOptions) => {
                 setStep('ssh-browser');
                 void loadRemoteDirectory(result.id, '/');
             } else {
-                setError(result.error ?? 'Failed to connect');
+                setError(result.error ?? t('workspace.errors.wizard.connectFailed'));
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Connection failed');
+            setError(err instanceof Error ? err.message : t('workspace.errors.wizard.connectionFailed'));
         } finally {
             setIsLoading(false);
         }
@@ -98,7 +110,7 @@ export const useSSHConnectHandler = (options: SSHConnectOptions) => {
 };
 
 export const useCreateWorkspaceHandler = (options: CreateWorkspaceOptions) => {
-    const { formData, setIsLoading, setError, setStep, onWorkspaceCreated, onClose } = options;
+    const { formData, setIsLoading, setError, setStep, onWorkspaceCreated, onClose, t } = options;
     const handleCreate = async () => {
         if (!formData.name) {
             return;
@@ -126,11 +138,11 @@ export const useCreateWorkspaceHandler = (options: CreateWorkspaceOptions) => {
                 onClose();
                 return;
             }
-            setError('Failed to create workspace');
+            setError(t('workspace.errors.wizard.createWorkspaceFailed'));
             setStep('details');
 
         } catch (err) {
-            const errorToReport = err instanceof Error ? err : new Error('Failed to create workspace');
+            const errorToReport = err instanceof Error ? err : new Error(t('workspace.errors.wizard.createWorkspaceFailed'));
             window.electron.log.error('Workspace Creation Failed:', errorToReport);
             setError(errorToReport.message);
             setStep('details');
@@ -142,13 +154,8 @@ export const useCreateWorkspaceHandler = (options: CreateWorkspaceOptions) => {
     return handleCreate;
 };
 
-export const useImportLocalHandler = (
-    formData: FormData,
-    setIsLoading: (loading: boolean) => void,
-    setError: (error: string | null) => void,
-    onWorkspaceCreated: (path: string, name: string, description: string, mounts?: WorkspaceMount[]) => Promise<boolean>,
-    onClose: () => void
-) => {
+export const useImportLocalHandler = (options: ImportLocalOptions) => {
+    const { formData, setIsLoading, setError, onWorkspaceCreated, onClose, t } = options;
     const handleImportLocal = async () => {
         setIsLoading(true);
         setError(null);
@@ -156,7 +163,7 @@ export const useImportLocalHandler = (
             const result = await window.electron.selectDirectory();
             if (result.success && result.path) {
                 const normalizedPath = result.path.replace(/[/\\]+$/, '');
-                const dirName = normalizedPath.split(/[/\\]/).pop() || 'Workspace';
+                const dirName = normalizedPath.split(/[/\\]/).pop() || t('workspaceWizard.defaultWorkspaceName');
                 const mounts: WorkspaceMount[] = [{
                     id: `local-${Date.now()}`,
                     name: formData.name || dirName,
@@ -169,7 +176,7 @@ export const useImportLocalHandler = (
                 }
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to select directory');
+            setError(err instanceof Error ? err.message : t('workspace.errors.wizard.selectDirectoryFailed'));
         } finally {
             setIsLoading(false);
         }
@@ -179,7 +186,7 @@ export const useImportLocalHandler = (
 };
 
 export const useSSHBrowserNextHandler = (options: SSHBrowserNextOptions) => {
-    const { sshConnectionId, formData, sshForm, sshPath, setError, setIsLoading, onWorkspaceCreated, onClose } = options;
+    const { sshConnectionId, formData, sshForm, sshPath, setError, setIsLoading, onWorkspaceCreated, onClose, t } = options;
     const handleSSHBrowserNext = async () => {
         setIsLoading(true);
         setError(null);
@@ -205,9 +212,9 @@ export const useSSHBrowserNextHandler = (options: SSHBrowserNextOptions) => {
                 onClose();
                 return;
             }
-            setError('Failed to create workspace');
+            setError(t('workspace.errors.wizard.createWorkspaceFailed'));
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to create workspace');
+            setError(err instanceof Error ? err.message : t('workspace.errors.wizard.createWorkspaceFailed'));
         } finally {
             setIsLoading(false);
         }

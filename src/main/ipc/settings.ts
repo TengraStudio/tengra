@@ -146,7 +146,7 @@ export function registerSettingsIpc(options: {
     ] as const;
 
     function getSensitiveValue(settings: AppSettings, fieldKey: typeof sensitiveFields[number]['key']): string | undefined {
-        const providerSettings = settings[fieldKey] as Record<string, unknown> | undefined;
+        const providerSettings = settings[fieldKey] as Record<string, RuntimeValue> | undefined;
         const keyCandidate = providerSettings?.['apiKey'] ?? providerSettings?.['token'] ?? providerSettings?.['key'];
         return typeof keyCandidate === 'string' ? keyCandidate : undefined;
     }

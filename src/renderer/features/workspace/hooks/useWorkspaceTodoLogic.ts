@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { useTranslation } from '@/i18n';
+
 import { TodoFile, TodoItem } from '../components/todo/types';
 
 export function useWorkspaceTodoLogic(workspaceRoot: string) {
+    const { t } = useTranslation();
     const [todoFiles, setTodoFiles] = useState<TodoFile[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -66,7 +69,7 @@ export function useWorkspaceTodoLogic(workspaceRoot: string) {
             // Verify line content matches to avoid drift issues
             const targetLine = lines[item.line - 1];
             if (!targetLine || (!targetLine.includes('- [ ]') && !targetLine.includes('- [x]'))) {
-                throw new Error('File content changed, please refresh');
+                throw new Error(t('workspace.errors.todoFileChanged'));
             }
 
             const newLine = item.completed
@@ -90,7 +93,7 @@ export function useWorkspaceTodoLogic(workspaceRoot: string) {
             setError(e instanceof Error ? e.message : String(e));
             void fetchTodos(); // Revert/Refresh on error
         }
-    }, [fetchTodos, pushUndoSnapshot]);
+    }, [fetchTodos, pushUndoSnapshot, t]);
 
     const handleAddTask = useCallback(async (text: string) => {
         if (!text.trim()) { return; }

@@ -66,7 +66,7 @@ describe('PluginChannel', () => {
 
             expect(channel.getQueueDepth('B')).toBe(5);
             const messages = channel.drainQueue('B');
-            expect((messages[0].payload as Record<string, unknown>).i).toBe(2);
+            expect((messages[0].payload as Record<string, TestValue>).i).toBe(2);
         });
 
         it('should report correct queue depth', () => {
@@ -78,7 +78,7 @@ describe('PluginChannel', () => {
 
     describe('message size limit', () => {
         it('should reject messages exceeding max size', () => {
-            const largePayload: Record<string, unknown> = { data: 'x'.repeat(2000) };
+            const largePayload: Record<string, TestValue> = { data: 'x'.repeat(2000) };
             const sent = channel.send({ from: 'A', to: 'B', type: 'big', payload: largePayload });
             expect(sent).toBe(false);
         });

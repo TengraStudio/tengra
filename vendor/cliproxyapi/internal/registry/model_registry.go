@@ -577,13 +577,34 @@ func (r *ModelRegistry) ClientSupportsModel(clientID, modelID string) bool {
 		return false
 	}
 
+	candidates := modelMatchCandidates(modelID)
 	for _, id := range models {
-		if strings.EqualFold(strings.TrimSpace(id), modelID) {
-			return true
+		trimmedID := strings.TrimSpace(id)
+		for _, candidate := range candidates {
+			if strings.EqualFold(trimmedID, candidate) {
+				return true
+			}
 		}
 	}
 
 	return false
+}
+
+func modelMatchCandidates(modelID string) []string {
+	base := strings.TrimSpace(modelID)
+	if base == "" {
+		return nil
+	}
+
+	candidates := []string{base}
+	lowerBase := strings.ToLower(base)
+	if strings.HasPrefix(lowerBase, "antigravity/") {
+		candidates = append(candidates, base[len("antigravity/"):])
+	}
+	if strings.HasSuffix(lowerBase, "-antigravity") {
+		candidates = append(candidates, base[:len(base)-len("-antigravity")])
+	}
+	return candidates
 }
 
 // GetAvailableModels returns all models that have at least one available client

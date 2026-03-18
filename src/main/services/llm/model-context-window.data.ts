@@ -11,6 +11,8 @@ const EXACT_CONTEXT_WINDOWS: Readonly<Record<string, number>> = {
     'gpt-5.1-codex-max': 400000,
     'gpt-5.2': 400000,
     'gpt-5.2-codex': 400000,
+    'gpt-5.4': 400000,
+    'gpt-5.4-mini': 400000,
     'gpt-5.2-pro': 400000,
     'gpt-5-pro': 400000,
     'gpt-4.1': 1047576,

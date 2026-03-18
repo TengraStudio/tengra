@@ -15,21 +15,51 @@ const mockExecSync = vi.fn();
 const mockSpawn = vi.fn();
 
 vi.mock('child_process', () => ({
-    execSync: (...args: unknown[]) => mockExecSync(...args),
-    spawn: (...args: unknown[]) => mockSpawn(...args),
+    execSync: (...args: TestValue[]) => mockExecSync(...args),
+    spawn: (...args: TestValue[]) => mockSpawn(...args),
 }));
 
 const mockExistsSync = vi.fn();
 
 vi.mock('fs', () => ({
-    existsSync: (...args: unknown[]) => mockExistsSync(...args),
+    existsSync: (...args: TestValue[]) => mockExistsSync(...args),
+}));
+
+vi.mock('@main/services/terminal/backends/backend-discovery.util', () => ({
+    findExecutableInPath: async () => {
+        try {
+            const result = mockExecSync();
+            if (typeof result !== 'string') {
+                return null;
+            }
+            const [firstPath] = result
+                .split(/\r?\n/)
+                .map(candidate => candidate.trim())
+                .filter(candidate => candidate.length > 0);
+            return firstPath ?? null;
+        } catch {
+            return null;
+        }
+    },
+    findFirstExistingPath: async (candidatePaths: readonly string[]) => {
+        for (const candidatePath of candidatePaths) {
+            try {
+                if (mockExistsSync(candidatePath)) {
+                    return candidatePath;
+                }
+            } catch {
+                // Ignore failing candidate paths so discovery can continue.
+            }
+        }
+        return null;
+    },
 }));
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
 function createMockChildProcess(): ChildProcess {
     const emitter = new EventEmitter();
-    const child = emitter as unknown as ChildProcess;
+    const child = emitter as never as ChildProcess;
     Object.defineProperty(child, 'killed', { value: false, writable: true });
     child.unref = vi.fn();
     child.kill = vi.fn(() => {

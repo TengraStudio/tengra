@@ -8,7 +8,9 @@ const sectionData = {
     "modelComparison": "Model Comparison",
     "readMore": "Read more",
     "searchMessages": "Search messages...",
+    "exportChat": "Export chat",
     "sources": "Sources",
+    "screenshotAlt": "Screenshot",
     "thought": "Deep Thought",
     "plan": "Strategic Plan",
     "raw": "Raw",
@@ -77,7 +79,31 @@ const sectionData = {
         "generateShareLink": "Generate Share Link",
         "linkGenerated": "Session share link generated",
         "contextUpdated": "Shared context updated",
-        "collaborationRunFinished": "Collaboration run completed"
+        "collaborationRunFinished": "Collaboration run completed",
+        "noSharedContextEntries": "No shared context entries",
+        "ownerDisplayName": "You",
+        "guestReviewerName": "Guest Reviewer",
+        "aiPartnerName": "AI Partner",
+        "host": "Host",
+        "ai": "AI",
+        "copied": "Copied",
+        "noEventsInSession": "No events recorded in current session"
+    },
+    "promptOptimizer": {
+        "vagueWordDetected": "Vague word \"{{word}}\" detected. Consider being more specific.",
+        "contextSuggestion": "Consider adding a role or context (e.g., \"You are a senior developer...\").",
+        "contextSuggestedText": "You are an expert in [domain].",
+        "constraintSuggestion": "Add constraints like length limits, scope, or what to avoid.",
+        "constraintSuggestedText": "Constraints: Keep the response under [N] words. Do not include [X].",
+        "formatSuggestion": "Specify the desired output format (e.g., JSON, bullet points, table).",
+        "formatSuggestedText": "Output format: Respond as a numbered list.",
+        "shortPromptWarning": "Prompt is quite short. Adding more detail typically improves results.",
+        "longPromptStructureWarning": "Long prompt without clear structure. Add headings, numbered steps, or sections.",
+        "examplesSuggestion": "Consider adding examples to clarify the expected output.",
+        "examplesSuggestedText": "Example: Input: [sample] -> Output: [expected]",
+        "ambiguousPronounStarts": "Starts with ambiguous pronoun \"{{pronoun}}\". Specify the subject explicitly.",
+        "complexTaskSuggestion": "Complex task detected. Consider adding \"Think step by step\" for better reasoning.",
+        "complexTaskSuggestedText": "Think step by step."
     },
     "errorProviderUnavailable": "The AI provider is currently unreachable. It may be down or experiencing connectivity issues.",
     "errorProviderUnavailableAction": "Try a Different Provider",
@@ -89,7 +115,9 @@ const sectionData = {
     "errorGeneric": "An unexpected error occurred while communicating with the AI provider.",
     "errorRetry": "Retry",
     "errorSwitchModel": "Switch Model",
-    "errorDismiss": "Dismiss"
+    "errorDismiss": "Dismiss",
+    "toolArgumentsTooLarge": "Tool arguments exceed maximum size limit",
+    "imageGenerationNoImages": "Image generation returned no images"
 };
 
 export default sectionData;

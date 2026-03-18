@@ -108,12 +108,12 @@ const EXPECTED_COLUMNS = {
 
 // Mock database client for unit tests
 interface MockQueryResult {
-    rows: Record<string, unknown>[];
+    rows: Record<string, TestValue>[];
     affected_rows: number;
 }
 
 const createMockDbClient = () => {
-    const tables = new Map<string, Record<string, unknown>[]>();
+    const tables = new Map<string, Record<string, TestValue>[]>();
     const migrationTracker = new Map<number, boolean>();
 
     return {
@@ -121,7 +121,7 @@ const createMockDbClient = () => {
         isConnected: vi.fn().mockReturnValue(true),
 
         // Execute arbitrary SQL
-        executeQuery: vi.fn().mockImplementation(async (req: { sql: string; params: unknown[] }): Promise<MockQueryResult> => {
+        executeQuery: vi.fn().mockImplementation(async (req: { sql: string; params: TestValue[] }): Promise<MockQueryResult> => {
             const sql = req.sql.trim().toUpperCase();
 
             // Handle table list queries
@@ -195,7 +195,7 @@ describe('Database Migration Integration Tests', () => {
                 params: []
             });
 
-            const tableNames = result.rows.map((r: Record<string, unknown>) => r.name as string);
+            const tableNames = result.rows.map((r: Record<string, TestValue>) => r.name as string);
 
             // Verify all expected tables exist
             for (const expectedTable of EXPECTED_TABLES) {
@@ -212,7 +212,7 @@ describe('Database Migration Integration Tests', () => {
                 params: []
             });
 
-            const indexNames = result.rows.map((r: Record<string, unknown>) => r.name as string);
+            const indexNames = result.rows.map((r: Record<string, TestValue>) => r.name as string);
 
             // Verify all expected indexes exist
             for (const expectedIndex of EXPECTED_INDEXES) {
@@ -228,7 +228,7 @@ describe('Database Migration Integration Tests', () => {
                 params: []
             });
 
-            const columnNames = result.rows.map((r: Record<string, unknown>) => r.name as string);
+            const columnNames = result.rows.map((r: Record<string, TestValue>) => r.name as string);
 
             for (const expectedColumn of EXPECTED_COLUMNS.chats) {
                 expect(columnNames).toContain(expectedColumn);
@@ -243,7 +243,7 @@ describe('Database Migration Integration Tests', () => {
                 params: []
             });
 
-            const columnNames = result.rows.map((r: Record<string, unknown>) => r.name as string);
+            const columnNames = result.rows.map((r: Record<string, TestValue>) => r.name as string);
 
             // Verify the 'vector' column was added by migration 4
             expect(columnNames).toContain('vector');
@@ -257,7 +257,7 @@ describe('Database Migration Integration Tests', () => {
                 params: []
             });
 
-            const columnNames = result.rows.map((r: Record<string, unknown>) => r.name as string);
+            const columnNames = result.rows.map((r: Record<string, TestValue>) => r.name as string);
 
             // Migration 5 renamed the legacy workspace id column to the legacy workspace path column.
             expect(columnNames).toContain(WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN);
@@ -272,7 +272,7 @@ describe('Database Migration Integration Tests', () => {
                 params: []
             });
 
-            const columnNames = result.rows.map((r: Record<string, unknown>) => r.name as string);
+            const columnNames = result.rows.map((r: Record<string, TestValue>) => r.name as string);
 
             // Migration 6 renamed the legacy workspace id column to the legacy workspace path column.
             expect(columnNames).toContain(WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN);
@@ -286,7 +286,7 @@ describe('Database Migration Integration Tests', () => {
                 params: []
             });
 
-            const columnNames = result.rows.map((r: Record<string, unknown>) => r.name as string);
+            const columnNames = result.rows.map((r: Record<string, TestValue>) => r.name as string);
 
             // Migration 7 renamed the legacy workspace id column to the legacy workspace path column.
             expect(columnNames).toContain(WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN);

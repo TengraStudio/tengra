@@ -11,6 +11,32 @@ import { SettingsService } from '@main/services/system/settings.service';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { McpPermissionProfile } from '@shared/types/settings';
 
+const MCP_PLUGIN_MESSAGE_KEY = {
+    PERMISSION_REQUEST_NOT_FOUND: 'mainProcess.mcpPlugin.permissionRequestNotFound',
+    PLUGIN_NOT_FOUND: 'mainProcess.mcpPlugin.pluginNotFound',
+    PLUGIN_DISABLED: 'mainProcess.mcpPlugin.pluginDisabled',
+    ACTION_FORBIDDEN_FOR_PROFILE: 'mainProcess.mcpPlugin.actionForbiddenForProfile',
+    PERMISSION_DENIED_FOR_ACTION: 'mainProcess.mcpPlugin.permissionDeniedForAction',
+    PERMISSION_REQUIRED_FOR_ACTION: 'mainProcess.mcpPlugin.permissionRequiredForAction'
+} as const;
+const MCP_PLUGIN_ERROR_MESSAGE = {
+    PERMISSION_REQUEST_NOT_FOUND: 'Permission request not found',
+    PLUGIN_NOT_FOUND: 'MCP Plugin \'{{pluginName}}\' not found.',
+    PLUGIN_DISABLED: 'Plugin \'{{pluginName}}\' is disabled. Enable it in Settings > MCP.',
+    ACTION_FORBIDDEN_FOR_PROFILE: 'Action \'{{actionName}}\' is forbidden for profile \'{{profile}}\'. Change the server\'s permission profile in Settings.',
+    PERMISSION_DENIED_FOR_ACTION: 'Permission denied for action \'{{actionName}}\'',
+    PERMISSION_REQUIRED_FOR_ACTION: 'Permission required for \'{{pluginName}}:{{actionName}}\'. Approve it in MCP settings.'
+} as const;
+
+function interpolateMessage(
+    template: string,
+    params: Record<string, string | number>
+): string {
+    return Object.entries(params).reduce((message, [key, value]) => {
+        return message.replace(`{{${key}}}`, String(value));
+    }, template);
+}
+
 /**
  * McpPluginService manages the lifecycle and dispatching of MCP tool plugins.
  * It supports both internal (TypeScript) and external (standalone process) plugins.
@@ -337,7 +363,11 @@ export class McpPluginService extends BaseService {
         const requests = settings.mcpPermissionRequests ?? [];
         const req = requests.find(r => r.id === requestId);
         if (!req) {
-            return { success: false, error: 'Permission request not found' };
+            return {
+                success: false,
+                error: MCP_PLUGIN_ERROR_MESSAGE.PERMISSION_REQUEST_NOT_FOUND,
+                messageKey: MCP_PLUGIN_MESSAGE_KEY.PERMISSION_REQUEST_NOT_FOUND
+            };
         }
 
         const nextRequests = requests.map(r => r.id === requestId ? { ...r, status: decision } : r);
@@ -359,7 +389,12 @@ export class McpPluginService extends BaseService {
     async dispatch(pluginName: string, actionName: string, args: JsonObject): Promise<McpDispatchResult> {
         const plugin = this.plugins.get(pluginName);
         if (!plugin) {
-            return { success: false, error: `MCP Plugin '${pluginName}' not found.` };
+            return {
+                success: false,
+                error: interpolateMessage(MCP_PLUGIN_ERROR_MESSAGE.PLUGIN_NOT_FOUND, { pluginName }),
+                messageKey: MCP_PLUGIN_MESSAGE_KEY.PLUGIN_NOT_FOUND,
+                messageParams: { pluginName }
+            };
         }
 
         // Check if plugin is enabled (user must explicitly enable MCPs)
@@ -369,7 +404,12 @@ export class McpPluginService extends BaseService {
 
         // If it's a user server, check if it's enabled
         if (serverConfig && !serverConfig.enabled) {
-            return { success: false, error: `Plugin '${pluginName}' is disabled. Enable it in Settings > MCP.` };
+            return {
+                success: false,
+                error: interpolateMessage(MCP_PLUGIN_ERROR_MESSAGE.PLUGIN_DISABLED, { pluginName }),
+                messageKey: MCP_PLUGIN_MESSAGE_KEY.PLUGIN_DISABLED,
+                messageParams: { pluginName }
+            };
         }
         if (serverConfig) {
             this.ensureStorageQuota(
@@ -386,7 +426,12 @@ export class McpPluginService extends BaseService {
         if (!this.isActionAllowed(profile, actionName)) {
             return {
                 success: false,
-                error: `Action '${actionName}' is forbidden for profile '${profile}'. Change the server's permission profile in Settings.`
+                error: interpolateMessage(MCP_PLUGIN_ERROR_MESSAGE.ACTION_FORBIDDEN_FOR_PROFILE, {
+                    actionName,
+                    profile
+                }),
+                messageKey: MCP_PLUGIN_MESSAGE_KEY.ACTION_FORBIDDEN_FOR_PROFILE,
+                messageParams: { actionName, profile }
             };
         }
 
@@ -404,7 +449,12 @@ export class McpPluginService extends BaseService {
         const requiresReview = settings.mcpReviewPolicy === 'elevated' && this.isSensitiveAction(actionName);
 
         if (requiresReview && permissionPolicy === 'deny') {
-            return { success: false, error: `Permission denied for action '${actionName}'` };
+            return {
+                success: false,
+                error: interpolateMessage(MCP_PLUGIN_ERROR_MESSAGE.PERMISSION_DENIED_FOR_ACTION, { actionName }),
+                messageKey: MCP_PLUGIN_MESSAGE_KEY.PERMISSION_DENIED_FOR_ACTION,
+                messageParams: { actionName }
+            };
         }
 
         if (requiresReview && permissionPolicy === 'ask') {
@@ -425,7 +475,12 @@ export class McpPluginService extends BaseService {
             }
             return {
                 success: false,
-                error: `Permission required for '${pluginName}:${actionName}'. Approve it in MCP settings.`
+                error: interpolateMessage(MCP_PLUGIN_ERROR_MESSAGE.PERMISSION_REQUIRED_FOR_ACTION, {
+                    pluginName,
+                    actionName
+                }),
+                messageKey: MCP_PLUGIN_MESSAGE_KEY.PERMISSION_REQUIRED_FOR_ACTION,
+                messageParams: { pluginName, actionName }
             };
         }
 

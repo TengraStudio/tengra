@@ -87,7 +87,7 @@ async function saveSSHProfileIfNeeded(
     }
     try {
         await window.electron.ssh.saveProfile({
-            name: mountForm.name || mountForm.host || 'SSH',
+            name: mountForm.name || mountForm.host || t('workspaces.sshMountName'),
             host: mountForm.host || '',
             port: parsedPort,
             username: mountForm.username || '',
@@ -138,7 +138,7 @@ export function useMountManagement({
 
         const newMount: WorkspaceMount = {
             id: `mount-${Date.now()}`,
-            name: mountForm.name || (mountForm.type === 'local' ? 'Local' : mountForm.host || 'SSH'),
+            name: mountForm.name || (mountForm.type === 'local' ? t('workspaces.localMountName') : mountForm.host || t('workspaces.sshMountName')),
             type: mountForm.type,
             rootPath: mountForm.rootPath,
             ssh:

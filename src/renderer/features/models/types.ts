@@ -22,6 +22,14 @@ export interface ModelListItem {
     replacementModelId?: string;
     sunsetDate?: string;
     score?: number;
+    quotaInfo?: {
+        remainingQuota?: number;
+        totalQuota?: number;
+        resetTime?: string;
+        remainingFraction?: number;
+    };
+    percentage?: number;
+    reset?: string;
 }
 
 export interface ModelCategory {

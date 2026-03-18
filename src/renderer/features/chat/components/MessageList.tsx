@@ -240,11 +240,13 @@ export const MessageList = memo(({
             }
         >
             <p id="message-list-keyboard-help" className="sr-only">
-                Use ArrowUp and ArrowDown to navigate, Home and End to jump, Enter to select, and R to regenerate assistant messages.
+                {t('aria.messageListKeyboardHelp')}
             </p>
             <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
-                {isLoading ? 'Assistant is streaming a new message.' : ''}
-                {messages.length > 0 && !isLoading ? `Message list now has ${messages.length} messages.` : ''}
+                {isLoading ? t('aria.messageListStreaming') : ''}
+                {messages.length > 0 && !isLoading
+                    ? t('aria.messageListCount', { count: messages.length })
+                    : ''}
             </div>
             <div aria-live="polite" aria-atomic="false" className="sr-only">
                 {isLoading && messages.length > 0 && messages[messages.length - 1].role === 'assistant'

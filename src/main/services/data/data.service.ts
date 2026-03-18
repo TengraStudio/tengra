@@ -44,12 +44,13 @@ export enum DataServiceTelemetryEvent {
     PATH_ACCESSED = 'data_service_path_accessed'
 }
 
-export type DataType = 'auth' | 'db' | 'config' | 'logs' | 'models' | 'gallery' | 'galleryImages' | 'galleryVideos' | 'data'
+export type DataType = 'db' | 'config' | 'logs' | 'models' | 'gallery' | 'galleryImages' | 'galleryVideos' | 'data'
+
 
 /**
  * Valid DataType values for validation
  */
-const VALID_DATA_TYPES: DataType[] = ['auth', 'db', 'config', 'logs', 'models', 'gallery', 'galleryImages', 'galleryVideos', 'data'];
+const VALID_DATA_TYPES: DataType[] = ['db', 'config', 'logs', 'models', 'gallery', 'galleryImages', 'galleryVideos', 'data'];
 
 /**
  * Migration entry definition
@@ -76,7 +77,6 @@ export class DataService extends BaseService {
         this.baseDir = path.join(userData, 'data');
 
         this.paths = {
-            auth: path.join(this.baseDir, 'auth'),
             db: path.join(userData, 'db'),
             config: path.join(this.baseDir, 'config'),
             logs: path.join(this.baseDir, 'logs'),
@@ -98,7 +98,7 @@ export class DataService extends BaseService {
     /**
      * Track telemetry event if service is available
      */
-    private trackEvent(eventName: DataServiceTelemetryEvent, properties?: Record<string, unknown>): void {
+    private trackEvent(eventName: DataServiceTelemetryEvent, properties?: Record<string, RuntimeValue>): void {
         if (this.telemetryService) {
             this.telemetryService.track(eventName, properties);
         }
@@ -107,7 +107,7 @@ export class DataService extends BaseService {
     /**
      * Validate that the provided DataType is valid
      */
-    private validateDataType(type: unknown): type is DataType {
+    private validateDataType(type: RuntimeValue): type is DataType {
         return typeof type === 'string' && VALID_DATA_TYPES.includes(type as DataType);
     }
 
@@ -237,24 +237,6 @@ export class DataService extends BaseService {
         const rootPath = path.dirname(userData);  // tengra
 
         const migrations: MigrationEntry[] = [
-            // Auth: root/auth -> data/auth
-            {
-                old: path.join(rootPath, 'auth'),
-                new: this.paths.auth,
-                isDir: true
-            },
-            // Encrypted Token: root/cliproxy-auth.enc -> data/auth/proxy-auth-token.enc
-            {
-                old: path.join(rootPath, 'cliproxy-auth.enc'),
-                new: path.join(this.paths.auth, 'proxy-auth-token.enc'),
-                isDir: false
-            },
-            // Legacy Migration: root/cliproxy-auth-work -> data/auth
-            {
-                old: path.join(rootPath, 'cliproxy-auth-work'),
-                new: this.paths.auth,
-                isDir: true
-            },
             // DB: root/tengra-lancedb -> data/db/vector-store (Renamed from tengra-lancedb)
             {
                 old: path.join(rootPath, 'tengra-lancedb'),
@@ -278,12 +260,6 @@ export class DataService extends BaseService {
             {
                 old: path.join(rootPath, 'settings.json'),
                 new: path.join(this.paths.config, 'settings.json'),
-                isDir: false
-            },
-            // Proxy Config: root/proxy-config.yaml -> data/config/proxy-config.yaml
-            {
-                old: path.join(rootPath, 'proxy-config.yaml'),
-                new: path.join(this.paths.config, 'proxy-config.yaml'),
                 isDir: false
             },
             // Models: root/models -> data/models

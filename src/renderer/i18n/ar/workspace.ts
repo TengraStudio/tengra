@@ -63,7 +63,16 @@ const sectionData = {
     "noBranchesFound": "لم يتم العثور على فروع",
     "switchingBranch": "جارٍ التبديل branch...",
     "branchSwitched": "تم التبديل إلى {{branch}}.",
-    "branchSwitchFailed": "فشل في تبديل branch."
+    "branchSwitchFailed": "فشل في تبديل branch.",
+    "listPresetTitle": "List preset",
+    "openTitle": "Open",
+    "todoUndoTitle": "Undo (Ctrl/Cmd+Z)",
+    "todoRedoTitle": "Redo (Ctrl/Cmd+Y)",
 };
 
 export default sectionData;
+
+
+
+
+

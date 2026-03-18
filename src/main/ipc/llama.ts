@@ -20,7 +20,7 @@ const MAX_FILENAME_LENGTH = 255;
 /**
  * Validates a path string
  */
-function validatePath(value: unknown, maxLength: number = MAX_PATH_LENGTH): string | null {
+function validatePath(value: RuntimeValue, maxLength: number = MAX_PATH_LENGTH): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -34,7 +34,7 @@ function validatePath(value: unknown, maxLength: number = MAX_PATH_LENGTH): stri
 /**
  * Validates a message string
  */
-function validateMessage(value: unknown): string | null {
+function validateMessage(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -47,7 +47,7 @@ function validateMessage(value: unknown): string | null {
 /**
  * Validates an optional system prompt
  */
-function validateSystemPrompt(value: unknown): string | undefined {
+function validateSystemPrompt(value: RuntimeValue): string | undefined {
     if (value === undefined || value === null) {
         return undefined;
     }
@@ -63,7 +63,7 @@ function validateSystemPrompt(value: unknown): string | undefined {
 /**
  * Validates a URL
  */
-function validateUrl(value: unknown): string | null {
+function validateUrl(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -83,7 +83,7 @@ function validateUrl(value: unknown): string | null {
 /**
  * Validates a config object
  */
-function validateConfig(value: unknown): Record<string, IpcValue> {
+function validateConfig(value: RuntimeValue): Record<string, IpcValue> {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
         return {};
     }
@@ -101,7 +101,7 @@ export function registerLlamaIpc(getMainWindow: () => BrowserWindow | null, llam
         'llama:loadModel',
         createIpcHandler(
             'llama:loadModel',
-            async (event: IpcMainInvokeEvent, modelPathRaw: unknown, configRaw: unknown) => {
+            async (event: IpcMainInvokeEvent, modelPathRaw: RuntimeValue, configRaw: RuntimeValue) => {
                 validateSender(event);
                 const modelPath = validatePath(modelPathRaw);
                 if (!modelPath) {
@@ -132,7 +132,7 @@ export function registerLlamaIpc(getMainWindow: () => BrowserWindow | null, llam
         'llama:chat',
         createSafeIpcHandler(
             'llama:chat',
-            async (event: IpcMainInvokeEvent, messageRaw: unknown, systemPromptRaw?: unknown) => {
+            async (event: IpcMainInvokeEvent, messageRaw: RuntimeValue, systemPromptRaw?: RuntimeValue) => {
                 validateSender(event);
                 const message = validateMessage(messageRaw);
                 if (!message) {
@@ -178,7 +178,7 @@ export function registerLlamaIpc(getMainWindow: () => BrowserWindow | null, llam
         'llama:downloadModel',
         createIpcHandler(
             'llama:downloadModel',
-            async (event: IpcMainInvokeEvent, urlRaw: unknown, filenameRaw: unknown) => {
+            async (event: IpcMainInvokeEvent, urlRaw: RuntimeValue, filenameRaw: RuntimeValue) => {
                 validateSender(event);
                 const url = validateUrl(urlRaw);
                 const filename = validatePath(filenameRaw, MAX_FILENAME_LENGTH);
@@ -195,7 +195,7 @@ export function registerLlamaIpc(getMainWindow: () => BrowserWindow | null, llam
         'llama:deleteModel',
         createIpcHandler(
             'llama:deleteModel',
-            async (event: IpcMainInvokeEvent, modelPathRaw: unknown) => {
+            async (event: IpcMainInvokeEvent, modelPathRaw: RuntimeValue) => {
                 validateSender(event);
                 const modelPath = validatePath(modelPathRaw);
                 if (!modelPath) {
@@ -222,7 +222,7 @@ export function registerLlamaIpc(getMainWindow: () => BrowserWindow | null, llam
         'llama:setConfig',
         createSafeIpcHandler(
             'llama:setConfig',
-            async (event: IpcMainInvokeEvent, configRaw: unknown) => {
+            async (event: IpcMainInvokeEvent, configRaw: RuntimeValue) => {
                 validateSender(event);
                 const config = validateConfig(configRaw);
                 llamaService.setConfig(config);

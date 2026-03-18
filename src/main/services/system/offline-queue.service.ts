@@ -128,7 +128,7 @@ export class OfflineQueueService extends BaseService {
     private async loadFromDisk(): Promise<void> {
         try {
             const raw = await fsp.readFile(this.filePath, 'utf-8');
-            const parsed: unknown = JSON.parse(raw);
+            const parsed: RuntimeValue = JSON.parse(raw);
             if (Array.isArray(parsed)) {
                 this.queue = parsed.filter(
                     (item): item is QueuedPrompt =>

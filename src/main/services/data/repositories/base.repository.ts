@@ -31,7 +31,7 @@ export abstract class BaseRepository {
         if (typeof json !== 'string' || json.trim() === '') {
             return defaultValue;
         }
-        const first = safeJsonParse<unknown>(json, defaultValue as unknown);
+        const first = safeJsonParse<RuntimeValue>(json, defaultValue as RuntimeValue);
         if (typeof first === 'string') {
             return safeJsonParse<T>(first, defaultValue);
         }

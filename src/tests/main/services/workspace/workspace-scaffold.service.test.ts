@@ -14,7 +14,7 @@ vi.mock('fs/promises', () => ({
 }));
 
 vi.mock('@shared/utils/error.util', () => ({
-    getErrorMessage: (e: unknown) => (e instanceof Error ? e.message : String(e))
+    getErrorMessage: (e: TestValue) => (e instanceof Error ? e.message : String(e))
 }));
 
 import { mkdir, writeFile } from 'fs/promises';

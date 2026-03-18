@@ -34,7 +34,7 @@ export const EmptyState: React.FC<EmptyStateProps> = memo(({
   description,
   action,
 }) => (
-  <div className="flex flex-col items-center justify-center py-20 text-center gap-4 bg-muted/10 rounded-2xl border border-dashed border-white/5">
+  <div className="flex flex-col items-center justify-center py-20 text-center gap-4 bg-muted/10 rounded-2xl border border-dashed border-border/50">
     {icon && (
       <div className="text-muted-foreground/20">
         {icon}

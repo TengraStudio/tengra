@@ -5,12 +5,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 type MockFn = ReturnType<typeof vi.fn>;
 
 // Mock Electron ipcMain
-const ipcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
+const ipcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
 
 vi.mock('electron', () => ({
     ipcMain: {
         handle: vi.fn((channel, handler) => {
-            ipcMainHandlers.set(channel, handler);
+            ipcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
         }),
         removeHandler: vi.fn()
     }
@@ -76,7 +76,7 @@ describe('Collaboration IPC Integration', () => {
                 options: { temperature: 0.7, maxTokens: 1000 }
             };
 
-            const result = await handler?.({} as IpcMainInvokeEvent, request);
+            const result = await handler!({} as IpcMainInvokeEvent, request);
 
             expect(mockCollaborationService.collaborate).toHaveBeenCalledWith(request);
             expect(result).toMatchObject({
@@ -97,7 +97,7 @@ describe('Collaboration IPC Integration', () => {
                 strategy: 'consensus' as const
             };
 
-            const result = await handler?.({} as IpcMainInvokeEvent, request);
+            const result = await handler!({} as IpcMainInvokeEvent, request);
 
             expect(result).toMatchObject({
                 success: false,
@@ -116,7 +116,7 @@ describe('Collaboration IPC Integration', () => {
                 strategy: 'consensus' as const
             };
 
-            const result = await handler?.({} as IpcMainInvokeEvent, request);
+            const result = await handler!({} as IpcMainInvokeEvent, request);
 
             expect(result).toMatchObject({
                 success: false,
@@ -135,7 +135,7 @@ describe('Collaboration IPC Integration', () => {
                 strategy: 'consensus' as const
             };
 
-            const result = await handler?.({} as IpcMainInvokeEvent, request);
+            const result = await handler!({} as IpcMainInvokeEvent, request);
 
             expect(result).toMatchObject({
                 success: false,
@@ -154,7 +154,7 @@ describe('Collaboration IPC Integration', () => {
                 strategy: 'invalid-strategy' as never
             };
 
-            const result = await handler?.({} as IpcMainInvokeEvent, request);
+            const result = await handler!({} as IpcMainInvokeEvent, request);
 
             expect(result).toMatchObject({
                 success: false,
@@ -178,7 +178,7 @@ describe('Collaboration IPC Integration', () => {
                     strategy
                 };
 
-                const result = await handler?.({} as IpcMainInvokeEvent, request) as { success: boolean };
+                const result = await handler!({} as IpcMainInvokeEvent, request) as { success: boolean };
 
                 expect(result).toBeDefined();
                 expect(result.success).toBe(true);
@@ -202,7 +202,7 @@ describe('Collaboration IPC Integration', () => {
 
             (multiLLMOrchestrator.getProviderStats as MockFn).mockReturnValue(stats);
 
-            const result = await handler?.({} as IpcMainInvokeEvent, 'openai');
+            const result = await handler!({} as IpcMainInvokeEvent, 'openai');
 
             expect(multiLLMOrchestrator.getProviderStats).toHaveBeenCalledWith('openai');
             expect(result).toMatchObject({
@@ -217,7 +217,7 @@ describe('Collaboration IPC Integration', () => {
 
             (multiLLMOrchestrator.getProviderStats as MockFn).mockReturnValue(undefined);
 
-            const result = await handler?.({} as IpcMainInvokeEvent, 'non-existent');
+            const result = await handler!({} as IpcMainInvokeEvent, 'non-existent');
 
             expect(multiLLMOrchestrator.getProviderStats).toHaveBeenCalledWith('non-existent');
             expect(result).toMatchObject({
@@ -237,7 +237,7 @@ describe('Collaboration IPC Integration', () => {
 
             (multiLLMOrchestrator.getAllStats as MockFn).mockReturnValue(allStats);
 
-            const result = await handler?.({} as IpcMainInvokeEvent);
+            const result = await handler!({} as IpcMainInvokeEvent);
 
             expect(multiLLMOrchestrator.getAllStats).toHaveBeenCalled();
             expect(result).toMatchObject({
@@ -257,7 +257,7 @@ describe('Collaboration IPC Integration', () => {
                 throw new Error('Stats error');
             });
 
-            const result = await handler?.({} as IpcMainInvokeEvent, 'openai');
+            const result = await handler!({} as IpcMainInvokeEvent, 'openai');
 
             expect(result).toMatchObject({
                 success: true,
@@ -273,7 +273,7 @@ describe('Collaboration IPC Integration', () => {
 
             (multiLLMOrchestrator.getActiveTaskCount as MockFn).mockReturnValue(5);
 
-            const result = await handler?.({} as IpcMainInvokeEvent, 'openai');
+            const result = await handler!({} as IpcMainInvokeEvent, 'openai');
 
             expect(multiLLMOrchestrator.getActiveTaskCount).toHaveBeenCalledWith('openai');
             expect(result).toMatchObject({
@@ -286,7 +286,7 @@ describe('Collaboration IPC Integration', () => {
             initIPC();
             const handler = ipcMainHandlers.get('collaboration:getActiveTaskCount');
 
-            const result = await handler?.({} as IpcMainInvokeEvent, 123);
+            const result = await handler!({} as IpcMainInvokeEvent, 123);
 
             expect(multiLLMOrchestrator.getActiveTaskCount).not.toHaveBeenCalled();
             expect(result).toMatchObject({
@@ -303,7 +303,7 @@ describe('Collaboration IPC Integration', () => {
                 throw new Error('Count error');
             });
 
-            const result = await handler?.({} as IpcMainInvokeEvent, 'openai');
+            const result = await handler!({} as IpcMainInvokeEvent, 'openai');
 
             expect(result).toMatchObject({
                 success: true,
@@ -325,7 +325,7 @@ describe('Collaboration IPC Integration', () => {
                 rateLimitPerMinute: 100
             };
 
-            const result = await handler?.({} as IpcMainInvokeEvent, 'openai', config);
+            const result = await handler!({} as IpcMainInvokeEvent, 'openai', config);
 
             expect(multiLLMOrchestrator.setProviderConfig).toHaveBeenCalledWith('openai', config);
             expect(result).toMatchObject({
@@ -344,7 +344,7 @@ describe('Collaboration IPC Integration', () => {
                 rateLimitPerMinute: 100
             };
 
-            const result = await handler?.({} as IpcMainInvokeEvent, 123, config);
+            const result = await handler!({} as IpcMainInvokeEvent, 123, config);
 
             expect(result).toMatchObject({
                 success: false,
@@ -363,7 +363,7 @@ describe('Collaboration IPC Integration', () => {
                 rateLimitPerMinute: 100
             };
 
-            const result = await handler?.({} as IpcMainInvokeEvent, 'openai', config);
+            const result = await handler!({} as IpcMainInvokeEvent, 'openai', config);
 
             expect(result).toMatchObject({
                 success: false,
@@ -382,7 +382,7 @@ describe('Collaboration IPC Integration', () => {
                 rateLimitPerMinute: 100
             };
 
-            const result = await handler?.({} as IpcMainInvokeEvent, 'openai', config);
+            const result = await handler!({} as IpcMainInvokeEvent, 'openai', config);
 
             expect(result).toMatchObject({
                 success: false,
@@ -401,7 +401,7 @@ describe('Collaboration IPC Integration', () => {
                 rateLimitPerMinute: 100
             };
 
-            const result = await handler?.({} as IpcMainInvokeEvent, 'openai', config);
+            const result = await handler!({} as IpcMainInvokeEvent, 'openai', config);
 
             expect(result).toMatchObject({
                 success: false,
@@ -420,7 +420,7 @@ describe('Collaboration IPC Integration', () => {
                 rateLimitPerMinute: -1
             };
 
-            const result = await handler?.({} as IpcMainInvokeEvent, 'openai', config);
+            const result = await handler!({} as IpcMainInvokeEvent, 'openai', config);
 
             expect(result).toMatchObject({
                 success: false,
@@ -439,7 +439,7 @@ describe('Collaboration IPC Integration', () => {
                 rateLimitPerMinute: 'unlimited' as never
             };
 
-            const result = await handler?.({} as IpcMainInvokeEvent, 'openai', config);
+            const result = await handler!({} as IpcMainInvokeEvent, 'openai', config);
 
             expect(result).toMatchObject({
                 success: false,
@@ -449,3 +449,4 @@ describe('Collaboration IPC Integration', () => {
         });
     });
 });
+

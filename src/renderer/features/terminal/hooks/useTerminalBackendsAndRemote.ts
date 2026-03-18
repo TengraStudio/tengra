@@ -1,14 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { invokeTypedIpc } from '@/lib/ipc-client';
 import { appLogger } from '@/utils/renderer-logger';
 
 import {
-    terminalGetBackendsResponseSchema,
+    terminalGetDiscoverySnapshotResponseSchema,
     terminalGetDockerContainersResponseSchema,
-    terminalGetShellsResponseSchema,
     TerminalIpcContract,
-    terminalIsAvailableResponseSchema,
 } from '../utils/terminal-ipc';
 
 /**
@@ -73,7 +71,14 @@ export interface ShellInfo {
     path: string;
 }
 
-function toDisplayString(value: unknown): string {
+interface TerminalDiscoverySnapshot {
+    terminalAvailable: boolean;
+    shells: ShellInfo[];
+    backends: TerminalBackendInfo[];
+    refreshedAt: number;
+}
+
+function toDisplayString(value: RendererDataValue): string {
     return typeof value === 'string' ? value.trim() : '';
 }
 
@@ -83,7 +88,7 @@ function toDisplayString(value: unknown): string {
  * @param raw - Raw SSH profile data
  * @returns Normalized SSH profiles
  */
-function normalizeSshProfiles(raw: unknown): RemoteSshProfile[] {
+function normalizeSshProfiles(raw: RendererDataValue): RemoteSshProfile[] {
     if (!Array.isArray(raw)) {
         return [];
     }
@@ -93,7 +98,7 @@ function normalizeSshProfiles(raw: unknown): RemoteSshProfile[] {
         if (!item || typeof item !== 'object') {
             return;
         }
-        const record = item as Record<string, unknown>;
+        const record = item as Record<string, RendererDataValue>;
         const host = toDisplayString(record.host);
         const username = toDisplayString(record.username);
         if (!host || !username) {
@@ -123,7 +128,7 @@ function normalizeSshProfiles(raw: unknown): RemoteSshProfile[] {
  * @returns Normalized container or null
  */
 function parseDockerContainerRecord(
-    record: Record<string, unknown>,
+    record: Record<string, RendererDataValue>,
     index: number
 ): RemoteDockerContainer | null {
     const id =
@@ -168,7 +173,7 @@ function parseDockerContainerRecord(
  * @param raw - Raw container data
  * @returns Normalized Docker containers
  */
-function normalizeDockerContainers(raw: unknown): RemoteDockerContainer[] {
+function normalizeDockerContainers(raw: RendererDataValue): RemoteDockerContainer[] {
     if (!Array.isArray(raw)) {
         return [];
     }
@@ -178,7 +183,7 @@ function normalizeDockerContainers(raw: unknown): RemoteDockerContainer[] {
         if (!item || typeof item !== 'object') {
             return;
         }
-        const container = parseDockerContainerRecord(item as Record<string, unknown>, index);
+        const container = parseDockerContainerRecord(item as Record<string, RendererDataValue>, index);
         if (container) {
             containers.push(container);
         }
@@ -213,6 +218,7 @@ export function useTerminalBackendsAndRemote({
         []
     );
     const [preferredBackendId, setPreferredBackendId] = useState<string | null>(null);
+    const discoveryRequestRef = useRef<Promise<TerminalDiscoverySnapshot> | null>(null);
 
     /**
      * Load preferred backend from settings and localStorage
@@ -253,6 +259,47 @@ export function useTerminalBackendsAndRemote({
         return null;
     }, [preferredBackendStorageKey]);
 
+    const fetchDiscoverySnapshot = useCallback(async (refresh = false) => {
+        if (!refresh && discoveryRequestRef.current) {
+            return discoveryRequestRef.current;
+        }
+
+        setIsLoadingShells(true);
+        setIsLoadingBackends(true);
+
+        const request = invokeTypedIpc<TerminalIpcContract, 'terminal:getDiscoverySnapshot'>(
+            'terminal:getDiscoverySnapshot',
+            [refresh ? { refresh: true } : undefined],
+            { responseSchema: terminalGetDiscoverySnapshotResponseSchema }
+        )
+            .then(snapshot => {
+                setAvailableShells(snapshot.shells);
+                setAvailableBackends(snapshot.backends);
+                return snapshot;
+            })
+            .catch(error => {
+                appLogger.error('TerminalPanel', 'Failed to load terminal discovery snapshot', error as Error);
+                setAvailableShells([]);
+                setAvailableBackends([]);
+                return {
+                    terminalAvailable: false,
+                    shells: [],
+                    backends: [],
+                    refreshedAt: Date.now(),
+                };
+            })
+            .finally(() => {
+                setIsLoadingShells(false);
+                setIsLoadingBackends(false);
+                if (discoveryRequestRef.current === request) {
+                    discoveryRequestRef.current = null;
+                }
+            });
+
+        discoveryRequestRef.current = request;
+        return request;
+    }, []);
+
     /**
      * Fetch available shells
      * 
@@ -260,21 +307,12 @@ export function useTerminalBackendsAndRemote({
      */
     const fetchAvailableShells = useCallback(async () => {
         try {
-            setIsLoadingShells(true);
-            const isAvailable = await invokeTypedIpc<TerminalIpcContract, 'terminal:isAvailable'>('terminal:isAvailable', [], { responseSchema: terminalIsAvailableResponseSchema });
-            if (!isAvailable) {
-                return [];
-            }
-            const shells = await invokeTypedIpc<TerminalIpcContract, 'terminal:getShells'>('terminal:getShells', [], { responseSchema: terminalGetShellsResponseSchema });
-            setAvailableShells(shells);
-            return shells;
-        } catch (error) {
-            appLogger.error('TerminalPanel', 'Failed to load shells', error as Error);
+            const snapshot = await fetchDiscoverySnapshot();
+            return snapshot.shells;
+        } catch {
             return [];
-        } finally {
-            setIsLoadingShells(false);
         }
-    }, []);
+    }, [fetchDiscoverySnapshot]);
 
     /**
      * Fetch available backends
@@ -283,21 +321,12 @@ export function useTerminalBackendsAndRemote({
      */
     const fetchAvailableBackends = useCallback(async () => {
         try {
-            setIsLoadingBackends(true);
-            const isAvailable = await invokeTypedIpc<TerminalIpcContract, 'terminal:isAvailable'>('terminal:isAvailable', [], { responseSchema: terminalIsAvailableResponseSchema });
-            if (!isAvailable) {
-                return [];
-            }
-            const backends = await invokeTypedIpc<TerminalIpcContract, 'terminal:getBackends'>('terminal:getBackends', [], { responseSchema: terminalGetBackendsResponseSchema });
-            setAvailableBackends(backends);
-            return backends;
-        } catch (error) {
-            appLogger.error('TerminalPanel', 'Failed to load terminal backends', error as Error);
+            const snapshot = await fetchDiscoverySnapshot();
+            return snapshot.backends;
+        } catch {
             return [];
-        } finally {
-            setIsLoadingBackends(false);
         }
-    }, []);
+    }, [fetchDiscoverySnapshot]);
 
     /**
      * Fetch remote connections (SSH profiles and Docker containers)
@@ -427,6 +456,7 @@ export function useTerminalBackendsAndRemote({
         preferredBackendId,
         hasRemoteConnections,
         resolvedDefaultBackendId,
+        fetchDiscoverySnapshot,
         fetchAvailableShells,
         fetchAvailableBackends,
         fetchRemoteConnections,

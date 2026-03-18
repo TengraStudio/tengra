@@ -152,8 +152,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 title: p.title,
                 content: p.path,
                 metadata: {
-                    Type: p.type ?? 'Unknown',
-                    Created: new Date(p.createdAt).toLocaleDateString(),
+                    [t('commandPalette.metadataType')]: p.type ?? t('commandPalette.unknown'),
+                    [t('commandPalette.metadataCreated')]: new Date(p.createdAt).toLocaleDateString(),
                 },
             },
         }));
@@ -171,7 +171,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 category: 'model' as const,
             },
             ...models.map(m => {
-                const name = m.name ?? m.id ?? 'Unknown';
+                const name = m.name ?? m.id ?? t('commandPalette.unknown');
                 return {
                     id: `model-${name}`,
                     label: name,
@@ -187,8 +187,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                     category: 'model' as const,
                     preview: {
                         title: name,
-                        content: m.id ?? 'No details',
-                        metadata: { Provider: m.id?.split(':')[0] ?? 'Unknown' },
+                        content: m.id ?? t('commandPalette.noDetails'),
+                        metadata: {
+                            [t('commandPalette.metadataProvider')]: m.id?.split(':')[0] ?? t('commandPalette.unknown')
+                        },
                     },
                 };
             }),
@@ -314,7 +316,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                     className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh]"
                     onClick={onClose}
                 >
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                    <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" />
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: -20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -328,7 +330,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                         aria-describedby="command-palette-help"
                     >
                         <p id="command-palette-help" className="sr-only">
-                            Use arrow keys to move through command results and Enter to run the selected command.
+                            {t('commandPalette.keyboardHelp')}
                         </p>
                         <CommandHeader
                             search={search}

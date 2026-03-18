@@ -32,7 +32,7 @@ describe('TelemetryService Integration Tests', () => {
         };
 
         service = new TelemetryService(
-            mockSettingsService as unknown as SettingsService
+            mockSettingsService as never as SettingsService
         );
     });
 
@@ -243,7 +243,7 @@ describe('TelemetryService Integration Tests', () => {
         it('should handle repeated init-track-flush-cleanup cycles', async () => {
             for (let cycle = 0; cycle < 3; cycle++) {
                 const svc = new TelemetryService(
-                    mockSettingsService as unknown as SettingsService
+                    mockSettingsService as never as SettingsService
                 );
                 await svc.initialize();
                 svc.track(`cycle${cycle}.event`);

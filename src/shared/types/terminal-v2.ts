@@ -83,5 +83,5 @@ export interface TerminalPanelState {
 export interface TerminalCommand {
     type: 'create' | 'close' | 'resize' | 'write' | 'clear' | 'split' | 'focus' | 'toggle';
     sessionId?: string;
-    payload?: unknown;
+    payload?: RuntimeValue;
 }

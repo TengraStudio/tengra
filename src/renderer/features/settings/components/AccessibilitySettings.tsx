@@ -79,10 +79,10 @@ export const AccessibilitySettings: React.FC = () => {
                     </div>
                     <div>
                         <h2 className="text-lg font-semibold text-foreground">
-                            {t('settings.accessibility.title') || 'Accessibility'}
+                            {t('settings.accessibility.title')}
                         </h2>
                         <p className="text-sm text-muted-foreground">
-                            {t('settings.accessibility.description') || 'Customize your experience for better accessibility'}
+                            {t('settings.accessibility.description')}
                         </p>
                     </div>
                 </div>
@@ -93,7 +93,7 @@ export const AccessibilitySettings: React.FC = () => {
                     className="text-muted-foreground hover:text-foreground"
                 >
                     <RotateCcw className="w-4 h-4 mr-2" />
-                    {t('common.reset') || 'Reset'}
+                    {t('common.reset')}
                 </Button>
             </div>
 
@@ -101,32 +101,32 @@ export const AccessibilitySettings: React.FC = () => {
             <div className="space-y-3">
                 <SettingRow
                     icon={<Contrast className="w-4 h-4" />}
-                    label={t('settings.accessibility.highContrast') || 'High Contrast Mode'}
-                    description={t('settings.accessibility.highContrastDesc') || 'Increase contrast for better visibility'}
+                    label={t('settings.accessibility.highContrast')}
+                    description={t('settings.accessibility.highContrastDesc')}
                     checked={settings.highContrast}
                     onChange={toggleHighContrast}
                 />
 
                 <SettingRow
                     icon={<Eye className="w-4 h-4" />}
-                    label={t('settings.accessibility.reducedMotion') || 'Reduced Motion'}
-                    description={t('settings.accessibility.reducedMotionDesc') || 'Minimize animations and transitions'}
+                    label={t('settings.accessibility.reducedMotion')}
+                    description={t('settings.accessibility.reducedMotionDesc')}
                     checked={settings.reducedMotion}
                     onChange={() => updateSettings({ reducedMotion: !settings.reducedMotion })}
                 />
 
                 <SettingRow
                     icon={<Focus className="w-4 h-4" />}
-                    label={t('settings.accessibility.enhancedFocus') || 'Enhanced Focus Indicators'}
-                    description={t('settings.accessibility.enhancedFocusDesc') || 'Make focus states more visible'}
+                    label={t('settings.accessibility.enhancedFocus')}
+                    description={t('settings.accessibility.enhancedFocusDesc')}
                     checked={settings.enhancedFocusIndicators}
                     onChange={toggleEnhancedFocus}
                 />
 
                 <SettingRow
                     icon={<Volume2 className="w-4 h-4" />}
-                    label={t('settings.accessibility.screenReader') || 'Screen Reader Announcements'}
-                    description={t('settings.accessibility.screenReaderDesc') || 'Enable announcements for screen readers'}
+                    label={t('settings.accessibility.screenReader')}
+                    description={t('settings.accessibility.screenReaderDesc')}
                     checked={settings.screenReaderAnnouncements}
                     onChange={(checked) => updateSettings({ screenReaderAnnouncements: checked })}
                 />
@@ -136,41 +136,38 @@ export const AccessibilitySettings: React.FC = () => {
             <div className="p-4 rounded-xl bg-info/10 border border-info/20">
                 <h4 className="font-medium text-foreground flex items-center gap-2">
                     <Volume2 className="w-4 h-4 text-info" />
-                    {t('settings.accessibility.systemPrefs') || 'System Preferences'}
+                    {t('settings.accessibility.systemPrefs')}
                 </h4>
                 <p className="text-sm text-muted-foreground mt-2">
-                    {t('settings.accessibility.systemPrefsDesc') ||
-                        'Some settings automatically detect your system preferences. ' +
-                        'Enable "Reduced Motion" or "High Contrast" in your operating system ' +
-                        'for automatic detection.'}
+                    {t('settings.accessibility.systemPrefsDesc')}
                 </p>
             </div>
 
             {/* Keyboard Shortcuts Info */}
             <div className="p-4 rounded-xl bg-muted/20 border border-border/50">
                 <h4 className="font-medium text-foreground mb-3">
-                    {t('settings.accessibility.shortcuts') || 'Keyboard Shortcuts'}
+                    {t('settings.accessibility.shortcuts')}
                 </h4>
                 <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                        <span className="text-muted-foreground">Tab</span>
-                        <span className="text-foreground">{t('settings.accessibility.tabNav') || 'Navigate between elements'}</span>
+                        <span className="text-muted-foreground">{t('settings.accessibility.shortcutTab')}</span>
+                        <span className="text-foreground">{t('settings.accessibility.tabNav')}</span>
                     </div>
                     <div className="flex justify-between">
-                        <span className="text-muted-foreground">Shift + Tab</span>
-                        <span className="text-foreground">{t('settings.accessibility.tabNavBack') || 'Navigate backwards'}</span>
+                        <span className="text-muted-foreground">{t('settings.accessibility.shortcutShiftTab')}</span>
+                        <span className="text-foreground">{t('settings.accessibility.tabNavBack')}</span>
                     </div>
                     <div className="flex justify-between">
-                        <span className="text-muted-foreground">Enter / Space</span>
-                        <span className="text-foreground">{t('settings.accessibility.activate') || 'Activate focused element'}</span>
+                        <span className="text-muted-foreground">{t('settings.accessibility.shortcutEnterSpace')}</span>
+                        <span className="text-foreground">{t('settings.accessibility.activate')}</span>
                     </div>
                     <div className="flex justify-between">
-                        <span className="text-muted-foreground">Escape</span>
-                        <span className="text-foreground">{t('settings.accessibility.escape') || 'Close modal or cancel'}</span>
+                        <span className="text-muted-foreground">{t('settings.accessibility.shortcutEscape')}</span>
+                        <span className="text-foreground">{t('settings.accessibility.escape')}</span>
                     </div>
                     <div className="flex justify-between">
-                        <span className="text-muted-foreground">Arrow Keys</span>
-                        <span className="text-foreground">{t('settings.accessibility.arrowNav') || 'Navigate within lists'}</span>
+                        <span className="text-muted-foreground">{t('settings.accessibility.shortcutArrowKeys')}</span>
+                        <span className="text-foreground">{t('settings.accessibility.arrowNav')}</span>
                     </div>
                 </div>
             </div>

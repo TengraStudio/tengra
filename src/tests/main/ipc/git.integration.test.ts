@@ -3,7 +3,7 @@ import { IpcMainInvokeEvent } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { ipcMainHandlers, fsPromisesMock } = vi.hoisted(() => ({
-    ipcMainHandlers: new Map<string, (...args: unknown[]) => Promise<unknown>>(),
+    ipcMainHandlers: new Map<string, (...args: TestValue[]) => Promise<TestValue>>(),
     fsPromisesMock: {
         readdir: vi.fn(),
         stat: vi.fn(),
@@ -16,7 +16,7 @@ const { ipcMainHandlers, fsPromisesMock } = vi.hoisted(() => ({
 
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: unknown[]) => Promise<unknown>) => {
+        handle: vi.fn((channel: string, handler: (...args: TestValue[]) => Promise<TestValue>) => {
             ipcMainHandlers.set(channel, handler);
         }),
         removeHandler: vi.fn(),
@@ -42,7 +42,7 @@ vi.mock('@main/utils/ipc-batch.util', () => ({
 
 
 vi.mock('@main/utils/rate-limiter.util', () => ({
-    withRateLimit: vi.fn(async (_bucket: string, fn: () => Promise<unknown>) => await fn()),
+    withRateLimit: vi.fn(async (_bucket: string, fn: () => Promise<TestValue>) => await fn()),
 }));
 
 describe('Git IPC Integration', () => {
@@ -211,7 +211,7 @@ describe('Git IPC Integration', () => {
             { operationId: 'op-1', timeoutMs: 5000 }
         );
         expect((cancelResult as { success: boolean }).success).toBe(true);
-        const cancelOp = (mockGitService as unknown as { cancelOperation: ReturnType<typeof vi.fn> }).cancelOperation;
+        const cancelOp = (mockGitService as never as { cancelOperation: ReturnType<typeof vi.fn> }).cancelOperation;
         expect(cancelOp).toHaveBeenCalledWith('op-1');
     });
 

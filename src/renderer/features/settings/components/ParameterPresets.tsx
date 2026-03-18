@@ -48,12 +48,20 @@ export function ParameterPresets({
     const [showCustom, setShowCustom] = useState(false);
     const [editingPreset, setEditingPreset] = useState<ParameterPreset | null>(null);
 
+    const resolvePresetName = (preset: ParameterPreset): string => {
+        if (preset.id === 'creative') { return t('ssh.presets.creative'); }
+        if (preset.id === 'precise') { return t('ssh.presets.precise'); }
+        if (preset.id === 'coding') { return t('ssh.presets.coding'); }
+        if (preset.id.startsWith('custom-')) { return t('ssh.presets.custom'); }
+        return preset.name;
+    };
+
     const allPresets = [...DEFAULT_PRESETS, ...customPresets];
 
     const handleCreateCustom = () => {
         const newPreset: ParameterPreset = {
             id: `custom-${Date.now()}`,
-            name: 'Custom',
+            name: t('ssh.presets.custom'),
             icon: 'custom',
             temperature: 0.7,
             topP: 0.9,
@@ -86,12 +94,10 @@ export function ParameterPresets({
                                 "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all",
                                 getPresetColor(preset.icon, isActive)
                             )}
-                            title={`${preset.name}: temp=${preset.temperature}, top_p=${preset.topP}`}
+                            title={`${resolvePresetName(preset)}: temp=${preset.temperature}, top_p=${preset.topP}`}
                         >
                             <Icon size={12} />
-                            {preset.id === 'creative' ? t('ssh.presets.creative') :
-                                preset.id === 'precise' ? t('ssh.presets.precise') :
-                                    preset.id === 'coding' ? t('ssh.presets.coding') : preset.name}
+                            {resolvePresetName(preset)}
                             {isActive && <Check size={10} />}
                         </button>
                     );

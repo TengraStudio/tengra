@@ -74,6 +74,20 @@ interface ShellSession {
     onExit: () => void;
 }
 
+const SSH_MESSAGE_KEY = {
+    NOT_CONNECTED: 'mainProcess.sshService.notConnected',
+    CONNECTION_PROFILE_NOT_FOUND: 'mainProcess.sshService.connectionProfileNotFound',
+    RECONNECT_ATTEMPTS_EXHAUSTED: 'mainProcess.sshService.reconnectAttemptsExhausted'
+} as const;
+const SSH_ERROR_MESSAGE = {
+    NOT_CONNECTED: 'Not connected',
+    CONNECTION_PROFILE_NOT_FOUND: 'Connection profile not found',
+    RECONNECT_ATTEMPTS_EXHAUSTED: 'Reconnect attempts exhausted',
+    PATH_TRAVERSAL_DETECTED: 'Access denied: Path traversal detected',
+    PATH_MUST_BE_ABSOLUTE: 'Access denied: Path must be absolute',
+    PATH_MUST_BE_WITHIN_VAR_LOG: 'Access denied: Path must be within /var/log'
+} as const;
+
 export class SSHService extends EventEmitter {
     private connections: Map<string, Client> = new Map();
     private connectionDetails: Map<string, SSHConnection> = new Map();
@@ -139,12 +153,12 @@ export class SSHService extends EventEmitter {
 
         // Check for path traversal attempts that escape allowed directories
         if (normalized.includes('..')) {
-            throw new Error('Access denied: Path traversal detected');
+            throw new Error(SSH_ERROR_MESSAGE.PATH_TRAVERSAL_DETECTED);
         }
 
         // Ensure path is absolute
         if (!normalized.startsWith('/')) {
-            throw new Error('Access denied: Path must be absolute');
+            throw new Error(SSH_ERROR_MESSAGE.PATH_MUST_BE_ABSOLUTE);
         }
 
         // Check if path starts with an allowed base path
@@ -532,7 +546,7 @@ export class SSHService extends EventEmitter {
 
         const conn = this.connections.get(connectionId);
         if (!conn) {
-            throw new Error('Not connected');
+            throw new Error(SSH_ERROR_MESSAGE.NOT_CONNECTED);
         }
 
         // Update stats
@@ -544,7 +558,7 @@ export class SSHService extends EventEmitter {
         }
 
         return new Promise((resolve, reject) => {
-            const execOptions: Record<string, unknown> = {};
+            const execOptions: Record<string, RuntimeValue> = {};
             if (options?.env) {
                 execOptions.env = options.env;
             }
@@ -606,7 +620,7 @@ export class SSHService extends EventEmitter {
 
         const conn = this.connections.get(connectionId);
         if (!conn) {
-            throw new Error('Not connected');
+            throw new Error(SSH_ERROR_MESSAGE.NOT_CONNECTED);
         }
 
         const stats = this.connectionStats.get(connectionId);
@@ -616,7 +630,7 @@ export class SSHService extends EventEmitter {
         }
 
         return new Promise((resolve, reject) => {
-            const execOptions: Record<string, unknown> = {};
+            const execOptions: Record<string, RuntimeValue> = {};
             if (options?.env) {
                 execOptions.env = options.env;
             }
@@ -649,7 +663,7 @@ export class SSHService extends EventEmitter {
     ): Promise<{ success: boolean; files?: SSHFile[]; error?: string }> {
         const conn = this.connections.get(connectionId);
         if (!conn) {
-            throw new Error('Not connected');
+            throw new Error(SSH_ERROR_MESSAGE.NOT_CONNECTED);
         }
 
         const validPath = this.validateRemotePath(dirPath);
@@ -700,7 +714,7 @@ export class SSHService extends EventEmitter {
     async readFile(connectionId: string, filePath: string): Promise<string> {
         const conn = this.connections.get(connectionId);
         if (!conn) {
-            throw new Error('Not connected');
+            throw new Error(SSH_ERROR_MESSAGE.NOT_CONNECTED);
         }
 
         const validPath = this.validateRemotePath(filePath);
@@ -721,7 +735,7 @@ export class SSHService extends EventEmitter {
     async writeFile(connectionId: string, filePath: string, content: string): Promise<boolean> {
         const conn = this.connections.get(connectionId);
         if (!conn) {
-            throw new Error('Not connected');
+            throw new Error(SSH_ERROR_MESSAGE.NOT_CONNECTED);
         }
 
         const validPath = this.validateRemotePath(filePath);
@@ -742,7 +756,7 @@ export class SSHService extends EventEmitter {
     async deleteDirectory(connectionId: string, dirPath: string): Promise<boolean> {
         const conn = this.connections.get(connectionId);
         if (!conn) {
-            throw new Error('Not connected');
+            throw new Error(SSH_ERROR_MESSAGE.NOT_CONNECTED);
         }
 
         const validPath = this.validateRemotePath(dirPath);
@@ -764,7 +778,7 @@ export class SSHService extends EventEmitter {
     async deleteFile(connectionId: string, filePath: string): Promise<boolean> {
         const conn = this.connections.get(connectionId);
         if (!conn) {
-            throw new Error('Not connected');
+            throw new Error(SSH_ERROR_MESSAGE.NOT_CONNECTED);
         }
 
         const validPath = this.validateRemotePath(filePath);
@@ -786,7 +800,7 @@ export class SSHService extends EventEmitter {
     async createDirectory(connectionId: string, dirPath: string): Promise<boolean> {
         const conn = this.connections.get(connectionId);
         if (!conn) {
-            throw new Error('Not connected');
+            throw new Error(SSH_ERROR_MESSAGE.NOT_CONNECTED);
         }
 
         const validPath = this.validateRemotePath(dirPath);
@@ -808,7 +822,7 @@ export class SSHService extends EventEmitter {
     async rename(connectionId: string, oldPath: string, newPath: string): Promise<boolean> {
         const conn = this.connections.get(connectionId);
         if (!conn) {
-            throw new Error('Not connected');
+            throw new Error(SSH_ERROR_MESSAGE.NOT_CONNECTED);
         }
 
         const validOldPath = this.validateRemotePath(oldPath);
@@ -839,7 +853,7 @@ export class SSHService extends EventEmitter {
     ): Promise<boolean> {
         const conn = this.connections.get(connectionId);
         if (!conn) {
-            throw new Error('Not connected');
+            throw new Error(SSH_ERROR_MESSAGE.NOT_CONNECTED);
         }
 
         const validRemotePath = this.validateRemotePath(remotePath);
@@ -904,7 +918,7 @@ export class SSHService extends EventEmitter {
     ): Promise<boolean> {
         const conn = this.connections.get(connectionId);
         if (!conn) {
-            throw new Error('Not connected');
+            throw new Error(SSH_ERROR_MESSAGE.NOT_CONNECTED);
         }
 
         const validRemotePath = this.validateRemotePath(remotePath);
@@ -964,10 +978,19 @@ export class SSHService extends EventEmitter {
         connectionId: string,
         onData: (data: string) => void,
         onExit: () => void
-    ): Promise<{ success: boolean; error?: string }> {
+    ): Promise<{
+        success: boolean;
+        error?: string;
+        messageKey?: string;
+        messageParams?: Record<string, string | number>;
+    }> {
         const conn = this.connections.get(connectionId);
         if (!conn) {
-            return { success: false, error: 'Not connected' };
+            return {
+                success: false,
+                error: SSH_ERROR_MESSAGE.NOT_CONNECTED,
+                messageKey: SSH_MESSAGE_KEY.NOT_CONNECTED
+            };
         }
 
         // Check if shell already exists
@@ -1043,7 +1066,7 @@ export class SSHService extends EventEmitter {
     async getLogFiles(connectionId: string): Promise<string[]> {
         const conn = this.connections.get(connectionId);
         if (!conn) {
-            throw new Error('Not connected');
+            throw new Error(SSH_ERROR_MESSAGE.NOT_CONNECTED);
         }
 
         // List common log locations
@@ -1063,7 +1086,7 @@ export class SSHService extends EventEmitter {
     async readLogFile(connectionId: string, filePath: string, lines: number = 50): Promise<string> {
         const conn = this.connections.get(connectionId);
         if (!conn) {
-            throw new Error('Not connected');
+            throw new Error(SSH_ERROR_MESSAGE.NOT_CONNECTED);
         }
 
         // Normalize path to resolve '..' segments
@@ -1072,7 +1095,7 @@ export class SSHService extends EventEmitter {
 
         // Ensure it starts with /var/log
         if (!normalizedPath.startsWith('/var/log/') && normalizedPath !== '/var/log') {
-            throw new Error('Access denied: Path must be within /var/log');
+            throw new Error(SSH_ERROR_MESSAGE.PATH_MUST_BE_WITHIN_VAR_LOG);
         }
 
         // Safe quoting for shell command
@@ -1110,10 +1133,20 @@ export class SSHService extends EventEmitter {
         localPort: number,
         remoteHost: string,
         remotePort: number
-    ): Promise<{ success: boolean; forwardId?: string; error?: string }> {
+    ): Promise<{
+        success: boolean;
+        forwardId?: string;
+        error?: string;
+        messageKey?: string;
+        messageParams?: Record<string, string | number>;
+    }> {
         const conn = this.connections.get(connectionId);
         if (!conn) {
-            return { success: false, error: 'Not connected' };
+            return {
+                success: false,
+                error: SSH_ERROR_MESSAGE.NOT_CONNECTED,
+                messageKey: SSH_MESSAGE_KEY.NOT_CONNECTED
+            };
         }
 
         return this._tunnelManager.createLocalForward({
@@ -1132,10 +1165,20 @@ export class SSHService extends EventEmitter {
         remotePort: number,
         localHost: string,
         localPort: number
-    ): Promise<{ success: boolean; forwardId?: string; error?: string }> {
+    ): Promise<{
+        success: boolean;
+        forwardId?: string;
+        error?: string;
+        messageKey?: string;
+        messageParams?: Record<string, string | number>;
+    }> {
         const conn = this.connections.get(connectionId);
         if (!conn) {
-            return { success: false, error: 'Not connected' };
+            return {
+                success: false,
+                error: SSH_ERROR_MESSAGE.NOT_CONNECTED,
+                messageKey: SSH_MESSAGE_KEY.NOT_CONNECTED
+            };
         }
 
         return this._tunnelManager.createRemoteForward({
@@ -1152,10 +1195,20 @@ export class SSHService extends EventEmitter {
         connectionId: string,
         localHost: string,
         localPort: number
-    ): Promise<{ success: boolean; forwardId?: string; error?: string }> {
+    ): Promise<{
+        success: boolean;
+        forwardId?: string;
+        error?: string;
+        messageKey?: string;
+        messageParams?: Record<string, string | number>;
+    }> {
         const conn = this.connections.get(connectionId);
         if (!conn) {
-            return { success: false, error: 'Not connected' };
+            return {
+                success: false,
+                error: SSH_ERROR_MESSAGE.NOT_CONNECTED,
+                messageKey: SSH_MESSAGE_KEY.NOT_CONNECTED
+            };
         }
 
         return this._tunnelManager.createDynamicForward(connectionId, conn, localHost, localPort);
@@ -1384,12 +1437,21 @@ export class SSHService extends EventEmitter {
         return this.profileManager.exportSearchHistory();
     }
 
-    async reconnectConnection(connectionId: string, maxRetries: number = 3): Promise<{ success: boolean; error?: string }> {
+    async reconnectConnection(connectionId: string, maxRetries: number = 3): Promise<{
+        success: boolean;
+        error?: string;
+        messageKey?: string;
+        messageParams?: Record<string, string | number>;
+    }> {
         const active = this.connectionDetails.get(connectionId);
         const fallback = await this.getProfileWithCredentials(connectionId);
         const config = active ?? fallback;
         if (!config) {
-            return { success: false, error: 'Connection profile not found' };
+            return {
+                success: false,
+                error: SSH_ERROR_MESSAGE.CONNECTION_PROFILE_NOT_FOUND,
+                messageKey: SSH_MESSAGE_KEY.CONNECTION_PROFILE_NOT_FOUND
+            };
         }
         try {
             return await withRetry(
@@ -1403,11 +1465,20 @@ export class SSHService extends EventEmitter {
                 { maxRetries: maxRetries - 1, baseDelayMs: 1000 }
             );
         } catch {
-            return { success: false, error: 'Reconnect attempts exhausted' };
+            return {
+                success: false,
+                error: SSH_ERROR_MESSAGE.RECONNECT_ATTEMPTS_EXHAUSTED,
+                messageKey: SSH_MESSAGE_KEY.RECONNECT_ATTEMPTS_EXHAUSTED
+            };
         }
     }
 
-    async acquireConnection(connectionId: string): Promise<{ success: boolean; error?: string }> {
+    async acquireConnection(connectionId: string): Promise<{
+        success: boolean;
+        error?: string;
+        messageKey?: string;
+        messageParams?: Record<string, string | number>;
+    }> {
         const refs = this.connectionPoolRefs.get(connectionId) ?? 0;
         this.connectionPoolRefs.set(connectionId, refs + 1);
         if (this.isConnected(connectionId)) {
@@ -1559,4 +1630,5 @@ export class SSHService extends EventEmitter {
         return this.sessionRecordingManager.list();
     }
 }
+
 

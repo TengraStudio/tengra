@@ -37,9 +37,9 @@ function sanitizeConnectionForRenderer(connection: SSHConnection): Omit<SSHConne
 
 export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshService: SSHService, rateLimitService: RateLimitService) {
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'ssh operation');
-    const secureHandle = <Args extends unknown[]>(
+    const secureHandle = <Args extends RuntimeValue[]>(
         channel: string,
-        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<unknown>
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<RuntimeValue>
     ) => {
         ipcMain.handle(channel, async (event, ...args: Args) => {
             validateSender(event);
@@ -115,12 +115,12 @@ export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshSer
 
 function registerConnectionHandlers(
     sshService: SSHService,
-    secureHandle: <Args extends unknown[]>(
+    secureHandle: <Args extends RuntimeValue[]>(
         channel: string,
-        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<unknown>
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<RuntimeValue>
     ) => void
 ) {
-    secureHandle('ssh:connect', async (_event, connection: unknown) => {
+    secureHandle('ssh:connect', async (_event, connection: RuntimeValue) => {
         const validated = validateIpc(sshConnectionSchema, connection, 'ssh:connect');
 
         const id = validated.id ?? randomUUID();
@@ -169,7 +169,7 @@ function registerConnectionHandlers(
         return profiles.map(sanitizeConnectionForRenderer);
     });
 
-    secureHandle('ssh:saveProfile', async (_event, profile: unknown) => {
+    secureHandle('ssh:saveProfile', async (_event, profile: RuntimeValue) => {
         try {
             const validated = validateIpc(sshProfileSchema, profile, 'ssh:saveProfile');
             // Validation strips unknown fields but SSHConnection has index signature [key: string]
@@ -206,9 +206,9 @@ function registerCommandHandlers(
     sshService: SSHService,
     rateLimitService: RateLimitService,
     send: (channel: string, data: JsonValue) => void,
-    secureHandle: <Args extends unknown[]>(
+    secureHandle: <Args extends RuntimeValue[]>(
         channel: string,
-        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<unknown>
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<RuntimeValue>
     ) => void
 ) {
     secureHandle('ssh:execute', async (_event, connectionId: string, command: string, options?: Record<string, IpcValue>) => {
@@ -240,9 +240,9 @@ function registerCommandHandlers(
 function registerFileSystemHandlers(
     sshService: SSHService,
     send: (channel: string, data: JsonValue) => void,
-    secureHandle: <Args extends unknown[]>(
+    secureHandle: <Args extends RuntimeValue[]>(
         channel: string,
-        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<unknown>
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<RuntimeValue>
     ) => void
 ) {
     secureHandle('ssh:listDir', async (_event, payload: { connectionId: string; path: string }) => {
@@ -347,9 +347,9 @@ function registerFileSystemHandlers(
 
 function registerSystemHandlers(
     sshService: SSHService,
-    secureHandle: <Args extends unknown[]>(
+    secureHandle: <Args extends RuntimeValue[]>(
         channel: string,
-        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<unknown>
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<RuntimeValue>
     ) => void
 ) {
     secureHandle('ssh:getSystemStats', async (_event, connectionId: string) => {
@@ -390,9 +390,9 @@ function registerSystemHandlers(
 
 function registerTunnelHandlers(
     sshService: SSHService,
-    secureHandle: <Args extends unknown[]>(
+    secureHandle: <Args extends RuntimeValue[]>(
         channel: string,
-        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<unknown>
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<RuntimeValue>
     ) => void
 ) {
     secureHandle(
@@ -461,9 +461,9 @@ function registerTunnelHandlers(
 
 function registerAdvancedSshHandlers(
     sshService: SSHService,
-    secureHandle: <Args extends unknown[]>(
+    secureHandle: <Args extends RuntimeValue[]>(
         channel: string,
-        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<unknown>
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<RuntimeValue>
     ) => void
 ) {
     secureHandle(
@@ -491,11 +491,11 @@ function registerAdvancedSshHandlers(
         sshService.releaseConnection(connectionId)
     );
     secureHandle('ssh:getConnectionPoolStats', async () => sshService.getConnectionPoolStats());
-    secureHandle('ssh:enqueueTransfer', async (_event, task: unknown) =>
+    secureHandle('ssh:enqueueTransfer', async (_event, task: RuntimeValue) =>
         sshService.enqueueTransfer(task as never)
     );
     secureHandle('ssh:getTransferQueue', async () => sshService.getTransferQueue());
-    secureHandle('ssh:runTransferBatch', async (_event, tasks: unknown, concurrency?: number) =>
+    secureHandle('ssh:runTransferBatch', async (_event, tasks: RuntimeValue, concurrency?: number) =>
         sshService.runTransferBatch(tasks as never, concurrency)
     );
     secureHandle('ssh:listRemoteContainers', async (_event, connectionId: string) =>
@@ -516,7 +516,7 @@ function registerAdvancedSshHandlers(
     secureHandle('ssh:stopRemoteContainer', async (_event, connectionId: string, containerId: string) =>
         sshService.stopRemoteContainer(connectionId, containerId)
     );
-    secureHandle('ssh:saveProfileTemplate', async (_event, template: unknown) =>
+    secureHandle('ssh:saveProfileTemplate', async (_event, template: RuntimeValue) =>
         sshService.saveProfileTemplate(template as never)
     );
     secureHandle('ssh:listProfileTemplates', async () => sshService.listProfileTemplates());
@@ -525,10 +525,10 @@ function registerAdvancedSshHandlers(
     );
     secureHandle('ssh:exportProfiles', async (_event, ids?: string[]) => sshService.exportProfiles(ids));
     secureHandle('ssh:importProfiles', async (_event, payload: string) => sshService.importProfiles(payload));
-    secureHandle('ssh:validateProfile', async (_event, profile: unknown) =>
+    secureHandle('ssh:validateProfile', async (_event, profile: RuntimeValue) =>
         sshService.validateProfile(profile as never)
     );
-    secureHandle('ssh:testProfile', async (_event, profile: unknown) =>
+    secureHandle('ssh:testProfile', async (_event, profile: RuntimeValue) =>
         sshService.testProfile(profile as never)
     );
     secureHandle('ssh:startSessionRecording', async (_event, connectionId: string) =>
@@ -551,9 +551,9 @@ function registerAdvancedSshHandlers(
 
 function registerKeyManagementHandlers(
     sshService: SSHService,
-    secureHandle: <Args extends unknown[]>(
+    secureHandle: <Args extends RuntimeValue[]>(
         channel: string,
-        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<unknown>
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<RuntimeValue>
     ) => void
 ) {
     secureHandle('ssh:listManagedKeys', async () => sshService.listManagedKeys());
@@ -599,9 +599,9 @@ function registerKeyManagementHandlers(
 function registerHealthHandlers(
     sshService: SSHService,
     _rateLimitService: RateLimitService,
-    secureHandle: <Args extends unknown[]>(
+    secureHandle: <Args extends RuntimeValue[]>(
         channel: string,
-        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<unknown>
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<RuntimeValue>
     ) => void
 ) {
     secureHandle('ssh:health', async () => {

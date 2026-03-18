@@ -5,6 +5,7 @@ const sectionData = {
     "logout": "Çıkış yap",
     "sessionKeyRequired": "Claude Oturum Anahtarı Gerekli",
     "completeConnection": "{{email}} için Bağlantıyı Tamamla",
+    "yourAccount": "hesabınız",
     "sessionKeyDescription": "Kota takibi ve doğrudan etkileşim için Tengra, Claude oturum anahtarınıza ihtiyaç duyar. Bu anahtar cihazınızda şifrelenmiş olarak saklanır.",
     "howToFindKey": "Oturum anahtarınızı nasıl bulursunuz",
     "sessionKeyInstructions": {
@@ -19,6 +20,7 @@ const sectionData = {
     "enterSessionKey": "Lütfen bir oturum anahtarı girin",
     "invalidSessionFormat": "Geçersiz format. Anahtar \"sk-ant-sid\" ile başlamalıdır",
     "saveSessionKey": "Oturum Anahtarını Kaydet",
+    "saveSessionKeyFailed": "Oturum anahtarı kaydedilemedi",
     "validatedAndSaved": "Doğrulandı ve Kaydedildi",
     "connectProvider": "{{provider}} Bağla",
     "enterCodeOnGithub": "Bağlantıyı tamamlamak için aşağıdaki kodu GitHub'a girin:",

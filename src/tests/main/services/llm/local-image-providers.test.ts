@@ -1,0 +1,165 @@
+import { LinkedAccount } from '@main/services/data/database.service';
+import { LLMService } from '@main/services/llm/llm.service';
+import { LocalImageProviders } from '@main/services/llm/local-image-providers';
+import { QuotaService } from '@main/services/proxy/quota.service';
+import { AuthService } from '@main/services/security/auth.service';
+import { SettingsService } from '@main/services/system/settings.service';
+import { AppSettings } from '@shared/types/settings';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('@main/logging/logger', () => ({
+    appLogger: {
+        debug: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+    }
+}));
+
+const SETTINGS_FIXTURE: AppSettings = {
+    ollama: { url: 'http://127.0.0.1:11434' },
+    embeddings: { provider: 'none' },
+    general: {
+        language: 'tr',
+        theme: 'dark',
+        resolution: '1920x1080',
+        fontSize: 14,
+        onboardingCompleted: true,
+    },
+    images: { provider: 'antigravity' },
+};
+
+const ACCOUNT_FIXTURE: LinkedAccount = {
+    id: 'account-1',
+    provider: 'antigravity',
+    email: 'agnes@example.com',
+    accessToken: 'token',
+    isActive: true,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+};
+
+function createSettingsService(): SettingsService {
+    // SAFETY: The test only exercises getSettings().
+    return {
+        getSettings: () => SETTINGS_FIXTURE,
+    } as never as SettingsService;
+}
+
+function createAuthService(
+    getAllAccountsFull: () => Promise<LinkedAccount[]>,
+    setActiveAccount?: (provider: string, accountId: string) => Promise<void>
+): AuthService {
+    // SAFETY: The test only exercises getAllAccountsFull() and setActiveAccount().
+    return {
+        getAllAccountsFull,
+        setActiveAccount,
+    } as never as AuthService;
+}
+
+function createQuotaService(
+    fetchAntigravityUpstreamForToken: (account: LinkedAccount) => Promise<TestValue>
+): QuotaService {
+    // SAFETY: The test only exercises fetchAntigravityUpstreamForToken().
+    return {
+        fetchAntigravityUpstreamForToken,
+    } as never as QuotaService;
+}
+
+function createLlmService(
+    chat: (messages: Array<{ role: string; content: string }>, model: string, tools: TestValue[], provider: string) => Promise<{ images: string[] }>
+): LLMService {
+    // SAFETY: The test only exercises chat().
+    return {
+        chat,
+    } as never as LLMService;
+}
+
+describe('LocalImageProviders', () => {
+    const getAllAccountsFull = vi.fn<() => Promise<LinkedAccount[]>>();
+    const setActiveAccount = vi.fn<(provider: string, accountId: string) => Promise<void>>();
+    const fetchAntigravityUpstreamForToken = vi.fn();
+    const chat = vi.fn();
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('accepts Antigravity image model aliases when quota is available', async () => {
+        getAllAccountsFull.mockResolvedValue([ACCOUNT_FIXTURE]);
+        setActiveAccount.mockResolvedValue();
+        fetchAntigravityUpstreamForToken.mockResolvedValue({
+            models: {
+                'gemini-3.1-flash-image': {
+                    displayName: 'Gemini 3.1 Flash Image',
+                    quotaInfo: {
+                        remainingFraction: 0.42,
+                    },
+                },
+            },
+        });
+        chat.mockResolvedValue({
+            images: ['safe-file://generated-image.png'],
+        });
+
+        const providers = new LocalImageProviders({
+            settingsService: createSettingsService(),
+            authService: createAuthService(getAllAccountsFull, setActiveAccount),
+            quotaService: createQuotaService(fetchAntigravityUpstreamForToken),
+            llmService: createLlmService(chat),
+        });
+
+        const result = await providers.tryGenerateWithAntigravity({ prompt: 'Draw a lighthouse' });
+
+        expect(result).toBe('safe-file://generated-image.png');
+        expect(setActiveAccount).toHaveBeenCalledWith('antigravity', 'account-1');
+        expect(chat).toHaveBeenCalledWith(
+            [{ role: 'user', content: 'Draw a lighthouse' }],
+            'gemini-3.1-flash-image',
+            [],
+            'antigravity'
+        );
+    });
+
+    it('surfaces Google account verification errors instead of silently falling back', async () => {
+        getAllAccountsFull.mockResolvedValue([ACCOUNT_FIXTURE]);
+        setActiveAccount.mockResolvedValue();
+        fetchAntigravityUpstreamForToken.mockResolvedValue({
+            models: {
+                'gemini-3.1-flash-image': {
+                    displayName: 'Gemini 3.1 Flash Image',
+                    quotaInfo: {
+                        remainingFraction: 1,
+                    },
+                },
+            },
+        });
+        chat.mockRejectedValue(new Error(JSON.stringify({
+            error: {
+                code: 403,
+                message: 'Verify your account to continue.',
+                status: 'PERMISSION_DENIED',
+                details: [
+                    {
+                        '@type': 'type.googleapis.com/google.rpc.ErrorInfo',
+                        metadata: {
+                            validation_error_message: 'Verify your account to continue.',
+                            validation_url: 'https://accounts.google.com/verify'
+                        }
+                    }
+                ]
+            }
+        })));
+
+        const providers = new LocalImageProviders({
+            settingsService: createSettingsService(),
+            authService: createAuthService(getAllAccountsFull, setActiveAccount),
+            quotaService: createQuotaService(fetchAntigravityUpstreamForToken),
+            llmService: createLlmService(chat),
+        });
+
+        await expect(providers.tryGenerateWithAntigravity({ prompt: 'Draw a lighthouse' }))
+            .rejects
+            .toThrow('Verify your account to continue. https://accounts.google.com/verify');
+    });
+});

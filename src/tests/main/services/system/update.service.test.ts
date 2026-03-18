@@ -1,4 +1,3 @@
-import { DataService } from '@main/services/data/data.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { UpdateService } from '@main/services/system/update.service';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,7 +8,7 @@ vi.mock('@main/logging/logger', () => ({
 
 vi.mock('electron-updater', () => ({
     autoUpdater: {
-        logger: null as unknown,
+        logger: null as never,
         autoDownload: true,
         autoInstallOnAppQuit: true,
         on: vi.fn(),
@@ -18,17 +17,7 @@ vi.mock('electron-updater', () => ({
         quitAndInstall: vi.fn()
     }
 }));
-
-vi.mock('electron-log', () => ({
-    default: {
-        transports: {
-            file: { level: 'info', resolvePathFn: null as unknown }
-        },
-        info: vi.fn(),
-        error: vi.fn()
-    }
-}));
-
+ 
 vi.mock('electron', () => ({
     app: { isPackaged: false },
     BrowserWindow: vi.fn(),
@@ -44,7 +33,6 @@ vi.mock('@shared/utils/error.util', () => ({
 describe('UpdateService', () => {
     let service: UpdateService;
     let mockSettingsService: SettingsService;
-    let mockDataService: DataService;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -53,13 +41,10 @@ describe('UpdateService', () => {
             getSettings: vi.fn().mockReturnValue({
                 autoUpdate: { enabled: false, checkOnStartup: false }
             })
-        } as unknown as SettingsService;
+        } as never as SettingsService;
 
-        mockDataService = {
-            getPath: vi.fn().mockReturnValue('/mock/data')
-        } as unknown as DataService;
 
-        service = new UpdateService(mockSettingsService, mockDataService);
+        service = new UpdateService(mockSettingsService);
     });
 
     afterEach(async () => {

@@ -6,6 +6,26 @@ import {
 
 import { SessionRegistryReader } from './session-registry.contract';
 
+const MAX_SESSION_RECOVERY_HINT_LENGTH = 1000;
+const MAX_SESSION_LAST_ERROR_LENGTH = 5000;
+
+const clampSessionText = (value: string | undefined, maxLength: number): string | undefined => {
+    if (!value) {
+        return undefined;
+    }
+
+    return value.length <= maxLength ? value : value.slice(0, maxLength);
+};
+
+const sanitizeSessionState = (snapshot: SessionState): SessionState => ({
+    ...snapshot,
+    lastError: clampSessionText(snapshot.lastError, MAX_SESSION_LAST_ERROR_LENGTH),
+    recovery: {
+        ...snapshot.recovery,
+        hint: clampSessionText(snapshot.recovery.hint, MAX_SESSION_RECOVERY_HINT_LENGTH),
+    },
+});
+
 export class SessionDirectoryService extends BaseService {
     private readonly registries = new Map<string, SessionRegistryReader>();
 
@@ -25,7 +45,7 @@ export class SessionDirectoryService extends BaseService {
         for (const registry of this.registries.values()) {
             const snapshot = registry.getSnapshot(sessionId);
             if (snapshot) {
-                return snapshot;
+                return sanitizeSessionState(snapshot);
             }
         }
 

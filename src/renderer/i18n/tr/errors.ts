@@ -6,6 +6,12 @@ const sectionData = {
     "technicalDetails": "TEKNİK DETAYLAR (YIĞIN İZİ)",
     "copyDetails": "Detayları Kopyala",
     "rootNotFound": "Kök öğe bulunamadı",
+    "ipcValidation": {
+        "hostRequired": "Host gereklidir.",
+        "usernameRequired": "Kullanıcı adı gereklidir.",
+        "tokenRequired": "En az bir token alanı bulunmalıdır.",
+        "invalidUrlOrProtocol": "Geçersiz URL veya desteklenmeyen protokol."
+    },
     "rateLimitWarning": "Hız sınırı uyarısı ({{provider}}): {{remaining}}/{{limit}} kalan",
     "rateLimit": {
         "exceeded": "Hız sınırı aşıldı. Lütfen bekleyip tekrar deneyin.",
@@ -130,6 +136,9 @@ const sectionData = {
         "restoreFailed": "Veritabanı yedekten geri yüklenemedi.",
         "restoreSuccess": "Veritabanı başarıyla geri yüklendi.",
         "slowQuery": "Yavaş sorgu tespit edildi: {{duration}}ms."
+    },
+    "extension": {
+        "sandboxSizeLimit": "Eklenti betiği korumalı alan boyut sınırını aşıyor ({{maxSizeKb}} KB)."
     }
 };
 

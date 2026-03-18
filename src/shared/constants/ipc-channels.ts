@@ -269,6 +269,32 @@ export const SESSION_WORKSPACE_CHANNELS = {
   DELETE_CANVAS_EDGE: 'session:workspace:delete-canvas-edge',
 } as const;
 
+/** Workspace-scoped agent session channels */
+export const WORKSPACE_AGENT_SESSION_CHANNELS = {
+  /** List persistent workspace agent sessions for a workspace */
+  LIST_BY_WORKSPACE: 'workspace-agent-session:list-by-workspace',
+  /** Create a new workspace agent session */
+  CREATE: 'workspace-agent-session:create',
+  /** Rename an existing workspace agent session */
+  RENAME: 'workspace-agent-session:rename',
+  /** Persist the selected active session for a workspace */
+  SELECT: 'workspace-agent-session:select',
+  /** Update workspace-scoped persistence state for the panel */
+  UPDATE_PERSISTENCE: 'workspace-agent-session:update-persistence',
+  /** Update the active mode set for a session */
+  UPDATE_MODES: 'workspace-agent-session:update-modes',
+  /** Update the permission policy for a session */
+  UPDATE_PERMISSIONS: 'workspace-agent-session:update-permissions',
+  /** Update execution strategy for a session */
+  UPDATE_STRATEGY: 'workspace-agent-session:update-strategy',
+  /** Read computed context telemetry for a session */
+  GET_CONTEXT_TELEMETRY: 'workspace-agent-session:get-context-telemetry',
+  /** Archive or unarchive a session */
+  ARCHIVE: 'workspace-agent-session:archive',
+  /** Update background-state persistence for a workspace */
+  RESUME_BACKGROUND_STATE: 'workspace-agent-session:resume-background-state',
+} as const;
+
 /** Session council channels */
 export const SESSION_COUNCIL_CHANNELS = {
   /** Ask the council runtime to generate a proposal for a task */
@@ -1312,6 +1338,7 @@ export const IPC_CHANNELS = {
   SESSION_AUTOMATION: SESSION_AUTOMATION_CHANNELS,
   SESSION_COUNCIL: SESSION_COUNCIL_CHANNELS,
   SESSION_WORKSPACE: SESSION_WORKSPACE_CHANNELS,
+  WORKSPACE_AGENT_SESSION: WORKSPACE_AGENT_SESSION_CHANNELS,
   PROMPT_TEMPLATES: PROMPT_TEMPLATES_CHANNELS,
   PROXY: PROXY_CHANNELS,
   SD_CPP: SD_CPP_CHANNELS,

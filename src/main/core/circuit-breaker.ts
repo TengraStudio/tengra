@@ -79,7 +79,7 @@ export class CircuitBreaker {
     }
 
     /** Increment failure count or re-open circuit based on current state. */
-    private onFailure(_error: unknown): void {
+    private onFailure<T>(_error: T): void {
         if (this.state === CircuitState.CLOSED) {
             this.failureCount++;
             if (this.failureCount >= this.options.failureThreshold) {

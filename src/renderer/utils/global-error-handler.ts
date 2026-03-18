@@ -1,11 +1,12 @@
 import { appLogger } from '@/utils/renderer-logger';
 
 const CONTEXT = 'GlobalErrorHandler';
+const RESIZE_OBSERVER_LOOP_MESSAGE = 'ResizeObserver loop completed with undelivered notifications';
 
 /**
  * Extracts a readable message from an ErrorEvent or unknown error value.
  */
-function extractErrorMessage(error: unknown): string {
+function extractErrorMessage(error: RendererDataValue): string {
     if (error instanceof Error) {
         return error.message;
     }
@@ -20,6 +21,9 @@ function extractErrorMessage(error: unknown): string {
  * Logs the error with source location details.
  */
 function handleWindowError(event: ErrorEvent): void {
+    if (event.message.includes(RESIZE_OBSERVER_LOOP_MESSAGE)) {
+        return;
+    }
     const message = event.error instanceof Error
         ? event.error.message
         : event.message || 'Unknown error';
@@ -36,7 +40,7 @@ function handleWindowError(event: ErrorEvent): void {
  * Logs the rejection reason with structured context.
  */
 function handleUnhandledRejection(event: PromiseRejectionEvent): void {
-    const reason: unknown = event.reason;
+    const reason: RendererDataValue = event.reason;
     const message = extractErrorMessage(reason);
 
     appLogger.error(

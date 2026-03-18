@@ -1,4 +1,4 @@
-import { ChildProcess, execSync, spawn } from 'child_process';
+import { ChildProcess, spawn } from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -6,6 +6,7 @@ import * as path from 'path';
 import { appLogger } from '@main/logging/logger';
 import { app } from 'electron';
 
+import { findExecutableInPath, findFirstExistingPath } from './backend-discovery.util';
 import { ITerminalBackend, ITerminalProcess, TerminalCreateOptions } from './terminal-backend.interface';
 
 /**
@@ -213,23 +214,15 @@ export class GhosttyBackend implements ITerminalBackend {
     }
 
     private async discoverGhosttyPath(): Promise<string | null> {
-        const isWin = process.platform === 'win32';
-        const cmd = isWin ? 'where ghostty' : 'which ghostty';
-
-        try {
-            const result = execSync(cmd, { encoding: 'utf8' }).trim();
-            if (result) {
-                // 'where' can return multiple lines
-                const path = result.split('\n')[0].trim();
-                appLogger.info('GhosttyBackend', `Found Ghostty at: ${path}`);
-                return path;
-            }
-        } catch {
-            appLogger.debug('GhosttyBackend', 'Ghostty not found in PATH');
+        const discoveredPath = await findExecutableInPath('ghostty');
+        if (discoveredPath) {
+            appLogger.info('GhosttyBackend', `Found Ghostty at: ${discoveredPath}`);
+            return discoveredPath;
         }
 
-        // Common locations if not in PATH
-        const commonPaths = isWin
+        appLogger.debug('GhosttyBackend', 'Ghostty not found in PATH');
+
+        const commonPaths = process.platform === 'win32'
             ? [
                 'C:\\Program Files\\Ghostty\\ghostty.exe',
                 path.join(process.env.LOCALAPPDATA ?? '', 'Ghostty', 'ghostty.exe')
@@ -240,16 +233,10 @@ export class GhosttyBackend implements ITerminalBackend {
                 '/usr/bin/ghostty'
             ];
 
-        for (const p of commonPaths) {
-            try {
-                // Sync I/O acceptable: one-time shell detection at backend init
-                if (fs.existsSync(p)) {
-                    appLogger.info('GhosttyBackend', `Found Ghostty at common location: ${p}`);
-                    return p;
-                }
-            } catch {
-                // Ignore
-            }
+        const commonPath = await findFirstExistingPath(commonPaths);
+        if (commonPath) {
+            appLogger.info('GhosttyBackend', `Found Ghostty at common location: ${commonPath}`);
+            return commonPath;
         }
 
         return null;

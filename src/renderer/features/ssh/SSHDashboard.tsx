@@ -22,11 +22,11 @@ export const SSHDashboard: React.FC<SSHDashboardProps> = ({ connectionId, active
             setStats(data);
             setError(null);
         } catch (error) {
-            setError(error instanceof Error ? error.message : 'Failed to fetch stats');
+            setError(error instanceof Error ? error.message : t('ssh.failedStats'));
         } finally {
             setLoading(false);
         }
-    }, [connectionId]);
+    }, [connectionId, t]);
 
     useEffect(() => {
         if (active) {
@@ -68,7 +68,7 @@ export const SSHDashboard: React.FC<SSHDashboardProps> = ({ connectionId, active
                     <div className="flex items-end gap-2">
                         <span className="text-4xl font-bold text-foreground">{Math.round((stats.memory.used / stats.memory.total) * 100)}%</span>
                         <span className="text-sm text-muted-foreground mb-1">
-                            {stats.memory.used}MB / {stats.memory.total}MB
+                            {stats.memory.used}{t('ssh.memoryUnitMb')} / {stats.memory.total}{t('ssh.memoryUnitMb')}
                         </span>
                     </div>
                     <div className="w-full bg-muted/30 h-2 rounded-full mt-3 overflow-hidden">

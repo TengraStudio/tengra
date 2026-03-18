@@ -148,7 +148,7 @@ export interface AgentSystemEvents {
     'agent:user_intervention': {
         taskId: string;
         action: 'model_selected' | 'paused' | 'cancelled';
-        details?: Record<string, unknown>;
+        details?: Record<string, RuntimeValue>;
     };
 
     // Error and recovery events

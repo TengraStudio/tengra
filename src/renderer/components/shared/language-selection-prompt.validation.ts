@@ -15,7 +15,7 @@ export type LanguageSelectionPromptErrorCode =
     | 'LANGUAGE_PROMPT_INVALID_LANGUAGE'
     | 'LANGUAGE_PROMPT_SAVE_FAILED';
 
-export function sanitizePromptLanguage(raw: unknown): Language | null {
+export function sanitizePromptLanguage(raw: RendererDataValue): Language | null {
     if (typeof raw !== 'string') {
         return null;
     }

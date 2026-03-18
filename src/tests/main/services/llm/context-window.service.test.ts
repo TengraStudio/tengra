@@ -176,7 +176,7 @@ describe('ContextWindowService', () => {
             const msg: Message = {
                 id: 'multi',
                 role: 'user',
-                content: [{ type: 'text', text: 'hello' }] as unknown as string,
+                content: [{ type: 'text', text: 'hello' }] as never as string,
                 timestamp: new Date(),
             };
             const info = service.getContextWindowInfo([msg], 'gpt-4');

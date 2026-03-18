@@ -1,5 +1,5 @@
-import { Eye, Sparkles } from 'lucide-react';
-import { memo } from 'react';
+import { Expand, Sparkles, X } from 'lucide-react';
+import { memo, useState } from 'react';
 
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
 
@@ -34,31 +34,98 @@ export interface MessageImagesProps {
  * Supports a loading skeleton state.
  */
 export const MessageImages = memo(({ images, t }: MessageImagesProps) => {
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
+
     if (images.length === 0) {
         return null;
     }
     return (
-        <div className="flex gap-3 flex-wrap mb-4">
-            {images.map((img, i) =>
-                img === '__LOADING_IMAGE__' ? (
-                    <ImageSkeleton key={i} t={t} />
-                ) : (
-                    <div key={i} className="relative group/img-container">
-                        <img
-                            src={img}
-                            alt={t('messageBubble.attachedImage', { index: i + 1 })}
-                            className="max-w-full md:max-w-md max-h-[500px] object-contain rounded-xl border border-border/50 cursor-pointer hover:opacity-90 transition-all duration-300 shadow-2xl"
-                            onClick={() => {
-                                window.electron.openExternal(img);
-                            }}
-                        />
-                        <div className="absolute inset-0 bg-background/40 opacity-0 group-hover/img-container:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none">
-                            <Eye className="w-6 h-6 text-foreground" />
-                        </div>
+        <>
+            <div className="mb-4 overflow-hidden rounded-[22px] border border-border/60 bg-card/50">
+                <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
+                    <div className="flex flex-col">
+                        <span className="text-xxs font-semibold uppercase tracking-[0.2em] text-muted-foreground/70">
+                            {t('input.generate')}
+                        </span>
+                        <span className="text-sm font-medium text-foreground/90">
+                            {t('gallery.imageCount', { count: images.length })}
+                        </span>
                     </div>
-                )
+                    <span className="rounded-full border border-border/60 bg-background/80 px-3 py-1 text-xxs font-semibold text-muted-foreground/80">
+                        {t('common.zoomIn')}
+                    </span>
+                </div>
+
+                <div className="grid gap-4 p-4">
+                    {images.map((img, i) =>
+                        img === '__LOADING_IMAGE__' ? (
+                            <ImageSkeleton key={i} t={t} />
+                        ) : (
+                            <button
+                                key={i}
+                                type="button"
+                                className="group relative overflow-hidden rounded-[20px] border border-border/50 bg-muted/10 text-left"
+                                onClick={() => {
+                                    setPreviewImage(img);
+                                }}
+                            >
+                                <img
+                                    src={img}
+                                    alt={t('messageBubble.attachedImage', { index: i + 1 })}
+                                    className="max-h-[720px] min-h-[360px] w-full object-cover transition-transform duration-300 group-hover:scale-[1.01]"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-background/75 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                                <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between rounded-xl border border-white/10 bg-black/45 px-3 py-2 opacity-0 backdrop-blur-md transition-opacity duration-300 group-hover:opacity-100">
+                                    <span className="text-xs font-medium text-white/90">
+                                        {t('messageBubble.attachedImage', { index: i + 1 })}
+                                    </span>
+                                    <span className="flex items-center gap-1 text-xs font-medium text-white/80">
+                                        <Expand className="h-3.5 w-3.5" />
+                                        {t('common.zoomIn')}
+                                    </span>
+                                </div>
+                            </button>
+                        )
+                    )}
+                </div>
+            </div>
+
+            {previewImage && (
+                <div
+                    className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/88 p-6 backdrop-blur-md"
+                    onClick={() => {
+                        setPreviewImage(null);
+                    }}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={t('common.zoomIn')}
+                >
+                    <button
+                        type="button"
+                        className="absolute right-6 top-6 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/45 text-white/80 transition-colors hover:bg-black/70 hover:text-white"
+                        onClick={event => {
+                            event.stopPropagation();
+                            setPreviewImage(null);
+                        }}
+                        aria-label={t('aria.closeModal')}
+                    >
+                        <X className="h-4 w-4" />
+                    </button>
+                    <div
+                        className="flex max-h-[94vh] max-w-[96vw] items-center justify-center"
+                        onClick={event => {
+                            event.stopPropagation();
+                        }}
+                    >
+                        <img
+                            src={previewImage}
+                            alt={t('messageBubble.attachedImage', { index: 1 })}
+                            className="max-h-[94vh] max-w-[96vw] rounded-2xl object-contain shadow-2xl"
+                        />
+                    </div>
+                </div>
             )}
-        </div>
+        </>
     );
 });
 

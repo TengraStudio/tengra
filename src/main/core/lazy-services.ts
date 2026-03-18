@@ -12,21 +12,21 @@ type LazyServiceFactory<T> = () => Promise<T>
  * Handles concurrent load requests by deduplicating via a loading promise cache.
  */
 class LazyServiceRegistry {
-    private readonly lazyServices = new Map<string, LazyServiceFactory<unknown>>();
-    private readonly loadedServices = new Map<string, unknown>();
-    private readonly loadingPromises = new Map<string, Promise<unknown>>();
+    private readonly lazyServices = new Map<string, LazyServiceFactory<object>>();
+    private readonly loadedServices = new Map<string, object>();
+    private readonly loadingPromises = new Map<string, Promise<object>>();
 
     /**
      * Register a service for lazy loading
      */
-    register<T>(name: string, factory: LazyServiceFactory<T>): void {
-        this.lazyServices.set(name, factory);
+    register<T extends object>(name: string, factory: LazyServiceFactory<T>): void {
+        this.lazyServices.set(name, factory as LazyServiceFactory<object>);
     }
 
     /**
      * Get a service, loading it if necessary
      */
-    async get<T>(name: string): Promise<T> {
+    async get<T extends object>(name: string): Promise<T> {
         // Return cached service if already loaded
         if (this.loadedServices.has(name)) {
             return this.loadedServices.get(name) as T;
@@ -58,7 +58,7 @@ class LazyServiceRegistry {
         }
     }
 
-    private async loadService<T>(name: string, factory: LazyServiceFactory<T>): Promise<T> {
+    private async loadService<T extends object>(name: string, factory: LazyServiceFactory<T>): Promise<T> {
         const startTime = Date.now();
 
         try {
@@ -151,21 +151,21 @@ export function createLazyServiceDependency<T extends object>(serviceName: strin
  */
 export function createLazyServiceProxy<T extends object>(serviceName: string): T {
     return new Proxy({} as T, {
-        get(_target: T, prop: string | symbol, _receiver: T): unknown {
+        get(_target: T, prop: string | symbol, _receiver: T): RuntimeValue {
             // Handle async service loading
             if (prop === 'then') {
                 // If accessed via await/Promise, return the actual service
-                return (resolve: (value: T) => void, reject: (reason: unknown) => void) => {
+                return (resolve: (value: T) => void, reject: (reason: RuntimeValue) => void) => {
                     lazyServiceRegistry.get<T>(serviceName).then(resolve).catch(reject);
                 };
             }
 
             // For any other property access, load the service and forward the call
-            return (...args: unknown[]) => {
+            return (...args: RuntimeValue[]) => {
                 return lazyServiceRegistry.get<T>(serviceName).then(service => {
-                    const method = (service as Record<string | symbol, unknown>)[prop];
+                    const method = (service as Record<string | symbol, RuntimeValue>)[prop];
                     if (typeof method === 'function') {
-                        return (method as (...methodArgs: unknown[]) => unknown).apply(service, args);
+                        return (method as (...methodArgs: RuntimeValue[]) => RuntimeValue).apply(service, args);
                     }
                     return method;
                 });

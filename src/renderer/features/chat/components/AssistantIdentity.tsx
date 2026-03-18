@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 
 import LogoAntigravity from '@/assets/antigravity.svg';
 import LogoOpenAI from '@/assets/chatgpt.svg';
@@ -28,7 +28,7 @@ const PROVIDER_CONFIGS: Record<ProviderKey, BrandConfig> = {
     openai: { bgClass: 'bg-success/10', borderClass: 'border-success/10', titleKey: 'assistantIdentity.openai', content: (label) => <img src={LogoOpenAI} className="w-full h-full opacity-70" alt={label} /> },
     anthropic: { bgClass: 'bg-warning/10', borderClass: 'border-orange/10', titleKey: 'assistantIdentity.anthropic', content: (label) => <img src={LogoClaude} className="w-full h-full opacity-70" alt={label} /> },
     antigravity: { bgClass: 'bg-yellow/10', borderClass: 'border-yellow/10', titleKey: 'assistantIdentity.antigravity', content: (label) => <img src={LogoAntigravity} className="w-full h-full opacity-70" alt={label} /> },
-    copilot: { bgClass: 'bg-background', borderClass: 'border-white/5', titleKey: 'assistantIdentity.copilot', content: (label) => <img src={LogoCopilot} className="w-full h-full object-cover opacity-70" alt={label} /> },
+    copilot: { bgClass: 'bg-background', borderClass: 'border-border/50', titleKey: 'assistantIdentity.copilot', content: (label) => <img src={LogoCopilot} className="w-full h-full object-cover opacity-70" alt={label} /> },
     groq: { bgClass: 'bg-warning/10', borderClass: 'border-orange/10', titleKey: 'assistantIdentity.groq', content: () => <span className="font-bold text-orange text-xxs">G</span> },
     ollama: { bgClass: 'bg-muted/30', borderClass: 'border-border/50', titleKey: 'assistantIdentity.ollama', content: (label) => <img src={LogoOllama} className="w-full h-full opacity-50" alt={label} /> },
 };

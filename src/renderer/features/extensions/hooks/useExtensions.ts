@@ -41,7 +41,7 @@ interface UseExtensionsReturn extends UseExtensionsState {
     runTests: (options: ExtensionTestOptions) => Promise<ExtensionTestResult>;
     publish: (options: ExtensionPublishOptions) => Promise<ExtensionPublishResult>;
     getProfile: (extensionId: string) => Promise<{ success: boolean; profile?: ExtensionProfileData }>;
-    getState: (extensionId: string) => Promise<{ success: boolean; state?: { global: Record<string, unknown>, workspace: Record<string, unknown> } }>;
+    getState: (extensionId: string) => Promise<{ success: boolean; state?: { global: Record<string, RendererDataValue>, workspace: Record<string, RendererDataValue> } }>;
 }
 
 function useExtensionState() {
@@ -252,7 +252,7 @@ function useExtensionTools() {
     }, []);
 
     /** Get state data */
-    const getState = useCallback(async (extensionId: string): Promise<{ success: boolean; state?: { global: Record<string, unknown>, workspace: Record<string, unknown> } }> => {
+    const getState = useCallback(async (extensionId: string): Promise<{ success: boolean; state?: { global: Record<string, RendererDataValue>, workspace: Record<string, RendererDataValue> } }> => {
         try {
             const result = await window.electron.extension.getState(extensionId);
             return result ?? { success: false };

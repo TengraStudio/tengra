@@ -135,6 +135,8 @@ vi.mock('@/renderer/features/models/components/model-selector/ModelSelectorSecti
  * Creates mock categories for testing
  */
 function createMockCategories(overrides?: Partial<ModelCategory>[]): ModelCategory[] {
+    const MockCategoryIcon: React.FC = () => null;
+
     const defaultModels: ModelListItem[] = [
         {
             id: 'model-1',
@@ -163,7 +165,7 @@ function createMockCategories(overrides?: Partial<ModelCategory>[]): ModelCatego
     const defaultCategory: ModelCategory = {
         id: 'test-category',
         name: 'Test Category',
-        icon: vi.fn() as unknown as React.ElementType,
+        icon: MockCategoryIcon,
         color: 'text-blue-500',
         bg: 'bg-blue-500/10',
         providerId: 'test-provider',

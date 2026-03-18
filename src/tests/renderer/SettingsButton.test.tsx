@@ -2,9 +2,14 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
 
+interface SettingsSavePayload {
+    theme: string;
+    language: string;
+}
+
 // Mock a critical UI component (like a settings page button)
 const SettingsButton: React.FC<{ 
-    onSave: (data: any) => void; 
+    onSave: (data: SettingsSavePayload) => void; 
     disabled?: boolean;
     loading?: boolean; 
 }> = ({ 

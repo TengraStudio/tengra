@@ -58,18 +58,18 @@ function persist(): void {
     }
 }
 
-function isObject(value: unknown): value is Record<string, unknown> {
+function isObject(value: RendererDataValue): value is Record<string, RendererDataValue> {
     return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
-function toCount(value: unknown): number {
+function toCount(value: RendererDataValue): number {
     if (typeof value !== 'number' || !Number.isFinite(value)) {
         return 0;
     }
     return Math.max(0, Math.floor(value));
 }
 
-function sanitizePreset(value: unknown): AnimationPresetId {
+function sanitizePreset(value: RendererDataValue): AnimationPresetId {
     if (
         value === 'micro' ||
         value === 'default' ||
@@ -82,7 +82,7 @@ function sanitizePreset(value: unknown): AnimationPresetId {
     return 'default';
 }
 
-function sanitizeRecentEvent(value: unknown): AnimationEvent | null {
+function sanitizeRecentEvent(value: RendererDataValue): AnimationEvent | null {
     if (!isObject(value)) {
         return null;
     }
@@ -104,7 +104,7 @@ function sanitizeRecentEvent(value: unknown): AnimationEvent | null {
     };
 }
 
-function sanitizeSnapshot(raw: unknown): AnimationAnalyticsSnapshot {
+function sanitizeSnapshot(raw: RendererDataValue): AnimationAnalyticsSnapshot {
     if (!isObject(raw)) {
         return defaultSnapshot;
     }

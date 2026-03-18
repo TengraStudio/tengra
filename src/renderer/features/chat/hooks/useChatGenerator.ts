@@ -66,6 +66,15 @@ const IMAGE_REQUEST_COUNT_MAX = 5;
 const IMAGE_ACTION_PATTERN = /\b(create|draw|generate|make|render|olu[sş]tur|u[̈u]ret|yarat|ciz|[çc]iz)\b/i;
 const IMAGE_SUBJECT_PATTERN = /\b(avatar|drawing|g[oö]rsel|icon|illustration|image|logo|picture|poster|render|resim|sketch|wallpaper|foto(?:g(?:raf)?)?)\b/i;
 const DIRECT_IMAGE_RESULT_KEYS = ['images', 'paths', 'files'] as const;
+const IMAGE_ONLY_MODEL_PATTERNS = [
+    'gemini-3.1-flash-image',
+    'gemini-3.1-flash-image-preview',
+    'gemini-3-pro-image',
+    'gemini-3-pro-image-preview',
+    'gemini-2.5-flash-image',
+    'gemini-2.5-flash-image-preview',
+    'imagen-3.0-generate-001'
+] as const;
 
 const getReasoningEffort = (modelId: string, appSettings: AppSettings | undefined) => {
     return appSettings?.modelSettings?.[modelId]?.reasoningLevel;
@@ -93,6 +102,10 @@ const isExplicitImageRequest = (message: Message): boolean => {
 };
 
 const extractImageRequestCount = (message: Message): number => {
+    const metadataCount = message.metadata?.imageRequestCount;
+    if (typeof metadataCount === 'number' && Number.isFinite(metadataCount)) {
+        return Math.max(1, Math.min(metadataCount, IMAGE_REQUEST_COUNT_MAX));
+    }
     const text = getMessageTextContent(message);
     const match = text.match(/(\d+)\s*(?:adet|image(?:s)?|photo(?:s)?|picture(?:s)?|tane|g[oö]rsel|resim|foto(?:g(?:raf)?)?)/i);
     if (!match?.[1]) {
@@ -103,6 +116,11 @@ const extractImageRequestCount = (message: Message): number => {
         return 1;
     }
     return Math.max(1, Math.min(parsed, IMAGE_REQUEST_COUNT_MAX));
+};
+
+const isImageOnlyModel = (modelId: string): boolean => {
+    const normalizedModelId = modelId.trim().toLowerCase();
+    return IMAGE_ONLY_MODEL_PATTERNS.some(pattern => normalizedModelId.includes(pattern));
 };
 
 const createModelToolList = (provider: string, allTools: ToolDefinition[]): ToolDefinition[] => {
@@ -130,6 +148,76 @@ const readToolResultImages = (toolResult: ToolResult): string[] => {
         return value.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0);
     }
     return [];
+};
+
+const getMessageStringContent = (content: Message['content']): string => {
+    if (typeof content === 'string') {
+        return content;
+    }
+    return content
+        .filter(part => part.type === 'text')
+        .map(part => part.text)
+        .join('\n')
+        .trim();
+};
+
+const buildStoredToolResults = (
+    toolCalls: Message['toolCalls'],
+    toolMessages: Message[]
+): ToolResult[] => {
+    if (!toolCalls || toolCalls.length === 0) {
+        return [];
+    }
+
+    return toolCalls.map(toolCall => {
+        const matchingToolMessage = toolMessages.find(message => message.toolCallId === toolCall.id);
+        return {
+            toolCallId: toolCall.id,
+            name: toolCall.function.name,
+            result: matchingToolMessage
+                ? safeJsonParse(getMessageStringContent(matchingToolMessage.content), {})
+                : {},
+            success: true,
+            isImage: toolCall.function.name === 'generate_image',
+        };
+    });
+};
+
+const executeToolCall = async (
+    toolCall: NonNullable<Message['toolCalls']>[number],
+    t: (key: string) => string
+): Promise<{
+    toolMessage: Message;
+    generatedImages: string[];
+}> => {
+    const toolArgs = typeof toolCall.function.arguments === 'string'
+        ? toolCall.function.arguments.length > 100000
+            ? (() => { throw new Error(t('chat.toolArgumentsTooLarge')); })()
+            : safeJsonParse(toolCall.function.arguments, {})
+        : toolCall.function.arguments;
+
+    const toolExecResult = await window.electron.executeTools(toolCall.function.name, toolArgs, toolCall.id);
+    const generatedImages = toolCall.function.name === 'generate_image'
+        ? readToolResultImages(toolExecResult)
+        : [];
+    return {
+        toolMessage: {
+            id: generateId(),
+            role: 'tool',
+            content: JSON.stringify(toolExecResult),
+            toolCallId: toolCall.id,
+            timestamp: new Date()
+        },
+        generatedImages,
+    };
+};
+
+const logRendererError = (message: string, error: Error): void => {
+    if (window.electron?.log?.error) {
+        window.electron.log.error(message, error);
+        return;
+    }
+    appLogger.error('useChatGenerator', message, error);
 };
 
 const prepareMessages = (options: PrepareMessagesOptions) => {
@@ -181,6 +269,41 @@ const buildModelConversation = (
     return [...messages, assistantMessage, ...toolResults];
 };
 
+const upsertMessageInChat = (
+    messages: Message[],
+    messageId: string,
+    buildMessage: (existing?: Message) => Message
+): Message[] => {
+    const messageIndex = messages.findIndex(message => message.id === messageId);
+    if (messageIndex === -1) {
+        return [...messages, buildMessage()];
+    }
+
+    const nextMessages = [...messages];
+    nextMessages[messageIndex] = buildMessage(nextMessages[messageIndex]);
+    return nextMessages;
+};
+
+const persistAssistantMessage = async (
+    assistantId: string,
+    chatId: string,
+    updates: Partial<Message>
+): Promise<void> => {
+    const updateResult = await window.electron.db.updateMessage(assistantId, updates);
+    if (updateResult.success) {
+        return;
+    }
+
+    await window.electron.db.addMessage({
+        id: assistantId,
+        chatId,
+        role: 'assistant',
+        content: typeof updates.content === 'string' ? updates.content : '',
+        timestamp: new Date(),
+        ...updates,
+    });
+};
+
 const completeDirectImageMessage = async (options: {
     assistantId: string;
     chatId: string;
@@ -200,13 +323,17 @@ const completeDirectImageMessage = async (options: {
         generateId()
     );
 
+    if (!toolResult || typeof toolResult !== 'object') {
+        throw new Error(t('chat.error'));
+    }
+
     if (!toolResult.success) {
         throw new Error(toolResult.error ?? t('chat.error'));
     }
 
     const images = readToolResultImages(toolResult);
     if (images.length === 0) {
-        throw new Error('Image generation returned no images');
+        throw new Error(t('chat.imageGenerationNoImages'));
     }
 
     const responseTime = Math.round(performance.now() - startedAt);
@@ -222,21 +349,21 @@ const completeDirectImageMessage = async (options: {
             ? {
                 ...chat,
                 isGenerating: false,
-                messages: chat.messages.map(message => (
-                    message.id === assistantId
-                        ? {
-                            ...message,
-                            ...updates,
-                            provider: selectedProvider,
-                            model: activeModel,
-                        }
-                        : message
-                )),
+                messages: upsertMessageInChat(chat.messages, assistantId, existing => ({
+                    id: assistantId,
+                    role: 'assistant',
+                    content: '',
+                    timestamp: existing?.timestamp ?? new Date(),
+                    ...existing,
+                    ...updates,
+                    provider: selectedProvider,
+                    model: activeModel,
+                })),
             }
             : chat
     )));
 
-    await window.electron.db.updateMessage(assistantId, updates);
+    await persistAssistantMessage(assistantId, chatId, updates);
 };
 
 export const useChatGenerator = (
@@ -285,9 +412,12 @@ export const useChatGenerator = (
                 : [{ provider: selectedProvider, model: activeModel }];
 
         const isMultiModel = modelsToUse.length > 1;
+        const shouldUseDirectImageFlow = isImageOnlyModel(activeModel) || isExplicitImageRequest(userMessage);
 
         try {
-            const allTools: ToolDefinition[] = (await window.electron.getToolDefinitions()) ?? [];
+            const allTools: ToolDefinition[] = shouldUseDirectImageFlow
+                ? []
+                : (await window.electron.getToolDefinitions()) ?? [];
 
             const tempMsg: Message = {
                 id: assistantId,
@@ -311,9 +441,9 @@ export const useChatGenerator = (
             setChats(prev =>
                 prev.map(c => (c.id === chatId ? { ...c, messages: [...c.messages, tempMsg] } : c))
             );
-            void window.electron.db.addMessage({ ...tempMsg, chatId, timestamp: Date.now() });
+            await window.electron.db.addMessage({ ...tempMsg, chatId, timestamp: Date.now() });
 
-            if (isExplicitImageRequest(userMessage)) {
+            if (shouldUseDirectImageFlow) {
                 await completeDirectImageMessage({
                     assistantId,
                     chatId,
@@ -349,7 +479,7 @@ export const useChatGenerator = (
                 });
             }
         } catch (e) {
-            window.electron.log.error('[generateResponse] Error', e as Error);
+            logRendererError('[generateResponse] Error', e as Error);
             const errText = formatChatError(e as CatchError);
             setLastChatError(categorizeError(errText, activeModel));
             const partialContent = await new Promise<string>(resolve => {
@@ -390,7 +520,7 @@ export const useChatGenerator = (
             }
             setStreamingStates({});
         } catch (e) {
-            window.electron.log.error('Failed to stop generation', e as Error);
+            logRendererError('Failed to stop generation', e as Error);
         }
     };
 
@@ -400,7 +530,7 @@ export const useChatGenerator = (
 const executeToolTurnLoop = async (params: {
     initialMessages: Message[];
     chatId: string; assistantId: string; activeModel: string; selectedProvider: string; tools: ToolDefinition[];
-    fullOptions: Record<string, unknown>; workspaceId: string | undefined; autoReadEnabled: boolean;
+    fullOptions: Record<string, RendererDataValue>; workspaceId: string | undefined; autoReadEnabled: boolean;
     handleSpeak: (id: string, content: string) => void; t: (key: string) => string;
     setStreamingStates: React.Dispatch<React.SetStateAction<Record<string, StreamStreamingState>>>;
     setChats: React.Dispatch<React.SetStateAction<Chat[]>>; activeWorkspacePath: string | undefined;
@@ -438,24 +568,52 @@ const executeToolTurnLoop = async (params: {
             };
 
             const toolResults: Message[] = [];
+            const generatedImages: string[] = [];
             for (const tc of result.finalToolCalls) {
                 try {
-                    const toolArgs = typeof tc.function.arguments === 'string'
-                        ? tc.function.arguments.length > 100000 ? (() => { throw new Error('Tool arguments exceed maximum size limit'); })()
-                            : safeJsonParse(tc.function.arguments, {})
-                        : tc.function.arguments;
-
-                    const toolExecResult = await window.electron.executeTools(tc.function.name, toolArgs, tc.id);
-                    const toolMsg: Message = {
-                        id: generateId(), role: 'tool' as const, content: JSON.stringify(toolExecResult),
-                        toolCallId: tc.id, timestamp: new Date()
-                    };
-                    toolResults.push(toolMsg);
-                    void window.electron.db.addMessage({ ...toolMsg, chatId, timestamp: Date.now() });
+                    const executedTool = await executeToolCall(tc, t);
+                    generatedImages.push(...executedTool.generatedImages);
+                    toolResults.push(executedTool.toolMessage);
+                    void window.electron.db.addMessage({ ...executedTool.toolMessage, chatId, timestamp: Date.now() });
                 } catch (error) {
-                    const errorMsg = error instanceof Error ? error.message : 'Tool execution failed';
+                    const errorMsg = error instanceof Error ? error.message : t('chat.error');
                     appLogger.error('useChatGenerator', `Tool execution error: ${errorMsg}`, error as Error);
                 }
+            }
+
+            if (generatedImages.length > 0) {
+                const assistantContent = getMessageStringContent(result.finalContent);
+                const finalContent = assistantContent.length > 0
+                    ? assistantContent
+                    : '';
+                const updates: Partial<Message> = {
+                    content: finalContent,
+                    images: generatedImages,
+                    toolCalls: result.finalToolCalls,
+                    toolResults: buildStoredToolResults(result.finalToolCalls, toolResults),
+                };
+
+                setChats(prev => prev.map(chat => (
+                    chat.id === chatId
+                        ? {
+                            ...chat,
+                            isGenerating: false,
+                            messages: upsertMessageInChat(chat.messages, currentAssistantId, existing => ({
+                                id: currentAssistantId,
+                                role: 'assistant',
+                                content: '',
+                                timestamp: existing?.timestamp ?? new Date(),
+                                ...existing,
+                                ...updates,
+                                provider: selectedProvider,
+                                model: activeModel,
+                            })),
+                        }
+                        : chat
+                )));
+
+                await persistAssistantMessage(currentAssistantId, chatId, updates);
+                break;
             }
 
             const nextAssistantId = generateId();

@@ -26,8 +26,8 @@ import { DockerService } from '@main/services/workspace/docker.service';
 import { GitService } from '@main/services/workspace/git.service';
 import { SSHService } from '@main/services/workspace/ssh.service';
 import { SESSION_RUNTIME_EVENTS } from '@shared/constants/session-runtime-events';
-import { WorkspaceStep, WorkspaceStepStatus } from '@shared/types/automation-workflow';
 import { JsonObject, JsonValue } from '@shared/types/common';
+import { WorkspaceStep, WorkspaceStepStatus } from '@shared/types/council';
 
 export interface InternalToolResult {
     success: boolean;
@@ -70,6 +70,11 @@ export interface ToolExecutionContext {
 }
 
 export class ToolExecutor {
+    private static readonly DEFAULT_TIMEOUT_MS = 30000;
+    private static readonly TOOL_TIMEOUT_MS: Partial<Record<string, number>> = {
+        generate_image: 120000,
+    };
+
     private idempotentTools = new Set([
         'read_file',
         'list_directory',
@@ -118,7 +123,7 @@ export class ToolExecutor {
     }
 
     async execute(name: string, args: JsonObject, context?: ToolExecutionContext): Promise<InternalToolResult> {
-        const timeoutMs = context?.timeoutMs ?? 30000; // Default 30s timeout
+        const timeoutMs = context?.timeoutMs ?? this.resolveTimeoutMs(name);
 
         // AGT-10: Caching for idempotent tools
         if (this.idempotentTools.has(name)) {
@@ -164,6 +169,10 @@ export class ToolExecutor {
                 errorType: isTimeout ? 'timeout' : 'unknown'
             };
         }
+    }
+
+    private resolveTimeoutMs(name: string): number {
+        return ToolExecutor.TOOL_TIMEOUT_MS[name] ?? ToolExecutor.DEFAULT_TIMEOUT_MS;
     }
 
     private async routeToolCall(name: string, args: JsonObject, context?: ToolExecutionContext): Promise<InternalToolResult> {

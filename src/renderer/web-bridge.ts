@@ -31,6 +31,9 @@ import type {
     SSHTunnelPreset
 } from '@/types/ssh';
 
+type MockSessionCouncilApi = NonNullable<ElectronAPI['session']>['council'];
+type CouncilQuotaInterruptCallback = Parameters<MockSessionCouncilApi['onQuotaInterrupt']>[0];
+
 // Mock Electron API for Web/Standalone development
 export const webElectronMock: ElectronAPI = {
     invoke: <T = IpcValue>(_channel: string, ..._args: IpcValue[]) => Promise.resolve({} as T),
@@ -75,7 +78,7 @@ export const webElectronMock: ElectronAPI = {
     getLinkedAccounts: async (_provider?: string) => [],
     getActiveLinkedAccount: async (_provider: string) => null,
     setActiveLinkedAccount: async (_provider: string, _accountId: string) => ({ success: true }),
-    linkAccount: async (_provider: string, _tokenData: unknown) => ({ success: true }),
+    linkAccount: async (_provider: string, _tokenData: RendererDataValue) => ({ success: true }),
     unlinkAccount: async (_accountId: string) => ({ success: true }),
     unlinkProvider: async (_provider: string) => ({ success: true }),
     hasLinkedAccount: async (_provider: string) => false,
@@ -223,12 +226,14 @@ export const webElectronMock: ElectronAPI = {
     workspace: {
         analyze: async (_rootPath: string, _workspaceId: string) =>
             ({}) as WorkspaceAnalysis,
+        analyzeSummary: async (_rootPath: string, _workspaceId?: string) =>
+            ({}) as WorkspaceAnalysis,
         generateLogo: async (_path: string, _opts: { prompt: string; style: string; model: string; count: number }) => [],
         analyzeIdentity: async (_path: string) => ({ suggestedPrompts: [], colors: [] }),
         applyLogo: async (_path: string, _tempPath: string) => '',
         getCompletion: async (_text: string) => '',
-        getInlineSuggestion: async (_request: unknown) => ({}) as InlineSuggestionResponse,
-        trackInlineSuggestionTelemetry: async (_event: unknown) => ({ success: true }),
+        getInlineSuggestion: async (_request: RendererDataValue) => ({}) as InlineSuggestionResponse,
+        trackInlineSuggestionTelemetry: async (_event: RendererDataValue) => ({ success: true }),
         improveLogoPrompt: async (_prompt: string) => '',
         uploadLogo: async (_path: string) => null,
         analyzeDirectory: async (_dirPath: string) => ({
@@ -236,6 +241,8 @@ export const webElectronMock: ElectronAPI = {
         }),
         watch: async (_rootPath: string) => true,
         unwatch: async (_rootPath: string) => true,
+        setActive: async (_rootPath: string | null) => ({ rootPath: _rootPath }),
+        clearActive: async () => ({ rootPath: null }),
         onFileChange:
             (_callback: (event: string, path: string, rootPath: string) => void) => () => { },
         getEnv: async (_rootPath: string) => ({}) as Record<string, string>,
@@ -322,6 +329,8 @@ export const webElectronMock: ElectronAPI = {
     ) => 0,
     performance: {
         getMemoryStats: async () => ({ success: true, data: { main: {}, timestamp: Date.now() } }),
+        getProcessMetrics: async () => ({ success: true, data: [] }),
+        getStartupMetrics: async () => ({ success: true, data: { startTime: Date.now() } }),
         detectLeak: async () => ({ success: true, data: { isPossibleLeak: false, trend: [] } }),
         triggerGC: async () => ({ success: true, data: { success: true } }),
         getDashboard: async () => ({
@@ -374,7 +383,7 @@ export const webElectronMock: ElectronAPI = {
             height: number;
             steps: number;
             cfgScale: number;
-            provider?: 'antigravity' | 'ollama' | 'sd-webui' | 'comfyui' | 'pollinations' | 'sd-cpp';
+            provider?: 'antigravity' | 'ollama' | 'sd-webui' | 'comfyui' | 'sd-cpp';
         }) => ({}),
         deletePreset: async (_id: string) => true,
         exportPresetShare: async (_id: string) => '',
@@ -384,7 +393,7 @@ export const webElectronMock: ElectronAPI = {
             id?: string;
             name: string;
             description?: string;
-            workflow: Record<string, unknown>;
+            workflow: Record<string, RendererDataValue>;
         }) => ({}),
         deleteWorkflowTemplate: async (_id: string) => true,
         exportWorkflowTemplateShare: async (_id: string) => '',
@@ -448,11 +457,11 @@ export const webElectronMock: ElectronAPI = {
     forceOllamaHealthCheck: async () => ({ status: 'ok' as const }),
     checkCuda: async () => ({ hasCuda: true }),
     onOllamaStatusChange: (_callback: (status: { status: string }) => void) => { },
-    onAgentEvent: (_callback: (payload: unknown) => void) => () => { },
-    onSdCppStatus: (_callback: (data: unknown) => void) => () => { },
-    onSdCppProgress: (_callback: (data: unknown) => void) => () => { },
+    onAgentEvent: (_callback: (payload: RendererDataValue) => void) => () => { },
+    onSdCppStatus: (_callback: (data: RendererDataValue) => void) => () => { },
+    onSdCppProgress: (_callback: (data: RendererDataValue) => void) => () => { },
     modelDownloader: {
-        start: async (_request: Record<string, unknown>) => ({}),
+        start: async (_request: Record<string, RendererDataValue>) => ({}),
         pause: async (_downloadId: string) => ({}),
         resume: async (_downloadId: string) => ({}),
         cancel: async (_downloadId: string) => ({}),
@@ -1062,7 +1071,8 @@ export const webElectronMock: ElectronAPI = {
     executeTools: async (
         _toolName: string,
         _args: Record<string, IpcValue>,
-        _toolCallId?: string
+        _toolCallId?: string,
+        _workspaceAgentSessionId?: string
     ) =>
         ({
             toolCallId: _toolCallId ?? 'mock',
@@ -1189,7 +1199,7 @@ export const webElectronMock: ElectronAPI = {
         cancelFineTuneJob: async (_jobId: string) => ({ success: true }),
         evaluateFineTuneJob: async (_jobId: string) => ({ success: true, metrics: {} }),
         exportFineTunedModel: async (_jobId: string, _exportPath: string) => ({ success: true }),
-        onFineTuneProgress: (_callback: (job: unknown) => void) => () => { },
+        onFineTuneProgress: (_callback: (job: RendererDataValue) => void) => () => { },
         downloadFile: async (
             _url: string,
             _outputPath: string,
@@ -1289,18 +1299,18 @@ export const webElectronMock: ElectronAPI = {
     },
     advancedMemory: {
         getPending: async () => ({ success: true, data: [] }),
-        confirm: async (_id: string, _adjustments?: unknown) => ({
+        confirm: async (_id: string, _adjustments?: RendererDataValue) => ({
             success: true,
             data: undefined,
         }),
         reject: async (_id: string, _reason?: string) => ({ success: true }),
         confirmAll: async () => ({ success: true, confirmed: 0 }),
         rejectAll: async () => ({ success: true, rejected: 0 }),
-        remember: async (_content: string, _options?: unknown) => ({
+        remember: async (_content: string, _options?: RendererDataValue) => ({
             success: true,
             data: undefined,
         }),
-        recall: async (_context: unknown) => ({
+        recall: async (_context: RendererDataValue) => ({
             success: true,
             data: { memories: [], totalMatches: 0 },
         }),
@@ -1353,7 +1363,7 @@ export const webElectronMock: ElectronAPI = {
         }),
         delete: async (_id: string) => ({ success: true }),
         deleteMany: async (_ids: string[]) => ({ success: true, deleted: 0, failed: [] }),
-        edit: async (_id: string, _updates: unknown) => ({ success: true, data: undefined }),
+        edit: async (_id: string, _updates: RendererDataValue) => ({ success: true, data: undefined }),
         archive: async (_id: string) => ({ success: true }),
         archiveMany: async (_ids: string[]) => ({ success: true, archived: 0, failed: [] }),
         restore: async (_id: string) => ({ success: true }),
@@ -1423,8 +1433,8 @@ export const webElectronMock: ElectronAPI = {
         }),
     },
     ideas: {
-        createSession: async (config: unknown) => ({
-            ...(config as Record<string, unknown>),
+        createSession: async (config: RendererDataValue) => ({
+            ...(config as Record<string, RendererDataValue>),
             id: '1',
             ideasGenerated: 0,
             status: 'active',
@@ -1522,19 +1532,6 @@ export const webElectronMock: ElectronAPI = {
     on:
         (_channel: string, _listener: (event: IpcRendererEvent, ..._args: IpcValue[]) => void) =>
             () => { },
-    orchestrator: {
-        start: async (_task: unknown, _workspaceId: unknown) => { },
-        approve: async (_plan: unknown) => { },
-        getState: async () => ({
-            status: 'idle',
-            currentTask: '',
-            plan: [],
-            history: [],
-            assignments: {}
-        }),
-        stop: async () => { },
-        onUpdate: (_callback: unknown) => () => { },
-    },
     session: {
         conversation: {
             complete: async (_request: import('@shared/types').ChatRequest) => ({
@@ -1552,78 +1549,6 @@ export const webElectronMock: ElectronAPI = {
                     data: import('@shared/types/session-conversation').SessionConversationGenerationStatus
                 ) => void
             ) => () => { },
-        },
-        automation: {
-            start: async (_options: import('@shared/types/automation-workflow').AgentStartOptions) => ({
-                taskId: '',
-            }),
-            generatePlan: async (_options: import('@shared/types/automation-workflow').AgentStartOptions) => ({
-                taskId: '',
-            }),
-            approvePlan: async (
-                _plan: string[] | import('@shared/types/automation-workflow').WorkspaceStep[],
-                _taskId?: string
-            ) => undefined,
-            stop: async (_taskId?: string) => undefined,
-            pauseTask: async (_taskId: string) => ({ success: true as const }),
-            resumeTask: async (_taskId: string) => ({ success: true }),
-            saveSnapshot: async (_taskId: string) => ({ success: true, checkpointId: '' }),
-            approveCurrentPlan: async (_taskId: string) => ({ success: true }),
-            rejectCurrentPlan: async (_taskId: string, _reason?: string) => ({ success: true }),
-            resetState: async (_taskId?: string) => undefined,
-            getStatus: async (_taskId?: string) => ({
-                status: 'idle' as const,
-                currentTask: '',
-                plan: [],
-                history: [],
-            }),
-            getTaskMessages: async (_taskId: string) => ({ success: true, messages: [] }),
-            getTaskEvents: async (_taskId: string) => ({ success: true, events: [] }),
-            getTaskTelemetry: async (_taskId: string) => ({ success: true, telemetry: [] }),
-            getTaskHistory: async (_workspaceId?: string) => [],
-            deleteTask: async (_taskId: string) => ({ success: true }),
-            getAvailableModels: async () => ({ success: true, models: [] }),
-            retryStep: async (_index: number, _taskId?: string) => undefined,
-            selectModel: async (_payload: {
-                taskId: string;
-                provider: string;
-                model: string;
-            }) => ({ success: true }),
-            approveStep: async (_taskId: string, _stepId: string) => undefined,
-            skipStep: async (_taskId: string, _stepId: string) => undefined,
-            editStep: async (_taskId: string, _stepId: string, _text: string) => undefined,
-            addStepComment: async (_taskId: string, _stepId: string, _comment: string) => undefined,
-            insertInterventionPoint: async (_taskId: string, _afterStepId: string) => undefined,
-            getCheckpoints: async (_taskId: string) => [],
-            resumeCheckpoint: async (_checkpointId: string) => undefined,
-            rollbackCheckpoint: async (_checkpointId: string) => null,
-            getPlanVersions: async (_taskId: string) => [],
-            deleteTaskByNodeId: async (_nodeId: string) => false,
-            createPullRequest: async (_taskId?: string) => null,
-            getProfiles: async () => [],
-            getRoutingRules: async () => [],
-            setRoutingRules: async (_rules: import('@shared/types/automation-workflow').ModelRoutingRule[]) => ({
-                success: true as const,
-            }),
-            getTemplates: async (_category?: import('@shared/types/automation-workflow').AgentTemplateCategory) => [],
-            getTemplate: async (_id: string) => null,
-            saveTemplate: async (template: import('@shared/types/automation-workflow').AgentTemplate) => ({
-                success: true,
-                template,
-            }),
-            deleteTemplate: async (_id: string) => ({ success: true }),
-            exportTemplate: async (_id: string) => null,
-            importTemplate: async (_exported: import('@shared/types/automation-workflow').AgentTemplateExport) => ({
-                success: false,
-                error: 'Not available in web bridge',
-            }),
-            applyTemplate: async (_payload: {
-                templateId: string;
-                values: Record<string, string | number | boolean>;
-            }) => ({
-                success: false,
-                error: 'Not available in web bridge',
-            }),
         },
         workspace: {
             saveCanvasNodes: async (
@@ -1646,148 +1571,7 @@ export const webElectronMock: ElectronAPI = {
             pauseExecution: async (_taskId: string) => ({ success: true }),
             resumeExecution: async (_taskId: string) => ({ success: true }),
             getTimeline: async (_taskId: string) => ({ success: true, events: [] }),
-            createVotingSession: async (_payload: {
-                taskId: string;
-                stepIndex: number;
-                question: string;
-                options: string[];
-            }) => null,
-            submitVote: async (_payload: {
-                sessionId: string;
-                modelId: string;
-                provider: string;
-                decision: string;
-                confidence: number;
-                reasoning?: string;
-            }) => null,
-            requestVotes: async (_payload: {
-                sessionId: string;
-                models: Array<{ provider: string; model: string }>;
-            }) => null,
-            resolveVoting: async (_sessionId: string) => null,
-            getVotingSession: async (_sessionId: string) => null,
-            listVotingSessions: async (_taskId?: string) => [],
-            getVotingAnalytics: async (_taskId?: string) => ({
-                totalSessions: 0,
-                pendingSessions: 0,
-                resolvedSessions: 0,
-                deadlockedSessions: 0,
-                averageVotesPerSession: 0,
-                averageConfidence: 0,
-                disagreementIndex: 0,
-                updatedAt: Date.now(),
-            }),
-            getVotingConfiguration: async () => ({
-                minimumVotes: 2,
-                deadlockThreshold: 0.5,
-                autoResolve: true,
-                autoResolveTimeoutMs: 30000,
-            }),
-            updateVotingConfiguration: async (patch: Partial<import('@shared/types/automation-workflow').VotingConfiguration>) => ({
-                minimumVotes: patch.minimumVotes ?? 2,
-                deadlockThreshold: patch.deadlockThreshold ?? 0.5,
-                autoResolve: patch.autoResolve ?? true,
-                autoResolveTimeoutMs: patch.autoResolveTimeoutMs ?? 30000,
-            }),
-            listVotingTemplates: async () => [],
-            buildConsensus: async (_outputs: Array<{ modelId: string; provider: string; output: string }>) => null,
-            overrideVotingDecision: async (_payload: {
-                sessionId: string;
-                finalDecision: string;
-                reason?: string;
-            }) => null,
-            createDebateSession: async (_payload: {
-                taskId: string;
-                stepIndex: number;
-                topic: string;
-            }) => null,
-            submitDebateArgument: async (_payload: {
-                sessionId: string;
-                agentId: string;
-                provider: string;
-                side: import('@shared/types/automation-workflow').DebateSide;
-                content: string;
-                confidence: number;
-                citations?: import('@shared/types/automation-workflow').DebateCitation[];
-            }) => null,
-            resolveDebateSession: async (_sessionId: string) => null,
-            overrideDebateSession: async (_payload: {
-                sessionId: string;
-                moderatorId: string;
-                decision: import('@shared/types/automation-workflow').DebateSide | 'balanced';
-                reason?: string;
-            }) => null,
-            getDebateSession: async (_sessionId: string) => null,
-            listDebateHistory: async (_taskId?: string) => [],
-            getDebateReplay: async (_sessionId: string) => null,
-            generateDebateSummary: async (_sessionId: string) => null,
-            getTeamworkAnalytics: async () => null,
-            sendMessage: async (_payload: {
-                taskId: string;
-                stageId: string;
-                fromAgentId: string;
-                toAgentId?: string;
-                intent: import('@shared/types/automation-workflow').AgentCollaborationIntent;
-                priority?: import('@shared/types/automation-workflow').AgentCollaborationPriority;
-                payload: Record<string, string | number | boolean | null>;
-                expiresAt?: number;
-            }) => null,
-            getMessages: async (_payload: {
-                taskId: string;
-                stageId?: string;
-                agentId?: string;
-                includeExpired?: boolean;
-            }) => [],
-            cleanupExpiredMessages: async (_taskId?: string) => ({ success: true, removed: 0 }),
-            handleQuotaInterrupt: async (_payload: {
-                taskId: string;
-                stageId?: string;
-                provider: string;
-                model: string;
-                reason?: string;
-                autoSwitch?: boolean;
-            }) => null,
-            registerWorkerAvailability: async (_payload: {
-                taskId: string;
-                agentId: string;
-                status: 'available' | 'busy' | 'offline';
-                reason?: string;
-                skills?: string[];
-                contextReadiness?: number;
-            }) => null,
-            listAvailableWorkers: async (_payload: { taskId: string }) => [],
-            scoreHelperCandidates: async (_payload: {
-                taskId: string;
-                stageId: string;
-                requiredSkills: string[];
-                blockedAgentIds?: string[];
-                contextReadinessOverrides?: Record<string, number>;
-            }) => [],
-            generateHelperHandoff: async (_payload: {
-                taskId: string;
-                stageId: string;
-                ownerAgentId: string;
-                helperAgentId: string;
-                stageGoal: string;
-                acceptanceCriteria: string[];
-                constraints: string[];
-                contextNotes?: string;
-            }) => null,
-            reviewHelperMerge: async (_payload: {
-                acceptanceCriteria: string[];
-                constraints: string[];
-                helperOutput: string;
-                reviewerNotes?: string;
-            }) => ({
-                accepted: false,
-                verdict: 'REVISE' as const,
-                reasons: [],
-                requiredFixes: [],
-                reviewedAt: Date.now(),
-            }),
-            onQuotaInterrupt: (
-                _callback: (payload: import('@shared/types/session-engine').SessionCouncilQuotaInterruptEvent) => void
-            ) => () => { },
+            onQuotaInterrupt: (_callback: CouncilQuotaInterruptCallback) => () => { },
         },
         getState: async (_sessionId: string) => null,
         list: async () => [],
@@ -1945,7 +1729,7 @@ export const webElectronMock: ElectronAPI = {
         getState: async (_extensionId: string) => ({
             success: false,
         }),
-        validate: async (_manifest: unknown) => ({
+        validate: async (_manifest: RendererDataValue) => ({
             valid: true,
             errors: [],
         }),
@@ -2021,7 +1805,7 @@ export const webElectronMock: ElectronAPI = {
         onSyncUpdate: (_callback: (payload: { roomId: string; data: string }) => void) => () => { /* noop */ },
         onError: (_callback: (payload: { roomId: string; error: string }) => void) => () => { /* noop */ },
     },
-} as unknown as ElectronAPI;
+} as TypeAssertionValue as ElectronAPI;
 
 if (typeof window !== 'undefined' && !window.electron) {
     window.electron = webElectronMock;

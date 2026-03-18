@@ -11,12 +11,12 @@ const MAX_PORT = 65535;
 /**
  * Validates proxy start options
  */
-function validateStartOptions(value: unknown): { port?: number } | undefined {
+function validateStartOptions(value: RuntimeValue): { port?: number } | undefined {
     if (!value || typeof value !== 'object') {
         return undefined;
     }
 
-    const raw = value as Record<string, unknown>;
+    const raw = value as Record<string, RuntimeValue>;
     const result: { port?: number } = {};
 
     if (typeof raw.port === 'number') {
@@ -39,7 +39,7 @@ export function registerProxyEmbedIpc(proxyService: ProxyService): void {
         'proxy:embed:start',
         createIpcHandler(
             'proxy:embed:start',
-            async (_event: IpcMainInvokeEvent, argsRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, argsRaw: RuntimeValue) => {
                 const args = validateStartOptions(argsRaw);
                 return await proxyService.startEmbeddedProxy(args);
             }

@@ -1,5 +1,4 @@
-export * from './automation-session';
-export * from './automation-workflow';
+export * from './council';
 export * from './electron-api.types';
 export * from './session-conversation';
 export * from './session-domain-apis';
@@ -25,6 +24,7 @@ export * from '@/types/system';
 export * from '@/types/templates';
 export * from '@/types/terminal';
 export * from '@/types/workspace';
+export * from '@/types/workspace-agent-session';
 
 export interface ServiceResponse<T = void> {
     success: boolean;
@@ -34,6 +34,8 @@ export interface ServiceResponse<T = void> {
     /** @deprecated Use data instead */
     content?: T;
     message?: string;
+    messageKey?: string;
+    messageParams?: Record<string, string | number>;
     error?: string;
     details?: string | Record<string, string | number | boolean>;
 }

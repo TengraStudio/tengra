@@ -47,7 +47,7 @@ interface ModelDetailsPanelProps {
     onCancelDownload?: (modelRef: string) => void | Promise<void>;
     onResumeDownload?: (modelRef: string) => void | Promise<void>;
     installedOllamaModels?: Set<string>;
-    modelPreview?: unknown;
+    modelPreview?: RendererDataValue;
     isWatchlisted?: boolean;
     toggleWatchlist?: (modelId: string) => void | Promise<void>;
     toggleComparison?: (modelId: string) => void;
@@ -55,7 +55,7 @@ interface ModelDetailsPanelProps {
     comparisonCount?: number;
     installTests?: Record<string, { success: boolean; message: string }>;
     lastInstallConfig?: Record<string, HFInstallOptions>;
-    t: (key: string) => string;
+    t: (key: string, options?: Record<string, string | number>) => string;
 }
 
 const sanitizeFileSegment = (value: string): string => value.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -107,7 +107,8 @@ const HFFileCard: React.FC<{
     onPause?: () => void;
     onResume?: () => void;
     onCancel?: () => void;
-}> = ({ file, model, downloading, isDownloaded, activeStatus, queuePosition, onDownload, onPause, onResume, onCancel }) => {
+    t: (key: string, options?: Record<string, string | number>) => string;
+}> = ({ file, model, downloading, isDownloaded, activeStatus, queuePosition, onDownload, onPause, onResume, onCancel, t }) => {
     const modelRef = getHfModelRef(model, file);
     const status = (activeStatus ?? '').toLowerCase();
     const progress = downloading[modelRef];
@@ -132,7 +133,7 @@ const HFFileCard: React.FC<{
             {isDownloading && progress.total > 0 && (
                 <div className="space-y-1">
                     <div className="flex justify-between text-xxs font-black uppercase tracking-widest text-primary">
-                        <span>Downloading</span>
+                        <span>{t('modelExplorer.downloading')}</span>
                         <span>{Math.round((progress.received / progress.total) * 100)}%</span>
                     </div>
                     <div className="h-2 w-full bg-muted/50 rounded-full overflow-hidden">
@@ -143,16 +144,16 @@ const HFFileCard: React.FC<{
 
             {!isDownloading && showActiveTask && (
                 <div className="text-xxs px-3 py-2 rounded-lg border bg-primary/10 text-primary border-primary/20">
-                    {isQueued && (queuePosition ? `Queued #${queuePosition}` : 'Queued')}
-                    {isStarting && 'Starting...'}
-                    {isInstalling && 'Installing...'}
-                    {isPaused && 'Paused'}
+                    {isQueued && (queuePosition ? `${t('common.pending')} #${queuePosition}` : t('common.pending'))}
+                    {isStarting && `${t('common.processing')}...`}
+                    {isInstalling && `${t('workspaceAgent.toolSummary.editing')}...`}
+                    {isPaused && t('workspaceAgent.statePanel.status.paused')}
                 </div>
             )}
 
             {isDownloaded && (
                 <div className="text-xxs px-3 py-2 rounded-lg border bg-success/10 text-success border-success/20">
-                    Downloaded
+                    {t('modelExplorer.installed')}
                 </div>
             )}
 
@@ -162,17 +163,17 @@ const HFFileCard: React.FC<{
                     disabled={isDownloaded || showActiveTask}
                     className="py-2 rounded-lg bg-foreground text-background text-xxs font-black uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    <span className="inline-flex items-center gap-2"><Download className="w-3 h-3" /> Quick Install</span>
+                    <span className="inline-flex items-center gap-2"><Download className="w-3 h-3" /> {t('modelExplorer.downloadPackage')}</span>
                 </button>
                 {showActiveTask && (isPaused ? (
-                    <button onClick={onResume} className="py-2 rounded-lg border border-border/40 text-xxs font-bold uppercase tracking-wider">Resume</button>
+                    <button onClick={onResume} className="py-2 rounded-lg border border-border/40 text-xxs font-bold uppercase tracking-wider">{t('common.resume')}</button>
                 ) : (
-                    <button onClick={onPause} disabled={isStarting || isInstalling} className="py-2 rounded-lg border border-border/40 text-xxs font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed">Pause</button>
+                    <button onClick={onPause} disabled={isStarting || isInstalling} className="py-2 rounded-lg border border-border/40 text-xxs font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed">{t('common.pause')}</button>
                 ))}
             </div>
             {showActiveTask && (
                 <button onClick={onCancel} className="w-full py-2 rounded-lg border border-destructive/40 text-destructive text-xxs font-bold uppercase tracking-wider">
-                    Cancel
+                    {t('common.cancel')}
                 </button>
             )}
         </div>
@@ -358,27 +359,27 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
             </div>
 
             <div className="p-6 border-b border-border/50 space-y-3 bg-white/5">
-                <div className="text-xxs uppercase tracking-widest text-muted-foreground">{isHF ? 'HuggingFace' : t('modelExplorer.ollamaLibrary')}</div>
+                <div className="text-xxs uppercase tracking-widest text-muted-foreground">{isHF ? t('modelExplorer.sourceHuggingFace') : t('modelExplorer.ollamaLibrary')}</div>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                     {selectedModel.description || t('modelExplorer.defaultDescription')}
                 </p>
                 <div className="grid grid-cols-2 gap-3 text-xs">
                     <div className="rounded-lg border border-border/30 p-3">
-                        <div className="text-muted-foreground">Provider</div>
+                        <div className="text-muted-foreground">{t('modelExplorer.provider')}</div>
                         <div className="font-bold uppercase">{selectedModel.provider}</div>
                     </div>
                     <div className="rounded-lg border border-border/30 p-3">
-                        <div className="text-muted-foreground">Updated</div>
+                        <div className="text-muted-foreground">{t('modelExplorer.updated')}</div>
                         <div className="font-bold">
                             {isHF ? hfModel?.lastModified?.split('T')[0] : (ollamaModel?.lastUpdated || '-')}
                         </div>
                     </div>
                     <div className="rounded-lg border border-border/30 p-3">
-                        <div className="text-muted-foreground">Popularity</div>
+                        <div className="text-muted-foreground">{t('modelExplorer.popularity')}</div>
                         <div className="font-bold">{isHF ? (hfModel?.downloads?.toLocaleString() || '0') : (ollamaModel?.pulls || '-')}</div>
                     </div>
                     <div className="rounded-lg border border-border/30 p-3">
-                        <div className="text-muted-foreground">Disk / RAM</div>
+                        <div className="text-muted-foreground">{t('modelExplorer.diskRam')}</div>
                         <div className="font-bold">{preview?.requirements?.diskGB ? `${preview.requirements.diskGB}GB` : '-'}</div>
                     </div>
                 </div>
@@ -389,14 +390,14 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                     <>
                         {'longDescriptionMarkdown' in selectedModel && selectedModel.longDescriptionMarkdown && (
                             <div className="rounded-xl border border-border/40 bg-muted/10 p-4">
-                                <h3 className="text-xxs font-black uppercase tracking-[0.25em] text-muted-foreground mb-2">Long Description</h3>
+                                <h3 className="text-xxs font-black uppercase tracking-[0.25em] text-muted-foreground mb-2">{t('common.details')}</h3>
                                 <div className="text-sm whitespace-pre-wrap leading-relaxed">{selectedModel.longDescriptionMarkdown}</div>
                             </div>
                         )}
 
                         <div className="space-y-3">
                             <h3 className="text-xxs font-black uppercase tracking-[0.3em] text-muted-foreground flex items-center gap-2">
-                                <Server className="w-4 h-4" /> Download Files
+                                <Server className="w-4 h-4" /> {t('modelExplorer.pullVersion')}
                             </h3>
 
                             {loadingFiles ? (
@@ -407,7 +408,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                                 <>
                                     {hfShardGroups.length > 0 && (
                                         <div className="space-y-2 rounded-xl border border-border/40 bg-muted/10 p-3">
-                                            <div className="text-xxs font-black uppercase tracking-[0.2em] text-muted-foreground">Sharded Model Sets</div>
+                                            <div className="text-xxs font-black uppercase tracking-[0.2em] text-muted-foreground">{t('modelExplorer.shardedModelSets')}</div>
                                             {hfShardGroups.map((group) => {
                                                 const downloadedCount = group.files.filter((f) => downloadedFilePaths[f.path]).length;
                                                 const progressPct = Math.round((downloadedCount / group.totalParts) * 100);
@@ -425,7 +426,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                                                             disabled={downloadedCount >= group.totalParts}
                                                             className={cn('w-full py-2 rounded-lg text-xxs font-black uppercase tracking-wider', downloadedCount >= group.totalParts ? 'bg-success/15 text-success border border-success/30' : 'bg-foreground text-background')}
                                                         >
-                                                            {downloadedCount >= group.totalParts ? 'Full Set Downloaded' : 'Download Missing Parts'}
+                                                            {downloadedCount >= group.totalParts ? t('modelExplorer.fullSetDownloaded') : t('modelExplorer.downloadMissingParts')}
                                                         </button>
                                                     </div>
                                                 );
@@ -449,6 +450,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                                                 onPause={() => void onPauseDownload?.(modelRef)}
                                                 onResume={() => void onResumeDownload?.(modelRef)}
                                                 onCancel={() => void onCancelDownload?.(modelRef)}
+                                                t={t}
                                             />
                                         );
                                     })}
@@ -466,7 +468,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                     <>
                         {sanitizedOllamaDescriptionHtml && (
                             <div className="rounded-xl border border-border/40 bg-muted/10 p-4">
-                                <h3 className="text-xxs font-black uppercase tracking-[0.25em] text-muted-foreground mb-2">Long Description</h3>
+                                <h3 className="text-xxs font-black uppercase tracking-[0.25em] text-muted-foreground mb-2">{t('common.details')}</h3>
                                 <div className="prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: sanitizedOllamaDescriptionHtml }} />
                             </div>
                         )}
@@ -480,12 +482,12 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                                 <table className="w-full text-xs">
                                     <thead className="bg-muted/30">
                                         <tr className="text-left">
-                                            <th className="px-3 py-2">Version</th>
-                                            <th className="px-3 py-2">Size</th>
-                                            <th className="px-3 py-2">Context</th>
-                                            <th className="px-3 py-2">Input</th>
-                                            <th className="px-3 py-2">Digest</th>
-                                            <th className="px-3 py-2">Action</th>
+                                            <th className="px-3 py-2">{t('common.version')}</th>
+                                            <th className="px-3 py-2">{t('common.size')}</th>
+                                            <th className="px-3 py-2">{t('modelExplorer.context')}</th>
+                                            <th className="px-3 py-2">{t('common.type')}</th>
+                                            <th className="px-3 py-2">{t('modelExplorer.digest')}</th>
+                                            <th className="px-3 py-2">{t('modelExplorer.action')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -507,7 +509,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                                                                 onClick={() => void handleRemoveOllama?.(fullModelName)}
                                                                 className="px-2 py-1 rounded-md border border-destructive/40 text-destructive font-bold"
                                                             >
-                                                                Remove
+                                                                {t('common.delete')}
                                                             </button>
                                                         ) : (
                                                             <button
@@ -515,7 +517,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                                                                 disabled={!!pullingOllama}
                                                                 className="px-2 py-1 rounded-md bg-foreground text-background font-bold disabled:opacity-50"
                                                             >
-                                                                {isPulling ? 'Pulling...' : t('modelExplorer.pullVersion')}
+                                                                {isPulling ? `${t('modelExplorer.pulling')}...` : t('modelExplorer.pullVersion')}
                                                             </button>
                                                         )}
                                                     </td>
@@ -532,13 +534,19 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                                         onClick={() => setOllamaPage(p => Math.max(1, p - 1))}
                                         disabled={safeOllamaPage <= 1}
                                         className="px-3 py-1 rounded-md border border-border/40 disabled:opacity-50"
-                                    >Prev</button>
-                                    <span className="text-xs text-muted-foreground">Page {safeOllamaPage} / {ollamaTotalPages}</span>
+                                    >
+                                        {t('common.previous')}
+                                    </button>
+                                    <span className="text-xs text-muted-foreground">
+                                        {t('common.pageOf', { current: safeOllamaPage, total: ollamaTotalPages })}
+                                    </span>
                                     <button
                                         onClick={() => setOllamaPage(p => Math.min(ollamaTotalPages, p + 1))}
                                         disabled={safeOllamaPage >= ollamaTotalPages}
                                         className="px-3 py-1 rounded-md border border-border/40 disabled:opacity-50"
-                                    >Next</button>
+                                    >
+                                        {t('common.next')}
+                                    </button>
                                 </div>
                             )}
                         </div>

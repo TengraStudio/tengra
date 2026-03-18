@@ -12,11 +12,11 @@ vi.mock('electron', () => ({
 }));
 
 describe('Brain IPC Handlers', () => {
-    let registeredHandlers: Map<string, unknown>;
+    let registeredHandlers: Map<string, TestValue>;
 
     beforeEach(() => {
         registeredHandlers = new Map();
-        vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: unknown) => {
+        vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: TestValue) => {
             registeredHandlers.set(channel, handler);
         });
     });
@@ -32,7 +32,7 @@ describe('Brain IPC Handlers', () => {
             };
             registeredHandlers.set('brain:learn', handler);
 
-            const result = await (registeredHandlers.get('brain:learn') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('brain:learn') as () => Promise<TestValue>)();
 
             expect(result).toHaveProperty('success', true);
         });
@@ -45,7 +45,7 @@ describe('Brain IPC Handlers', () => {
             };
             registeredHandlers.set('brain:recall', handler);
 
-            const result = await (registeredHandlers.get('brain:recall') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('brain:recall') as () => Promise<TestValue>)();
 
             expect(result).toHaveProperty('success', true);
         });
@@ -58,7 +58,7 @@ describe('Brain IPC Handlers', () => {
             };
             registeredHandlers.set('brain:getByCategory', handler);
 
-            const result = await (registeredHandlers.get('brain:getByCategory') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('brain:getByCategory') as () => Promise<TestValue>)();
 
             expect(result).toHaveProperty('success', true);
         });
@@ -71,7 +71,7 @@ describe('Brain IPC Handlers', () => {
             };
             registeredHandlers.set('brain:getContext', handler);
 
-            const result = await (registeredHandlers.get('brain:getContext') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('brain:getContext') as () => Promise<TestValue>)();
 
             expect(result).toHaveProperty('success', true);
         });
@@ -84,7 +84,7 @@ describe('Brain IPC Handlers', () => {
             };
             registeredHandlers.set('brain:extractFromMessage', handler);
 
-            const result = await (registeredHandlers.get('brain:extractFromMessage') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('brain:extractFromMessage') as () => Promise<TestValue>)();
 
             expect(result).toHaveProperty('success', true);
         });
@@ -97,7 +97,7 @@ describe('Brain IPC Handlers', () => {
             };
             registeredHandlers.set('brain:forget', handler);
 
-            const result = await (registeredHandlers.get('brain:forget') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('brain:forget') as () => Promise<TestValue>)();
 
             expect(result).toEqual({ success: true });
         });
@@ -110,7 +110,7 @@ describe('Brain IPC Handlers', () => {
             };
             registeredHandlers.set('brain:getStats', handler);
 
-            const result = await (registeredHandlers.get('brain:getStats') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('brain:getStats') as () => Promise<TestValue>)();
 
             expect(result).toHaveProperty('success', true);
         });

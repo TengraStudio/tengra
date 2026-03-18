@@ -33,7 +33,7 @@ interface WorkerRequest {
 /** Message received from the sandbox worker thread. */
 interface WorkerResponse {
     success: boolean;
-    result?: unknown;
+    result?: RuntimeValue;
     error?: string;
     memoryUsedMB: number;
 }
@@ -129,7 +129,7 @@ export class PluginSandbox {
      * @param code - The JavaScript code to execute.
      * @returns SandboxResult with execution outcome and resource metrics.
      */
-    async execute<T = unknown>(code: string): Promise<SandboxResult<T>> {
+    async execute<T = RuntimeValue>(code: string): Promise<SandboxResult<T>> {
         const startTime = Date.now();
         const ac = new AbortController();
         const timeout = setTimeout(() => ac.abort(), this.config.maxExecutionTimeMs);

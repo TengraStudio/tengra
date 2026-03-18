@@ -413,18 +413,18 @@ describe('MemoryProfilingService', () => {
     describe('forceGC', () => {
         it('should return true and call gc when exposed', () => {
             const mockGc = vi.fn();
-            (global as Record<string, unknown>).gc = mockGc;
+            (global as Record<string, TestValue>).gc = mockGc;
 
             const result = service.forceGC();
 
             expect(result).toBe(true);
             expect(mockGc).toHaveBeenCalledOnce();
 
-            delete (global as Record<string, unknown>).gc;
+            delete (global as Record<string, TestValue>).gc;
         });
 
         it('should return false when gc is not exposed', () => {
-            delete (global as Record<string, unknown>).gc;
+            delete (global as Record<string, TestValue>).gc;
 
             const result = service.forceGC();
 

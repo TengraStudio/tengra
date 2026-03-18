@@ -12,8 +12,8 @@ import { JobState } from '@main/services/system/job-scheduler.service';
 import { PromptTemplate } from '@main/utils/prompt-templates.util';
 import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { AdvancedSemanticFragment, PendingMemory } from '@shared/types/advanced-memory';
-import { AgentProfile } from '@shared/types/automation-workflow';
 import { IpcValue, JsonObject, JsonValue } from '@shared/types/common';
+import { AgentProfile } from '@shared/types/council';
 import { DatabaseAdapter, SqlParams, SqlValue } from '@shared/types/database';
 import { DbDetailedStats, DbStats, DbTokenStats } from '@shared/types/db-api';
 import { FileDiff } from '@shared/types/file-diff';
@@ -243,7 +243,7 @@ export class DatabaseService extends BaseService {
     private readonly maxVectorCacheEntries = 200;
     private queryAnalytics = new Map<string, QueryAnalysisEntry>();
     private slowQueryLogs: SlowQueryLogEntry[] = [];
-    private vectorSearchCache = new Map<string, { expiresAt: number; value: unknown }>();
+    private vectorSearchCache = new Map<string, { expiresAt: number; value: RuntimeValue }>();
     private vectorSearchAnalytics = {
         codeSymbols: { queries: 0, cacheHits: 0, totalDurationMs: 0 },
         semanticFragments: { queries: 0, cacheHits: 0, totalDurationMs: 0 }
@@ -278,21 +278,21 @@ export class DatabaseService extends BaseService {
     }
 
     /** Validates that a value is a non-empty string, throwing with the given label if not. */
-    private validateId(value: unknown, label: string): asserts value is string {
+    private validateId(value: RuntimeValue, label: string): asserts value is string {
         if (typeof value !== 'string' || value.trim().length === 0) {
             throw new ValidationError(`[${DatabaseServiceErrorCode.INVALID_ID}] ${label} must be a non-empty string`);
         }
     }
 
     /** Validates that a value is a string (used for SQL statements). */
-    private validateSql(value: unknown): asserts value is string {
+    private validateSql(value: RuntimeValue): asserts value is string {
         if (typeof value !== 'string' || value.trim().length === 0) {
             throw new ValidationError(`[${DatabaseServiceErrorCode.INVALID_QUERY}] SQL statement must be a non-empty string`);
         }
     }
 
     /** Validates that a value is an array. */
-    private validateArray(value: unknown, label: string): asserts value is unknown[] {
+    private validateArray(value: RuntimeValue, label: string): asserts value is RuntimeValue[] {
         if (!Array.isArray(value)) {
             throw new ValidationError(`[${DatabaseServiceErrorCode.OPERATION_FAILED}] ${label} must be an array`);
         }
@@ -358,7 +358,7 @@ export class DatabaseService extends BaseService {
         return this.createAdapter();
     }
 
-    public async query<T = unknown>(sql: string, params?: SqlParams) {
+    public async query<T = RuntimeValue>(sql: string, params?: SqlParams) {
         this.validateSql(sql);
         const adapter = await this.ensureDb();
         return adapter.query<T>(sql, params);
@@ -385,7 +385,7 @@ export class DatabaseService extends BaseService {
             query: async <T = JsonObject>(sql: string, params?: SqlParams) => {
                 return this.trackQuery(sql, params, async () => {
                     const res = await this.dbClient.executeQuery({ sql, params: params as (string | number | boolean | null)[] });
-                    return { rows: res.rows as unknown as T[], fields: [] };
+                    return { rows: res.rows as RuntimeValue as T[], fields: [] };
                 });
             },
             exec: async (sql) => {
@@ -405,16 +405,16 @@ export class DatabaseService extends BaseService {
                             return { rowsAffected: res.affected_rows, insertId: undefined };
                         });
                     },
-                    all: async <T = unknown>(...params: SqlValue[]) => {
+                    all: async <T = RuntimeValue>(...params: SqlValue[]) => {
                         return this.trackQuery(sql, params, async () => {
                             const res = await this.dbClient.executeQuery({ sql, params: params as (string | number | boolean | null)[] });
-                            return res.rows as unknown as T[];
+                            return res.rows as RuntimeValue as T[];
                         });
                     },
-                    get: async <T = unknown>(...params: SqlValue[]) => {
+                    get: async <T = RuntimeValue>(...params: SqlValue[]) => {
                         return this.trackQuery(sql, params, async () => {
                             const res = await this.dbClient.executeQuery({ sql, params: params as (string | number | boolean | null)[] });
-                            return res.rows[0] as unknown as T;
+                            return res.rows[0] as RuntimeValue as T;
                         });
                     }
                 };
@@ -583,11 +583,11 @@ export class DatabaseService extends BaseService {
      * @param params - Optional query parameters
      * @returns Array of query plan rows
      */
-    async analyzeQueryPlan(sql: string, params?: SqlParams): Promise<unknown[]> {
+    async analyzeQueryPlan(sql: string, params?: SqlParams): Promise<RuntimeValue[]> {
         this.validateSql(sql);
         const explainSql = `EXPLAIN ${sql}`;
         const res = await this.query(explainSql, params);
-        return res.rows as unknown[];
+        return res.rows as RuntimeValue[];
     }
 
     /**
@@ -957,13 +957,13 @@ export class DatabaseService extends BaseService {
      * @param params - Optional query parameters
      * @returns Array of results grouped by shard index
      */
-    async queryAcrossShards(sql: string, params?: SqlParams): Promise<Array<{ shard: number; rows: unknown[] }>> {
+    async queryAcrossShards(sql: string, params?: SqlParams): Promise<Array<{ shard: number; rows: RuntimeValue[] }>> {
         this.validateSql(sql);
         const shards = Math.max(1, this.shardingConfig.shardCount);
-        const rows: Array<{ shard: number; rows: unknown[] }> = [];
+        const rows: Array<{ shard: number; rows: RuntimeValue[] }> = [];
         for (let shard = 0; shard < shards; shard += 1) {
             const result = await this.query(sql, params);
-            rows.push({ shard, rows: result.rows as unknown[] });
+            rows.push({ shard, rows: result.rows as RuntimeValue[] });
         }
         return rows;
     }
@@ -1325,7 +1325,7 @@ export class DatabaseService extends BaseService {
         return `${type}:${workspacePath ?? '*'}:${limit}:${approximate ? 'ann' : 'exact'}:${workspaceed}`;
     }
 
-    private readVectorCache<T>(key: string): T | null {
+    private readVectorCache<T extends RuntimeValue>(key: string): T | null {
         const hit = this.vectorSearchCache.get(key);
         if (!hit) {
             return null;
@@ -1337,7 +1337,7 @@ export class DatabaseService extends BaseService {
         return hit.value as T;
     }
 
-    private writeVectorCache<T>(key: string, value: T): void {
+    private writeVectorCache<T extends RuntimeValue>(key: string, value: T): void {
         this.vectorSearchCache.set(key, {
             value,
             expiresAt: Date.now() + this.vectorSearchCacheTtlMs
@@ -1668,11 +1668,11 @@ export class DatabaseService extends BaseService {
 
     // --- Agent Template Methods ---
 
-    async getAgentTemplates(): Promise<import('@shared/types/automation-workflow').AgentTemplate[]> {
+    async getAgentTemplates(): Promise<import('@shared/types/council').AgentTemplate[]> {
         return this._system.getAgentTemplates();
     }
 
-    async saveAgentTemplate(template: import('@shared/types/automation-workflow').AgentTemplate): Promise<void> {
+    async saveAgentTemplate(template: import('@shared/types/council').AgentTemplate): Promise<void> {
         return this._system.saveAgentTemplate(template);
     }
 

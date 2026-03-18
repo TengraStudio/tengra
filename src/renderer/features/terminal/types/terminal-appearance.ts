@@ -1,4 +1,4 @@
-import type { ITheme } from 'xterm';
+import type { ITheme } from '@xterm/xterm';
 
 export type TerminalCursorStyle = 'block' | 'underline' | 'bar';
 

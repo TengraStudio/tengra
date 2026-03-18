@@ -26,8 +26,7 @@ describe('settings-page-validation', () => {
     });
 
     it('rejects invalid settings payload without embeddings', () => {
-        const invalid = { ...settingsFixture } as Record<string, unknown>;
-        delete invalid.embeddings;
+        const { embeddings: _embeddings, ...invalid } = settingsFixture;
         expect(validateSettingsPayload(invalid as AppSettings)).toBe(false);
     });
 

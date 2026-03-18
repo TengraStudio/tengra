@@ -7,10 +7,12 @@ import React from 'react';
 import { AnimatedCard } from '@/components/ui/AnimatedCard';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslation } from '@/i18n';
 
 import type { ComponentStory } from '../types';
 
-const CardWrapper: React.FC<Record<string, unknown>> = (props) => {
+const CardWrapper: React.FC<Record<string, RendererDataValue>> = (props) => {
+  const { t } = useTranslation();
   const { title, content, withBadge, badgeText } = props as {
     title?: string
     content?: string
@@ -22,20 +24,21 @@ const CardWrapper: React.FC<Record<string, unknown>> = (props) => {
     <Card className="w-72">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>{title ?? 'Card Title'}</CardTitle>
-          {withBadge && <Badge variant="secondary">{badgeText ?? 'New'}</Badge>}
+          <CardTitle>{title ? t(title) : t('showcase.card.fallback.title')}</CardTitle>
+          {withBadge && <Badge variant="secondary">{badgeText ? t(badgeText) : t('showcase.card.fallback.badge')}</Badge>}
         </div>
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground">
-          {content ?? 'This is the card content area. It supports any React children.'}
+          {content ? t(content) : t('showcase.card.fallback.content')}
         </p>
       </CardContent>
     </Card>
   );
 };
 
-const AnimatedCardWrapper: React.FC<Record<string, unknown>> = (props) => {
+const AnimatedCardWrapper: React.FC<Record<string, RendererDataValue>> = (props) => {
+  const { t } = useTranslation();
   const { hoverEffect, title, content } = props as {
     hoverEffect?: 'lift' | 'glow' | 'scale' | '3d' | 'none'
     title?: string
@@ -44,54 +47,68 @@ const AnimatedCardWrapper: React.FC<Record<string, unknown>> = (props) => {
 
   return (
     <AnimatedCard hoverEffect={hoverEffect} className="w-72">
-      <h3 className="font-semibold mb-2">{title ?? 'Animated Card'}</h3>
+      <h3 className="font-semibold mb-2">{title ? t(title) : t('showcase.animatedCard.fallback.title')}</h3>
       <p className="text-sm text-muted-foreground">
-        {content ?? 'Hover to see the animation effect.'}
+        {content ? t(content) : t('showcase.animatedCard.fallback.content')}
       </p>
     </AnimatedCard>
   );
 };
 
-const BadgeWrapper: React.FC<Record<string, unknown>> = (props) => {
+const BadgeWrapper: React.FC<Record<string, RendererDataValue>> = (props) => {
+  const { t } = useTranslation();
   const { variant, children } = props as {
     variant?: 'default' | 'secondary' | 'destructive' | 'outline'
     children?: React.ReactNode
   };
-  return <Badge variant={variant}>{children ?? 'Badge'}</Badge>;
+  return (
+    <Badge variant={variant}>
+      {typeof children === 'string' ? t(children) : children ?? t('showcase.badge.fallback.label')}
+    </Badge>
+  );
 };
 
 export const cardStory: ComponentStory = {
-  name: 'Card',
-  category: 'Layout',
-  component: CardWrapper as React.ComponentType<Record<string, unknown>>,
+  name: 'showcase.story.card',
+  category: 'showcase.categories.layout',
+  component: CardWrapper as React.ComponentType<Record<string, RendererDataValue>>,
   variants: [
-    { name: 'Basic', props: { title: 'Basic Card', content: 'Simple card with content.' } },
-    { name: 'With Badge', props: { title: 'Feature', withBadge: true, badgeText: 'Beta' } },
-    { name: 'Long Content', props: { title: 'Details', content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' } },
+    {
+      name: 'showcase.variants.basic',
+      props: { title: 'showcase.card.titles.basic', content: 'showcase.card.contents.simple' },
+    },
+    {
+      name: 'showcase.variants.withBadge',
+      props: { title: 'showcase.card.titles.feature', withBadge: true, badgeText: 'showcase.card.badges.beta' },
+    },
+    {
+      name: 'showcase.variants.longContent',
+      props: { title: 'showcase.card.titles.details', content: 'showcase.card.contents.long' },
+    },
   ],
 };
 
 export const animatedCardStory: ComponentStory = {
-  name: 'AnimatedCard',
-  category: 'Layout',
-  component: AnimatedCardWrapper as React.ComponentType<Record<string, unknown>>,
+  name: 'showcase.story.animatedCard',
+  category: 'showcase.categories.layout',
+  component: AnimatedCardWrapper as React.ComponentType<Record<string, RendererDataValue>>,
   variants: [
-    { name: 'Lift', props: { hoverEffect: 'lift', title: 'Lift Effect' } },
-    { name: 'Glow', props: { hoverEffect: 'glow', title: 'Glow Effect' } },
-    { name: 'Scale', props: { hoverEffect: 'scale', title: 'Scale Effect' } },
-    { name: '3D', props: { hoverEffect: '3d', title: '3D Perspective' } },
-    { name: 'None', props: { hoverEffect: 'none', title: 'No Effect' } },
+    { name: 'showcase.variants.lift', props: { hoverEffect: 'lift', title: 'showcase.animatedCard.titles.lift' } },
+    { name: 'showcase.variants.glow', props: { hoverEffect: 'glow', title: 'showcase.animatedCard.titles.glow' } },
+    { name: 'showcase.variants.scale', props: { hoverEffect: 'scale', title: 'showcase.animatedCard.titles.scale' } },
+    { name: 'showcase.variants.perspective3d', props: { hoverEffect: '3d', title: 'showcase.animatedCard.titles.perspective3d' } },
+    { name: 'showcase.variants.none', props: { hoverEffect: 'none', title: 'showcase.animatedCard.titles.none' } },
   ],
 };
 
 export const badgeStory: ComponentStory = {
-  name: 'Badge',
-  category: 'UI',
-  component: BadgeWrapper as React.ComponentType<Record<string, unknown>>,
+  name: 'showcase.story.badge',
+  category: 'showcase.categories.ui',
+  component: BadgeWrapper as React.ComponentType<Record<string, RendererDataValue>>,
   variants: [
-    { name: 'Default', props: { children: 'Default' } },
-    { name: 'Secondary', props: { variant: 'secondary', children: 'Secondary' } },
-    { name: 'Destructive', props: { variant: 'destructive', children: 'Error' } },
-    { name: 'Outline', props: { variant: 'outline', children: 'Outline' } },
+    { name: 'showcase.variants.default', props: { children: 'showcase.badge.text.default' } },
+    { name: 'showcase.variants.secondary', props: { variant: 'secondary', children: 'showcase.badge.text.secondary' } },
+    { name: 'showcase.variants.destructive', props: { variant: 'destructive', children: 'showcase.badge.text.error' } },
+    { name: 'showcase.variants.outline', props: { variant: 'outline', children: 'showcase.badge.text.outline' } },
   ],
 };

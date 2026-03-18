@@ -24,22 +24,22 @@ export function createLiveCollaborationBridge(ipc: IpcRenderer): LiveCollaborati
         leaveRoom: roomId => ipc.invoke('collaboration:sync:leave', roomId),
 
         onJoined: callback => {
-            const listener = (_: unknown, payload: { roomId: string }) => callback(payload);
+            const listener = (_: RuntimeValue, payload: { roomId: string }) => callback(payload);
             ipc.on('collaboration:sync:joined', listener);
             return () => ipc.removeListener('collaboration:sync:joined', listener);
         },
         onLeft: callback => {
-            const listener = (_: unknown, payload: { roomId: string }) => callback(payload);
+            const listener = (_: RuntimeValue, payload: { roomId: string }) => callback(payload);
             ipc.on('collaboration:sync:left', listener);
             return () => ipc.removeListener('collaboration:sync:left', listener);
         },
         onSyncUpdate: callback => {
-            const listener = (_: unknown, payload: { roomId: string, data: string }) => callback(payload);
+            const listener = (_: RuntimeValue, payload: { roomId: string, data: string }) => callback(payload);
             ipc.on('collaboration:sync:update', listener);
             return () => ipc.removeListener('collaboration:sync:update', listener);
         },
         onError: callback => {
-            const listener = (_: unknown, payload: { roomId: string, error: string }) => callback(payload);
+            const listener = (_: RuntimeValue, payload: { roomId: string, error: string }) => callback(payload);
             ipc.on('collaboration:sync:error', listener);
             return () => ipc.removeListener('collaboration:sync:error', listener);
         }

@@ -6,7 +6,6 @@ export interface WorkspaceActionsProps {
     notify: (type: 'success' | 'error' | 'info', message: string) => void;
     t: (key: string) => string;
     onUpdateWorkspace?: (updates: Partial<Workspace>) => Promise<void>;
-    agentChatMessage?: string;
 }
 
 export function useWorkspaceActions({
@@ -14,7 +13,6 @@ export function useWorkspaceActions({
     notify,
     t,
     onUpdateWorkspace,
-    agentChatMessage: _agentChatMessage,
 }: WorkspaceActionsProps) {
     const handleUpdateWorkspace = async (updates: Partial<Workspace>) => {
         try {

@@ -43,13 +43,35 @@ export function registerPerformanceIpc(performanceService: IPerformanceService):
     );
 
     ipcMain.handle(
+        'performance:get-process-metrics',
+        createSafeIpcHandler(
+            'performance:get-process-metrics',
+            async () => {
+                return await performanceService.getProcessMetrics();
+            },
+            { success: false, data: [] }
+        )
+    );
+
+    ipcMain.handle(
+        'performance:get-startup-metrics',
+        createSafeIpcHandler(
+            'performance:get-startup-metrics',
+            async () => {
+                return performanceService.getStartupMetrics();
+            },
+            { success: false, data: { startTime: 0 } }
+        )
+    );
+
+    ipcMain.handle(
         'performance:get-dashboard',
         createSafeIpcHandler(
             'performance:get-dashboard',
             async () => {
                 return performanceService.getDashboard();
             },
-            { success: false, data: { memory: { latestRss: 0, latestHeapUsed: 0, sampleCount: 0 }, alerts: [] } }
+            { success: false, data: { memory: { latestRss: 0, latestHeapUsed: 0, sampleCount: 0 }, processes: [], startup: { startTime: 0 }, alerts: [] } }
         )
     );
 }

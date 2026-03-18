@@ -26,7 +26,7 @@ describe('ideas/utils/categories', () => {
                 const meta = CATEGORY_METADATA[cat];
                 expect(meta).toBeDefined();
                 expect(meta.id).toBe(cat);
-                expect(meta.label).toBeTruthy();
+                expect(meta.labelKey).toBeTruthy();
                 expect(meta.icon).toBeDefined();
                 expect(meta.color).toBeTruthy();
                 expect(meta.bgColor).toBeTruthy();
@@ -38,13 +38,13 @@ describe('ideas/utils/categories', () => {
         it('should return correct metadata for website', () => {
             const meta = getCategoryMeta('website');
             expect(meta.id).toBe('website');
-            expect(meta.label).toBe('Website');
+            expect(meta.labelKey).toBe('ideas.categories.website');
         });
 
         it('should return correct metadata for game', () => {
             const meta = getCategoryMeta('game');
             expect(meta.id).toBe('game');
-            expect(meta.label).toBe('Game');
+            expect(meta.labelKey).toBe('ideas.categories.game');
         });
     });
 

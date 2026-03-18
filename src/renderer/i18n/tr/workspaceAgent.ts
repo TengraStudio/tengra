@@ -30,6 +30,15 @@ const sectionData = {
     "stopLabel": "Durdur",
     "planAction": "Planla",
     "executeAction": "Yürüt",
+    "councilMode": "Council",
+    "reviewQueue": "Review Queue",
+    "assistQueue": "Assist Queue",
+    "filesCount": "{{count}} files",
+    "activity": "Activity",
+    "chairmanFallback": "Chairman",
+    "sessionFallback": "session",
+    "boardView": "Board",
+    "mapView": "Map",
     "thinkingOn": "Düşünme açık",
     "thinkingOff": "Düşünme kapalı",
     "selectAction": "Eylem seç",
@@ -75,7 +84,28 @@ const sectionData = {
             "error": "Hata"
         }
     },
-    "unnamedGroup": "Adsız Grup"
+    "unnamedGroup": "Adsız Grup",
+    "permissions": {
+        "title": "Ajan Yetki Ayarları",
+        "subtitle": "Erişim düzeylerini yönetin",
+        "profile": "Ajan Profili",
+        "commands": "Komut Yetkisi",
+        "files": "Dosya Erişimi",
+        "policy": {
+            "blocked": "Engellenmiş",
+            "ask-every-time": "Her Seferinde Sor",
+            "allowlist": "Sadece İzin Verilenler",
+            "full-access": "Tam Erişim",
+            "workspace-root-only": "Sadece Kök Dizin",
+            "restricted-off-dangerous": "Kısıtlı (Güvenli Mod)"
+        },
+        "allowedCommands": "İzin Verilen Komutlar",
+        "allowedPaths": "İzin Verilen Dizinler",
+        "addCommand": "Komut Ekle",
+        "addPath": "Dizin Ekle",
+        "noCommands": "Tanımlı komut yok",
+        "noPaths": "Tanımlı dizin yok"
+    }
 };
 
 export default sectionData;

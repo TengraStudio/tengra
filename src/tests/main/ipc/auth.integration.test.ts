@@ -15,11 +15,11 @@ vi.mock('electron', () => ({
 }));
 
 describe('Auth IPC Handlers', () => {
-    let registeredHandlers: Map<string, unknown>;
+    let registeredHandlers: Map<string, TestValue>;
 
     beforeEach(() => {
         registeredHandlers = new Map();
-        vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: unknown) => {
+        vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: TestValue) => {
             registeredHandlers.set(channel, handler);
         });
     });
@@ -35,7 +35,7 @@ describe('Auth IPC Handlers', () => {
             };
             registeredHandlers.set('auth:github-login', handler);
 
-            const result = await (registeredHandlers.get('auth:github-login') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('auth:github-login') as () => Promise<TestValue>)();
 
             expect(result).toHaveProperty('device_code');
         });
@@ -48,7 +48,7 @@ describe('Auth IPC Handlers', () => {
             };
             registeredHandlers.set('auth:poll-token', handler);
 
-            const result = await (registeredHandlers.get('auth:poll-token') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('auth:poll-token') as () => Promise<TestValue>)();
 
             expect(result).toEqual({ success: true, token: 'token123' });
         });
@@ -59,7 +59,7 @@ describe('Auth IPC Handlers', () => {
             };
             registeredHandlers.set('auth:poll-token', handler);
 
-            const result = await (registeredHandlers.get('auth:poll-token') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('auth:poll-token') as () => Promise<TestValue>)();
 
             expect(result).toEqual({ success: false, error: 'Auth failed' });
         });
@@ -72,7 +72,7 @@ describe('Auth IPC Handlers', () => {
             };
             registeredHandlers.set('auth:set-active-linked-account', handler);
 
-            const result = await (registeredHandlers.get('auth:set-active-linked-account') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('auth:set-active-linked-account') as () => Promise<TestValue>)();
 
             expect(result).toEqual({ success: true });
         });
@@ -85,7 +85,7 @@ describe('Auth IPC Handlers', () => {
             };
             registeredHandlers.set('auth:link-account', handler);
 
-            const result = await (registeredHandlers.get('auth:link-account') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('auth:link-account') as () => Promise<TestValue>)();
 
             expect(result).toHaveProperty('success', true);
         });
@@ -98,7 +98,7 @@ describe('Auth IPC Handlers', () => {
             };
             registeredHandlers.set('auth:unlink-account', handler);
 
-            const result = await (registeredHandlers.get('auth:unlink-account') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('auth:unlink-account') as () => Promise<TestValue>)();
 
             expect(result).toEqual({ success: true });
         });
@@ -111,7 +111,7 @@ describe('Auth IPC Handlers', () => {
             };
             registeredHandlers.set('auth:get-linked-accounts', handler);
 
-            const result = await (registeredHandlers.get('auth:get-linked-accounts') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('auth:get-linked-accounts') as () => Promise<TestValue>)();
 
             expect(Array.isArray(result)).toBe(true);
         });
@@ -124,7 +124,7 @@ describe('Auth IPC Handlers', () => {
             };
             registeredHandlers.set('auth:has-linked-account', handler);
 
-            const result = await (registeredHandlers.get('auth:has-linked-account') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('auth:has-linked-account') as () => Promise<TestValue>)();
 
             expect(result).toBe(true);
         });

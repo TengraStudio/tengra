@@ -55,7 +55,7 @@ export function createAdvancedMemoryBridge(ipc: IpcRenderer): AdvancedMemoryBrid
         getPendingCount: () => ipc.invoke('memory:advanced:pending-count'),
         processPending: () => ipc.invoke('memory:advanced:process-pending'),
         onSyncStatus: callback => {
-            const listener = (_event: IpcRendererEvent, status: Record<string, unknown>) =>
+            const listener = (_event: IpcRendererEvent, status: Record<string, RuntimeValue>) =>
                 callback(status as Parameters<Parameters<AdvancedMemoryBridge['onSyncStatus']>[0]>[0]);
             ipc.on('memory:advanced:sync-status', listener);
             return () => ipc.removeListener('memory:advanced:sync-status', listener);

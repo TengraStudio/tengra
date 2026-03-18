@@ -97,7 +97,7 @@ class RendererLogger {
         return true;
     }
 
-    private getConsoleMethod(level: LogLevel): (...args: unknown[]) => void {
+    private getConsoleMethod(level: LogLevel): (...args: RendererDataValue[]) => void {
         switch (level) {
             case LogLevel.TRACE:
                 return console.warn.bind(console);

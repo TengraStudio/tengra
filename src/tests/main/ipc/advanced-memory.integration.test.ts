@@ -1,11 +1,11 @@
 import { registerAdvancedMemoryIpc } from '@main/ipc/advanced-memory';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const handlers = new Map<string, (...args: unknown[]) => Promise<unknown>>();
+const handlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
 
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: unknown[]) => Promise<unknown>) => {
+        handle: vi.fn((channel: string, handler: (...args: TestValue[]) => Promise<TestValue>) => {
             handlers.set(channel, handler);
         })
     }

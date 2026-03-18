@@ -116,8 +116,10 @@ export const MemoryTimelineView: React.FC = () => {
                         <History className="w-5 h-5" />
                     </div>
                     <div>
-                        <h2 className="text-sm font-bold">{t('memory.timelineView') || 'Memory Timeline'}</h2>
-                        <p className="text-[10px] text-muted-foreground">{items.length} total events</p>
+                        <h2 className="text-sm font-bold">{t('memory.timelineView')}</h2>
+                        <p className="text-[10px] text-muted-foreground">
+                            {t('memory.timelineTotalEvents', { count: items.length })}
+                        </p>
                     </div>
                 </div>
 
@@ -136,7 +138,11 @@ export const MemoryTimelineView: React.FC = () => {
                                 className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${filter === f ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'
                                     }`}
                             >
-                                {f}
+                                {f === 'all'
+                                    ? t('memory.timelineFilterAll')
+                                    : f === 'episode'
+                                        ? t('memory.timelineFilterEpisode')
+                                        : t('memory.timelineFilterFragment')}
                             </button>
                         ))}
                     </div>
@@ -149,7 +155,7 @@ export const MemoryTimelineView: React.FC = () => {
                                 setSearchQuery('');
                             }}
                         >
-                            {t('common.clear') || 'Clear'}
+                            {t('common.clear')}
                         </Button>
                     )}
                 </div>
@@ -159,13 +165,13 @@ export const MemoryTimelineView: React.FC = () => {
                 {loading ? (
                     <div className="flex flex-col items-center justify-center h-full gap-4">
                         <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                        <span className="text-xs text-muted-foreground">Reconstructing history...</span>
+                        <span className="text-xs text-muted-foreground">{t('memory.timelineReconstructing')}</span>
                     </div>
                 ) : (
                     Object.keys(groupedItems).length === 0 ? (
                         <div className="flex h-full items-center justify-center">
                             <p className="rounded-lg border border-white/10 bg-background/70 px-4 py-2 text-sm text-muted-foreground">
-                                {t('memory.emptyState') || 'No memories match the selected filters.'}
+                                {t('memory.emptyState')}
                             </p>
                         </div>
                     ) : (

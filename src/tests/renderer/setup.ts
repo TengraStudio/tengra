@@ -1,3 +1,4 @@
+import type { IpcValue } from '@shared/types/common';
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, vi } from 'vitest';
 
@@ -19,13 +20,21 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock Electron IPC
+type ElectronInvoke = <T = IpcValue>(channel: string, ...args: IpcValue[]) => Promise<T>;
+type ElectronListener = (channel: string, listener: (...args: IpcValue[]) => void) => void;
+
+interface TranslationOptions {
+    defaultValue?: string;
+    [key: string]: string | number | boolean | undefined;
+}
+
 declare global {
     interface Window {
         electronAPI: {
-            invoke: any
-            on: any
-            off: any
-            once: any
+            invoke: ElectronInvoke
+            on: ElectronListener
+            off: ElectronListener
+            once: ElectronListener
         }
     }
 }
@@ -44,7 +53,7 @@ Object.defineProperty(window, 'electronAPI', {
 // Mock i18n
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
-        t: (key: string, options?: any) => {
+        t: (key: string, options?: TranslationOptions) => {
             if (options && typeof options === 'object' && 'defaultValue' in options) {
                 return options.defaultValue;
             }

@@ -8,7 +8,19 @@ const sectionData = {
     "noOutput": "No output",
     "executionTime": "Execution time: {{ms}}ms",
     "error": "Error",
-    "stderr": "Stderr"
+    "stderr": "Stderr",
+    "errors": {
+        "validationFailed": "Invalid code sandbox request.",
+        "executionFailed": "Code execution failed. Please check your code and try again.",
+        "securityBlocked": "Blocked by sandbox security policy.",
+        "timeout": "Execution timed out."
+    },
+    "languages": {
+        "javascript": "JavaScript",
+        "typescript": "TypeScript",
+        "python": "Python",
+        "shell": "Shell"
+    }
 };
 
 export default sectionData;

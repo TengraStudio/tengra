@@ -160,7 +160,7 @@ export class HttpService extends BaseService {
         for (let attempt = 0; attempt <= retryCount; attempt++) {
             try {
                 return await this.performAttempt(url, attempt, params);
-            } catch (error: unknown) {
+            } catch (error) {
                 if (this.isUserAbort(error)) {
                     throw error;
                 }
@@ -230,19 +230,21 @@ export class HttpService extends BaseService {
         return status >= 500;
     }
 
-    private isUserAbort(error: unknown): boolean {
-        const err = error as Error;
-        return err.name === 'AbortError' && !getErrorMessage(error).includes('timeout');
+    private isUserAbort<T>(error: T): boolean {
+        if (!(error instanceof Error)) {
+            return false;
+        }
+        return error.name === 'AbortError' && !getErrorMessage(error).includes('timeout');
     }
 
-    private logFailure(params: {
+    private logFailure<T>(params: {
         requestId: string,
         url: string,
         method: string,
         attempt: number,
         retryCount: number,
         startTime: number,
-        error: unknown
+        error: T
     }): void {
         const { requestId, url, method, attempt, retryCount, startTime, error } = params;
         const duration = Date.now() - startTime;

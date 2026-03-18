@@ -33,7 +33,7 @@ describe('Prompt Templates IPC Handlers', () => {
         // Capture IPC handlers
         vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: CallableFunction) => {
             ipcMainHandlers.set(channel, handler);
-            return { channels: [channel] } as unknown as Electron.IpcMain;
+            return { channels: [channel] } as never as Electron.IpcMain;
         });
 
         // Mock prompt templates service
@@ -47,7 +47,7 @@ describe('Prompt Templates IPC Handlers', () => {
             updateTemplate: vi.fn().mockResolvedValue({ id: 'updated', name: 'Updated Template' }),
             deleteTemplate: vi.fn().mockResolvedValue(true),
             renderTemplate: vi.fn().mockReturnValue('Rendered output')
-        } as unknown as PromptTemplatesService;
+        } as never as PromptTemplatesService;
 
         mockEvent = {} as IpcMainInvokeEvent;
 

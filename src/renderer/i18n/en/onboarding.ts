@@ -1,7 +1,19 @@
 const sectionData = {
     "language": {
         "title": "Choose your language",
-        "description": "Select your preferred language to get started with Tengra."
+        "description": "Select your preferred language to get started with Tengra.",
+        "labels": {
+            "en": "English",
+            "tr": "Türkçe",
+            "de": "Deutsch",
+            "fr": "Français",
+            "es": "Español",
+            "ja": "日本語",
+            "zh": "简体中文",
+            "ar": "العربية"
+        },
+        "LANGUAGE_PROMPT_INVALID_LANGUAGE": "Selected language is not supported.",
+        "LANGUAGE_PROMPT_SAVE_FAILED": "Language could not be saved. Please try again."
     },
     "welcomeTitle": "Welcome to Tengra",
     "welcomeDescription": "Your AI-powered coding companion. Tengra helps you write, debug, and understand code with multiple AI providers at your fingertips.",

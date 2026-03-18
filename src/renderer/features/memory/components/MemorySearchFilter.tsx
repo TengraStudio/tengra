@@ -131,7 +131,7 @@ export const MemorySearchFilter: React.FC<MemorySearchFilterProps> = ({
 
             {searchHistory.length > 0 && (
                 <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">{t('memory.searchHistory') || 'Recent'}:</span>
+                    <span className="text-xs text-muted-foreground">{t('common.search')}:</span>
                     <div className="flex flex-wrap gap-1">
                         {searchHistory.map(query => (
                             <button
@@ -145,7 +145,7 @@ export const MemorySearchFilter: React.FC<MemorySearchFilterProps> = ({
                         ))}
                     </div>
                     <Button type="button" variant="ghost" size="sm" onClick={clearSearchHistory}>
-                        {t('common.clear') || 'Clear'}
+                        {t('common.clear')}
                     </Button>
                 </div>
             )}

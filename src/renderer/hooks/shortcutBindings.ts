@@ -36,10 +36,10 @@ const SHORTCUT_ACTION_IDS = Object.keys(DEFAULT_SHORTCUT_BINDINGS) as ShortcutAc
 
 const normalizeKey = (key: string): string => key.toLowerCase();
 
-const isObject = (value: unknown): value is Record<string, unknown> =>
+const isObject = (value: RendererDataValue): value is Record<string, RendererDataValue> =>
     typeof value === 'object' && value !== null;
 
-const sanitizeBinding = (value: unknown, fallback: ShortcutBinding): ShortcutBinding => {
+const sanitizeBinding = (value: RendererDataValue, fallback: ShortcutBinding): ShortcutBinding => {
     if (!isObject(value) || typeof value.key !== 'string' || value.key.length === 0) {
         return fallback;
     }
@@ -52,7 +52,7 @@ const sanitizeBinding = (value: unknown, fallback: ShortcutBinding): ShortcutBin
     };
 };
 
-export const mergeShortcutBindings = (value: unknown): ShortcutBindings => {
+export const mergeShortcutBindings = (value: RendererDataValue): ShortcutBindings => {
     const record = isObject(value) ? value : {};
     const merged: Partial<ShortcutBindings> = {};
 

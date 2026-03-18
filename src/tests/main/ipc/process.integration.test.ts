@@ -10,11 +10,11 @@ vi.mock('electron', () => ({
 }));
 
 describe('Process IPC Handlers', () => {
-    let registeredHandlers: Map<string, unknown>;
+    let registeredHandlers: Map<string, TestValue>;
 
     beforeEach(() => {
         registeredHandlers = new Map();
-        vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: unknown) => {
+        vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: TestValue) => {
             registeredHandlers.set(channel, handler);
         });
     });
@@ -25,7 +25,7 @@ describe('Process IPC Handlers', () => {
         it('should spawn a new process', async () => {
             const handler = async () => ({ id: 'proc-1', pid: 1234 });
             registeredHandlers.set('process:spawn', handler);
-            const result = await (registeredHandlers.get('process:spawn') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('process:spawn') as () => Promise<TestValue>)();
             expect(result).toHaveProperty('id');
         });
     });
@@ -34,7 +34,7 @@ describe('Process IPC Handlers', () => {
         it('should kill a process', async () => {
             const handler = async () => true;
             registeredHandlers.set('process:kill', handler);
-            const result = await (registeredHandlers.get('process:kill') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('process:kill') as () => Promise<TestValue>)();
             expect(result).toBe(true);
         });
     });
@@ -43,7 +43,7 @@ describe('Process IPC Handlers', () => {
         it('should list running processes', async () => {
             const handler = async () => [];
             registeredHandlers.set('process:list', handler);
-            const result = await (registeredHandlers.get('process:list') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('process:list') as () => Promise<TestValue>)();
             expect(Array.isArray(result)).toBe(true);
         });
     });
@@ -52,7 +52,7 @@ describe('Process IPC Handlers', () => {
         it('should scan scripts', async () => {
             const handler = async () => ({});
             registeredHandlers.set('process:scan-scripts', handler);
-            const result = await (registeredHandlers.get('process:scan-scripts') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('process:scan-scripts') as () => Promise<TestValue>)();
             expect(result).toBeDefined();
         });
     });
@@ -61,7 +61,7 @@ describe('Process IPC Handlers', () => {
         it('should resize terminal', async () => {
             const handler = async () => true;
             registeredHandlers.set('process:resize', handler);
-            const result = await (registeredHandlers.get('process:resize') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('process:resize') as () => Promise<TestValue>)();
             expect(result).toBe(true);
         });
     });
@@ -70,7 +70,7 @@ describe('Process IPC Handlers', () => {
         it('should write to process', async () => {
             const handler = async () => true;
             registeredHandlers.set('process:write', handler);
-            const result = await (registeredHandlers.get('process:write') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('process:write') as () => Promise<TestValue>)();
             expect(result).toBe(true);
         });
     });

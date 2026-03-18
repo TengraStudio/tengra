@@ -14,8 +14,17 @@ export interface ChatExportResult {
     success: boolean;
     content?: string;
     error?: string;
+    messageKey?: string;
+    messageParams?: Record<string, string | number>;
     format: ExportFormat;
 }
+
+const CHAT_EXPORT_MESSAGE_KEY = {
+    CHAT_NOT_FOUND: 'mainProcess.chatExportService.chatNotFound'
+} as const;
+const CHAT_EXPORT_ERROR_MESSAGE = {
+    CHAT_NOT_FOUND: 'Chat not found'
+} as const;
 
 /**
  * Service for exporting chat conversations to markdown, HTML, JSON, or text.
@@ -50,7 +59,12 @@ export class ChatExportService extends BaseService {
         try {
             const chat = await this.loadChat(chatId);
             if (!chat) {
-                return { success: false, error: 'Chat not found', format };
+                return {
+                    success: false,
+                    error: CHAT_EXPORT_ERROR_MESSAGE.CHAT_NOT_FOUND,
+                    messageKey: CHAT_EXPORT_MESSAGE_KEY.CHAT_NOT_FOUND,
+                    format
+                };
             }
 
             const exportOptions: ExportOptions = {
@@ -80,12 +94,22 @@ export class ChatExportService extends BaseService {
     async exportChatToFile(
         chatId: string,
         format: ExportFormat
-    ): Promise<{ success: boolean; path?: string; error?: string }> {
+    ): Promise<{
+        success: boolean;
+        path?: string;
+        error?: string;
+        messageKey?: string;
+        messageParams?: Record<string, string | number>;
+    }> {
         this.logInfo(`Exporting chat ${chatId} to file as ${format}`);
         try {
             const chat = await this.loadChat(chatId);
             if (!chat) {
-                return { success: false, error: 'Chat not found' };
+                return {
+                    success: false,
+                    error: CHAT_EXPORT_ERROR_MESSAGE.CHAT_NOT_FOUND,
+                    messageKey: CHAT_EXPORT_MESSAGE_KEY.CHAT_NOT_FOUND
+                };
             }
             return await this.exportService.exportChat(chat, { format });
         } catch (error) {
@@ -99,6 +123,6 @@ export class ChatExportService extends BaseService {
         const chat = await this.databaseService.chats.getChat(chatId);
         if (!chat) {return null;}
         const messages = await this.databaseService.chats.getMessages(chatId);
-        return { ...chat, messages } as unknown as Chat;
+        return { ...chat, messages } as RuntimeValue as Chat;
     }
 }

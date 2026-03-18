@@ -2,6 +2,14 @@ import { useCallback, useState } from 'react';
 
 import { AppSettings } from '@/types';
 
+function normalizeSelectedModelId(provider: string, model: string): string {
+    const normalizedProvider = provider.trim().toLowerCase();
+    if (normalizedProvider === 'antigravity' && model.toLowerCase().endsWith('-antigravity')) {
+        return model.slice(0, -'-antigravity'.length);
+    }
+    return model;
+}
+
 export function useModelSelection(
     appSettings: AppSettings | null,
     setAppSettings: (settings: AppSettings) => void
@@ -13,24 +21,25 @@ export function useModelSelection(
 
     const handleSelectModel = useCallback((provider: string, model: string, isMultiSelect = false) => {
         if (!appSettings) { return; }
+        const normalizedModel = normalizeSelectedModelId(provider, model);
 
         if (isMultiSelect) {
             setSelectedModels(prev => {
-                const exists = prev.some(m => m.provider === provider && m.model === model);
+                const exists = prev.some(m => m.provider === provider && m.model === normalizedModel);
                 if (exists || prev.length >= 4) {
                     return prev;
                 }
-                return [...prev, { provider, model }];
+                return [...prev, { provider, model: normalizedModel }];
             });
         } else {
-            setSelectedModel(model);
+            setSelectedModel(normalizedModel);
             setSelectedProvider(provider);
-            setSelectedModels([{ provider, model }]);
+            setSelectedModels([{ provider, model: normalizedModel }]);
             setAppSettings({
                 ...appSettings,
                 general: {
                     ...appSettings.general,
-                    defaultModel: model,
+                    defaultModel: normalizedModel,
                     lastProvider: provider
                 }
             });

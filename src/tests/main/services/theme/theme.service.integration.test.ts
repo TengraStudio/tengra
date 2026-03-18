@@ -70,7 +70,7 @@ describe('ThemeService Integration Tests', () => {
             });
         });
         vi.mocked(fs.writeFile).mockResolvedValue(undefined);
-        vi.mocked(fs.readdir).mockResolvedValue(['black.theme.json', 'white.theme.json'] as any);
+        vi.mocked(fs.readdir).mockResolvedValue(['black.theme.json', 'white.theme.json'] as never);
         vi.mocked(fs.mkdir).mockResolvedValue(undefined);
         vi.mocked(fs.unlink).mockResolvedValue(undefined);
         vi.mocked(fs.rename).mockResolvedValue(undefined);
@@ -79,7 +79,7 @@ describe('ThemeService Integration Tests', () => {
         const dataService = new DataService();
         vi.mocked(dataService.getPath).mockReturnValue(tempDir);
 
-        themeService = new ThemeService(dataService as any);
+        themeService = new ThemeService(dataService as never);
         await themeService.initialize();
     });
 
@@ -242,7 +242,7 @@ describe('ThemeService Integration Tests', () => {
     describe('Error Recovery', () => {
         it('should recover from corrupt theme file during load', async () => {
             // Setup: simulate corrupt theme file
-            vi.mocked(fs.readdir).mockResolvedValueOnce(['black.theme.json', 'white.theme.json', 'corrupt.theme.json'] as any);
+            vi.mocked(fs.readdir).mockResolvedValueOnce(['black.theme.json', 'white.theme.json', 'corrupt.theme.json'] as never);
             vi.mocked(fs.readFile).mockImplementation(async (filePath) => {
                 const pathStr = String(filePath);
                 if (pathStr.includes('corrupt')) {return 'not valid json {{{';}
@@ -253,7 +253,7 @@ describe('ThemeService Integration Tests', () => {
             // Create new service and initialize
             const { DataService } = await import('@main/services/data/data.service');
             const dataService = new DataService();
-            const recoveryService = new ThemeService(dataService as any);
+            const recoveryService = new ThemeService(dataService as never);
 
             // Should not throw, just skip corrupt file
             await recoveryService.initialize();

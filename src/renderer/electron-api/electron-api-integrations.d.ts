@@ -1,6 +1,5 @@
 import type {
     ModelDefinition,
-    OrchestratorStateView,
 } from '@renderer/electron.d';
 import type {
     IpcContractVersionInfo,
@@ -16,7 +15,6 @@ import type {
 
 import type {
     AgentDefinition,
-    AgentStartOptions,
     Chat,
     Folder,
     IpcValue,
@@ -37,8 +35,6 @@ import type {
     SSHTransferTask,
     SSHTunnelPreset,
     Workspace,
-    WorkspaceState,
-    WorkspaceStep,
 } from '@/shared/types';
 import type {
     VoiceCommand,
@@ -174,6 +170,12 @@ export interface ElectronApiIntegrationsDomain {
         ) => Promise<{ success: boolean; imported: boolean; profileId?: string; error?: string }>;
         getShells: () => Promise<{ id: string; name: string; path: string }[]>;
         getBackends: () => Promise<Array<{ id: string; name: string; available: boolean }>>;
+        getDiscoverySnapshot: (options?: { refresh?: boolean }) => Promise<{
+            terminalAvailable: boolean;
+            shells: Array<{ id: string; name: string; path: string }>;
+            backends: Array<{ id: string; name: string; available: boolean }>;
+            refreshedAt: number;
+        }>;
         getRuntimeHealth: () => Promise<{
             terminalAvailable: boolean;
             totalBackends: number;
@@ -188,7 +190,7 @@ export interface ElectronApiIntegrationsDomain {
             rows?: number;
             backendId?: string;
             title?: string;
-            metadata?: Record<string, unknown>;
+            metadata?: Record<string, RendererDataValue>;
         }) => Promise<string>;
         getDockerContainers: () => Promise<Array<{ id: string; name: string; status: string }>>;
         detach: (options: {
@@ -276,7 +278,7 @@ export interface ElectronApiIntegrationsDomain {
             timestamp: number;
             backendId: string;
             workspaceId?: string;
-            metadata?: Record<string, unknown>;
+            metadata?: Record<string, RendererDataValue>;
         }>>;
         getSessionTemplates: () => Promise<Array<{
             id: string;
@@ -287,7 +289,7 @@ export interface ElectronApiIntegrationsDomain {
             rows: number;
             backendId: string;
             workspaceId?: string;
-            metadata?: Record<string, unknown>;
+            metadata?: Record<string, RendererDataValue>;
             createdAt: number;
             updatedAt: number;
         }>>;
@@ -304,7 +306,7 @@ export interface ElectronApiIntegrationsDomain {
             rows: number;
             backendId: string;
             workspaceId?: string;
-            metadata?: Record<string, unknown>;
+            metadata?: Record<string, RendererDataValue>;
             createdAt: number;
             updatedAt: number;
         } | null>;
@@ -621,7 +623,6 @@ export interface ElectronApiIntegrationsDomain {
 
     proxyEmbed: {
         start: (options?: {
-            configPath?: string;
             port?: number;
             health?: boolean;
         }) => Promise<IpcValue>;
@@ -757,19 +758,11 @@ export interface ElectronApiIntegrationsDomain {
         invoke: (channel: string, ...args: IpcValue[]) => Promise<IpcValue>;
         removeAllListeners: (channel: string) => void;
     };
-    orchestrator: {
-        start: (task: string, workspaceId?: string) => Promise<void>;
-        approve: (plan: WorkspaceStep[]) => Promise<void>;
-        getState: () => Promise<OrchestratorStateView>;
-        stop: () => Promise<void>;
-        onUpdate: (callback: (state: OrchestratorStateView) => void) => () => void;
-    };
-
     session: {
         conversation: import('@shared/types/session-conversation').SessionConversationApi;
-        automation: import('@shared/types/session-domain-apis').SessionAutomationApi;
         workspace: import('@shared/types/session-domain-apis').SessionWorkspaceApi;
         council: import('@shared/types/session-domain-apis').SessionCouncilApi;
+        workspaceAgent: import('@shared/types/session-domain-apis').SessionWorkspaceAgentApi;
         getState: (sessionId: string) => Promise<import('@shared/types/session-engine').SessionState | null>;
         list: () => Promise<import('@shared/types/session-engine').SessionRecoverySnapshot[]>;
         listCapabilities: () => Promise<import('@shared/types/session-engine').SessionCapabilityDescriptor[]>;
@@ -858,9 +851,9 @@ export interface ElectronApiIntegrationsDomain {
         }>;
         getState: (extensionId: string) => Promise<{
             success: boolean;
-            state?: { global: Record<string, unknown>; workspace: Record<string, unknown> };
+            state?: { global: Record<string, RendererDataValue>; workspace: Record<string, RendererDataValue> };
         }>;
-        validate: (manifest: unknown) => Promise<{ valid: boolean; errors: string[] }>;
+        validate: (manifest: RendererDataValue) => Promise<{ valid: boolean; errors: string[] }>;
     };
 
     codeSandbox: {

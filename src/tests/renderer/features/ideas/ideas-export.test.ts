@@ -35,22 +35,20 @@ describe('exportIdeas', () => {
         clickedLink = null;
 
         // Mock DOM APIs for download
+        const originalCreateElement = Document.prototype.createElement.bind(document);
         vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test-url');
         vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
         vi.spyOn(document.body, 'appendChild').mockImplementation((node) => node);
         vi.spyOn(document.body, 'removeChild').mockImplementation((node) => node);
         vi.spyOn(document, 'createElement').mockImplementation(((tag: string): HTMLElement => {
             if (tag === 'a') {
-                const anchor = {
-                    href: '',
-                    download: '',
-                    click: vi.fn(() => {
+                const anchor = originalCreateElement('a') as HTMLAnchorElement;
+                vi.spyOn(anchor, 'click').mockImplementation(() => {
                         clickedLink = { href: anchor.href, download: anchor.download };
-                    }),
-                } as unknown as HTMLAnchorElement;
+                });
                 return anchor;
             }
-            return document.createElement(tag);
+            return originalCreateElement(tag);
         }) as typeof document.createElement);
 
         window.electron = {

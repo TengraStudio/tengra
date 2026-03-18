@@ -13,17 +13,17 @@ import type { Language } from '@/i18n';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-type TranslationObject = Record<string, unknown>;
+type TranslationObject = Record<string, RendererDataValue>;
 
 const ALL_TRANSLATIONS: Record<Language, TranslationObject> = {
-    en: en as unknown as TranslationObject,
-    tr: tr as unknown as TranslationObject,
-    de: de as unknown as TranslationObject,
-    fr: fr as unknown as TranslationObject,
-    es: es as unknown as TranslationObject,
-    ja: ja as unknown as TranslationObject,
-    zh: zh as unknown as TranslationObject,
-    ar: ar as unknown as TranslationObject,
+    en: en as TypeAssertionValue as TranslationObject,
+    tr: tr as TypeAssertionValue as TranslationObject,
+    de: de as TypeAssertionValue as TranslationObject,
+    fr: fr as TypeAssertionValue as TranslationObject,
+    es: es as TypeAssertionValue as TranslationObject,
+    ja: ja as TypeAssertionValue as TranslationObject,
+    zh: zh as TypeAssertionValue as TranslationObject,
+    ar: ar as TypeAssertionValue as TranslationObject,
 };
 
 const LANGUAGE_LABELS: Record<Language, string> = {

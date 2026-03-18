@@ -1,7 +1,7 @@
 /**
  * Session History component for viewing all past idea generation sessions
  */
-import { IdeaSession, IdeaStatus, WorkspaceIdea } from '@shared/types/ideas';
+import { IdeaCategory, IdeaSession, IdeaStatus, WorkspaceIdea } from '@shared/types/ideas';
 import {
     Calendar,
     CheckCircle,
@@ -36,7 +36,7 @@ interface SessionWithIdeas {
     isLoading: boolean
 }
 
-const formatDate = (timestamp: number, t: (key: string, params?: Record<string, unknown>) => string): string => {
+const formatDate = (timestamp: number, t: (key: string, params?: Record<string, RendererDataValue>) => string): string => {
     const date = new Date(timestamp);
     const now = new Date();
     const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
@@ -74,7 +74,7 @@ interface BulkDeleteControlsProps {
     selectedCount: number
     onClearSelection: () => void
     onDelete: () => void
-    t: (key: string, params?: Record<string, unknown>) => string
+    t: (key: string, params?: Record<string, RendererDataValue>) => string
 }
 
 const BulkDeleteControls: React.FC<BulkDeleteControlsProps> = ({
@@ -120,9 +120,9 @@ interface SearchAndFilterProps {
     onSearchChange: (value: string) => void
     statusFilter: 'all' | 'pending' | 'approved' | 'rejected'
     onStatusChange: (value: 'all' | 'pending' | 'approved' | 'rejected') => void
-    categoryFilter: string
-    onCategoryChange: (value: string) => void
-    availableCategories: string[]
+    categoryFilter: 'all' | IdeaCategory
+    onCategoryChange: (value: 'all' | IdeaCategory) => void
+    availableCategories: IdeaCategory[]
     onClearFilters: () => void
     t: (key: string) => string
 }
@@ -170,12 +170,12 @@ const SearchAndFilterControls: React.FC<SearchAndFilterProps> = ({
                 {/* Category Filter */}
                 <select
                     value={categoryFilter}
-                    onChange={(e) => { onCategoryChange(e.target.value); }}
+                    onChange={(e) => { onCategoryChange(e.target.value as 'all' | IdeaCategory); }}
                     className="px-3 py-2 bg-background/50 border border-border/50 rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                 >
                     <option value="all">{t('ideas.filter.allCategories')}</option>
                     {availableCategories.map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
+                        <option key={cat} value={cat}>{t(getCategoryMeta(cat).labelKey)}</option>
                     ))}
                 </select>
             </div>
@@ -196,7 +196,7 @@ const SearchAndFilterControls: React.FC<SearchAndFilterProps> = ({
                     )}
                     {categoryFilter !== 'all' && (
                         <span className="px-2 py-1 bg-primary/10 text-primary rounded">
-                            {t('ideas.history.filter.categoryLabel')}: {categoryFilter}
+                            {t('ideas.history.filter.categoryLabel')}: {t(getCategoryMeta(categoryFilter as IdeaCategory).labelKey)}
                         </span>
                     )}
                     <button
@@ -274,7 +274,7 @@ interface SessionsGroupDisplayProps {
     onSelectIdea: (idea: WorkspaceIdea) => void
     onSelectSession: (sessionId: string) => void
     onToggleIdeaSelect: (ideaId: string) => void
-    t: (key: string, params?: Record<string, unknown>) => string
+    t: (key: string, params?: Record<string, RendererDataValue>) => string
 }
 
 const SessionsGroupDisplay: React.FC<SessionsGroupDisplayProps> = ({
@@ -383,7 +383,7 @@ const IDEA_STATUS_BADGES: Record<IdeaStatus, IdeaStatusBadgeConfig> = {
 const groupSessionsByDate = (
     sessions: IdeaSession[],
     sessionsWithIdeas: Map<string, SessionWithIdeas>,
-    t: (key: string, params?: Record<string, unknown>) => string
+    t: (key: string, params?: Record<string, RendererDataValue>) => string
 ): Array<{ label: string; sessions: SessionWithIdeas[] }> => {
     const groups: { label: string; sessions: SessionWithIdeas[] }[] = [];
     const today: SessionWithIdeas[] = [];
@@ -586,7 +586,7 @@ interface SessionHeaderProps {
     isLoading: boolean
     onToggle: (sessionId: string) => void | Promise<void>
     onSelectSession: (sessionId: string) => void
-    t: (key: string, params?: Record<string, unknown>) => string
+    t: (key: string, params?: Record<string, RendererDataValue>) => string
 }
 
 const SessionHeader: React.FC<SessionHeaderProps> = ({
@@ -616,7 +616,7 @@ const SessionHeader: React.FC<SessionHeaderProps> = ({
                     <span className="text-sm font-medium text-foreground">
                         {session.categories.map(c => {
                             const meta = getCategoryMeta(c);
-                            return meta.label;
+                            return t(meta.labelKey);
                         }).join(', ')}
                     </span>
                 </div>
@@ -709,7 +709,7 @@ interface SessionRowProps {
     onSelectSession: (sessionId: string) => void
     selectedIdeaIds: Set<string>
     onToggleIdeaSelect: (ideaId: string) => void
-    t: (key: string, params?: Record<string, unknown>) => string
+    t: (key: string, params?: Record<string, RendererDataValue>) => string
 }
 
 const SessionRow: React.FC<SessionRowProps> = ({
@@ -765,7 +765,7 @@ export const SessionHistory: React.FC<SessionHistoryProps> = ({
     // Search and filter state
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
-    const [categoryFilter, setCategoryFilter] = useState<string>('all');
+    const [categoryFilter, setCategoryFilter] = useState<'all' | IdeaCategory>('all');
 
     const initialMap = useMemo(() => createInitialSessionMap(sessions), [sessions]);
     const [sessionsWithIdeas, setSessionsWithIdeas] = useState<Map<string, SessionWithIdeas>>(initialMap);
@@ -859,7 +859,7 @@ export const SessionHistory: React.FC<SessionHistoryProps> = ({
     );
 
     const availableCategories = React.useMemo(() => {
-        const categories = new Set<string>();
+        const categories = new Set<IdeaCategory>();
         for (const data of sessionsWithIdeas.values()) {
             for (const idea of data.ideas) {
                 categories.add(idea.category);

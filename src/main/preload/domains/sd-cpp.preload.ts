@@ -1,34 +1,34 @@
 import { IpcRenderer } from 'electron';
 
 export interface SdCppBridge {
-    getStatus: () => Promise<unknown>;
+    getStatus: () => Promise<RuntimeValue>;
     reinstall: () => Promise<void>;
-    getHistory: (limit?: number) => Promise<unknown[]>;
-    searchHistory: (query: string, limit?: number) => Promise<unknown[]>;
+    getHistory: (limit?: number) => Promise<RuntimeValue[]>;
+    searchHistory: (query: string, limit?: number) => Promise<RuntimeValue[]>;
     exportHistory: (format?: 'json' | 'csv') => Promise<string>;
-    regenerate: (historyId: string) => Promise<unknown>;
-    getAnalytics: () => Promise<unknown>;
-    getPresetAnalytics: () => Promise<unknown>;
-    getScheduleAnalytics: () => Promise<unknown>;
-    listPresets: () => Promise<unknown[]>;
-    savePreset: (preset: unknown) => Promise<unknown>;
+    regenerate: (historyId: string) => Promise<RuntimeValue>;
+    getAnalytics: () => Promise<RuntimeValue>;
+    getPresetAnalytics: () => Promise<RuntimeValue>;
+    getScheduleAnalytics: () => Promise<RuntimeValue>;
+    listPresets: () => Promise<RuntimeValue[]>;
+    savePreset: (preset: RuntimeValue) => Promise<RuntimeValue>;
     deletePreset: (id: string) => Promise<void>;
     exportPresetShare: (id: string) => Promise<string>;
-    importPresetShare: (code: string) => Promise<unknown>;
-    listWorkflowTemplates: () => Promise<unknown[]>;
-    saveWorkflowTemplate: (payload: unknown) => Promise<unknown>;
+    importPresetShare: (code: string) => Promise<RuntimeValue>;
+    listWorkflowTemplates: () => Promise<RuntimeValue[]>;
+    saveWorkflowTemplate: (payload: RuntimeValue) => Promise<RuntimeValue>;
     deleteWorkflowTemplate: (id: string) => Promise<void>;
     exportWorkflowTemplateShare: (id: string) => Promise<string>;
-    importWorkflowTemplateShare: (code: string) => Promise<unknown>;
-    schedule: (payload: unknown) => Promise<unknown>;
-    listSchedules: () => Promise<unknown[]>;
+    importWorkflowTemplateShare: (code: string) => Promise<RuntimeValue>;
+    schedule: (payload: RuntimeValue) => Promise<RuntimeValue>;
+    listSchedules: () => Promise<RuntimeValue[]>;
     cancelSchedule: (id: string) => Promise<void>;
-    compare: (ids: string[]) => Promise<unknown>;
+    compare: (ids: string[]) => Promise<RuntimeValue>;
     exportComparison: (payload: { ids: string[]; format?: 'json' | 'csv' }) => Promise<string>;
     shareComparison: (ids: string[]) => Promise<string>;
-    batchGenerate: (requests: unknown[]) => Promise<unknown>;
-    getQueueStats: () => Promise<unknown>;
-    edit: (options: unknown) => Promise<unknown>;
+    batchGenerate: (requests: RuntimeValue[]) => Promise<RuntimeValue>;
+    getQueueStats: () => Promise<RuntimeValue>;
+    edit: (options: RuntimeValue) => Promise<RuntimeValue>;
 }
 
 export function createSdCppBridge(ipc: IpcRenderer): SdCppBridge {

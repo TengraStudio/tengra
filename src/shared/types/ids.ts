@@ -13,7 +13,7 @@ export function toChatId(value: string): ChatId {
     return value as ChatId;
 }
 
-export function isChatId(value: unknown): value is ChatId {
+export function isChatId(value: RuntimeValue): value is ChatId {
     return typeof value === 'string' && value.length > 0 && (isUuidLike(value) || value.startsWith('chat-'));
 }
 
@@ -21,7 +21,7 @@ export function toWorkspaceId(value: string): WorkspaceId {
     return value as WorkspaceId;
 }
 
-export function isWorkspaceId(value: unknown): value is WorkspaceId {
+export function isWorkspaceId(value: RuntimeValue): value is WorkspaceId {
     return typeof value === 'string' && value.length > 0 && (isUuidLike(value) || value.startsWith('proj-'));
 }
 
@@ -29,6 +29,6 @@ export function toTerminalSessionId(value: string): TerminalSessionId {
     return value as TerminalSessionId;
 }
 
-export function isTerminalSessionId(value: unknown): value is TerminalSessionId {
+export function isTerminalSessionId(value: RuntimeValue): value is TerminalSessionId {
     return typeof value === 'string' && value.length > 0 && value.startsWith('term-');
 }

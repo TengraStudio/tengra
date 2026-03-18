@@ -14,7 +14,7 @@ import {
 
 export interface CategoryMeta {
     id: IdeaCategory
-    label: string
+    labelKey: string
     icon: LucideIcon
     color: string
     bgColor: string
@@ -23,42 +23,42 @@ export interface CategoryMeta {
 export const CATEGORY_METADATA: Record<IdeaCategory, CategoryMeta> = {
     'website': {
         id: 'website',
-        label: 'Website',
+        labelKey: 'ideas.categories.website',
         icon: Globe,
         color: 'text-primary',
         bgColor: 'bg-primary/20'
     },
     'mobile-app': {
         id: 'mobile-app',
-        label: 'Mobile App',
+        labelKey: 'ideas.categories.mobileApp',
         icon: Smartphone,
         color: 'text-success',
         bgColor: 'bg-success/20'
     },
     'game': {
         id: 'game',
-        label: 'Game',
+        labelKey: 'ideas.categories.game',
         icon: Gamepad2,
         color: 'text-purple',
         bgColor: 'bg-purple/20'
     },
     'cli-tool': {
         id: 'cli-tool',
-        label: 'CLI Tool',
+        labelKey: 'ideas.categories.cliTool',
         icon: Code,
         color: 'text-orange',
         bgColor: 'bg-warning/20'
     },
     'desktop': {
         id: 'desktop',
-        label: 'Desktop App',
+        labelKey: 'ideas.categories.desktop',
         icon: Monitor,
         color: 'text-pink',
         bgColor: 'bg-pink/20'
     },
     'other': {
         id: 'other',
-        label: 'Other',
+        labelKey: 'ideas.categories.other',
         icon: Sparkles,
         color: 'text-warning',
         bgColor: 'bg-yellow/20'

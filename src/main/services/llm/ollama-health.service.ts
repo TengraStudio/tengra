@@ -37,12 +37,12 @@ export class OllamaHealthService extends BaseService {
         this.logInfo('Service initialized');
     }
 
-    on(event: string | symbol, listener: (...args: unknown[]) => void): this {
+    on(event: string | symbol, listener: (...args: RuntimeValue[]) => void): this {
         this.events.on(event, listener);
         return this;
     }
 
-    emit(event: string | symbol, ...args: unknown[]): boolean {
+    emit(event: string | symbol, ...args: RuntimeValue[]): boolean {
         return this.events.emit(event, ...args);
     }
 
@@ -125,7 +125,7 @@ export class OllamaHealthService extends BaseService {
             });
 
             if (response.ok) {
-                const data = await response.json() as { models?: unknown[] };
+                const data = await response.json() as { models?: RuntimeValue[] };
                 const modelsCount = data.models?.length ?? 0;
 
                 this.status = {

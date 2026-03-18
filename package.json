@@ -6,11 +6,14 @@
     "type": "commonjs",
     "scripts": {
         "dev": "set ELECTRON_RUN_AS_NODE= && set NODE_OPTIONS=--max-old-space-size=8192 && vite",
-        "build": "node scripts/build-optimized.js",
-        "build:legacy": "tsc && npm run lint && vite build && node scripts/build-native.js",
+        "build": "node scripts/build-all.js",
+        "build:legacy": "tsc && npm run lint && vite build && node scripts/compile-native.js",
         "build:check": "tsc --noEmit && vite build",
         "electron:build": "npm run build && electron-builder",
         "build:exe": "npm run build && electron-builder --win --x64",
+        "build:mac": "npm run build && electron-builder --mac",
+        "build:linux": "npm run build && electron-builder --linux",
+        "build:all": "npm run build && electron-builder --win --mac --linux",
         "preview": "vite preview",
         "test": "vitest run",
         "test:unit": "vitest run --project main",
@@ -18,28 +21,33 @@
         "test:watch": "vitest",
         "test:coverage": "vitest run --coverage && vitest run --coverage --config vitest.config.renderer.ts",
         "test:e2e": "playwright test",
-        "lint": "set NODE_OPTIONS=--max-old-space-size=8192 && eslint . --cache --cache-location node_modules/.cache/.eslintcache",
-        "lint:fix": "npm run lint -- --fix",
+        "perf:contract": "node scripts/audit-perf-contract.js",
+        "lint": "npm run lint:eslint && npm run lint:stylelint",
+        "lint:eslint": "eslint . --cache --cache-location node_modules/.cache/.eslintcache",
+        "lint:stylelint": "stylelint \"src/**/*.{css,scss}\"",
+        "lint:secretlint": "secretlint \"src/**\"",
+        "lint:fix": "npm run lint:eslint -- --fix && npm run lint:stylelint -- --fix",
         "type-check": "tsc --noEmit",
-        "verify": "node scripts/verify-optimized.js",
-        "format": "node scripts/format-changed.js --write",
+        "verify": "node scripts/build-verify.js",
+        "verify:full": "npm run verify && npm run perf:contract",
+        "format": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
         "format:all": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
-        "tool": "node scripts/tool.js",
-        "metrics": "node scripts/tool.js metrics",
-        "perf": "node scripts/tool.js perf",
-        "secrets": "node scripts/tool.js secrets",
-        "mcp": "node scripts/tool.js mcp",
-        "docs": "node scripts/tool.js docs",
+        "tool": "node scripts/cli.js",
+        "metrics": "node scripts/cli.js metrics",
+        "perf": "node scripts/cli.js perf",
+        "secrets": "node scripts/cli.js secrets",
+        "mcp": "node scripts/cli.js mcp",
+        "docs": "node scripts/cli.js docs",
         "db:migrate:plan": "node scripts/db/migration-cli.cjs migrate",
         "db:migrate:rollback": "node scripts/db/migration-cli.cjs rollback",
-        "install:native": "powershell -ExecutionPolicy Bypass -File scripts/install-native.ps1",
-        "preinstall": "node scripts/setup-build-env.js || node -e \"process.exit(0)\"",
-        "postinstall": "node scripts/setup-build-env.js || node -e \"process.exit(0)\"",
-        "setup-build-env": "node scripts/setup-build-env.js",
+
+        "preinstall": "node scripts/build-env-setup.js || node -e \"process.exit(0)\"",
+        "postinstall": "node scripts/build-env-setup.js && electron-builder install-app-deps || node -e \"process.exit(0)\"",
+        "setup-build-env": "node scripts/build-env-setup.js",
         "prepare": "node -e \"try { require('husky').install() } catch (e) { process.exit(0) }\"",
-        "gh:cleanup": "node scripts/cleanup-workflow-runs.js",
-        "gh:cleanup:all": "node scripts/cleanup-workflow-runs.js --status=all --older-than=7",
-        "gh:cleanup:dry": "node scripts/cleanup-workflow-runs.js --dry-run"
+        "gh:cleanup": "node scripts/gh-workflow-cleanup.js",
+        "gh:cleanup:all": "node scripts/gh-workflow-cleanup.js --status=all --older-than=7",
+        "gh:cleanup:dry": "node scripts/gh-workflow-cleanup.js --dry-run"
     },
     "keywords": [
         "ai",
@@ -63,7 +71,6 @@
         "@types/react": "^18.3.28",
         "@types/react-dom": "^18.2.0",
         "@types/react-file-icon": "^1.0.4",
-        "@types/react-transition-group": "^4.4.12",
         "@types/react-window": "^1.8.8",
         "@types/uuid": "^10.0.0",
         "@typescript-eslint/eslint-plugin": "^8.55.0",
@@ -97,17 +104,6 @@
         "vitest": "^4.0.18"
     },
     "dependencies": {
-        "@codemirror/autocomplete": "^6.18.0",
-        "@codemirror/commands": "^6.10.2",
-        "@codemirror/lang-css": "^6.3.1",
-        "@codemirror/lang-html": "^6.4.10",
-        "@codemirror/lang-javascript": "^6.2.3",
-        "@codemirror/lang-json": "^6.0.1",
-        "@codemirror/lang-markdown": "^6.3.2",
-        "@codemirror/lang-python": "^6.2.0",
-        "@codemirror/state": "^6.5.4",
-        "@codemirror/theme-one-dark": "^6.1.2",
-        "@codemirror/view": "^6.39.14",
         "@dnd-kit/core": "^6.3.1",
         "@dnd-kit/sortable": "^10.0.0",
         "@dnd-kit/utilities": "^3.2.2",
@@ -116,8 +112,7 @@
         "@radix-ui/react-popover": "^1.1.15",
         "@radix-ui/react-select": "^2.2.6",
         "@radix-ui/react-slot": "^1.2.4",
-        "@sentry/electron": "^7.7.1",
-        "@types/dompurify": "3.2.1",
+        "@types/dompurify": "^3.0.0",
         "@types/ssh2": "^1.15.5",
         "@types/ws": "8.18.1",
         "@xterm/addon-fit": "^0.11.0",
@@ -131,7 +126,6 @@
         "diff": "^8.0.3",
         "dompurify": "^3.3.1",
         "dotenv": "^17.3.1",
-        "electron-log": "^5.4.3",
         "electron-updater": "^6.7.3",
         "jose": "^6.1.3",
         "js-tiktoken": "1.0.21",
@@ -155,9 +149,8 @@
         "tailwind-merge": "^3.4.0",
         "tailwindcss-animate": "^1.0.7",
         "undici": "^6.19.2",
+        "uuid": "13.0.0",
         "ws": "8.19.0",
-        "xterm": "^5.3.0",
-        "xterm-addon-fit": "^0.8.0",
         "y-protocols": "^1.0.7",
         "yjs": "^13.6.29",
         "zod": "^4.3.6"
@@ -174,12 +167,12 @@
         ],
         "extraFiles": [
             {
-                "from": "scripts/register-services.ps1",
-                "to": "scripts/register-services.ps1"
+                "from": "scripts/win-services-register.ps1",
+                "to": "scripts/win-services-register.ps1"
             },
             {
-                "from": "scripts/install-db-service.ps1",
-                "to": "scripts/install-db-service.ps1"
+                "from": "scripts/win-db-install.ps1",
+                "to": "scripts/win-db-install.ps1"
             }
         ],
         "win": {
@@ -189,8 +182,7 @@
                 "portable",
                 "zip"
             ],
-            "icon": "resources/icon.ico",
-            "publisherName": "Tengra Team"
+            "icon": "resources/icon.ico"
         },
         "nsis": {
             "artifactName": "${productName} Setup.${ext}",
@@ -208,12 +200,42 @@
         "portable": {
             "artifactName": "${productName} Portable.${ext}"
         },
+        "mac": {
+            "artifactName": "${productName}.${ext}",
+            "target": [
+                "dmg",
+                "zip"
+            ],
+            "category": "public.app-category.developer-tools",
+            "icon": "resources/icon.icns",
+            "hardenedRuntime": true,
+            "gatekeeperAssess": false
+        },
+        "dmg": {
+            "artifactName": "${productName} Setup.${ext}",
+            "contents": [
+                {
+                    "x": 410,
+                    "y": 150,
+                    "type": "link",
+                    "path": "/Applications"
+                },
+                {
+                    "x": 130,
+                    "y": 150,
+                    "type": "file"
+                }
+            ]
+        },
         "linux": {
             "target": [
-                "AppImage"
+                "AppImage",
+                "deb",
+                "rpm",
+                "zip"
             ],
             "category": "Development",
-            "icon": "src/renderer/assets/logo.png"
+            "icon": "resources/icon.png"
         },
         "publish": {
             "provider": "github",

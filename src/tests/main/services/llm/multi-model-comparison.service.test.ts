@@ -36,8 +36,8 @@ describe('MultiModelComparisonService', () => {
         });
 
         service = new MultiModelComparisonService(
-            mockLlmService as unknown as LLMService,
-            mockOrchestrator as unknown as MultiLLMOrchestrator
+            mockLlmService as never as LLMService,
+            mockOrchestrator as never as MultiLLMOrchestrator
         );
     });
 

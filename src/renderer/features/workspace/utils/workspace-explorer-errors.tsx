@@ -5,6 +5,9 @@
 
 import React from 'react';
 
+import { useTranslation } from '@/i18n';
+import { appLogger } from '@/utils/renderer-logger';
+
 import {
     WorkspaceExplorerError,
     WorkspaceExplorerErrorCode,
@@ -176,14 +179,14 @@ export const WorkspaceFallbackStrategies = {
  * Error messages for user display
  */
 export const WorkspaceErrorMessages: Record<string, string> = {
-    [WorkspaceExplorerErrorCodes.INVALID_MOUNT_ID]: 'Invalid mount selected. Please refresh and try again.',
-    [WorkspaceExplorerErrorCodes.INVALID_ENTRY_PATH]: 'Invalid file path. Please check the path and try again.',
-    [WorkspaceExplorerErrorCodes.MOUNT_NOT_FOUND]: 'Mount not found. It may have been removed.',
-    [WorkspaceExplorerErrorCodes.ENTRY_NOT_FOUND]: 'File or folder not found. It may have been deleted.',
-    [WorkspaceExplorerErrorCodes.INVALID_PATH]: 'Invalid path. Path contains disallowed characters.',
-    [WorkspaceExplorerErrorCodes.PERMISSION_DENIED]: 'Permission denied. You do not have access to this resource.',
-    [WorkspaceExplorerErrorCodes.VALIDATION_ERROR]: 'Validation error. Please check your input.',
-    [WorkspaceExplorerErrorCodes.UNSUPPORTED_OPERATION]: 'This operation is not supported.',
+    [WorkspaceExplorerErrorCodes.INVALID_MOUNT_ID]: 'workspace.errors.explorer.invalidMountSelected',
+    [WorkspaceExplorerErrorCodes.INVALID_ENTRY_PATH]: 'workspace.errors.explorer.invalidFilePath',
+    [WorkspaceExplorerErrorCodes.MOUNT_NOT_FOUND]: 'workspace.errors.explorer.mountNotFound',
+    [WorkspaceExplorerErrorCodes.ENTRY_NOT_FOUND]: 'workspace.errors.explorer.entryNotFound',
+    [WorkspaceExplorerErrorCodes.INVALID_PATH]: 'workspace.errors.explorer.invalidPath',
+    [WorkspaceExplorerErrorCodes.PERMISSION_DENIED]: 'workspace.errors.explorer.permissionDenied',
+    [WorkspaceExplorerErrorCodes.VALIDATION_ERROR]: 'workspace.errors.explorer.validationError',
+    [WorkspaceExplorerErrorCodes.UNSUPPORTED_OPERATION]: 'workspace.errors.explorer.unsupportedOperation',
 };
 
 /**
@@ -191,8 +194,12 @@ export const WorkspaceErrorMessages: Record<string, string> = {
  * @param code - The error code
  * @returns User-friendly error message
  */
-export function getUserErrorMessage(code: string): string {
-    return WorkspaceErrorMessages[code] ?? 'An unexpected error occurred.';
+export function getUserErrorMessage(code: string, resolveMessage: (key: string) => string): string {
+    const messageKey = WorkspaceErrorMessages[code];
+    if (!messageKey) {
+        return resolveMessage('workspace.errors.explorer.unexpected');
+    }
+    return resolveMessage(messageKey);
 }
 
 /**
@@ -200,7 +207,7 @@ export function getUserErrorMessage(code: string): string {
  * @param error - The error to log
  * @param context - Additional context
  */
-export function logWorkspaceError(error: Error, context?: Record<string, unknown>): void {
+export function logWorkspaceError(error: Error, context?: Record<string, RendererDataValue>): void {
     const errorInfo = {
         message: error.message,
         name: error.name,
@@ -208,8 +215,7 @@ export function logWorkspaceError(error: Error, context?: Record<string, unknown
         ...context,
     };
 
-     
-    console.error('[WorkspaceExplorer]', JSON.stringify(errorInfo, null, 2));
+    appLogger.error('WorkspaceExplorer', JSON.stringify(errorInfo));
 }
 
 /**
@@ -218,7 +224,7 @@ export function logWorkspaceError(error: Error, context?: Record<string, unknown
 export interface WorkspaceErrorResponse {
     code: string;
     message: string;
-    details?: Record<string, unknown>;
+    details?: Record<string, RendererDataValue>;
     recoverable: boolean;
 }
 
@@ -251,10 +257,11 @@ export function WorkspaceErrorFallback({
     error,
     resetErrorBoundary,
 }: WorkspaceErrorBoundaryFallbackProps): React.ReactElement {
+    const { t } = useTranslation();
     const message =
         error instanceof WorkspaceExplorerError
-            ? getUserErrorMessage(error.code)
-            : 'An unexpected error occurred.';
+            ? getUserErrorMessage(error.code, t)
+            : t('workspace.errors.explorer.unexpected');
 
     return (
         <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
@@ -263,7 +270,7 @@ export function WorkspaceErrorFallback({
                 onClick={resetErrorBoundary}
                 className="mt-2 px-3 py-1 text-xs bg-destructive text-destructive-foreground rounded hover:bg-destructive/90"
             >
-                Try Again
+                {t('common.retry')}
             </button>
         </div>
     );
@@ -283,7 +290,7 @@ export const FileDebounceConfig = {
  * @param delay - Delay in milliseconds
  * @returns Debounced function
  */
-export function debounce<T extends (...args: unknown[]) => unknown>(
+export function debounce<T extends (...args: RendererDataValue[]) => RendererDataValue>(
     fn: T,
     delay: number = FileDebounceConfig.delayMs
 ): (...args: Parameters<T>) => void {
@@ -313,7 +320,7 @@ export const FileThrottleConfig = {
  * @param interval - Minimum interval between calls
  * @returns Throttled function
  */
-export function throttle<T extends (...args: unknown[]) => unknown>(
+export function throttle<T extends (...args: RendererDataValue[]) => RendererDataValue>(
     fn: T,
     interval: number = FileThrottleConfig.intervalMs
 ): (...args: Parameters<T>) => void {
@@ -351,21 +358,25 @@ export type FileOperationType =
 export function createFileOperationError(
     operation: FileOperationType,
     path: string,
-    cause?: Error
+    cause?: Error,
+    resolveMessage?: (key: string) => string
 ): WorkspaceExplorerError {
-    const messages: Record<FileOperationType, string> = {
-        read: 'Failed to read file',
-        write: 'Failed to write file',
-        delete: 'Failed to delete file',
-        rename: 'Failed to rename file',
-        create: 'Failed to create file',
-        move: 'Failed to move file',
-        copy: 'Failed to copy file',
-        list: 'Failed to list directory',
+    const messageKeys: Record<FileOperationType, string> = {
+        read: 'workspace.errors.fileOps.read',
+        write: 'workspace.errors.fileOps.write',
+        delete: 'workspace.errors.fileOps.delete',
+        rename: 'workspace.errors.fileOps.rename',
+        create: 'workspace.errors.fileOps.create',
+        move: 'workspace.errors.fileOps.move',
+        copy: 'workspace.errors.fileOps.copy',
+        list: 'workspace.errors.fileOps.list',
     };
+    const baseMessage = resolveMessage
+        ? resolveMessage(messageKeys[operation])
+        : messageKeys[operation];
 
     return new WorkspaceExplorerError(
-        `${messages[operation]}: ${path}`,
+        `${baseMessage}: ${path}`,
         WorkspaceExplorerErrorCodes.VALIDATION_ERROR,
         { operation, path, cause: cause?.message }
     );

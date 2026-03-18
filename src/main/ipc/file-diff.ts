@@ -26,7 +26,7 @@ const DEFAULT_CLEANUP_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 /**
  * Validates and sanitizes a string ID
  */
-function validateStringId(value: unknown, maxLength: number = MAX_ID_LENGTH): string | null {
+function validateStringId(value: RuntimeValue, maxLength: number = MAX_ID_LENGTH): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -40,7 +40,7 @@ function validateStringId(value: unknown, maxLength: number = MAX_ID_LENGTH): st
 /**
  * Validates and sanitizes a query limit
  */
-function validateLimit(value: unknown): number {
+function validateLimit(value: RuntimeValue): number {
     if (typeof value !== 'number' || !Number.isInteger(value)) {
         return DEFAULT_QUERY_LIMIT;
     }
@@ -50,7 +50,7 @@ function validateLimit(value: unknown): number {
 /**
  * Validates cleanup age parameter
  */
-function validateCleanupAge(value: unknown): number {
+function validateCleanupAge(value: RuntimeValue): number {
     if (typeof value !== 'number' || !Number.isInteger(value) || value <= 0) {
         return DEFAULT_CLEANUP_AGE_MS;
     }
@@ -70,7 +70,7 @@ export function registerFileDiffIpc(
         'diff:getFileHistory',
         createSafeIpcHandler(
             'diff:getFileHistory',
-            async (_event: IpcMainInvokeEvent, filePathRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, filePathRaw: RuntimeValue) => {
                 const filePath = validateStringId(filePathRaw, MAX_PATH_LENGTH);
                 if (!filePath) {
                     throw new Error('Invalid file path');
@@ -86,7 +86,7 @@ export function registerFileDiffIpc(
         'diff:getRecentChanges',
         createSafeIpcHandler(
             'diff:getRecentChanges',
-            async (_event: IpcMainInvokeEvent, limitRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, limitRaw: RuntimeValue) => {
                 const limit = validateLimit(limitRaw);
                 const changes = await fileChangeTracker.databaseService.getRecentFileDiffs(limit);
                 return { success: true, data: changes };
@@ -99,7 +99,7 @@ export function registerFileDiffIpc(
         'diff:getSessionChanges',
         createSafeIpcHandler(
             'diff:getSessionChanges',
-            async (_event: IpcMainInvokeEvent, chatSessionIdRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, chatSessionIdRaw: RuntimeValue) => {
                 const chatSessionId = validateStringId(chatSessionIdRaw);
                 if (!chatSessionId) {
                     throw new Error('Invalid chat session ID');
@@ -115,7 +115,7 @@ export function registerFileDiffIpc(
         'diff:getChangesBySystem',
         createSafeIpcHandler(
             'diff:getChangesBySystem',
-            async (_event: IpcMainInvokeEvent, aiSystemRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, aiSystemRaw: RuntimeValue) => {
                 const aiSystem = validateStringId(aiSystemRaw);
                 if (!aiSystem) {
                     throw new Error('Invalid AI system identifier');
@@ -131,7 +131,7 @@ export function registerFileDiffIpc(
         'diff:getDiffById',
         createSafeIpcHandler(
             'diff:getDiffById',
-            async (_event: IpcMainInvokeEvent, diffIdRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, diffIdRaw: RuntimeValue) => {
                 const diffId = validateStringId(diffIdRaw);
                 if (!diffId) {
                     throw new Error('Invalid diff ID');
@@ -147,7 +147,7 @@ export function registerFileDiffIpc(
         'diff:revertChange',
         createSafeIpcHandler(
             'diff:revertChange',
-            async (_event: IpcMainInvokeEvent, diffIdRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, diffIdRaw: RuntimeValue) => {
                 const diffId = validateStringId(diffIdRaw);
                 if (!diffId) {
                     throw new Error('Invalid diff ID');
@@ -162,7 +162,7 @@ export function registerFileDiffIpc(
         'diff:getStats',
         createSafeIpcHandler(
             'diff:getStats',
-            async (_event: IpcMainInvokeEvent, diffContentRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, diffContentRaw: RuntimeValue) => {
                 if (typeof diffContentRaw !== 'string') {
                     throw new Error('Invalid diff content');
                 }
@@ -180,7 +180,7 @@ export function registerFileDiffIpc(
         'diff:cleanup',
         createSafeIpcHandler(
             'diff:cleanup',
-            async (_event: IpcMainInvokeEvent, maxAgeMsRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, maxAgeMsRaw: RuntimeValue) => {
                 const maxAgeMs = validateCleanupAge(maxAgeMsRaw);
                 await fileChangeTracker.databaseService.cleanupOldFileDiffs(maxAgeMs);
                 appLogger.info('FileDiffIPC', 'Cleaned up old file diffs');

@@ -28,27 +28,27 @@ describe('QuotaService', () => {
                     codex: { organizationId: 'org-123' }
                 }
             })
-        } as unknown as SettingsService;
+        } as never as SettingsService;
 
         mockAuthService = {
             getAllAccountsFull: vi.fn().mockResolvedValue([]),
             getAccountsByProviderFull: vi.fn().mockResolvedValue([]),
             updateToken: vi.fn().mockResolvedValue(undefined)
-        } as unknown as AuthService;
+        } as never as AuthService;
 
         mockProcessManager = {
             startService: vi.fn().mockResolvedValue(undefined)
-        } as unknown as ProcessManagerService;
+        } as never as ProcessManagerService;
 
         mockTokenService = {
             ensureFreshToken: vi.fn()
-        } as unknown as TokenService;
+        } as never as TokenService;
 
         quotaService = new QuotaService(
-            mockSettingsService as unknown as SettingsService,
-            mockAuthService as unknown as AuthService,
-            mockProcessManager as unknown as ProcessManagerService,
-            mockTokenService as unknown as TokenService
+            mockSettingsService as never as SettingsService,
+            mockAuthService as never as AuthService,
+            mockProcessManager as never as ProcessManagerService,
+            mockTokenService as never as TokenService
         );
     });
 
@@ -69,7 +69,7 @@ describe('QuotaService', () => {
             vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([mockAccount]);
 
             // Mock handler behavior
-            (quotaService as unknown as { antigravityHandler: { fetchAntigravityUpstreamForToken: ReturnType<typeof vi.fn> } })
+            (quotaService as never as { antigravityHandler: { fetchAntigravityUpstreamForToken: ReturnType<typeof vi.fn> } })
                 .antigravityHandler.fetchAntigravityUpstreamForToken = vi.fn().mockResolvedValue({
                     models: {
                         'gpt-4': { displayName: 'GPT-4', quotaInfo: { remainingQuota: 10, totalQuota: 100, remainingFraction: 0.1 } }
@@ -123,7 +123,7 @@ describe('QuotaService', () => {
         });
 
         it('should return null for non-string proxyKey', async () => {
-            const result = await quotaService.getQuota(8080, 123 as unknown as string);
+            const result = await quotaService.getQuota(8080, 123 as never as string);
             expect(result).toBeNull();
         });
     });
@@ -152,7 +152,7 @@ describe('QuotaService', () => {
 
             vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([account1, account2]);
 
-            (quotaService as unknown as { copilotHandler: { fetchCopilotQuotaForToken: ReturnType<typeof vi.fn> } })
+            (quotaService as never as { copilotHandler: { fetchCopilotQuotaForToken: ReturnType<typeof vi.fn> } })
                 .copilotHandler.fetchCopilotQuotaForToken = vi.fn().mockResolvedValue({
                     chatEnabled: true,
                     codeCompletionEnabled: true
@@ -180,7 +180,7 @@ describe('QuotaService', () => {
 
             vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([githubAccount, copilotAccount]);
 
-            (quotaService as unknown as { copilotHandler: { fetchCopilotQuotaForToken: ReturnType<typeof vi.fn> } })
+            (quotaService as never as { copilotHandler: { fetchCopilotQuotaForToken: ReturnType<typeof vi.fn> } })
                 .copilotHandler.fetchCopilotQuotaForToken = vi.fn().mockResolvedValue({
                     chatEnabled: true,
                     codeCompletionEnabled: true
@@ -206,7 +206,7 @@ describe('QuotaService', () => {
         });
 
         it('should reject non-string input', async () => {
-            const result = await quotaService.saveClaudeSession(123 as unknown as string);
+            const result = await quotaService.saveClaudeSession(123 as never as string);
             expect(result.success).toBe(false);
             expect(result.error).toContain('non-empty string');
         });
@@ -224,7 +224,7 @@ describe('QuotaService', () => {
         });
 
         it('should reject non-string accountId', async () => {
-            const result = await quotaService.saveClaudeSession('valid-key', 42 as unknown as string);
+            const result = await quotaService.saveClaudeSession('valid-key', 42 as never as string);
             expect(result.success).toBe(false);
             expect(result.error).toContain('accountId');
         });
@@ -339,32 +339,32 @@ describe('QuotaService', () => {
 
     describe('fetchAntigravityUpstreamForToken', () => {
         it('should return null for null account', async () => {
-            const result = await quotaService.fetchAntigravityUpstreamForToken(null as unknown as LinkedAccount);
+            const result = await quotaService.fetchAntigravityUpstreamForToken(null as never as LinkedAccount);
             expect(result).toBeNull();
         });
 
         it('should return null for undefined account', async () => {
-            const result = await quotaService.fetchAntigravityUpstreamForToken(undefined as unknown as LinkedAccount);
+            const result = await quotaService.fetchAntigravityUpstreamForToken(undefined as never as LinkedAccount);
             expect(result).toBeNull();
         });
 
         it('should return null for account missing id', async () => {
-            const result = await quotaService.fetchAntigravityUpstreamForToken({ provider: 'antigravity' } as unknown as LinkedAccount);
+            const result = await quotaService.fetchAntigravityUpstreamForToken({ provider: 'antigravity' } as never as LinkedAccount);
             expect(result).toBeNull();
         });
 
         it('should return null for account missing provider', async () => {
-            const result = await quotaService.fetchAntigravityUpstreamForToken({ id: 'acc-1' } as unknown as LinkedAccount);
+            const result = await quotaService.fetchAntigravityUpstreamForToken({ id: 'acc-1' } as never as LinkedAccount);
             expect(result).toBeNull();
         });
 
         it('should return null for account with empty string id', async () => {
-            const result = await quotaService.fetchAntigravityUpstreamForToken({ id: '', provider: 'antigravity' } as unknown as LinkedAccount);
+            const result = await quotaService.fetchAntigravityUpstreamForToken({ id: '', provider: 'antigravity' } as never as LinkedAccount);
             expect(result).toBeNull();
         });
 
         it('should return null for non-object account', async () => {
-            const result = await quotaService.fetchAntigravityUpstreamForToken('not-an-object' as unknown as LinkedAccount);
+            const result = await quotaService.fetchAntigravityUpstreamForToken('not-an-object' as never as LinkedAccount);
             expect(result).toBeNull();
         });
     });
@@ -376,7 +376,7 @@ describe('QuotaService', () => {
         });
 
         it('should return null for undefined data', () => {
-            const result = quotaService.extractCodexUsageFromWham(undefined as unknown as null);
+            const result = quotaService.extractCodexUsageFromWham(undefined as never as null);
             expect(result).toBeNull();
         });
 
@@ -403,7 +403,7 @@ describe('QuotaService', () => {
 
     describe('deduplicateCopilotAccounts edge cases', () => {
         it('should handle non-array input gracefully', () => {
-            const dedup = (quotaService as unknown as { deduplicateCopilotAccounts: (a: unknown) => LinkedAccount[] })
+            const dedup = (quotaService as never as { deduplicateCopilotAccounts: (a: TestValue) => LinkedAccount[] })
                 .deduplicateCopilotAccounts;
             expect(dedup.call(quotaService, null)).toEqual([]);
             expect(dedup.call(quotaService, undefined)).toEqual([]);
@@ -411,20 +411,20 @@ describe('QuotaService', () => {
         });
 
         it('should return empty for empty array', () => {
-            const dedup = (quotaService as unknown as { deduplicateCopilotAccounts: (a: LinkedAccount[]) => LinkedAccount[] })
+            const dedup = (quotaService as never as { deduplicateCopilotAccounts: (a: LinkedAccount[]) => LinkedAccount[] })
                 .deduplicateCopilotAccounts;
             expect(dedup.call(quotaService, [])).toEqual([]);
         });
 
         it('should return single account directly without dedup', () => {
-            const dedup = (quotaService as unknown as { deduplicateCopilotAccounts: (a: LinkedAccount[]) => LinkedAccount[] })
+            const dedup = (quotaService as never as { deduplicateCopilotAccounts: (a: LinkedAccount[]) => LinkedAccount[] })
                 .deduplicateCopilotAccounts;
             const single = [{ id: 'a1', provider: 'github', email: 'u@x.com', accessToken: 'tok' } as LinkedAccount];
             expect(dedup.call(quotaService, single)).toHaveLength(1);
         });
 
         it('should skip accounts with no email and no token', () => {
-            const dedup = (quotaService as unknown as { deduplicateCopilotAccounts: (a: LinkedAccount[]) => LinkedAccount[] })
+            const dedup = (quotaService as never as { deduplicateCopilotAccounts: (a: LinkedAccount[]) => LinkedAccount[] })
                 .deduplicateCopilotAccounts;
             const accs = [{ id: 'a1', provider: 'github' } as LinkedAccount];
             expect(dedup.call(quotaService, accs)).toEqual([]);
@@ -433,7 +433,7 @@ describe('QuotaService', () => {
 
     describe('getLegacyQuota', () => {
         it('should return success false when codex handler returns null', async () => {
-            (quotaService as unknown as { codexHandler: { fetchCodexUsage: ReturnType<typeof vi.fn> } })
+            (quotaService as never as { codexHandler: { fetchCodexUsage: ReturnType<typeof vi.fn> } })
                 .codexHandler.fetchCodexUsage = vi.fn().mockResolvedValue(null);
             const result = await quotaService.getLegacyQuota();
             expect(result.success).toBe(false);
@@ -441,9 +441,9 @@ describe('QuotaService', () => {
 
         it('should return success true with quota data', async () => {
             const mockUsage = { rate_limit: { primary_window: { used_percent: 0.25 } } };
-            (quotaService as unknown as { codexHandler: { fetchCodexUsage: ReturnType<typeof vi.fn>; parseCodexUsageToQuota: ReturnType<typeof vi.fn> } })
+            (quotaService as never as { codexHandler: { fetchCodexUsage: ReturnType<typeof vi.fn>; parseCodexUsageToQuota: ReturnType<typeof vi.fn> } })
                 .codexHandler.fetchCodexUsage = vi.fn().mockResolvedValue(mockUsage);
-            (quotaService as unknown as { codexHandler: { parseCodexUsageToQuota: ReturnType<typeof vi.fn> } })
+            (quotaService as never as { codexHandler: { parseCodexUsageToQuota: ReturnType<typeof vi.fn> } })
                 .codexHandler.parseCodexUsageToQuota = vi.fn().mockReturnValue({ status: 'ok', models: [] });
             const result = await quotaService.getLegacyQuota();
             expect(result.success).toBe(true);
@@ -461,7 +461,7 @@ describe('QuotaService', () => {
             vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([
                 { id: 'a1', provider: 'antigravity-1', email: 'e@x.com', accessToken: 'tok' } as LinkedAccount
             ]);
-            (quotaService as unknown as { antigravityHandler: { fetchAntigravityUpstreamForToken: ReturnType<typeof vi.fn> } })
+            (quotaService as never as { antigravityHandler: { fetchAntigravityUpstreamForToken: ReturnType<typeof vi.fn> } })
                 .antigravityHandler.fetchAntigravityUpstreamForToken = vi.fn().mockResolvedValue(null);
             const result = await quotaService.getAntigravityAvailableModels();
             expect(result).toEqual([]);

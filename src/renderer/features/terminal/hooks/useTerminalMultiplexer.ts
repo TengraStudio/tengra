@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 
+import { useTranslation } from '@/i18n';
 import { appLogger } from '@/utils/renderer-logger';
 
 import type { MultiplexerMode, MultiplexerSession } from '../utils/terminal-panel-types';
@@ -28,8 +29,9 @@ export function useTerminalMultiplexer({
     activeTabIdRef: _activeTabIdRef,
     writeCommandToActiveTerminal,
 }: UseTerminalMultiplexerProps) {
+    const { t } = useTranslation();
     const [multiplexerMode, setMultiplexerMode] = useState<MultiplexerMode>('tmux');
-    const [multiplexerSessionName, setMultiplexerSessionName] = useState('main');
+    const [multiplexerSessionName, setMultiplexerSessionName] = useState(t('terminal.defaultSessionName'));
     const [isMultiplexerLoading, setIsMultiplexerLoading] = useState(false);
     const [multiplexerSessions, setMultiplexerSessions] = useState<MultiplexerSession[]>([]);
     const [multiplexerError, setMultiplexerError] = useState<string | null>(null);
@@ -61,7 +63,7 @@ export function useTerminalMultiplexer({
                             setMultiplexerSessions([]);
                             return;
                         }
-                        setMultiplexerError(result.stderr || 'Failed to list tmux sessions');
+                        setMultiplexerError(result.stderr || t('terminal.failedToListTmuxSessions'));
                         return;
                     }
                     setMultiplexerSessions(parseTmuxSessions(result.stdout));
@@ -75,7 +77,7 @@ export function useTerminalMultiplexer({
                         setMultiplexerSessions([]);
                         return;
                     }
-                    setMultiplexerError(result.stderr || 'Failed to list screen sessions');
+                    setMultiplexerError(result.stderr || t('terminal.failedToListScreenSessions'));
                     return;
                 }
                 setMultiplexerSessions(parseScreenSessions(result.stdout));
@@ -86,13 +88,13 @@ export function useTerminalMultiplexer({
                     error as Error
                 );
                 setMultiplexerError(
-                    error instanceof Error ? error.message : 'Multiplexer query failed'
+                    error instanceof Error ? error.message : t('terminal.multiplexerQueryFailed')
                 );
             } finally {
                 setIsMultiplexerLoading(false);
             }
         },
-        [multiplexerMode, workspacePath]
+        [multiplexerMode, workspacePath, t]
     );
 
     /**
@@ -115,13 +117,13 @@ export function useTerminalMultiplexer({
      * Create a new multiplexer session
      */
     const createMultiplexerSession = useCallback(async () => {
-        const safeName = multiplexerSessionName.trim() || 'main';
+        const safeName = multiplexerSessionName.trim() || t('terminal.defaultSessionName');
         const command =
             multiplexerMode === 'tmux'
                 ? `tmux new -As ${quoteCommandValue(safeName)}`
                 : `screen -S ${quoteCommandValue(safeName)}`;
         await writeCommandToActiveTerminal(command);
-    }, [multiplexerMode, multiplexerSessionName, writeCommandToActiveTerminal]);
+    }, [multiplexerMode, multiplexerSessionName, writeCommandToActiveTerminal, t]);
 
     return {
         multiplexerMode,

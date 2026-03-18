@@ -374,7 +374,7 @@ export class LLMService {
             this.recordTelemetryEvent('llm.openai.failure', provider);
             appLogger.error('LLMService', `[LLMService:OpenAI] Chat Error: ${getErrorMessage(error as Error)}`);
             if (error instanceof ApiError) { throw error; }
-            throw new NetworkError(error instanceof Error ? error.message : String(error), { originalError: (error instanceof Error ? error.message : String(error)) as unknown as JsonObject });
+            throw new NetworkError(error instanceof Error ? error.message : String(error), { originalError: (error instanceof Error ? error.message : String(error)) as RuntimeValue as JsonObject });
         }
     }
 
@@ -413,7 +413,7 @@ export class LLMService {
         return this.altProviders.chatGroq(
             messages, model,
             (msgs, opts) => this.openaiChat.buildOpenAIBody(msgs, opts),
-            (json) => this.openaiChat.processOpenAIResponse(json as unknown as OpenAIChatCompletion)
+            (json) => this.openaiChat.processOpenAIResponse(json as RuntimeValue as OpenAIChatCompletion)
         );
     }
 
@@ -491,7 +491,7 @@ export class LLMService {
                     reasoning_content: result.data.reasoning
                 };
                 if (!tools || tools.length === 0) {
-                    await this.deps.cacheService.set(messages as Message[], model, response, 3600000, options as Record<string, unknown>);
+                    await this.deps.cacheService.set(messages as Message[], model, response, 3600000, options as Record<string, RuntimeValue>);
                 }
                 return response;
             }
@@ -618,6 +618,16 @@ export class LLMService {
     private normalizeModelName(model: string, provider?: string): string {
         const lowerProvider = (provider ?? '').toLowerCase();
         let target = model;
+
+        if (lowerProvider === 'antigravity') {
+            const lowerTarget = target.toLowerCase();
+            if (lowerTarget.endsWith('-antigravity')) {
+                target = target.slice(0, -'-antigravity'.length);
+            }
+            if (lowerTarget.startsWith('antigravity/')) {
+                target = target.slice('antigravity/'.length);
+            }
+        }
 
         const prefixes: Record<string, string[]> = {
             'ollama': ['ollama/'],

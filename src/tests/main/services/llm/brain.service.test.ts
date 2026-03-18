@@ -1,6 +1,14 @@
 import { BrainService } from '@main/services/llm/brain.service';
 import { describe, expect, it, vi } from 'vitest';
 
+const invokeIsUserFact = (service: BrainService, content: string): boolean => {
+    const isUserFact = Reflect.get(service, 'isUserFact') as ((value: string) => boolean) | undefined;
+    if (!isUserFact) {
+        throw new Error('isUserFact is unavailable on BrainService instance');
+    }
+    return isUserFact.call(service, content);
+};
+
 describe('BrainService - multilingual fact extraction', () => {
     const createService = () => {
         const db = {
@@ -20,10 +28,10 @@ describe('BrainService - multilingual fact extraction', () => {
         };
 
         const service = new BrainService(
-            db as any,
-            embedding as any,
-            llmService as any,
-            {} as any
+            db as never,
+            embedding as never,
+            llmService as never,
+            {} as never
         );
 
         return { service, db, llmService };
@@ -31,17 +39,17 @@ describe('BrainService - multilingual fact extraction', () => {
 
     it('accepts Turkish user facts in validation helper', () => {
         const { service } = createService();
-        expect((service as any).isUserFact('Ben koyu tema kullanıyorum.')).toBe(true);
+        expect(invokeIsUserFact(service, 'Ben koyu tema kullanıyorum.')).toBe(true);
     });
 
     it('accepts Spanish user facts in validation helper', () => {
         const { service } = createService();
-        expect((service as any).isUserFact('Yo uso Neovim y prefiero terminal.')).toBe(true);
+        expect(invokeIsUserFact(service, 'Yo uso Neovim y prefiero terminal.')).toBe(true);
     });
 
     it('rejects workspace-local statements in validation helper', () => {
         const { service } = createService();
-        expect((service as any).isUserFact('Bu proje dosyasında bir hata var.')).toBe(false);
+        expect(invokeIsUserFact(service, 'Bu proje dosyasında bir hata var.')).toBe(false);
     });
 
     it('extracts and persists non-English facts from LLM output', async () => {

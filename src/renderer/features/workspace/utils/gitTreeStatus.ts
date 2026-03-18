@@ -1,21 +1,26 @@
 import { FileNode } from '@renderer/features/workspace/components/WorkspaceTreeItem';
 
-type GitTreeStatusEntry = {
-    status: string
+type GitTreeStatusPreviewEntry = {
+    statuses: string[]
     path: string
-    isIgnored: boolean
+    isDirectory: boolean
 };
 
-type GitTreeStatusResponse = {
+type GitTreeStatusPreviewResponse = {
     success: boolean
     isRepository?: boolean
     repoRoot?: string
     targetPath?: string
-    entries?: GitTreeStatusEntry[]
+    refreshedAt?: number
+    entries?: GitTreeStatusPreviewEntry[]
     error?: string
 };
 
-const SHOW_GIT_IGNORED = true;
+const GIT_TREE_STATUS_PREVIEW_TTL_MS = 30_000;
+const previewCache = new Map<
+    string,
+    { expiresAt: number; entries: GitTreeStatusPreviewEntry[]; repoRoot: string }
+>();
 
 const normalizePath = (value: string) => value.replace(/\\/g, '/').replace(/\/+$/, '');
 
@@ -52,50 +57,64 @@ export async function applyGitTreeStatus(
         return nodes;
     }
 
-    let response: GitTreeStatusResponse;
+    const cacheKey = `${cwd}::${directoryPath}`;
+    const cachedEntry = previewCache.get(cacheKey);
+    if (cachedEntry && cachedEntry.expiresAt > Date.now()) {
+        return applyPreviewEntries(nodes, cachedEntry.repoRoot, cachedEntry.entries);
+    }
+
+    let response: GitTreeStatusPreviewResponse;
     try {
-        response = await window.electron.ipcRenderer.invoke('git:getTreeStatus', cwd, directoryPath) as GitTreeStatusResponse;
+        response = await window.electron.ipcRenderer.invoke(
+            'git:getTreeStatusPreview',
+            cwd,
+            directoryPath
+        ) as GitTreeStatusPreviewResponse;
     } catch {
         return nodes;
     }
 
-    if (!response.success || !response.isRepository || !response.repoRoot || !Array.isArray(response.entries)) {
+    if (
+        !response.success ||
+        !response.isRepository ||
+        !response.repoRoot ||
+        !Array.isArray(response.entries)
+    ) {
         return nodes;
     }
 
-    const entries = response.entries;
-    const repoRoot = response.repoRoot;
-    const withGitMeta = nodes.map((node) => {
-        const rel = toRepoRelative(repoRoot, node.path);
-        const relNorm = normalizePath(rel).toLowerCase();
+    previewCache.set(cacheKey, {
+        expiresAt: Date.now() + GIT_TREE_STATUS_PREVIEW_TTL_MS,
+        entries: response.entries,
+        repoRoot: response.repoRoot,
+    });
+    return applyPreviewEntries(nodes, response.repoRoot, response.entries);
+}
 
-        const matches = entries.filter((entry) => {
-            const entryPath = normalizePath(entry.path).toLowerCase();
-            if (entryPath === relNorm) {
-                return true;
-            }
-            return node.isDirectory && relNorm.length > 0 && entryPath.startsWith(`${relNorm}/`);
-        });
+function applyPreviewEntries(
+    nodes: FileNode[],
+    repoRoot: string,
+    entries: GitTreeStatusPreviewEntry[]
+): FileNode[] {
+    const entryMap = new Map(entries.map(entry => [normalizePath(entry.path).toLowerCase(), entry]));
 
-        if (matches.length === 0) {
-            return { ...node, gitStatus: undefined, gitRawStatus: undefined, isGitIgnored: false };
+    return nodes.map(node => {
+        const relativeNodePath = normalizePath(toRepoRelative(repoRoot, node.path)).toLowerCase();
+        const previewEntry = entryMap.get(relativeNodePath);
+        if (!previewEntry) {
+            return {
+                ...node,
+                gitStatus: undefined,
+                gitRawStatus: undefined,
+                isGitIgnored: false,
+            };
         }
-
-        const nonIgnored = matches.filter(match => !match.isIgnored);
-        const isIgnored = nonIgnored.length === 0 && matches.some(match => match.isIgnored);
-        const statuses = nonIgnored.map(match => match.status);
 
         return {
             ...node,
-            isGitIgnored: isIgnored,
-            gitRawStatus: statuses[0],
-            gitStatus: isIgnored ? 'I' : toBadge(statuses)
+            isGitIgnored: false,
+            gitRawStatus: previewEntry.statuses[0],
+            gitStatus: toBadge(previewEntry.statuses),
         };
     });
-
-    if (SHOW_GIT_IGNORED) {
-        return withGitMeta;
-    }
-
-    return withGitMeta.filter(node => !node.isGitIgnored);
 }

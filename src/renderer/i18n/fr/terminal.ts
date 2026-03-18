@@ -91,7 +91,16 @@ const sectionData = {
     "workspaceIssuesLoading": "Actualisation des diagnostics de l'espace de travail...",
     "workspaceIssuesNoWorkspace": "Ouvrez un espace de travail pour inspecter les diagnostics.",
     "workspaceIssuesNoIssues": "Aucun avertissement ou erreur détecté lors de la dernière analyse.",
-    "workspaceIssuesLoadFailed": "Échec du chargement des diagnostics de l'espace de travail."
+    "workspaceIssuesLoadFailed": "Échec du chargement des diagnostics de l'espace de travail.",
+    "splitPresetsTitle": "Split presets",
+    "renamePresetTitle": "Rename preset",
+    "deletePresetTitle": "Delete preset",
+    "syncInputTitle": "Synchronized input for split panes",
 };
 
 export default sectionData;
+
+
+
+
+

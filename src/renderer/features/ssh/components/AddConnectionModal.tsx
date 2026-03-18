@@ -1,6 +1,8 @@
 
 import React, { useEffect, useState } from 'react';
 
+import { localizeIpcValidationMessage } from '@/features/ssh/utils/ipc-validation-message';
+
 export interface SSHProfileTestUIResult {
     success: boolean;
     message: string;
@@ -92,7 +94,8 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
             setTestMessage(result.message);
             setTestState(result.uiState);
         } catch (error) {
-            const message = error instanceof Error ? error.message : t('ssh.unknownError');
+            const fallbackMessage = error instanceof Error ? error.message : t('ssh.unknownError');
+            const message = localizeIpcValidationMessage(fallbackMessage, t);
             setTestMessage(t('ssh.profileTestFailed', { error: message }));
             setTestState('failure');
         } finally {

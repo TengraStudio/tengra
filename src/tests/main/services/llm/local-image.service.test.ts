@@ -1,7 +1,7 @@
 
 import { TelemetryService } from '@main/services/analysis/telemetry.service';
 import { LLMService } from '@main/services/llm/llm.service';
-import { LocalImageService, LocalImageServiceDeps } from '@main/services/llm/local-image.service';
+import { type ImageGenerationOptions, type ImageGenerationRecord, LocalImageService, type LocalImageServiceDeps } from '@main/services/llm/local-image.service';
 import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
@@ -46,23 +46,23 @@ describe('LocalImageService Integration', () => {
                 ollama: { url: 'http://localhost:11434' }
             }),
             saveSettings: vi.fn().mockResolvedValue(undefined),
-        } as unknown as SettingsService;
+        } as never as SettingsService;
 
         mockTelemetryService = {
             track: vi.fn(),
-        } as unknown as TelemetryService;
+        } as never as TelemetryService;
 
         mockEventBusService = {
             emit: vi.fn(),
-        } as unknown as EventBusService;
+        } as never as EventBusService;
 
         const deps: LocalImageServiceDeps = {
             settingsService: mockSettingsService,
             telemetryService: mockTelemetryService,
             eventBusService: mockEventBusService,
-            authService: { getAllAccountsFull: vi.fn().mockResolvedValue([]) } as unknown as AuthService,
-            llmService: {} as unknown as LLMService,
-            quotaService: {} as unknown as QuotaService,
+            authService: { getAllAccountsFull: vi.fn().mockResolvedValue([]) } as never as AuthService,
+            llmService: {} as never as LLMService,
+            quotaService: {} as never as QuotaService,
         };
 
         service = new LocalImageService(deps);
@@ -75,39 +75,7 @@ describe('LocalImageService Integration', () => {
     describe('Fallback Mechanism', () => {
         it('should reject generation when prompt is blank', async () => {
             await expect(service.generateImage({ prompt: '   ' })).rejects.toThrow('Prompt is required');
-        });
-
-        it('should fallback to pollinations when sd-cpp fails', async () => {
-            // Mock ensureSDCppReady to succeed
-            vi.spyOn(service, 'ensureSDCppReady').mockResolvedValue({
-                binaryPath: '/path/to/bin',
-                modelPath: '/path/to/model'
-            });
-
-            // Mock a failing process indirectly by mocking generateWithSDCpp if we could
-            // or by mocking runProcess which is private.
-            // Since generateImage calls generateWithProvider which calls generateWithSDCpp,
-            // we can mock generateWithSDCpp by spying on the prototype or the instance.
-
-            const sdCppSpy = vi.spyOn(service as any, 'generateWithSDCpp')
-                .mockRejectedValue(new Error('SD-CPP failed'));
-
-            const pollinationsSpy = vi.spyOn(service as any, 'generateWithPollinations')
-                .mockResolvedValue('/path/to/fallback/image.png');
-
-            const result = await service.generateImage({ prompt: 'test prompt' });
-
-            expect(result).toBe('/path/to/fallback/image.png');
-            expect(sdCppSpy).toHaveBeenCalled();
-            expect(pollinationsSpy).toHaveBeenCalled();
-            expect(mockTelemetryService.track).toHaveBeenCalledWith(
-                'sd-cpp-fallback-triggered',
-                expect.objectContaining({
-                    provider: 'sd-cpp',
-                    errorCode: 'LOCAL_IMAGE_SDCPP_FALLBACK_TRIGGERED',
-                })
-            );
-        });
+        }); 
 
         it('should track success metric when sd-cpp succeeds', async () => {
             vi.spyOn(service, 'ensureSDCppReady').mockResolvedValue({
@@ -116,7 +84,10 @@ describe('LocalImageService Integration', () => {
             });
 
             // Mock the private generateWithSDCpp to simulate success
-            vi.spyOn(service as any, 'generateWithSDCpp').mockResolvedValue('/path/to/image.png');
+            vi.spyOn(
+                service as never as { generateWithSDCpp: (options: ImageGenerationOptions) => Promise<string> },
+                'generateWithSDCpp'
+            ).mockResolvedValue('/path/to/image.png');
 
             const result = await service.generateImage({ prompt: 'test prompt' });
 
@@ -126,10 +97,12 @@ describe('LocalImageService Integration', () => {
         });
 
         it('should reject when sd-cpp fails and pollinations fallback also fails', async () => {
-            vi.spyOn(service as any, 'generateWithSDCpp').mockRejectedValue(new Error('sd-cpp failed'));
-            vi.spyOn(service as any, 'generateWithPollinations').mockRejectedValue(new Error('pollinations failed'));
+            vi.spyOn(
+                service as never as { generateWithSDCpp: (options: ImageGenerationOptions) => Promise<string> },
+                'generateWithSDCpp'
+            ).mockRejectedValue(new Error('sd-cpp failed')); 
 
-            await expect(service.generateImage({ prompt: 'test prompt' })).rejects.toThrow('pollinations failed');
+            await expect(service.generateImage({ prompt: 'test prompt' })).rejects.toThrow('sd-cpp failed');
             expect(mockTelemetryService.track).toHaveBeenCalledWith('sd-cpp-fallback-triggered', expect.any(Object));
         });
 
@@ -138,25 +111,26 @@ describe('LocalImageService Integration', () => {
                 images: { provider: 'ollama' },
                 ollama: { url: 'http://localhost:11434' }
             } as never);
-            vi.spyOn(service as any, 'generateWithProvider').mockRejectedValue(new Error('ollama unavailable'));
+            vi.spyOn(
+                service as never as {
+                    generateWithProvider: (provider: string, options: ImageGenerationOptions) => Promise<string>;
+                },
+                'generateWithProvider'
+            ).mockRejectedValue(new Error('ollama unavailable'));
 
             await expect(service.generateImage({ prompt: 'test prompt' })).rejects.toThrow('ollama unavailable');
             expect(mockTelemetryService.track).not.toHaveBeenCalledWith('sd-cpp-fallback-triggered', expect.any(Object));
         });
-
-        it('should fallback to pollinations for unknown provider values', async () => {
-            const pollinationsSpy = vi.spyOn(service as any, 'generateWithPollinations').mockResolvedValue('/path/to/unknown-provider.png');
-
-            const result = await (service as any).generateWithProvider('unknown-provider', { prompt: 'test prompt' });
-
-            expect(result).toBe('/path/to/unknown-provider.png');
-            expect(pollinationsSpy).toHaveBeenCalledWith({ prompt: 'test prompt' });
-        });
+ 
     });
 
     describe('Telemetry Tracking', () => {
         it('should track metrics with correct properties', async () => {
-            (service as any).trackSdCppMetric('test-event', { detail: 'info' });
+            (
+                service as never as {
+                    trackSdCppMetric: (name: string, properties?: Record<string, RuntimeValue>) => void;
+                }
+            ).trackSdCppMetric('test-event', { detail: 'info' });
 
             expect(mockTelemetryService.track).toHaveBeenCalledWith('test-event', {
                 provider: 'sd-cpp',
@@ -228,7 +202,7 @@ describe('LocalImageService Integration', () => {
     describe('History And Export', () => {
         it('should search history entries by prompt text', () => {
             const now = Date.now();
-            (service as never as { generationHistory: unknown }).generationHistory = [
+            const history: ImageGenerationRecord[] = [
                 {
                     id: '1',
                     provider: 'sd-cpp',
@@ -244,7 +218,7 @@ describe('LocalImageService Integration', () => {
                 },
                 {
                     id: '2',
-                    provider: 'pollinations',
+                    provider: 'ollama',
                     prompt: 'city skyline at night',
                     width: 1024,
                     height: 1024,
@@ -256,6 +230,7 @@ describe('LocalImageService Integration', () => {
                     source: 'generate'
                 }
             ];
+            service.generationHistory = history;
 
             const result = service.searchGenerationHistory('mountain', 20);
             expect(result.length).toBe(1);
@@ -264,7 +239,7 @@ describe('LocalImageService Integration', () => {
 
         it('should export generation history in CSV format', async () => {
             const now = Date.now();
-            (service as never as { generationHistory: unknown }).generationHistory = [
+            const history: ImageGenerationRecord[] = [
                 {
                     id: 'row-1',
                     provider: 'sd-cpp',
@@ -279,6 +254,7 @@ describe('LocalImageService Integration', () => {
                     source: 'generate'
                 }
             ];
+            service.generationHistory = history;
 
             const csv = await service.exportGenerationHistory('csv');
             expect(csv).toContain('provider');
@@ -342,7 +318,7 @@ describe('LocalImageService Integration', () => {
     describe('Comparison Features', () => {
         it('should compute bytes-per-pixel and comparison summary', async () => {
             const now = Date.now();
-            (service as never as { generationHistory: unknown }).generationHistory = [
+            const history: ImageGenerationRecord[] = [
                 {
                     id: 'cmp-1',
                     provider: 'sd-cpp',
@@ -370,6 +346,7 @@ describe('LocalImageService Integration', () => {
                     source: 'generate'
                 }
             ];
+            service.generationHistory = history;
 
             const result = await service.compareGenerations(['cmp-1', 'cmp-2']);
             expect(result.summary.averageFileSizeBytes).toBeGreaterThan(0);
@@ -379,7 +356,7 @@ describe('LocalImageService Integration', () => {
 
         it('should export and share comparison results', async () => {
             const now = Date.now();
-            (service as never as { generationHistory: unknown }).generationHistory = [
+            const history: ImageGenerationRecord[] = [
                 {
                     id: 'cmp-x',
                     provider: 'sd-cpp',
@@ -407,6 +384,7 @@ describe('LocalImageService Integration', () => {
                     source: 'generate'
                 }
             ];
+            service.generationHistory = history;
 
             const csv = await service.exportComparison(['cmp-x', 'cmp-y'], 'csv');
             expect(csv).toContain('bytesPerPixel');

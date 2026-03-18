@@ -3,10 +3,16 @@ import path from 'path';
 import { registerGitAdvancedIpc } from '@main/ipc/git-advanced';
 import { createMainWindowSenderValidator, SenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
+import { BrainService } from '@main/services/llm/brain.service';
+import { LLMService } from '@main/services/llm/llm.service';
 import { GitService } from '@main/services/workspace/git.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
+import {
+    gitTreeStatusPreviewArgsSchema,
+    gitTreeStatusPreviewResponseSchema,
+} from '@shared/schemas/git.schema';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { BrowserWindow, ipcMain } from 'electron';
 import { z } from 'zod';
@@ -23,6 +29,14 @@ const MAX_HASH_LENGTH = 64;
 const MAX_STATS_DAYS = 3650; // 10 years
 /** Maximum commit count */
 const MAX_COMMIT_COUNT = 1000;
+const TREE_STATUS_PREVIEW_TTL_MS = 30_000;
+
+interface GitTreeStatusPreviewCacheEntry {
+    response: z.infer<typeof gitTreeStatusPreviewResponseSchema>;
+    timestamp: number;
+}
+
+const gitTreeStatusPreviewCache = new Map<string, GitTreeStatusPreviewCacheEntry>();
 
 // --- Schemas ---
 
@@ -33,10 +47,75 @@ const HashSchema = z.string().min(1).max(MAX_HASH_LENGTH).regex(/^[a-fA-F0-9]+$/
 const CountSchema = (max: number) => z.number().int().min(1).max(max).optional().default(10);
 const PathSchema = z.string().min(1).max(MAX_PATH_LENGTH).trim();
 
+function normalizeGitPath(value: string): string {
+    return value.replace(/\\/g, '/').replace(/^\.\/+/, '').replace(/\/+$/, '');
+}
+
+function buildTreeStatusPreviewEntries(
+    entries: Array<{ status: string; path: string; isIgnored: boolean }>,
+    relativeTargetPath: string
+): Array<{ path: string; statuses: string[]; isDirectory: boolean }> {
+    const normalizedTargetPath = normalizeGitPath(
+        relativeTargetPath === '.' ? '' : relativeTargetPath
+    );
+    const previewEntries = new Map<string, { statuses: string[]; isDirectory: boolean }>();
+
+    for (const entry of entries) {
+        if (entry.isIgnored) {
+            continue;
+        }
+
+        const normalizedEntryPath = normalizeGitPath(entry.path);
+        if (!normalizedEntryPath) {
+            continue;
+        }
+
+        const relativeChildPath = normalizedTargetPath
+            ? normalizedEntryPath === normalizedTargetPath
+                ? ''
+                : normalizedEntryPath.startsWith(`${normalizedTargetPath}/`)
+                    ? normalizedEntryPath.slice(normalizedTargetPath.length + 1)
+                    : null
+            : normalizedEntryPath;
+
+        if (!relativeChildPath) {
+            continue;
+        }
+
+        const [firstSegment, ...remainingSegments] = relativeChildPath
+            .split('/')
+            .filter(segment => segment.length > 0);
+        if (!firstSegment) {
+            continue;
+        }
+
+        const childPath = normalizedTargetPath
+            ? `${normalizedTargetPath}/${firstSegment}`
+            : firstSegment;
+        const existing = previewEntries.get(childPath) ?? { statuses: [], isDirectory: false };
+        existing.statuses.push(entry.status);
+        if (remainingSegments.length > 0) {
+            existing.isDirectory = true;
+        }
+        previewEntries.set(childPath, existing);
+    }
+
+    return Array.from(previewEntries.entries()).map(([path, value]) => ({
+        path,
+        statuses: Array.from(new Set(value.statuses)),
+        isDirectory: value.isDirectory,
+    }));
+}
+
 /**
  * Registers IPC handlers for Git operations
  */
-export function registerGitIpc(getMainWindow: () => BrowserWindow | null, gitService: GitService) {
+export function registerGitIpc(
+    getMainWindow: () => BrowserWindow | null,
+    gitService: GitService,
+    llmService?: LLMService,
+    brainService?: BrainService
+) {
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'git operation');
     appLogger.info('GitIPC', 'Registering Git IPC handlers');
     registerStatusHandlers(gitService, validateSender);
@@ -44,7 +123,7 @@ export function registerGitIpc(getMainWindow: () => BrowserWindow | null, gitSer
     registerDiffHandlers(gitService, validateSender);
     registerActionHandlers(gitService, validateSender);
     registerGitBatchHandlers(gitService, validateSender);
-    registerGitAdvancedIpc(gitService, validateSender);
+    registerGitAdvancedIpc(gitService, validateSender, llmService, brainService);
 }
 
 /**
@@ -185,6 +264,73 @@ function registerStatusHandlers(gitService: GitService, validateSender: SenderVa
         defaultValue: { success: false, isRepository: false, entries: [] },
         argsSchema: z.tuple([CwdSchema, z.string().optional()])
     }));
+
+    ipcMain.handle(
+        'git:getTreeStatusPreview',
+        createValidatedIpcHandler(
+            'git:getTreeStatusPreview',
+            async (
+                event,
+                cwd: string,
+                targetPath?: string,
+                options?: { refresh?: boolean }
+            ) => {
+                validateSender(event);
+                try {
+                    const rootResult = await gitService.executeRaw(cwd, 'rev-parse --show-toplevel');
+                    if (!rootResult.success || !rootResult.stdout) {
+                        return { success: true, isRepository: false, entries: [] };
+                    }
+
+                    const repoRoot = rootResult.stdout.trim();
+                    const absoluteTarget = path.resolve(targetPath || cwd);
+                    const cacheKey = `${repoRoot}::${absoluteTarget}`;
+                    const cachedEntry = gitTreeStatusPreviewCache.get(cacheKey);
+                    if (
+                        options?.refresh !== true &&
+                        cachedEntry &&
+                        Date.now() - cachedEntry.timestamp < TREE_STATUS_PREVIEW_TTL_MS
+                    ) {
+                        return cachedEntry.response;
+                    }
+
+                    const relativeTarget = path.relative(repoRoot, absoluteTarget).replace(/\\/g, '/');
+                    const statusResult = await gitService.executeRaw(
+                        repoRoot,
+                        'status --porcelain=1 --untracked-files=normal'
+                    );
+                    const response = {
+                        success: true,
+                        isRepository: true,
+                        repoRoot,
+                        targetPath: absoluteTarget,
+                        refreshedAt: Date.now(),
+                        entries: buildTreeStatusPreviewEntries(
+                            parsePorcelainEntries(statusResult.stdout ?? ''),
+                            relativeTarget
+                        ),
+                    };
+                    gitTreeStatusPreviewCache.set(cacheKey, {
+                        response,
+                        timestamp: Date.now(),
+                    });
+                    return response;
+                } catch (error) {
+                    return {
+                        success: false,
+                        isRepository: false,
+                        entries: [],
+                        error: getErrorMessage(error as Error),
+                    };
+                }
+            },
+            {
+                defaultValue: { success: false, isRepository: false, entries: [] },
+                argsSchema: gitTreeStatusPreviewArgsSchema,
+                responseSchema: gitTreeStatusPreviewResponseSchema,
+            }
+        )
+    );
 
     ipcMain.handle('git:getRemotes', createValidatedIpcHandler('git:getRemotes', async (event, cwd: string) => {
         validateSender(event);

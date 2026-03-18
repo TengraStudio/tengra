@@ -1,4 +1,3 @@
-import { DataService } from '@main/services/data/data.service';
 import { DatabaseService, LinkedAccount } from '@main/services/data/database.service';
 import { AuthService, TokenData } from '@main/services/security/auth.service';
 import { SecurityService } from '@main/services/security/security.service';
@@ -7,7 +6,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@main/logging/logger');
 vi.mock('@main/services/data/database.service');
-vi.mock('@main/services/data/data.service');
 vi.mock('@main/services/security/security.service');
 vi.mock('@main/services/system/event-bus.service');
 vi.mock('electron', () => ({
@@ -23,7 +21,6 @@ let authService: AuthService;
 let mockDatabaseService: DatabaseService;
 let mockSecurityService: SecurityService;
 let mockEventBus: EventBusService;
-let mockDataService: DataService;
 
 const makeAccount = (overrides: Partial<LinkedAccount> = {}): LinkedAccount => ({
     id: 'test-account-1',
@@ -57,27 +54,25 @@ beforeEach(() => {
         saveLinkedAccount: vi.fn().mockResolvedValue(undefined),
         deleteLinkedAccount: vi.fn().mockResolvedValue(undefined),
         setActiveLinkedAccount: vi.fn().mockResolvedValue(undefined),
-    } as unknown as DatabaseService;
+    } as never as DatabaseService;
 
     mockSecurityService = {
         encryptSync: vi.fn((val: string) => `enc:${val}`),
         decryptSync: vi.fn((val: string) => val.startsWith('enc:') ? val.slice(4) : val),
         createEncryptedMasterKeyBackup: vi.fn().mockReturnValue({ success: true, result: { backup: 'backup-data' } }),
         restoreMasterKeyBackup: vi.fn().mockResolvedValue({ success: true }),
-    } as unknown as SecurityService;
+    } as never as SecurityService;
 
     mockEventBus = {
         emit: vi.fn(),
         emitCustom: vi.fn(),
         on: vi.fn().mockReturnValue(() => undefined),
         off: vi.fn()
-    } as unknown as EventBusService;
+    } as never as EventBusService;
 
-    mockDataService = {
-        getAuthDir: vi.fn().mockReturnValue('/mock/auth'),
-    } as unknown as DataService;
+    
 
-    authService = new AuthService(mockDatabaseService, mockSecurityService, mockEventBus, mockDataService);
+    authService = new AuthService(mockDatabaseService, mockSecurityService, mockEventBus);
 });
 
 describe('AuthService - Lifecycle', () => {
@@ -113,6 +108,60 @@ describe('AuthService - Account Management', () => {
         expect(result.provider).toBe('github');
         expect(mockDatabaseService.saveLinkedAccount).toHaveBeenCalled();
         expect(mockSecurityService.encryptSync).toHaveBeenCalledWith('my-token');
+    });
+
+    it('should migrate legacy google accounts to antigravity on update', async () => {
+        const legacyAccount = makeAccount({
+            id: 'legacy-google-account',
+            provider: 'google',
+            isActive: true
+        });
+        vi.mocked(mockDatabaseService.getLinkedAccounts).mockResolvedValue([legacyAccount]);
+        await authService.initialize();
+        vi.mocked(mockDatabaseService.saveLinkedAccount).mockClear();
+
+        await authService.linkAccountWithId('antigravity', 'legacy-google-account', {
+            accessToken: 'updated-token',
+            email: 'user@example.com'
+        });
+
+        expect(mockDatabaseService.saveLinkedAccount).toHaveBeenCalledWith(
+            expect.objectContaining({
+                id: 'legacy-google-account',
+                provider: 'antigravity',
+                isActive: true
+            })
+        );
+    });
+
+    it('preserves active selection when updating an existing linked account', async () => {
+        const activeAccount = makeAccount({
+            id: 'active-account',
+            provider: 'github',
+            isActive: true,
+        });
+        const inactiveAccount = makeAccount({
+            id: 'inactive-account',
+            provider: 'github',
+            isActive: false,
+            email: 'other@example.com',
+        });
+        vi.mocked(mockDatabaseService.getLinkedAccounts).mockResolvedValue([activeAccount, inactiveAccount]);
+        await authService.initialize();
+        vi.mocked(mockDatabaseService.saveLinkedAccount).mockClear();
+
+        await authService.linkAccountWithId('github', 'active-account', {
+            accessToken: 'updated-token',
+            email: 'user@example.com',
+        });
+
+        expect(mockDatabaseService.saveLinkedAccount).toHaveBeenCalledWith(
+            expect.objectContaining({
+                id: 'active-account',
+                provider: 'github',
+                isActive: true,
+            })
+        );
     });
 
     it('should get accounts by provider', async () => {
@@ -264,7 +313,7 @@ describe('AuthService - Master Key Backup', () => {
     it('should throw when backup creation fails', () => {
         vi.mocked(mockSecurityService.createEncryptedMasterKeyBackup).mockReturnValue({
             success: false, result: null
-        } as unknown as ReturnType<SecurityService['createEncryptedMasterKeyBackup']>);
+        } as never as ReturnType<SecurityService['createEncryptedMasterKeyBackup']>);
 
         expect(() => authService.createMasterKeyBackup('passphrase')).toThrow();
     });

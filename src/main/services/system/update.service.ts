@@ -1,10 +1,8 @@
 import { BaseService } from '@main/services/base.service';
-import { DataService } from '@main/services/data/data.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { IpcValue } from '@shared/types';
-import { getErrorMessage } from '@shared/utils/error.util';
+import { JsonObject } from '@shared/types/common';
 import { app, BrowserWindow, ipcMain } from 'electron';
-import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
 
 export class UpdateService extends BaseService {
@@ -12,16 +10,18 @@ export class UpdateService extends BaseService {
     private window: BrowserWindow | null = null;
 
     constructor(
-        settingsService: SettingsService,
-        dataService: DataService
+        settingsService: SettingsService
     ) {
         super('UpdateService');
         this.settingsService = settingsService;
 
-        // Configure electron-log
-        log.transports.file.level = 'info';
-        log.transports.file.resolvePathFn = () => dataService.getPath('logs') + '/update.log';
-        autoUpdater.logger = log;
+        // Configure autoUpdater logger to use our appLogger via BaseService methods
+        autoUpdater.logger = {
+            info: (msg: string) => this.logInfo(msg),
+            warn: (msg: string) => this.logWarn(msg),
+            error: (msg: string, err?: Error) => this.logError(msg, err),
+            debug: (msg: string) => this.logDebug(msg),
+        };
 
         // Disable auto-download if configured (we'll handle it manually based on settings)
         autoUpdater.autoDownload = false;
@@ -38,7 +38,7 @@ export class UpdateService extends BaseService {
 
         // Don't run in development unless forced
         if (!app.isPackaged && !process.env.FORCE_UPDATE_TEST) {
-            log.info('Skipping auto-updater in development mode');
+            this.logDebug('Skipping auto-updater in development mode');
             return;
         }
 
@@ -60,7 +60,7 @@ export class UpdateService extends BaseService {
         });
 
         autoUpdater.on('update-available', (info) => {
-            log.info('Update available:', info);
+            this.logInfo('Update available', info as RuntimeValue as JsonObject);
             this.sendToWindow('update:status', { state: 'available', version: info.version });
 
             const settings = this.settingsService.getSettings();
@@ -70,7 +70,7 @@ export class UpdateService extends BaseService {
         });
 
         autoUpdater.on('update-not-available', (info) => {
-            log.info('Update not available:', info);
+            this.logInfo('Update not available', info as RuntimeValue as JsonObject);
             this.sendToWindow('update:status', { state: 'not-available' });
         });
 
@@ -92,7 +92,7 @@ export class UpdateService extends BaseService {
         });
 
         autoUpdater.on('update-downloaded', (info) => {
-            log.info('Update downloaded');
+            this.logInfo('Update downloaded');
             this.sendToWindow('update:status', { state: 'downloaded', version: info.version });
         });
     }
@@ -115,7 +115,7 @@ export class UpdateService extends BaseService {
         try {
             await autoUpdater.checkForUpdates();
         } catch (error) {
-            log.error('Failed to check for updates', getErrorMessage(error as Error));
+            this.logError('Failed to check for updates', error);
             throw error;
         }
     }
@@ -124,7 +124,7 @@ export class UpdateService extends BaseService {
         try {
             await autoUpdater.downloadUpdate();
         } catch (error) {
-            log.error('Failed to download update', getErrorMessage(error as Error));
+            this.logError('Failed to download update', error);
             throw error;
         }
     }

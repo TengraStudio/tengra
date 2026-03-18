@@ -14,7 +14,7 @@ export type AiPanelMode = 'explain-error' | 'fix-error' | 'explain-command';
 export type AiResult =
     | { type: 'explain-error'; data: ExplainErrorResult }
     | { type: 'fix-error'; data: FixErrorResult }
-    | { type: 'explain-command'; data: Record<string, unknown> };
+    | { type: 'explain-command'; data: Record<string, RendererDataValue> };
 
 /**
  * Hook for terminal AI assistant state management

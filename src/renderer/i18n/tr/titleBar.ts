@@ -5,7 +5,8 @@ const sectionData = {
     "changelog": "Değişiklikler",
     "changelogTitle": "Uygulama Değişiklikleri",
     "changelogEmpty": "Değişiklik kaydı bulunamadı.",
-    "extension": "Eklenti"
+    "extension": "Eklenti",
+    "lazyServicesStatus": "Lazy services: {{loaded}}/{{registered}} loaded"
 };
 
 export default sectionData;

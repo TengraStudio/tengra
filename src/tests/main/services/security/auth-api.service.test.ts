@@ -61,7 +61,7 @@ beforeEach(() => {
         getActiveToken: vi.fn(),
         getActiveAccountFull: vi.fn(),
         getAccountsByProviderFull: vi.fn().mockResolvedValue([]),
-    } as unknown as AuthService;
+    } as never as AuthService;
 
     service = new AuthAPIService(mockAuthService);
 });
@@ -164,6 +164,10 @@ describe('AuthAPIService - GET /api/auth/accounts', () => {
 
 describe('AuthAPIService - POST /api/auth/accounts/:id', () => {
     it('should update an account with token data', async () => {
+        vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([
+            makeAccount({ id: 'github-acc-1', provider: 'github' })
+        ]);
+
         await service.initialize();
 
         const body = JSON.stringify({
@@ -198,6 +202,60 @@ describe('AuthAPIService - POST /api/auth/accounts/:id', () => {
         );
 
         expect(res.statusCode).toBe(400);
+    });
+
+    it('should reject updates for accounts that no longer exist', async () => {
+        vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([]);
+
+        await service.initialize();
+
+        const body = JSON.stringify({
+            access_token: 'new-token',
+            provider: 'codex'
+        });
+
+        const res = await request(
+            service.getPort(),
+            'POST',
+            '/api/auth/accounts/deleted-account',
+            body,
+            { 'content-type': 'application/json' }
+        );
+
+        expect(res.statusCode).toBe(404);
+        expect(mockAuthService.linkAccountWithId).not.toHaveBeenCalled();
+    });
+
+    it('should prefer the existing account provider when request body omits provider', async () => {
+        vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([
+            makeAccount({
+                id: 'da6fc8a8-f2f3-4780-88d8-c4f09d37d617',
+                provider: 'antigravity'
+            })
+        ]);
+
+        await service.initialize();
+
+        const body = JSON.stringify({
+            access_token: 'new-token',
+            refresh_token: 'new-refresh',
+            email: 'user@example.com'
+        });
+
+        const res = await request(
+            service.getPort(),
+            'POST',
+            '/api/auth/accounts/da6fc8a8-f2f3-4780-88d8-c4f09d37d617',
+            body,
+            { 'content-type': 'application/json' }
+        );
+
+        expect(res.statusCode).toBe(200);
+        expect(mockAuthService.linkAccountWithId).toHaveBeenCalledWith(
+            'antigravity',
+            'da6fc8a8-f2f3-4780-88d8-c4f09d37d617',
+            expect.objectContaining({ accessToken: 'new-token' })
+        );
     });
 });
 
@@ -242,5 +300,51 @@ describe('AuthAPIService - Provider Normalization', () => {
         const parsed = JSON.parse(res.body) as { accounts: Array<{ provider: string }> };
 
         expect(parsed.accounts[0]?.provider).toBe('codex');
+    });
+
+    it('should normalize google to antigravity', async () => {
+        await service.initialize();
+
+        const account = makeAccount({ provider: 'google', id: 'google-acc' });
+        vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([account]);
+
+        const res = await request(service.getPort(), 'GET', '/api/auth/accounts');
+        const parsed = JSON.parse(res.body) as { accounts: Array<{ provider: string }> };
+
+        expect(parsed.accounts[0]?.provider).toBe('antigravity');
+    });
+});
+
+describe('AuthAPIService - Legacy Provider Aliases', () => {
+    it('should update legacy google accounts using the antigravity provider', async () => {
+        vi.mocked(mockAuthService.getAllAccountsFull).mockResolvedValue([
+            makeAccount({
+                id: 'legacy-google-account',
+                provider: 'google'
+            })
+        ]);
+
+        await service.initialize();
+
+        const body = JSON.stringify({
+            access_token: 'new-token',
+            refresh_token: 'new-refresh',
+            email: 'user@example.com'
+        });
+
+        const res = await request(
+            service.getPort(),
+            'POST',
+            '/api/auth/accounts/legacy-google-account',
+            body,
+            { 'content-type': 'application/json' }
+        );
+
+        expect(res.statusCode).toBe(200);
+        expect(mockAuthService.linkAccountWithId).toHaveBeenCalledWith(
+            'antigravity',
+            'legacy-google-account',
+            expect.objectContaining({ accessToken: 'new-token' })
+        );
     });
 });

@@ -10,13 +10,15 @@ const sectionData = {
         "idle": "Ready",
         "listening": "Listening...",
         "processing": "Processing...",
+        "standby": "Voice Standby",
         "speaking": "Speaking...",
         "error": "Error"
     },
     "feedback": {
         "navigating": "Navigating to {{target}}",
         "commandExecuted": "Command executed",
-        "notRecognized": "Command not recognized"
+        "notRecognized": "Command not recognized",
+        "executedPrefix": "Executed"
     },
     "settings": {
         "enableVoice": "Enable Voice Control",
@@ -41,6 +43,7 @@ const sectionData = {
     "commands": {
         "title": "Voice Commands",
         "aliases": "Aliases",
+        "customDescription": "Custom command: {{phrase}}",
         "categories": {
             "navigation": "Navigation",
             "actions": "Actions",

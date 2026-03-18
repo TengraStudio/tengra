@@ -254,7 +254,7 @@ export class SettingsService extends BaseService {
                 loaded = await this.parseAndRecoverSettings(data);
             }
 
-            const loadedRecord = loaded as Record<string, unknown>;
+            const loadedRecord = loaded as Record<string, RuntimeValue>;
             if (loadedRecord.userAvatar) {
                 delete loadedRecord.userAvatar;
             }
@@ -391,8 +391,8 @@ export class SettingsService extends BaseService {
         loaded?: Partial<AppSettings[T]>,
         keyField: string = 'token'
     ): AppSettings[T] {
-        const def = (DEFAULT_SETTINGS[provider] as Record<string, unknown> | undefined) ?? {};
-        const loadedObj = (loaded ?? {}) as Record<string, unknown>;
+        const def = (DEFAULT_SETTINGS[provider] as Record<string, RuntimeValue> | undefined) ?? {};
+        const loadedObj = (loaded ?? {}) as Record<string, RuntimeValue>;
         const tokenVal = loadedObj[keyField] as string | undefined;
         const authToken = this.findTokenInAuth(authAccounts, String(provider));
         const token = authToken !== '' ? authToken : (tokenVal ?? '');
@@ -602,9 +602,9 @@ export class SettingsService extends BaseService {
             anthropic_key: settings.anthropic?.apiKey,
             groq_key: settings.groq?.apiKey,
             nvidia_key: settings.nvidia?.apiKey,
-            antigravity_token: (settings.antigravity as Record<string, unknown> | undefined)
+            antigravity_token: (settings.antigravity as Record<string, RuntimeValue> | undefined)
                 ?.token as string | undefined,
-            copilot_token: (settings.copilot as Record<string, unknown> | undefined)?.token as
+            copilot_token: (settings.copilot as Record<string, RuntimeValue> | undefined)?.token as
                 | string
                 | undefined,
             proxy_key: settings.proxy?.key,
@@ -760,9 +760,9 @@ export class SettingsService extends BaseService {
     }
 
     private stripOtherSecrets(settings: AppSettings): void {
-        const antigravity = settings.antigravity as Record<string, unknown> | undefined;
-        const copilot = settings.copilot as Record<string, unknown> | undefined;
-        const proxy = settings.proxy as Record<string, unknown> | undefined;
+        const antigravity = settings.antigravity as Record<string, RuntimeValue> | undefined;
+        const copilot = settings.copilot as Record<string, RuntimeValue> | undefined;
+        const proxy = settings.proxy as Record<string, RuntimeValue> | undefined;
 
         if (antigravity) {
             antigravity.token = undefined;
@@ -886,9 +886,9 @@ export class SettingsService extends BaseService {
     }
 
     private deepMergeSettings(
-        target: Record<string, unknown>,
-        source: Record<string, unknown>
-    ): Record<string, unknown> {
+        target: Record<string, RuntimeValue>,
+        source: Record<string, RuntimeValue>
+    ): Record<string, RuntimeValue> {
         const res = { ...target };
         for (const key of Object.keys(source)) {
             const sourceValue = source[key];
@@ -897,7 +897,7 @@ export class SettingsService extends BaseService {
                 typeof sourceValue === 'object' &&
                 !Array.isArray(sourceValue)
             ) {
-                const targetValue = (target[key] as Record<string, unknown> | undefined) ?? {};
+                const targetValue = (target[key] as Record<string, RuntimeValue> | undefined) ?? {};
                 res[key] = { ...targetValue, ...sourceValue };
             } else {
                 res[key] = sourceValue;
@@ -906,7 +906,7 @@ export class SettingsService extends BaseService {
         return res;
     }
 
-    private sanitizeWindowSettings(raw: unknown): AppSettings['window'] {
+    private sanitizeWindowSettings(raw: RuntimeValue): AppSettings['window'] {
         const fallback = {
             width: DEFAULT_SETTINGS.window?.width ?? 1280,
             height: DEFAULT_SETTINGS.window?.height ?? 800,
@@ -916,14 +916,14 @@ export class SettingsService extends BaseService {
             startOnStartup: DEFAULT_SETTINGS.window?.startOnStartup ?? true,
             workAtBackground: DEFAULT_SETTINGS.window?.workAtBackground ?? true,
         };
-        const record = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+        const record = raw && typeof raw === 'object' ? (raw as Record<string, RuntimeValue>) : {};
         const legacyBounds =
             record.bounds && typeof record.bounds === 'object'
-                ? (record.bounds as Record<string, unknown>)
+                ? (record.bounds as Record<string, RuntimeValue>)
                 : null;
 
         const resolveNumber = (
-            value: unknown,
+            value: RuntimeValue,
             defaultValue: number,
             min: number,
             max: number
@@ -947,7 +947,7 @@ export class SettingsService extends BaseService {
             4320
         );
 
-        const resolvePosition = (value: unknown, fallbackValue: number): number => {
+        const resolvePosition = (value: RuntimeValue, fallbackValue: number): number => {
             if (typeof value !== 'number' || !Number.isFinite(value)) {
                 return fallbackValue;
             }
@@ -974,8 +974,8 @@ export class SettingsService extends BaseService {
 
     private preserveSensitiveTokens(newSettings: Partial<AppSettings>): void {
         const preserveToken = (provider: keyof AppSettings, field: string = 'token') => {
-            const newProv = newSettings[provider] as Record<string, unknown> | undefined;
-            const oldProv = this.settings[provider] as Record<string, unknown> | undefined;
+            const newProv = newSettings[provider] as Record<string, RuntimeValue> | undefined;
+            const oldProv = this.settings[provider] as Record<string, RuntimeValue> | undefined;
             if (newProv && oldProv && !newProv[field] && oldProv[field]) {
                 newProv[field] = oldProv[field];
             }

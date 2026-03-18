@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mockIpcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
+const mockIpcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
 
 // Mock electron with inline factories
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
-            mockIpcMainHandlers.set(channel, handler);
+        handle: vi.fn((channel: string, handler: (...args: TestValue[]) => TestValue | Promise<TestValue>) => {
+            mockIpcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
         }),
         removeHandler: vi.fn((channel: string) => {
             mockIpcMainHandlers.delete(channel);
@@ -30,7 +30,7 @@ vi.mock('@main/logging/logger', () => ({
 
 // Mock rate limiter
 vi.mock('@main/utils/rate-limiter.util', () => ({
-    withRateLimit: vi.fn((_key: string, fn: () => unknown) => fn()),
+    withRateLimit: vi.fn((_key: string, fn: () => TestValue) => fn()),
 }));
 
 // Import module under test AFTER mocks
@@ -46,7 +46,7 @@ describe('Screenshot IPC Handlers', () => {
         
         // Get mocked electron after import
         const electron = await import('electron');
-        mockDesktopCapturer = electron.desktopCapturer as unknown as Record<string, ReturnType<typeof vi.fn>>;
+        mockDesktopCapturer = electron.desktopCapturer as never as Record<string, ReturnType<typeof vi.fn>>;
         
         // Create mock thumbnail
         mockThumbnail = {
@@ -158,3 +158,4 @@ describe('Screenshot IPC Handlers', () => {
         });
     });
 });
+

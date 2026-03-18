@@ -32,6 +32,8 @@ export interface PromptAnalysis {
     stats: PromptStats;
 }
 
+type PromptTranslate = (key: string, options?: Record<string, string | number>) => string;
+
 const VAGUE_WORDS = [
     'good', 'nice', 'better', 'some', 'things', 'stuff',
     'maybe', 'probably', 'kind of', 'sort of', 'a bit',
@@ -68,6 +70,29 @@ const STRUCTURE_INDICATORS = [
 const AMBIGUOUS_PRONOUN_PATTERN = /^(it|they|this|that|these|those)\s/i;
 
 export class PromptOptimizerService {
+    constructor(private readonly translate?: PromptTranslate) {}
+
+    private formatText(template: string, options?: Record<string, string | number>): string {
+        if (!options) {
+            return template;
+        }
+        return Object.keys(options).reduce((acc, key) => {
+            return acc.replace(new RegExp(`{{${key}}}`, 'g'), String(options[key]));
+        }, template);
+    }
+
+    private tr(
+        key: string,
+        fallback: string,
+        options?: Record<string, string | number>
+    ): string {
+        const translated = this.translate?.(key, options);
+        if (!translated || translated === key) {
+            return this.formatText(fallback, options);
+        }
+        return translated;
+    }
+
     analyzePrompt(prompt: string): PromptAnalysis {
         const trimmed = prompt.trim();
         if (trimmed.length === 0) {
@@ -105,7 +130,11 @@ export class PromptOptimizerService {
                 suggestions.push({
                     type: 'clarity',
                     severity: 'improvement',
-                    message: `Vague word "${word}" detected. Consider being more specific.`,
+                    message: this.tr(
+                        'chat.promptOptimizer.vagueWordDetected',
+                        'Vague word "{{word}}" detected. Consider being more specific.',
+                        { word }
+                    ),
                     originalText: word,
                     position: { start: match.index, end: match.index + word.length },
                 });
@@ -116,31 +145,52 @@ export class PromptOptimizerService {
             suggestions.push({
                 type: 'context',
                 severity: 'improvement',
-                message: 'Consider adding a role or context (e.g., "You are a senior developer...").',
-                suggestedText: 'You are an expert in [domain]. ',
+                message: this.tr(
+                    'chat.promptOptimizer.contextSuggestion',
+                    'Consider adding a role or context (e.g., "You are a senior developer...").'
+                ),
+                suggestedText: this.tr(
+                    'chat.promptOptimizer.contextSuggestedText',
+                    'You are an expert in [domain]. '
+                ),
             });
         }
         if (!stats.hasConstraints && stats.wordCount > 15) {
             suggestions.push({
                 type: 'constraint',
                 severity: 'improvement',
-                message: 'Add constraints like length limits, scope, or what to avoid.',
-                suggestedText: 'Constraints: Keep the response under [N] words. Do not include [X].',
+                message: this.tr(
+                    'chat.promptOptimizer.constraintSuggestion',
+                    'Add constraints like length limits, scope, or what to avoid.'
+                ),
+                suggestedText: this.tr(
+                    'chat.promptOptimizer.constraintSuggestedText',
+                    'Constraints: Keep the response under [N] words. Do not include [X].'
+                ),
             });
         }
         if (!stats.hasOutputFormat && stats.wordCount > 15) {
             suggestions.push({
                 type: 'format',
                 severity: 'info',
-                message: 'Specify the desired output format (e.g., JSON, bullet points, table).',
-                suggestedText: 'Output format: Respond as a numbered list.',
+                message: this.tr(
+                    'chat.promptOptimizer.formatSuggestion',
+                    'Specify the desired output format (e.g., JSON, bullet points, table).'
+                ),
+                suggestedText: this.tr(
+                    'chat.promptOptimizer.formatSuggestedText',
+                    'Output format: Respond as a numbered list.'
+                ),
             });
         }
         if (stats.wordCount > 0 && stats.wordCount < 20) {
             suggestions.push({
                 type: 'specificity',
                 severity: 'warning',
-                message: 'Prompt is quite short. Adding more detail typically improves results.',
+                message: this.tr(
+                    'chat.promptOptimizer.shortPromptWarning',
+                    'Prompt is quite short. Adding more detail typically improves results.'
+                ),
             });
         }
         if (stats.wordCount > 500) {
@@ -149,7 +199,10 @@ export class PromptOptimizerService {
                 suggestions.push({
                     type: 'structure',
                     severity: 'warning',
-                    message: 'Long prompt without clear structure. Add headings, numbered steps, or sections.',
+                    message: this.tr(
+                        'chat.promptOptimizer.longPromptStructureWarning',
+                        'Long prompt without clear structure. Add headings, numbered steps, or sections.'
+                    ),
                 });
             }
         }
@@ -157,8 +210,14 @@ export class PromptOptimizerService {
             suggestions.push({
                 type: 'specificity',
                 severity: 'info',
-                message: 'Consider adding examples to clarify the expected output.',
-                suggestedText: 'Example: Input: [sample] → Output: [expected]',
+                message: this.tr(
+                    'chat.promptOptimizer.examplesSuggestion',
+                    'Consider adding examples to clarify the expected output.'
+                ),
+                suggestedText: this.tr(
+                    'chat.promptOptimizer.examplesSuggestedText',
+                    'Example: Input: [sample] → Output: [expected]'
+                ),
             });
         }
         const pronounMatch = AMBIGUOUS_PRONOUN_PATTERN.exec(trimmed);
@@ -166,7 +225,11 @@ export class PromptOptimizerService {
             suggestions.push({
                 type: 'clarity',
                 severity: 'warning',
-                message: `Starts with ambiguous pronoun "${pronounMatch[0].trim()}". Specify the subject explicitly.`,
+                message: this.tr(
+                    'chat.promptOptimizer.ambiguousPronounStarts',
+                    'Starts with ambiguous pronoun "{{pronoun}}". Specify the subject explicitly.',
+                    { pronoun: pronounMatch[0].trim() }
+                ),
                 originalText: pronounMatch[0].trim(),
                 position: { start: 0, end: pronounMatch[0].length },
             });
@@ -178,8 +241,14 @@ export class PromptOptimizerService {
             suggestions.push({
                 type: 'structure',
                 severity: 'info',
-                message: 'Complex task detected. Consider adding "Think step by step" for better reasoning.',
-                suggestedText: 'Think step by step.',
+                message: this.tr(
+                    'chat.promptOptimizer.complexTaskSuggestion',
+                    'Complex task detected. Consider adding "Think step by step" for better reasoning.'
+                ),
+                suggestedText: this.tr(
+                    'chat.promptOptimizer.complexTaskSuggestedText',
+                    'Think step by step.'
+                ),
             });
         }
 

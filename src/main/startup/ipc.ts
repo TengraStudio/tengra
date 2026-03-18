@@ -31,17 +31,15 @@ import { registerModelDownloaderIpc } from '@main/ipc/model-downloader';
 import { registerModelRegistryIpc } from '@main/ipc/model-registry';
 import { registerMultiModelIpc } from '@main/ipc/multi-model';
 import { registerOllamaIpc } from '@main/ipc/ollama';
-import { registerOrchestratorIpc } from '@main/ipc/orchestrator';
 import { registerPerformanceIpc } from '@main/ipc/performance';
 import { registerProcessIpc, setupProcessEvents } from '@main/ipc/process';
 import { registerPromptTemplatesIpc } from '@main/ipc/prompt-templates';
 import { registerProxyIpc } from '@main/ipc/proxy';
 import { registerProxyEmbedIpc } from '@main/ipc/proxy-embed';
+import { registerRuntimeIpc } from '@main/ipc/runtime';
 import { registerScreenshotIpc } from '@main/ipc/screenshot';
 import { registerSessionIpc } from '@main/ipc/session';
-import { registerSessionAutomationIpc } from '@main/ipc/session-automation';
 import { registerSessionConversationIpc } from '@main/ipc/session-conversation';
-import { registerSessionCouncilIpc } from '@main/ipc/session-council';
 import { registerSessionWorkspaceIpc } from '@main/ipc/session-workspace';
 import { registerSettingsIpc } from '@main/ipc/settings';
 import { registerSharedPromptsIpc } from '@main/ipc/shared-prompts';
@@ -55,6 +53,7 @@ import { registerUserCollaborationIpc } from '@main/ipc/user-collaboration';
 import { registerVoiceIpc } from '@main/ipc/voice';
 import { registerWindowIpc } from '@main/ipc/window';
 import { registerWorkspaceIpc } from '@main/ipc/workspace';
+import { registerWorkspaceAgentSessionIpc } from '@main/ipc/workspace-agent-session';
 import { appLogger } from '@main/logging/logger';
 import { McpDispatcher } from '@main/mcp/dispatcher';
 import { SharedPromptsService } from '@main/services/data/shared-prompts.service';
@@ -75,7 +74,6 @@ export async function registerIpcHandlers(
     mcpDispatcher: McpDispatcher
 ): Promise<void> {
     setIpcEventBus(services.eventBusService);
-    const sshService = await services.sshService.resolve();
     const logoService = container.resolve<LogoService>('logoService');
     const dockerService = container.resolve<DockerService>('dockerService');
     const userCollaborationService = new UserCollaborationService(
@@ -83,8 +81,6 @@ export async function registerIpcHandlers(
         services.eventBusService
     );
     const sharedPromptsService = new SharedPromptsService(services.databaseService);
-    await userCollaborationService.initialize();
-    await sharedPromptsService.initialize();
 
     // Registers
     registerWindowIpc(getMainWindow, allowedFileRoots);
@@ -98,6 +94,7 @@ export async function registerIpcHandlers(
     registerMetricsIpc();
     registerHealthIpc(services.healthCheckService);
     registerMigrationIpc(services.databaseService);
+    registerRuntimeIpc(services.runtimeBootstrapService);
 
     registerAuthIpc({
         proxyService: services.proxyService,
@@ -164,7 +161,7 @@ export async function registerIpcHandlers(
     registerMemoryIpc(getMainWindow, services.memoryService);
     registerAdvancedMemoryIpc(services.advancedMemoryService);
     registerBrainIpcHandlers(getMainWindow, services.brainService);
-    registerGitIpc(getMainWindow, services.gitService);
+    registerGitIpc(getMainWindow, services.gitService, services.llmService, services.brainService);
 
     registerSettingsIpc({
         getMainWindow,
@@ -195,7 +192,6 @@ export async function registerIpcHandlers(
         },
     });
 
-    registerSshIpc(getMainWindow, sshService, services.rateLimitService);
     registerFilesIpc(getMainWindow, services.fileSystemService, allowedFileRoots, services.auditLogService);
     registerHFModelIpc(services.llmService, services.huggingFaceService);
     registerMultiModelIpc(services.multiModelComparisonService);
@@ -206,11 +202,20 @@ export async function registerIpcHandlers(
         services.sessionModuleRegistryService,
         services.eventBusService
     );
-    registerSessionAutomationIpc(services.automationWorkflowService, getMainWindow);
-    registerSessionCouncilIpc(getMainWindow, services.automationWorkflowService);
-    registerSessionWorkspaceIpc(getMainWindow, services.databaseService);
 
-    registerToolsIpc(getMainWindow, toolExecutor, services.commandService);
+    registerSessionWorkspaceIpc(getMainWindow, services.databaseService);
+    registerWorkspaceAgentSessionIpc(
+        getMainWindow,
+        services.databaseService,
+        services.modelRegistryService
+    );
+
+    registerToolsIpc(
+        getMainWindow,
+        toolExecutor,
+        services.commandService,
+        services.databaseService
+    );
     registerMcpIpc(mcpDispatcher, getMainWindow);
 
     registerScreenshotIpc(getMainWindow);
@@ -247,11 +252,6 @@ export async function registerIpcHandlers(
     // Register Idea Generator IPC
     registerIdeaGeneratorIpc(services.ideaGeneratorService, services.eventBusService);
 
-    services.automationWorkflowService.setToolExecutor(toolExecutor);
-
-    // Register Multi-Agent Orchestrator IPC
-    registerOrchestratorIpc(services.multiAgentOrchestratorService, getMainWindow);
-
     // Token Estimation
     registerTokenEstimationIpc();
     registerVoiceIpc();
@@ -264,4 +264,12 @@ export async function registerIpcHandlers(
 
     // Register Batch IPC
     registerBatchIpc();
+}
+
+export async function registerDeferredIpcHandlers(
+    services: Services,
+    getMainWindow: () => BrowserWindow | null
+): Promise<void> {
+    const sshService = await services.sshService.resolve();
+    registerSshIpc(getMainWindow, sshService, services.rateLimitService);
 }

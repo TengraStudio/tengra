@@ -2,11 +2,11 @@ import { registerSshIpc } from '@main/ipc/ssh';
 import { ipcMain } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const handlers = new Map<string, (...args: unknown[]) => Promise<unknown>>();
+const handlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
 
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: unknown[]) => Promise<unknown>) => {
+        handle: vi.fn((channel: string, handler: (...args: TestValue[]) => Promise<TestValue>) => {
             handlers.set(channel, handler);
         }),
         removeHandler: vi.fn()
@@ -18,7 +18,7 @@ vi.mock('@main/ipc/sender-validator', () => ({
 }));
 
 vi.mock('@main/ipc/validation', () => ({
-    validateIpc: vi.fn((_schema: unknown, value: unknown) => value),
+    validateIpc: vi.fn((_schema: TestValue, value: TestValue) => value),
     sshConnectionSchema: {},
     sshProfileSchema: {}
 }));
@@ -28,7 +28,7 @@ describe('SSH IPC Handlers', () => {
         const sshService = {
             on: vi.fn(),
             off: vi.fn(),
-            connect: vi.fn(async (payload: unknown) => ({ success: true, id: (payload as Record<string, unknown>).id })),
+            connect: vi.fn(async (payload: TestValue) => ({ success: true, id: (payload as Record<string, TestValue>).id })),
             disconnect: vi.fn(async () => undefined),
             getAllConnections: vi.fn(() => [{ id: 'c1', host: '127.0.0.1', username: 'u', connected: true }]),
             isConnected: vi.fn(() => true),

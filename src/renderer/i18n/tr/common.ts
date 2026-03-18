@@ -48,6 +48,7 @@ const sectionData = {
     "commands": "Komutlar",
     "connect": "Bağlan",
     "favorites": "Favoriler",
+    "fit": "Sığdır",
     "fitView": "Görünüme Sığdır",
     "host": "Sunucu",
     "next": "İleri",
@@ -63,6 +64,7 @@ const sectionData = {
     "searching": "Aranıyor...",
     "send": "Gönder",
     "stop": "Durdur",
+    "pause": "Duraklat",
     "unarchive": "Arşivden Çıkar",
     "update": "Güncelle",
     "username": "Kullanıcı Adı",
@@ -77,7 +79,7 @@ const sectionData = {
     "manual": "Manuel",
     "generating": "Oluşturuluyor...",
     "generateLogos": "Logoları Oluştur",
-    "select": "Seçme",
+    "select": "Seç",
     "more": "Daha",
     "kb_one": "bilgi bankası",
     "continue": "Devam etmek",
@@ -87,8 +89,15 @@ const sectionData = {
     "finalizing": "Tamamlanıyor...",
     "timeRemaining": "~{{seconds}}sn kaldı",
     "loadingContext": "{{context}} yükleniyor",
+    "layout": "Düzen",
     "selectEllipsis": "Seçiniz...",
-    "offlineBanner": "Çevrimdışısınız. Bazı özellikler kullanılamayabilir."
+    "offlineBanner": "Çevrimdışısınız. Bazı özellikler kullanılamayabilir.",
+    "snooze": "Ertele",
+    "markRead": "Okundu İşaretle",
+    "dismiss": "Kapat",
+    "remindInMinutes": "{{minutes}} dakika sonra hatırlat",
+    "optional": "Optional",
+    "escKey": "Esc"
 };
 
 export default sectionData;

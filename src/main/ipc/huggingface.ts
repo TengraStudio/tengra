@@ -21,7 +21,7 @@ const MAX_PAGE = 1000;
 /**
  * Validates a query string
  */
-function validateQuery(value: unknown): string {
+function validateQuery(value: RuntimeValue): string {
     if (typeof value !== 'string') {
         return '';
     }
@@ -31,7 +31,7 @@ function validateQuery(value: unknown): string {
 /**
  * Validates a model ID
  */
-function validateModelId(value: unknown): string | null {
+function validateModelId(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -49,7 +49,7 @@ function validateModelId(value: unknown): string | null {
 /**
  * Validates a URL
  */
-function validateUrl(value: unknown): string | null {
+function validateUrl(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -75,7 +75,7 @@ function validateUrl(value: unknown): string | null {
 /**
  * Validates an output path
  */
-function validatePath(value: unknown): string | null {
+function validatePath(value: RuntimeValue): string | null {
     if (typeof value !== 'string') {
         return null;
     }
@@ -89,7 +89,7 @@ function validatePath(value: unknown): string | null {
 /**
  * Validates a numeric limit
  */
-function validateLimit(value: unknown): number {
+function validateLimit(value: RuntimeValue): number {
     const num = Number(value);
     if (!Number.isInteger(num) || num < 1) {
         return 10;
@@ -100,7 +100,7 @@ function validateLimit(value: unknown): number {
 /**
  * Validates a page number
  */
-function validatePage(value: unknown): number {
+function validatePage(value: RuntimeValue): number {
     const num = Number(value);
     if (!Number.isInteger(num) || num < 0) {
         return 0;
@@ -111,7 +111,7 @@ function validatePage(value: unknown): number {
 /**
  * Validates a sort option
  */
-function validateSort(value: unknown): string {
+function validateSort(value: RuntimeValue): string {
     if (typeof value !== 'string') {
         return 'downloads';
     }
@@ -122,7 +122,7 @@ function validateSort(value: unknown): string {
 /**
  * Validates expected file size
  */
-function validateFileSize(value: unknown): number {
+function validateFileSize(value: RuntimeValue): number {
     const num = Number(value);
     if (!Number.isFinite(num) || num < 0) {
         return 0;
@@ -130,7 +130,7 @@ function validateFileSize(value: unknown): number {
     return num;
 }
 
-function validateModelIdList(value: unknown): string[] {
+function validateModelIdList(value: RuntimeValue): string[] {
     if (!Array.isArray(value)) {
         return [];
     }
@@ -143,7 +143,7 @@ function validateModelIdList(value: unknown): string[] {
 /**
  * Validates expected SHA256 hash
  */
-function validateSha256(value: unknown): string {
+function validateSha256(value: RuntimeValue): string {
     if (typeof value !== 'string') {
         return '';
     }
@@ -155,7 +155,7 @@ function validateSha256(value: unknown): string {
     return trimmed;
 }
 
-function validateConversionQuantization(value: unknown): 'F16' | 'Q8_0' | 'Q6_K' | 'Q5_K_M' | 'Q4_K_M' {
+function validateConversionQuantization(value: RuntimeValue): 'F16' | 'Q8_0' | 'Q6_K' | 'Q5_K_M' | 'Q4_K_M' {
     if (typeof value !== 'string') {
         return 'Q4_K_M';
     }
@@ -174,7 +174,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
     appLogger.info('HuggingFaceIPC', 'Registering HuggingFace IPC handlers');
 
     ipcMain.handle('hf:search-models', createSafeIpcHandler('hf:search-models',
-        async (_event: IpcMainInvokeEvent, queryRaw: unknown, limitRaw: unknown, pageRaw: unknown, sortRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, queryRaw: RuntimeValue, limitRaw: RuntimeValue, pageRaw: RuntimeValue, sortRaw: RuntimeValue) => {
             const query = validateQuery(queryRaw);
             const limit = validateLimit(limitRaw);
             const page = validatePage(pageRaw);
@@ -186,7 +186,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
     ));
 
     ipcMain.handle('hf:get-files', createSafeIpcHandler('hf:get-files',
-        async (_event: IpcMainInvokeEvent, modelIdRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, modelIdRaw: RuntimeValue) => {
             const modelId = validateModelId(modelIdRaw);
             if (!modelId) {
                 throw new Error('Invalid model ID');
@@ -198,13 +198,13 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
     ));
 
     ipcMain.handle('hf:download-file', createIpcHandler('hf:download-file',
-        async (event: IpcMainInvokeEvent, paramsRaw: unknown) => {
+        async (event: IpcMainInvokeEvent, paramsRaw: RuntimeValue) => {
             const params = paramsRaw as {
-                url: unknown;
-                outputPath: unknown;
-                expectedSize: unknown;
-                expectedSha256: unknown;
-                scheduleAt: unknown;
+                url: RuntimeValue;
+                outputPath: RuntimeValue;
+                expectedSize: RuntimeValue;
+                expectedSha256: RuntimeValue;
+                scheduleAt: RuntimeValue;
             };
             const url = validateUrl(params.url);
             const outputPath = validatePath(params.outputPath);
@@ -237,7 +237,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:get-recommendations', createSafeIpcHandler(
         'hf:get-recommendations',
-        async (_event: IpcMainInvokeEvent, limitRaw: unknown, queryRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, limitRaw: RuntimeValue, queryRaw: RuntimeValue) => {
             const limit = validateLimit(limitRaw);
             const query = validateQuery(queryRaw);
             return await withRateLimit('huggingface', async () => hfService.getRecommendations(limit, query));
@@ -247,7 +247,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:get-model-preview', createSafeIpcHandler(
         'hf:get-model-preview',
-        async (_event: IpcMainInvokeEvent, modelIdRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, modelIdRaw: RuntimeValue) => {
             const modelId = validateModelId(modelIdRaw);
             if (!modelId) {
                 throw new Error('Invalid model ID');
@@ -259,7 +259,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:compare-models', createSafeIpcHandler(
         'hf:compare-models',
-        async (_event: IpcMainInvokeEvent, modelIdsRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, modelIdsRaw: RuntimeValue) => {
             const modelIds = validateModelIdList(modelIdsRaw);
             return await withRateLimit('huggingface', async () => hfService.compareModels(modelIds));
         },
@@ -268,7 +268,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:validate-compatibility', createSafeIpcHandler(
         'hf:validate-compatibility',
-        async (_event: IpcMainInvokeEvent, fileRaw: unknown, ramRaw: unknown, vramRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, fileRaw: RuntimeValue, ramRaw: RuntimeValue, vramRaw: RuntimeValue) => {
             const file = fileRaw as { path: string; size: number; oid?: string; quantization: string };
             if (!file || typeof file.path !== 'string' || typeof file.size !== 'number' || typeof file.quantization !== 'string') {
                 throw new Error('Invalid file payload');
@@ -288,7 +288,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:watchlist:add', createSafeIpcHandler(
         'hf:watchlist:add',
-        async (_event: IpcMainInvokeEvent, modelIdRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, modelIdRaw: RuntimeValue) => {
             const modelId = validateModelId(modelIdRaw);
             if (!modelId) {
                 throw new Error('Invalid model ID');
@@ -300,7 +300,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:watchlist:remove', createSafeIpcHandler(
         'hf:watchlist:remove',
-        async (_event: IpcMainInvokeEvent, modelIdRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, modelIdRaw: RuntimeValue) => {
             const modelId = validateModelId(modelIdRaw);
             if (!modelId) {
                 throw new Error('Invalid model ID');
@@ -324,7 +324,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:test-downloaded-model', createSafeIpcHandler(
         'hf:test-downloaded-model',
-        async (_event: IpcMainInvokeEvent, filePathRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, filePathRaw: RuntimeValue) => {
             const filePath = validatePath(filePathRaw);
             if (!filePath) {
                 throw new Error('Invalid file path');
@@ -342,7 +342,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:get-optimization-suggestions', createSafeIpcHandler(
         'hf:get-optimization-suggestions',
-        async (_event: IpcMainInvokeEvent, optionsRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, optionsRaw: RuntimeValue) => {
             const options = optionsRaw as {
                 sourcePath: string;
                 outputPath: string;
@@ -363,7 +363,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:validate-conversion', createSafeIpcHandler(
         'hf:validate-conversion',
-        async (_event: IpcMainInvokeEvent, optionsRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, optionsRaw: RuntimeValue) => {
             const options = optionsRaw as {
                 sourcePath: string;
                 outputPath: string;
@@ -384,7 +384,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:convert-model', createSafeIpcHandler(
         'hf:convert-model',
-        async (event: IpcMainInvokeEvent, optionsRaw: unknown) => {
+        async (event: IpcMainInvokeEvent, optionsRaw: RuntimeValue) => {
             const options = optionsRaw as {
                 sourcePath: string;
                 outputPath: string;
@@ -410,7 +410,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:versions:list', createSafeIpcHandler(
         'hf:versions:list',
-        async (_event: IpcMainInvokeEvent, modelIdRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, modelIdRaw: RuntimeValue) => {
             const modelId = validateModelId(modelIdRaw);
             if (!modelId) {
                 throw new Error('Invalid model ID');
@@ -422,7 +422,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:versions:register', createSafeIpcHandler(
         'hf:versions:register',
-        async (_event: IpcMainInvokeEvent, modelIdRaw: unknown, filePathRaw: unknown, notesRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, modelIdRaw: RuntimeValue, filePathRaw: RuntimeValue, notesRaw: RuntimeValue) => {
             const modelId = validateModelId(modelIdRaw);
             const filePath = validatePath(filePathRaw);
             if (!modelId || !filePath) {
@@ -436,7 +436,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:versions:compare', createSafeIpcHandler(
         'hf:versions:compare',
-        async (_event: IpcMainInvokeEvent, modelIdRaw: unknown, leftRaw: unknown, rightRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, modelIdRaw: RuntimeValue, leftRaw: RuntimeValue, rightRaw: RuntimeValue) => {
             const modelId = validateModelId(modelIdRaw);
             const left = validateModelId(leftRaw);
             const right = validateModelId(rightRaw);
@@ -450,7 +450,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:versions:rollback', createSafeIpcHandler(
         'hf:versions:rollback',
-        async (_event: IpcMainInvokeEvent, modelIdRaw: unknown, versionIdRaw: unknown, targetPathRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, modelIdRaw: RuntimeValue, versionIdRaw: RuntimeValue, targetPathRaw: RuntimeValue) => {
             const modelId = validateModelId(modelIdRaw);
             const versionId = validateModelId(versionIdRaw);
             const targetPath = validatePath(targetPathRaw);
@@ -464,7 +464,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:versions:pin', createSafeIpcHandler(
         'hf:versions:pin',
-        async (_event: IpcMainInvokeEvent, modelIdRaw: unknown, versionIdRaw: unknown, pinnedRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, modelIdRaw: RuntimeValue, versionIdRaw: RuntimeValue, pinnedRaw: RuntimeValue) => {
             const modelId = validateModelId(modelIdRaw);
             const versionId = validateModelId(versionIdRaw);
             if (!modelId || !versionId) {
@@ -478,7 +478,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:versions:notifications', createSafeIpcHandler(
         'hf:versions:notifications',
-        async (_event: IpcMainInvokeEvent, modelIdRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, modelIdRaw: RuntimeValue) => {
             const modelId = validateModelId(modelIdRaw);
             if (!modelId) {
                 throw new Error('Invalid model ID');
@@ -490,7 +490,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:finetune:prepare-dataset', createSafeIpcHandler(
         'hf:finetune:prepare-dataset',
-        async (_event: IpcMainInvokeEvent, inputRaw: unknown, outputRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, inputRaw: RuntimeValue, outputRaw: RuntimeValue) => {
             const inputPath = validatePath(inputRaw);
             const outputPath = validatePath(outputRaw);
             if (!inputPath || !outputPath) {
@@ -503,7 +503,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:finetune:start', createSafeIpcHandler(
         'hf:finetune:start',
-        async (event: IpcMainInvokeEvent, modelIdRaw: unknown, datasetRaw: unknown, outputRaw: unknown, optionsRaw: unknown) => {
+        async (event: IpcMainInvokeEvent, modelIdRaw: RuntimeValue, datasetRaw: RuntimeValue, outputRaw: RuntimeValue, optionsRaw: RuntimeValue) => {
             const modelId = validateModelId(modelIdRaw);
             const datasetPath = validatePath(datasetRaw);
             const outputPath = validatePath(outputRaw);
@@ -524,7 +524,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:finetune:list', createSafeIpcHandler(
         'hf:finetune:list',
-        async (_event: IpcMainInvokeEvent, modelIdRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, modelIdRaw: RuntimeValue) => {
             const modelId = validateModelId(modelIdRaw ?? '');
             return await hfService.listFineTuneJobs(modelId ?? undefined);
         },
@@ -533,7 +533,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:finetune:get', createSafeIpcHandler(
         'hf:finetune:get',
-        async (_event: IpcMainInvokeEvent, jobIdRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, jobIdRaw: RuntimeValue) => {
             const jobId = validateModelId(jobIdRaw);
             if (!jobId) {
                 throw new Error('Invalid job ID');
@@ -545,7 +545,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:finetune:cancel', createSafeIpcHandler(
         'hf:finetune:cancel',
-        async (_event: IpcMainInvokeEvent, jobIdRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, jobIdRaw: RuntimeValue) => {
             const jobId = validateModelId(jobIdRaw);
             if (!jobId) {
                 throw new Error('Invalid job ID');
@@ -557,7 +557,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:finetune:evaluate', createSafeIpcHandler(
         'hf:finetune:evaluate',
-        async (_event: IpcMainInvokeEvent, jobIdRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, jobIdRaw: RuntimeValue) => {
             const jobId = validateModelId(jobIdRaw);
             if (!jobId) {
                 throw new Error('Invalid job ID');
@@ -569,7 +569,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
 
     ipcMain.handle('hf:finetune:export', createSafeIpcHandler(
         'hf:finetune:export',
-        async (_event: IpcMainInvokeEvent, jobIdRaw: unknown, exportPathRaw: unknown) => {
+        async (_event: IpcMainInvokeEvent, jobIdRaw: RuntimeValue, exportPathRaw: RuntimeValue) => {
             const jobId = validateModelId(jobIdRaw);
             const exportPath = validatePath(exportPathRaw);
             if (!jobId || !exportPath) {

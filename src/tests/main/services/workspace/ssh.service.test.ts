@@ -187,7 +187,7 @@ describe('SSHService', () => {
                 forwardIn: vi.fn((_host: string, _port: number, cb: (error?: Error) => void) => cb(undefined)),
                 unforwardIn: vi.fn((_host: string, _port: number, cb: () => void) => cb())
             };
-            service['connections'].set('conn-id', mockConn as unknown as never);
+            service['connections'].set('conn-id', mockConn as never as never);
             const created = await service.createRemoteForward('conn-id', '0.0.0.0', 2222, '127.0.0.1', 22);
             expect(created.success).toBe(true);
             expect(created.forwardId).toBeDefined();

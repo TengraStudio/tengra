@@ -11,11 +11,11 @@ vi.mock('electron', () => ({
 }));
 
 describe('Idea-Generator IPC Handlers', () => {
-    let registeredHandlers: Map<string, unknown>;
+    let registeredHandlers: Map<string, TestValue>;
 
     beforeEach(() => {
         registeredHandlers = new Map();
-        mockIpcMainHandle.mockImplementation((channel: string, listener: (event: IpcMainInvokeEvent, ...args: unknown[]) => unknown) => {
+        mockIpcMainHandle.mockImplementation((channel: string, listener: (event: IpcMainInvokeEvent, ...args: TestValue[]) => TestValue) => {
             registeredHandlers.set(channel, listener);
         });
     });
@@ -26,7 +26,7 @@ describe('Idea-Generator IPC Handlers', () => {
         it('should create a session', async () => {
             const handler = async () => ({ id: 'session-1', status: 'active' });
             registeredHandlers.set('ideas:createSession', handler);
-            const result = await (registeredHandlers.get('ideas:createSession') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('ideas:createSession') as () => Promise<TestValue>)();
             expect(result).toHaveProperty('id');
         });
     });
@@ -35,7 +35,7 @@ describe('Idea-Generator IPC Handlers', () => {
         it('should get a session', async () => {
             const handler = async () => ({ id: 'session-1', status: 'active' });
             registeredHandlers.set('ideas:getSession', handler);
-            const result = await (registeredHandlers.get('ideas:getSession') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('ideas:getSession') as () => Promise<TestValue>)();
             expect(result).toHaveProperty('id');
         });
     });
@@ -44,7 +44,7 @@ describe('Idea-Generator IPC Handlers', () => {
         it('should get all sessions', async () => {
             const handler = async () => [];
             registeredHandlers.set('ideas:getSessions', handler);
-            const result = await (registeredHandlers.get('ideas:getSessions') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('ideas:getSessions') as () => Promise<TestValue>)();
             expect(Array.isArray(result)).toBe(true);
         });
     });
@@ -53,7 +53,7 @@ describe('Idea-Generator IPC Handlers', () => {
         it('should get an idea', async () => {
             const handler = async () => ({ id: 'idea-1', title: 'Test Idea' });
             registeredHandlers.set('ideas:getIdea', handler);
-            const result = await (registeredHandlers.get('ideas:getIdea') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('ideas:getIdea') as () => Promise<TestValue>)();
             expect(result).toHaveProperty('title');
         });
     });
@@ -62,7 +62,7 @@ describe('Idea-Generator IPC Handlers', () => {
         it('should get ideas', async () => {
             const handler = async () => [];
             registeredHandlers.set('ideas:getIdeas', handler);
-            const result = await (registeredHandlers.get('ideas:getIdeas') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('ideas:getIdeas') as () => Promise<TestValue>)();
             expect(Array.isArray(result)).toBe(true);
         });
     });
@@ -71,7 +71,7 @@ describe('Idea-Generator IPC Handlers', () => {
         it('should delete an idea', async () => {
             const handler = async () => ({ success: true });
             registeredHandlers.set('ideas:deleteIdea', handler);
-            const result = await (registeredHandlers.get('ideas:deleteIdea') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('ideas:deleteIdea') as () => Promise<TestValue>)();
             expect(result).toEqual({ success: true });
         });
     });
@@ -80,7 +80,7 @@ describe('Idea-Generator IPC Handlers', () => {
         it('should check logo generation availability', async () => {
             const handler = async () => true;
             registeredHandlers.set('ideas:canGenerateLogo', handler);
-            const result = await (registeredHandlers.get('ideas:canGenerateLogo') as () => Promise<unknown>)();
+            const result = await (registeredHandlers.get('ideas:canGenerateLogo') as () => Promise<TestValue>)();
             expect(result).toBe(true);
         });
     });

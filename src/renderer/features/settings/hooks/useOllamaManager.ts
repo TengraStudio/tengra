@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useTranslation } from '@/i18n';
 import { appLogger } from '@/utils/renderer-logger';
 
 export function useOllamaManager() {
+    const { t } = useTranslation();
     const [isOllamaRunning, setIsOllamaRunning] = useState(false);
     const [statusMessage, setStatusMessage] = useState('');
     const statusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -36,7 +38,10 @@ export function useOllamaManager() {
             }
             const result = await window.electron.startOllama();
             if (result.message) {
-                setStatusMessage(result.message);
+                const localizedMessage = result.messageKey
+                    ? t(result.messageKey, result.messageParams)
+                    : result.message;
+                setStatusMessage(localizedMessage);
                 statusTimeoutRef.current = setTimeout(() => setStatusMessage(''), 2000);
             }
         } catch (error) {
@@ -44,7 +49,7 @@ export function useOllamaManager() {
         } finally {
             void checkOllama();
         }
-    }, [checkOllama]);
+    }, [checkOllama, t]);
 
     return {
         isOllamaRunning,

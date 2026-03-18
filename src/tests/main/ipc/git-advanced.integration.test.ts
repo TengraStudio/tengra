@@ -2,11 +2,11 @@ import { registerGitAdvancedIpc } from '@main/ipc/git-advanced';
 import { ipcMain } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const ipcHandlers = new Map<string, (...args: unknown[]) => Promise<unknown>>();
+const ipcHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
 
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: unknown[]) => Promise<unknown>) => {
+        handle: vi.fn((channel: string, handler: (...args: TestValue[]) => Promise<TestValue>) => {
             ipcHandlers.set(channel, handler);
         }),
         removeHandler: vi.fn()
@@ -15,7 +15,7 @@ vi.mock('electron', () => ({
 
 
 vi.mock('@main/utils/rate-limiter.util', () => ({
-    withRateLimit: vi.fn(async (_scope: string, fn: () => Promise<unknown>) => fn())
+    withRateLimit: vi.fn(async (_scope: string, fn: () => Promise<TestValue>) => fn())
 }));
 
 describe('Git Advanced IPC Handlers', () => {
@@ -42,7 +42,7 @@ describe('Git Advanced IPC Handlers', () => {
             }),
             cancelOperation: vi.fn((id: string) => id === 'op-1')
         };
-        registerGitAdvancedIpc(gitService as unknown as Parameters<typeof registerGitAdvancedIpc>[0], (_e) => {});
+        registerGitAdvancedIpc(gitService as never as Parameters<typeof registerGitAdvancedIpc>[0], (_e) => {});
     });
 
     it('registers advanced git handlers', () => {
@@ -64,9 +64,9 @@ describe('Git Advanced IPC Handlers', () => {
     it('returns repository stats and clamps invalid days', async () => {
         const handler = ipcHandlers.get('git:getRepositoryStats');
         const result = await handler?.({}, 'C:/repo', -1);
-        expect((result as Record<string, unknown>).success).toBe(true);
-        expect((result as Record<string, Record<string, unknown>>).stats.totalCommits).toBe(42);
-        expect((result as Record<string, Record<string, unknown>>).stats.days).toBe(365);
+        expect((result as Record<string, TestValue>).success).toBe(true);
+        expect((result as Record<string, Record<string, TestValue>>).stats.totalCommits).toBe(42);
+        expect((result as Record<string, Record<string, TestValue>>).stats.days).toBe(365);
     });
 });
 

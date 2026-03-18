@@ -19,7 +19,7 @@ export class ProxyError extends AppError {
     message: string,
     code: string = 'PROXY_ERROR',
     recoverable: boolean = false,
-    options?: { cause?: Error; context?: Record<string, unknown> }
+    options?: { cause?: Error; context?: Record<string, RuntimeValue> }
   ) {
     super(message, code, options);
     this.recoverable = recoverable;

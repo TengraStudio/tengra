@@ -5,6 +5,22 @@ const sectionData = {
     "totalFacts": "Toplam Gerçek",
     "episodes": "Bölümler",
     "entities": "Varlıklar",
+    "graph": "Knowledge Graph",
+    "timeline": "Memory Timeline",
+    "graphView": "Knowledge Graph",
+    "timelineView": "Memory Timeline",
+    "erDiagram": "Entity Diagram",
+    "entitiesTracked": "{{count}} entities tracked",
+    "graphStats": "{{nodes}} nodes • {{edges}} edges",
+    "graphLoading": "Rebuilding graph...",
+    "graphEdgeRelated": "related",
+    "graphEdgeContradicts": "contradicts",
+    "timelineTotalEvents": "{{count}} total events",
+    "timelineFilterAll": "All",
+    "timelineFilterEpisode": "Episodes",
+    "timelineFilterFragment": "Fragments",
+    "timelineReconstructing": "Reconstructing timeline...",
+    "emptyState": "No memory data to display",
     "facts": "Gerçekler",
     "addFact": "Gerçek Ekle",
     "addManualFact": "Manuel Gerçek Ekle",
@@ -99,6 +115,7 @@ const sectionData = {
         "pending": "Bekleyen",
         "confirmed": "Onaylı",
         "archived": "Arşiv",
+        "visualization": "Görselleştirme",
         "stats": "İstatistikler"
     },
     "categories": {
@@ -125,11 +142,27 @@ const sectionData = {
         "globalContext": "Genel Bağlam",
         "totalActiveFragments": "Toplam Aktif Parça"
     },
+    "visualization": {
+        "title": "Bellek Görselleştirme",
+        "subtitle": "Ajan bilgisinin etkileşimli keşfi",
+        "legend": {
+            "semanticContext": "Semantik Bağlam",
+            "entityKnowledge": "Varlık Bilgisi",
+            "episodicExperience": "Episodik Deneyim"
+        },
+        "poweredBy": "Tengra Gelişmiş Bellek Hizmeti ile desteklenir"
+    },
     "errors": {
         "exportFailed": "Bellek dışa aktarma başarısız",
         "importFailed": "Bellek içe aktarma başarısız"
     },
-    "select": "Bellek Seç"
+    "select": "Bellek Seç",
+    "refreshTitle": "Refresh",
 };
 
 export default sectionData;
+
+
+
+
+

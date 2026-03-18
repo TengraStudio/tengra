@@ -1,9 +1,9 @@
-import { ChildProcess, execSync, spawn } from 'child_process';
-import * as fs from 'fs';
+import { ChildProcess, spawn } from 'child_process';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 
+import { findExecutableInPath, findFirstExistingPath } from './backend-discovery.util';
 import { ITerminalBackend, ITerminalProcess, TerminalCreateOptions } from './terminal-backend.interface';
 
 /**
@@ -93,21 +93,15 @@ export class WarpBackend implements ITerminalBackend {
     }
 
     private async discoverWarpPath(): Promise<string | null> {
-        const isWin = process.platform === 'win32';
-        const cmd = isWin ? 'where warp' : 'which warp';
-
-        try {
-            const result = execSync(cmd, { encoding: 'utf8' }).trim();
-            if (result) {
-                const pathResult = result.split('\n')[0].trim();
-                appLogger.info('WarpBackend', `Found Warp at: ${pathResult}`);
-                return pathResult;
-            }
-        } catch {
-            appLogger.debug('WarpBackend', 'Warp not found in PATH');
+        const discoveredPath = await findExecutableInPath('warp');
+        if (discoveredPath) {
+            appLogger.info('WarpBackend', `Found Warp at: ${discoveredPath}`);
+            return discoveredPath;
         }
 
-        const commonPaths = isWin
+        appLogger.debug('WarpBackend', 'Warp not found in PATH');
+
+        const commonPaths = process.platform === 'win32'
             ? [
                 path.join(process.env.LOCALAPPDATA ?? '', 'Warp', 'warp.exe'),
                 'C:\\Program Files\\Warp\\warp.exe'
@@ -118,16 +112,10 @@ export class WarpBackend implements ITerminalBackend {
                 '/usr/bin/warp'
             ];
 
-        for (const p of commonPaths) {
-            try {
-                // Sync I/O acceptable: one-time shell detection at backend init
-                if (fs.existsSync(p)) {
-                    appLogger.info('WarpBackend', `Found Warp at common location: ${p}`);
-                    return p;
-                }
-            } catch {
-                // Ignore
-            }
+        const commonPath = await findFirstExistingPath(commonPaths);
+        if (commonPath) {
+            appLogger.info('WarpBackend', `Found Warp at common location: ${commonPath}`);
+            return commonPath;
         }
 
         return null;

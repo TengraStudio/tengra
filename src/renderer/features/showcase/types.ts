@@ -8,7 +8,7 @@ export interface StoryVariant {
   /** Display name for this variant */
   name: string
   /** Props to pass to the component */
-  props: Record<string, unknown>
+  props: Record<string, RendererDataValue>
   /** Optional description of what this variant demonstrates */
   description?: string
 }
@@ -18,7 +18,7 @@ export interface ComponentStory {
   /** Display name of the component */
   name: string
   /** The React component to render */
-  component: React.ComponentType<Record<string, unknown>>
+  component: React.ComponentType<Record<string, RendererDataValue>>
   /** List of variants to showcase */
   variants: StoryVariant[]
   /** Optional category for grouping in sidebar */

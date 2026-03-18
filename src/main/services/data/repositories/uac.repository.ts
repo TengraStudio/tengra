@@ -1,5 +1,5 @@
 import { WORKSPACE_COMPAT_INDEX_VALUES, WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
-import { AgentCollaborationMessage, WorkspaceStep } from '@shared/types/automation-workflow';
+import { AgentCollaborationMessage, WorkspaceStep } from '@shared/types/council';
 import { DatabaseAdapter, SqlValue } from '@shared/types/database';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -165,7 +165,7 @@ export interface CreateUacTaskInput {
     description: string;
     status?: string;
     nodeId?: string;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, RuntimeValue>;
     parentTaskId?: string;
 }
 
@@ -478,7 +478,7 @@ export class UacRepository {
         return id;
     }
 
-    async updateTaskMetadata(id: string, metadata: Record<string, unknown>): Promise<void> {
+    async updateTaskMetadata(id: string, metadata: Record<string, RuntimeValue>): Promise<void> {
         await this.db
             .prepare(`UPDATE uac_tasks SET metadata = ?, updated_at = ? WHERE id = ?`)
             .run(JSON.stringify(metadata), Date.now(), id);
@@ -712,7 +712,7 @@ export class UacRepository {
         id: string;
         type: string;
         position: { x: number; y: number };
-        data: Record<string, unknown>;
+        data: Record<string, RuntimeValue>;
     }): Promise<void> {
         const now = Date.now();
         await this.db
@@ -744,7 +744,7 @@ export class UacRepository {
             id: string;
             type: string;
             position: { x: number; y: number };
-            data: Record<string, unknown>;
+            data: Record<string, RuntimeValue>;
         }>
     ): Promise<void> {
         if (nodes.length === 0) {

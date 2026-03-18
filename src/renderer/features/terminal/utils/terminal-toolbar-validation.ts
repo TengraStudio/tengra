@@ -1,4 +1,4 @@
-export function sanitizeShellId(raw: unknown): string | null {
+export function sanitizeShellId(raw: RendererDataValue): string | null {
     if (typeof raw !== 'string') {
         return null;
     }
@@ -6,7 +6,7 @@ export function sanitizeShellId(raw: unknown): string | null {
     return normalized.length > 0 ? normalized : null;
 }
 
-export function sanitizeBackendId(raw: unknown): string | undefined {
+export function sanitizeBackendId(raw: RendererDataValue): string | undefined {
     if (typeof raw !== 'string') {
         return undefined;
     }

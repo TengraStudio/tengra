@@ -1,9 +1,67 @@
+import { ar } from '@renderer/i18n/ar';
+import { de } from '@renderer/i18n/de';
+import { en } from '@renderer/i18n/en';
+import { es } from '@renderer/i18n/es';
+import { fr } from '@renderer/i18n/fr';
+import { ja } from '@renderer/i18n/ja';
+import { tr } from '@renderer/i18n/tr';
+import { zh } from '@renderer/i18n/zh';
+import { JsonValue } from '@shared/types/common';
 import { getErrorMessage, getErrorRecoveryStrategy } from '@shared/utils/error.util';
 
 import { appLogger } from '@/utils/renderer-logger';
 
 interface CustomWindow extends Window {
     showToast?: (options: { type: string; message: string }) => void
+}
+
+type SupportedLanguage = 'tr' | 'en' | 'de' | 'fr' | 'es' | 'ja' | 'zh' | 'ar';
+
+const TRANSLATIONS: Record<SupportedLanguage, JsonValue> = {
+    tr,
+    en,
+    de,
+    fr,
+    es,
+    ja,
+    zh,
+    ar
+};
+
+function isSupportedLanguage(value: string): value is SupportedLanguage {
+    return value === 'tr'
+        || value === 'en'
+        || value === 'de'
+        || value === 'fr'
+        || value === 'es'
+        || value === 'ja'
+        || value === 'zh'
+        || value === 'ar';
+}
+
+function getTranslationNode(root: JsonValue, path: string): string | null {
+    const parts = path.split('.');
+    let current: JsonValue = root;
+
+    for (const part of parts) {
+        if (current !== null && typeof current === 'object' && !Array.isArray(current) && part in current) {
+            current = (current as Record<string, JsonValue>)[part];
+            continue;
+        }
+        return null;
+    }
+
+    return typeof current === 'string' ? current : null;
+}
+
+function resolveTranslatedMessage(path: string): string {
+    const langCandidate = typeof document === 'undefined'
+        ? 'en'
+        : document.documentElement.lang.split('-')[0].toLowerCase();
+    const language: SupportedLanguage = isSupportedLanguage(langCandidate) ? langCandidate : 'en';
+    const activeValue = getTranslationNode(TRANSLATIONS[language], path);
+    const fallbackValue = getTranslationNode(TRANSLATIONS.en, path);
+    return activeValue ?? fallbackValue ?? path;
 }
 
 /**
@@ -39,16 +97,16 @@ export interface ErrorDisplayOptions {
  */
 function mapToUserFriendlyMessage(message: string): string {
     if (message.includes('429') || message.includes('rate limit') || message.includes('quota')) {
-        return 'Rate limit exceeded. Please wait a moment and try again.';
+        return resolveTranslatedMessage('errors.rateLimit.exceeded');
     }
     if (message.includes('401') || message.includes('unauthorized')) {
-        return 'Authentication failed. Please check your API keys.';
+        return resolveTranslatedMessage('errors.proxy.authFailed');
     }
     if (message.includes('network') || message.includes('fetch')) {
-        return 'Network error. Please check your connection.';
+        return resolveTranslatedMessage('common.networkError');
     }
     if (message.includes('timeout')) {
-        return 'Request timed out. Please try again.';
+        return resolveTranslatedMessage('errors.proxy.timeout');
     }
     return message;
 }
@@ -60,7 +118,7 @@ function showErrorToast(message: string): void {
     if (typeof window === 'undefined') {
         return;
     }
-    const customWindow = window as unknown as CustomWindow;
+    const customWindow = window as TypeAssertionValue as CustomWindow;
     if (customWindow.showToast) {
         customWindow.showToast({ type: 'error', message });
     }
@@ -87,7 +145,7 @@ function showErrorToast(message: string): void {
 /**
  * Gets the error message, with custom message taking precedence
  */
-function resolveErrorMessage(error: unknown, customMessage?: string): string {
+function resolveErrorMessage(error: RendererDataValue, customMessage?: string): string {
     if (customMessage !== undefined && customMessage !== '') {
         return customMessage;
     }
@@ -97,12 +155,12 @@ function resolveErrorMessage(error: unknown, customMessage?: string): string {
 /**
  * Logs error to console with context
  */
-function logError(context: string, error: unknown): void {
+function logError(context: string, error: RendererDataValue): void {
     appLogger.error(context, getErrorMessage(error), error as Error);
 }
 
 export function handleError(
-    error: unknown,
+    error: RendererDataValue,
     context: string,
     options: ErrorDisplayOptions = {}
 ): string {

@@ -47,7 +47,7 @@ const VALID_MANIFEST = {
             targets: [],
         },
     ],
-} as const;
+};
 
 describe('RuntimeManifestService', () => {
     let service: RuntimeManifestService;

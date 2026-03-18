@@ -117,7 +117,7 @@ export function validateSSHConnectionForm(
 /**
  * Parses a raw SSH profile payload into a strict renderer-safe shape.
  */
-export function parseSSHProfile(raw: unknown): ParsedSSHProfileResult {
+export function parseSSHProfile(raw: RendererDataValue): ParsedSSHProfileResult {
     const parsed = sshProfileSchema.safeParse(raw);
     if (!parsed.success) {
         return { success: false, errorCode: sshManagerErrorCodes.validation };

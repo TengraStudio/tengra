@@ -7,13 +7,14 @@ import { TodoItem } from './types';
 interface TodoItemCardProps {
     todo: TodoItem;
     onToggle: (item: TodoItem) => void;
+    t: (key: string) => string;
     onUndo?: () => void;
     onRedo?: () => void;
     canUndo?: boolean;
     canRedo?: boolean;
 }
 
-export const TodoItemCard = ({ todo, onToggle, onUndo, onRedo, canUndo, canRedo }: TodoItemCardProps) => (
+export const TodoItemCard = ({ todo, onToggle, t, onUndo, onRedo, canUndo, canRedo }: TodoItemCardProps) => (
     <div
         className={cn(
             "group flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer relative overflow-hidden",
@@ -38,7 +39,7 @@ export const TodoItemCard = ({ todo, onToggle, onUndo, onRedo, canUndo, canRedo 
             </p>
             <div className="flex items-center gap-2 mt-1.5">
                 <span className="text-xxs font-mono text-muted-foreground/40 text-primary/40">
-                    Line {todo.line}
+                    {t('workspace.todoLinePrefix')} {todo.line}
                 </span>
                 {(onUndo || onRedo) && (
                     <div className="ml-auto flex items-center gap-1">
@@ -51,7 +52,7 @@ export const TodoItemCard = ({ todo, onToggle, onUndo, onRedo, canUndo, canRedo 
                                 }}
                                 disabled={!canUndo}
                                 className="p-1 rounded hover:bg-muted/40 disabled:opacity-30"
-                                title="Undo (Ctrl/Cmd+Z)"
+                                title={t('workspace.todoUndoTitle')}
                             >
                                 <RotateCcw className="w-3 h-3" />
                             </button>
@@ -65,7 +66,7 @@ export const TodoItemCard = ({ todo, onToggle, onUndo, onRedo, canUndo, canRedo 
                                 }}
                                 disabled={!canRedo}
                                 className="p-1 rounded hover:bg-muted/40 disabled:opacity-30"
-                                title="Redo (Ctrl/Cmd+Y)"
+                                title={t('workspace.todoRedoTitle')}
                             >
                                 <RotateCw className="w-3 h-3" />
                             </button>

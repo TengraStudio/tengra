@@ -26,7 +26,7 @@ export interface ServiceMetadata {
  */
 export class ServiceRegistry extends EventEmitter {
     /** Service instances keyed by ID. Typed as unknown since registry is generic. */
-    private services: Map<string, unknown> = new Map();
+    private services: Map<string, RuntimeValue> = new Map();
     private metadata: Map<string, ServiceMetadata> = new Map();
 
     private static instance?: ServiceRegistry;
@@ -46,7 +46,7 @@ export class ServiceRegistry extends EventEmitter {
      * @param instance - The service instance
      * @param metadata - Optional metadata (version, tags, description)
      */
-    register<T = unknown>(id: string, instance: T, metadata?: Partial<ServiceMetadata>): void {
+    register<T extends RuntimeValue = RuntimeValue>(id: string, instance: T, metadata?: Partial<ServiceMetadata>): void {
         if (this.services.has(id)) {
             appLogger.warn('ServiceRegistry', `Overwriting existing service: ${id}`);
         }
@@ -80,7 +80,7 @@ export class ServiceRegistry extends EventEmitter {
      * @param id - The service identifier
      * @returns The service instance, or undefined if not found
      */
-    get<T>(id: string): T | undefined {
+    get<T extends RuntimeValue = RuntimeValue>(id: string): T | undefined {
         return this.services.get(id) as T;
     }
 
@@ -89,7 +89,7 @@ export class ServiceRegistry extends EventEmitter {
      * @param predicate - Filter function applied to each service's metadata
      * @returns Array of matching service instances
      */
-    find<T = unknown>(predicate: (meta: ServiceMetadata) => boolean): T[] {
+    find<T extends RuntimeValue = RuntimeValue>(predicate: (meta: ServiceMetadata) => boolean): T[] {
         const results: T[] = [];
         for (const [id, meta] of this.metadata) {
             if (predicate(meta)) {
@@ -107,7 +107,7 @@ export class ServiceRegistry extends EventEmitter {
      * @param tag - The tag to search for
      * @returns Array of service instances that have the specified tag
      */
-    findByTag<T = unknown>(tag: string): T[] {
+    findByTag<T extends RuntimeValue = RuntimeValue>(tag: string): T[] {
         return this.find<T>(meta => meta.tags.includes(tag));
     }
 }

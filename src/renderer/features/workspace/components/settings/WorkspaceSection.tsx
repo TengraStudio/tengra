@@ -16,16 +16,16 @@ export const WorkspaceSection: React.FC<WorkspaceSectionProps> = ({ workspace, o
             <div>
                 <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-1 flex items-center gap-2">
                     <FolderTree className="w-4 h-4 text-primary" />
-                    {t('workspaces.mounts') || 'Workspace Mounts'}
+                    {t('workspaces.mounts')}
                 </h3>
-                <p className="text-xs text-muted-foreground">{t('workspaces.mountsDesc') || 'Manage folders and remote connections for this workspace.'}</p>
+                <p className="text-xs text-muted-foreground">{t('workspaces.mountsDesc')}</p>
             </div>
             <button
                 onClick={onAddMount}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-muted/20 hover:bg-muted/30 border border-border/50 transition-all text-foreground"
             >
                 <Plus className="w-4 h-4" />
-                {t('workspaces.addMount') || 'Add Mount'}
+                {t('workspaces.addMount')}
             </button>
         </div>
 
@@ -56,12 +56,12 @@ export const WorkspaceSection: React.FC<WorkspaceSectionProps> = ({ workspace, o
             {workspace.mounts.length === 0 && (
                 <div className="py-12 flex flex-col items-center justify-center text-center bg-muted/20 rounded-xl border border-dashed border-border/50 p-6">
                     <FolderTree className="w-12 h-12 text-muted-foreground/20 mb-3" />
-                    <p className="text-sm text-muted-foreground">{t('workspaces.noMounts') || 'No mounts found for this workspace.'}</p>
+                    <p className="text-sm text-muted-foreground">{t('workspaces.noMounts')}</p>
                     <button
                         onClick={onAddMount}
                         className="mt-4 text-primary text-sm hover:underline font-medium"
                     >
-                        Add the first mount
+                        {t('workspace.addFirstMount')}
                     </button>
                 </div>
             )}

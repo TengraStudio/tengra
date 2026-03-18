@@ -60,12 +60,12 @@ export function buildOpenAIBody(
         reasoningEffort?: string;
     },
     normalizeModelName: (model: string, provider?: string) => string
-): Record<string, unknown> {
+): Record<string, RuntimeValue> {
     const { model, tools, provider, stream = false, n = 1, temperature, systemMode, reasoningEffort } = options;
     const normalizedMessages = MessageNormalizer.normalizeOpenAIMessages(messages, model);
     const finalModel = normalizeModelName(model, provider);
 
-    const body: Record<string, unknown> = {
+    const body: Record<string, RuntimeValue> = {
         model: finalModel,
         messages: normalizedMessages,
         stream
@@ -80,21 +80,21 @@ export function buildOpenAIBody(
 }
 
 /** Adds stream_options when streaming (except nvidia). */
-function applyStreamOptions(body: Record<string, unknown>, stream: boolean, provider?: string): void {
+function applyStreamOptions(body: Record<string, RuntimeValue>, stream: boolean, provider?: string): void {
     if (stream && provider !== 'nvidia') {
         body.stream_options = { include_usage: true };
     }
 }
 
 /** Applies optional parameters like temperature and n. */
-function applyOptionalOpenAIParams(body: Record<string, unknown>, n: number, provider?: string, temperature?: number): void {
+function applyOptionalOpenAIParams(body: Record<string, RuntimeValue>, n: number, provider?: string, temperature?: number): void {
     if (temperature !== undefined) { body.temperature = temperature; }
     if (n > 1) { body.n = n; }
     if (provider === 'nvidia' && !body.max_tokens) { body.max_tokens = 4096; }
 }
 
 /** Applies tool definitions to the request body. */
-function applyTools(body: Record<string, unknown>, tools?: ToolDefinition[]): void {
+function applyTools(body: Record<string, RuntimeValue>, tools?: ToolDefinition[]): void {
     if (tools && tools.length > 0) {
         body.tools = sanitizeTools(tools);
         body.tool_choice = 'auto';
@@ -102,7 +102,7 @@ function applyTools(body: Record<string, unknown>, tools?: ToolDefinition[]): vo
 }
 
 /** Strips `required` from tool parameters for provider compatibility. */
-function sanitizeTools(tools: ToolDefinition[]): unknown[] {
+function sanitizeTools(tools: ToolDefinition[]): RuntimeValue[] {
     return tools.map(tool => {
         const params = tool.function.parameters ? { ...tool.function.parameters as JsonObject } : {};
         if (params.required) { delete params.required; }
@@ -114,7 +114,7 @@ function sanitizeTools(tools: ToolDefinition[]): unknown[] {
  * Applies reasoning effort configuration based on model type.
  */
 export function applyReasoningEffort(
-    body: Record<string, unknown>,
+    body: Record<string, RuntimeValue>,
     model: string,
     systemMode?: SystemMode,
     reasoningEffort?: string
@@ -173,7 +173,7 @@ function getClaudeBudget(effort: string): number {
  * Creates the HTTP request init for OpenAI-compatible endpoints.
  */
 export function createOpenAIRequest(
-    body: unknown,
+    body: RuntimeValue,
     apiKey: string,
     dispatcher: Agent | null,
     extraHeaders: Record<string, string> = {}

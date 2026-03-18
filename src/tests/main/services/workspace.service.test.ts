@@ -15,7 +15,7 @@ vi.mock('fs', () => ({
     }
 }));
 vi.mock('path', async () => {
-    const actual = await vi.importActual('path') as Record<string, unknown>;
+    const actual = await vi.importActual('path') as Record<string, TestValue>;
     return {
         ...actual,
         join: vi.fn((...args: string[]) => args.join('/')),
@@ -67,7 +67,7 @@ describe('WorkspaceService', () => {
             size: 1000,
             mtimeMs: Date.now(),
             isDirectory: () => false
-        } as unknown as import('fs').Stats);
+        } as never as import('fs').Stats);
 
         const analysis = await workspaceService.analyzeWorkspace(mockDirPath);
 
@@ -89,7 +89,7 @@ describe('WorkspaceService', () => {
             size: 500,
             mtimeMs: Date.now(),
             isDirectory: () => false
-        } as unknown as import('fs').Stats);
+        } as never as import('fs').Stats);
 
         const result = await workspaceService.analyzeDirectory(mockDirPath);
 
@@ -126,7 +126,7 @@ describe('WorkspaceService', () => {
     });
 
     it('throws when workspace root path input is invalid', async () => {
-        await expect(workspaceService.analyzeWorkspace('')).rejects.toThrow('Invalid workspace root path');
+        await expect(workspaceService.analyzeWorkspace('')).rejects.toThrow('Workspace root path must be a non-empty string');
     });
 
     it('applies incremental invalidation from changed path set', async () => {
@@ -151,13 +151,13 @@ describe('WorkspaceService', () => {
             mtimeMs: Date.now(),
             isDirectory: () => false,
             isFile: () => true
-        } as unknown as import('fs').Stats);
+        } as never as import('fs').Stats);
 
         const initial = await workspaceService.analyzeWorkspace(mockDirPath);
         expect(initial.stats.fileCount).toBeGreaterThan(0);
 
         const trackChangedPath = (
-            workspaceService as unknown as { trackChangedPath: (rootPath: string, changedPath: string) => void }
+            workspaceService as never as { trackChangedPath: (rootPath: string, changedPath: string) => void }
         ).trackChangedPath.bind(workspaceService);
         trackChangedPath(mockDirPath, '/mock/workspace/src/new-file.ts');
         const updated = await workspaceService.analyzeWorkspace(mockDirPath);
@@ -185,7 +185,7 @@ describe('WorkspaceService', () => {
             mtimeMs: Date.now(),
             isDirectory: () => false,
             isFile: () => true
-        } as unknown as import('fs').Stats);
+        } as never as import('fs').Stats);
 
         await workspaceService.analyzeWorkspace(mockDirPath);
         const page = await workspaceService.getWorkspaceFilePage(mockDirPath, -10, 0);
@@ -196,33 +196,20 @@ describe('WorkspaceService', () => {
         expect(page.total).toBeGreaterThanOrEqual(3);
     });
 
-    it('uses sampled stats for partial scans and completes the full scan in background', async () => {
+    it('does not cap initial workspace scans by a 5000-file hard limit', async () => {
         const mockDirPath = '/mock/workspace';
         const rootEntries = Array.from({ length: 5001 }, (_, index) => mockDirent(`file-${index}.ts`, false));
 
-        vi.mocked(fs.readdir).mockResolvedValueOnce(rootEntries as never).mockResolvedValueOnce(rootEntries as never);
+        vi.mocked(fs.readdir).mockResolvedValue(rootEntries as never);
         vi.mocked(fs.stat).mockResolvedValue({
             size: 100,
             mtimeMs: Date.now(),
             isDirectory: () => false,
             isFile: () => true
-        } as unknown as import('fs').Stats);
+        } as never as import('fs').Stats);
 
         const initial = await workspaceService.analyzeWorkspace(mockDirPath);
-        expect(initial.stats.fileCount).toBe(5000);
-
-        for (let attempt = 0; attempt < 20; attempt++) {
-            const fileListCache = (
-                workspaceService as unknown as {
-                    fileListCache: Map<string, { files: string[]; timestamp: number; complete: boolean }>;
-                }
-            ).fileListCache;
-            const cachedFiles = fileListCache.get(mockDirPath);
-            if (cachedFiles?.complete && cachedFiles.files.length === 5001) {
-                break;
-            }
-            await new Promise(resolve => setTimeout(resolve, 5));
-        }
+        expect(initial.stats.fileCount).toBe(5001);
 
         const fullPage = await workspaceService.getWorkspaceFilePage(mockDirPath, 0, 6000);
         expect(fullPage.total).toBe(5001);
@@ -268,5 +255,81 @@ describe('WorkspaceService', () => {
         await expect(workspaceService.saveEnvVars('/mock/workspace', {
             'INVALID-NAME': 'x'
         })).rejects.toThrow('Invalid environment variable payload');
+    });
+
+    it('deduplicates concurrent summary analysis requests for the same workspace', async () => {
+        vi.mocked(fs.readdir).mockResolvedValueOnce([
+            mockDirent('src', true),
+            mockDirent('package.json', false)
+        ] as never).mockResolvedValueOnce([
+            mockDirent('index.ts', false)
+        ] as never);
+        vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify({
+            dependencies: { react: '18.2.0' },
+            devDependencies: {}
+        }));
+        vi.mocked(fs.stat).mockResolvedValue({
+            size: 100,
+            mtimeMs: Date.now(),
+            isDirectory: () => false,
+            isFile: () => true
+        } as never as import('fs').Stats);
+
+        const [firstResult, secondResult] = await Promise.all([
+            workspaceService.analyzeWorkspaceSummary('/mock/workspace'),
+            workspaceService.analyzeWorkspaceSummary('/mock/workspace'),
+        ]);
+
+        expect(fs.readdir).toHaveBeenCalledTimes(2);
+        expect(firstResult).toEqual(secondResult);
+    });
+
+    it('weights language distribution by file size and recognizes special filenames', async () => {
+        vi.mocked(fs.stat).mockImplementation(async (filePath: import('fs').PathLike) => {
+            const normalizedPath = String(filePath);
+            const sizeMap: Record<string, number> = {
+                '/mock/workspace/src/app.ts': 400,
+                '/mock/workspace/src/view.tsx': 600,
+                '/mock/workspace/Dockerfile': 50,
+                '/mock/workspace/include/app.h': 200,
+                '/mock/workspace/docs/guide.md': 900,
+                '/mock/workspace/logs/build.log': 700,
+                '/mock/workspace/vendor/lib/helper.c': 800,
+                '/mock/workspace/build/native/app.pdb': 5000,
+                '/mock/workspace/native/project.vcxproj': 1200,
+            };
+
+            return {
+                size: sizeMap[normalizedPath] ?? 1,
+                mtimeMs: Date.now(),
+                isDirectory: () => false,
+                isFile: () => true,
+            } as never as import('fs').Stats;
+        });
+
+        const languageMap = await (
+            workspaceService as never as {
+                calculateLanguages: (files: string[]) => Promise<Record<string, number>>;
+            }
+        ).calculateLanguages([
+            '/mock/workspace/src/app.ts',
+            '/mock/workspace/src/view.tsx',
+            '/mock/workspace/Dockerfile',
+            '/mock/workspace/include/app.h',
+            '/mock/workspace/docs/guide.md',
+            '/mock/workspace/logs/build.log',
+            '/mock/workspace/vendor/lib/helper.c',
+            '/mock/workspace/build/native/app.pdb',
+            '/mock/workspace/native/project.vcxproj',
+        ]);
+
+        expect(languageMap.TypeScript).toBe(1000);
+        expect(languageMap.Dockerfile).toBe(50);
+        expect(languageMap['C/C++ Header']).toBe(200);
+        expect(languageMap.Markdown).toBeUndefined();
+        expect(languageMap.Log).toBeUndefined();
+        expect(languageMap.C).toBeUndefined();
+        expect(languageMap.PDB).toBeUndefined();
+        expect(languageMap.VCXPROJ).toBeUndefined();
     });
 });

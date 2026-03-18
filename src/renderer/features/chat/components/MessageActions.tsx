@@ -170,14 +170,6 @@ interface MessageActionsGroupProps {
     onRegenerate?: () => void;
 }
 
-const EMOJI_REACTIONS = [
-    { emoji: '\u{1F44D}', label: 'Thumbs up' },
-    { emoji: '\u{1F44E}', label: 'Thumbs down' },
-    { emoji: '\u{2764}\u{FE0F}', label: 'Heart' },
-    { emoji: '\u{1F389}', label: 'Celebrate' },
-    { emoji: '\u{1F680}', label: 'Rocket' },
-];
-
 export const MessageActionsGroup = React.memo(({
     displayContent,
     role,
@@ -232,7 +224,13 @@ export const MessageActionsGroup = React.memo(({
                     role="group"
                     aria-label={t('messageBubble.emojiReactions')}
                 >
-                    {EMOJI_REACTIONS.map(({ emoji, label }) => (
+                    {[
+                        { emoji: '\u{1F44D}', label: t('messageBubble.emojiThumbsUp') },
+                        { emoji: '\u{1F44E}', label: t('messageBubble.emojiThumbsDown') },
+                        { emoji: '\u{2764}\u{FE0F}', label: t('messageBubble.emojiHeart') },
+                        { emoji: '\u{1F389}', label: t('messageBubble.emojiCelebrate') },
+                        { emoji: '\u{1F680}', label: t('messageBubble.emojiRocket') },
+                    ].map(({ emoji, label }) => (
                         <button
                             key={emoji}
                             onClick={() => onReact?.(emoji)}

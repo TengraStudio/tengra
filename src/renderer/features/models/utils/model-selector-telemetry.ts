@@ -76,13 +76,13 @@ export interface ModalOpenedPayload {
 export interface ErrorPayload {
     code: string;
     message: string;
-    context?: Record<string, unknown>;
+    context?: Record<string, RendererDataValue>;
 }
 
 export interface PerformancePayload {
     durationMs: number;
     operation: string;
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, RendererDataValue>;
 }
 
 /**
@@ -95,7 +95,7 @@ export type TelemetryPayload =
     | ModalOpenedPayload
     | ErrorPayload
     | PerformancePayload
-    | Record<string, unknown>;
+    | Record<string, RendererDataValue>;
 
 /**
  * Telemetry event interface
@@ -182,7 +182,7 @@ export class ModelSelectorTelemetry {
     /**
      * Ends a performance measurement and records the event
      */
-    endPerformanceMark(operation: string, metadata?: Record<string, unknown>): number {
+    endPerformanceMark(operation: string, metadata?: Record<string, RendererDataValue>): number {
         const startTime = this.performanceMarks.get(operation);
         if (startTime === undefined) {
             return 0;
@@ -339,7 +339,7 @@ export function recordSearch(query: string, resultCount: number, latencyMs: numb
 /**
  * Convenience function to record an error event
  */
-export function recordError(code: string, message: string, context?: Record<string, unknown>): void {
+export function recordError(code: string, message: string, context?: Record<string, RendererDataValue>): void {
     getTelemetry().recordEvent(TelemetryEvents.SELECTION_ERROR, {
         code,
         message,

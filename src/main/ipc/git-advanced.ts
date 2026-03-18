@@ -5,6 +5,8 @@ import { promisify } from 'util';
 
 import { SenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
+import { BrainService } from '@main/services/llm/brain.service';
+import { LLMService } from '@main/services/llm/llm.service';
 import { GitService } from '@main/services/workspace/git.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
@@ -28,7 +30,9 @@ const HOOK_TEMPLATES: Record<string, string> = {
 // --- Schemas ---
 
 const MAX_PATH_LENGTH = 4096;
+const MAX_BRANCH_LENGTH = 255;
 const PathSchema = z.string().min(1).max(MAX_PATH_LENGTH).trim();
+const BranchSchema = z.string().min(1).max(MAX_BRANCH_LENGTH).regex(/^[^\s~^:?*\\[\]]+$/).trim();
 const FilePathArgSchema = z.string().min(1).max(MAX_PATH_LENGTH).refine(v => !v.includes('\0') && !/[\r\n`]/.test(v), {
     message: 'Invalid file path characters'
 });
@@ -767,10 +771,10 @@ function registerFlowHandlers(gitService: GitService, validateSender: SenderVali
             };
         }
 
-        const createBranch = await withRateLimit('git', () =>
+        const createBranchResult = await withRateLimit('git', () =>
             gitService.executeRaw(cwd, `checkout -b ${branchName}`)
         );
-        return { success: createBranch.success, branch: branchName, error: createBranch.error };
+        return { success: createBranchResult.success, branch: branchName, error: createBranchResult.error };
     }, {
         defaultValue: { success: false, error: 'Failed to start flow branch' },
         argsSchema: z.tuple([PathSchema, FlowTypeSchema, SimpleArgSchema, SimpleArgSchema.optional()])
@@ -1027,9 +1031,107 @@ function registerStatsHandlers(gitService: GitService, validateSender: SenderVal
 }
 
 /**
+ * Registers IPC handlers for branch management
+ */
+function registerBranchHandlers(gitService: GitService, validateSender: SenderValidator) {
+    ipcMain.handle('git:createBranch', createValidatedIpcHandler('git:createBranch', async (event, cwd: string, name: string, startPoint?: string) => {
+        validateSender(event);
+        return await gitService.createBranch(cwd, name, startPoint);
+    }, {
+        defaultValue: { success: false, error: 'Failed to create branch' },
+        argsSchema: z.tuple([PathSchema, BranchSchema, z.string().optional()])
+    }));
+
+    ipcMain.handle('git:deleteBranch', createValidatedIpcHandler('git:deleteBranch', async (event, cwd: string, name: string, force: boolean = false) => {
+        validateSender(event);
+        return await gitService.deleteBranch(cwd, name, force);
+    }, {
+        defaultValue: { success: false, error: 'Failed to delete branch' },
+        argsSchema: z.tuple([PathSchema, BranchSchema, z.boolean().optional()])
+    }));
+
+    ipcMain.handle('git:renameBranch', createValidatedIpcHandler('git:renameBranch', async (event, cwd: string, oldName: string, newName: string) => {
+        validateSender(event);
+        return await gitService.renameBranch(cwd, oldName, newName);
+    }, {
+        defaultValue: { success: false, error: 'Failed to rename branch' },
+        argsSchema: z.tuple([PathSchema, BranchSchema, BranchSchema])
+    }));
+
+    ipcMain.handle('git:setUpstream', createValidatedIpcHandler('git:setUpstream', async (event, cwd: string, branch: string, remote: string, upstreamBranch: string) => {
+        validateSender(event);
+        return await gitService.setUpstream(cwd, branch, remote, upstreamBranch);
+    }, {
+        defaultValue: { success: false, error: 'Failed to set upstream' },
+        argsSchema: z.tuple([PathSchema, BranchSchema, SimpleArgSchema, BranchSchema])
+    }));
+}
+
+/**
+ * Registers IPC handlers for Pull Requests
+ */
+const DEFAULT_PR_SUMMARY_MODEL = 'gpt-4o';
+
+function registerPrHandlers(
+    gitService: GitService,
+    validateSender: SenderValidator,
+    llmService?: Pick<LLMService, 'chat'>
+) {
+    ipcMain.handle('git:generatePrSummary', createValidatedIpcHandler('git:generatePrSummary', async (event, cwd: string, base: string, head: string) => {
+        validateSender(event);
+        try {
+            if (!llmService) {
+                return { success: false, error: 'PR summary generation is unavailable' };
+            }
+
+            // Get diff between head and base
+            const diffResult = await gitService.executeRaw(cwd, `diff --unified=3 ${base}...${head}`);
+            if (!diffResult.success || !diffResult.stdout) {
+                return { success: false, error: 'Failed to get diff for PR summary' };
+            }
+
+            // Get recent commit messages
+            const logResult = await gitService.executeRaw(cwd, `log ${base}...${head} --oneline`);
+            
+            const prompt = `Generate a concise and professional Pull Request summary based on the following git diff and commit messages. 
+Summary should include:
+- A clear title
+- High-level overview of changes
+- Key features/fixes
+- Potential impacts
+
+Commit Messages:
+${logResult.stdout || 'No commit messages found'}
+
+Diff:
+${diffResult.stdout.substring(0, 20000)} // Limiting diff size for LLM
+`;
+
+            const response = await llmService.chat([
+                { role: 'system', content: 'You are an expert software engineer generating Pull Request summaries.' },
+                { role: 'user', content: prompt }
+            ], DEFAULT_PR_SUMMARY_MODEL);
+
+            return { success: true, summary: response.content };
+        } catch (error) {
+            appLogger.error('GitAdvanced', 'Failed to generate PR summary', error as Error);
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }, {
+        defaultValue: { success: false, error: 'Failed to generate PR summary' },
+        argsSchema: z.tuple([PathSchema, BranchSchema, BranchSchema])
+    }));
+}
+
+/**
  * Registers advanced git IPC handlers including conflicts, stashing, blame, rebase, and submodules.
  */
-export function registerGitAdvancedIpc(gitService: GitService, validateSender: SenderValidator) {
+export function registerGitAdvancedIpc(
+    gitService: GitService,
+    validateSender: SenderValidator,
+    llmService?: LLMService,
+    _brainService?: BrainService
+) {
     appLogger.info('GitAdvanced', '[IPC] Git-Advanced service registered');
 
     registerConflictHandlers(gitService, validateSender);
@@ -1040,6 +1142,9 @@ export function registerGitAdvancedIpc(gitService: GitService, validateSender: S
     registerFlowHandlers(gitService, validateSender);
     registerHookHandlers(gitService, validateSender);
     registerStatsHandlers(gitService, validateSender);
+    registerBranchHandlers(gitService, validateSender);
+    registerPrHandlers(gitService, validateSender, llmService);
+    registerInvestigationHandlers(gitService, validateSender);
 
     ipcMain.handle('git:runControlledOperation', createValidatedIpcHandler('git:runControlledOperation', async (event, cwd: string, command: string, operationId?: string, timeoutMs?: number) => {
         validateSender(event);
@@ -1086,5 +1191,37 @@ export function registerGitAdvancedIpc(gitService: GitService, validateSender: S
     }, {
         defaultValue: { success: false, error: 'Failed to cancel operation' },
         argsSchema: z.tuple([OperationIdSchema])
+    }));
+}
+
+/**
+ * Registers investigation handlers including file history, ref comparison, and hotspots.
+ */
+function registerInvestigationHandlers(gitService: GitService, validateSender: SenderValidator) {
+    ipcMain.handle('git:getFileHistory', createValidatedIpcHandler('git:getFileHistory', async (event, cwd: string, filePath: string, limit?: number) => {
+        validateSender(event);
+        const commits = await gitService.getFileLog(cwd, filePath, limit);
+        return { success: true, commits };
+    }, {
+        defaultValue: { success: false, commits: [] },
+        argsSchema: z.tuple([PathSchema, PathSchema, z.number().int().optional()])
+    }));
+
+    ipcMain.handle('git:compareRefs', createValidatedIpcHandler('git:compareRefs', async (event, cwd: string, base: string, head: string) => {
+        validateSender(event);
+        const result = await gitService.compareRefs(cwd, base, head);
+        return result;
+    }, {
+        defaultValue: { success: false, ahead: 0, behind: 0, files: [] },
+        argsSchema: z.tuple([PathSchema, BranchSchema, BranchSchema])
+    }));
+
+    ipcMain.handle('git:getHotspots', createValidatedIpcHandler('git:getHotspots', async (event, cwd: string, limit?: number, days?: number) => {
+        validateSender(event);
+        const hotspots = await gitService.getHotspots(cwd, limit, days);
+        return { success: true, hotspots };
+    }, {
+        defaultValue: { success: false, hotspots: [] },
+        argsSchema: z.tuple([PathSchema, z.number().int().optional(), z.number().int().optional()])
     }));
 }

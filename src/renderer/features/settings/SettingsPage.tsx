@@ -1,6 +1,6 @@
 import { useSettingsLogic } from '@renderer/features/settings/hooks/useSettingsLogic';
 import { SettingsCategory } from '@renderer/features/settings/types';
-import { BarChart, Code, Mic, Palette, Rocket, Server, Settings, Shield, Sparkles, User, Users } from 'lucide-react';
+import { BarChart, Code, Mic, Palette, Rocket, Settings, Shield, Sparkles, User, Users } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 
 // Tab Components
@@ -50,7 +50,7 @@ async function withSettingsPageRetry<T>(operation: () => Promise<T>): Promise<T>
             }
         }
     }
-    throw (lastError ?? new Error('Settings page operation failed'));
+    throw (lastError ?? new Error('SETTINGS_PAGE_OPERATION_FAILED'));
 }
 
 export function SettingsPage({
@@ -94,7 +94,6 @@ export function SettingsPage({
         { id: 'voice', label: t('voice.interfaceTitle'), icon: Mic, category: 'Interaction' },
         { id: 'developer', label: t('settings.tabs.developer'), icon: Code, category: 'Tools' },
         { id: 'advanced', label: t('settings.tabs.advanced'), icon: Shield, category: 'Security' },
-        { id: 'mcp-servers', label: t('settings.tabs.mcpServers'), icon: Server, category: 'Infrastructure' },
         { id: 'images', label: t('settings.tabs.images'), icon: Palette, category: 'Visuals' },
         { id: 'about', label: t('settings.tabs.about'), icon: Rocket, category: 'App' }
     ], [t]);
@@ -220,7 +219,7 @@ export function SettingsPage({
         <div className="settings-container">
             <div className="settings-content flex h-full gap-6">
                 <main className="settings-main flex-1 overflow-y-auto">
-                    <div className={cn("settings-section h-full pr-4 pb-20", (activeTab === 'models' || activeTab === 'gallery') && "max-w-none")}>
+                    <div className={cn("settings-section h-full pr-4 pb-20 w-full", (activeTab === 'models' || activeTab === 'gallery') && "max-w-none")}>
                         {searchQuery && (
                             <div className="mb-4 text-xs text-muted-foreground">
                                 {filteredTabs.length > 0

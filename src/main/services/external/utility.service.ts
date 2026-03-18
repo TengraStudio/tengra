@@ -10,6 +10,38 @@ interface ExchangeRateResponse {
 
 // QUAL-002-2: Extract configurable API URLs
 const EXCHANGE_RATE_API_BASE = 'https://open.er-api.com/v6/latest';
+const UTILITY_MESSAGE_KEY = {
+    RATE_NOT_FOUND: 'mainProcess.utilityService.rateNotFound',
+    MONITOR_STARTED: 'mainProcess.utilityService.monitorStarted',
+    REMINDER_SET: 'mainProcess.utilityService.reminderSet',
+    REMINDER_CANCELLED: 'mainProcess.utilityService.reminderCancelled',
+    REMINDER_NOT_FOUND: 'mainProcess.utilityService.reminderNotFound',
+    GHOST_MODE_ENABLED: 'mainProcess.utilityService.ghostModeEnabled',
+    GHOST_MODE_DISABLED: 'mainProcess.utilityService.ghostModeDisabled',
+    VIRUSTOTAL_API_KEY_REQUIRED: 'mainProcess.utilityService.virusTotalApiKeyRequired',
+    SHODAN_API_KEY_REQUIRED: 'mainProcess.utilityService.shodanApiKeyRequired',
+    PLUGIN_LOADING_DISABLED: 'mainProcess.utilityService.pluginLoadingDisabled',
+    MEMORY_STORED: 'mainProcess.utilityService.memoryStored',
+    DEPRECATED_INDEX_DOCUMENT: 'mainProcess.utilityService.deprecatedIndexDocument',
+    DEPRECATED_SEARCH_DOCUMENTS: 'mainProcess.utilityService.deprecatedSearchDocuments',
+    DEPRECATED_SCAN_CODEBASE: 'mainProcess.utilityService.deprecatedScanCodebase'
+} as const;
+const UTILITY_MESSAGE = {
+    RATE_NOT_FOUND: 'Rate not found',
+    MONITOR_STARTED: 'Started monitoring {{url}}',
+    REMINDER_SET: 'Reminder set for {{time}}',
+    REMINDER_CANCELLED: 'Reminder cancelled',
+    REMINDER_NOT_FOUND: 'Reminder not found',
+    GHOST_MODE_ENABLED: 'Ghost Mode (DND) enabled. Notifications silenced.',
+    GHOST_MODE_DISABLED: 'Ghost Mode disabled.',
+    VIRUSTOTAL_API_KEY_REQUIRED: 'VirusTotal API key required in arguments or settings',
+    SHODAN_API_KEY_REQUIRED: 'Shodan API key required',
+    PLUGIN_LOADING_DISABLED: 'Plugin loading via eval is disabled for security reasons.',
+    MEMORY_STORED: 'Memory stored for "{{key}}" (encrypted)',
+    DEPRECATED_INDEX_DOCUMENT: 'Deprecated. Use CodeIntelligenceService for indexing.',
+    DEPRECATED_SEARCH_DOCUMENTS: 'Deprecated. Use ContextRetrievalService for search.',
+    DEPRECATED_SCAN_CODEBASE: 'Deprecated. Use CodeIntelligenceService for scanning.'
+} as const;
 
 export class UtilityService extends BaseService {
     private monitors: Map<string, NodeJS.Timeout> = new Map();
@@ -52,7 +84,11 @@ export class UtilityService extends BaseService {
             // Standardized: return { rate } in data
             return rate
                 ? { success: true, data: { rate } }
-                : { success: false, error: 'Rate not found' };
+                : {
+                    success: false,
+                    error: UTILITY_MESSAGE.RATE_NOT_FOUND,
+                    messageKey: UTILITY_MESSAGE_KEY.RATE_NOT_FOUND
+                };
         } catch (e) {
             const message = e instanceof Error ? e.message : String(e);
             this.logError(`Failed to get exchange rate from ${from} to ${to}`, e);
@@ -87,7 +123,12 @@ export class UtilityService extends BaseService {
         }, interval);
 
         this.monitors.set(url, timer);
-        return { success: true, message: `Started monitoring ${url}` };
+        return {
+            success: true,
+            message: UTILITY_MESSAGE.MONITOR_STARTED.replace('{{url}}', url),
+            messageKey: UTILITY_MESSAGE_KEY.MONITOR_STARTED,
+            messageParams: { url }
+        };
     }
 
     // 29. Smart Reminders
@@ -100,6 +141,7 @@ export class UtilityService extends BaseService {
      */
     scheduleReminder(text: string, delayMs: number, onTrigger: (msg: string) => void) {
         const id = randomBytes(4).toString('hex');
+        const reminderTime = new Date(Date.now() + delayMs).toLocaleTimeString();
         const timeout = setTimeout(() => {
             onTrigger(text);
             this.reminders.delete(id);
@@ -108,7 +150,9 @@ export class UtilityService extends BaseService {
         return {
             success: true,
             data: { id },
-            message: `Reminder set for ${new Date(Date.now() + delayMs).toLocaleTimeString()}`,
+            message: UTILITY_MESSAGE.REMINDER_SET.replace('{{time}}', reminderTime),
+            messageKey: UTILITY_MESSAGE_KEY.REMINDER_SET,
+            messageParams: { time: reminderTime },
         };
     }
 
@@ -121,9 +165,17 @@ export class UtilityService extends BaseService {
         if (reminder) {
             clearTimeout(reminder);
             this.reminders.delete(id);
-            return { success: true, message: 'Reminder cancelled' };
+            return {
+                success: true,
+                message: UTILITY_MESSAGE.REMINDER_CANCELLED,
+                messageKey: UTILITY_MESSAGE_KEY.REMINDER_CANCELLED
+            };
         }
-        return { success: false, error: 'Reminder not found' };
+        return {
+            success: false,
+            error: UTILITY_MESSAGE.REMINDER_NOT_FOUND,
+            messageKey: UTILITY_MESSAGE_KEY.REMINDER_NOT_FOUND
+        };
     }
 
     // 34. Ghost Mode (Productivity)
@@ -133,9 +185,17 @@ export class UtilityService extends BaseService {
      */
     toggleGhostMode(enabled: boolean) {
         if (enabled) {
-            return { success: true, message: 'Ghost Mode (DND) enabled. Notifications silenced.' };
+            return {
+                success: true,
+                message: UTILITY_MESSAGE.GHOST_MODE_ENABLED,
+                messageKey: UTILITY_MESSAGE_KEY.GHOST_MODE_ENABLED
+            };
         } else {
-            return { success: true, message: 'Ghost Mode disabled.' };
+            return {
+                success: true,
+                message: UTILITY_MESSAGE.GHOST_MODE_DISABLED,
+                messageKey: UTILITY_MESSAGE_KEY.GHOST_MODE_DISABLED
+            };
         }
     }
 
@@ -149,7 +209,8 @@ export class UtilityService extends BaseService {
         if (!apiKey) {
             return {
                 success: false,
-                error: 'VirusTotal API key required in arguments or settings',
+                error: UTILITY_MESSAGE.VIRUSTOTAL_API_KEY_REQUIRED,
+                messageKey: UTILITY_MESSAGE_KEY.VIRUSTOTAL_API_KEY_REQUIRED,
             };
         }
         try {
@@ -173,7 +234,11 @@ export class UtilityService extends BaseService {
      */
     async lookupShodan(ip: string, apiKey?: string) {
         if (!apiKey) {
-            return { success: false, error: 'Shodan API key required' };
+            return {
+                success: false,
+                error: UTILITY_MESSAGE.SHODAN_API_KEY_REQUIRED,
+                messageKey: UTILITY_MESSAGE_KEY.SHODAN_API_KEY_REQUIRED
+            };
         }
         try {
             const response = await fetch(`https://api.shodan.io/shodan/host/${ip}?key=${apiKey}`);
@@ -190,7 +255,8 @@ export class UtilityService extends BaseService {
     async loadPlugin() {
         return {
             success: false,
-            error: 'Plugin loading via eval is disabled for security reasons.',
+            error: UTILITY_MESSAGE.PLUGIN_LOADING_DISABLED,
+            messageKey: UTILITY_MESSAGE_KEY.PLUGIN_LOADING_DISABLED,
         };
     }
 
@@ -205,7 +271,12 @@ export class UtilityService extends BaseService {
             // Encrypt the value before storing
             const encryptedValue = this.security.encryptSync(value);
             await this.db.storeMemory(key, encryptedValue);
-            return { success: true, message: `Memory stored for "${key}" (encrypted)` };
+            return {
+                success: true,
+                message: UTILITY_MESSAGE.MEMORY_STORED.replace('{{key}}', key),
+                messageKey: UTILITY_MESSAGE_KEY.MEMORY_STORED,
+                messageParams: { key }
+            };
         } catch (error) {
             this.logError(`Failed to store encrypted memory for "${key}"`, error);
             return {
@@ -241,15 +312,27 @@ export class UtilityService extends BaseService {
     // 40. Local RAG (Vector-based)
     // 40. Local RAG (Deprecated)
     async indexDocument() {
-        return { success: false, error: 'Deprecated. Use CodeIntelligenceService for indexing.' };
+        return {
+            success: false,
+            error: UTILITY_MESSAGE.DEPRECATED_INDEX_DOCUMENT,
+            messageKey: UTILITY_MESSAGE_KEY.DEPRECATED_INDEX_DOCUMENT
+        };
     }
 
     async searchDocuments() {
-        return { success: false, error: 'Deprecated. Use ContextRetrievalService for search.' };
+        return {
+            success: false,
+            error: UTILITY_MESSAGE.DEPRECATED_SEARCH_DOCUMENTS,
+            messageKey: UTILITY_MESSAGE_KEY.DEPRECATED_SEARCH_DOCUMENTS
+        };
     }
 
     // 41. Codebase Scanner (Deprecated)
     async scanCodebase() {
-        return { success: false, error: 'Deprecated. Use CodeIntelligenceService for scanning.' };
+        return {
+            success: false,
+            error: UTILITY_MESSAGE.DEPRECATED_SCAN_CODEBASE,
+            messageKey: UTILITY_MESSAGE_KEY.DEPRECATED_SCAN_CODEBASE
+        };
     }
 }

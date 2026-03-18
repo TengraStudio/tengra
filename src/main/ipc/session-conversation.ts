@@ -40,7 +40,7 @@ import { z } from 'zod';
 /**
  * Safely send IPC message to renderer
  */
-function safeSend(sender: WebContents, channel: string, ...args: unknown[]): boolean {
+function safeSend(sender: WebContents, channel: string, ...args: RuntimeValue[]): boolean {
     try {
         if (sender.isDestroyed()) { return false; }
         sender.send(channel, ...args);
@@ -54,7 +54,7 @@ function safeSend(sender: WebContents, channel: string, ...args: unknown[]): boo
     }
 }
 
-function safeSendConversationChunk(sender: WebContents, chunk: Record<string, unknown>): boolean {
+function safeSendConversationChunk(sender: WebContents, chunk: Record<string, RuntimeValue>): boolean {
     return safeSend(sender, SESSION_CONVERSATION_CHANNELS.STREAM_CHUNK, chunk);
 }
 
@@ -358,7 +358,7 @@ class SessionConversationIpcManager {
         const controller = new AbortController();
         const { signal } = controller;
 
-        const cancelHandler = (_: unknown, { chatId }: { chatId: string }) => {
+        const cancelHandler = (_: RuntimeValue, { chatId }: { chatId: string }) => {
             if (chatId === params.chatId) {
                 controller.abort();
             }
@@ -420,6 +420,13 @@ class SessionConversationIpcManager {
     }
 
     private toSessionMessage(message: Message): SessionMessageEnvelope {
+        const metadata: JsonObject = {};
+        if (typeof message.provider === 'string' && message.provider.trim().length > 0) {
+            metadata.provider = sanitizeString(message.provider, { maxLength: 50, allowNewlines: false });
+        }
+        if (typeof message.model === 'string' && message.model.trim().length > 0) {
+            metadata.model = sanitizeString(message.model, { maxLength: 200, allowNewlines: false });
+        }
         return {
             id: String(message.id),
             role: message.role === 'tool' ? 'tool' : message.role,
@@ -429,10 +436,7 @@ class SessionConversationIpcManager {
                     .map(item => item.type === 'text' ? item.text : item.image_url.url)
                     .join('\n'),
             createdAt: message.timestamp instanceof Date ? message.timestamp.getTime() : Date.now(),
-            metadata: {
-                provider: message.provider,
-                model: message.model,
-            },
+            metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
         };
     }
 

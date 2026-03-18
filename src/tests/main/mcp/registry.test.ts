@@ -31,7 +31,7 @@ function createMockDeps(): McpDeps {
         modelCollaboration: {},
         rateLimit: { waitForToken: async () => undefined },
         auditLog: undefined
-    } as unknown as McpDeps;
+    } as never as McpDeps;
 }
 
 describe('MCP registry', () => {

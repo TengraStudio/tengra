@@ -169,7 +169,7 @@ interface VoiceResponseMetadata {
     fallbackUsed?: boolean;
 }
 
-type VoiceResponse<T extends Record<string, unknown> = Record<string, unknown>> = { success: boolean } & T & VoiceResponseMetadata;
+type VoiceResponse<T extends Record<string, RuntimeValue> = Record<string, RuntimeValue>> = { success: boolean } & T & VoiceResponseMetadata;
 
 /**
  * Voice Service
@@ -810,7 +810,7 @@ export class VoiceService extends BaseService {
     private async handleSendEvent(
         _event: Electron.IpcMainInvokeEvent,
         eventType: VoiceEventType,
-        data: unknown
+        data: RuntimeValue
     ): Promise<VoiceResponse> {
         return await this.withPolicy(
             'voice:send-event',
@@ -895,7 +895,7 @@ export class VoiceService extends BaseService {
     /**
      * Send event to renderer process
      */
-    private sendEvent(type: VoiceEventType, data: unknown): void {
+    private sendEvent(type: VoiceEventType, data: RuntimeValue): void {
         if (this.state.mainWindow && !this.state.mainWindow.isDestroyed()) {
             const event: VoiceEvent = {
                 type,

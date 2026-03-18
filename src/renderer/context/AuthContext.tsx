@@ -2,19 +2,56 @@ import { useAuthManager } from '@renderer/features/settings/hooks/useAuthManager
 import { createContext, ReactNode, useContext, useMemo } from 'react';
 
 type AuthContextType = ReturnType<typeof useAuthManager>
+type AuthLanguageContextType = {
+    language: AuthContextType['language'];
+};
+type AuthSettingsUiContextType = Pick<
+    AuthContextType,
+    | 'settingsCategory'
+    | 'setSettingsCategory'
+    | 'isAuthModalOpen'
+    | 'setIsAuthModalOpen'
+    | 'handleAntigravityLogout'
+>;
 
 const AuthContext = createContext<AuthContextType | null>(null);
+const AuthLanguageContext = createContext<AuthLanguageContextType | null>(null);
+const AuthSettingsUiContext = createContext<AuthSettingsUiContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const authManager = useAuthManager();
 
     // Memoize the context value to prevent unnecessary re-renders
     const value = useMemo(() => authManager, [authManager]);
+    const languageValue = useMemo(
+        () => ({ language: authManager.language }),
+        [authManager.language]
+    );
+    const settingsUiValue = useMemo(
+        () => ({
+            settingsCategory: authManager.settingsCategory,
+            setSettingsCategory: authManager.setSettingsCategory,
+            isAuthModalOpen: authManager.isAuthModalOpen,
+            setIsAuthModalOpen: authManager.setIsAuthModalOpen,
+            handleAntigravityLogout: authManager.handleAntigravityLogout,
+        }),
+        [
+            authManager.settingsCategory,
+            authManager.setSettingsCategory,
+            authManager.isAuthModalOpen,
+            authManager.setIsAuthModalOpen,
+            authManager.handleAntigravityLogout,
+        ]
+    );
 
     return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
+        <AuthLanguageContext.Provider value={languageValue}>
+            <AuthSettingsUiContext.Provider value={settingsUiValue}>
+                <AuthContext.Provider value={value}>
+                    {children}
+                </AuthContext.Provider>
+            </AuthSettingsUiContext.Provider>
+        </AuthLanguageContext.Provider>
     );
 }
 
@@ -22,6 +59,22 @@ export function useAuth() {
     const context = useContext(AuthContext);
     if (!context) {
         throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
+}
+
+export function useAuthLanguage() {
+    const context = useContext(AuthLanguageContext);
+    if (!context) {
+        throw new Error('useAuthLanguage must be used within an AuthProvider');
+    }
+    return context;
+}
+
+export function useAuthSettingsUi() {
+    const context = useContext(AuthSettingsUiContext);
+    if (!context) {
+        throw new Error('useAuthSettingsUi must be used within an AuthProvider');
     }
     return context;
 }

@@ -68,7 +68,7 @@ export function useTerminalTabActions({
             backendId?: string,
             options?: {
                 name?: string;
-                metadata?: Record<string, unknown>;
+                metadata?: Record<string, RendererDataValue>;
                 bootstrapCommand?: string;
             }
         ) => {
@@ -121,19 +121,16 @@ export function useTerminalTabActions({
     );
 
     const createDefaultTerminal = useCallback(async () => {
-        let shells = availableShells;
-        if (shells.length === 0) {
-            shells = await fetchAvailableShells();
-        }
-
-        let backends = availableBackends;
-        if (backends.length === 0) {
-            backends = await fetchAvailableBackends();
-        }
-
-        const backendId = resolveDefaultBackendId(backends);
-        const shellId = shells[0]?.id ?? tabs[0]?.type ?? 'powershell';
+        const shellId = availableShells[0]?.id ?? tabsRef.current[0]?.type ?? 'powershell';
+        const backendId = resolveDefaultBackendId(availableBackends) ?? 'node-pty';
         createTerminal(shellId, backendId);
+
+        if (availableShells.length === 0) {
+            void fetchAvailableShells();
+        }
+        if (availableBackends.length === 0) {
+            void fetchAvailableBackends();
+        }
     }, [
         availableBackends,
         availableShells,
@@ -141,7 +138,7 @@ export function useTerminalTabActions({
         fetchAvailableBackends,
         fetchAvailableShells,
         resolveDefaultBackendId,
-        tabs,
+        tabsRef,
     ]);
 
     const resolvePreferredShellId = useCallback(() => {

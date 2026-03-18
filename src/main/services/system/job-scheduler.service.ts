@@ -4,14 +4,22 @@ import * as path from 'path';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
+import { EventBusService } from '@main/services/system/event-bus.service';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { app } from 'electron';
 
+interface RecurringJobOptions {
+    persistState: boolean
+    runOnStart: boolean
+    rescheduleOnPowerChange: boolean
+}
+
 interface RecurringJob {
     id: string
     task: () => Promise<void>
-    getInterval: () => number // Factory to get current interval (e.g. from settings)
+    getInterval: () => number
+    options: RecurringJobOptions
     lastRun?: number
 }
 
@@ -19,22 +27,27 @@ export interface JobState {
     lastRun: number
 }
 
+const DEFAULT_RECURRING_JOB_OPTIONS: RecurringJobOptions = {
+    persistState: true,
+    runOnStart: true,
+    rescheduleOnPowerChange: true,
+};
+
 export class JobSchedulerService extends BaseService {
-    private tasks: Map<string, NodeJS.Timeout> = new Map(); // For debounced tasks
+    private tasks: Map<string, NodeJS.Timeout> = new Map();
     private recurringJobs: Map<string, RecurringJob> = new Map();
     private recurringTimers: Map<string, NodeJS.Timeout> = new Map();
+    private persistedStates: Record<string, JobState> = {};
+    private started = false;
+    private unsubscribePowerState: (() => void) | null = null;
     private legacyStatePath: string;
 
     constructor(
-        private databaseService: DatabaseService
+        private databaseService: DatabaseService,
+        private eventBus?: EventBusService
     ) {
         super('JobSchedulerService');
         const userDataPath = app.getPath('userData');
-        // Assuming legacy path was in userData/config/jobs.json or similar.
-        // The original code used dataService.getPath('config').
-        // We'll approximate this or we can't easily access dataService here if we remove it.
-        // But wait, the previous code used `this.dataService.getPath('config')`.
-        // 'config' path in DataService usually defaults to `userData/config`.
         this.legacyStatePath = path.join(userDataPath, 'config', 'jobs.json');
     }
 
@@ -81,28 +94,66 @@ export class JobSchedulerService extends BaseService {
      * @param task Async task to execute
      * @param intervalGetter Function that returns the interval in ms. Can read from settings.
      */
-    registerRecurringJob(id: string, task: () => Promise<void>, intervalGetter: () => number) {
-        this.recurringJobs.set(id, { id, task, getInterval: intervalGetter });
+    registerRecurringJob(
+        id: string,
+        task: () => Promise<void>,
+        intervalGetter: () => number,
+        options?: Partial<RecurringJobOptions>
+    ) {
+        const existingJob = this.recurringJobs.get(id);
+        const job: RecurringJob = {
+            id,
+            task,
+            getInterval: intervalGetter,
+            options: {
+                ...DEFAULT_RECURRING_JOB_OPTIONS,
+                ...(options ?? {}),
+            },
+            lastRun: existingJob?.lastRun,
+        };
+        this.recurringJobs.set(id, job);
+        this.clearRecurringTimer(id);
+
+        if (this.started) {
+            this.prepareJob(job, existingJob);
+            this.scheduleNextRun(job);
+        }
+    }
+
+    unregisterRecurringJob(id: string) {
+        this.clearRecurringTimer(id);
+        this.recurringJobs.delete(id);
+        delete this.persistedStates[id];
     }
 
     /**
      * Start the scheduler. Loads state and schedules jobs.
      */
     async start() {
+        if (this.started) {
+            return;
+        }
+
         await this.migrateLegacyState();
+        this.persistedStates = await this.loadPersistedStates();
+        this.started = true;
+        this.bindPowerStateListener();
 
-        const states = await this.databaseService.getAllJobStates();
-
-        for (const [id, job] of this.recurringJobs) {
-            if (id in states) {
-                job.lastRun = states[id].lastRun;
-            } else {
-                job.lastRun = 0;
-            }
+        for (const job of this.recurringJobs.values()) {
+            this.prepareJob(job);
             this.scheduleNextRun(job);
         }
 
         appLogger.info('JobScheduler', `Started with ${this.recurringJobs.size} recurring jobs`);
+    }
+
+    private bindPowerStateListener(): void {
+        if (this.unsubscribePowerState || !this.eventBus) {
+            return;
+        }
+        this.unsubscribePowerState = this.eventBus.on('power:state-changed', () => {
+            this.reschedulePowerAwareJobs();
+        });
     }
 
     private async migrateLegacyState() {
@@ -130,6 +181,44 @@ export class JobSchedulerService extends BaseService {
         }
     }
 
+    private async loadPersistedStates(): Promise<Record<string, JobState>> {
+        try {
+            return await this.databaseService.getAllJobStates();
+        } catch (error) {
+            appLogger.warn(
+                'JobScheduler',
+                `Falling back to in-memory job state only: ${getErrorMessage(error as Error)}`
+            );
+            return {};
+        }
+    }
+
+    private prepareJob(job: RecurringJob, existingJob?: RecurringJob): void {
+        job.lastRun = this.getInitialLastRun(job, existingJob);
+    }
+
+    private getInitialLastRun(job: RecurringJob, existingJob?: RecurringJob): number {
+        if (typeof existingJob?.lastRun === 'number') {
+            return existingJob.lastRun;
+        }
+
+        const persistedJobState = this.persistedStates[job.id];
+        if (persistedJobState && typeof persistedJobState.lastRun === 'number') {
+            return persistedJobState.lastRun;
+        }
+
+        return job.options.runOnStart ? 0 : Date.now();
+    }
+
+    private reschedulePowerAwareJobs(): void {
+        for (const job of this.recurringJobs.values()) {
+            if (!job.options.rescheduleOnPowerChange) {
+                continue;
+            }
+            this.scheduleNextRun(job);
+        }
+    }
+
     private scheduleNextRun(job: RecurringJob) {
         const now = Date.now();
         const interval = job.getInterval();
@@ -145,13 +234,7 @@ export class JobSchedulerService extends BaseService {
 
         appLogger.debug('JobScheduler', `Scheduling ${job.id} in ${Math.ceil(delay / 1000)}s (Interval: ${interval}ms)`);
 
-        // Clear existing if any
-        if (this.recurringTimers.has(job.id)) {
-            const existingTimer = this.recurringTimers.get(job.id);
-            if (existingTimer !== undefined) {
-                clearTimeout(existingTimer);
-            }
-        }
+        this.clearRecurringTimer(job.id);
 
         const timer = setTimeout(() => {
             void this.executeJob(job);
@@ -161,17 +244,18 @@ export class JobSchedulerService extends BaseService {
     }
 
     private async executeJob(job: RecurringJob) {
-        appLogger.info('JobScheduler', `Executing recurring job: ${job.id}`);
+        appLogger.debug('JobScheduler', `Executing recurring job: ${job.id}`);
         try {
             await job.task();
         } catch (error) {
             appLogger.error('JobScheduler', `Recurring job ${job.id} failed:`, error as Error);
         } finally {
-            // Update state
             job.lastRun = Date.now();
-            await this.databaseService.updateJobLastRun(job.id, job.lastRun);
+            if (job.options.persistState) {
+                this.persistedStates[job.id] = { lastRun: job.lastRun };
+                await this.databaseService.updateJobLastRun(job.id, job.lastRun);
+            }
 
-            // Schedule next
             this.scheduleNextRun(job);
         }
     }
@@ -190,5 +274,16 @@ export class JobSchedulerService extends BaseService {
             clearTimeout(timer);
         }
         this.tasks.clear();
+        this.unsubscribePowerState?.();
+        this.unsubscribePowerState = null;
+        this.started = false;
+    }
+
+    private clearRecurringTimer(id: string): void {
+        const existingTimer = this.recurringTimers.get(id);
+        if (existingTimer !== undefined) {
+            clearTimeout(existingTimer);
+        }
+        this.recurringTimers.delete(id);
     }
 }

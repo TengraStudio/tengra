@@ -6,13 +6,13 @@ import { SettingsSectionProps } from './types';
 export const DevServerSection: React.FC<SettingsSectionProps> = ({ formData, setFormData, t }) => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div>
-            <h3 className="text-lg font-semibold text-foreground mb-1">{t('workspaces.devServer') || 'Development Server'}</h3>
-            <p className="text-sm text-muted-foreground">{t('workspaces.devServerDesc') || 'Configure your local development environment.'}</p>
+            <h3 className="text-lg font-semibold text-foreground mb-1">{t('workspaces.devServer')}</h3>
+            <p className="text-sm text-muted-foreground">{t('workspaces.devServerDesc')}</p>
         </div>
 
         <div className="grid grid-cols-1 gap-6">
             <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground uppercase">{t('workspaces.startCommand') || 'Start Command'}</label>
+                <label className="text-xs font-medium text-muted-foreground uppercase">{t('workspaces.startCommand')}</label>
                 <div className="relative">
                     <Play className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input
@@ -27,7 +27,7 @@ export const DevServerSection: React.FC<SettingsSectionProps> = ({ formData, set
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground uppercase">{t('workspaces.port') || 'Port'}</label>
+                    <label className="text-xs font-medium text-muted-foreground uppercase">{t('workspaces.port')}</label>
                     <input
                         type="number"
                         value={formData.devPort}
@@ -44,7 +44,7 @@ export const DevServerSection: React.FC<SettingsSectionProps> = ({ formData, set
                             onChange={e => setFormData(prev => ({ ...prev, devAutoStart: e.target.checked }))}
                             className="rounded border-border/50 bg-muted/20 text-primary focus:ring-primary"
                         />
-                        <span className="text-sm text-foreground">{t('workspaces.autoStart') || 'Auto-start on load'}</span>
+                        <span className="text-sm text-foreground">{t('workspaces.autoStart')}</span>
                     </label>
                 </div>
             </div>

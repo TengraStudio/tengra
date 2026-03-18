@@ -145,7 +145,7 @@ describe('ModelAnalyticsService', () => {
         it('should export as valid JSON', () => {
             service.recordUsage(sampleUsage);
             const exported = service.exportData();
-            const parsed = JSON.parse(exported) as { records: unknown[]; exportedAt: string };
+            const parsed = JSON.parse(exported) as { records: TestValue[]; exportedAt: string };
             expect(parsed.records).toHaveLength(1);
             expect(parsed.exportedAt).toBeDefined();
         });

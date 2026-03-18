@@ -34,10 +34,15 @@ describe('useExtensions', () => {
 
     beforeEach(() => {
         mocks = buildExtensionMocks();
+        const baseElectron = window.electron ?? ({} as typeof window.electron);
+        const baseExtension = baseElectron.extension ?? ({} as typeof window.electron.extension);
         window.electron = {
-            ...window.electron,
-            extension: mocks,
-        } as unknown as typeof window.electron;
+            ...baseElectron,
+            extension: {
+                ...baseExtension,
+                ...mocks,
+            },
+        } as typeof window.electron;
     });
 
     it('should load extensions on mount', async () => {

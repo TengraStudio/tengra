@@ -9,6 +9,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { WorkspaceEntry, WorkspaceMount } from '@/types';
+import { performanceMonitor } from '@/utils/performance';
 import { appLogger } from '@/utils/renderer-logger';
 
 import { ContextMenuAction, ContextMenuState, MountFileEntry } from '../components/workspace/types';
@@ -56,11 +57,26 @@ export function useWorkspaceExplorerLogic(
                             path: joinPath(mount.rootPath, item.name, mount.type),
                         }));
                         const sorted = sortNodes(mapped);
-                        const withGit =
-                            mount.type === 'local'
-                                ? await applyGitTreeStatus(mount.rootPath, mount.rootPath, sorted)
-                                : sorted;
-                        setRootNodes(prev => ({ ...prev, [mount.id]: sortNodes(withGit) }));
+                        setRootNodes(prev => ({ ...prev, [mount.id]: sorted }));
+                        if (!performanceMonitor.hasMark('workspace:explorer:ready')) {
+                            performanceMonitor.mark('workspace:explorer:ready');
+                        }
+                        if (mount.type === 'local') {
+                            void applyGitTreeStatus(mount.rootPath, mount.rootPath, sorted)
+                                .then(withGit => {
+                                    setRootNodes(prev => ({
+                                        ...prev,
+                                        [mount.id]: sortNodes(withGit),
+                                    }));
+                                })
+                                .catch(error => {
+                                    appLogger.error(
+                                        'WorkspaceExplorer',
+                                        'Failed to apply git tree preview',
+                                        error as Error
+                                    );
+                                });
+                        }
                     }
                 }
             } catch (error) {

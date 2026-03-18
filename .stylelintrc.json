@@ -14,6 +14,24 @@
                     "screen"
                 ]
             }
+        ],
+        "selector-class-pattern": null,
+        "no-descending-specificity": null,
+        "media-feature-name-value-no-unknown": null,
+        "function-no-unknown": [
+            true,
+            {
+                "ignoreFunctions": ["theme", "hsl"]
+            }
+        ],
+        "declaration-property-value-no-unknown": [
+            true,
+            {
+                "ignoreProperties": {
+                    "scrollbar-color": ["/theme/"],
+                    "background": ["/theme/"]
+                }
+            }
         ]
     }
 }

@@ -16,12 +16,12 @@ vi.mock('electron', () => ({
 }));
 
 // Mock dependencies
-const mockSettingsService = { getSettings: vi.fn(() => ({ proxy: {} })), saveSettings: vi.fn() } as any;
-const mockSecurityService = { encryptSync: vi.fn(d => d), decryptSync: vi.fn(d => d) } as any;
-const mockProcessManager = {} as any;
-const mockQuotaService = {} as any;
-const mockEventBus = { on: vi.fn(), off: vi.fn(), emit: vi.fn(), emitCustom: vi.fn() } as any;
-const mockAuthService = { saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn() } as any;
+const mockSettingsService = { getSettings: vi.fn(() => ({ proxy: {} })), saveSettings: vi.fn() } as never;
+const mockSecurityService = { encryptSync: vi.fn(d => d), decryptSync: vi.fn(d => d) } as never;
+const mockProcessManager = {} as never;
+const mockQuotaService = {} as never;
+const mockEventBus = { on: vi.fn(), off: vi.fn(), emit: vi.fn(), emitCustom: vi.fn() } as never;
+const mockAuthService = { saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn() } as never;
 
 describe('Proxy-Data Integration', () => {
     let tempDir: string;
@@ -48,12 +48,12 @@ describe('Proxy-Data Integration', () => {
         vi.clearAllMocks();
     });
 
-    it('should resolve auth work directory via DataService', () => {
+    it('should resolve db directory via DataService', () => {
         // This confirms ProxyService is correctly wired to DataService
-        const authDir = proxyService.dataService.getPath('auth');
-        const expected = dataService.getPath('auth');
-        expect(authDir).toBe(expected);
-        expect(authDir).toContain(tempDir);
+        const dbDir = proxyService.dataService.getPath('db');
+        const expected = dataService.getPath('db');
+        expect(dbDir).toBe(expected);
+        expect(dbDir).toContain(tempDir);
     });
 
     // We intentionally skip file I/O tests here as they proved flaky in the test environment 

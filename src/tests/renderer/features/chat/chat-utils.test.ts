@@ -44,10 +44,20 @@ describe('formatMessageContent', () => {
 });
 
 describe('getPresetOptions', () => {
-    const settings = {
+    const settings: AppSettings = {
+        ollama: { url: 'http://localhost:11434' },
+        embeddings: { provider: 'none' },
+        general: {
+            language: 'en',
+            theme: 'dark',
+            resolution: '1920x1080',
+            fontSize: 14,
+            onboardingCompleted: true,
+        },
         presets: [
             {
                 id: 'p1',
+                name: 'Preset 1',
                 temperature: 0.7,
                 topP: 0.9,
                 frequencyPenalty: 0.1,
@@ -55,7 +65,7 @@ describe('getPresetOptions', () => {
                 maxTokens: 2048,
             },
         ],
-    } as unknown as AppSettings;
+    };
 
     it('returns preset options when matching preset found', () => {
         const result = getPresetOptions(settings, { presetId: 'p1' });

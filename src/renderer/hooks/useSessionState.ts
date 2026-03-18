@@ -1,5 +1,5 @@
 import { SessionState } from '@shared/types/session-engine';
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useSyncExternalStore } from 'react';
 
 import {
     ensureSessionState,
@@ -8,9 +8,10 @@ import {
 } from '@/store/session-runtime.store';
 
 export function useSessionState(sessionId: string | null): SessionState | null {
+    const getSnapshot = useMemo(() => () => getSessionStateSnapshot(sessionId), [sessionId]);
     const state = useSyncExternalStore(
         subscribeSessionRuntime,
-        () => getSessionStateSnapshot(sessionId),
+        getSnapshot,
         () => null
     );
 

@@ -21,7 +21,7 @@ export class NetworkError extends AppError {
     code: string = 'NETWORK_ERROR',
     options?: {
       cause?: Error
-      context?: Record<string, unknown>
+      context?: Record<string, RuntimeValue>
       statusCode?: number
       url?: string
     }

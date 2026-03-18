@@ -203,17 +203,17 @@ const ResponseCardStats = ({
         className="flex items-center gap-4 px-4 py-2 border-t border-border/30 bg-muted/10 text-xs text-muted-foreground"
         aria-label={t('modelComparison.metrics')}
     >
-        <span className="flex items-center gap-1" title="Response time">
+        <span className="flex items-center gap-1" title={t('modelComparison.responseTime')}>
             <Clock className="w-3 h-3" aria-hidden="true" />
             {(response.responseTime / 1000).toFixed(2)}s
         </span>
-        <span className="flex items-center gap-1" title="Tokens consumed">
+        <span className="flex items-center gap-1" title={t('modelComparison.tokenCount')}>
             <Zap className="w-3 h-3" aria-hidden="true" />
-            {response.tokens} tokens
+            {response.tokens} {t('modelComparison.tokensUnit')}
         </span>
-        <span className="flex items-center gap-1" title="Tokens per second">
+        <span className="flex items-center gap-1" title={t('modelComparison.tokensPerSecond')}>
             <BarChart3 className="w-3 h-3" aria-hidden="true" />
-            {(response.tokens / (response.responseTime / 1000 || 1)).toFixed(1)} t/s
+            {(response.tokens / (response.responseTime / 1000 || 1)).toFixed(1)} {t('modelComparison.tokensPerSecondUnit')}
         </span>
     </div>
 );
@@ -240,7 +240,7 @@ const ResponseCard = (props: ResponseCardProps) => {
                 slot.isLoading && 'animate-pulse'
             )}
             role="region"
-            aria-label={`Response from ${slot.model}`}
+            aria-label={`${props.t('modelComparison.responseFrom')} ${slot.model}`}
         >
             <ResponseCardHeader {...props} />
             <ResponseCardContent slot={slot} t={props.t} />

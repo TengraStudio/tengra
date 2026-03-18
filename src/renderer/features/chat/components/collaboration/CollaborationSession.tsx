@@ -66,7 +66,7 @@ export const CollaborationSession = memo(({
                                 className="h-8 text-[11px] font-mono font-medium truncate pr-16 bg-muted border-muted-foreground/10 focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-all"
                             />
                             <div className="absolute right-0 top-0 h-full flex items-center pr-2.5 group-hover:opacity-100 opacity-50 transition-opacity">
-                                <span className="text-[10px] uppercase font-bold tracking-tighter text-primary">Copied</span>
+                                <span className="text-[10px] uppercase font-bold tracking-tighter text-primary">{t('chat.collaboration.copied')}</span>
                             </div>
                         </div>
                     )}
@@ -74,7 +74,7 @@ export const CollaborationSession = memo(({
                         {recordedEvents.length === 0 ? (
                             <div className="p-3 border border-dashed border-muted-foreground/10 rounded-md text-center">
                                 <span className="text-[10px] text-muted-foreground italic font-medium opacity-50 uppercase tracking-widest leading-relaxed">
-                                    No events recorded in current session
+                                    {t('chat.collaboration.noEventsInSession')}
                                 </span>
                             </div>
                         ) : (

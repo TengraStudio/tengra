@@ -7,7 +7,11 @@ import { DatabaseService, SemanticFragment } from '@main/services/data/database.
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import type { FileSearchResult } from '@shared/types/common';
-import { BrowserWindow } from 'electron';
+import { app, BrowserWindow } from 'electron';
+
+interface IndexManifest {
+    files: Record<string, number>;
+}
 
 import {
     analyzeCodeQuality as analyzeWorkspaceCodeQuality
@@ -67,11 +71,43 @@ const EMBEDDING_BATCH_SIZE = 4;
 export class CodeIntelligenceService {
     private readonly indexingInProgress = new Set<string>();
     private readonly indexedWorkspaces = new Set<string>();
+    private manifestPath = '';
 
     constructor(
         private readonly db: DatabaseService,
         private readonly embedding: EmbeddingService
-    ) { }
+    ) {
+        try {
+            const userDataPath = app.getPath('userData');
+            this.manifestPath = path.join(userDataPath, 'code-intel-manifests.json');
+        } catch {
+            this.manifestPath = '';
+        }
+    }
+
+    private async loadManifest(): Promise<Record<string, IndexManifest>> {
+        if (!this.manifestPath) {
+            return {};
+        }
+        try {
+            const data = await fs.readFile(this.manifestPath, 'utf8');
+            const parsed = JSON.parse(data) as Record<string, IndexManifest>;
+            return parsed;
+        } catch {
+            return {};
+        }
+    }
+
+    private async saveManifest(manifest: Record<string, IndexManifest>): Promise<void> {
+        if (!this.manifestPath) {
+            return;
+        }
+        try {
+            await fs.writeFile(this.manifestPath, JSON.stringify(manifest), 'utf8');
+        } catch {
+            // Ignore write errors to cache
+        }
+    }
 
     async queryIndexedSymbols(query: string): Promise<FileSearchResult[]> {
         const vector = await this.embedding.generateEmbedding(query);
@@ -174,18 +210,61 @@ export class CodeIntelligenceService {
             await scanDirRecursively(rootPath, files);
 
             const total = files.length;
-            appLogger.info('code-intelligence.service', `[CodeIntelligence] Found ${total} files. Clearing old index...`);
+            
+            const allManifests = await this.loadManifest();
+            const manifest = allManifests[workspaceId] ?? { files: {} };
+            const newFileManifest: Record<string, number> = {};
+            const filesToIndex: string[] = [];
+            
+            appLogger.info('code-intelligence.service', `[CodeIntelligence] Found ${total} total files. Checking index manifest...`);
 
-            await this.db.clearCodeSymbols(rootPath);
-            await this.db.clearSemanticFragments(rootPath);
+            // Identify changed and removed files
+            for (const filePath of files) {
+                try {
+                    const stats = await fs.stat(filePath);
+                    newFileManifest[filePath] = stats.mtimeMs;
+                    if (force || !manifest.files[filePath] || manifest.files[filePath] !== stats.mtimeMs) {
+                        filesToIndex.push(filePath);
+                    }
+                } catch {
+                    // Ignore stat errors, skip file
+                }
+            }
 
-            for (let index = 0; index < total; index++) {
-                const filePath = files[index];
+            if (force) {
+                await this.db.clearCodeSymbols(rootPath);
+                await this.db.clearSemanticFragments(rootPath);
+            } else {
+                for (const filePath of Object.keys(manifest.files)) {
+                    if (!newFileManifest[filePath]) {
+                        await this.db.deleteCodeSymbolsForFile(rootPath, filePath);
+                        await this.db.deleteSemanticFragmentsForFile(rootPath, filePath);
+                    }
+                }
+            }
+
+            appLogger.info('code-intelligence.service', `[CodeIntelligence] Found ${filesToIndex.length} files that need indexing.`);
+
+            for (let index = 0; index < filesToIndex.length; index++) {
+                const filePath = filesToIndex[index];
                 if (!filePath) {
                     continue;
                 }
-                await this.processWorkspaceFile(workspaceId, rootPath, filePath, index, total);
+                
+                if (!force && manifest.files[filePath]) {
+                    await this.db.deleteCodeSymbolsForFile(rootPath, filePath);
+                    await this.db.deleteSemanticFragmentsForFile(rootPath, filePath);
+                }
+                
+                await this.processWorkspaceFile(workspaceId, rootPath, filePath, index, filesToIndex.length);
+                
+                if (index > 0 && index % 10 === 0) {
+                    await new Promise(r => setImmediate(r));
+                }
             }
+            
+            allManifests[workspaceId] = { files: newFileManifest };
+            await this.saveManifest(allManifests);
 
             this.indexedWorkspaces.add(workspaceId);
             this.sendIndexingProgress(workspaceId, total, total, 'Complete');

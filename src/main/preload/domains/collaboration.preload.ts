@@ -23,7 +23,7 @@ export interface ModelCollaborationBridge {
             content: string;
         };
     }>;
-    getProviderStats: (provider?: string) => Promise<unknown>;
+    getProviderStats: (provider?: string) => Promise<RuntimeValue>;
     getActiveTaskCount: (provider: string) => Promise<number>;
     setProviderConfig: (
         provider: string,

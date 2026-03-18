@@ -10,14 +10,14 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({ formData, setFo
         <div>
             <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-1 flex items-center gap-2">
                 <Info className="w-4 h-4 text-primary" />
-                {t('workspaces.basicInfo') || 'Basic Information'}
+                {t('workspaces.basicInfo')}
             </h3>
-            <p className="text-xs text-muted-foreground">{t('workspaces.basicInfoDesc') || 'Update your workspace identity and status.'}</p>
+            <p className="text-xs text-muted-foreground">{t('workspaces.basicInfoDesc')}</p>
         </div>
 
         <div className="space-y-4">
             <div className="grid gap-2">
-                <label className="text-sm font-medium text-muted-foreground">{t('workspaces.workspaceTitle') || 'Workspace Title'}</label>
+                <label className="text-sm font-medium text-muted-foreground">{t('workspaces.workspaceTitle')}</label>
                 <input
                     type="text"
                     value={formData.title}
@@ -26,7 +26,7 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({ formData, setFo
                 />
             </div>
             <div className="grid gap-2">
-                <label className="text-sm font-medium text-muted-foreground">{t('workspaces.description') || 'Description'}</label>
+                <label className="text-sm font-medium text-muted-foreground">{t('workspaces.description')}</label>
                 <textarea
                     value={formData.description}
                     onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
@@ -35,7 +35,7 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({ formData, setFo
                 />
             </div>
             <div className="grid gap-2">
-                <label className="text-sm font-medium text-muted-foreground">{t('workspaces.status') || 'Status'}</label>
+                <label className="text-sm font-medium text-muted-foreground">{t('workspaces.status')}</label>
                 <select
                     value={formData.status}
                     onChange={e => setFormData(prev => ({ ...prev, status: e.target.value as Workspace['status'] }))}

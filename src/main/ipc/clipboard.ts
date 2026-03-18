@@ -7,7 +7,7 @@ export function registerClipboardIpc(clipboardService: ClipboardService) {
         'clipboard:writeText',
         createSafeIpcHandler(
             'clipboard:writeText',
-            async (_event, text: unknown) => {
+            async (_event, text: RuntimeValue) => {
                 if (typeof text !== 'string') {
                     throw new Error('Invalid text');
                 }

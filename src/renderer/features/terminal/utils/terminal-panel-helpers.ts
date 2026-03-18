@@ -57,7 +57,7 @@ export function buildDockerBootstrapCommand(container: RemoteDockerContainer): s
     ].join(' ');
 }
 
-export function validateTerminalAppearanceImport(data: unknown): {
+export function validateTerminalAppearanceImport(data: RendererDataValue): {
     valid: boolean;
     errors: string[];
 } {
@@ -66,7 +66,7 @@ export function validateTerminalAppearanceImport(data: unknown): {
         return { valid: false, errors: ['Invalid theme file: must be a JSON object'] };
     }
 
-    const theme = data as Partial<TerminalAppearancePreferences> & Record<string, unknown>;
+    const theme = data as Partial<TerminalAppearancePreferences> & Record<string, RendererDataValue>;
     if ('themePresetId' in theme && typeof theme.themePresetId !== 'string') {
         errors.push('themePresetId must be a string');
     }
@@ -108,7 +108,7 @@ export function validateTerminalAppearanceImport(data: unknown): {
         if (typeof theme.customTheme !== 'object') {
             errors.push('customTheme must be an object or null');
         } else {
-            const customTheme = theme.customTheme as Record<string, unknown>;
+            const customTheme = theme.customTheme as Record<string, RendererDataValue>;
             const validColorKeys = [
                 'background', 'foreground', 'cursor', 'cursorAccent', 'selectionBackground',
                 'selectionForeground', 'selectionInactiveBackground', 'black', 'red', 'green',

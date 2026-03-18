@@ -2,7 +2,7 @@
 import { registerPerformanceIpc } from '@main/ipc/performance';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mockIpcMainHandlers = new Map<string, (...args: unknown[]) => unknown>();
+const mockIpcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
 
 // Mock performance service
 const mockPerformanceService = {
@@ -14,8 +14,8 @@ const mockPerformanceService = {
 // Mock electron
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
-            mockIpcMainHandlers.set(channel, handler);
+        handle: vi.fn((channel: string, handler: (...args: TestValue[]) => TestValue | Promise<TestValue>) => {
+            mockIpcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
         }),
         removeHandler: vi.fn((channel: string) => {
             mockIpcMainHandlers.delete(channel);
@@ -99,9 +99,9 @@ describe('Performance IPC Handlers', () => {
             const handler = mockIpcMainHandlers.get('performance:get-memory-stats');
             const result = await handler!({});
             
-            expect((result as Record<string, Record<string, unknown>>).data.main).toHaveProperty('rss');
-            expect((result as Record<string, Record<string, unknown>>).data.main).toHaveProperty('heapTotal');
-            expect((result as Record<string, Record<string, unknown>>).data.main).toHaveProperty('heapUsed');
+            expect((result as Record<string, Record<string, TestValue>>).data.main).toHaveProperty('rss');
+            expect((result as Record<string, Record<string, TestValue>>).data.main).toHaveProperty('heapTotal');
+            expect((result as Record<string, Record<string, TestValue>>).data.main).toHaveProperty('heapUsed');
         });
     });
 
@@ -146,7 +146,7 @@ describe('Performance IPC Handlers', () => {
             const handler = mockIpcMainHandlers.get('performance:detect-leak');
             const result = await handler!({});
             
-            expect((result as Record<string, Record<string, unknown>>).data.isPossibleLeak).toBe(false);
+            expect((result as Record<string, Record<string, TestValue>>).data.isPossibleLeak).toBe(false);
         });
 
         it('should return default on error', async () => {
@@ -192,7 +192,7 @@ describe('Performance IPC Handlers', () => {
             const handler = mockIpcMainHandlers.get('performance:trigger-gc');
             const result = await handler!({});
             
-            expect((result as Record<string, Record<string, unknown>>).data.success).toBe(false);
+            expect((result as Record<string, Record<string, TestValue>>).data.success).toBe(false);
         });
 
         it('should return default on error', async () => {
@@ -210,3 +210,4 @@ describe('Performance IPC Handlers', () => {
         });
     });
 });
+

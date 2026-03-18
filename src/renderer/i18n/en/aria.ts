@@ -32,7 +32,10 @@ const sectionData = {
     "workspaceSettingsPanel": "Workspace settings panel",
     "workspaceSettingsContent": "Workspace settings content",
     "findPrevious": "Find previous",
-    "findNext": "Find next"
+    "findNext": "Find next",
+    "messageListKeyboardHelp": "Use ArrowUp and ArrowDown to navigate, Home and End to jump, Enter to select, and R to regenerate assistant messages.",
+    "messageListStreaming": "Assistant is streaming a new message.",
+    "messageListCount": "Message list now has {{count}} messages."
 };
 
 export default sectionData;

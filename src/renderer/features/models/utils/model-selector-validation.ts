@@ -115,7 +115,7 @@ export const PendingModelSchema = z
 /**
  * Type guard to check if a value is a valid ModelListItem
  */
-export function isValidModelListItem(value: unknown): value is z.infer<typeof ModelListItemSchema> {
+export function isValidModelListItem(value: RendererDataValue): value is z.infer<typeof ModelListItemSchema> {
     const result = ModelListItemSchema.safeParse(value);
     return result.success;
 }
@@ -123,7 +123,7 @@ export function isValidModelListItem(value: unknown): value is z.infer<typeof Mo
 /**
  * Type guard to check if a value is a valid ModelCategory
  */
-export function isValidModelCategory(value: unknown): value is z.infer<typeof ModelCategorySchema> {
+export function isValidModelCategory(value: RendererDataValue): value is z.infer<typeof ModelCategorySchema> {
     const result = ModelCategorySchema.safeParse(value);
     return result.success;
 }
@@ -131,7 +131,7 @@ export function isValidModelCategory(value: unknown): value is z.infer<typeof Mo
 /**
  * Type guard to check if a value is a valid ChatMode
  */
-export function isValidChatMode(value: unknown): value is z.infer<typeof ChatModeSchema> {
+export function isValidChatMode(value: RendererDataValue): value is z.infer<typeof ChatModeSchema> {
     const result = ChatModeSchema.safeParse(value);
     return result.success;
 }
@@ -139,7 +139,7 @@ export function isValidChatMode(value: unknown): value is z.infer<typeof ChatMod
 /**
  * Type guard to check if a value is a valid ThinkingLevel
  */
-export function isValidThinkingLevel(value: unknown): value is z.infer<typeof ThinkingLevelSchema> {
+export function isValidThinkingLevel(value: RendererDataValue): value is z.infer<typeof ThinkingLevelSchema> {
     const result = ThinkingLevelSchema.safeParse(value);
     return result.success;
 }
@@ -176,7 +176,7 @@ export function isValidModelSelection(provider: string, modelId: string): boolea
  * @returns Validated categories or empty array
  */
 export function validateCategories(
-    categories: unknown
+    categories: RendererDataValue
 ): z.infer<typeof ModelCategorySchema>[] {
     if (!Array.isArray(categories)) {
         return [];
@@ -298,7 +298,7 @@ export class ModelSelectorError extends Error {
     constructor(
         message: string,
         public readonly code: ModelSelectorErrorCode,
-        public readonly details?: Record<string, unknown>
+        public readonly details?: Record<string, RendererDataValue>
     ) {
         super(message);
         this.name = 'ModelSelectorError';

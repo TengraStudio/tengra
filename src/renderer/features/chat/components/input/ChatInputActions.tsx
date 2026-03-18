@@ -21,6 +21,7 @@ export const ModelSelectorWrapper = memo(({ ctrl }: { ctrl: ControllerType }) =>
             quotas={ctrl.quotas}
             codexUsage={ctrl.codexUsage}
             claudeQuota={ctrl.claudeQuota}
+            copilotQuota={ctrl.copilotQuota}
             onOpenChange={ctrl.setIsModelMenuOpen}
             contextTokens={ctrl.contextTokens}
             language={ctrl.language}

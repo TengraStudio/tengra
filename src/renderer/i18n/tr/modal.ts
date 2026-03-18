@@ -1,5 +1,6 @@
 const sectionData = {
-    "close": "Modali kapat"
+    "close": "Modali kapat",
+    "contentForTitle": "Başlık için modal içeriği: {{title}}"
 };
 
 export default sectionData;

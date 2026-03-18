@@ -12,7 +12,7 @@ const MAX_PATH_LENGTH = 1024;
 /**
  * Validates export input parameters
  */
-function validateExportInput(content: unknown, filePath: unknown): { content: string; filePath: string } | null {
+function validateExportInput(content: RuntimeValue, filePath: RuntimeValue): { content: string; filePath: string } | null {
     if (typeof content !== 'string' || typeof filePath !== 'string') {
         return null;
     }
@@ -39,7 +39,7 @@ export function registerExportIpc(getMainWindow: () => BrowserWindow | null, exp
         'export:markdown',
         createIpcHandler(
             'export:markdown',
-            async (event: IpcMainInvokeEvent, contentRaw: unknown, filePathRaw: unknown) => {
+            async (event: IpcMainInvokeEvent, contentRaw: RuntimeValue, filePathRaw: RuntimeValue) => {
                 validateSender(event);
                 const validated = validateExportInput(contentRaw, filePathRaw);
                 if (!validated) {
@@ -54,7 +54,7 @@ export function registerExportIpc(getMainWindow: () => BrowserWindow | null, exp
         'export:pdf',
         createIpcHandler(
             'export:pdf',
-            async (event: IpcMainInvokeEvent, htmlContentRaw: unknown, filePathRaw: unknown) => {
+            async (event: IpcMainInvokeEvent, htmlContentRaw: RuntimeValue, filePathRaw: RuntimeValue) => {
                 validateSender(event);
                 const validated = validateExportInput(htmlContentRaw, filePathRaw);
                 if (!validated) {

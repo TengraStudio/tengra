@@ -11,7 +11,7 @@ interface ImageSettingsRuntimeProps {
     downloadProgress: { downloaded: number; total: number; filename: string } | null;
     setDownloadProgress: (val: { downloaded: number; total: number; filename: string } | null) => void;
     checkStatus: () => Promise<void>;
-    t: (key: string) => string | undefined;
+    t: (key: string) => string;
 }
 
 export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
@@ -81,10 +81,10 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                         </div>
                         <div>
                             <h4 className="text-sm font-bold flex items-center gap-2">
-                                Stable Diffusion (C++)
+                                {t('settings.images.runtimeName')}
                                 {sdCppStatus === 'ready' && (
                                     <span className="bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter">
-                                        v1.5
+                                        {t('settings.images.runtimeVersion')}
                                     </span>
                                 )}
                             </h4>
@@ -123,7 +123,7 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                         <div className="flex justify-between items-end gap-4">
                             <div className="space-y-1 min-w-0 flex-1">
                                 <p className="text-[10px] font-black text-primary uppercase tracking-widest leading-none">
-                                    Downloading
+                                    {t('settings.images.downloading')}
                                 </p>
                                 <p className="text-xxs text-muted-foreground/80 truncate font-medium underline underline-offset-4 decoration-white/10">
                                     {downloadProgress.filename}
@@ -158,9 +158,9 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                 isOpen={isReinstallModalOpen}
                 onClose={() => setIsReinstallModalOpen(false)}
                 onConfirm={() => { void handleReinstallConfirm(); }}
-                title={t('settings.images.reinstall') || 'Reinstall'}
-                message={t('settings.images.reinstallConfirm') || 'Confirm?'}
-                confirmLabel={t('settings.images.reinstall') || 'Yes'}
+                title={t('settings.images.reinstall')}
+                message={t('settings.images.reinstallConfirm')}
+                confirmLabel={t('settings.images.reinstall')}
                 variant="warning"
             />
         </div>

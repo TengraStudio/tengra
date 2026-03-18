@@ -19,7 +19,7 @@ export class LLMError extends AppError {
     provider: string,
     message: string,
     code: string = 'LLM_ERROR',
-    options?: { cause?: Error; context?: Record<string, unknown> }
+    options?: { cause?: Error; context?: Record<string, RuntimeValue> }
   ) {
     super(message, code, options);
     this.provider = provider;

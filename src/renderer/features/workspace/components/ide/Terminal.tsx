@@ -1,13 +1,14 @@
 import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { FitAddon } from '@xterm/addon-fit';
+import { Terminal } from '@xterm/xterm';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Terminal } from 'xterm';
-import { FitAddon } from 'xterm-addon-fit';
 
 import { useTranslation } from '@/i18n';
 import { getTerminalTheme } from '@/lib/terminal-theme';
+import { performanceMonitor } from '@/utils/performance';
 import { appLogger } from '@/utils/renderer-logger';
 
-import 'xterm/css/xterm.css';
+import '@xterm/xterm/css/xterm.css';
 
 interface TerminalComponentProps {
     cwd?: string | undefined
@@ -299,6 +300,7 @@ const useTerminalInstance = (
 
                 attachCleanups(term, { data: cleanupData, exit: cleanupExit });
                 setupTerminalDataHandler(term, { historyRef, historyIndexRef, currentInputRef }, pidRef, addToHistory);
+                performanceMonitor.mark('workspace:terminal:ready');
 
                 term.onResize(({ cols, rows }) => {
                     if (pidRef.current) {
@@ -423,13 +425,13 @@ export const TerminalComponent = ({ cwd, workspaceId }: TerminalComponentProps) 
         <div className="w-full h-full relative group flex flex-col gap-2" style={{ minHeight: '300px' }}>
             <div className="flex flex-wrap items-center gap-2 text-[11px]">
                 <span className={`inline-flex items-center rounded-full px-2 py-1 border ${terminalRuntimeHealth?.terminalAvailable ? 'border-success/50 text-success' : 'border-destructive/50 text-destructive'}`}>
-                    TERM {terminalRuntimeHealth?.availableBackends ?? 0}/{terminalRuntimeHealth?.totalBackends ?? 0}
+                    {t('workspace.terminalStatusTerm')} {terminalRuntimeHealth?.availableBackends ?? 0}/{terminalRuntimeHealth?.totalBackends ?? 0}
                 </span>
                 <span className={`inline-flex items-center rounded-full px-2 py-1 border ${sshConnectionCount > 0 ? 'border-success/50 text-success' : 'border-muted-foreground/40 text-muted-foreground'}`}>
-                    SSH {sshConnectionCount}
+                    {t('workspace.terminalStatusSsh')} {sshConnectionCount}
                 </span>
                 <span className={`inline-flex items-center rounded-full px-2 py-1 border ${dockerAvailable ? 'border-success/50 text-success' : 'border-muted-foreground/40 text-muted-foreground'}`}>
-                    Docker {dockerAvailable ? 'ready' : 'unavailable'}
+                    {t('workspace.terminalStatusDocker')} {dockerAvailable ? t('workspace.terminalStatusReady') : t('workspace.terminalStatusUnavailable')}
                 </span>
             </div>
             <div className="relative flex-1">

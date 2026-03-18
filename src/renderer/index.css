@@ -1,4 +1,4 @@
-@import './typography.css';
+@import url('./typography.css');
 
 /* stylelint-disable */
 @tailwind base;
@@ -232,6 +232,13 @@
         --neutral-light: 0 0% 70%;
         --neutral-dark: 0 0% 30%;
 
+        /* Brand Accent Colors */
+        --indigo: 239 84% 67%;
+        --purple: 270 95% 75%;
+        --cyan: 180 100% 45%;
+        --orange: 25 95% 53%;
+        --fuchsia: 295 82% 80%;
+
         /* Code Syntax Highlighting - Light Theme */
         --code-keyword: 262 90% 60%;
         --code-function: 211 60% 48%;
@@ -333,6 +340,13 @@
         --neutral-light: 0 0% 65%;
         --neutral-dark: 0 0% 35%;
 
+        /* Brand Accent Colors - Dark */
+        --indigo: 239 84% 75%;
+        --purple: 270 95% 82%;
+        --cyan: 180 100% 60%;
+        --orange: 25 95% 65%;
+        --fuchsia: 295 82% 85%;
+
         /* Code Syntax Highlighting - Dark Theme */
         --code-keyword: 286 60% 67%;
         --code-function: 207 82% 66%;
@@ -421,7 +435,7 @@
 
     /* Premium Glassmorphism */
     .premium-glass {
-        @apply bg-card/40 backdrop-blur-xl border border-white/10 rounded-2xl transition-premium;
+        @apply bg-card/40 backdrop-blur-xl border border-border/50 rounded-2xl transition-premium;
         box-shadow:
             var(--shadow-xl),
             inset 0 0 0 1px hsla(0, 0%, 100%, 0.05);
@@ -433,17 +447,17 @@
                 hsla(0, 0%, 100%, 0.05) 100%);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
+        border: 1px solid hsl(var(--border) / 0.5);
     }
 
     /* Vibrant Mesh Gradients */
     .bg-mesh {
         background-color: hsl(var(--background));
         background-image:
-            radial-gradient(at 0% 0%, hsla(250, 100%, 65%, 0.15) 0px, transparent 50%),
-            radial-gradient(at 100% 0%, hsla(190, 100%, 60%, 0.15) 0px, transparent 50%),
-            radial-gradient(at 100% 100%, hsla(320, 100%, 60%, 0.1) 0px, transparent 50%),
-            radial-gradient(at 0% 100%, hsla(150, 100%, 60%, 0.1) 0px, transparent 50%);
+            radial-gradient(at 0% 0%, hsl(var(--primary) / 0.15) 0px, transparent 50%),
+            radial-gradient(at 100% 0%, hsl(var(--accent) / 0.15) 0px, transparent 50%),
+            radial-gradient(at 100% 100%, hsl(var(--destructive) / 0.1) 0px, transparent 50%),
+            radial-gradient(at 0% 100%, hsl(var(--success) / 0.1) 0px, transparent 50%);
     }
 
     /* Micro-animations */

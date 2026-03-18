@@ -33,7 +33,7 @@ const FAKE_ACCESS_TOKEN = 'ghu_FAKE_ACCESS_TOKEN_12345';
 const FAKE_REFRESH_TOKEN = 'ghr_FAKE_REFRESH_TOKEN_67890';
 
 /** Recursively check that a value contains no token strings. */
-function assertNoTokenLeak(value: unknown, path = 'root'): void {
+function assertNoTokenLeak(value: TestValue, path = 'root'): void {
     if (value === null || value === undefined) {
         return;
     }
@@ -49,20 +49,20 @@ function assertNoTokenLeak(value: unknown, path = 'root'): void {
         return;
     }
     if (typeof value === 'object') {
-        for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
+        for (const [key, v] of Object.entries(value as Record<string, TestValue>)) {
             assertNoTokenLeak(v, `${path}.${key}`);
         }
     }
 }
 
 describe('AUD-2026-02-27-01: auth:poll-token must not expose access_token', () => {
-    let handlers: Map<string, (...args: unknown[]) => Promise<unknown>>;
+    let handlers: Map<string, (...args: TestValue[]) => Promise<TestValue>>;
     let deps: AuthIpcDependencies;
 
     beforeEach(() => {
         handlers = new Map();
-        vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: unknown) => {
-            handlers.set(channel, handler as (...args: unknown[]) => Promise<unknown>);
+        vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: TestValue) => {
+            handlers.set(channel, handler as (...args: TestValue[]) => Promise<TestValue>);
         });
 
         deps = {
@@ -82,10 +82,10 @@ describe('AUD-2026-02-27-01: auth:poll-token must not expose access_token', () =
                     login: 'testuser'
                 }),
                 fetchGitHubEmails: vi.fn().mockResolvedValue('test@example.com')
-            } as unknown as AuthIpcDependencies['proxyService'],
+            } as never as AuthIpcDependencies['proxyService'],
             copilotService: {
                 setGithubToken: vi.fn()
-            } as unknown as AuthIpcDependencies['copilotService'],
+            } as never as AuthIpcDependencies['copilotService'],
             authService: {
                 linkAccount: vi.fn().mockResolvedValue({
                     id: 'acct-1',
@@ -97,17 +97,17 @@ describe('AUD-2026-02-27-01: auth:poll-token must not expose access_token', () =
                     createdAt: Date.now()
                 }),
                 detectProvider: vi.fn().mockReturnValue('copilot')
-            } as unknown as AuthIpcDependencies['authService'],
+            } as never as AuthIpcDependencies['authService'],
             auditLogService: {
                 logAuthenticationEvent: vi.fn().mockResolvedValue(undefined)
-            } as unknown as AuthIpcDependencies['auditLogService'],
+            } as never as AuthIpcDependencies['auditLogService'],
             getMainWindow: vi.fn().mockReturnValue({
                 webContents: { id: 1 },
                 isDestroyed: vi.fn().mockReturnValue(false)
             }),
             eventBus: {
                 on: vi.fn()
-            } as unknown as AuthIpcDependencies['eventBus']
+            } as never as AuthIpcDependencies['eventBus']
         };
 
         registerAuthIpc(deps);
@@ -126,7 +126,7 @@ describe('AUD-2026-02-27-01: auth:poll-token must not expose access_token', () =
 
         assertNoTokenLeak(result);
 
-        const resultObj = result as Record<string, unknown>;
+        const resultObj = result as Record<string, TestValue>;
         expect(resultObj).toHaveProperty('success', true);
         expect(resultObj).toHaveProperty('account');
         expect(resultObj).not.toHaveProperty('access_token');
@@ -166,7 +166,7 @@ describe('AUD-2026-02-27-01: auth:poll-token must not expose access_token', () =
         const result = await handler!(fakeEvent, 'device-code-789', 5, 'copilot');
 
         assertNoTokenLeak(result);
-        const resultObj = result as Record<string, unknown>;
+        const resultObj = result as Record<string, TestValue>;
         expect(resultObj).toHaveProperty('success', false);
         expect(resultObj).not.toHaveProperty('access_token');
         expect(resultObj).not.toHaveProperty('token');
@@ -177,7 +177,7 @@ describe('AUD-2026-02-27-01: auth:poll-token must not expose access_token', () =
         const fakeEvent = { sender: { id: 1 } };
         const result = await handler!(fakeEvent, 'device-code-123', 5, 'copilot');
 
-        const account = (result as { account?: Record<string, unknown> }).account;
+        const account = (result as { account?: Record<string, TestValue> }).account;
         expect(account).toBeDefined();
 
         const ALLOWED_FIELDS = new Set([

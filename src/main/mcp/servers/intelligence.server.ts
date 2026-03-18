@@ -73,7 +73,7 @@ export function buildIntelligenceServers(deps: McpDeps): McpService[] {
                 {
                     name: 'collaborate',
                     description: 'Run multiple models on a task with a strategy',
-                    handler: (args) => deps.modelCollaboration.collaborate(args as unknown as CollaborationRequest)
+                    handler: (args) => deps.modelCollaboration.collaborate(args as RuntimeValue as CollaborationRequest)
                 }
             ], 'collaboration', deps.auditLog)
         }

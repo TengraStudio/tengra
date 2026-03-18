@@ -14,6 +14,7 @@ import { SessionRegistryReader } from './session-registry.contract';
 import { WorkspaceSessionEngine } from './workspace-session-engine.service';
 
 type ConversationSessionEngine = ChatSessionEngine | WorkspaceSessionEngine;
+const MAX_RECOVERY_HINT_LENGTH = 1000;
 
 const getLastMessagePreview = (state: SessionState): string | undefined => {
     const lastMessage = state.messages[state.messages.length - 1];
@@ -24,6 +25,21 @@ const getLastMessagePreview = (state: SessionState): string | undefined => {
     const preview = lastMessage.content.trim().replace(/\s+/g, ' ');
     return preview ? preview.slice(0, 280) : undefined;
 };
+
+const truncateRecoveryHint = (value: string | undefined): string | undefined => {
+    if (!value) {
+        return undefined;
+    }
+
+    return value.length <= MAX_RECOVERY_HINT_LENGTH
+        ? value
+        : value.slice(0, MAX_RECOVERY_HINT_LENGTH);
+};
+
+const buildRecoveryState = (state: SessionState): SessionState['recovery'] => ({
+    ...state.recovery,
+    hint: truncateRecoveryHint(state.recovery.hint),
+});
 
 export class ChatSessionRegistryService extends BaseService implements SessionRegistryReader {
     private readonly sessions = new Map<string, ConversationSessionEngine>();
@@ -73,8 +89,8 @@ export class ChatSessionRegistryService extends BaseService implements SessionRe
                 messageCount: state.messages.length,
                 metadata: state.metadata,
                 updatedAt: state.updatedAt,
-                recoveryHint: state.lastError,
-                recovery: state.recovery,
+                recoveryHint: truncateRecoveryHint(state.lastError),
+                recovery: buildRecoveryState(state),
                 lastMessagePreview: getLastMessagePreview(state),
             };
         });

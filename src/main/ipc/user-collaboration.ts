@@ -23,7 +23,7 @@ export function registerUserCollaborationIpc(
     const validateSender = createMainWindowSenderValidator(mainWindowGetter, 'user-collaboration operation');
 
     // Helper:Forward specific event types to the renderer
-    const forwardToRenderer = (channel: string, payload: unknown) => {
+    const forwardToRenderer = (channel: string, payload: RuntimeValue) => {
         const win = mainWindowGetter();
         if (win && !win.isDestroyed()) {
             win.webContents.send(channel, payload);

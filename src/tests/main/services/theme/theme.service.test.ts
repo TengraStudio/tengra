@@ -71,7 +71,7 @@ describe('ThemeService', () => {
         vi.clearAllMocks();
         const { DataService } = await import('@main/services/data/data.service');
         const dataService = new DataService();
-        themeService = new ThemeService(dataService as any);
+        themeService = new ThemeService(dataService as never);
         await themeService.initialize();
     });
 
@@ -164,7 +164,7 @@ describe('ThemeService', () => {
                 // missing name, displayName, version, type, colors
             };
 
-            await expect(themeService.installTheme(invalidManifest as any)).rejects.toThrow('THEME_INVALID_MANIFEST');
+            await expect(themeService.installTheme(invalidManifest as never)).rejects.toThrow('THEME_INVALID_MANIFEST');
         });
 
         it('should reject invalid manifest - invalid type', async () => {
@@ -177,7 +177,7 @@ describe('ThemeService', () => {
                 colors: { background: '0 0% 0%', foreground: '0 0% 100%', primary: '', secondary: '', accent: '', muted: '', destructive: '', border: '', input: '', ring: '', card: '', cardForeground: '', popover: '', popoverForeground: '', primaryForeground: '', secondaryForeground: '', accentForeground: '', destructiveForeground: '', mutedForeground: '' }
             };
 
-            await expect(themeService.installTheme(invalidManifest as any)).rejects.toThrow();
+            await expect(themeService.installTheme(invalidManifest as never)).rejects.toThrow();
         });
 
         it('should reject invalid manifest - null colors', async () => {
@@ -187,10 +187,10 @@ describe('ThemeService', () => {
                 displayName: 'Test',
                 version: '1.0.0',
                 type: 'dark' as const,
-                colors: null as any
+                colors: null as never
             };
 
-            await expect(themeService.installTheme(invalidManifest as any)).rejects.toThrow();
+            await expect(themeService.installTheme(invalidManifest as never)).rejects.toThrow();
         });
 
         it('should reject invalid manifest - array instead of object', async () => {
@@ -200,15 +200,15 @@ describe('ThemeService', () => {
                 displayName: 'Test',
                 version: '1.0.0',
                 type: 'dark' as const,
-                colors: [] as any
+                colors: [] as never
             };
 
-            await expect(themeService.installTheme(invalidManifest as any)).rejects.toThrow();
+            await expect(themeService.installTheme(invalidManifest as never)).rejects.toThrow();
         });
 
         it('should reject manifest with non-string id', async () => {
             const invalidManifest = {
-                id: 123 as any,
+                id: 123 as never,
                 name: 'test',
                 displayName: 'Test',
                 version: '1.0.0',
@@ -216,7 +216,7 @@ describe('ThemeService', () => {
                 colors: { background: '0 0% 0%', foreground: '0 0% 100%', primary: '', secondary: '', accent: '', muted: '', destructive: '', border: '', input: '', ring: '', card: '', cardForeground: '', popover: '', popoverForeground: '', primaryForeground: '', secondaryForeground: '', accentForeground: '', destructiveForeground: '', mutedForeground: '' }
             };
 
-            await expect(themeService.installTheme(invalidManifest as any)).rejects.toThrow();
+            await expect(themeService.installTheme(invalidManifest as never)).rejects.toThrow();
         });
 
         it('should handle very long theme id', async () => {
@@ -307,7 +307,7 @@ describe('ThemeService Edge Cases', () => {
         vi.clearAllMocks();
         const { DataService } = await import('@main/services/data/data.service');
         const dataService = new DataService();
-        themeService = new ThemeService(dataService as any);
+        themeService = new ThemeService(dataService as never);
     });
 
     describe('initialize with file system errors', () => {
@@ -330,7 +330,7 @@ describe('ThemeService Edge Cases', () => {
 
         it('should handle empty themes directory', async () => {
             const fs = await import('fs/promises');
-            vi.mocked(fs.readdir).mockResolvedValueOnce([] as any);
+            vi.mocked(fs.readdir).mockResolvedValueOnce([] as never);
 
             await themeService.initialize();
             const themes = await themeService.getAllThemes();
@@ -427,7 +427,7 @@ describe('ThemeService Additional Edge Cases', () => {
         vi.clearAllMocks();
         const { DataService } = await import('@main/services/data/data.service');
         const dataService = new DataService();
-        themeService = new ThemeService(dataService as unknown as import('@main/services/data/data.service').DataService);
+        themeService = new ThemeService(dataService as never as import('@main/services/data/data.service').DataService);
         await themeService.initialize();
     });
 
@@ -485,39 +485,39 @@ describe('ThemeService Additional Edge Cases', () => {
 
         it('should reject manifest without id', async () => {
             const manifest = { name: 'test', displayName: 'Test', version: '1.0.0', type: 'dark', colors: validColors };
-            await expect(themeService.installTheme(manifest as unknown as import('@shared/types/theme').ThemeManifest)).rejects.toThrow('THEME_INVALID_MANIFEST');
+            await expect(themeService.installTheme(manifest as never as import('@shared/types/theme').ThemeManifest)).rejects.toThrow('THEME_INVALID_MANIFEST');
         });
 
         it('should reject manifest without name', async () => {
             const manifest = { id: 'test', displayName: 'Test', version: '1.0.0', type: 'dark', colors: validColors };
-            await expect(themeService.installTheme(manifest as unknown as import('@shared/types/theme').ThemeManifest)).rejects.toThrow('THEME_INVALID_MANIFEST');
+            await expect(themeService.installTheme(manifest as never as import('@shared/types/theme').ThemeManifest)).rejects.toThrow('THEME_INVALID_MANIFEST');
         });
 
         it('should reject manifest without displayName', async () => {
             const manifest = { id: 'test', name: 'test', version: '1.0.0', type: 'dark', colors: validColors };
-            await expect(themeService.installTheme(manifest as unknown as import('@shared/types/theme').ThemeManifest)).rejects.toThrow('THEME_INVALID_MANIFEST');
+            await expect(themeService.installTheme(manifest as never as import('@shared/types/theme').ThemeManifest)).rejects.toThrow('THEME_INVALID_MANIFEST');
         });
 
         it('should reject manifest without version', async () => {
             const manifest = { id: 'test', name: 'test', displayName: 'Test', type: 'dark', colors: validColors };
-            await expect(themeService.installTheme(manifest as unknown as import('@shared/types/theme').ThemeManifest)).rejects.toThrow('THEME_INVALID_MANIFEST');
+            await expect(themeService.installTheme(manifest as never as import('@shared/types/theme').ThemeManifest)).rejects.toThrow('THEME_INVALID_MANIFEST');
         });
 
         it('should reject manifest with invalid type', async () => {
             const manifest = { id: 'test', name: 'test', displayName: 'Test', version: '1.0.0', type: 'neon', colors: validColors };
-            await expect(themeService.installTheme(manifest as unknown as import('@shared/types/theme').ThemeManifest)).rejects.toThrow('THEME_INVALID_MANIFEST');
+            await expect(themeService.installTheme(manifest as never as import('@shared/types/theme').ThemeManifest)).rejects.toThrow('THEME_INVALID_MANIFEST');
         });
 
         it('should reject manifest without colors', async () => {
             const manifest = { id: 'test', name: 'test', displayName: 'Test', version: '1.0.0', type: 'dark' };
-            await expect(themeService.installTheme(manifest as unknown as import('@shared/types/theme').ThemeManifest)).rejects.toThrow('THEME_INVALID_MANIFEST');
+            await expect(themeService.installTheme(manifest as never as import('@shared/types/theme').ThemeManifest)).rejects.toThrow('THEME_INVALID_MANIFEST');
         });
 
         it('should reject manifest with missing required color', async () => {
             const incompleteColors = { ...validColors };
             delete (incompleteColors as Record<string, string>)['ring'];
             const manifest = { id: 'test', name: 'test', displayName: 'Test', version: '1.0.0', type: 'dark', colors: incompleteColors };
-            await expect(themeService.installTheme(manifest as unknown as import('@shared/types/theme').ThemeManifest)).rejects.toThrow('THEME_INVALID_MANIFEST');
+            await expect(themeService.installTheme(manifest as never as import('@shared/types/theme').ThemeManifest)).rejects.toThrow('THEME_INVALID_MANIFEST');
         });
     });
 

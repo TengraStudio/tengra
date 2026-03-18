@@ -1,5 +1,11 @@
 import { PerformanceService } from '@main/services/analysis/performance.service';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('electron', () => ({
+    app: {
+        getAppMetrics: vi.fn().mockReturnValue([]),
+    },
+}));
 
 describe('PerformanceService integration', () => {
     it('initializes, reports memory stats, and cleans up', async () => {
@@ -8,8 +14,8 @@ describe('PerformanceService integration', () => {
 
         const mem = service.getMemoryStats();
         expect(mem.success).toBe(true);
-        expect(mem.result?.main).toBeDefined();
-        expect(typeof mem.result?.timestamp).toBe('number');
+        expect(mem.data?.main).toBeDefined();
+        expect(typeof mem.data?.timestamp).toBe('number');
 
         const leak = await service.detectLeak();
         expect(leak.success).toBe(true);
@@ -17,4 +23,3 @@ describe('PerformanceService integration', () => {
         await service.cleanup();
     });
 });
-
