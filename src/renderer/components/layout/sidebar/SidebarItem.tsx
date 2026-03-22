@@ -25,7 +25,7 @@ function getButtonClassName(
     className?: string
 ): string {
     const baseClasses = cn(
-        'w-full flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 border border-transparent',
+        'w-full flex items-center px-3 py-2 rounded-lg text-sm transition-colors duration-200 border border-transparent',
         isCollapsed ? 'justify-center px-0' : 'gap-3'
     );
     const activeClasses = 'bg-primary/10 text-primary font-medium border-primary/5 shadow-sm';
@@ -70,7 +70,7 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
                 <div className="relative flex items-center justify-center min-w-0">
                     <Icon
                         className={cn(
-                            'w-4 h-4 shrink-0 transition-transform duration-200 group-hover/item:scale-110',
+                            'w-4 h-4 shrink-0 transition-opacity duration-200',
                             active ? 'opacity-100' : 'opacity-70 group-hover/item:opacity-100',
                             iconClassName
                         )}

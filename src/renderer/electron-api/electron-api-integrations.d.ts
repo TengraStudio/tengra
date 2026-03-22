@@ -474,6 +474,11 @@ export interface ElectronApiIntegrationsDomain {
             oldPath: string,
             newPath: string
         ) => Promise<{ success: boolean; error?: string }>;
+        copyPath: (
+            connectionId: string,
+            sourcePath: string,
+            destinationPath: string
+        ) => Promise<{ success: boolean; error?: string }>;
         getConnections: () => Promise<SSHConnection[]>;
         isConnected: (connectionId: string) => Promise<boolean>;
         onStdout: (callback: (data: string | Uint8Array) => void) => void;
@@ -949,6 +954,8 @@ export interface ElectronApiIntegrationsDomain {
         joinRoom: (params: JoinCollaborationRoom) => Promise<CollaborationResponse>;
         leaveRoom: (roomId: string) => Promise<CollaborationResponse>;
         sendUpdate: (params: CollaborationSyncUpdate) => Promise<CollaborationResponse>;
+        onJoined: (callback: (payload: { roomId: string }) => void) => () => void;
+        onLeft: (callback: (payload: { roomId: string }) => void) => () => void;
         onSyncUpdate: (callback: (payload: { roomId: string; data: string }) => void) => () => void;
         onError: (callback: (payload: { roomId: string; error: string }) => void) => () => void;
     };

@@ -3,7 +3,7 @@ const sectionData = {
     "streaming": "Typing...",
     "clear": "Clear",
     "error": "Error",
-    "quotaExceeded": "Quota or rate limit exceeded. This could be due to rate limiting (too many requests) or quota exhaustion. Please wait a few minutes and try again.",
+    "quotaExceeded": "Quota or rate limit exceeded. This may be caused by too many requests or exhausted quota. Please wait a few minutes and try again.",
     "rateLimitExceeded": "Rate limit or quota exceeded. Please wait a few minutes and try again.",
     "modelComparison": "Model Comparison",
     "readMore": "Read more",
@@ -11,8 +11,8 @@ const sectionData = {
     "exportChat": "Export chat",
     "sources": "Sources",
     "screenshotAlt": "Screenshot",
-    "thought": "Deep Thought",
-    "plan": "Strategic Plan",
+    "thought": "Reasoning",
+    "plan": "Plan",
     "raw": "Raw",
     "render": "Render",
     "expand": "Expand",
@@ -27,7 +27,7 @@ const sectionData = {
         "addToWorkspace": "Add to Workspace",
         "openInEditor": "Open in Editor",
         "output": "Output",
-        "executed": "Executed {{language}} block successfully."
+        "executed": "Ran the {{language}} block successfully."
     },
     "collaboration": {
         "title": "Multi-Model Collaboration",
@@ -35,10 +35,10 @@ const sectionData = {
         "addModel": "Add Model",
         "strategy": "Collaboration Strategy",
         "strategyConsensus": "Consensus (Find Common Themes)",
-        "strategyVote": "Vote (Majority Wins)",
+        "strategyVote": "Vote (Majority)",
         "strategyBestOfN": "Best of N (Quality Score)",
-        "strategyChain": "Chain of Thought (Sequential Refinement)",
-        "running": "Running Collaboration...",
+        "strategyChain": "Chain of Thought (Step-by-Step Refinement)",
+        "running": "Running collaboration...",
         "run": "Run Collaboration",
         "results": "Results",
         "individualResponses": "Individual Responses",
@@ -46,7 +46,7 @@ const sectionData = {
         "consensus": "Consensus",
         "bestResponse": "Best Response",
         "from": "From: {{provider}}/{{model}}",
-        "selectModelError": "Please select at least one model",
+        "selectModelError": "Please select at least one model.",
         "runFailed": "Failed to run collaboration",
         "retry": "Retry",
         "dismiss": "Dismiss",
@@ -57,7 +57,7 @@ const sectionData = {
         "sharedContext": "Shared Context",
         "sharedContextPlaceholder": "Add context for all collaborators...",
         "sharedMemory": "Shared Memory",
-        "memoryPlaceholder": "Add a shared memory note",
+        "memoryPlaceholder": "Add a shared memory note...",
         "memoryUpdated": "Shared memory updated",
         "presence": "Presence",
         "guestsAllowed": "Guests Allowed",
@@ -70,7 +70,7 @@ const sectionData = {
         "latestResponse": "Latest Response",
         "changeAnnotations": "Change Annotations",
         "annotate": "Annotate",
-        "annotationTemplate": "Synced context changes for collaborators.",
+        "annotationTemplate": "Synchronized context changes for collaborators.",
         "annotationRecorded": "Change annotation recorded",
         "responseSynchronized": "AI response synchronized with session members.",
         "startRecording": "Start Recording",
@@ -87,7 +87,7 @@ const sectionData = {
         "host": "Host",
         "ai": "AI",
         "copied": "Copied",
-        "noEventsInSession": "No events recorded in current session"
+        "noEventsInSession": "No events recorded in the current session."
     },
     "promptOptimizer": {
         "vagueWordDetected": "Vague word \"{{word}}\" detected. Consider being more specific.",
@@ -110,14 +110,14 @@ const sectionData = {
     "errorQuotaExhausted": "Your usage quota has been exhausted or the rate limit has been reached for this model.",
     "errorQuotaExhaustedAction": "Switch to Local Model",
     "errorQuotaResetHint": "Quota resets at {{time}}",
-    "errorTimeout": "The request timed out. The server may be overloaded or the response was too large.",
+    "errorTimeout": "The request timed out. The server may be overloaded, or the response may be too large.",
     "errorTimeoutAction": "Retry",
     "errorGeneric": "An unexpected error occurred while communicating with the AI provider.",
     "errorRetry": "Retry",
     "errorSwitchModel": "Switch Model",
     "errorDismiss": "Dismiss",
-    "toolArgumentsTooLarge": "Tool arguments exceed maximum size limit",
-    "imageGenerationNoImages": "Image generation returned no images"
+    "toolArgumentsTooLarge": "Tool arguments exceed the maximum size limit.",
+    "imageGenerationNoImages": "Image generation returned no images."
 };
 
 export default sectionData;

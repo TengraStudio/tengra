@@ -40,7 +40,7 @@ export class StreamParser {
         let buffer = '';
 
         try {
-            appLogger.info('stream-parser.util', `[StreamParser] Starting parse. Input type: ${input.constructor.name}`);
+            appLogger.debug('stream-parser.util', `[StreamParser] Starting parse. Input type: ${input.constructor.name}`);
             if (this.isWebStream(body)) {
                 yield* this.parseWebStream(body, decoder, (b) => { buffer = b; }, () => buffer);
             } else {

@@ -1,30 +1,20 @@
 import { ThemeManifest } from '@shared/types/theme';
-import { FolderOpen, Palette, Type } from 'lucide-react';
+import { FolderOpen, Palette } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { AppSettings } from '@/types/settings';
+import { appLogger } from '@/utils/renderer-logger';
 import { themeIpc } from '@/utils/theme-ipc.util';
+
+import { TerminalAppearanceSection } from './TerminalAppearanceSection';
 
 interface AppearanceTabProps {
     settings: AppSettings | null;
     updateGeneral: (patch: Partial<AppSettings['general']>) => void;
     t: (key: string) => string;
 }
-
-interface FontOption {
-    id: string;
-    label: string;
-}
-
-const createFontOptions = (t: (key: string) => string): FontOption[] => [
-    { id: "'Inter', system-ui, sans-serif", label: `Inter (${t('appearance.default')})` },
-    { id: "'JetBrains Mono', monospace", label: t('appearance.fontOptionJetBrainsMono') },
-    { id: "'Roboto', sans-serif", label: t('appearance.fontOptionRoboto') },
-    { id: "'Outfit', sans-serif", label: t('appearance.fontOptionOutfit') },
-    { id: 'system-ui, sans-serif', label: t('appearance.system') },
-];
 
 interface ThemeSectionProps {
     currentTheme: string;
@@ -101,7 +91,7 @@ const ThemeSection: React.FC<ThemeSectionProps> = ({
                                     isActive ? 'text-primary' : 'text-muted-foreground'
                                 )}
                             >
-                                {theme.displayName}
+                                {t(`appearance.themes.${theme.id}`) || theme.displayName}
                             </div>
                         </div>
                         {isActive && (
@@ -110,93 +100,6 @@ const ThemeSection: React.FC<ThemeSectionProps> = ({
                     </button>
                 );
             })}
-        </div>
-    </div>
-);
-
-interface TypographySectionProps {
-    currentFont: string;
-    fontSize: number;
-    fontOptions: FontOption[];
-    onFontChange: (id: string) => void;
-    onFontSizeChange: (size: number) => void;
-    t: (key: string) => string;
-}
-
-const TypographySection: React.FC<TypographySectionProps> = ({
-    currentFont,
-    fontSize,
-    fontOptions,
-    onFontChange,
-    onFontSizeChange,
-    t,
-}) => (
-    <div className="premium-glass p-8 space-y-8">
-        <div className="flex items-center gap-4">
-            <div className="p-3 rounded-2xl bg-success/10 text-success border border-success/20 shadow-lg shadow-success/10">
-                <Type className="w-6 h-6" />
-            </div>
-            <div>
-                <div className="text-base font-black text-foreground uppercase tracking-tight">
-                    {t('appearance.font')}
-                </div>
-                <div className="text-xs font-medium text-muted-foreground/70">
-                    {t('appearance.fontDesc')}
-                </div>
-            </div>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="space-y-4">
-                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
-                    {t('appearance.fontFamily')}
-                </div>
-                <div className="grid gap-2">
-                    {fontOptions.map(font => (
-                        <button
-                            key={font.id}
-                            onClick={() => onFontChange(font.id)}
-                            className={cn(
-                                'w-full px-5 py-4 rounded-xl border text-left text-sm transition-all duration-300',
-                                currentFont === font.id
-                                    ? 'border-primary/50 bg-primary/10 text-primary shadow-lg shadow-primary/5 ring-1 ring-primary/20'
-                                    : 'border-border/40 bg-muted/5 text-muted-foreground hover:bg-muted/10 hover:text-foreground'
-                            )}
-                            style={{ fontFamily: font.id }}
-                        >
-                            {font.label}
-                        </button>
-                    ))}
-                </div>
-            </div>
-            <div className="space-y-4">
-                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1 flex justify-between">
-                    <span>{t('appearance.fontSize')}</span>
-                    <span className="text-primary">{fontSize}px</span>
-                </div>
-                <div className="p-8 rounded-3xl bg-muted/5 border border-border/40 flex flex-col items-center gap-8 shadow-inner">
-                    <div
-                        className="text-center transition-all bg-background/50 backdrop-blur-md p-6 rounded-2xl border border-border/40 w-full shadow-2xl"
-                        style={{ fontSize: `${fontSize}px`, fontFamily: currentFont }}
-                    >
-                        {t('appearance.previewText')}
-                    </div>
-                    <div className="w-full space-y-2">
-                        <input
-                            type="range"
-                            min="12"
-                            max="20"
-                            step="1"
-                            value={fontSize}
-                            onChange={e => onFontSizeChange(parseInt(e.target.value))}
-                            className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                        />
-                        <div className="flex justify-between text-xxxs font-black text-muted-foreground uppercase opacity-50 px-1">
-                            <span>12px</span>
-                            <span>20px</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 );
@@ -242,10 +145,10 @@ const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
             </div>
             <div>
                 <div className="text-base font-black text-foreground uppercase tracking-tight">
-                    {t('appearance.accessibility')}
+                    {t('appearance.accessibility.title')}
                 </div>
                 <div className="text-xs font-medium text-muted-foreground/70">
-                    {t('appearance.accessibilityDesc')}
+                    {t('appearance.accessibility.description')}
                 </div>
             </div>
         </div>
@@ -277,10 +180,7 @@ const normalizeTheme = (rawTheme: string): string => {
 };
 
 export const AppearanceTab: React.FC<AppearanceTabProps> = ({ settings, updateGeneral, t }) => {
-    const fontOptions = createFontOptions(t);
     const currentTheme = normalizeTheme(settings?.general.theme ?? 'black');
-    const currentFont = settings?.general.fontFamily ?? fontOptions[0].id;
-    const fontSize = settings?.general.fontSize ?? 14;
     const [themes, setThemes] = useState<ThemeManifest[]>([]);
 
     // Load themes from runtime directory
@@ -290,33 +190,28 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({ settings, updateGe
                 const loadedThemes = await themeIpc.getAllThemes();
                 setThemes(loadedThemes);
             } catch (error) {
-                window.electron.log.error('[AppearanceTab] Failed to load themes:', error);
+                appLogger.error('AppearanceTab', 'Failed to load themes', error as Error);
             }
         };
         void loadThemes();
     }, []);
 
-    const handleThemeChange = (themeId: string) => {
+    const handleThemeChange = (themeId: string): void => {
         updateGeneral({ theme: themeId });
         document.documentElement.setAttribute('data-theme', themeId);
     };
 
-    const handleFontChange = (fontId: string) => {
-        updateGeneral({ fontFamily: fontId });
-        document.documentElement.style.setProperty('--font-family', fontId);
-    };
-
-    const handleHighContrastChange = (checked: boolean) => {
+    const handleHighContrastChange = (checked: boolean): void => {
         updateGeneral({ highContrast: checked });
         document.documentElement.classList.toggle('high-contrast', checked);
     };
 
-    const handleReduceMotionChange = (checked: boolean) => {
+    const handleReduceMotionChange = (checked: boolean): void => {
         updateGeneral({ reduceMotion: checked });
         document.documentElement.classList.toggle('reduce-motion', checked);
     };
 
-    const handleOpenThemesFolder = () => {
+    const handleOpenThemesFolder = (): void => {
         void themeIpc.openThemesDirectory();
     };
 
@@ -329,14 +224,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({ settings, updateGe
                 onOpenThemesFolder={handleOpenThemesFolder}
                 t={t}
             />
-            <TypographySection
-                currentFont={currentFont}
-                fontSize={fontSize}
-                fontOptions={fontOptions}
-                onFontChange={handleFontChange}
-                onFontSizeChange={size => updateGeneral({ fontSize: size })}
-                t={t}
-            />
+            <TerminalAppearanceSection t={t} />
             <AccessibilitySection
                 highContrast={Boolean(settings?.general.highContrast)}
                 reduceMotion={Boolean(settings?.general.reduceMotion)}

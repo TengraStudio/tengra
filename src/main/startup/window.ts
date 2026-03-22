@@ -22,7 +22,7 @@ export function getTray(): Tray | null {
 }
 
 export function createWindow(settingsService?: SettingsService): BrowserWindow {
-    const { width, height, x, y } = getWindowInitialSettings(settingsService);
+    const { width, height, x, y, zoomFactor } = getWindowInitialSettings(settingsService);
     const iconPath = getWindowIconPath();
 
     const win = new BrowserWindow({
@@ -46,6 +46,7 @@ export function createWindow(settingsService?: SettingsService): BrowserWindow {
     // Setup Security & Event Handlers
     setupWebContentsSecurity(win);
     setupConsoleRedirect(win);
+    win.webContents.setZoomFactor(zoomFactor);
     setupWindowStatePersistence(win, settingsService, 1280, 800);
     setupWindowReadyState(win, settingsService);
 
@@ -82,6 +83,7 @@ function getWindowInitialSettings(settingsService?: SettingsService): {
     height: number;
     x: number | undefined;
     y: number | undefined;
+    zoomFactor: number;
 } {
     const settings = settingsService?.getSettings();
     const win = settings?.window;
@@ -90,6 +92,7 @@ function getWindowInitialSettings(settingsService?: SettingsService): {
         height: win?.height ?? 800,
         x: win?.x,
         y: win?.y,
+        zoomFactor: win?.zoomFactor ?? 1,
     };
 }
 
@@ -127,7 +130,7 @@ function setupWebContentsSecurity(win: BrowserWindow) {
         const scriptSources = [
             `'self'`,
             'blob:',
-            ...(isDev ? [`'unsafe-inline'`, `'unsafe-eval'`] : [`'nonce-${nonce}'`]),
+            ...(isDev ? [`'unsafe-inline'`] : [`'nonce-${nonce}'`]),
         ];
 
         const connectSources = [

@@ -47,15 +47,15 @@ function resolveExecutionStatusLabel(
     t: (key: string) => string
 ): string {
     if (executionStatus === 'ready' || executionStatus === 'installed') {
-        return t('settings.images.status.ready');
+        return t('runtime.status.ready');
     }
     if (executionStatus === 'install-required') {
-        return t('settings.images.status.notConfigured');
+        return t('runtime.status.notConfigured');
     }
     if (executionStatus === 'failed') {
-        return t('settings.images.status.failed');
+        return t('runtime.status.failed');
     }
-    return t('settings.images.status.notConfigured');
+    return t('runtime.status.notConfigured');
 }
 
 function resolveTone(
@@ -136,8 +136,8 @@ export function ManagedRuntimeStatusPanel({
         ? 'w-full max-w-4xl rounded-2xl border border-border bg-card/95 p-6 shadow-2xl backdrop-blur'
         : '';
 
-    const title = t('settings.images.runtimeManagement');
-    const subtitle = t('settings.images.runtimeStatus');
+    const title = t('runtime.managementTitle');
+    const subtitle = t('runtime.statusTitle');
 
     const handleOpenInstallUrl = (installUrl: string) => {
         window.electron.openExternal(installUrl);
@@ -183,7 +183,7 @@ export function ManagedRuntimeStatusPanel({
                             className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             <Download className={`h-3.5 w-3.5 ${isRepairing ? 'animate-bounce' : ''}`} />
-                            {t('settings.images.reinstall')}
+                            {t('runtime.repairAction')}
                         </button>
                     </div>
                 </div>
@@ -235,7 +235,7 @@ export function ManagedRuntimeStatusPanel({
                                             className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition hover:bg-muted/40"
                                         >
                                             <Download className="h-3.5 w-3.5" />
-                                            {t('git.install')}
+                                            {t('runtime.installAction')}
                                         </button>
                                     )}
                                     {entry.canStart && (
@@ -247,7 +247,7 @@ export function ManagedRuntimeStatusPanel({
                                             className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-60"
                                         >
                                             <Play className="h-3.5 w-3.5" />
-                                            {t('general.startup')}
+                                            {t('runtime.startAction')}
                                         </button>
                                     )}
                                 </div>
@@ -257,7 +257,7 @@ export function ManagedRuntimeStatusPanel({
 
                     {!isLoading && entries.length === 0 && (
                         <div className="rounded-lg border border-success/20 bg-success/5 px-4 py-3 text-sm text-success">
-                            {t('settings.images.status.ready')}
+                            {t('runtime.status.ready')}
                         </div>
                     )}
                 </div>

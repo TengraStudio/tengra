@@ -59,10 +59,10 @@ export async function initializeContainerSafely(container: ContainerLike): Promi
  */
 export async function initDeferredServices(container: ContainerLike): Promise<void> {
     const start = Date.now();
-    appLogger.info('Startup', 'Starting deferred service initialization...');
+    appLogger.debug('Startup', 'Starting deferred service initialization...');
     try {
         await container.initDeferred();
-        appLogger.info('Startup', `Deferred services initialized in ${Date.now() - start}ms`);
+        appLogger.debug('Startup', `Deferred services initialized in ${Date.now() - start}ms`);
     } catch (error) {
         appLogger.error('Startup', `Deferred service initialization failed: ${error}`);
     }
@@ -77,7 +77,6 @@ const DEFERRED_SERVICE_NAMES: string[] = [
     'performanceService',
     'monitoringService',
 
-    'collaborationService',
     // Export & screenshot
     'exportService',
     'screenshotService',

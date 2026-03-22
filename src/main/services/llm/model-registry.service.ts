@@ -288,7 +288,7 @@ export class ModelRegistryService extends BaseService {
             return readKey(settings.anthropic);
         }
         if (provider === 'antigravity') {
-            return readKey(settings.gemini);
+            return readKey(settings.antigravity);
         }
         return undefined;
     }
@@ -787,13 +787,22 @@ export class ModelRegistryService extends BaseService {
                 if (model.provider !== 'antigravity') {
                     return true;
                 }
+
+                // Hide specified models as per user request and sanity checks
+                const modelId = model.id.trim().toLowerCase();
+                const idWithoutPrefix = modelId.replace(/^antigravity\//, '');
+                
+                if (idWithoutPrefix === 'gemini-3.1-flash-lite') {
+                    return false;
+                }
+
                 if (!this.isAntigravityImageModel(model)) {
                     return true;
                 }
                 if (registeredAntigravityImageIds.size === 0) {
                     return true;
                 }
-                return registeredAntigravityImageIds.has(model.id.trim().toLowerCase());
+                return registeredAntigravityImageIds.has(modelId);
             });
             const existing = new Set(models.map(model => `${model.provider}:${model.id}`));
 

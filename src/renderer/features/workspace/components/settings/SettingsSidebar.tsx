@@ -1,7 +1,9 @@
-import { Bot, Code, Cpu, FolderTree, Info, Play } from 'lucide-react';
+import { Bot, Code, Cpu, FileCode2, FolderTree, Info, Play } from 'lucide-react';
 import React from 'react';
 
 import { cn } from '@/lib/utils';
+
+import { WorkspaceSettingsSection } from './types';
 
 interface NavButtonProps {
     active: boolean;
@@ -31,10 +33,8 @@ const NavButton: React.FC<NavButtonProps> = ({ active, onClick, icon: Icon, labe
 );
 
 export const SettingsSidebar: React.FC<{
-    activeSection: string;
-    setActiveSection: (
-        section: 'general' | 'council' | 'workspace' | 'build' | 'dev' | 'advanced'
-    ) => void;
+    activeSection: WorkspaceSettingsSection;
+    setActiveSection: (section: WorkspaceSettingsSection) => void;
     t: (key: string) => string;
 }> = ({ activeSection, setActiveSection, t }) => (
     <div className="w-64 border-r border-border/40 flex flex-col p-3 gap-1 shrink-0 bg-background">
@@ -68,6 +68,12 @@ export const SettingsSidebar: React.FC<{
             onClick={() => setActiveSection('dev')}
             icon={Play}
             label={t('workspaces.devServer')}
+        />
+        <NavButton
+            active={activeSection === 'editor'}
+            onClick={() => setActiveSection('editor')}
+            icon={FileCode2}
+            label={t('workspace.editor')}
         />
         <NavButton
             active={activeSection === 'advanced'}

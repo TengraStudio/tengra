@@ -75,10 +75,7 @@ function createBaseProps(): ComponentProps<typeof TerminalToolbar> {
         toggleSplitOrientation: vi.fn(),
         closeSplitView: vi.fn(),
         isGalleryView: false,
-        toggleGalleryView: vi.fn(),
-        onFloatingChange: undefined,
-        toggleFloatingMode: vi.fn(),
-        isFloating: false,
+        toggleGalleryView: vi.fn(), 
         toggleSemanticPanel: vi.fn(),
         hasActiveSession: false,
         activeSemanticIssuesLength: 0,
@@ -177,11 +174,5 @@ describe('TerminalToolbar edge cases', () => {
         render(<TerminalToolbar {...createBaseProps()} />);
 
         expect(screen.getByTitle('terminal.multiplexerTitle')).toBeDisabled();
-    });
-
-    it('does not render floating toggle when floating callback is unavailable', () => {
-        render(<TerminalToolbar {...createBaseProps()} onFloatingChange={undefined} />);
-
-        expect(screen.queryByTitle('terminal.floatTerminal')).not.toBeInTheDocument();
-    });
+    }); 
 });

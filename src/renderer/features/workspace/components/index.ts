@@ -9,9 +9,7 @@ export * from '@renderer/features/workspace/workspace-dashboard/WorkspaceSearchT
 export * from '@renderer/features/workspace/workspace-dashboard/WorkspaceSettingsPanel';
 export * from '@renderer/features/workspace/workspace-dashboard/WorkspaceStatsCards';
 export * from '@renderer/features/workspace/workspace-dashboard/WorkspaceTodoTab';
-export * from '@renderer/features/workspace/workspace-explorer/WorkspaceExplorer';
-export * from '@renderer/features/workspace/workspace-explorer/WorkspaceIssueBanner';
-export * from '@renderer/features/workspace/workspace-explorer/WorkspacePreflightBanner';
+export * from '@renderer/features/workspace/workspace-explorer/WorkspaceExplorer'; 
 export * from '@renderer/features/workspace/workspace-explorer/WorkspaceTreeItem';
 export * from '@renderer/features/workspace/workspace-git/GitCommitGenerator';
 export * from '@renderer/features/workspace/workspace-shell/WorkspaceCard';

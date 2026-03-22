@@ -1,6 +1,6 @@
 const sectionData = {
-    "close": "Modali kapat",
-    "contentForTitle": "Başlık için modal içeriği: {{title}}"
+    "close": "Pencereyi kapat",
+    "contentForTitle": "{{title}} başlığı için pencere içeriği"
 };
 
 export default sectionData;

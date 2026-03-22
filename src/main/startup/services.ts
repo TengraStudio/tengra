@@ -20,7 +20,6 @@ import { FileChangeTracker } from '@main/services/data/file-change-tracker.servi
 import { FileSystemService } from '@main/services/data/filesystem.service';
 import { ImagePersistenceService } from '@main/services/data/image-persistence.service';
 import { ExportService } from '@main/services/export/export.service';
-import { CollaborationService } from '@main/services/external/collaboration.service';
 import { ContentService } from '@main/services/external/content.service';
 import { FeatureFlagService } from '@main/services/external/feature-flag.service';
 import { HttpService } from '@main/services/external/http.service';
@@ -103,6 +102,7 @@ import { ScreenshotService } from '@main/services/ui/screenshot.service';
 import { CodeIntelligenceService } from '@main/services/workspace/code-intelligence.service';
 import type { DockerService } from '@main/services/workspace/docker.service';
 import { GitService } from '@main/services/workspace/git.service';
+import { LspService } from '@main/services/workspace/lsp.service';
 import type { SSHService } from '@main/services/workspace/ssh.service';
 import { TerminalService } from '@main/services/workspace/terminal.service';
 import { TerminalSmartService } from '@main/services/workspace/terminal-smart.service';
@@ -153,6 +153,7 @@ export interface Services {
     llamaService: LlamaService;
     huggingFaceService: HuggingFaceService;
     workspaceService: WorkspaceService;
+    lspService: LspService;
     terminalService: TerminalService;
     inlineSuggestionService: InlineSuggestionService;
     logoService: LazyServiceDependency<LogoService>;
@@ -310,6 +311,7 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
         ['jobSchedulerService', 'powerManagerService']
     );
     container.register('gitService', () => new GitService());
+    container.register('lspService', () => new LspService());
     container.register('contentService', () => new ContentService());
     container.register('screenshotService', () => new ScreenshotService());
     container.register('processService', () => new ProcessService());
@@ -616,7 +618,8 @@ function registerLLMServices() {
 function registerLazyServices() {
     lazyServiceRegistry.register('workspaceService', async () => {
         const { WorkspaceService } = await import('@main/services/workspace/workspace.service');
-        return new WorkspaceService();
+        const lspService = container.resolve<LspService>('lspService');
+        return new WorkspaceService(lspService);
     });
 
     lazyServiceRegistry.register('advancedMemoryService', async () => {
@@ -702,8 +705,9 @@ function registerLazyServices() {
         const pm = container.resolve<PowerManagerService>('powerManagerService');
         const eb = container.resolve<EventBusService>('eventBusService');
         const scheduler = container.resolve<JobSchedulerService>('jobSchedulerService');
+        const utilityProcessService = container.resolve<UtilityProcessService>('utilityProcessService');
         const { TelemetryService } = await import('@main/services/analysis/telemetry.service');
-        return new TelemetryService(ss, pm, eb, scheduler);
+        return new TelemetryService(ss, pm, eb, scheduler, utilityProcessService);
     });
 
     lazyServiceRegistry.register('backupService', async () => {
@@ -915,15 +919,19 @@ function registerAnalysisServices() {
         dbs => new UsageTrackingService(dbs as DatabaseService),
         ['databaseService']
     );
-    container.register('auditLogService', dbs => new AuditLogService(dbs as DatabaseService), [
-        'databaseService',
-    ]);
+    container.register(
+        'auditLogService',
+        (dbs, utilityProcessService) => new AuditLogService(
+            dbs as DatabaseService,
+            utilityProcessService as UtilityProcessService
+        ),
+        ['databaseService', 'utilityProcessService']
+    );
     // performanceService is now lazy-loaded
     container.register('ruleService', () => new RuleService());
     container.register('featureFlagService', ds => new FeatureFlagService(ds as DataService), [
         'dataService',
     ]);
-    container.register('collaborationService', () => new CollaborationService());
     container.register('exportService', () => new ExportService());
 }
 
@@ -1033,6 +1041,7 @@ function buildServicesMap(
         llamaService: container.resolve<LlamaService>('llamaService'),
         huggingFaceService: container.resolve<HuggingFaceService>('huggingFaceService'),
         workspaceService: container.resolve<WorkspaceService>('workspaceService'),
+        lspService: container.resolve<LspService>('lspService'),
         terminalService: container.resolve<TerminalService>('terminalService'),
         inlineSuggestionService: container.resolve<InlineSuggestionService>(
             'inlineSuggestionService'

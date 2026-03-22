@@ -243,7 +243,7 @@ export const Sidebar = React.memo(({
     onSearch
 }: SidebarProps) => {
     const { selectedWorkspace } = useWorkspaceSelection();
-    const { t, language } = useTranslation();
+    const { t } = useTranslation();
     const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
     return (
@@ -252,7 +252,7 @@ export const Sidebar = React.memo(({
                 data-testid="sidebar"
                 aria-label={t('aria.applicationSidebar')}
                 className={cn(
-                    "flex flex-col h-full transition-all duration-300 ease-in-out bg-background",
+                    "flex flex-col h-full transition-[width] duration-300 ease-in-out bg-background",
                     isCollapsed ? "w-[70px]" : "w-full"
                 )}>
                 <SidebarHeaderConnector
@@ -284,7 +284,6 @@ export const Sidebar = React.memo(({
                     toggleSidebar={toggleSidebar}
                     onOpenSettings={onOpenSettings}
                     t={t}
-                    language={language}
                 />
             </aside>
         </>

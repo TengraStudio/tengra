@@ -73,7 +73,7 @@ function parseSaveFileOptions(value: RuntimeValue): SaveFileOptions | null {
  * Registers IPC handlers for native dialog operations
  */
 export function registerDialogIpc(getMainWindow: () => BrowserWindow | null): void {
-    appLogger.info('DialogIPC', 'Registering dialog IPC handlers');
+    appLogger.debug('DialogIPC', 'Registering dialog IPC handlers');
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'dialog operation');
 
     ipcMain.handle(
@@ -144,7 +144,7 @@ export function registerDialogIpc(getMainWindow: () => BrowserWindow | null): vo
                 }
 
                 await fs.writeFile(filePath, options.content);
-                appLogger.info('DialogIPC', `File saved to ${filePath}`);
+                appLogger.debug('DialogIPC', `File saved to ${filePath}`);
                 return { success: true, path: filePath };
             },
             createDialogFailure(

@@ -1,7 +1,7 @@
 const sectionData = {
     "title": "Logging Dashboard",
     "filterPlaceholder": "Filter logs...",
-    "allLevels": "All Levels",
+    "allLevels": "All levels",
     "debug": "Debug",
     "info": "Info",
     "warn": "Warning",
@@ -14,7 +14,7 @@ const sectionData = {
     "on": "ON",
     "off": "OFF",
     "noLogs": "No logs to display",
-    "noLogsDesc": "Logs will appear here as they are generated",
+    "noLogsDesc": "Logs will appear here as they are created",
     "time": "Time",
     "level": "Level",
     "source": "Source",

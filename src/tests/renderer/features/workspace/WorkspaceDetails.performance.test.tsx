@@ -169,14 +169,11 @@ vi.mock('@/features/workspace/hooks/useWorkspaceWorkspaceController', () => ({
 }));
 
 vi.mock('@/features/workspace/hooks/useTerminalLayout', () => ({
-    useTerminalLayout: () => ({
-        isFloatingTerminal: false,
-        setIsFloatingTerminal: vi.fn(),
+    useTerminalLayout: () => ({ 
         isMaximizedTerminal: false,
         setIsMaximizedTerminal: vi.fn(),
         isResizingTerminal: false,
-        setIsResizingTerminal: vi.fn(),
-        floatingTerminalLayout: null,
+        setIsResizingTerminal: vi.fn(), 
         dockedTerminalRightInsetPx: 0,
         lastExpandedTerminalHeightRef: { current: 320 },
         handleCommandStripResizeStart: vi.fn(),

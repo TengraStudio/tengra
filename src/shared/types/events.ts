@@ -1,21 +1,20 @@
-import { SESSION_RUNTIME_EVENTS } from '@shared/constants/session-runtime-events';
-import { JsonValue } from '@shared/types/common';
+import { JsonValue, RuntimeValue } from '@shared/types/common';
 import { CouncilStepStatus,PlanCostBreakdown, WorkspaceStep } from '@shared/types/council';
 import { IdeaProgress, ResearchProgress } from '@shared/types/ideas';
 
-export interface ModelUpdateEvent {
+export type ModelUpdateEvent = {
     provider: string
     count: number
     timestamp: number
 }
 
-export interface AuthStatusEvent {
+export type AuthStatusEvent = {
     provider: string
     isAuthenticated: boolean
     username?: string
 }
 
-export interface SystemEvents {
+export type SystemEvents = {
     'model:updated': ModelUpdateEvent
     'auth:changed': AuthStatusEvent
     'config:updated': { path: string; key: string; value: JsonValue }
@@ -43,26 +42,26 @@ export interface SystemEvents {
     'idea:regenerated': { ideaId: string }
     'file-changed': { path: string; type: 'create' | 'update' | 'delete' }
     // Automation session runtime events
-    [SESSION_RUNTIME_EVENTS.AUTOMATION_STEP_UPDATE]: {
+    'session:automation:step-update': {
         index: number;
         status: CouncilStepStatus;
         message?: string;
         taskId?: string;
     }
-    [SESSION_RUNTIME_EVENTS.AUTOMATION_PLAN_PROPOSED]: {
+    'session:automation:plan-proposed': {
         steps: Array<string | WorkspaceStep>;
         taskId?: string;
     }
-    [SESSION_RUNTIME_EVENTS.AUTOMATION_COST_ESTIMATED]: {
+    'session:automation:cost-estimated': {
         taskId: string;
         estimate: PlanCostBreakdown;
     }
-    [SESSION_RUNTIME_EVENTS.AUTOMATION_BUDGET_EXCEEDED]: {
+    'session:automation:budget-exceeded': {
         taskId: string;
         budgetLimitUsd: number;
         currentCostUsd: number;
     }
-    [SESSION_RUNTIME_EVENTS.AUTOMATION_PLAN_REVISED]: {
+    'session:automation:plan-revised': {
         action: 'add' | 'remove' | 'modify' | 'insert';
         index?: number;
         stepText?: string;
@@ -76,7 +75,7 @@ export interface SystemEvents {
     'model-registry.cache.update.started': { provider?: string }
     'model-registry.cache.update.completed': { provider?: string; count: number }
     'model-registry.provider.fetch.failed': { provider: string; error: string }
-    'telemetry:model-registry': { name: SystemEventKey;[key: string]: RuntimeValue; timestamp: number }
+    'telemetry:model-registry': { name: SystemEventKey; [key: string]: RuntimeValue; timestamp: number }
     'security:vulnerabilities-found': { critical: number; high: number; timestamp: number }
     // User behavior tracking events
     'user:feature-used': { featureId: string; metadata?: Record<string, RuntimeValue> }
@@ -90,4 +89,4 @@ export interface SystemEvents {
     'collaboration:error': { roomId: string; error: string }
 }
 
-export type SystemEventKey = keyof SystemEvents
+export type SystemEventKey = keyof SystemEvents;

@@ -1,8 +1,15 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
+import { LspService } from '@main/services/workspace/lsp.service';
+import {
+    DEFAULT_WORKSPACE_SCAN_IGNORE_PATTERNS,
+    getWorkspaceIgnoreMatcher,
+    type WorkspaceIgnoreMatcher
+} from '@main/services/workspace/workspace-ignore.util';
 import { WORKSPACE_COMPAT_FILE_VALUES } from '@shared/constants';
 import {
     WorkspaceEnvKeySchema,
@@ -10,50 +17,46 @@ import {
     WorkspaceRootPathSchema
 } from '@shared/schemas/service-hardening.schema';
 import { JsonObject } from '@shared/types/common';
+import type {
+    CodeAnnotation,
+    WorkspaceAnalysis,
+    WorkspaceDefinitionLocation,
+    WorkspaceFilesPageMeta,
+    WorkspaceIssue,
+    WorkspaceLspServerSupport,
+    WorkspaceStats
+} from '@shared/types/workspace';
 import { getErrorMessage, ValidationError } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
-export interface WorkspaceStats {
-    fileCount: number
-    totalSize: number
-    loc: number // approximate
-    lastModified: number
-}
-
-export interface WorkspaceIssue {
-    type: 'error' | 'warning'
-    message: string
-    file: string
-    line: number
-}
-
-export interface WorkspaceFilesPageMeta {
-    offset: number
-    limit: number
-    total: number
-    hasMore: boolean
-}
+export type {
+    CodeAnnotation,
+    WorkspaceAnalysis,
+    WorkspaceFilesPageMeta,
+    WorkspaceIssue,
+    WorkspaceStats
+};
 
 export interface WorkspaceFilesPageResult extends WorkspaceFilesPageMeta {
     files: string[]
 }
 
-export interface WorkspaceAnalysis {
-    type: 'node' | 'python' | 'rust' | 'go' | 'cpp' | 'java' | 'php' | 'csharp' | 'unknown' | string //TODO: add more types
-    frameworks: string[]
-    dependencies: Record<string, string>
-    devDependencies: Record<string, string>
-    stats: WorkspaceStats
-    languages: Record<string, number>
-    files: string[]
-    filesPage?: WorkspaceFilesPageMeta
-    monorepo?: {
-        type: 'npm' | 'yarn' | 'pnpm' | 'lerna' | 'turbo' | 'rush' | 'unknown';
-        packages: string[];
-    }
-    todos: string[]
-    issues?: WorkspaceIssue[]
+interface WorkspaceDirectorySizeEntry {
+    path: string;
+    size: number;
+    fileCount: number;
 }
+
+const LSP_PROJECT_ROOT_MARKERS: Partial<Record<string, readonly string[]>> = {
+    typescript: ['tsconfig.json', 'jsconfig.json', 'package.json'],
+    javascript: ['tsconfig.json', 'jsconfig.json', 'package.json'],
+    python: ['pyproject.toml', 'requirements.txt', 'setup.py'],
+    go: ['go.mod'],
+    rust: ['Cargo.toml'],
+    java: ['pom.xml', 'build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts'],
+    php: ['composer.json'],
+    yaml: ['pnpm-workspace.yaml', 'docker-compose.yml', 'docker-compose.yaml'],
+};
 
 const SPECIAL_FILE_LANGUAGE_MAP: Record<string, string> = {
     'dockerfile': 'Dockerfile',
@@ -257,6 +260,15 @@ const LANGUAGE_DISTRIBUTION_EXCLUDED_LANGUAGES = new Set([
 
 const LOG_CONTEXT = 'WorkspaceService';
 type WorkspaceChangeCallback = (event: string, path: string) => void;
+const WORKSPACE_SCAN_INCLUDED_PATTERNS = new Set([
+    'package-lock.json',
+    'pnpm-lock.yaml',
+    'yarn.lock',
+]);
+
+function normalizeWorkspacePath(value: string): string {
+    return value.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
+}
 
 export class WorkspaceService extends BaseService {
     private watchers: Map<string, import('fs').FSWatcher> = new Map();
@@ -272,10 +284,10 @@ export class WorkspaceService extends BaseService {
     private activeWorkspaceRootPath: string | null = null;
     private readonly ANALYSIS_CACHE_TTL_MS = 300000;
     private readonly WORKSPACE_FILES_PAGE_SIZE = 1000;
-    private readonly INITIAL_SCAN_BUDGET_MS = 1200;
     private readonly INITIAL_STATS_SAMPLE_LIMIT = 400;
+    private readonly LSP_PRIME_WAIT_MS = 400;
 
-    constructor() {
+    constructor(private lspService?: LspService) {
         super('WorkspaceService');
     }
 
@@ -297,12 +309,18 @@ export class WorkspaceService extends BaseService {
             return;
         }
 
+        if (this.watchers.has(rootPath)) {
+            return;
+        }
         await this.ensureWorkspaceWatcher(rootPath);
     }
 
     /** Closes all file watchers and clears caches. */
     async cleanup(): Promise<void> {
         this.logInfo('Cleaning up WorkspaceService watchers...');
+        if (this.lspService) {
+            await this.lspService.dispose();
+        }
         for (const [path, watcher] of this.watchers) {
             try {
                 watcher.close();
@@ -328,6 +346,9 @@ export class WorkspaceService extends BaseService {
     async stopWatch(rootPath: string) {
         rootPath = this.resolveAndValidateRootPath(rootPath);
         this.closeWorkspaceWatcher(rootPath);
+        if (this.lspService) {
+            await this.lspService.stopServersWithinRoot(rootPath);
+        }
         this.watchCallbacks.delete(rootPath);
         this.changedPathSets.delete(rootPath);
         this.logInfo(`Stopped watching ${rootPath}`);
@@ -356,7 +377,7 @@ export class WorkspaceService extends BaseService {
     async setActiveWorkspace(rootPath: string | null): Promise<void> {
         appLogger.debug(LOG_CONTEXT, 'Setting active workspace', { rootPath });
         const nextRootPath = rootPath ? this.resolveAndValidateRootPath(rootPath) : null;
-        
+
         if (nextRootPath === this.activeWorkspaceRootPath && this.activeWorkspaceRootPath !== null) {
             appLogger.debug(LOG_CONTEXT, 'Workspace already active', { rootPath: nextRootPath });
             return;
@@ -410,10 +431,15 @@ export class WorkspaceService extends BaseService {
         }
 
         const nextFiles = new Set(cachedFileList.files);
+        const ignoreMatcher = await this.getScanIgnoreMatcher(rootPath);
         for (const changedPath of changedPaths) {
             try {
                 const stat = await fs.stat(changedPath);
-                if (stat.isFile() && !this.shouldIgnore(path.basename(changedPath))) {
+                if (
+                    stat.isFile() &&
+                    !this.shouldIgnore(path.basename(changedPath)) &&
+                    !ignoreMatcher.ignoresAbsolute(changedPath)
+                ) {
                     nextFiles.add(changedPath);
                 } else {
                     nextFiles.delete(changedPath);
@@ -508,9 +534,7 @@ export class WorkspaceService extends BaseService {
         const runStart = Date.now();
         const includeIssues = options?.includeIssues !== false;
 
-        const scanResult = await this.scanFiles(rootPath, {
-            budgetMs: this.INITIAL_SCAN_BUDGET_MS,
-        });
+        const scanResult = await this.scanFiles(rootPath);
         const files = scanResult.files;
         this.logDebug(`Found ${files.length} files`);
         const type = await this.detectType(files);
@@ -520,6 +544,7 @@ export class WorkspaceService extends BaseService {
             files
         );
         const stats = await this.calculateStats(
+            rootPath,
             files,
             scanResult.complete ? files.length : this.INITIAL_STATS_SAMPLE_LIMIT
         );
@@ -533,7 +558,10 @@ export class WorkspaceService extends BaseService {
         const languages = await this.calculateLanguages(files);
         const monorepo = await this.detectMonorepo(rootPath, files);
         const initialFilePage = this.paginateFiles(files, 0, this.WORKSPACE_FILES_PAGE_SIZE);
-        const issues = includeIssues ? await this.findIssues(rootPath, files) : undefined;
+        const issues = includeIssues ? await this.findStaticIssues(rootPath, files) : undefined;
+        const annotations = includeIssues ? await this.findAnnotations(rootPath, files) : undefined;
+        const lspDiagnostics = includeIssues ? [] : undefined;
+        const lspServers = this.collectLspServerSupport(rootPath, files);
 
         this.logDebug(`Analysis complete in ${Date.now() - runStart}ms`);
 
@@ -554,7 +582,10 @@ export class WorkspaceService extends BaseService {
                 },
                 monorepo,
                 todos: [],
-                issues
+                issues,
+                annotations,
+                lspDiagnostics,
+                lspServers,
             },
             scanComplete: scanResult.complete,
             files,
@@ -586,6 +617,9 @@ export class WorkspaceService extends BaseService {
 
         const analysisRequest = (async (): Promise<WorkspaceAnalysis> => {
             const { analysis, scanComplete, files } = await this.buildWorkspaceAnalysis(rootPath);
+            await this.ensureLspReady(rootPath, files, analysis.type);
+            analysis.lspDiagnostics = this.collectLspDiagnostics(rootPath);
+            analysis.lspServers = this.collectLspServerSupport(rootPath, files);
 
             const timestamp = Date.now();
             this.analysisCache.set(rootPath, { data: analysis, timestamp });
@@ -642,6 +676,88 @@ export class WorkspaceService extends BaseService {
         }
     }
 
+    async getFileDiagnostics(rootPath: string, filePath: string, content: string): Promise<WorkspaceIssue[]> {
+        const normalizedRootPath = this.resolveAndValidateRootPath(rootPath);
+        const normalizedFilePath = this.resolveWorkspaceFilePath(normalizedRootPath, filePath);
+        const normalizedContent = typeof content === 'string' ? content : '';
+
+        if (!this.lspService) {
+            return [];
+        }
+
+        const languageId = this.lspService.getLanguageIdForFile(normalizedFilePath);
+        if (!languageId) {
+            return [];
+        }
+
+        const lspWorkspaceRoot = await this.resolveLspProjectRoot(
+            normalizedRootPath,
+            normalizedFilePath,
+            languageId
+        );
+
+        await this.lspService.startServer(lspWorkspaceRoot, lspWorkspaceRoot, languageId);
+        await this.lspService.openDocument(
+            lspWorkspaceRoot,
+            normalizedFilePath,
+            languageId,
+            normalizedContent
+        );
+
+        return this.waitForFileDiagnostics(
+            lspWorkspaceRoot,
+            normalizedRootPath,
+            this.toFileUri(normalizedFilePath)
+        );
+    }
+
+    async getFileDefinition(
+        rootPath: string,
+        filePath: string,
+        content: string,
+        line: number,
+        column: number
+    ): Promise<WorkspaceDefinitionLocation[]> {
+        const normalizedRootPath = this.resolveAndValidateRootPath(rootPath);
+        const normalizedFilePath = this.resolveWorkspaceFilePath(normalizedRootPath, filePath);
+        const normalizedContent = typeof content === 'string' ? content : '';
+
+        if (!this.lspService) {
+            return [];
+        }
+
+        const languageId = this.lspService.getLanguageIdForFile(normalizedFilePath);
+        if (!languageId) {
+            return [];
+        }
+
+        const lspWorkspaceRoot = await this.resolveLspProjectRoot(
+            normalizedRootPath,
+            normalizedFilePath,
+            languageId
+        );
+
+        await this.lspService.startServer(lspWorkspaceRoot, lspWorkspaceRoot, languageId);
+        await this.lspService.openDocument(
+            lspWorkspaceRoot,
+            normalizedFilePath,
+            languageId,
+            normalizedContent
+        );
+
+        const definitions = await this.lspService.getDefinition(
+            lspWorkspaceRoot,
+            normalizedFilePath,
+            languageId,
+            line,
+            column
+        );
+
+        return definitions
+            .map(definition => this.resolveLspDefinitionLocation(definition.uri, definition.line, definition.column))
+            .filter((definition): definition is WorkspaceDefinitionLocation => definition !== null);
+    }
+
     /**
      * Returns a lazily paginated file list for previously scanned workspace analysis results.
      * @param rootPath The absolute path to the workspace root.
@@ -687,10 +803,11 @@ export class WorkspaceService extends BaseService {
                     type,
                     fullScan.files
                 );
-                const stats = await this.calculateStats(fullScan.files);
+                const stats = await this.calculateStats(rootPath, fullScan.files);
                 const languages = await this.calculateLanguages(fullScan.files);
                 const monorepo = await this.detectMonorepo(rootPath, fullScan.files);
-                const issues = await this.findIssues(rootPath, fullScan.files);
+                const issues = await this.findStaticIssues(rootPath, fullScan.files);
+                const annotations = await this.findAnnotations(rootPath, fullScan.files);
                 this.fileListCache.set(rootPath, {
                     files: fullScan.files,
                     timestamp,
@@ -723,6 +840,7 @@ export class WorkspaceService extends BaseService {
                             },
                             monorepo,
                             issues,
+                            annotations,
                         },
                     });
                 }
@@ -905,38 +1023,202 @@ export class WorkspaceService extends BaseService {
         return undefined;
     }
 
-    private async findIssues(rootPath: string, files: string[]): Promise<WorkspaceIssue[]> {
-        const issues: WorkspaceIssue[] = [];
-        const codeFiles = files.filter(f => /\.(ts|tsx|js|jsx|py|go|rs|kt|java|cpp|h)$/.test(f)).slice(0, 100);
-
-        for (const file of codeFiles) {
-            try {
-                await this.scanFileIssues(file, rootPath, issues);
-                if (issues.length >= 50) { break; }
-            } catch (error) {
-                this.logWarn(`Failed to scan issues in ${file}: ${getErrorMessage(error as Error)}`);
-            }
-            if (issues.length >= 50) { break; }
-        }
-        return issues;
+    private async findAnnotations(rootPath: string, files: string[]): Promise<CodeAnnotation[]> {
+        void rootPath;
+        void files;
+        return [];
     }
 
-    private async scanFileIssues(file: string, rootPath: string, issues: WorkspaceIssue[]) {
-        const content = await fs.readFile(file, 'utf-8');
-        const lines = content.split('\n');
-        const fileName = path.relative(rootPath, file);
+    private async findStaticIssues(rootPath: string, files: string[]): Promise<WorkspaceIssue[]> {
+        void rootPath;
+        void files;
+        return [];
+    }
 
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            const lowerLine = line.toLowerCase();
-
-            if (lowerLine.includes('console.error(') || lowerLine.includes('fixme:') || lowerLine.includes('bug:')) {
-                issues.push({ type: 'error', message: line.trim(), file: fileName, line: i + 1 });
-            } else if (lowerLine.includes('console.warn(') || lowerLine.includes('warning:')) {
-                issues.push({ type: 'warning', message: line.trim(), file: fileName, line: i + 1 });
+    private async waitForFileDiagnostics(
+        lspWorkspaceRoot: string,
+        workspaceRootPath: string,
+        fileUri: string
+    ): Promise<WorkspaceIssue[]> {
+        const maxAttempts = 12;
+        for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+            const diagnostics = this.collectLspDiagnostics(
+                lspWorkspaceRoot,
+                workspaceRootPath,
+                fileUri
+            );
+            if (diagnostics.length > 0 || attempt === maxAttempts - 1) {
+                return diagnostics;
             }
-            if (issues.length >= 50) { break; }
+            await new Promise(resolve => setTimeout(resolve, 100));
         }
+        return [];
+    }
+
+    private async ensureLspReady(
+        rootPath: string,
+        files: string[],
+        _type: WorkspaceAnalysis['type'] | string
+    ): Promise<void> {
+        if (!this.lspService) {
+            return;
+        }
+
+        await this.lspService.startWorkspaceServers(rootPath, rootPath, files);
+        await this.lspService.primeWorkspaceDocuments(rootPath, rootPath, files);
+        await new Promise(resolve => setTimeout(resolve, this.LSP_PRIME_WAIT_MS));
+    }
+
+    private collectLspDiagnostics(
+        lspWorkspaceRoot: string,
+        workspaceRootPath = lspWorkspaceRoot,
+        targetUri?: string
+    ): WorkspaceIssue[] {
+        if (!this.lspService) {
+            return [];
+        }
+
+        const rawDiagnostics = this.lspService.getDiagnostics(lspWorkspaceRoot);
+        const diagnostics: WorkspaceIssue[] = [];
+        for (const item of rawDiagnostics) {
+            if (targetUri && item.uri !== targetUri) {
+                continue;
+            }
+            const fileName = this.resolveLspUriToWorkspaceRelativePath(workspaceRootPath, item.uri);
+            if (!fileName) {
+                continue;
+            }
+            for (const diagnostic of item.diagnostics) {
+                diagnostics.push({
+                    severity: this.mapLspSeverity(diagnostic.severity),
+                    message: diagnostic.message,
+                    file: fileName,
+                    line: diagnostic.range.start.line + 1,
+                    column: diagnostic.range.start.character + 1,
+                    source: diagnostic.source || 'lsp',
+                    code: typeof diagnostic.code === 'string' || typeof diagnostic.code === 'number'
+                        ? diagnostic.code
+                        : undefined
+                });
+            }
+        }
+
+        return diagnostics;
+    }
+
+    private collectLspServerSupport(rootPath: string, files: string[]): WorkspaceLspServerSupport[] | undefined {
+        if (!this.lspService) {
+            return undefined;
+        }
+
+        return this.lspService.getWorkspaceServerSupport(rootPath, files);
+    }
+
+    private mapLspSeverity(severity?: number): WorkspaceIssue['severity'] {
+        switch (severity) {
+            case 1:
+                return 'error';
+            case 2:
+                return 'warning';
+            case 3:
+                return 'info';
+            case 4:
+                return 'hint';
+            default:
+                return 'warning';
+        }
+    }
+
+    private resolveLspUriToWorkspaceRelativePath(rootPath: string, uri: string): string | null {
+        try {
+            const filePath = fileURLToPath(uri);
+            const normalizedRoot = path.resolve(rootPath);
+            const normalizedFilePath = path.resolve(filePath);
+            if (!normalizedFilePath.startsWith(normalizedRoot)) {
+                return null;
+            }
+            return path.relative(normalizedRoot, normalizedFilePath);
+        } catch (error) {
+            this.logWarn(`Failed to resolve LSP URI ${uri}: ${getErrorMessage(error as Error)}`);
+            return null;
+        }
+    }
+
+    private resolveLspDefinitionLocation(
+        uri: string,
+        line: number,
+        column: number
+    ): WorkspaceDefinitionLocation | null {
+        try {
+            return {
+                file: path.resolve(fileURLToPath(uri)),
+                line,
+                column,
+            };
+        } catch (error) {
+            this.logWarn(`Failed to resolve LSP definition URI ${uri}: ${getErrorMessage(error as Error)}`);
+            return null;
+        }
+    }
+
+    private resolveWorkspaceFilePath(rootPath: string, filePath: string): string {
+        const normalizedFilePath = path.resolve(filePath);
+        const normalizedRootPath = path.resolve(rootPath);
+        const relativePath = path.relative(normalizedRootPath, normalizedFilePath);
+
+        if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+            throw new ValidationError('Workspace file path must be inside the workspace root');
+        }
+
+        return normalizedFilePath;
+    }
+
+    private async resolveLspProjectRoot(
+        workspaceRootPath: string,
+        filePath: string,
+        languageId: string
+    ): Promise<string> {
+        const markers = LSP_PROJECT_ROOT_MARKERS[languageId] ?? [];
+        if (markers.length === 0) {
+            return workspaceRootPath;
+        }
+
+        let currentDirectory = path.dirname(filePath);
+        const normalizedWorkspaceRoot = path.resolve(workspaceRootPath);
+        for (let attempt = 0; attempt < 32; attempt += 1) {
+            if (await this.directoryContainsAnyMarker(currentDirectory, markers)) {
+                return currentDirectory;
+            }
+            if (currentDirectory === normalizedWorkspaceRoot) {
+                break;
+            }
+            const parentDirectory = path.dirname(currentDirectory);
+            if (parentDirectory === currentDirectory) {
+                break;
+            }
+            currentDirectory = parentDirectory;
+        }
+
+        return normalizedWorkspaceRoot;
+    }
+
+    private async directoryContainsAnyMarker(
+        directoryPath: string,
+        markers: readonly string[]
+    ): Promise<boolean> {
+        for (const marker of markers) {
+            try {
+                await fs.access(path.join(directoryPath, marker));
+                return true;
+            } catch {
+                continue;
+            }
+        }
+        return false;
+    }
+
+    private toFileUri(filePath: string): string {
+        return pathToFileURL(filePath).toString();
     }
 
     private async findPackages(_rootPath: string, _configType: string): Promise<string[]> {
@@ -989,7 +1271,7 @@ export class WorkspaceService extends BaseService {
             this.logWarn(`Failed to read directory ${dirPath}:`, getErrorMessage(error as Error));
         }
 
-        const stats = await this.calculateStats(files);
+        const stats = await this.calculateStats(dirPath, files);
 
         return { hasPackageJson, pkg, readme, stats };
     }
@@ -1064,6 +1346,7 @@ export class WorkspaceService extends BaseService {
     ): Promise<{ files: string[]; complete: boolean }> {
         const files: string[] = [];
         const dirsToVisit: string[] = [rootPath];
+        const ignoreMatcher = await this.getScanIgnoreMatcher(rootPath);
         const budgetMs = options?.budgetMs;
         const maxFiles = options?.maxFiles;
         const startedAt = Date.now();
@@ -1087,11 +1370,11 @@ export class WorkspaceService extends BaseService {
             try {
                 const entries = await fs.readdir(currentDir, { withFileTypes: true });
                 for (const entry of entries) {
-                    if (this.shouldIgnore(entry.name)) {
+                    const fullPath = path.join(currentDir, entry.name);
+                    if (this.shouldIgnore(entry.name) || ignoreMatcher.ignoresAbsolute(fullPath)) {
                         continue;
                     }
 
-                    const fullPath = path.join(currentDir, entry.name);
                     if (entry.isDirectory()) {
                         dirsToVisit.push(fullPath);
                         continue;
@@ -1114,13 +1397,22 @@ export class WorkspaceService extends BaseService {
         return { files: files.sort(), complete };
     }
 
+    private async getScanIgnoreMatcher(rootPath: string): Promise<WorkspaceIgnoreMatcher> {
+        const defaultPatterns = DEFAULT_WORKSPACE_SCAN_IGNORE_PATTERNS.filter(
+            pattern => !WORKSPACE_SCAN_INCLUDED_PATTERNS.has(pattern)
+        );
+        return getWorkspaceIgnoreMatcher(rootPath, {
+            defaultPatterns,
+        });
+    }
+
     private shouldIgnore(name: string): boolean {
         const lowerName = name.toLowerCase();
         const ignoredNames = [
             'node_modules', '.git', '.svn', '.hg', 'dist', 'build', 'out', '.Tengra',
             '.vscode', '.idea', 'coverage', '.nyc_output', 'target', 'bin', 'obj',
             '.next', '.nuxt', '.cache', '__pycache__', '.pytest_cache', '.output',
-            '.yarn', 'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'composer.lock',
+            '.yarn', 'composer.lock',
             'cargo.lock', 'go.sum', '.ds_store', 'thumbs.db', '.parcel-cache', '.turbo'
         ];
         if (ignoredNames.includes(lowerName)) { return true; }
@@ -1171,7 +1463,7 @@ export class WorkspaceService extends BaseService {
 
     private async analyzeDependencies(rootPath: string, type: string, allFiles: string[]): Promise<{ frameworks: string[], dependencies: Record<string, string>, devDependencies: Record<string, string> }> {
         switch (type) {
-            case 'node': return this.analyzeNodeDependencies(rootPath);
+            case 'node': return this.analyzeNodeDependencies(rootPath, allFiles);
             case 'python': return this.analyzePythonDependencies(rootPath);
             case 'go': return this.analyzeGoDependencies(rootPath);
             case 'rust': return this.analyzeRustDependencies(rootPath);
@@ -1180,7 +1472,7 @@ export class WorkspaceService extends BaseService {
         }
     }
 
-    private async analyzeNodeDependencies(rootPath: string) {
+    private async analyzeNodeDependencies(rootPath: string, allFiles: string[]) {
         const result = { frameworks: [] as string[], dependencies: {} as Record<string, string>, devDependencies: {} };
         try {
             const pkgPath = path.join(rootPath, 'package.json');
@@ -1191,6 +1483,7 @@ export class WorkspaceService extends BaseService {
             result.devDependencies = pkg.devDependencies ? (pkg.devDependencies as Record<string, string>) : {};
 
             this.detectNodeFrameworks(pkg, result.frameworks);
+            this.detectNodeWorkspaceFrameworks(allFiles, result.frameworks);
         } catch (error) {
             this.logWarn('Failed to parse package.json:', getErrorMessage(error as Error));
         }
@@ -1216,7 +1509,7 @@ export class WorkspaceService extends BaseService {
             'nest': 'NestJS',
             '@nestjs/core': 'NestJS',
             'electron': 'Electron',
-            'tailwindcss': 'TailwindCSS',
+            'tailwindcss': 'Tailwind CSS',
             'typescript': 'TypeScript'
         };
 
@@ -1225,6 +1518,27 @@ export class WorkspaceService extends BaseService {
                 frameworks.push(name);
             }
         }
+    }
+
+    private detectNodeWorkspaceFrameworks(files: string[], frameworks: string[]): void {
+        const fileNames = files.map(file => path.basename(file).toLowerCase());
+
+        if (fileNames.some(fileName => fileName.startsWith('playwright.config.'))) {
+            frameworks.push('Playwright');
+        }
+        if (fileNames.some(fileName => fileName.startsWith('tailwind.config.'))) {
+            frameworks.push('Tailwind CSS');
+        }
+        if (fileNames.includes('pnpm-lock.yaml')) {
+            frameworks.push('pnpm');
+        }
+        if (files.some(file => normalizeWorkspacePath(file).includes('/.github/workflows/'))) {
+            frameworks.push('GitHub Actions');
+        }
+
+        const uniqueFrameworks = Array.from(new Set(frameworks));
+        frameworks.length = 0;
+        frameworks.push(...uniqueFrameworks);
     }
 
     private async analyzePythonDependencies(rootPath: string) {
@@ -1481,6 +1795,7 @@ export class WorkspaceService extends BaseService {
     }
 
     private async calculateStats(
+        rootPath: string,
         files: string[],
         maxSampleCount = 100
     ): Promise<WorkspaceStats> {
@@ -1492,23 +1807,33 @@ export class WorkspaceService extends BaseService {
         let lastModified = 0;
         const fileCount = files.length;
         const sampledFiles = this.buildStatsSample(files, maxSampleCount);
+        const directorySizes = new Map<string, WorkspaceDirectorySizeEntry>();
 
         // Simple LOC estimation based on file size (very rough)
         // 100 bytes approx 1 line of code including whitespace
         let totalBytes = 0;
 
-        for (const file of sampledFiles) {
+        for (const file of files) {
             try {
                 const stat = await fs.stat(file);
                 totalSize += stat.size;
-                totalBytes += stat.size;
                 const modifiedAt = Math.max(0, Math.trunc(stat.mtimeMs));
                 if (modifiedAt > lastModified) {
                     lastModified = modifiedAt;
                 }
+                this.trackDirectorySize(directorySizes, rootPath, file, stat.size);
             } catch (error) {
                 // Ignore missing file errors during scan
                 appLogger.debug(LOG_CONTEXT, `Failed to stat file ${file}:`, getErrorMessage(error as Error));
+            }
+        }
+
+        for (const file of sampledFiles) {
+            try {
+                const stat = await fs.stat(file);
+                totalBytes += stat.size;
+            } catch (error) {
+                appLogger.debug(LOG_CONTEXT, `Failed to stat sampled file ${file}:`, getErrorMessage(error as Error));
             }
         }
 
@@ -1519,10 +1844,66 @@ export class WorkspaceService extends BaseService {
 
         return {
             fileCount,
-            totalSize: Math.round(totalSize * scaleFactor),
+            totalSize,
             loc: Math.round((totalBytes * scaleFactor) / 50), // Rough estimate: 50 bytes per line avg
-            lastModified
+            lastModified,
+            largestDirectories: Array.from(directorySizes.values())
+                .sort((left, right) => right.size - left.size)
+                .slice(0, 8),
         };
+    }
+
+    private trackDirectorySize(
+        directorySizes: Map<string, WorkspaceDirectorySizeEntry>,
+        rootPath: string,
+        filePath: string,
+        size: number
+    ): void {
+        const normalizedRootPath = path.resolve(rootPath);
+        const normalizedFilePath = path.resolve(filePath);
+        const relativeFilePath = path.relative(normalizedRootPath, normalizedFilePath);
+        if (!relativeFilePath || relativeFilePath.startsWith('..') || path.isAbsolute(relativeFilePath)) {
+            return;
+        }
+
+        const relativeDirectoryPath = path.dirname(relativeFilePath);
+        if (relativeDirectoryPath === '.' || !relativeDirectoryPath) {
+            return;
+        }
+
+        const segments = relativeDirectoryPath
+            .split(path.sep)
+            .map(segment => segment.trim())
+            .filter(Boolean);
+        if (segments.length === 0) {
+            return;
+        }
+
+        let currentPath = '';
+        const seenPaths = new Set<string>();
+
+        for (const segment of segments) {
+            currentPath = currentPath
+                ? `${currentPath}/${segment}`
+                : segment;
+            if (seenPaths.has(currentPath)) {
+                continue;
+            }
+            seenPaths.add(currentPath);
+
+            const existingEntry = directorySizes.get(currentPath);
+            if (existingEntry) {
+                existingEntry.size += size;
+                existingEntry.fileCount += 1;
+                continue;
+            }
+
+            directorySizes.set(currentPath, {
+                path: currentPath,
+                size,
+                fileCount: 1,
+            });
+        }
     }
 
     private buildStatsSample(files: string[], maxSampleCount: number): string[] {
@@ -1611,7 +1992,7 @@ export class WorkspaceService extends BaseService {
         const sanitizedInput = process.platform === 'win32' && inputPath.startsWith('/') && inputPath.charAt(2) === ':'
             ? inputPath.slice(1)
             : inputPath;
-        
+
         appLogger.debug(LOG_CONTEXT, 'Validating sanitized path', { sanitizedInput });
         const parsedPath = WorkspaceRootPathSchema.safeParse(sanitizedInput);
         if (!parsedPath.success) {
@@ -1620,5 +2001,3 @@ export class WorkspaceService extends BaseService {
         return path.resolve(parsedPath.data);
     }
 }
-
-

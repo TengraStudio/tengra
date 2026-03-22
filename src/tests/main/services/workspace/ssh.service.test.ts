@@ -233,6 +233,131 @@ describe('SSHService', () => {
     });
 
     describe('SSH roadmap advanced features', () => {
+        it('caches remote directory metadata for repeated explorer reads', async () => {
+            const readdir = vi.fn((_path: string, callback: (error: Error | undefined, list: Array<{
+                filename: string;
+                longname: string;
+                attrs: { size: number; mtime: number; isDirectory: () => boolean };
+            }>) => void) => callback(undefined, [
+                {
+                    filename: 'src',
+                    longname: 'drwxr-xr-x',
+                    attrs: {
+                        size: 0,
+                        mtime: 123,
+                        isDirectory: () => true,
+                    },
+                },
+            ]));
+            const mockConn = {
+                sftp: vi.fn((callback: (error: Error | undefined, sftp: { readdir: typeof readdir }) => void) =>
+                    callback(undefined, { readdir }))
+            };
+
+            service['connections'].set('conn-id', mockConn as never);
+
+            const first = await service.listDirectory('conn-id', '/home/demo');
+            const second = await service.listDirectory('conn-id', '/home/demo');
+
+            expect(first.success).toBe(true);
+            expect(second.success).toBe(true);
+            expect(readdir).toHaveBeenCalledTimes(1);
+        });
+
+        it('returns stale remote metadata immediately and lazily hydrates the cache', async () => {
+            const readdir = vi
+                .fn()
+                .mockImplementationOnce((_path: string, callback: (error: Error | undefined, list: Array<{
+                    filename: string;
+                    longname: string;
+                    attrs: { size: number; mtime: number; isDirectory: () => boolean };
+                }>) => void) =>
+                    callback(undefined, [
+                        {
+                            filename: 'src',
+                            longname: 'drwxr-xr-x',
+                            attrs: {
+                                size: 0,
+                                mtime: 123,
+                                isDirectory: () => true,
+                            },
+                        },
+                    ]))
+                .mockImplementationOnce((_path: string, callback: (error: Error | undefined, list: Array<{
+                    filename: string;
+                    longname: string;
+                    attrs: { size: number; mtime: number; isDirectory: () => boolean };
+                }>) => void) =>
+                    callback(undefined, [
+                        {
+                            filename: 'docs',
+                            longname: 'drwxr-xr-x',
+                            attrs: {
+                                size: 0,
+                                mtime: 456,
+                                isDirectory: () => true,
+                            },
+                        },
+                    ]));
+            const mockConn = {
+                sftp: vi.fn((callback: (error: Error | undefined, sftp: { readdir: typeof readdir }) => void) =>
+                    callback(undefined, { readdir }))
+            };
+
+            service['connections'].set('conn-id', mockConn as never);
+
+            const first = await service.listDirectory('conn-id', '/home/demo');
+            service['directoryMetadataCache'].set('conn-id:/home/demo', {
+                files: first.files ?? [],
+                cachedAt: Date.now() - 6_000,
+            });
+
+            const stale = await service.listDirectory('conn-id', '/home/demo');
+
+            expect(first.files?.[0]?.name).toBe('src');
+            expect(stale.files?.[0]?.name).toBe('src');
+            expect(readdir).toHaveBeenCalledTimes(2);
+        });
+
+        it('invalidates remote directory cache after mutating file operations', async () => {
+            const readdir = vi
+                .fn()
+                .mockImplementation((_path: string, callback: (error: Error | undefined, list: Array<{
+                    filename: string;
+                    longname: string;
+                    attrs: { size: number; mtime: number; isDirectory: () => boolean };
+                }>) => void) =>
+                    callback(undefined, [
+                        {
+                            filename: 'src',
+                            longname: 'drwxr-xr-x',
+                            attrs: {
+                                size: 0,
+                                mtime: 123,
+                                isDirectory: () => true,
+                            },
+                        },
+                    ]));
+            const mkdir = vi.fn((_path: string, callback: (error?: Error) => void) => callback());
+            const mockConn = {
+                sftp: vi.fn((callback: (error: Error | undefined, sftp: {
+                    readdir: typeof readdir;
+                    mkdir: typeof mkdir;
+                }) => void) =>
+                    callback(undefined, { readdir, mkdir }))
+            };
+
+            service['connections'].set('conn-id', mockConn as never);
+
+            await service.listDirectory('conn-id', '/home/demo');
+            await service.listDirectory('conn-id', '/home/demo');
+            await service.createDirectory('conn-id', '/home/demo/new-dir');
+            await service.listDirectory('conn-id', '/home/demo');
+
+            expect(readdir).toHaveBeenCalledTimes(2);
+            expect(mkdir).toHaveBeenCalledTimes(1);
+        });
+
         it('should search remote files and persist search history', async () => {
             service.executeCommand = vi.fn().mockResolvedValue({
                 stdout: '/home/user/file-a.txt\n/home/user/file-b.txt',
@@ -341,13 +466,13 @@ describe('SSHService', () => {
         it('should throw error for path traversal attempting to escape /var/log', async () => {
             await expect(service.readLogFile('test-id', '/var/log/../../etc/passwd'))
                 .rejects
-                .toThrow('Access denied');
+                .toThrow('error.ssh.path_must_be_within_var_log');
         });
 
         it('should throw error for paths not starting with /var/log', async () => {
             await expect(service.readLogFile('test-id', '/etc/passwd'))
                 .rejects
-                .toThrow('Access denied');
+                .toThrow('error.ssh.path_must_be_within_var_log');
         });
 
         it('should quote the path to prevent shell injection', async () => {

@@ -27,7 +27,7 @@ function validateProvider(value: RuntimeValue): string | undefined {
  * Registers IPC handlers for metrics operations
  */
 export function registerMetricsIpc(): void {
-    appLogger.info('MetricsIPC', 'Registering metrics IPC handlers');
+    appLogger.debug('MetricsIPC', 'Registering metrics IPC handlers');
 
     ipcMain.handle(
         'metrics:get-provider-stats',

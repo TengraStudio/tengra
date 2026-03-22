@@ -1824,4 +1824,5 @@ export class TerminalService extends BaseService {
             return false;
         }
     }
+
 }

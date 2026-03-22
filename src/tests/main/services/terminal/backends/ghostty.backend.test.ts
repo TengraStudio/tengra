@@ -198,7 +198,9 @@ describe('GhosttyBackend', () => {
             mockExistsSync.mockReturnValue(false);
 
             const options = createDefaultOptions();
-            await expect(backend.create(options)).rejects.toThrow('Ghostty is not installed or not in PATH');
+            await expect(backend.create(options)).rejects.toThrow(
+                'error.terminal.backend_not_found'
+            );
         });
 
         it('spawns ghostty process with correct arguments', async () => {

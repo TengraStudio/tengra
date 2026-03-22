@@ -6,18 +6,27 @@ interface UseCommandStripResizeParams {
     showTerminal: boolean;
     setShowTerminal: (show: boolean) => void;
     setIsMaximizedTerminal: React.Dispatch<React.SetStateAction<boolean>>;
-    setIsFloatingTerminal: React.Dispatch<React.SetStateAction<boolean>>;
     setIsResizingTerminal: React.Dispatch<React.SetStateAction<boolean>>;
     setTerminalHeight: (height: number) => void;
     calculateTerminalHeight: (clientY: number) => number;
     lastExpandedTerminalHeightRef: React.MutableRefObject<number>;
 }
 
+function isInteractiveResizeTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof Element)) {
+        return false;
+    }
+    return Boolean(
+        target.closest(
+            'button, a, input, textarea, select, [role="button"], [data-radix-popper-content-wrapper]'
+        )
+    );
+}
+
 export function useCommandStripResize({
     showTerminal,
     setShowTerminal,
     setIsMaximizedTerminal,
-    setIsFloatingTerminal,
     setIsResizingTerminal,
     setTerminalHeight,
     calculateTerminalHeight,
@@ -38,6 +47,9 @@ export function useCommandStripResize({
             if (e.button !== 0) {
                 return;
             }
+            if (isInteractiveResizeTarget(e.target)) {
+                return;
+            }
             e.preventDefault();
 
             stripResizeCleanupRef.current?.();
@@ -46,8 +58,7 @@ export function useCommandStripResize({
             const nextHeight = calculateTerminalHeight(e.clientY);
             setTerminalHeight(nextHeight);
             lastExpandedTerminalHeightRef.current = Math.max(nextHeight, MIN_TERMINAL_HEIGHT);
-            setIsMaximizedTerminal(false);
-            setIsFloatingTerminal(false);
+            setIsMaximizedTerminal(false); 
             setIsResizingTerminal(true);
             if (!showTerminal) {
                 setShowTerminal(true);
@@ -81,7 +92,6 @@ export function useCommandStripResize({
             setShowTerminal,
             stopCommandStripResize,
             setIsMaximizedTerminal,
-            setIsFloatingTerminal,
             setIsResizingTerminal,
             lastExpandedTerminalHeightRef
         ]

@@ -7,10 +7,17 @@ interface WorkspaceSectionProps {
     workspace: Workspace
     onAddMount: () => void
     onRemoveMount: (id: string) => void
+    onDelete?: () => void
     t: (key: string) => string
 }
 
-export const WorkspaceSection: React.FC<WorkspaceSectionProps> = ({ workspace, onAddMount, onRemoveMount, t }) => (
+export const WorkspaceSection: React.FC<WorkspaceSectionProps> = ({
+    workspace,
+    onAddMount,
+    onRemoveMount,
+    onDelete,
+    t,
+}) => (
     <section className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="flex items-center justify-between">
             <div>
@@ -65,6 +72,32 @@ export const WorkspaceSection: React.FC<WorkspaceSectionProps> = ({ workspace, o
                     </button>
                 </div>
             )}
+        </div>
+
+        <div className="pt-6 border-t border-destructive/20">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-destructive">
+                <Trash2 className="h-4 w-4" />
+                {t('workspace.dangerZone')}
+            </h3>
+            <div className="flex items-center justify-between rounded-xl border border-destructive/10 bg-destructive/5 p-4">
+                <div>
+                    <div className="text-sm font-semibold text-foreground">
+                        {t('workspaces.deleteWorkspace')}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                        {t('workspaces.deleteWarning').trim()}
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    onClick={() => {
+                        void onDelete?.();
+                    }}
+                    className="rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/20"
+                >
+                    {t('common.delete')}
+                </button>
+            </div>
         </div>
     </section>
 );

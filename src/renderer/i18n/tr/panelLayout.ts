@@ -1,7 +1,7 @@
 const sectionData = {
-    "expand": "Genişlet",
-    "collapse": "Daralt",
-    "maximize": "Büyüt"
+    "expand": "Paneli genişlet",
+    "collapse": "Paneli daralt",
+    "maximize": "Paneli büyüt"
 };
 
 export default sectionData;

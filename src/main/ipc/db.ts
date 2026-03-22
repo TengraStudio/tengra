@@ -119,7 +119,7 @@ export function registerDbIpc(
         }
     };
 
-    appLogger.info('DatabaseIPC', 'Registering database IPC handlers');
+    appLogger.debug('DatabaseIPC', 'Registering database IPC handlers');
 
     registerBatchHandlers(databaseService, validateSender);
     registerChatHandlers(databaseService, validateSender, auditLogService);
@@ -383,25 +383,29 @@ function registerWorkspaceHandlers(databaseService: DatabaseService, validateSen
 
     ipcMain.handle('db:updateWorkspace', createValidatedIpcHandler('db:updateWorkspace', async (event, id: string, updates: Partial<Workspace>) => {
         validateSender(event);
-        return await withRateLimit('db', () => databaseService.workspaces.updateWorkspace(id, updates as JsonObject));
+        const updatedWorkspace = await withRateLimit('db', () => databaseService.workspaces.updateWorkspace(id, updates as JsonObject));
+        event.sender.send(DB_CHANNELS.WORKSPACE_UPDATED_EVENT, { id });
+        return updatedWorkspace;
     }, {
         defaultValue: null,
         argsSchema: z.tuple([IdSchema, z.record(z.string(), z.unknown())]),
         responseSchema: WorkspaceSchema.nullable()
     }));
 
-    ipcMain.handle('db:deleteWorkspace', createValidatedIpcHandler('db:deleteWorkspace', async (event, id: string) => {
+    ipcMain.handle('db:deleteWorkspace', createValidatedIpcHandler('db:deleteWorkspace', async (event, id: string, deleteFiles: boolean = false) => {
         validateSender(event);
-        await withRateLimit('db', () => databaseService.workspaces.deleteWorkspace(id));
+        await withRateLimit('db', () => databaseService.workspaces.deleteWorkspace(id, deleteFiles));
+        event.sender.send(DB_CHANNELS.WORKSPACE_UPDATED_EVENT, { id });
         return { success: true };
     }, {
         defaultValue: { success: false },
-        argsSchema: z.tuple([IdSchema])
+        argsSchema: z.tuple([IdSchema, z.boolean().optional()])
     }));
 
     ipcMain.handle('db:archiveWorkspace', createValidatedIpcHandler('db:archiveWorkspace', async (event, id: string, isArchived: boolean) => {
         validateSender(event);
         await withRateLimit('db', () => databaseService.archiveWorkspace(id, isArchived));
+        event.sender.send(DB_CHANNELS.WORKSPACE_UPDATED_EVENT, { id });
         return { success: true };
     }, {
         defaultValue: { success: false },
@@ -411,6 +415,7 @@ function registerWorkspaceHandlers(databaseService: DatabaseService, validateSen
     ipcMain.handle('db:bulkDeleteWorkspaces', createValidatedIpcHandler('db:bulkDeleteWorkspaces', async (event, ids: string[], deleteFiles: boolean = false) => {
         validateSender(event);
         await withRateLimit('db', () => databaseService.bulkDeleteWorkspaces(ids, deleteFiles));
+        event.sender.send(DB_CHANNELS.WORKSPACE_UPDATED_EVENT, {});
         return { success: true };
     }, {
         defaultValue: { success: false },
@@ -420,6 +425,7 @@ function registerWorkspaceHandlers(databaseService: DatabaseService, validateSen
     ipcMain.handle('db:bulkArchiveWorkspaces', createValidatedIpcHandler('db:bulkArchiveWorkspaces', async (event, ids: string[], isArchived: boolean) => {
         validateSender(event);
         await withRateLimit('db', () => databaseService.bulkArchiveWorkspaces(ids, isArchived));
+        event.sender.send(DB_CHANNELS.WORKSPACE_UPDATED_EVENT, {});
         return { success: true };
     }, {
         defaultValue: { success: false },

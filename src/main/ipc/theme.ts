@@ -121,7 +121,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
     ipcMain.handle('theme:runtime:install', createIpcHandler('theme:runtime:install',
         async (_event: IpcMainInvokeEvent, themeManifest: RuntimeValue) => {
             if (!themeManifest || typeof themeManifest !== 'object') {
-                throw new Error('Invalid theme manifest');
+                throw new Error('error.theme.invalid_manifest');
             }
             return themeService.installTheme(themeManifest as ThemeManifest);
         }
@@ -131,7 +131,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
         async (_event: IpcMainInvokeEvent, themeIdRaw: RuntimeValue) => {
             const themeId = validateThemeId(themeIdRaw);
             if (!themeId) {
-                throw new Error('Invalid theme ID');
+                throw new Error('error.theme.invalid_id');
             }
             return themeService.uninstallTheme(themeId);
         }
@@ -156,7 +156,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
         async (_event: IpcMainInvokeEvent, themeIdRaw: RuntimeValue) => {
             const themeId = validateThemeId(themeIdRaw);
             if (!themeId) {
-                throw new Error('Invalid theme ID');
+                throw new Error('error.theme.invalid_id');
             }
             return themeStore.setTheme(themeId);
         }, null
@@ -172,7 +172,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
         async (_event: IpcMainInvokeEvent, themeIdRaw: RuntimeValue) => {
             const themeId = validateThemeId(themeIdRaw);
             if (!themeId) {
-                throw new Error('Invalid theme ID');
+                throw new Error('error.theme.invalid_id');
             }
             return themeStore.getThemeDetails(themeId);
         }, null
@@ -188,7 +188,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
         async (_event: IpcMainInvokeEvent, theme: RuntimeValue) => {
             const validatedTheme = validateCustomThemeInput(theme);
             if (!validatedTheme) {
-                throw new Error('Invalid theme object');
+                throw new Error('error.theme.invalid_object');
             }
             return themeStore.addCustomTheme(validatedTheme);
         }
@@ -201,7 +201,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
                 throw new Error('Invalid theme ID');
             }
             if (!updates || typeof updates !== 'object') {
-                throw new Error('Invalid updates object');
+                throw new Error('error.theme.invalid_updates');
             }
             return themeStore.updateCustomTheme(id, updates);
         }
@@ -221,7 +221,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
         async (_event: IpcMainInvokeEvent, themeIdRaw: RuntimeValue) => {
             const themeId = validateThemeId(themeIdRaw);
             if (!themeId) {
-                throw new Error('Invalid theme ID');
+                throw new Error('error.theme.invalid_id');
             }
             return themeStore.toggleFavorite(themeId);
         }, false
@@ -237,7 +237,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
         async (_event: IpcMainInvokeEvent, themeIdRaw: RuntimeValue) => {
             const themeId = validateThemeId(themeIdRaw);
             if (!themeId) {
-                throw new Error('Invalid theme ID');
+                throw new Error('error.theme.invalid_id');
             }
             return themeStore.isFavorite(themeId);
         }, false
@@ -266,7 +266,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
         async (_event: IpcMainInvokeEvent, presetIdRaw: RuntimeValue) => {
             const presetId = validateThemeId(presetIdRaw);
             if (!presetId) {
-                throw new Error('Invalid preset ID');
+                throw new Error('error.theme.invalid_preset_id');
             }
             return themeStore.applyPreset(presetId);
         }, null
@@ -289,7 +289,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
         async (_event: IpcMainInvokeEvent, themeIdRaw: RuntimeValue) => {
             const themeId = validateThemeId(themeIdRaw);
             if (!themeId) {
-                throw new Error('Invalid theme ID');
+                throw new Error('error.theme.invalid_id');
             }
 
             const json = themeStore.exportTheme(themeId);
@@ -308,7 +308,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
         async (_event: IpcMainInvokeEvent, jsonStringRaw: RuntimeValue) => {
             const jsonString = validateJsonString(jsonStringRaw);
             if (!jsonString) {
-                throw new Error('Invalid JSON string');
+                throw new Error('error.theme.invalid_json');
             }
             return themeStore.importTheme(jsonString);
         }
@@ -318,11 +318,11 @@ export function registerThemeIpc(themeService: ThemeService): void {
         async (_event: IpcMainInvokeEvent, themeIdRaw: RuntimeValue, newNameRaw: RuntimeValue) => {
             const themeId = validateThemeId(themeIdRaw);
             if (!themeId) {
-                throw new Error('Invalid theme ID');
+                throw new Error('error.theme.invalid_id');
             }
             const newName = validateThemeName(newNameRaw);
             if (!newName) {
-                throw new Error('Invalid theme name');
+                throw new Error('error.theme.invalid_name');
             }
             return themeStore.duplicateTheme(themeId, newName);
         }

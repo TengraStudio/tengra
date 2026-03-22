@@ -1,9 +1,38 @@
 import { appLogger } from '@main/logging/logger';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+const { spawnMock } = vi.hoisted(() => ({
+    spawnMock: vi.fn(() => ({
+        stdout: {
+            on: vi.fn(),
+        },
+        stderr: {
+            on: vi.fn(),
+        },
+        on: vi.fn((event: string, cb: (...args: TestValue[]) => void) => {
+            if (event === 'close') {
+                setTimeout(() => cb(0), 0);
+            }
+        }),
+        unref: vi.fn(),
+    }))
+}));
+
+const originalPlatformDescriptor = Object.getOwnPropertyDescriptor(process, 'platform');
+
+function setProcessPlatform(value: NodeJS.Platform): void {
+    Object.defineProperty(process, 'platform', { value });
+}
+
+function restoreProcessPlatform(): void {
+    if (originalPlatformDescriptor) {
+        Object.defineProperty(process, 'platform', originalPlatformDescriptor);
+    }
+}
+
 // Mock BrowserWindow
 const mockMainWindow = {
-    webContents: { id: 1 },
+    webContents: { id: 1, getZoomFactor: vi.fn(), setZoomFactor: vi.fn() },
     minimize: vi.fn(),
     maximize: vi.fn(),
     unmaximize: vi.fn(),
@@ -79,20 +108,7 @@ vi.mock('@main/logging/logger', () => ({
 
 // Mock child_process
 vi.mock('child_process', () => ({
-    spawn: vi.fn(() => ({
-        stdout: {
-            on: vi.fn(),
-        },
-        stderr: {
-            on: vi.fn(),
-        },
-        on: vi.fn((event: string, cb: (...args: TestValue[]) => void) => {
-            if (event === 'close') {
-                setTimeout(() => cb(0), 0);
-            }
-        }),
-        unref: vi.fn(),
-    })),
+    spawn: spawnMock,
 }));
 
 // Import module under test AFTER mocks
@@ -108,6 +124,7 @@ describe('Window IPC Handlers', () => {
         mockMainWindow.isFullScreen.mockReturnValue(false);
         mockMainWindow.isMinimized.mockReturnValue(false);
         mockMainWindow.isDestroyed.mockReturnValue(false);
+        mockMainWindow.webContents.getZoomFactor.mockReturnValue(1);
 
         // Trigger registration
         registerWindowIpc(() => mockMainWindow as never, new Set<string>(['/app']));
@@ -117,6 +134,7 @@ describe('Window IPC Handlers', () => {
 
 
     afterEach(() => {
+        restoreProcessPlatform();
         // Clean up handlers
         mockIpcMainHandlers.clear();
         mockIpcMainListeners.clear();
@@ -271,6 +289,37 @@ describe('Window IPC Handlers', () => {
         });
     });
 
+    describe('window zoom', () => {
+        it('should return current zoom factor', async () => {
+            const handler = mockIpcMainHandlers.get('window:get-zoom-factor');
+            expect(handler).toBeDefined();
+
+            const result = await handler!(mockEvent);
+
+            expect(result).toEqual({ zoomFactor: 1 });
+        });
+
+        it('should set zoom factor', async () => {
+            const handler = mockIpcMainHandlers.get('window:set-zoom-factor');
+            expect(handler).toBeDefined();
+
+            const result = await handler!(mockEvent, 1.25);
+
+            expect(mockMainWindow.webContents.setZoomFactor).toHaveBeenCalledWith(1.25);
+            expect(result).toEqual({ zoomFactor: 1.25 });
+        });
+
+        it('should step zoom factor', async () => {
+            const handler = mockIpcMainHandlers.get('window:step-zoom-factor');
+            expect(handler).toBeDefined();
+
+            const result = await handler!(mockEvent, 1);
+
+            expect(mockMainWindow.webContents.setZoomFactor).toHaveBeenCalledWith(1.1);
+            expect(result).toEqual({ zoomFactor: 1.1 });
+        });
+    });
+
     describe('shell:openExternal', () => {
         it('should open URL in external browser', async () => {
             const electron = await import('electron');
@@ -342,9 +391,26 @@ describe('Window IPC Handlers', () => {
             const handler = mockIpcMainHandlers.get('shell:runCommand');
             expect(handler).toBeDefined();
 
+            const originalComSpec = process.env.ComSpec;
+            setProcessPlatform('win32');
+            process.env.ComSpec = 'C:\\Windows\\System32\\cmd.exe';
+
             const result = await handler!(mockEvent, 'npm', ['--version'], '/app');
 
             expect(result).toEqual({ success: true, data: { stdout: '', stderr: '', code: 0, error: '' } });
+            expect(spawnMock).toHaveBeenCalledWith(
+                'C:\\Windows\\System32\\cmd.exe',
+                ['/d', '/s', '/c', 'npm.cmd', '--version'],
+                {
+                    cwd: '/app',
+                    shell: false
+                }
+            );
+            if (originalComSpec === undefined) {
+                delete process.env.ComSpec;
+            } else {
+                process.env.ComSpec = originalComSpec;
+            }
         });
     });
 

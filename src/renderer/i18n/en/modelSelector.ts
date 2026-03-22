@@ -1,12 +1,12 @@
 const sectionData = {
-    "searchModels": "Search Models...",
+    "searchModels": "Search models...",
     "image": "Image",
     "limit": "Limit",
     "ollamaLocal": "Ollama (Local)",
     "openCode": "OpenCode",
     "proxyCustom": "Custom Proxy / Other",
     "model": "Model",
-    "selectModel": "Select Model",
+    "selectModel": "Select model",
     "recentModels": "Recent",
     "noModelsFound": "No models found",
     "shiftClickMulti": "Shift+click to select multiple models",
@@ -26,9 +26,9 @@ const sectionData = {
         "week": "WEEK"
     },
     "categoryLabelSuffix": "category",
-    "selectReasoningLevel": "Select Reasoning Level",
+    "selectReasoningLevel": "Select reasoning level",
     "reasoningRequired": "This model requires a reasoning level to be selected before use.",
-    "confirmModel": "Confirm Selection",
+    "confirmModel": "Confirm selection",
     "selectLevelFirst": "Select a level first",
     "mustSelectReasoning": "Please select a reasoning level to continue",
     "reasoningLevels": {
@@ -52,9 +52,9 @@ const sectionData = {
     "cloud": "Cloud",
     "reasoningBadge": "Reasoning",
     "free": "Free",
-    "creditsLeft": "Credits Left",
+    "creditsLeft": "Credits left",
     "deprecated": "Deprecated",
-    "allModels": "All Models",
+    "allModels": "All models",
 };
 
 export default sectionData;

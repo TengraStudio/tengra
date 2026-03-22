@@ -149,7 +149,7 @@ export function registerIdeaGeneratorIpc(
     deepResearchService?: DeepResearchService,
     ideaScoringService?: IdeaScoringService
 ): void {
-    appLogger.info('IdeaGeneratorIPC', 'Registering Idea Generator IPC handlers');
+    appLogger.debug('IdeaGeneratorIPC', 'Registering Idea Generator IPC handlers');
     // Set up event forwarding to renderer
     setupEventForwarding(eventBus);
 

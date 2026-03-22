@@ -56,6 +56,7 @@ export const SplitEditorPane: React.FC<SplitEditorPaneProps> = ({
                         language={getLanguageFromExtension(rightTab.name)}
                         readOnly={true}
                         initialLine={rightTab.initialLine}
+                        savedValue={rightTab.savedContent}
                         showMinimap={false}
                         enableCodeLens={false}
                         enableInlayHints={false}

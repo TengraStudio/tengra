@@ -1,10 +1,10 @@
 const sectionData = {
     "workspaceBasics": "Workspace Basics",
-    "workspaceBasicsDesc": "Core workspace setttings",
+    "workspaceBasicsDesc": "Core workspace settings",
     "appIntelligence": "App Intelligence",
-    "appIntelligenceDesc": "Configure AI features",
+    "appIntelligenceDesc": "Configure AI-powered features",
     "lifecycle": "Lifecycle",
-    "lifecycleDesc": "Manage workspace lifecycle",
+    "lifecycleDesc": "Manage your workspace lifecycle",
     "autoUpdateDesc": "Automatically check for updates",
     "checkOnStartupDesc": "Check for updates on startup",
     "privacySafety": "Privacy & Safety",
@@ -17,7 +17,7 @@ const sectionData = {
     "terminalBackendAlacritty": "Alacritty",
     "terminalBackendWarp": "Warp",
     "terminalBackendUnavailable": "(Unavailable)",
-    "defaultTerminalBackendDesc": "Select the default backend used when creating new terminal sessions.",
+    "defaultTerminalBackendDesc": "Choose the default backend for new terminal sessions.",
     "inlineSuggestions": "Inline Suggestions",
     "inlineSuggestionsDesc": "Show ghost text suggestions while you type in Monaco editors.",
     "inlineSuggestionsSource": "Suggestion Source",
@@ -35,13 +35,13 @@ const sectionData = {
     "french": "French",
     "spanish": "Spanish",
     "contextMessageLimit": "Context Message Limit",
-    "database": "DATABASE",
+    "database": "Database",
     "databaseDesc": "Manage application data and cache.",
-    "onboardingTour": "ONBOARDING TOUR",
-    "onboardingTourDesc": "Restart the tour introducing application features.",
-    "startTour": "START TOUR",
-    "autoUpdate": "Auto-Update",
-    "checkOnStartup": "Check on Startup",
+    "onboardingTour": "Onboarding Tour",
+    "onboardingTourDesc": "Restart the tour that introduces app features.",
+    "startTour": "Start Tour",
+    "autoUpdate": "Auto-update",
+    "checkOnStartup": "Check on startup",
     "checkForUpdates": "Check for Updates",
     "updates": "Updates",
     "privacy": "Privacy",
@@ -50,8 +50,8 @@ const sectionData = {
     "startup": "Startup",
     "startOnStartup": "Start on system startup",
     "startOnStartupDesc": "Automatically launch Tengra when your computer starts.",
-    "workAtBackground": "Run in background",
-    "workAtBackgroundDesc": "Keep Tengra running in the background after closing the window."
+    "workAtBackground": "Run in the background",
+    "workAtBackgroundDesc": "Keep Tengra running in the background after you close the window."
 };
 
 export default sectionData;

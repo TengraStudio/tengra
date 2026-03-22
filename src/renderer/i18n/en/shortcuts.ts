@@ -18,14 +18,14 @@ const sectionData = {
     "searchChat": "Search Chat",
     "showShortcuts": "Show Shortcuts",
     "close": "Close",
-    "footer": "Press Esc to close",
-    "pressKeys": "Press keys...",
-    "resetToDefault": "Reset to default",
-    "searchPlaceholder": "Search shortcuts",
+    "footer": "Press Esc to close.",
+    "pressKeys": "Press shortcut...",
+    "resetToDefault": "Reset to Default",
+    "searchPlaceholder": "Search shortcuts...",
     "export": "Export",
     "import": "Import",
-    "resetAll": "Reset all",
-    "closeModal": "Close modal"
+    "resetAll": "Reset All",
+    "closeModal": "Close Modal"
 };
 
 export default sectionData;

@@ -3,11 +3,12 @@ import * as path from 'path';
 
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
+import { SettingsService } from '@main/services/system/settings.service';
 import { validateCommand } from '@main/utils/command-validator.util';
 import { createIpcHandler, createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { RateLimiter } from '@main/utils/rate-limiter.util';
 import { validateCommandArgs } from '@main/utils/shell-command-policy.util';
-import { resolveWindowsCommand } from '@main/utils/windows-command.util';
+import { createWindowsSpawnCommand } from '@main/utils/windows-command.util';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import { z } from 'zod';
@@ -21,6 +22,9 @@ const DEFAULT_HEIGHT = 800;
 const DETACHED_TERMINAL_WIDTH = 1000;
 const DETACHED_TERMINAL_HEIGHT = 420;
 const MAX_TEXT_LENGTH = 512;
+const WINDOW_ZOOM_STEP = 0.1;
+const WINDOW_ZOOM_MIN = 0.5;
+const WINDOW_ZOOM_MAX = 2;
 const detachedTerminalWindows = new Map<string, BrowserWindow>();
 const SENSITIVE_QUERY_KEYS = new Set([
     'token', 'access_token', 'refresh_token', 'code', 'state', 'sessionkey', 'session_key',
@@ -98,10 +102,18 @@ interface DetachedTerminalWindowOptions {
  * Registers all window-related IPC handlers including window controls, shell operations, and cookies.
  * @param getMainWindow - Factory function that returns the main BrowserWindow instance
  */
-export function registerWindowIpc(getMainWindow: () => BrowserWindow | null, allowedRoots: Set<string>) {
-    registerWindowControlHandlers(getMainWindow);
+export function registerWindowIpc(
+    getMainWindow: () => BrowserWindow | null,
+    allowedRoots: Set<string>,
+    settingsService?: SettingsService
+) {
+    registerWindowControlHandlers(getMainWindow, settingsService);
     registerShellHandlers(getMainWindow, allowedRoots);
     registerCookieHandlers(getMainWindow);
+}
+
+function clampZoomFactor(value: number): number {
+    return Math.max(WINDOW_ZOOM_MIN, Math.min(WINDOW_ZOOM_MAX, Math.round(value * 100) / 100));
 }
 
 function isPathAllowed(filePath: string, allowedRoots: Set<string>): boolean {
@@ -171,7 +183,34 @@ function isCookieCaptureUrlAllowed(rawUrl: string): boolean {
  * Registers IPC handlers for window control operations (minimize, maximize, close, resize, fullscreen, detached terminal).
  * @param getMainWindow - Factory function that returns the main BrowserWindow instance
  */
-function registerWindowControlHandlers(getMainWindow: () => BrowserWindow | null) {
+async function persistZoomFactor(
+    settingsService: SettingsService | undefined,
+    zoomFactor: number
+): Promise<void> {
+    if (!settingsService) {
+        return;
+    }
+    const currentSettings = settingsService.getSettings();
+    const currentWindowSettings = currentSettings.window ?? {
+        width: 1280,
+        height: 800,
+        x: 0,
+        y: 0,
+        zoomFactor: 1,
+    };
+    await settingsService.saveSettings({
+        ...currentSettings,
+        window: {
+            ...currentWindowSettings,
+            zoomFactor,
+        },
+    });
+}
+
+function registerWindowControlHandlers(
+    getMainWindow: () => BrowserWindow | null,
+    settingsService?: SettingsService
+) {
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'window operation');
 
     ipcMain.on('window:minimize', event => {
@@ -257,6 +296,65 @@ function registerWindowControlHandlers(getMainWindow: () => BrowserWindow | null
             /* ignore */
         }
     });
+
+    const zoomResponseSchema = z.object({ zoomFactor: z.number().min(WINDOW_ZOOM_MIN).max(WINDOW_ZOOM_MAX) });
+
+    ipcMain.handle(
+        'window:get-zoom-factor',
+        createValidatedIpcHandler('window:get-zoom-factor', async event => {
+            validateSender(event);
+            const win = getMainWindow();
+            return { zoomFactor: win?.webContents.getZoomFactor() ?? 1 };
+        }, {
+            argsSchema: z.tuple([]),
+            responseSchema: zoomResponseSchema,
+        })
+    );
+
+    ipcMain.handle(
+        'window:set-zoom-factor',
+        createValidatedIpcHandler('window:set-zoom-factor', async (event, zoomFactor: number) => {
+            validateSender(event);
+            const win = getMainWindow();
+            const nextZoomFactor = clampZoomFactor(zoomFactor);
+            win?.webContents.setZoomFactor(nextZoomFactor);
+            await persistZoomFactor(settingsService, nextZoomFactor);
+            return { zoomFactor: nextZoomFactor };
+        }, {
+            argsSchema: z.tuple([z.number()]),
+            responseSchema: zoomResponseSchema,
+        })
+    );
+
+    ipcMain.handle(
+        'window:step-zoom-factor',
+        createValidatedIpcHandler('window:step-zoom-factor', async (event, direction: number) => {
+            validateSender(event);
+            const win = getMainWindow();
+            const currentZoomFactor = win?.webContents.getZoomFactor() ?? 1;
+            const nextZoomFactor = clampZoomFactor(currentZoomFactor + (direction * WINDOW_ZOOM_STEP));
+            win?.webContents.setZoomFactor(nextZoomFactor);
+            await persistZoomFactor(settingsService, nextZoomFactor);
+            return { zoomFactor: nextZoomFactor };
+        }, {
+            argsSchema: z.tuple([z.number().min(-1).max(1)]),
+            responseSchema: zoomResponseSchema,
+        })
+    );
+
+    ipcMain.handle(
+        'window:reset-zoom-factor',
+        createValidatedIpcHandler('window:reset-zoom-factor', async event => {
+            validateSender(event);
+            const win = getMainWindow();
+            win?.webContents.setZoomFactor(1);
+            await persistZoomFactor(settingsService, 1);
+            return { zoomFactor: 1 };
+        }, {
+            argsSchema: z.tuple([]),
+            responseSchema: zoomResponseSchema,
+        })
+    );
 
     ipcMain.handle('window:openDetachedTerminal', async (event, optionsRaw: RuntimeValue) => {
         validateSender(event);
@@ -614,9 +712,12 @@ function registerShellHandlers(getMainWindow: () => BrowserWindow | null, allowe
         }
 
         return new Promise(resolve => {
-            const resolvedCommand = resolveWindowsCommand(command);
-            appLogger.info('WindowIPC', `Running command: ${resolvedCommand} ${args.join(' ')}`);
-            const child = spawn(resolvedCommand, args, {
+            const spawnCommand = createWindowsSpawnCommand(command, args);
+            appLogger.info(
+                'WindowIPC',
+                `Running command: ${spawnCommand.command} ${spawnCommand.args.join(' ')}`
+            );
+            const child = spawn(spawnCommand.command, spawnCommand.args, {
                 cwd: cwd ?? process.cwd(),
                 shell: false, // Disable shell for security
             });

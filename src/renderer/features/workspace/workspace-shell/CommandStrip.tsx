@@ -1,4 +1,4 @@
-import { AlertCircle, Bell, Check, CheckCircle2, ChevronsUpDown, GitBranch, Loader2 } from 'lucide-react';
+import { Bell, Check, ChevronsUpDown, GitBranch, Loader2, } from 'lucide-react';
 import React from 'react';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -17,6 +17,8 @@ interface CommandStripProps {
     activeFilePath?: string;
     activeFileContent?: string;
     activeFileType?: 'code' | 'image';
+    runningTaskCount?: number;
+    onRunWorkspace?: () => void;
     onBranchSelect?: (branch: string) => void | Promise<void>;
     onCommandClick?: () => void;
     onQuickSwitchClick?: () => void;
@@ -94,13 +96,10 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
     isBranchLoading = false,
     isBranchSwitching = false,
     notificationCount = 0,
-    status = 'ready',
     activeFilePath,
     activeFileContent,
     activeFileType = 'code',
     onBranchSelect,
-    onCommandClick,
-    onQuickSwitchClick,
     onMouseDown,
 }) => {
     const { t } = useTranslation(language);
@@ -210,54 +209,6 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
                         <span>{branchName}</span>
                     </div>
                 )}
-                <div className="flex items-center gap-1.5">
-                    {status === 'ready' && <CheckCircle2 className="w-3 h-3 text-success" />}
-                    {status === 'busy' && (
-                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                    )}
-                    {status === 'error' && <AlertCircle className="w-3 h-3 text-destructive" />}
-                    <span
-                        className={cn(
-                            status === 'ready'
-                                ? 'text-success/80'
-                                : status === 'error'
-                                  ? 'text-destructive/80'
-                                  : 'text-primary/80'
-                        )}
-                    >
-                        {status.toUpperCase()}
-                    </span>
-                </div>
-                {onCommandClick && (
-                    <button
-                        onMouseDown={e => {
-                            e.stopPropagation();
-                        }}
-                        onClick={e => {
-                            e.stopPropagation();
-                            onCommandClick();
-                        }}
-                        className="px-2 py-0.5 rounded-md border border-border/40 bg-muted/20 hover:bg-muted/40 text-xxs font-semibold text-foreground/80 transition-colors"
-                        title={t('shortcuts.commandPalette')}
-                    >
-                        {t('workspace.shortcutCombos.commandPalette')}
-                    </button>
-                )}
-                {onQuickSwitchClick && (
-                    <button
-                        onMouseDown={e => {
-                            e.stopPropagation();
-                        }}
-                        onClick={e => {
-                            e.stopPropagation();
-                            onQuickSwitchClick();
-                        }}
-                        className="px-2 py-0.5 rounded-md border border-border/40 bg-muted/20 hover:bg-muted/40 text-xxs font-semibold text-foreground/80 transition-colors"
-                        title={t('workspace.quickSwitch')}
-                    >
-                        {t('workspace.shortcutCombos.quickSwitch')}
-                    </button>
-                )}
             </div>
 
             {/* Right: System Stats */}
@@ -277,7 +228,12 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
                         <div className="w-px h-3 bg-white/10" />
                     </>
                 )}
-                <button className="flex items-center gap-1.5 hover:text-foreground transition-colors relative">
+                <button
+                    onMouseDown={e => {
+                        e.stopPropagation();
+                    }}
+                    className="flex items-center gap-1.5 hover:text-foreground transition-colors relative"
+                >
                     <Bell className="w-3 h-3" />
                     {notificationCount > 0 && (
                         <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-primary rounded-full" />

@@ -1,11 +1,11 @@
 const sectionData = {
-    "title": "Prompt Analysis",
-    "score": "Prompt Score",
+    "title": "Prompt analysis",
+    "score": "Prompt score",
     "suggestions": "Suggestions",
     "apply": "Apply",
     "dismiss": "Dismiss",
     "analyzing": "Analyzing...",
-    "noSuggestions": "Looking good! No suggestions."
+    "noSuggestions": "Looks good—no suggestions."
 };
 
 export default sectionData;

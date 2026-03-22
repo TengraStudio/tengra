@@ -1,17 +1,31 @@
 import { CommonBatches } from '@renderer/utils/ipc-batch.util';
+import type { Dispatch, SetStateAction } from 'react';
 
 import { generateId } from '@/lib/utils';
 import { Chat, Message } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface UseChatCRUDProps {
     currentChatId: string | null
     setCurrentChatId: (id: string | null) => void
-    setChats: React.Dispatch<React.SetStateAction<Chat[]>>
+    setChats: Dispatch<SetStateAction<Chat[]>>
     setInput: (input: string) => void
     baseDeleteFolder: (id: string, callback?: (deletedId: string) => void) => void | Promise<void>
 }
 
-export const useChatCRUD = (props: UseChatCRUDProps) => {
+export const useChatCRUD = (props: UseChatCRUDProps): {
+    createNewChat: () => void;
+    deleteChat: (id: string) => Promise<void>;
+    clearMessages: () => Promise<void>;
+    deleteFolder: (id: string) => void;
+    moveChatToFolder: (chatId: string, folderId: string | null) => Promise<void>;
+    addMessage: (chatId: string, role: string, content: string) => Promise<void>;
+    updateChat: (id: string, updates: Partial<Chat>) => Promise<void>;
+    togglePin: (id: string, isPinned: boolean) => Promise<void>;
+    toggleFavorite: (id: string, isFavorite: boolean) => Promise<void>;
+    bulkUpdateChats: (updates: Array<{ id: string; updates: Partial<Chat> }>) => Promise<void>;
+    bulkDeleteChats: (chatIds: string[]) => Promise<void>;
+} => {
     const { currentChatId, setCurrentChatId, setChats, setInput, baseDeleteFolder } = props;
 
     const createNewChat = () => {
@@ -25,7 +39,7 @@ export const useChatCRUD = (props: UseChatCRUDProps) => {
             setChats(prev => prev.filter(c => c.id !== id));
             if (currentChatId === id) { createNewChat(); }
         } catch (error) {
-            window.electron.log.error('Failed to delete chat', error as Error);
+            appLogger.error('useChatCRUD', 'Failed to delete chat', error as Error);
         }
     };
 
@@ -35,7 +49,7 @@ export const useChatCRUD = (props: UseChatCRUDProps) => {
             await window.electron.db.deleteMessages(currentChatId);
             setChats(prev => prev.map(c => c.id === currentChatId ? { ...c, messages: [] } : c));
         } catch (error) {
-            window.electron.log.error('Failed to clear messages', error as Error);
+            appLogger.error('useChatCRUD', 'Failed to clear messages', error as Error);
         }
     };
 
@@ -50,7 +64,7 @@ export const useChatCRUD = (props: UseChatCRUDProps) => {
             await window.electron.db.updateChat(chatId, { folderId });
             setChats(prev => prev.map(c => c.id === chatId ? { ...c, folderId: folderId ?? undefined } : c));
         } catch (error) {
-            window.electron.log.error('Failed to move chat to folder', error as Error);
+            appLogger.error('useChatCRUD', 'Failed to move chat to folder', error as Error);
         }
     };
 
@@ -61,7 +75,7 @@ export const useChatCRUD = (props: UseChatCRUDProps) => {
             const uiMessage: Message = { ...messageObj, id: generateId(), timestamp: new Date(messageObj.timestamp), role: role as 'user' | 'assistant' | 'system' };
             setChats(prev => prev.map(c => c.id === chatId ? { ...c, messages: [...c.messages, uiMessage] } : c));
         } catch (error) {
-            window.electron.log.error('Failed to add message', error as Error);
+            appLogger.error('useChatCRUD', 'Failed to add message', error as Error);
         }
     };
 
@@ -70,7 +84,7 @@ export const useChatCRUD = (props: UseChatCRUDProps) => {
             await window.electron.db.updateChat(id, updates);
             setChats(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
         } catch (error) {
-            window.electron.log.error('Failed to update chat', error as Error);
+            appLogger.error('useChatCRUD', 'Failed to update chat', error as Error);
         }
     };
 
@@ -91,7 +105,7 @@ export const useChatCRUD = (props: UseChatCRUDProps) => {
                 return update ? { ...c, ...update.updates } : c;
             }));
         } catch (error) {
-            window.electron.log.error('Failed to bulk update chats', error as Error);
+            appLogger.error('useChatCRUD', 'Failed to bulk update chats', error as Error);
         }
     };
 
@@ -103,7 +117,7 @@ export const useChatCRUD = (props: UseChatCRUDProps) => {
                 createNewChat();
             }
         } catch (error) {
-            window.electron.log.error('Failed to bulk delete chats', error as Error);
+            appLogger.error('useChatCRUD', 'Failed to bulk delete chats', error as Error);
         }
     };
 

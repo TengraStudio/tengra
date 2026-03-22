@@ -27,6 +27,21 @@ function validateSshCommand(command: string): void {
     }
 }
 
+function quoteSshShellArgument(value: string): string {
+    return `'${value.replace(/'/g, `'"'"'`)}'`;
+}
+
+function getSshParentPath(targetPath: string): string {
+    const separatorIndex = targetPath.lastIndexOf('/');
+    if (separatorIndex < 0) {
+        return '.';
+    }
+    if (separatorIndex === 0) {
+        return '/';
+    }
+    return targetPath.slice(0, separatorIndex);
+}
+
 function sanitizeConnectionForRenderer(connection: SSHConnection): Omit<SSHConnection, 'password' | 'privateKey' | 'passphrase'> {
     const safeConnection = { ...connection };
     delete safeConnection.password;
@@ -313,6 +328,25 @@ function registerFileSystemHandlers(
             validateSshPath(payload.newPath, 'ssh:rename newPath');
             const success = await sshService.rename(payload.connectionId, payload.oldPath, payload.newPath);
             return { success };
+        } catch (_error) {
+            return { success: false, error: getErrorMessage(_error as Error) };
+        }
+    });
+
+    secureHandle('ssh:copyPath', async (_event, payload: { connectionId: string; sourcePath: string; destinationPath: string }) => {
+        try {
+            validateSshPath(payload.sourcePath, 'ssh:copyPath sourcePath');
+            validateSshPath(payload.destinationPath, 'ssh:copyPath destinationPath');
+            const parentPath = getSshParentPath(payload.destinationPath);
+            const command = `mkdir -p -- ${quoteSshShellArgument(parentPath)} && cp -R -- ${quoteSshShellArgument(payload.sourcePath)} ${quoteSshShellArgument(payload.destinationPath)}`;
+            const result = await sshService.executeCommand(payload.connectionId, command);
+            if (result.code !== 0) {
+                return {
+                    success: false,
+                    error: result.stderr || result.stdout || 'Failed to copy remote path'
+                };
+            }
+            return { success: true };
         } catch (_error) {
             return { success: false, error: getErrorMessage(_error as Error) };
         }

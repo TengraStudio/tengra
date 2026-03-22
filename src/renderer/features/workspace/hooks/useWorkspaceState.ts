@@ -4,22 +4,49 @@ import {
     pushNotification,
     useNotificationCenterStore,
 } from '@/store/notification-center.store';
-import { setWorkspaceShellState, useUiLayoutStore } from '@/store/ui-layout.store';
+import {
+    selectWorkspaceShellState,
+    setWorkspaceShellState,
+    useUiLayoutStore,
+    WorkspaceShellState,
+} from '@/store/ui-layout.store';
+import {
+    setWorkspaceExplorerLastSelectedEntry,
+    setWorkspaceExplorerSelectedEntries,
+    useWorkspaceExplorerStore,
+} from '@/store/workspace-explorer.store';
 import { WorkspaceEntry } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
-export function useWorkspaceState() {
-    const [selectedEntries, setSelectedEntries] = useState<WorkspaceEntry[]>([]);
-    const [lastSelectedEntry, setLastSelectedEntry] = useState<WorkspaceEntry | null>(null);
-    const persistedWorkspaceShell = useUiLayoutStore(snapshot => snapshot.workspaceShell);
+export function useWorkspaceState(workspaceId: string) {
+    const selectedEntries = useWorkspaceExplorerStore(
+        workspaceId,
+        snapshot => snapshot.selectedEntries
+    );
+    const lastSelectedEntry = useWorkspaceExplorerStore(
+        workspaceId,
+        snapshot => snapshot.lastSelectedEntry
+    );
+    const persistedWorkspaceShell = useUiLayoutStore(snapshot =>
+        selectWorkspaceShellState(snapshot, workspaceId)
+    );
     const [sidebarCollapsed, setSidebarCollapsedState] = useState(
         persistedWorkspaceShell.sidebarCollapsed
     );
-    const [showAgentPanel, setShowAgentPanel] = useState(false);
+    const [showAgentPanel, setShowAgentPanelState] = useState(
+        persistedWorkspaceShell.showAgentPanel
+    );
     const [agentPanelWidth, setAgentPanelWidthState] = useState(persistedWorkspaceShell.agentPanelWidth);
-    const [showTerminal, setShowTerminal] = useState(false);
+    const [showTerminal, setShowTerminalState] = useState(
+        persistedWorkspaceShell.showTerminal
+    );
     const [terminalHeight, setTerminalHeightState] = useState(persistedWorkspaceShell.terminalHeight);
-    const [showLogoModal, setShowLogoModal] = useState(false);
+    const [terminalFloating, setTerminalFloatingState] = useState(
+        persistedWorkspaceShell.terminalFloating
+    );
+    const [terminalMaximized, setTerminalMaximizedState] = useState(
+        persistedWorkspaceShell.terminalMaximized
+    );
 
     const [showMountModal, setShowMountModal] = useState(false);
     const [entryModal, setEntryModal] = useState<{
@@ -41,26 +68,56 @@ export function useWorkspaceState() {
 
     useEffect(() => {
         setSidebarCollapsedState(persistedWorkspaceShell.sidebarCollapsed);
+        setShowAgentPanelState(persistedWorkspaceShell.showAgentPanel);
         setAgentPanelWidthState(persistedWorkspaceShell.agentPanelWidth);
+        setShowTerminalState(persistedWorkspaceShell.showTerminal);
         setTerminalHeightState(persistedWorkspaceShell.terminalHeight);
+        setTerminalFloatingState(persistedWorkspaceShell.terminalFloating);
+        setTerminalMaximizedState(persistedWorkspaceShell.terminalMaximized);
     }, [persistedWorkspaceShell]);
 
     const setSidebarCollapsed = useCallback((collapsed: boolean) => {
         setSidebarCollapsedState(collapsed);
-        setWorkspaceShellState({ sidebarCollapsed: collapsed });
-    }, []);
+        setWorkspaceShellState(workspaceId, { sidebarCollapsed: collapsed });
+    }, [workspaceId]);
+
+    const setShowAgentPanel = useCallback((show: boolean) => {
+        setShowAgentPanelState(show);
+        setWorkspaceShellState(workspaceId, { showAgentPanel: show });
+    }, [workspaceId]);
 
     const setAgentPanelWidth = useCallback((width: number) => {
         const nextWidth = Math.max(260, Math.min(640, Math.floor(width)));
         setAgentPanelWidthState(nextWidth);
-        setWorkspaceShellState({ agentPanelWidth: nextWidth });
-    }, []);
+        setWorkspaceShellState(workspaceId, { agentPanelWidth: nextWidth });
+    }, [workspaceId]);
+
+    const setShowTerminal = useCallback((show: boolean) => {
+        setShowTerminalState(show);
+        setWorkspaceShellState(workspaceId, { showTerminal: show });
+    }, [workspaceId]);
 
     const setTerminalHeight = useCallback((height: number) => {
         const nextHeight = Math.max(150, Math.min(900, Math.floor(height)));
         setTerminalHeightState(nextHeight);
-        setWorkspaceShellState({ terminalHeight: nextHeight });
-    }, []);
+        setWorkspaceShellState(workspaceId, { terminalHeight: nextHeight });
+    }, [workspaceId]);
+
+    const setTerminalLayoutState = useCallback((
+        update: Partial<Pick<
+            WorkspaceShellState,
+            'terminalFloating' | 'terminalMaximized'
+        >>
+    ) => {
+        const nextFloating = update.terminalFloating ?? terminalFloating;
+        const nextMaximized = update.terminalMaximized ?? terminalMaximized;
+        setTerminalFloatingState(nextFloating);
+        setTerminalMaximizedState(nextMaximized);
+        setWorkspaceShellState(workspaceId, {
+            terminalFloating: nextFloating,
+            terminalMaximized: nextMaximized,
+        });
+    }, [terminalFloating, terminalMaximized, workspaceId]);
 
     const notify = useCallback((type: 'success' | 'error' | 'info', message: string) => {
         pushNotification({
@@ -73,6 +130,20 @@ export function useWorkspaceState() {
     const logActivity = useCallback((title: string, detail?: string) => {
         appLogger.warn('Activity', `${title}: ${detail}`);
     }, []);
+
+    const setSelectedEntries = useCallback(
+        (update: WorkspaceEntry[] | ((prevState: WorkspaceEntry[]) => WorkspaceEntry[])) => {
+            setWorkspaceExplorerSelectedEntries(workspaceId, update);
+        },
+        [workspaceId]
+    );
+
+    const setLastSelectedEntry = useCallback(
+        (entry: WorkspaceEntry | null) => {
+            setWorkspaceExplorerLastSelectedEntry(workspaceId, entry);
+        },
+        [workspaceId]
+    );
 
     return {
         selectedEntries,
@@ -89,8 +160,9 @@ export function useWorkspaceState() {
         setShowTerminal,
         terminalHeight,
         setTerminalHeight,
-        showLogoModal,
-        setShowLogoModal,
+        terminalFloating,
+        terminalMaximized,
+        setTerminalLayoutState,
         showMountModal,
         setShowMountModal,
         entryModal,

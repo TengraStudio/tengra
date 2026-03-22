@@ -1,11 +1,5 @@
-import { ar } from '@renderer/i18n/ar';
-import { de } from '@renderer/i18n/de';
 import { en } from '@renderer/i18n/en';
-import { es } from '@renderer/i18n/es';
-import { fr } from '@renderer/i18n/fr';
-import { ja } from '@renderer/i18n/ja';
 import { tr } from '@renderer/i18n/tr';
-import { zh } from '@renderer/i18n/zh';
 import { Download, Globe } from 'lucide-react';
 import React, { useMemo } from 'react';
 
@@ -18,23 +12,11 @@ type TranslationObject = Record<string, RendererDataValue>;
 const ALL_TRANSLATIONS: Record<Language, TranslationObject> = {
     en: en as TypeAssertionValue as TranslationObject,
     tr: tr as TypeAssertionValue as TranslationObject,
-    de: de as TypeAssertionValue as TranslationObject,
-    fr: fr as TypeAssertionValue as TranslationObject,
-    es: es as TypeAssertionValue as TranslationObject,
-    ja: ja as TypeAssertionValue as TranslationObject,
-    zh: zh as TypeAssertionValue as TranslationObject,
-    ar: ar as TypeAssertionValue as TranslationObject,
 };
 
 const LANGUAGE_LABELS: Record<Language, string> = {
     en: 'English',
     tr: 'Türkçe',
-    de: 'Deutsch',
-    fr: 'Français',
-    es: 'Español',
-    ja: '日本語',
-    zh: '中文',
-    ar: 'العربية',
 };
 
 /** Flatten a nested object into dot-separated keys. */

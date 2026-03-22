@@ -2,6 +2,7 @@
 export type { GroupedModels, ModelInfo } from '@/types/model.types';
 
 import type { GroupedModels, ModelInfo } from '@/types/model.types';
+import { appLogger } from '@/utils/renderer-logger';
 
 // Simple in-memory cache for model fetches
 let modelCache: { data: ModelInfo[]; timestamp: number } | null = null;
@@ -114,7 +115,7 @@ export async function fetchModels(bypassCache = false): Promise<ModelInfo[]> {
 
         return await inFlightModelRequest;
     } catch (error) {
-        window.electron.log.error('Failed to fetch models', error as Error);
+        appLogger.error('ModelFetcher', 'Failed to fetch models', error as Error);
         return [];
     }
 }

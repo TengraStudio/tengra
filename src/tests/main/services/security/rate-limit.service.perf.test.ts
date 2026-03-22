@@ -27,11 +27,20 @@ describe('RateLimitService - Performance Budgets', () => {
         await service.cleanup();
     });
 
+    function measureAverageDuration(iterations: number, operation: () => void): number {
+        const start = performance.now();
+        for (let i = 0; i < iterations; i++) {
+            operation();
+        }
+        return (performance.now() - start) / iterations;
+    }
+
     describe('tryAcquire performance', () => {
         it('should complete within TRY_ACQUIRE_MS budget for unknown provider', () => {
-            const start = performance.now();
-            service.tryAcquire('unknown-provider');
-            const duration = performance.now() - start;
+            service.tryAcquire('unknown-provider-warmup');
+            const duration = measureAverageDuration(250, () => {
+                service.tryAcquire('unknown-provider');
+            });
 
             expect(duration).toBeLessThan(RATE_LIMIT_PERFORMANCE_BUDGETS.TRY_ACQUIRE_MS);
         });

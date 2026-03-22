@@ -11,7 +11,7 @@ const sectionData = {
     "stderr": "Stderr",
     "errors": {
         "validationFailed": "Kod korumalı alan isteği geçersiz.",
-        "executionFailed": "Kod yürütme başarısız oldu. Lütfen kodunuzu kontrol edip tekrar deneyin.",
+        "executionFailed": "Kod çalıştırılamadı. Lütfen kodunuzu kontrol edip tekrar deneyin.",
         "securityBlocked": "Korumalı alan güvenlik politikası tarafından engellendi.",
         "timeout": "Çalıştırma zaman aşımına uğradı."
     },
@@ -19,7 +19,7 @@ const sectionData = {
         "javascript": "JavaScript",
         "typescript": "TypeScript",
         "python": "Python",
-        "shell": "Kabuk"
+        "shell": "Shell"
     }
 };
 

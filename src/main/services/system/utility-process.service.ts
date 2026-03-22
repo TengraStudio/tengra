@@ -1,6 +1,5 @@
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
-import { JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { UtilityProcess, utilityProcess } from 'electron';
 
@@ -11,19 +10,42 @@ export interface UtilityProcessOptions {
     env?: Record<string, string>;
 }
 
+interface UtilityProcessRequest {
+    requestId: string;
+    type: string;
+    payload?: RuntimeValue;
+}
+
+interface UtilityProcessResponse {
+    requestId: string;
+    success: boolean;
+    payload?: RuntimeValue;
+    error?: string;
+}
+
+type UtilityProcessMessage = RuntimeValue | UtilityProcessResponse;
+
+interface PendingUtilityProcessRequest {
+    resolve: (value: RuntimeValue) => void;
+    reject: (reason?: Error) => void;
+    timeout: NodeJS.Timeout;
+}
+
 /**
  * Service to manage Electron's UtilityProcess workers.
  * These are more efficient than full BrowserWindow workers and isolated from the main process.
  */
 export class UtilityProcessService extends BaseService {
-    private processes: Map<string, UtilityProcess> = new Map();
+    private readonly processes = new Map<string, UtilityProcess>();
+    private readonly pendingRequests = new Map<string, PendingUtilityProcessRequest>();
+    private readonly messageListeners = new Map<string, Set<(message: RuntimeValue) => void>>();
 
     constructor() {
         super('UtilityProcessService');
     }
 
     async initialize(): Promise<void> {
-        appLogger.info('UtilityProcessService', 'Utility process service initialized.');
+        appLogger.debug('UtilityProcessService', 'Utility process service initialized.');
     }
 
     /**
@@ -32,7 +54,7 @@ export class UtilityProcessService extends BaseService {
     spawn(options: UtilityProcessOptions): string {
         try {
             const processId = `${options.name}-${Math.random().toString(36).substring(2, 9)}`;
-            
+
             const child = utilityProcess.fork(options.entryPoint, options.args || [], {
                 env: { ...process.env, ...options.env },
                 execArgv: ['--no-warnings'],
@@ -40,11 +62,13 @@ export class UtilityProcessService extends BaseService {
             });
 
             child.on('spawn', () => {
-                appLogger.info('UtilityProcessService', `Process ${options.name} (${processId}) spawned successfully.`);
+                appLogger.debug('UtilityProcessService', `Process ${options.name} (${processId}) spawned successfully.`);
             });
 
             child.on('exit', (code) => {
                 appLogger.info('UtilityProcessService', `Process ${options.name} (${processId}) exited with code ${code}.`);
+                this.clearPendingRequestsForProcess(processId, `Process exited with code ${code}`);
+                this.messageListeners.delete(processId);
                 this.processes.delete(processId);
             });
 
@@ -53,6 +77,9 @@ export class UtilityProcessService extends BaseService {
             });
 
             this.processes.set(processId, child);
+            child.on('message', (message: UtilityProcessMessage) => {
+                this.handleProcessMessage(processId, message);
+            });
             return processId;
         } catch (error) {
             appLogger.error('UtilityProcessService', `Failed to spawn ${options.name}: ${getErrorMessage(error)}`);
@@ -60,7 +87,7 @@ export class UtilityProcessService extends BaseService {
         }
     }
 
-    postMessage(processId: string, message: JsonValue): void {
+    postMessage(processId: string, message: RuntimeValue): void {
         const child = this.processes.get(processId);
         if (child) {
             child.postMessage(message);
@@ -69,19 +96,44 @@ export class UtilityProcessService extends BaseService {
         }
     }
 
-    onMessage(processId: string, callback: (message: JsonValue) => void): void {
+    onMessage(processId: string, callback: (message: RuntimeValue) => void): void {
         const child = this.processes.get(processId);
         if (child) {
-            child.on('message', (message: JsonValue) => {
-                callback(message);
-            });
+            const listeners = this.messageListeners.get(processId) ?? new Set<(message: RuntimeValue) => void>();
+            listeners.add(callback);
+            this.messageListeners.set(processId, listeners);
         }
+    }
+
+    request(processId: string, type: string, payload?: RuntimeValue, timeoutMs = 10_000): Promise<RuntimeValue> {
+        const child = this.processes.get(processId);
+        if (!child) {
+            return Promise.reject(new Error(`Process ${processId} not found.`));
+        }
+
+        const requestId = `${processId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        return new Promise<RuntimeValue>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                this.pendingRequests.delete(requestId);
+                reject(new Error(`Utility process request timed out: ${type}`));
+            }, timeoutMs);
+
+            this.pendingRequests.set(requestId, { resolve, reject, timeout });
+            const message: UtilityProcessRequest = {
+                requestId,
+                type,
+                payload,
+            };
+            child.postMessage(message);
+        });
     }
 
     terminate(processId: string): boolean {
         const child = this.processes.get(processId);
         if (child) {
             child.kill();
+            this.clearPendingRequestsForProcess(processId, 'Process terminated');
+            this.messageListeners.delete(processId);
             this.processes.delete(processId);
             return true;
         }
@@ -94,6 +146,58 @@ export class UtilityProcessService extends BaseService {
             child.kill();
             appLogger.debug('UtilityProcessService', `Terminated ${id}`);
         }
+        for (const pendingRequest of this.pendingRequests.values()) {
+            clearTimeout(pendingRequest.timeout);
+        }
+        this.pendingRequests.clear();
+        this.messageListeners.clear();
         this.processes.clear();
+    }
+
+    private handleProcessMessage(processId: string, message: UtilityProcessMessage): void {
+        if (this.isUtilityProcessResponse(message)) {
+            const pendingRequest = this.pendingRequests.get(message.requestId);
+            if (!pendingRequest) {
+                return;
+            }
+
+            clearTimeout(pendingRequest.timeout);
+            this.pendingRequests.delete(message.requestId);
+            if (message.success) {
+                pendingRequest.resolve(message.payload ?? null);
+            } else {
+                pendingRequest.reject(new Error(message.error ?? 'Utility process request failed'));
+            }
+            return;
+        }
+
+        const listeners = this.messageListeners.get(processId);
+        if (!listeners) {
+            return;
+        }
+        listeners.forEach(listener => listener(message as RuntimeValue));
+    }
+
+    private clearPendingRequestsForProcess(processId: string, reason: string): void {
+        for (const [requestId, pendingRequest] of this.pendingRequests.entries()) {
+            if (!requestId.startsWith(`${processId}-`)) {
+                continue;
+            }
+            clearTimeout(pendingRequest.timeout);
+            pendingRequest.reject(new Error(reason));
+            this.pendingRequests.delete(requestId);
+        }
+    }
+
+    private isUtilityProcessResponse(message: UtilityProcessMessage): message is UtilityProcessResponse {
+        if (!message || typeof message !== 'object' || Array.isArray(message)) {
+            return false;
+        }
+        return (
+            'requestId' in message
+            && typeof message.requestId === 'string'
+            && 'success' in message
+            && typeof message.success === 'boolean'
+        );
     }
 }

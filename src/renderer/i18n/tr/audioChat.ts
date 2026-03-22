@@ -1,14 +1,14 @@
 const sectionData = {
     "listening": "Dinleniyor...",
     "listeningLabel": "Dinleniyor",
-    "listeningDesc": "Sizi dinliyorum.",
+    "listeningDesc": "Sizi dinliyor.",
     "speaking": "Konuşuluyor...",
-    "speakingDesc": "Sizinle konuşuyorum.",
+    "speakingDesc": "Yanıt veriyor.",
     "thinking": "Düşünülüyor...",
     "thinkingDesc": "İsteğiniz işleniyor.",
-    "stopSpeaking": "Konuşmayı Durdur",
+    "stopSpeaking": "Konuşmayı durdur",
     "pauseListening": "Duraklat",
-    "resumeListening": "Devam Et"
+    "resumeListening": "Devam et"
 };
 
 export default sectionData;

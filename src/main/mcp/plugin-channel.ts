@@ -144,7 +144,7 @@ export class PluginChannel {
      */
     advertiseCapabilities(pluginId: string, handledTypes: string[]): void {
         this.capabilities.set(pluginId, new Set(handledTypes));
-        appLogger.info('PluginChannel', `Plugin '${pluginId}' advertises: ${handledTypes.join(', ')}`);
+        appLogger.debug('PluginChannel', `Plugin '${pluginId}' advertises: ${handledTypes.join(', ')}`);
     }
 
     /**

@@ -117,7 +117,7 @@ export function registerGitIpc(
     brainService?: BrainService
 ) {
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'git operation');
-    appLogger.info('GitIPC', 'Registering Git IPC handlers');
+    appLogger.debug('GitIPC', 'Registering Git IPC handlers');
     registerStatusHandlers(gitService, validateSender);
     registerHistoryHandlers(gitService, validateSender);
     registerDiffHandlers(gitService, validateSender);
@@ -470,30 +470,6 @@ function parseTrackingCounts(result: { success: boolean; stdout?: string }, trac
  * @param gitService - Git service instance for executing git commands
  */
 function registerHistoryHandlers(gitService: GitService, validateSender: SenderValidator) {
-    ipcMain.handle('git:getLastCommit', createValidatedIpcHandler('git:getLastCommit', async (event, cwd: string) => {
-        validateSender(event);
-        const result = await gitService.executeRaw(
-            cwd,
-            'log -1 --pretty=format:"%h|%s|%an|%ar|%cI"'
-        );
-        if (result.success && result.stdout) {
-            const parts = result.stdout.trim().split('|');
-            const [hash, message, author, relativeTime, date] = parts;
-            return {
-                success: true,
-                hash: hash,
-                message: message,
-                author: author,
-                relativeTime: relativeTime,
-                date: date,
-            };
-        }
-        return { success: false, error: 'No commits found' };
-    }, {
-        defaultValue: { success: false, error: 'Failed to get last commit' },
-        argsSchema: z.tuple([CwdSchema])
-    }));
-
     ipcMain.handle('git:getRecentCommits', createValidatedIpcHandler('git:getRecentCommits', async (event, cwd: string, count?: number) => {
         validateSender(event);
         const result = await gitService.getLog(cwd, count || 10);

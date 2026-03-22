@@ -54,7 +54,38 @@ function safeSend(sender: WebContents, channel: string, ...args: RuntimeValue[])
     }
 }
 
+const STREAM_CHUNK_BINARY_THRESHOLD_BYTES = 4_096;
+
+function shouldSendBinaryConversationChunk(chunk: Record<string, RuntimeValue>): boolean {
+    const content = typeof chunk.content === 'string' ? chunk.content : '';
+    const reasoning = typeof chunk.reasoning === 'string' ? chunk.reasoning : '';
+    return content.length + reasoning.length >= STREAM_CHUNK_BINARY_THRESHOLD_BYTES;
+}
+
+function encodeConversationChunk(
+    chunk: Record<string, RuntimeValue>
+): Uint8Array | null {
+    try {
+        return new TextEncoder().encode(JSON.stringify(chunk));
+    } catch (error) {
+        appLogger.warn('IPC', 'Failed to encode binary conversation chunk', {
+            error: getErrorMessage(error as Error),
+        });
+        return null;
+    }
+}
+
 function safeSendConversationChunk(sender: WebContents, chunk: Record<string, RuntimeValue>): boolean {
+    if (shouldSendBinaryConversationChunk(chunk)) {
+        const encodedChunk = encodeConversationChunk(chunk);
+        if (encodedChunk) {
+            return safeSend(
+                sender,
+                SESSION_CONVERSATION_CHANNELS.STREAM_CHUNK_BINARY,
+                encodedChunk
+            );
+        }
+    }
     return safeSend(sender, SESSION_CONVERSATION_CHANNELS.STREAM_CHUNK, chunk);
 }
 
@@ -372,7 +403,7 @@ class SessionConversationIpcManager {
             await this.chatSessionRegistryService.markStreaming(sanitized.chatId);
             if (sanitized.provider === 'copilot') {
                 const body = await this.options.copilotService.streamChat(finalMessages, sanitized.model, sanitized.tools);
-                if (!body) { throw new Error('Failed to start Copilot stream'); }
+                if (!body) { throw new Error('error.copilot.stream_start_failed'); }
                 await this.handleCopilotStream(body as ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>, sanitized.chatId, sanitized.model, event);
             } else if (sanitized.provider === 'opencode') {
                 await this.handleOpencodeStream({ messages: finalMessages, model: sanitized.model, tools: sanitized.tools, chatId: sanitized.chatId, event, signal });
@@ -452,9 +483,9 @@ class SessionConversationIpcManager {
 
     private sanitizeRequestParams(params: { messages: Message[], model: string, provider: string, tools?: ToolDefinition[], workspaceId?: string, systemMode?: SystemMode }) {
         const { messages, model, provider, tools, workspaceId, systemMode } = params;
-        if (!Array.isArray(messages) || messages.length === 0) { throw new Error('Messages must be a non-empty array'); }
-        if (!model) { throw new Error('Model must be a non-empty string'); }
-        if (!provider) { throw new Error('Provider must be a non-empty string'); }
+        if (!Array.isArray(messages) || messages.length === 0) { throw new Error('error.chat.invalid_messages'); }
+        if (!model) { throw new Error('error.chat.invalid_model'); }
+        if (!provider) { throw new Error('error.chat.invalid_provider'); }
 
         return {
             messages: messages.map(m => this.sanitizeChatMessage(m)),
@@ -484,7 +515,7 @@ class SessionConversationIpcManager {
 
     private sanitizeStreamInputs(params: { messages: Message[], model: string, provider: string, chatId: string, tools?: ToolDefinition[], workspaceId?: string, systemMode?: SystemMode }) {
         const { messages, model, provider, chatId, tools, workspaceId, systemMode } = params;
-        if (!chatId) { throw new Error('Chat ID must be a non-empty string'); }
+        if (!chatId) { throw new Error('error.chat.invalid_id'); }
 
         const sanitized = this.sanitizeRequestParams({ messages, model, provider, tools, workspaceId, systemMode });
         return {
@@ -742,7 +773,7 @@ class SessionConversationIpcManager {
 
         const dbMessages = await this.options.databaseService.chats.getMessages(chatId);
         if (!dbMessages || dbMessages.length === 0) {
-            throw new Error('No messages found for the given chat');
+            throw new Error('error.chat.no_messages');
         }
 
         const assistantIdx = dbMessages.findIndex(m => String(m.id) === messageId);
@@ -753,7 +784,7 @@ class SessionConversationIpcManager {
         const precedingMessages = dbMessages.slice(0, assistantIdx);
         const lastUserMsg = [...precedingMessages].reverse().find(m => m.role === 'user');
         if (!lastUserMsg) {
-            throw new Error('No preceding user message found to retry');
+            throw new Error('error.chat.no_user_message_to_retry');
         }
 
         const contextMessages: Message[] = precedingMessages.map(m => ({

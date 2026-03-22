@@ -652,6 +652,25 @@ export class DatabaseService extends BaseService {
                     'DROP INDEX IF EXISTS idx_linked_accounts_is_active'
                 ],
                 checksum: 'mig-v2-linked-accounts-indexes'
+            },
+            {
+                version: 3,
+                name: 'workspace_intelligence_hot_path_indexes',
+                up: [
+                    'CREATE INDEX IF NOT EXISTS idx_code_symbols_workspace_path ON code_symbols(workspace_path)',
+                    'CREATE INDEX IF NOT EXISTS idx_code_symbols_workspace_name ON code_symbols(workspace_path, name COLLATE NOCASE)',
+                    'CREATE INDEX IF NOT EXISTS idx_code_symbols_workspace_file ON code_symbols(workspace_path, file_path)',
+                    'CREATE INDEX IF NOT EXISTS idx_semantic_fragments_workspace_path ON semantic_fragments(workspace_path)',
+                    'CREATE INDEX IF NOT EXISTS idx_semantic_fragments_workspace_source ON semantic_fragments(workspace_path, source)'
+                ],
+                down: [
+                    'DROP INDEX IF EXISTS idx_code_symbols_workspace_path',
+                    'DROP INDEX IF EXISTS idx_code_symbols_workspace_name',
+                    'DROP INDEX IF EXISTS idx_code_symbols_workspace_file',
+                    'DROP INDEX IF EXISTS idx_semantic_fragments_workspace_path',
+                    'DROP INDEX IF EXISTS idx_semantic_fragments_workspace_source'
+                ],
+                checksum: 'mig-v3-workspace-intelligence-indexes'
             }
         ];
     }

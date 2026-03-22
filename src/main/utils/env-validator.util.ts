@@ -126,7 +126,7 @@ function logValidationResults(result: ValidationResult) {
     }
 
     if (result.valid && result.warnings.length === 0) {
-        appLogger.info('EnvValidator', 'All environment variables are configured');
+        appLogger.debug('EnvValidator', 'All environment variables are configured');
     }
 }
 

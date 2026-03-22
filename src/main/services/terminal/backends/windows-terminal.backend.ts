@@ -36,10 +36,10 @@ export class WindowsTerminalBackend implements ITerminalBackend {
 
     public async create(options: TerminalCreateOptions): Promise<ITerminalProcess> {
         if (!(await this.isAvailable())) {
-            throw new Error('Windows Terminal is not installed or not available on this OS');
+            throw new Error('error.terminal.windows_terminal_unsupported');
         }
         if (!this.windowsTerminalPath) {
-            throw new Error('Windows Terminal path could not be resolved');
+            throw new Error('error.terminal.windows_terminal_path_unresolved');
         }
 
         appLogger.info('WindowsTerminalBackend', `Opening Windows Terminal session: ${options.id}`);
@@ -97,7 +97,7 @@ export class WindowsTerminalBackend implements ITerminalBackend {
             const result = stdout.trim();
             if (result) {
                 const first = result.split(/\r?\n/)[0].trim();
-                appLogger.info('WindowsTerminalBackend', `Found wt.exe at: ${first}`);
+                appLogger.debug('WindowsTerminalBackend', `Found wt.exe at: ${first}`);
                 return first;
             }
         } catch {
@@ -112,7 +112,7 @@ export class WindowsTerminalBackend implements ITerminalBackend {
         for (const candidate of commonPaths) {
             try {
                 await fs.promises.access(candidate, fs.constants.F_OK);
-                appLogger.info('WindowsTerminalBackend', `Found wt.exe at common location: ${candidate}`);
+                appLogger.debug('WindowsTerminalBackend', `Found wt.exe at common location: ${candidate}`);
                 return candidate;
             } catch {
                 // Ignore failed path checks.

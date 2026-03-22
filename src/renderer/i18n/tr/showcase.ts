@@ -1,225 +1,225 @@
 const sectionData = {
     "categories": {
         "ui": "UI",
-        "forms": "Forms",
-        "layout": "Layout",
-        "overlay": "Overlay",
-        "other": "Other"
+        "forms": "Formlar",
+        "layout": "Yerleşim",
+        "overlay": "Katman",
+        "other": "Diğer"
     },
     "preview": {
-        "title": "Preview",
-        "toggleThemeAria": "Toggle theme"
+        "title": "Önizleme",
+        "toggleThemeAria": "Temayı değiştir"
     },
     "story": {
-        "button": "Button",
-        "rippleButton": "RippleButton",
-        "card": "Card",
-        "animatedCard": "AnimatedCard",
-        "badge": "Badge",
-        "input": "Input",
-        "textarea": "Textarea",
-        "modal": "Modal",
-        "confirmationModal": "ConfirmationModal",
-        "formModal": "Form Modal"
+        "button": "Buton",
+        "rippleButton": "Dalga butonu",
+        "card": "Kart",
+        "animatedCard": "Animasyonlu kart",
+        "badge": "Rozet",
+        "input": "Giriş",
+        "textarea": "Metin alanı",
+        "modal": "Pencere",
+        "confirmationModal": "Onay penceresi",
+        "formModal": "Form penceresi"
     },
     "variants": {
-        "default": "Default",
-        "primary": "Primary",
-        "secondary": "Secondary",
-        "outline": "Outline",
-        "ghost": "Ghost",
-        "destructive": "Destructive",
+        "default": "Varsayılan",
+        "primary": "Birincil",
+        "secondary": "İkincil",
+        "outline": "Çerçeveli",
+        "ghost": "Hayalet",
+        "destructive": "Yıkıcı",
         "link": "Link",
-        "small": "Small",
-        "large": "Large",
-        "withIcon": "With Icon",
-        "saveIcon": "Save Icon",
-        "loading": "Loading",
-        "disabled": "Disabled",
-        "basic": "Basic",
-        "withBadge": "With Badge",
-        "longContent": "Long Content",
-        "lift": "Lift",
-        "glow": "Glow",
-        "scale": "Scale",
+        "small": "Küçük",
+        "large": "Büyük",
+        "withIcon": "İkonlu",
+        "saveIcon": "Kaydet ikonu",
+        "loading": "Yükleniyor",
+        "disabled": "Devre dışı",
+        "basic": "Temel",
+        "withBadge": "Rozetli",
+        "longContent": "Uzun içerik",
+        "lift": "Yükselme",
+        "glow": "Parlama",
+        "scale": "Ölçek",
         "perspective3d": "3D",
-        "none": "None",
-        "error": "Error",
-        "success": "Success",
-        "password": "Password",
-        "withLabel": "With Label",
-        "withErrorLabel": "With Error Label",
-        "customRows": "Custom Rows",
-        "withFooter": "With Footer",
-        "danger": "Danger",
-        "warning": "Warning",
-        "info": "Info",
-        "createForm": "Create Form"
+        "none": "Yok",
+        "error": "Hata",
+        "success": "Başarılı",
+        "password": "Parola",
+        "withLabel": "Etiketli",
+        "withErrorLabel": "Hata etiketli",
+        "customRows": "Özel satırlar",
+        "withFooter": "Alt bilgiyle",
+        "danger": "Tehlike",
+        "warning": "Uyarı",
+        "info": "Bilgi",
+        "createForm": "Form oluştur"
     },
     "button": {
         "text": {
-            "primaryButton": "Primary Button",
-            "secondary": "Secondary",
-            "outline": "Outline",
-            "ghost": "Ghost",
-            "delete": "Delete",
-            "linkButton": "Link Button",
-            "small": "Small",
-            "large": "Large",
-            "create": "Create",
-            "save": "Save",
-            "saving": "Saving...",
-            "disabled": "Disabled"
+            "primaryButton": "Birincil buton",
+            "secondary": "İkincil",
+            "outline": "Çerçeveli",
+            "ghost": "Hayalet",
+            "delete": "Sil",
+            "linkButton": "Bağlantı butonu",
+            "small": "Küçük",
+            "large": "Büyük",
+            "create": "Oluştur",
+            "save": "Kaydet",
+            "saving": "Kaydediliyor...",
+            "disabled": "Devre dışı"
         },
         "descriptions": {
-            "compact": "Compact size",
-            "large": "Large size"
+            "compact": "Kompakt boyut",
+            "large": "Büyük boyut"
         }
     },
     "rippleButton": {
         "text": {
-            "default": "Ripple Default",
-            "primary": "Primary Ripple",
-            "secondary": "Secondary",
-            "ghost": "Ghost",
-            "danger": "Danger",
-            "small": "Small",
-            "large": "Large Ripple"
+            "default": "Varsayılan dalga",
+            "primary": "Birincil dalga",
+            "secondary": "İkincil",
+            "ghost": "Hayalet",
+            "danger": "Tehlike",
+            "small": "Küçük",
+            "large": "Büyük dalga"
         }
     },
     "card": {
         "fallback": {
-            "title": "Card Title",
-            "badge": "New",
-            "content": "This is the card content area. It supports any React children."
+            "title": "Kart başlığı",
+            "badge": "Yeni",
+            "content": "Burası kartın içerik alanıdır. Her türlü React içeriğini destekler."
         },
         "titles": {
-            "basic": "Basic Card",
-            "feature": "Feature",
-            "details": "Details"
+            "basic": "Temel kart",
+            "feature": "Özellik",
+            "details": "Detaylar"
         },
         "badges": {
             "beta": "Beta"
         },
         "contents": {
-            "simple": "Simple card with content.",
+            "simple": "İçerikli basit kart.",
             "long": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
         }
     },
     "animatedCard": {
         "fallback": {
-            "title": "Animated Card",
-            "content": "Hover to see the animation effect."
+            "title": "Animasyonlu kart",
+            "content": "Animasyonu görmek için üzerine gelin."
         },
         "titles": {
-            "lift": "Lift Effect",
-            "glow": "Glow Effect",
-            "scale": "Scale Effect",
-            "perspective3d": "3D Perspective",
-            "none": "No Effect"
+            "lift": "Yükselme efekti",
+            "glow": "Parlama efekti",
+            "scale": "Ölçek efekti",
+            "perspective3d": "3B perspektif",
+            "none": "Efekt yok"
         }
     },
     "badge": {
         "fallback": {
-            "label": "Badge"
+            "label": "Rozet"
         },
         "text": {
-            "default": "Default",
-            "secondary": "Secondary",
-            "error": "Error",
-            "outline": "Outline"
+            "default": "Varsayılan",
+            "secondary": "İkincil",
+            "error": "Hata",
+            "outline": "Çerçeveli"
         }
     },
     "input": {
         "fallback": {
-            "label": "Label"
+            "label": "Etiket"
         },
         "validation": {
-            "required": "This field is required"
+            "required": "Bu alan zorunludur"
         },
         "labels": {
-            "email": "Email",
-            "username": "Username"
+            "email": "E-posta",
+            "username": "Kullanıcı adı"
         },
         "descriptions": {
-            "errorLabel": "Shows validation error below input"
+            "errorLabel": "Doğrulama hatasını girişin altında gösterir"
         },
         "placeholders": {
-            "enterText": "Enter text...",
-            "smallInput": "Small input",
-            "largeInput": "Large input",
-            "invalidValue": "Invalid value",
-            "valid": "Valid",
-            "disabled": "Disabled",
-            "password": "Password",
+            "enterText": "Metin girin...",
+            "smallInput": "Küçük giriş",
+            "largeInput": "Büyük giriş",
+            "invalidValue": "Geçersiz değer",
+            "valid": "Geçerli",
+            "disabled": "Devre dışı",
+            "password": "Parola",
             "email": "user@example.com",
-            "required": "Required"
+            "required": "Zorunlu"
         }
     },
     "textarea": {
         "placeholders": {
-            "writeSomething": "Write something...",
-            "tallTextarea": "Tall textarea",
-            "cannotEdit": "Cannot edit"
+            "writeSomething": "Bir şeyler yazın...",
+            "tallTextarea": "Uzun metin alanı",
+            "cannotEdit": "Düzenlenemiyor"
         }
     },
     "modal": {
         "fallback": {
-            "title": "Modal",
-            "content": "Modal content goes here."
+            "title": "Pencere",
+            "content": "Pencere içeriği burada görünür."
         },
         "actions": {
-            "openWithTitle": "Open {{title}}",
-            "cancel": "Cancel",
-            "confirm": "Confirm"
+            "openWithTitle": "{{title}} aç",
+            "cancel": "İptal",
+            "confirm": "Onayla"
         },
         "titles": {
-            "basic": "Basic Modal",
-            "confirm": "Confirm",
-            "large": "Large Modal",
-            "small": "Small Modal"
+            "basic": "Temel pencere",
+            "confirm": "Onay",
+            "large": "Büyük pencere",
+            "small": "Küçük pencere"
         },
         "contents": {
-            "simple": "Simple modal content.",
-            "confirmAction": "Confirm action?",
-            "large": "This is a large modal.",
-            "small": "Compact modal."
+            "simple": "Basit pencere içeriği.",
+            "confirmAction": "İşlemi onaylıyor musunuz?",
+            "large": "Bu büyük bir pencere örneğidir.",
+            "small": "Kompakt pencere."
         },
         "confirm": {
             "actions": {
-                "openVariant": "Open {{variant}} confirm"
+                "openVariant": "{{variant}} onayını aç"
             },
             "fallback": {
-                "title": "Are you sure?",
-                "message": "This action cannot be undone."
+                "title": "Emin misiniz?",
+                "message": "Bu işlem geri alınamaz."
             },
             "titles": {
-                "deleteItem": "Delete Item?",
-                "unsavedChanges": "Unsaved Changes",
-                "headsUp": "Heads Up"
+                "deleteItem": "Öğe silinsin mi?",
+                "unsavedChanges": "Kaydedilmemiş değişiklikler",
+                "headsUp": "Dikkat"
             },
             "messages": {
-                "deletePermanent": "This will be permanently deleted.",
-                "unsavedChanges": "You have unsaved changes.",
-                "updateRecords": "This will update all records."
+                "deletePermanent": "Bu öğe kalıcı olarak silinecek.",
+                "unsavedChanges": "Kaydedilmemiş değişiklikleriniz var.",
+                "updateRecords": "Bu işlem tüm kayıtları güncelleyecek."
             }
         },
         "form": {
-            "title": "Create Item",
+            "title": "Öğe oluştur",
             "actions": {
-                "open": "Open Form Modal",
-                "create": "Create"
+                "open": "Form penceresini aç",
+                "create": "Oluştur"
             },
             "labels": {
-                "name": "Name",
-                "description": "Description"
+                "name": "Ad",
+                "description": "Açıklama"
             },
             "placeholders": {
-                "name": "Enter name...",
-                "description": "Enter description..."
+                "name": "Ad girin...",
+                "description": "Açıklama girin..."
             },
             "descriptions": {
-                "withFields": "Modal with form fields and actions"
+                "withFields": "Alanlar ve eylemler içeren form penceresi"
             }
         }
     }

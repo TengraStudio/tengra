@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface MCPServer {
     id?: string;
@@ -149,7 +150,7 @@ function ServerItem({ server, t, onToggle, onDelete, onEdit }: ServerItemProps) 
     );
 }
 
-export function MCPServersTab() {
+export function MCPServersTab(): JSX.Element {
     const { t } = useTranslation();
     const [servers, setServers] = useState<MCPServer[]>([]);
     const [loading, setLoading] = useState(true);
@@ -157,7 +158,7 @@ export function MCPServersTab() {
     const [draftCommand, setDraftCommand] = useState('');
     const [draftProfile, setDraftProfile] = useState<McpPermissionProfile>('read-only');
 
-    const loadServers = useCallback(async () => {
+    const loadServers = useCallback(async (): Promise<void> => {
         try {
             setLoading(true);
             const nextServers = await window.electron.mcp.list();
@@ -188,9 +189,7 @@ export function MCPServersTab() {
                     : []
             );
         } catch (error) {
-            window.electron.log.error('Failed to load MCP servers', {
-                error: error instanceof Error ? error.message : String(error),
-            });
+            appLogger.error('MCPServersTab', 'Failed to load MCP servers', error as Error);
         } finally {
             setLoading(false);
         }
@@ -205,7 +204,7 @@ export function MCPServersTab() {
         [servers]
     );
 
-    const handleToggle = useCallback(async (serverId: string, currentEnabled: boolean, isInternal: boolean) => {
+    const handleToggle = useCallback(async (serverId: string, currentEnabled: boolean, isInternal: boolean): Promise<void> => {
         if (isInternal) {
             return;
         }
@@ -213,14 +212,11 @@ export function MCPServersTab() {
             await window.electron.mcp.toggle(serverId, !currentEnabled);
             await loadServers();
         } catch (error) {
-            window.electron.log.error('Failed to toggle MCP server', {
-                error: error instanceof Error ? error.message : String(error),
-                serverId,
-            });
+            appLogger.error('MCPServersTab', 'Failed to toggle MCP server', error as Error);
         }
     }, [loadServers]);
 
-    const handleDelete = useCallback(async (serverId: string, isInternal: boolean) => {
+    const handleDelete = useCallback(async (serverId: string, isInternal: boolean): Promise<void> => {
         if (isInternal) {
             return;
         }
@@ -235,20 +231,17 @@ export function MCPServersTab() {
             });
             await loadServers();
         } catch (error) {
-            window.electron.log.error('Failed to delete MCP server', {
-                error: error instanceof Error ? error.message : String(error),
-                serverId,
-            });
+            appLogger.error('MCPServersTab', 'Failed to delete MCP server', error as Error);
         }
     }, [loadServers]);
 
-    const handleEdit = useCallback((server: MCPServer) => {
+    const handleEdit = useCallback((server: MCPServer): void => {
         setEditingServer(server);
         setDraftCommand([server.command ?? '', ...(server.args ?? [])].join(' ').trim());
         setDraftProfile(server.permissionProfile ?? 'read-only');
     }, []);
 
-    const handleSaveEdit = useCallback(async () => {
+    const handleSaveEdit = useCallback(async (): Promise<void> => {
         if (!editingServer) {
             return;
         }
@@ -277,10 +270,7 @@ export function MCPServersTab() {
             setEditingServer(null);
             await loadServers();
         } catch (error) {
-            window.electron.log.error('Failed to update MCP server', {
-                error: error instanceof Error ? error.message : String(error),
-                serverId: editingServer.id,
-            });
+            appLogger.error('MCPServersTab', 'Failed to update MCP server', error as Error);
         }
     }, [draftCommand, draftProfile, editingServer, loadServers]);
 

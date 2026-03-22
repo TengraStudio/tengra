@@ -1,6 +1,6 @@
 const sectionData = {
     "explain": "Explain",
-    "translate": "Translate",
+    "translate": "Translate text",
     "explainPrefix": "Explain: ",
     "translatePrefix": "Translate: "
 };

@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/i18n';
 import { ensureMonacoInitialized } from '@/utils/monaco-loader.util';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface DiffViewerProps {
     original: string;
@@ -34,7 +35,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
                 }
             })
             .catch(error => {
-                window.electron.log.error('Failed to initialize Monaco for DiffEditor', error);
+                appLogger.error('DiffViewer', 'Failed to initialize Monaco for DiffEditor', error);
             });
 
         return () => {

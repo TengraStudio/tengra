@@ -201,7 +201,7 @@ export class PluginSandbox {
             worker.on('message', (msg: WorkerResponse) => {
                 signal.removeEventListener('abort', onAbort);
                 const elapsed = Date.now() - startTime;
-                appLogger.info('PluginSandbox', `Execution completed in ${elapsed}ms, memory: ${msg.memoryUsedMB.toFixed(2)}MB`);
+                appLogger.debug('PluginSandbox', `Execution completed in ${elapsed}ms, memory: ${msg.memoryUsedMB.toFixed(2)}MB`);
                 resolve({
                     success: msg.success,
                     result: msg.success ? (msg.result as T) : undefined,

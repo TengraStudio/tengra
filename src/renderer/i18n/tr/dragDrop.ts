@@ -1,6 +1,6 @@
 const sectionData = {
-    "title": "SİPARİŞİ BIRAKIN",
-    "description": "Analiz için dosyaları merkeze gönderin."
+    "title": "Dosyaları buraya bırakın",
+    "description": "Analiz etmek için dosyaları ortadaki alana bırakın."
 };
 
 export default sectionData;

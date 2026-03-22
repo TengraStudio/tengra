@@ -20,3 +20,32 @@ export function resolveWindowsCommand(command: string): string {
 
     return command;
 }
+
+export interface WindowsSpawnCommand {
+    command: string;
+    args: string[];
+}
+
+export function createWindowsSpawnCommand(command: string, args: string[]): WindowsSpawnCommand {
+    const resolvedCommand = resolveWindowsCommand(command);
+    if (process.platform !== 'win32') {
+        return {
+            command: resolvedCommand,
+            args
+        };
+    }
+
+    const normalized = resolvedCommand.trim().toLowerCase();
+    const isCmdScript = normalized.endsWith('.cmd') || normalized.endsWith('.bat');
+    if (!isCmdScript) {
+        return {
+            command: resolvedCommand,
+            args
+        };
+    }
+
+    return {
+        command: process.env.ComSpec || 'cmd.exe',
+        args: ['/d', '/s', '/c', resolvedCommand, ...args]
+    };
+}

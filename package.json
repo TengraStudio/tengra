@@ -40,7 +40,6 @@
         "docs": "node scripts/cli.js docs",
         "db:migrate:plan": "node scripts/db/migration-cli.cjs migrate",
         "db:migrate:rollback": "node scripts/db/migration-cli.cjs rollback",
-
         "preinstall": "node scripts/build-env-setup.js || node -e \"process.exit(0)\"",
         "postinstall": "node scripts/build-env-setup.js && electron-builder install-app-deps || node -e \"process.exit(0)\"",
         "setup-build-env": "node scripts/build-env-setup.js",
@@ -120,10 +119,12 @@
         "@xterm/xterm": "^6.0.0",
         "@xyflow/react": "^12.10.0",
         "axios": "^1.13.5",
+        "bash-language-server": "^5.6.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "date-fns": "^4.1.0",
         "diff": "^8.0.3",
+        "dockerfile-language-server-nodejs": "^0.15.0",
         "dompurify": "^3.3.1",
         "dotenv": "^17.3.1",
         "electron-updater": "^6.7.3",
@@ -136,6 +137,7 @@
         "monaco-editor": "^0.55.1",
         "node-pty": "^1.1.0",
         "prism-react-renderer": "^2.4.1",
+        "pyright": "^1.1.408",
         "re-resizable": "^6.11.2",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
@@ -148,10 +150,15 @@
         "ssh2": "^1.17.0",
         "tailwind-merge": "^3.4.0",
         "tailwindcss-animate": "^1.0.7",
+        "typescript-language-server": "^5.1.3",
         "undici": "^6.19.2",
         "uuid": "13.0.0",
+        "vscode-jsonrpc": "^8.2.1",
+        "vscode-langservers-extracted": "^4.10.0",
+        "vscode-languageserver-protocol": "^3.17.5",
         "ws": "8.19.0",
         "y-protocols": "^1.0.7",
+        "yaml-language-server": "^1.21.0",
         "yjs": "^13.6.29",
         "zod": "^4.3.6"
     },
@@ -166,6 +173,10 @@
             "dist/**/*"
         ],
         "extraFiles": [
+            {
+                "from": "resources/utility-workers",
+                "to": "utility-workers"
+            },
             {
                 "from": "scripts/win-services-register.ps1",
                 "to": "scripts/win-services-register.ps1"

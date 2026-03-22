@@ -1,5 +1,5 @@
 const sectionData = {
-    "selectArea": "Alan Seç"
+    "selectArea": "Alan seç"
 };
 
 export default sectionData;

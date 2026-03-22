@@ -67,7 +67,7 @@ function extractBatchResults(response: BatchResponse): Map<string, IpcValue> {
             results.set(result.channel, result.data);
         } else {
             // Store error information
-            results.set(result.channel, { error: result.error });
+            results.set(result.channel, { success: false, error: result.error });
         }
     });
 

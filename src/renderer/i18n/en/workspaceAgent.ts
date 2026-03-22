@@ -1,5 +1,5 @@
 const sectionData = {
-    "unnamedGroup": "Unnamed Group",
+    "unnamedGroup": "Unnamed group",
     "changePreview": "Change preview",
     "reasoningTitle": "Reasoning",
     "consoleTitle": "Console",
@@ -13,7 +13,7 @@ const sectionData = {
         "running": "Running tool",
         "fileFallback": "File change"
     },
-    "newTask": "New Task",
+    "newTask": "New task",
     "generatingPlan": "Generating plan...",
     "executingTask": "Executing task...",
     "waitingApproval": "Waiting for approval",
@@ -23,17 +23,17 @@ const sectionData = {
     "overallProgress": "Overall progress",
     "selectAgentProfile": "Select agent profile",
     "agentSelected": "Agent selected",
-    "defaultAgent": "Default Agent",
+    "defaultAgent": "Default agent",
     "defaultAgentDesc": "General-purpose workspace agent",
-    "approveAndRun": "Approve & Run",
+    "approveAndRun": "Approve & run",
     "planning": "Planning",
     "running": "Running",
     "stopLabel": "Stop",
     "planAction": "Plan",
     "executeAction": "Execute",
     "councilMode": "Council",
-    "reviewQueue": "Review Queue",
-    "assistQueue": "Assist Queue",
+    "reviewQueue": "Review queue",
+    "assistQueue": "Assist queue",
     "filesCount": "{{count}} files",
     "activity": "Activity",
     "chairmanFallback": "Chairman",
@@ -46,7 +46,7 @@ const sectionData = {
     "noDescription": "No description provided",
     "selectWorkspace": "Select workspace",
     "votingPanel": {
-        "title": "Voting Sessions",
+        "title": "Voting sessions",
         "sessionCount": "{{count}} sessions",
         "pending": "Pending",
         "resolved": "Resolved",
@@ -68,7 +68,7 @@ const sectionData = {
         }
     },
     "statePanel": {
-        "title": "State Machine",
+        "title": "State machine",
         "currentState": "Current states",
         "allowedTransitions": "Allowed transitions",
         "noTransitions": "No transitions available",
@@ -86,23 +86,23 @@ const sectionData = {
         }
     },
     "permissions": {
-        "title": "Agent Permission Settings",
+        "title": "Agent permission settings",
         "subtitle": "Manage access levels",
-        "profile": "Agent Profile",
-        "commands": "Command Permission",
-        "files": "File Access",
+        "profile": "Agent profile",
+        "commands": "Command permission",
+        "files": "File access",
         "policy": {
             "blocked": "Blocked",
-            "ask-every-time": "Ask Every Time",
-            "allowlist": "Allowlist Only",
-            "full-access": "Full Access",
-            "workspace-root-only": "Workspace Root Only",
-            "restricted-off-dangerous": "Restricted (Safe Mode)"
+            "ask-every-time": "Ask every time",
+            "allowlist": "Allowlist only",
+            "full-access": "Full access",
+            "workspace-root-only": "Workspace root only",
+            "restricted-off-dangerous": "Restricted (Safe mode)"
         },
-        "allowedCommands": "Allowed Commands",
-        "allowedPaths": "Allowed Paths",
-        "addCommand": "Add Command",
-        "addPath": "Add Path",
+        "allowedCommands": "Allowed commands",
+        "allowedPaths": "Allowed paths",
+        "addCommand": "Add command",
+        "addPath": "Add path",
         "noCommands": "No commands defined",
         "noPaths": "No paths defined"
     }

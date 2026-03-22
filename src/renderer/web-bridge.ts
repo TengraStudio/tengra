@@ -30,6 +30,7 @@ import type {
     SSHTransferTask,
     SSHTunnelPreset
 } from '@/types/ssh';
+import { appLogger } from '@/utils/renderer-logger';
 
 type MockSessionCouncilApi = NonNullable<ElectronAPI['session']>['council'];
 type CouncilQuotaInterruptCallback = Parameters<MockSessionCouncilApi['onQuotaInterrupt']>[0];
@@ -37,13 +38,17 @@ type CouncilQuotaInterruptCallback = Parameters<MockSessionCouncilApi['onQuotaIn
 // Mock Electron API for Web/Standalone development
 export const webElectronMock: ElectronAPI = {
     invoke: <T = IpcValue>(_channel: string, ..._args: IpcValue[]) => Promise.resolve({} as T),
-    minimize: () => window.electron.log.warn('minimize'),
+    minimize: () => appLogger.warn('WebBridge', 'minimize called in mock mode'),
 
-    maximize: () => window.electron.log.warn('maximize'),
-    close: () => window.electron.log.warn('close'),
+    maximize: () => appLogger.warn('WebBridge', 'maximize called in mock mode'),
+    close: () => appLogger.warn('WebBridge', 'close called in mock mode'),
 
-    resizeWindow: (res: string) => window.electron.log.warn('resize', res),
-    toggleCompact: (enabled: boolean) => window.electron.log.warn('compact', enabled),
+    getZoomFactor: async () => ({ zoomFactor: 1 }),
+    resizeWindow: (res: string) => appLogger.warn('WebBridge', `resize called in mock mode with: ${res}`),
+    resetZoomFactor: async () => ({ zoomFactor: 1 }),
+    setZoomFactor: async (zoomFactor: number) => ({ zoomFactor }),
+    stepZoomFactor: async (direction: -1 | 1) => ({ zoomFactor: direction > 0 ? 1.1 : 0.9 }),
+    toggleCompact: (enabled: boolean) => appLogger.warn('WebBridge', `toggleCompact called in mock mode with: ${enabled}`),
 
     githubLogin: async (_appId?: 'profile' | 'copilot') => ({
         device_code: '123',
@@ -221,13 +226,57 @@ export const webElectronMock: ElectronAPI = {
             topSymbols: [],
             generatedAt: new Date().toISOString(),
         }),
+        getWorkspaceDependencyGraph: async (rootPath: string) => ({
+            rootPath,
+            indexedFileCount: 0,
+            generatedAt: new Date().toISOString(),
+            nodes: [],
+            edges: [],
+            externalDependencies: [],
+        }),
+        getWorkspaceCodeMap: async (rootPath: string) => ({
+            rootPath,
+            totalFiles: 0,
+            totalSymbols: 0,
+            generatedAt: new Date().toISOString(),
+            files: [],
+            folders: [],
+        }),
     },
 
     workspace: {
         analyze: async (_rootPath: string, _workspaceId: string) =>
-            ({}) as WorkspaceAnalysis,
+            ({
+                type: 'unknown',
+                frameworks: [],
+                dependencies: {},
+                devDependencies: {},
+                stats: { fileCount: 0, totalSize: 0, loc: 0, lastModified: 0 },
+                languages: {},
+                files: [],
+                todos: [],
+                issues: []
+            }) as WorkspaceAnalysis,
         analyzeSummary: async (_rootPath: string, _workspaceId?: string) =>
-            ({}) as WorkspaceAnalysis,
+            ({
+                type: 'unknown',
+                frameworks: [],
+                dependencies: {},
+                devDependencies: {},
+                stats: { fileCount: 0, totalSize: 0, loc: 0, lastModified: 0 },
+                languages: {},
+                files: [],
+                todos: [],
+                issues: []
+            }) as WorkspaceAnalysis,
+        getFileDiagnostics: async (_rootPath: string, _filePath: string, _content: string) => [],
+        getFileDefinition: async (
+            _rootPath: string,
+            _filePath: string,
+            _content: string,
+            _line: number,
+            _column: number
+        ) => [],
         generateLogo: async (_path: string, _opts: { prompt: string; style: string; model: string; count: number }) => [],
         analyzeIdentity: async (_path: string) => ({ suggestedPrompts: [], colors: [] }),
         applyLogo: async (_path: string, _tempPath: string) => '',
@@ -267,6 +316,9 @@ export const webElectronMock: ElectronAPI = {
         readImage: async (_path: string) => ({ success: true }),
         writeFile: async (_path: string, _content: string) => { },
         exists: async (_path: string) => true,
+        copyPath: async (_sourcePath: string, _destinationPath: string) => ({
+            success: true,
+        }),
     },
 
     getProxyModels: async () => [],
@@ -841,6 +893,13 @@ export const webElectronMock: ElectronAPI = {
         rename: async (_connectionId: string, _oldPath: string, _newPath: string) => ({
             success: true,
         }),
+        copyPath: async (
+            _connectionId: string,
+            _sourcePath: string,
+            _destinationPath: string
+        ) => ({
+            success: true,
+        }),
         getConnections: async () => [],
         isConnected: async (_connectionId: string) => true,
         onStdout: (_callback: (data: string | Uint8Array) => void) => { },
@@ -1125,6 +1184,7 @@ export const webElectronMock: ElectronAPI = {
     createDirectory: async (_path: string) => ({ success: true }),
     deleteFile: async (_path: string) => ({ success: true }),
     deleteDirectory: async (_path: string) => ({ success: true }),
+    copyPath: async (_sourcePath: string, _destinationPath: string) => ({ success: true }),
     renamePath: async (_oldPath: string, _newPath: string) => ({ success: true }),
     searchFiles: async (_rootPath: string, _pattern: string) => ({ success: true, matches: [] }),
     saveFile: async (_content: string, _filename: string) => ({ success: true, path: '' }),
@@ -1795,6 +1855,8 @@ export const webElectronMock: ElectronAPI = {
         joinRoom: async (_params: JoinCollaborationRoom): Promise<CollaborationResponse> => ({ success: true }),
         leaveRoom: async (_roomId: string): Promise<CollaborationResponse> => ({ success: true }),
         sendUpdate: async (_params: CollaborationSyncUpdate): Promise<CollaborationResponse> => ({ success: true }),
+        onJoined: (_callback: (payload: { roomId: string }) => void) => () => { /* noop */ },
+        onLeft: (_callback: (payload: { roomId: string }) => void) => () => { /* noop */ },
         onSyncUpdate: (_callback: (payload: { roomId: string; data: string }) => void) => () => { /* noop */ },
         onError: (_callback: (payload: { roomId: string; error: string }) => void) => () => { /* noop */ },
     },
@@ -1802,6 +1864,8 @@ export const webElectronMock: ElectronAPI = {
         joinRoom: async (_params: JoinCollaborationRoom): Promise<CollaborationResponse> => ({ success: true }),
         leaveRoom: async (_roomId: string): Promise<CollaborationResponse> => ({ success: true }),
         sendUpdate: async (_params: CollaborationSyncUpdate): Promise<CollaborationResponse> => ({ success: true }),
+        onJoined: (_callback: (payload: { roomId: string }) => void) => () => { /* noop */ },
+        onLeft: (_callback: (payload: { roomId: string }) => void) => () => { /* noop */ },
         onSyncUpdate: (_callback: (payload: { roomId: string; data: string }) => void) => () => { /* noop */ },
         onError: (_callback: (payload: { roomId: string; error: string }) => void) => () => { /* noop */ },
     },

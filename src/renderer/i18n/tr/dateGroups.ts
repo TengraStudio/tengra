@@ -1,8 +1,8 @@
 const sectionData = {
     "today": "Bugün",
     "yesterday": "Dün",
-    "lastWeek": "Geçen Hafta",
-    "older": "Daha Eski"
+    "lastWeek": "Geçen hafta",
+    "older": "Daha eski"
 };
 
 export default sectionData;

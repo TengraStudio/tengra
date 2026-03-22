@@ -5,6 +5,8 @@ import * as path from 'path';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
+import { UtilityProcessService } from '@main/services/system/utility-process.service';
+import { getBundledUtilityWorkerPath } from '@main/services/system/utility-worker-path.util';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { app } from 'electron';
@@ -27,14 +29,18 @@ export interface AuditLogEntry {
  * Handles migration of legacy file-based logs to the database on initialization.
  */
 export class AuditLogService extends BaseService {
+    private static readonly WORKER_FILE_NAME = 'audit-log.worker.cjs';
     private legacyLogPath: string;
     private lastIntegrityHash: string = '';
+    private workerProcessId: string | null = null;
+    private workerDisabled = false;
     private readonly maxAuditEntries = 20_000;
     private readonly maxAuditAgeMs = 180 * 24 * 60 * 60 * 1000;
 
     /** @param databaseService - Database service used to persist audit log entries. */
     constructor(
-        private databaseService: DatabaseService
+        private databaseService: DatabaseService,
+        private readonly utilityProcessService?: UtilityProcessService
     ) {
         super('AuditLogService');
         const userDataPath = app.getPath('userData');
@@ -45,11 +51,17 @@ export class AuditLogService extends BaseService {
     public async initialize(): Promise<void> {
         await this.migrateLegacyData();
         await this.rotateLogs();
+        await this.startWorkerIfAvailable();
     }
 
     /** Resets in-memory integrity hash chain. */
     async cleanup(): Promise<void> {
         this.lastIntegrityHash = '';
+        this.workerDisabled = false;
+        if (this.workerProcessId && this.utilityProcessService) {
+            this.utilityProcessService.terminate(this.workerProcessId);
+            this.workerProcessId = null;
+        }
         this.logInfo('Audit log service cleaned up');
     }
 
@@ -93,34 +105,9 @@ export class AuditLogService extends BaseService {
      */
     async log(entry: Omit<AuditLogEntry, 'timestamp'>): Promise<void> {
         try {
-            const details = (entry.details ?? {}) as Record<string, RuntimeValue>;
-            const prevHash = this.lastIntegrityHash || 'genesis';
-            const timestamp = Date.now();
-            const integrityInput = JSON.stringify({
-                action: entry.action,
-                category: entry.category,
-                success: entry.success,
-                userId: entry.userId,
-                details,
-                prevHash,
-                timestamp
-            });
-            const integrityHash = createHash('sha256').update(integrityInput).digest('hex');
-
-            const fullEntry: AuditLogEntry = {
-                ...entry,
-                timestamp,
-                details: {
-                    ...details,
-                    integrity: {
-                        prevHash,
-                        hash: integrityHash
-                    }
-                }
-            };
-
+            const { fullEntry, nextHash } = await this.prepareAuditEntry(entry);
             await this.databaseService.addAuditLog(fullEntry);
-            this.lastIntegrityHash = integrityHash;
+            this.lastIntegrityHash = nextHash;
 
             // Also log to console in development
             if (process.env.NODE_ENV === 'development') {
@@ -187,6 +174,26 @@ export class AuditLogService extends BaseService {
 
     async verifyIntegrity(sampleSize: number = 200): Promise<{ ok: boolean; checked: number; firstInvalidAt?: number }> {
         const logs = await this.databaseService.getAuditLogs({ limit: Math.max(1, sampleSize) });
+        if (this.shouldUseWorker() && this.utilityProcessService && this.workerProcessId) {
+            try {
+                const response = await this.utilityProcessService.request(
+                    this.workerProcessId,
+                    'audit.verifyIntegrity',
+                    {
+                        logs,
+                        sampleSize,
+                    }
+                );
+                if (this.isIntegrityResult(response)) {
+                    return response;
+                }
+            } catch (error) {
+                this.disableWorker(
+                    `Worker integrity verification failed, switching to local fallback: ${getErrorMessage(error as Error)}`
+                );
+            }
+        }
+
         let previous = 'genesis';
 
         for (let i = logs.length - 1; i >= 0; i--) {
@@ -226,5 +233,120 @@ export class AuditLogService extends BaseService {
         await this.databaseService.pruneAuditLogsToMaxEntries(this.maxAuditEntries);
         const totalAfter = await this.databaseService.countAuditLogs();
         return { prunedByAge, totalAfter };
+    }
+
+    private async startWorkerIfAvailable(): Promise<void> {
+        if (!this.utilityProcessService || this.workerProcessId || this.workerDisabled) {
+            return;
+        }
+
+        try {
+            this.workerProcessId = this.utilityProcessService.spawn({
+                name: 'audit-log-worker',
+                entryPoint: getBundledUtilityWorkerPath(AuditLogService.WORKER_FILE_NAME),
+            });
+        } catch (error) {
+            this.workerProcessId = null;
+            appLogger.warn(
+                'AuditLogService',
+                `Falling back to main-process audit hashing: ${getErrorMessage(error as Error)}`
+            );
+        }
+    }
+
+    private shouldUseWorker(): boolean {
+        return Boolean(this.workerProcessId && this.utilityProcessService && !this.workerDisabled);
+    }
+
+    private disableWorker(reason: string): void {
+        if (!this.workerDisabled) {
+            appLogger.warn('AuditLogService', reason);
+        }
+        this.workerDisabled = true;
+        if (this.workerProcessId && this.utilityProcessService) {
+            this.utilityProcessService.terminate(this.workerProcessId);
+        }
+        this.workerProcessId = null;
+    }
+
+    private async prepareAuditEntry(
+        entry: Omit<AuditLogEntry, 'timestamp'>
+    ): Promise<{ fullEntry: AuditLogEntry; nextHash: string }> {
+        if (this.shouldUseWorker() && this.utilityProcessService && this.workerProcessId) {
+            try {
+                const response = await this.utilityProcessService.request(
+                    this.workerProcessId,
+                    'audit.prepareEntry',
+                    {
+                        entry,
+                        prevHash: this.lastIntegrityHash,
+                    }
+                );
+                if (this.isPreparedAuditEntry(response)) {
+                    return response;
+                }
+            } catch (error) {
+                this.disableWorker(
+                    `Worker entry preparation failed, switching to local fallback: ${getErrorMessage(error as Error)}`
+                );
+            }
+        }
+
+        const details = (entry.details ?? {}) as Record<string, RuntimeValue>;
+        const prevHash = this.lastIntegrityHash || 'genesis';
+        const timestamp = Date.now();
+        const integrityInput = JSON.stringify({
+            action: entry.action,
+            category: entry.category,
+            success: entry.success,
+            userId: entry.userId,
+            details,
+            prevHash,
+            timestamp
+        });
+        const nextHash = createHash('sha256').update(integrityInput).digest('hex');
+        return {
+            fullEntry: {
+                ...entry,
+                timestamp,
+                details: {
+                    ...details,
+                    integrity: {
+                        prevHash,
+                        hash: nextHash
+                    }
+                }
+            },
+            nextHash,
+        };
+    }
+
+    private isPreparedAuditEntry(
+        value: RuntimeValue
+    ): value is { fullEntry: AuditLogEntry; nextHash: string } {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+            return false;
+        }
+        return (
+            'fullEntry' in value
+            && typeof value.fullEntry === 'object'
+            && value.fullEntry !== null
+            && 'nextHash' in value
+            && typeof value.nextHash === 'string'
+        );
+    }
+
+    private isIntegrityResult(
+        value: RuntimeValue
+    ): value is { ok: boolean; checked: number; firstInvalidAt?: number } {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+            return false;
+        }
+        return (
+            'ok' in value
+            && typeof value.ok === 'boolean'
+            && 'checked' in value
+            && typeof value.checked === 'number'
+        );
     }
 }

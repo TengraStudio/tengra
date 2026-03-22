@@ -1,13 +1,20 @@
 const sectionData = {
+    "general": {
+        "unknownError": "Bilinmeyen bir hata oluştu",
+        "operationFailed": "İşlem başarısız",
+        "invalidInput": "Geçersiz giriş",
+        "networkError": "Ağ hatası",
+        "permissionDenied": "İzin verilmedi"
+    },
     "unexpected": "Üzgünüz, bir hata oluştu.",
     "somethingWentWrong": "Bir şeyler yanlış gitti:",
     "unexpectedDescription": "Uygulama beklenmeyen bir hatayla karşılaştı.",
     "errorMessageLabel": "Hata Mesajı",
     "technicalDetails": "TEKNİK DETAYLAR (YIĞIN İZİ)",
-    "copyDetails": "Detayları Kopyala",
+    "copyDetails": "Detayları kopyala",
     "rootNotFound": "Kök öğe bulunamadı",
     "ipcValidation": {
-        "hostRequired": "Host gereklidir.",
+        "hostRequired": "Ana makine gereklidir.",
         "usernameRequired": "Kullanıcı adı gereklidir.",
         "tokenRequired": "En az bir token alanı bulunmalıdır.",
         "invalidUrlOrProtocol": "Geçersiz URL veya desteklenmeyen protokol."
@@ -68,9 +75,9 @@ const sectionData = {
         "initFailed": "İzleme servisi başlatılamadı.",
         "metricCollectionFailed": "Metrik toplanamadı: {{metricName}}.",
         "thresholdExceeded": "{{metricName}} için kritik eşik aşıldı: {{value}}{{unit}}.",
-        "memoryWarning": "Sistem bellek kullanımı %{{percentage}} seviyesinde.",
+            "memoryWarning": "Sistem bellek kullanımı %{{percentage}} seviyesine ulaştı.",
         "gcNotAvailable": "Çöp toplama kullanılamıyor.",
-        "gcForced": "Zorla çöp toplama yapıldı.",
+            "gcForced": "Zorunlu çöp toplama çalıştırıldı.",
         "snapshotFailed": "Performans anlık görüntüsü alınamadı.",
         "alertTriggered": "İzleme uyarısı tetiklendi: {{alertName}}.",
         "serviceUnavailable": "İzleme servisi kullanılamıyor.",
@@ -139,6 +146,100 @@ const sectionData = {
     },
     "extension": {
         "sandboxSizeLimit": "Eklenti betiği korumalı alan boyut sınırını aşıyor ({{maxSizeKb}} KB)."
+    },
+    "copilot": {
+        "auth_failed_no_token": "GitHub Copilot kimlik doğrulaması başarısız: Belirteç bulunamadı",
+        "token_fetch_failed": "GitHub Copilot belirteci alınamadı"
+    },
+    "collaboration": {
+        "auth_required": "İşbirliği için kimlik doğrulaması gerekiyor",
+        "not_connected": "Bir işbirliği oturumuna bağlı değil"
+    },
+    "voice": {
+        "synthesis_unavailable": "Konuşma sentezi kullanılamıyor",
+        "recognition_unavailable": "Konuşma tanıma kullanılamıyor"
+    },
+    "chat": {
+        "invalid_messages": "Geçersiz sohbet mesajları",
+        "no_messages": "Sohbet mesajı bulunamadı",
+        "invalid_id": "Geçersiz sohbet oturumu kimliği",
+        "no_user_message_to_retry": "Yeniden denenecek kullanıcı mesajı bulunamadı",
+        "invalid_messages_array": "Geçersiz mesaj dizisi"
+    },
+    "process": {
+        "invalid_command": "Geçersiz terminal komutu"
+    },
+    "workspace": {
+        "not_ready": "Çalışma alanı hazır değil"
+    },
+    "git": {
+        "cancel_failed": "Aktif Git işlemi iptal edilemedi",
+        "invalid_branch_name": "Geçersiz dal adı",
+        "invalid_parameters": "Geçersiz parametreler",
+        "invalid_branch_names": "Geçersiz dal adları"
+    },
+    "terminal": {
+        "windows_terminal_unsupported": "Windows Terminal bu işletim sisteminde yüklü değil veya mevcut değil",
+        "windows_terminal_path_unresolved": "Windows Terminal yolu çözülemedi",
+        "request_timeout": "Terminal isteği zaman aşımına uğradı",
+        "backend_not_found": "{{backend}} yüklü değil veya PATH içinde bulunamadı",
+        "pty_not_available": "node-pty arka ucu mevcut değil",
+        "connection_id_required": "SSH terminali için connectionId gereklidir",
+        "container_id_required": "Docker terminali için containerId gereklidir"
+    },
+    "ssh": {
+        "not_connected": "Bağlı değil",
+        "connection_profile_not_found": "Bağlantı profili bulunamadı",
+        "reconnect_attempts_exhausted": "Yeniden bağlanma denemeleri tükendi",
+        "path_traversal_detected": "Erişim reddedildi: Yol aşımı tespit edildi",
+        "path_must_be_absolute": "Erişim reddedildi: Yol mutlak olmalıdır",
+        "path_must_be_within_var_log": "Erişim reddedildi: Yol /var/log içinde olmalıdır",
+        "path_outside_allowed_directories": "Erişim reddedildi: Yol izin verilen dizinler içinde olmalıdır"
+    },
+    "auth": {
+        "legacy_key_unsupported": "Eski düz metin ana anahtar formatı artık desteklenmiyor",
+        "encryption_unavailable": "safeStorage şifrelemesi mevcut değil",
+        "invalid_key_length": "Şifre çözme sonrası geçersiz ana anahtar uzunluğu",
+        "storage_not_available": "Ana anahtarı güvenli bir şekilde kaydetmek için safeStorage mevcut değil",
+        "invalid_format": "Geçersiz format (Tengra:v1)",
+        "provider_required": "Sağlayıcı gereklidir",
+        "server_not_initialized": "Sunucu başlatılmadı"
+    },
+    "llm": {
+        "rate_limit_exhausted": "GitHub API hız sınırı tükendi",
+        "response_body_null": "Yanıt gövdesi boş",
+        "download_aborted": "İndirme iptal edildi",
+        "no_json_found": "Yanıtta JSON bulunamadı",
+        "llama_not_running": "llama-server çalışmıyor",
+        "invalid_embedding_response": "llama-server'dan geçersiz gömme yanıtı",
+        "no_images_returned": "Görüntü döndürülmedi",
+        "no_quota_available": "Mevcut kotası olan hesap bulunamadı",
+        "experimental_ollama_sd": "Ollama özel görüntü oluşturma hala deneyseldir. Lütfen SD-WebUI kullanın.",
+        "comfyui_no_prompt_id": "ComfyUI prompt_id döndürmedi",
+        "comfyui_timeout": "ComfyUI sonucu beklenirken zaman aşımına uğradı",
+        "quota_service_unavailable": "Kota servisi (QuotaService) mevcut değil",
+        "download_failed": "İndirme başarısız oldu"
+    },
+    "settings": {
+        "invalid_payload": "Ayarlar veri yığını (payload) dizi olmayan bir nesne olmalıdır"
+    },
+    "system": {
+        "manifest_read_failed": "Çalışma zamanı manifest önbelleği okuma hatası",
+        "https_required": "Çalışma zamanı indirmeleri https kullanmalıdır"
+    },
+    "mcp": {
+        "connectionFailed": "MCP sunucusuna bağlanılamadı: {{server}}",
+        "toolNotFound": "MCP aracı \"{{tool}}\" bulunamadı",
+        "timeout": "MCP isteği {{seconds}} saniye sonra zaman aşımına uğradı",
+        "invalidConfig": "Geçersiz MCP sunucu yapılandırması",
+        "executionError": "MCP aracı yürütülemedi: {{error}}"
+    },
+    "models": {
+        "notFound": "Model \"{{modelId}}\" bulunamadı",
+        "downloadCorrupt": "Model indirmesi bozuk. Lütfen tekrar deneyin.",
+        "presetSaveFailed": "Model hazır ayarı kaydedilemedi",
+        "gpuNotAvailable": "Bu model için GPU hızlandırması mevcut değil",
+        "contextExceeded": "{{model}} modeli için bağlam uzunluğu aşıldı"
     }
 };
 

@@ -44,7 +44,7 @@ export type AppSettings = {
     activeAccountId?: string;
 
     general: {
-        language: 'tr' | 'en' | 'de' | 'fr' | 'es' | 'ja' | 'zh' | 'ar';
+        language: 'tr' | 'en';
         theme: string;
         resolution: string;
         fontSize: number;
@@ -75,6 +75,8 @@ export type AppSettings = {
         favoriteModels?: string[];
         recentModels?: string[];
         hiddenModels?: string[];
+        dismissedRuntimeInstallPrompts?: string[];
+        completedRuntimeInstalls?: string[];
     };
     modelGovernance?: ModelGovernanceSettings;
     github?: {
@@ -150,6 +152,7 @@ export type AppSettings = {
         height: number;
         x: number;
         y: number;
+        zoomFactor?: number;
         fullscreen?: boolean;
         startOnStartup?: boolean;
         workAtBackground?: boolean; // Minimize to tray instead of closing

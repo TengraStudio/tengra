@@ -64,7 +64,7 @@ export function registerFileDiffIpc(
     _getMainWindow: () => BrowserWindow | null,
     fileChangeTracker: FileChangeTracker
 ): void {
-    appLogger.info('FileDiffIPC', 'Registering file diff IPC handlers');
+    appLogger.debug('FileDiffIPC', 'Registering file diff IPC handlers');
 
     ipcMain.handle(
         'diff:getFileHistory',

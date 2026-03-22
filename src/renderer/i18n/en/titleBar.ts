@@ -4,9 +4,9 @@ const sectionData = {
     "maximize": "Maximize",
     "close": "Close",
     "changelog": "Changelog",
-    "changelogTitle": "Application Changes",
+    "changelogTitle": "App updates",
     "changelogEmpty": "No changelog entries found.",
-    "lazyServicesStatus": "Lazy services: {{loaded}}/{{registered}} loaded"
+    "lazyServicesStatus": "Lazy services loaded: {{loaded}}/{{registered}}"
 };
 
 export default sectionData;

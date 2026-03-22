@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { appLogger } from '@/utils/renderer-logger';
+
 interface UseWorkspaceBranchStateOptions {
     workspacePath?: string;
     enabled?: boolean;
@@ -34,7 +36,13 @@ export function useWorkspaceBranchState({
     enabled = true,
     notify,
     t,
-}: UseWorkspaceBranchStateOptions) {
+}: UseWorkspaceBranchStateOptions): {
+    currentBranchName: string;
+    availableBranches: string[];
+    isBranchLoading: boolean;
+    isBranchSwitching: boolean;
+    handleBranchSelect: (branch: string) => Promise<void>;
+} {
     const [currentBranchName, setCurrentBranchName] = useState('main');
     const [availableBranches, setAvailableBranches] = useState<string[]>([]);
     const [isBranchLoading, setIsBranchLoading] = useState(false);
@@ -57,10 +65,10 @@ export function useWorkspaceBranchState({
             setCurrentBranchName(snapshot.branchName);
             setAvailableBranches(snapshot.branches);
         } catch (error) {
-            window.electron.log.error(
-                'useWorkspaceBranchState: Failed to load branch data',
-                error as Error
-            );
+            appLogger.error('useWorkspaceBranchState', 'Failed to load branch data', error as Error);
+
+
+
             setAvailableBranches([]);
         } finally {
             setIsBranchLoading(false);
@@ -98,10 +106,10 @@ export function useWorkspaceBranchState({
                 notify('success', t('workspace.branchSwitched', { branch }));
                 await refreshBranchState();
             } catch (error) {
-                window.electron.log.error(
-                    'useWorkspaceBranchState: Failed to switch workspace branch',
-                    error as Error
-                );
+                appLogger.error('useWorkspaceBranchState', 'Failed to switch workspace branch', error as Error);
+
+
+
                 notify('error', t('workspace.branchSwitchFailed'));
             } finally {
                 setIsBranchSwitching(false);

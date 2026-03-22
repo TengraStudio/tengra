@@ -6,26 +6,47 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
+import {
+    DEFAULT_WORKSPACE_SCAN_IGNORE_PATTERNS,
+    getWorkspaceIgnoreMatcher,
+    WorkspaceIgnoreMatcher,
+} from '@main/services/workspace/workspace-ignore.util';
 import { FileSearchResult } from '@shared/types/common';
 
-const IGNORED_DIRS = ['node_modules', 'dist', 'build', 'out', 'coverage', 'bin', 'obj'];
 const CODE_FILE_PATTERN = /\.(ts|tsx|js|jsx|py|go|rs|java|c|cpp|h|hpp|md|txt|json)$/;
 const TODO_FILE_PATTERN = /\.(ts|js|py|kt|java|go|rs|cpp|h|gradle)$/;
 const SYMBOL_SCAN_PATTERN = /\.(ts|tsx|js|jsx|py|kt|java|go|rs|cpp|h|cs)$/;
 const BINARY_FILE_PATTERN = /\.(png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|mp4|webm)$/i;
 
+async function resolveIgnoreMatcher(
+    rootPath: string,
+    matcher?: WorkspaceIgnoreMatcher
+): Promise<WorkspaceIgnoreMatcher> {
+    if (matcher) {
+        return matcher;
+    }
+    return getWorkspaceIgnoreMatcher(rootPath, {
+        defaultPatterns: DEFAULT_WORKSPACE_SCAN_IGNORE_PATTERNS,
+    });
+}
+
 /** Recursively scan a directory for code files */
-export async function scanDirRecursively(dir: string, fileList: string[]): Promise<void> {
+export async function scanDirRecursively(
+    dir: string,
+    fileList: string[],
+    matcher?: WorkspaceIgnoreMatcher
+): Promise<void> {
     try {
+        const activeMatcher = await resolveIgnoreMatcher(dir, matcher);
         const entries = await fs.readdir(dir, { withFileTypes: true });
         for (const entry of entries) {
             const fullPath = path.join(dir, entry.name);
-            if (entry.name.startsWith('.') || IGNORED_DIRS.includes(entry.name)) {
+            if (activeMatcher.ignoresAbsolute(fullPath)) {
                 continue;
             }
 
             if (entry.isDirectory()) {
-                await scanDirRecursively(fullPath, fileList);
+                await scanDirRecursively(fullPath, fileList, activeMatcher);
             } else if (entry.isFile() && CODE_FILE_PATTERN.test(entry.name)) {
                 fileList.push(fullPath);
             }
@@ -36,17 +57,22 @@ export async function scanDirRecursively(dir: string, fileList: string[]): Promi
 }
 
 /** Scan directory for TODO/FIXME/HACK comments */
-export async function scanDirForTodos(dir: string, results: FileSearchResult[]): Promise<void> {
+export async function scanDirForTodos(
+    dir: string,
+    results: FileSearchResult[],
+    matcher?: WorkspaceIgnoreMatcher
+): Promise<void> {
     try {
+        const activeMatcher = await resolveIgnoreMatcher(dir, matcher);
         const entries = await fs.readdir(dir, { withFileTypes: true });
         for (const entry of entries) {
             const fullPath = path.join(dir, entry.name);
-            if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist') {
+            if (activeMatcher.ignoresAbsolute(fullPath)) {
                 continue;
             }
 
             if (entry.isDirectory()) {
-                await scanDirForTodos(fullPath, results);
+                await scanDirForTodos(fullPath, results, activeMatcher);
             } else if (entry.isFile() && TODO_FILE_PATTERN.test(entry.name)) {
                 await scanFileForTodos(fullPath, results);
             }
@@ -79,18 +105,20 @@ async function scanFileForTodos(filePath: string, results: FileSearchResult[]): 
 export async function scanDirForSymbols(
     dir: string,
     query: string,
-    results: FileSearchResult[]
+    results: FileSearchResult[],
+    matcher?: WorkspaceIgnoreMatcher
 ): Promise<void> {
     try {
+        const activeMatcher = await resolveIgnoreMatcher(dir, matcher);
         const entries = await fs.readdir(dir, { withFileTypes: true });
         for (const entry of entries) {
             const fullPath = path.join(dir, entry.name);
-            if (entry.name.startsWith('.') || ['node_modules', 'dist', 'build'].includes(entry.name)) {
+            if (activeMatcher.ignoresAbsolute(fullPath)) {
                 continue;
             }
 
             if (entry.isDirectory()) {
-                await scanDirForSymbols(fullPath, query, results);
+                await scanDirForSymbols(fullPath, query, results, activeMatcher);
             } else if (entry.isFile() && SYMBOL_SCAN_PATTERN.test(entry.name)) {
                 await scanFileForSymbols(fullPath, query, results);
             }
@@ -132,18 +160,20 @@ export async function scanDirForText(
     dir: string,
     query: string,
     isRegex: boolean,
-    results: FileSearchResult[]
+    results: FileSearchResult[],
+    matcher?: WorkspaceIgnoreMatcher
 ): Promise<void> {
     try {
+        const activeMatcher = await resolveIgnoreMatcher(dir, matcher);
         const entries = await fs.readdir(dir, { withFileTypes: true });
         for (const entry of entries) {
             const fullPath = path.join(dir, entry.name);
-            if (entry.name.startsWith('.') || ['node_modules', 'dist', 'coverage'].includes(entry.name)) {
+            if (activeMatcher.ignoresAbsolute(fullPath)) {
                 continue;
             }
 
             if (entry.isDirectory()) {
-                await scanDirForText(fullPath, query, isRegex, results);
+                await scanDirForText(fullPath, query, isRegex, results, activeMatcher);
             } else if (entry.isFile() && !BINARY_FILE_PATTERN.test(entry.name)) {
                 await scanFileForText(fullPath, query, isRegex, results);
             }

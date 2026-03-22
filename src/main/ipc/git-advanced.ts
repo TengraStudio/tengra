@@ -1132,7 +1132,7 @@ export function registerGitAdvancedIpc(
     llmService?: LLMService,
     _brainService?: BrainService
 ) {
-    appLogger.info('GitAdvanced', '[IPC] Git-Advanced service registered');
+    appLogger.debug('GitAdvanced', '[IPC] Git-Advanced service registered');
 
     registerConflictHandlers(gitService, validateSender);
     registerStashHandlers(gitService, validateSender);

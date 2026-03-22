@@ -122,7 +122,7 @@ export function createDbBridge(ipc: IpcRenderer): DbBridge {
                 mounts
             }),
         updateWorkspace: (id, updates) => ipc.invoke('db:updateWorkspace', id, updates),
-        deleteWorkspace: (id, _deleteFiles) => ipc.invoke('db:deleteWorkspace', id),
+        deleteWorkspace: (id, deleteFiles) => ipc.invoke('db:deleteWorkspace', id, deleteFiles),
         archiveWorkspace: (id, isArchived) => ipc.invoke('db:archiveWorkspace', id, isArchived),
         bulkDeleteWorkspaces: (ids, deleteFiles) => ipc.invoke('db:bulkDeleteWorkspaces', ids, deleteFiles),
         bulkArchiveWorkspaces: (ids, isArchived) => ipc.invoke('db:bulkArchiveWorkspaces', ids, isArchived),

@@ -188,8 +188,8 @@ describe('Theme IPC Handlers', () => {
         it('should reject invalid manifest', async () => {
             const handler = mockIpcMainHandlers.get('theme:runtime:install');
 
-            await expect(handler!({}, null)).rejects.toThrow('Invalid theme manifest');
-            await expect(handler!({}, 'not-an-object')).rejects.toThrow('Invalid theme manifest');
+            await expect(handler!({}, null)).rejects.toThrow('error.theme.invalid_manifest');
+            await expect(handler!({}, 'not-an-object')).rejects.toThrow('error.theme.invalid_manifest');
         });
     });
 

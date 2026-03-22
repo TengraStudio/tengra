@@ -1,4 +1,5 @@
 import aboutSection from '@renderer/i18n/en/about';
+import accessibilitySection from '@renderer/i18n/en/accessibility';
 import accountsSection from '@renderer/i18n/en/accounts';
 import activityBarSection from '@renderer/i18n/en/activityBar';
 import advancedSection from '@renderer/i18n/en/advanced';
@@ -10,6 +11,7 @@ import agentDashboardSection from '@renderer/i18n/en/agentDashboard';
 import agentsSection from '@renderer/i18n/en/agents';
 import appSection from '@renderer/i18n/en/app';
 import appearanceSection from '@renderer/i18n/en/appearance';
+import appProvidersSection from '@renderer/i18n/en/appProviders';
 import ariaSection from '@renderer/i18n/en/aria';
 import assistantIdentitySection from '@renderer/i18n/en/assistantIdentity';
 import attachmentsSection from '@renderer/i18n/en/attachments';
@@ -19,26 +21,24 @@ import buildSection from '@renderer/i18n/en/build';
 import canvasSection from '@renderer/i18n/en/canvas';
 import chatSection from '@renderer/i18n/en/chat';
 import codeSandboxSection from '@renderer/i18n/en/codeSandbox';
-import collapseSection from '@renderer/i18n/en/collapse';
 import commandPaletteSection from '@renderer/i18n/en/commandPalette';
 import commonSection from '@renderer/i18n/en/common';
 import contextRetrievalSection from '@renderer/i18n/en/contextRetrieval';
 import councilSection from '@renderer/i18n/en/council';
-import databaseServiceSection from '@renderer/i18n/en/databaseService';
-import dataServiceSection from '@renderer/i18n/en/dataService';
+import dataSection from '@renderer/i18n/en/data';
+import databaseSection from '@renderer/i18n/en/database';
 import dateGroupsSection from '@renderer/i18n/en/dateGroups';
 import developerSection from '@renderer/i18n/en/developer';
 import devServerSection from '@renderer/i18n/en/devServer';
 import diffViewerSection from '@renderer/i18n/en/diffViewer';
 import dockerSection from '@renderer/i18n/en/docker';
 import dragDropSection from '@renderer/i18n/en/dragDrop';
+import editorSection from '@renderer/i18n/en/editor';
 import embeddingSection from '@renderer/i18n/en/embedding';
 import errorsSection from '@renderer/i18n/en/errors';
-import expandSection from '@renderer/i18n/en/expand';
 import exportSection from '@renderer/i18n/en/export';
 import exportChatSection from '@renderer/i18n/en/exportChat';
 import extensionDevSection from '@renderer/i18n/en/extensionDev';
-import extensionPromptSection from '@renderer/i18n/en/extensionPrompt';
 import fabSection from '@renderer/i18n/en/fab';
 import featureFlagSection from '@renderer/i18n/en/featureFlag';
 import gallerySection from '@renderer/i18n/en/gallery';
@@ -52,6 +52,7 @@ import inspectorSection from '@renderer/i18n/en/inspector';
 import languagesSection from '@renderer/i18n/en/languages';
 import loadingSection from '@renderer/i18n/en/loading';
 import loggingSection from '@renderer/i18n/en/logging';
+import mainProcessSection from '@renderer/i18n/en/mainProcess';
 import markdownSection from '@renderer/i18n/en/markdown';
 import mcpSection from '@renderer/i18n/en/mcp';
 import memorySection from '@renderer/i18n/en/memory';
@@ -59,22 +60,28 @@ import messageBubbleSection from '@renderer/i18n/en/messageBubble';
 import modalSection from '@renderer/i18n/en/modal';
 import modelComparisonSection from '@renderer/i18n/en/modelComparison';
 import modelExplorerSection from '@renderer/i18n/en/modelExplorer';
+import modelsSection from '@renderer/i18n/en/models';
 import modelSelectorSection from '@renderer/i18n/en/modelSelector';
 import modelsPageSection from '@renderer/i18n/en/modelsPage';
 import monitoringSection from '@renderer/i18n/en/monitoring';
 import navSection from '@renderer/i18n/en/nav';
 import notificationsSection from '@renderer/i18n/en/notifications';
 import onboardingSection from '@renderer/i18n/en/onboarding';
+import packagesSection from '@renderer/i18n/en/packages';
 import panelLayoutSection from '@renderer/i18n/en/panelLayout';
 import personasSection from '@renderer/i18n/en/personas';
 import placeholderSection from '@renderer/i18n/en/placeholder';
 import promptOptimizerSection from '@renderer/i18n/en/promptOptimizer';
+import promptsSection from '@renderer/i18n/en/prompts';
 import providerLabelsSection from '@renderer/i18n/en/providerLabels';
+import proxySection from '@renderer/i18n/en/proxy';
 import quickActionSection from '@renderer/i18n/en/quickAction';
+import runtimeSection from '@renderer/i18n/en/runtime';
 import semanticSearchSection from '@renderer/i18n/en/semanticSearch';
 import serviceHealthSection from '@renderer/i18n/en/serviceHealth';
 import settingsSection from '@renderer/i18n/en/settings';
 import shortcutsSection from '@renderer/i18n/en/shortcuts';
+import showcaseSection from '@renderer/i18n/en/showcase';
 import sidebarSection from '@renderer/i18n/en/sidebar';
 import speechSection from '@renderer/i18n/en/speech';
 import sshSection from '@renderer/i18n/en/ssh';
@@ -84,7 +91,7 @@ import tasksSection from '@renderer/i18n/en/tasks';
 import telemetrySection from '@renderer/i18n/en/telemetry';
 import templatesSection from '@renderer/i18n/en/templates';
 import terminalSection from '@renderer/i18n/en/terminal';
-import themeServiceSection from '@renderer/i18n/en/themeService';
+import themeSection from '@renderer/i18n/en/theme';
 import themeStoreSection from '@renderer/i18n/en/themeStore';
 import tipsSection from '@renderer/i18n/en/tips';
 import titleBarSection from '@renderer/i18n/en/titleBar';
@@ -102,6 +109,7 @@ import workspaceWizardSection from '@renderer/i18n/en/workspaceWizard';
 
 export const en = {
     "about": aboutSection,
+    "accessibility": accessibilitySection,
     "accounts": accountsSection,
     "activityBar": activityBarSection,
     "advanced": advancedSection,
@@ -109,10 +117,10 @@ export const en = {
     "advancedTab": advancedTabSection,
     "agent": agentSection,
     "agentCheckpoint": agentCheckpointSection,
-    
     "agentDashboard": agentDashboardSection,
     "agents": agentsSection,
     "app": appSection,
+    "appProviders": appProvidersSection,
     "appearance": appearanceSection,
     "aria": ariaSection,
     "assistantIdentity": assistantIdentitySection,
@@ -123,26 +131,25 @@ export const en = {
     "canvas": canvasSection,
     "chat": chatSection,
     "codeSandbox": codeSandboxSection,
-    "collapse": collapseSection,
     "commandPalette": commandPaletteSection,
     "common": commonSection,
     "contextRetrieval": contextRetrievalSection,
     "council": councilSection,
-    "dataService": dataServiceSection,
-    "databaseService": databaseServiceSection,
+    "data": dataSection,
+    "database": databaseSection,
     "dateGroups": dateGroupsSection,
-    "devServer": devServerSection,
     "developer": developerSection,
+    "devServer": devServerSection,
     "diffViewer": diffViewerSection,
     "docker": dockerSection,
     "dragDrop": dragDropSection,
+    "editor": editorSection,
     "embedding": embeddingSection,
     "errors": errorsSection,
-    "expand": expandSection,
     "export": exportSection,
     "exportChat": exportChatSection,
     "extensionDev": extensionDevSection,
-    "extensionPrompt": extensionPromptSection,
+
     "fab": fabSection,
     "featureFlag": featureFlagSection,
     "gallery": gallerySection,
@@ -156,6 +163,7 @@ export const en = {
     "languages": languagesSection,
     "loading": loadingSection,
     "logging": loggingSection,
+    "mainProcess": mainProcessSection,
     "markdown": markdownSection,
     "mcp": mcpSection,
     "memory": memorySection,
@@ -163,25 +171,28 @@ export const en = {
     "modal": modalSection,
     "modelComparison": modelComparisonSection,
     "modelExplorer": modelExplorerSection,
+    "models": modelsSection,
     "modelSelector": modelSelectorSection,
     "modelsPage": modelsPageSection,
     "monitoring": monitoringSection,
     "nav": navSection,
     "notifications": notificationsSection,
     "onboarding": onboardingSection,
+    "packages": packagesSection,
     "panelLayout": panelLayoutSection,
     "personas": personasSection,
     "placeholder": placeholderSection,
-    "workspaceDashboard": workspaceDashboardSection,
-    "workspaceWizard": workspaceWizardSection,
-    "workspaces": workspacesSection,
     "promptOptimizer": promptOptimizerSection,
+    "prompts": promptsSection,
     "providerLabels": providerLabelsSection,
+    "proxy": proxySection,
     "quickAction": quickActionSection,
+    "runtime": runtimeSection,
     "semanticSearch": semanticSearchSection,
     "serviceHealth": serviceHealthSection,
     "settings": settingsSection,
     "shortcuts": shortcutsSection,
+    "showcase": showcaseSection,
     "sidebar": sidebarSection,
     "speech": speechSection,
     "ssh": sshSection,
@@ -191,7 +202,7 @@ export const en = {
     "telemetry": telemetrySection,
     "templates": templatesSection,
     "terminal": terminalSection,
-    "themeService": themeServiceSection,
+    "theme": themeSection,
     "themeStore": themeStoreSection,
     "tips": tipsSection,
     "titleBar": titleBarSection,
@@ -202,6 +213,8 @@ export const en = {
     "welcome": welcomeSection,
     "workspace": workspaceSection,
     "workspaceAgent": workspaceAgentSection,
+    "workspaceDashboard": workspaceDashboardSection,
     "workspaceModals": workspaceModalsSection,
-    
+    "workspaces": workspacesSection,
+    "workspaceWizard": workspaceWizardSection
 };

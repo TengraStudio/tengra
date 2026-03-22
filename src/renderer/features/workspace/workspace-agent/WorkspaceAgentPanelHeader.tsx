@@ -1,12 +1,15 @@
 import type { WorkspaceAgentSessionSummary } from '@shared/types/workspace-agent-session';
 import {
     Archive,
+    ArrowLeft,
     Clock3,
-    FolderKanban,
-    Layers3,
+    ListTodo,
     MoreHorizontal,
+    Play,
     Plus,
     Shield,
+    Sparkles,
+    Users,
 } from 'lucide-react';
 import React from 'react';
 
@@ -185,7 +188,15 @@ export const WorkspaceAgentPanelHeader: React.FC<WorkspaceAgentPanelHeaderProps>
                 <div className="min-w-0">
                     <div className="flex items-center gap-2">
                         <div className="rounded-2xl border border-white/10 bg-white/5 p-2 text-cyan-200">
-                            <FolderKanban className="h-4 w-4" />
+                            {currentSession.modes.council ? (
+                                <Users className="h-4 w-4" />
+                            ) : currentSession.modes.agent ? (
+                                <Play className="h-4 w-4" />
+                            ) : currentSession.modes.plan ? (
+                                <ListTodo className="h-4 w-4" />
+                            ) : (
+                                <Sparkles className="h-4 w-4" />
+                            )}
                         </div>
                         <div className="min-w-0">
                             <div className="truncate text-base font-semibold text-foreground">
@@ -204,7 +215,7 @@ export const WorkspaceAgentPanelHeader: React.FC<WorkspaceAgentPanelHeaderProps>
                         title={t('memory.archive')}
                     />
                     <Button variant="ghost" size="icon" onClick={() => onSelectSession(null)} title={t('common.back')}>
-                        <Layers3 className="h-4 w-4" />
+                        <ArrowLeft className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={onOpenSessionPicker} title={t('common.more')}>
                         <MoreHorizontal className="h-4 w-4" />
@@ -228,7 +239,7 @@ export const WorkspaceAgentPanelHeader: React.FC<WorkspaceAgentPanelHeaderProps>
                     <SessionModes councilLabel={t('agents.council')} session={currentSession} t={t} />
                     <Badge variant="outline" className={cn('rounded-full border px-2 py-1 text-[11px]', getPermissionTone(currentSession))}>
                         <Shield className="mr-1 h-3 w-3" />
-                        {currentSession.permissionPolicy.commandPolicy}
+                        {t(`workspaceAgent.permissions.policy.${currentSession.permissionPolicy.commandPolicy}`)}
                     </Badge>
                     {telemetry && (
                         <Badge
@@ -242,7 +253,7 @@ export const WorkspaceAgentPanelHeader: React.FC<WorkspaceAgentPanelHeaderProps>
                                         : 'border-cyan-500/20 bg-cyan-500/10 text-cyan-100'
                             )}
                         >
-                            {telemetry.pressureState} · {Math.round(telemetry.usagePercent)}%
+                            {t(`common.${telemetry.pressureState}`)} · {Math.round(telemetry.usagePercent)}%
                         </Badge>
                     )}
                     {telemetry?.handoffCount ? (

@@ -1,9 +1,9 @@
 const sectionData = {
     "listening": "Listening...",
     "listeningLabel": "Listening",
-    "listeningDesc": "I am listening to you.",
+    "listeningDesc": "I'm listening.",
     "speaking": "Speaking...",
-    "speakingDesc": "I am talking to you.",
+    "speakingDesc": "I'm speaking.",
     "thinking": "Thinking...",
     "thinkingDesc": "Processing your request.",
     "stopSpeaking": "Stop Speaking",

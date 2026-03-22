@@ -1,6 +1,7 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
 
 import { useTranslation } from '@/i18n';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface Props {
     children: ReactNode;
@@ -29,11 +30,11 @@ class ErrorBoundaryBase extends Component<ErrorBoundaryBaseProps, State> {
     }
 
     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-        window.electron.log.error('Uncaught error', error);
-        window.electron.log.error('React error info', { componentStack: errorInfo.componentStack });
+        appLogger.error('ErrorBoundary', 'Uncaught error', error);
+        appLogger.error('ErrorBoundary', 'React error info', { componentStack: errorInfo.componentStack });
     }
 
-    public componentDidUpdate(prevProps: ErrorBoundaryBaseProps) {
+    public componentDidUpdate(prevProps: ErrorBoundaryBaseProps): void {
         if (this.state.hasError && this.props.resetKeys && prevProps.resetKeys) {
             const keysChanged = this.props.resetKeys.some((key, index) => {
                 const prevKey = prevProps.resetKeys?.[index];
@@ -50,7 +51,7 @@ class ErrorBoundaryBase extends Component<ErrorBoundaryBaseProps, State> {
         this.setState({ hasError: false, error: null });
     };
 
-    public render() {
+    public render(): ReactNode {
         if (this.state.hasError) {
             const resolvedError = this.state.error ?? new Error('Unknown render error');
             if (this.props.fallbackRender) {
@@ -60,7 +61,8 @@ class ErrorBoundaryBase extends Component<ErrorBoundaryBaseProps, State> {
                         resetErrorBoundary: this.resetErrorBoundary
                     });
                 } catch (fallbackError) {
-                    window.electron.log.error(
+                    appLogger.error(
+                        'ErrorBoundary',
                         'Error boundary fallback render failed',
                         fallbackError instanceof Error
                             ? fallbackError
@@ -75,7 +77,7 @@ class ErrorBoundaryBase extends Component<ErrorBoundaryBaseProps, State> {
     }
 }
 
-export const ErrorBoundary = (props: Props) => {
+export const ErrorBoundary = (props: Props): JSX.Element => {
     const { t } = useTranslation();
     const defaultFallbackRender = ({ resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) => (
         <div className="min-h-[220px] flex flex-col items-center justify-center gap-3 p-6 text-center">
@@ -88,14 +90,7 @@ export const ErrorBoundary = (props: Props) => {
                     className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm"
                 >
                     {t('common.retry')}
-                </button>
-                <button
-                    type="button"
-                    onClick={() => window.location.reload()}
-                    className="px-3 py-1.5 rounded-md border border-border text-sm"
-                >
-                    {t('common.reload')}
-                </button>
+                </button> 
             </div>
         </div>
     );

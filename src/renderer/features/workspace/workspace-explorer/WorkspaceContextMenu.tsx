@@ -1,4 +1,4 @@
-import { FilePlus, FolderPlus, Pencil, Trash2 } from 'lucide-react';
+import { FilePlus, FolderPlus, History, Pencil, SquareArrowDown, SquareArrowUp, Trash2 } from 'lucide-react';
 import React from 'react';
 import { createPortal } from 'react-dom';
 
@@ -19,6 +19,19 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
     onContextAction,
     t,
 }) => {
+    const hasGitEntryContext =
+        contextMenu.entry &&
+        contextMenu.entryMountType === 'local' &&
+        typeof contextMenu.entryGitStatus === 'string';
+    const rawGitStatus = contextMenu.entryGitRawStatus ?? '';
+    const hasStagedChanges =
+        rawGitStatus.length >= 1 &&
+        rawGitStatus[0] !== ' ' &&
+        rawGitStatus[0] !== '?';
+    const hasUnstagedChanges =
+        rawGitStatus === '??' ||
+        (rawGitStatus.length >= 2 && rawGitStatus[1] !== ' ');
+
     return createPortal(
         <div
             className="fixed bg-card/95 border border-border/50 rounded-xl shadow-2xl py-1.5 min-w-[180px] animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl"
@@ -48,6 +61,36 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
             {/* File/Folder context menu */}
             {contextMenu.entry && (
                 <>
+                    {hasGitEntryContext && (
+                        <>
+                            {(hasUnstagedChanges || !hasStagedChanges) && (
+                                <button
+                                    onClick={() => onContextAction('stage')}
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                    <SquareArrowUp className="w-3.5 h-3.5" />
+                                    {t('workspaceDashboard.stage')}
+                                </button>
+                            )}
+                            {hasStagedChanges && (
+                                <button
+                                    onClick={() => onContextAction('unstage')}
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                    <SquareArrowDown className="w-3.5 h-3.5" />
+                                    {t('workspaceDashboard.unstage')}
+                                </button>
+                            )}
+                            <button
+                                onClick={() => onContextAction('gitHistory')}
+                                className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                                <History className="w-3.5 h-3.5" />
+                                {t('agent.history')}
+                            </button>
+                            <div className="h-px bg-border/50 my-1 mx-2" />
+                        </>
+                    )}
                     {contextMenu.entry.isDirectory && (
                         <>
                             <button

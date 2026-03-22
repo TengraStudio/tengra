@@ -7,6 +7,10 @@ import * as https from 'https';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
+import {
+    DEFAULT_WORKSPACE_EXPLORER_IGNORE_PATTERNS,
+    getWorkspaceIgnoreMatcher,
+} from '@main/services/workspace/workspace-ignore.util';
 import { JsonObject } from '@shared/types/common';
 import { AISystemType } from '@shared/types/file-diff';
 import { ServiceResponse } from '@shared/types/index';
@@ -37,6 +41,22 @@ export class FileSystemService {
 
     updateAllowedRoots(allowedRoots: string[]) {
         this.allowedRoots = allowedRoots.map(r => path.resolve(r));
+    }
+
+    private resolveContainingRoot(targetPath: string): string | null {
+        const isWin = process.platform === 'win32';
+        const normalizedTargetPath = isWin
+            ? path.resolve(targetPath).toLowerCase()
+            : path.resolve(targetPath);
+        const matchingRoots = this.allowedRoots.filter(root => {
+            const normalizedRootPath = isWin ? path.resolve(root).toLowerCase() : path.resolve(root);
+            const relativePath = path.relative(normalizedRootPath, normalizedTargetPath);
+            return (
+                relativePath === '' ||
+                (!relativePath.startsWith('..') && !path.isAbsolute(relativePath))
+            );
+        }).sort((left, right) => right.length - left.length);
+        return matchingRoots[0] ?? null;
     }
 
     private isPathAllowed(filePath: string): boolean {
@@ -265,36 +285,25 @@ export class FileSystemService {
             this.validatePath(dirPath);
             const absolutePath = path.resolve(dirPath);
             const entries = await fs.readdir(absolutePath, { withFileTypes: true });
+            const workspaceRoot = this.resolveContainingRoot(absolutePath) ?? absolutePath;
+            const ignoreMatcher = await getWorkspaceIgnoreMatcher(workspaceRoot, {
+                defaultPatterns: DEFAULT_WORKSPACE_EXPLORER_IGNORE_PATTERNS,
+                extraPatterns: this.ignorePatterns,
+            });
 
             const filteredEntries = entries.filter(
-                entry => !this.shouldIgnore(path.join(absolutePath, entry.name))
-            );
-
-            // Parallel stat calls for much better performance
-            const files = await Promise.all(
-                filteredEntries.map(async entry => {
+                entry => {
                     const entryPath = path.join(absolutePath, entry.name);
-                    let size: number | undefined;
-                    let modified: string | undefined;
-
-                    // Optimization: Only stat if it's a file, or if we really need directory stats
-                    // For tree view, we often only need to know if it's a directory (which we already know)
-                    try {
-                        const stats = await fs.stat(entryPath);
-                        size = stats.size;
-                        modified = stats.mtime.toISOString();
-                    } catch {
-                        // ignore errors for individual files
+                    if (ignoreMatcher.ignoresAbsolute(entryPath)) {
+                        return false;
                     }
-
-                    return {
-                        name: entry.name,
-                        isDirectory: entry.isDirectory(),
-                        size,
-                        modified,
-                    };
-                })
+                    return !this.shouldIgnore(entryPath);
+                }
             );
+            const files = filteredEntries.map(entry => ({
+                name: entry.name,
+                isDirectory: entry.isDirectory(),
+            }));
             return { success: true, data: files };
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) };
@@ -380,7 +389,32 @@ export class FileSystemService {
             this.validatePath(destination);
             const srcPath = path.resolve(source);
             const destPath = path.resolve(destination);
+            await fs.mkdir(path.dirname(destPath), { recursive: true });
             await fs.copyFile(srcPath, destPath);
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
+    async copyPath(source: string, destination: string): Promise<ServiceResponse> {
+        try {
+            this.validatePath(source);
+            this.validatePath(destination);
+            const sourcePath = path.resolve(source);
+            const destinationPath = path.resolve(destination);
+            const sourceStats = await fs.stat(sourcePath);
+            await fs.mkdir(path.dirname(destinationPath), { recursive: true });
+
+            if (sourceStats.isDirectory()) {
+                await fs.cp(sourcePath, destinationPath, {
+                    recursive: true,
+                    force: true,
+                });
+            } else {
+                await fs.copyFile(sourcePath, destinationPath);
+            }
+
             return { success: true };
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) };

@@ -1036,13 +1036,13 @@ export class HuggingFaceService extends BaseService {
 
             const response = await fetch(url, { headers, signal });
             if (!response.ok && response.status !== 206) {
-                throw new Error(`Download failed with status ${response.status}`);
+                throw new Error('error.llm.download_failed');
             }
 
             const total = (parseInt(response.headers.get('content-length') ?? '0', 10) || 0) + start;
             const fileStream = fs.createWriteStream(outputPath, { flags: start > 0 ? 'a' : 'w' });
             if (!response.body) {
-                throw new Error('Response body is null');
+                throw new Error('error.llm.response_body_null');
             }
 
             const reader = response.body.getReader();
@@ -1058,7 +1058,7 @@ export class HuggingFaceService extends BaseService {
                     received += value.length;
                     onProgress?.(received, total);
                     if (signal?.aborted) {
-                        throw new Error('Download aborted');
+                        throw new Error('error.llm.download_aborted');
                     }
                 }
             } finally {
@@ -1185,10 +1185,10 @@ export class HuggingFaceService extends BaseService {
             signal
         });
         if (!response.ok && response.status !== 206) {
-            throw new Error(`Chunk download failed with status ${response.status}`);
+            throw new Error('error.llm.download_failed');
         }
         if (!response.body) {
-            throw new Error('Chunk response body is null');
+            throw new Error('error.llm.response_body_null');
         }
 
         const ws = fs.createWriteStream(outputPath, { flags: 'w' });
@@ -1307,7 +1307,7 @@ export class HuggingFaceService extends BaseService {
             if (signal) {
                 signal.addEventListener('abort', () => {
                     clearTimeout(timer);
-                    reject(new Error('Download aborted'));
+                    reject(new Error('error.llm.download_aborted'));
                 }, { once: true });
             }
         });

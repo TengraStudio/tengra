@@ -10,7 +10,7 @@ const sectionData = {
         "idle": "Hazır",
         "listening": "Dinleniyor...",
         "processing": "İşleniyor...",
-        "standby": "Ses Beklemede",
+        "standby": "Ses beklemede",
         "speaking": "Konuşuyor...",
         "error": "Hata"
     },
@@ -21,29 +21,29 @@ const sectionData = {
         "executedPrefix": "Çalıştırıldı"
     },
     "settings": {
-        "enableVoice": "Ses Kontrolünü Etkinleştir",
+        "enableVoice": "Ses kontrolünü etkinleştir",
         "enableVoiceDescription": "Uygulamayı ses komutlarıyla kontrol edin",
-        "wakeWord": "Uyandırma Kelimesi",
+        "wakeWord": "Uyandırma kelimesi",
         "wakeWordLabel": "Uyandırma kelimesi",
         "continuousListening": "Sürekli dinleme modu",
-        "speech": "Konuşma Ayarları",
+        "speech": "Konuşma ayarları",
         "voice": "Ses",
         "selectVoice": "Bir ses seçin",
         "speechRate": "Konuşma hızı",
         "speechPitch": "Konuşma tonu",
         "speechVolume": "Konuşma ses düzeyi",
-        "feedback": "Geri Bildirim Ayarları",
+        "feedback": "Geri bildirim ayarları",
         "audioFeedback": "Sesli geri bildirim",
         "visualFeedback": "Görsel geri bildirim",
         "accessibilityMode": "Erişilebilirlik modu",
-        "customCommands": "Özel Komutlar",
+        "customCommands": "Özel komutlar",
         "commandPhrase": "Komut ifadesi",
         "commandAction": "Eylem"
     },
     "commands": {
-        "title": "Ses Komutları",
+        "title": "Ses komutları",
         "aliases": "Takma adlar",
-        "customDescription": "Custom command: {{phrase}}",
+        "customDescription": "Özel komut: {{phrase}}",
         "categories": {
             "navigation": "Gezinme",
             "actions": "Eylemler",
@@ -52,7 +52,22 @@ const sectionData = {
             "accessibility": "Erişilebilirlik",
             "custom": "Özel"
         }
-    }
+    },
+    "addNewCommand": "Yeni komut ekle",
+    "audioFeedback": "Sesli geri bildirim",
+    "behavior": "Davranış",
+    "continuousListening": "Sürekli dinleme",
+    "helpToast": "Sesli komut yardımı hazır.",
+    "interfaceSubtitle": "Uygulamayı sesinizle kontrol edin",
+    "interfaceTitle": "Sesli Arayüz",
+    "pitch": "Ton",
+    "speechSettings": "Konuşma ayarları",
+    "speed": "Hız",
+    "systemDefault": "Sistem varsayılanı",
+    "visualFeedback": "Görsel geri bildirim",
+    "voiceSelection": "Ses seçimi",
+    "volume": "Ses düzeyi",
+    "wakeWord": "Uyandırma kelimesi"
 };
 
 export default sectionData;

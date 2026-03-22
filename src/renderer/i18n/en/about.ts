@@ -1,17 +1,17 @@
 const sectionData = {
-    "description": "Tengra is a next-generation AI IDE assistant designed for developers, unifying local and cloud-based AI models in a single interface.",
-    "checkUpdates": "Check for Updates",
+    "description": "Tengra is a next-generation AI IDE assistant for developers, bringing local and cloud AI models together in one interface.",
+    "checkUpdates": "Check for updates",
     "privacyPolicy": "Privacy Policy",
     "github": "GitHub",
     "copyright": "© 2025 Tengra",
     "factoryReset": "Factory Reset",
-    "factoryResetDesc": "Resets the application by deleting all settings and data.",
-    "updateCheckAlert": "Update check enabled in production builds.",
+    "factoryResetDesc": "Delete all settings and data to reset the app.",
+    "updateCheckAlert": "Update checks are enabled in production builds.",
     "locale": "Locale",
     "buildSync": "Build Sync",
-    "forceReload": "FORCE RELOAD",
+    "forceReload": "Force Reload",
     "sessionStart": "Session Start",
-    "buildVersion": "Build Ver",
+    "buildVersion": "Build version",
     "notAvailable": "N/A"
 };
 

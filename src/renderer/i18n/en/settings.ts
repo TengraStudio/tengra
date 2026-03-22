@@ -15,10 +15,10 @@ const sectionData = {
         "accessibility": "Accessibility"
     },
     "searchPlaceholder": "Search settings...",
-    "searchResults": "Found {count} matching settings",
+    "searchResults": "Found {count} matching setting(s)",
     "noResults": "No settings found",
     "title": "Settings",
-    "subtitle": "Configure application preferences.",
+    "subtitle": "Configure your app preferences.",
     "general": "General",
     "accounts": "Accounts",
     "models": "Models",
@@ -33,17 +33,17 @@ const sectionData = {
     "personas": "Personas",
     "accessibility": {
         "title": "Accessibility",
-        "description": "Customize your experience for better accessibility",
+        "description": "Customize the app for better accessibility.",
         "highContrast": "High Contrast Mode",
         "highContrastDesc": "Increase contrast for better visibility",
         "reducedMotion": "Reduced Motion",
-        "reducedMotionDesc": "Minimize animations and transitions",
+        "reducedMotionDesc": "Reduce animations and transitions",
         "enhancedFocus": "Enhanced Focus Indicators",
-        "enhancedFocusDesc": "Make focus states more visible",
+        "enhancedFocusDesc": "Make focus indicators easier to see",
         "screenReader": "Screen Reader Announcements",
-        "screenReaderDesc": "Enable announcements for screen readers",
+        "screenReaderDesc": "Enable screen reader announcements",
         "systemPrefs": "System Preferences",
-        "systemPrefsDesc": "Some settings automatically detect your system preferences. Enable \"Reduced Motion\" or \"High Contrast\" in your operating system for automatic detection.",
+        "systemPrefsDesc": "Some settings follow your system preferences automatically. Enable \"Reduced Motion\" or \"High Contrast\" in your OS to apply them here.",
         "shortcuts": "Keyboard Shortcuts",
         "shortcutTab": "Tab",
         "shortcutShiftTab": "Shift + Tab",
@@ -99,34 +99,34 @@ const sectionData = {
     "browserClosure": {
         "title": "Browser Closure Required",
         "description": "To authenticate with {{provider}}, Tengra needs to read protected cookies.",
-        "warningPrefix": "We must",
-        "warningEmphasis": "automatically close your browser",
+        "warningPrefix": "We need to",
+        "warningEmphasis": "close your browser automatically",
         "warningSuffix": "to release the file lock.",
-        "saveWork": "Please save your work in the browser before proceeding. We will re-open it invisibly to extract the session key.",
-        "confirm": "Close Browser & Connect"
+        "saveWork": "Please save your browser work before continuing. We'll reopen it in the background to extract the session key.",
+        "confirm": "Close Browser & Continue"
     },
     "hyperparameters": {
         "title": "Hyperparameters",
         "temperature": {
             "label": "Temperature",
-            "description": "Creativity level (0: deterministic, 2: very creative)"
+            "description": "Controls creativity (0: deterministic, 2: very creative)"
         },
         "topP": {
             "label": "Top-P",
-            "description": "Nucleus sampling probability threshold"
+            "description": "Nucleus sampling probability threshold."
         },
         "topK": {
             "label": "Top-K",
-            "description": "Number of most likely tokens to consider"
+            "description": "Number of likely tokens to consider."
         },
         "repeatPenalty": {
             "label": "Repeat Penalty",
-            "description": "Repetition penalty (1: none, 2: high)"
+            "description": "Penalty for repetition (1: none, 2: high)."
         }
     },
     "mcp": {
         "title": "Model Context Protocol",
-        "subtitle": "Manage your MCP servers and install new tools",
+        "subtitle": "Manage MCP servers and install new tools.",
         "healthSummary": "{{title}}: {{state}} | {{loading}} avg {{avg}}ms / budget {{budget}}ms",
         "tabs": {
             "servers": "Servers"
@@ -138,7 +138,7 @@ const sectionData = {
             "empty": "No servers connected",
             "enabled": "enabled",
             "note": "Note",
-            "noteText": "Only enabled servers are accessible to AI assistants. Toggle the power button to enable/disable each server.",
+            "noteText": "AI assistants can access only enabled servers. Use the toggle to enable or disable each one.",
             "internalAlwaysEnabled": "Internal tools are always enabled"
         },
         "status": {
@@ -155,11 +155,11 @@ const sectionData = {
             "profile": "Permission Profile"
         },
         "profiles": {
-            "read-only": "Read Only",
-            "workspace-only": "Workspace Only",
-            "network-enabled": "Network Enabled",
+            "read-only": "Read-only",
+            "workspace-only": "Workspace-only",
+            "network-enabled": "Network-enabled",
             "destructive": "Destructive",
-            "full-access": "Full Access"
+            "full-access": "Full access"
         }
     },
     "images": {
@@ -171,13 +171,13 @@ const sectionData = {
         "remoteCloud": "Remote Cloud",
         "runtimeManagement": "Runtime Management",
         "reinstall": "Reinstall",
-        "reinstallHelp": "Reinstall the runtime if corrupted",
+        "reinstallHelp": "Reinstall the runtime if it's corrupted",
         "operationsTitle": "Image Operations",
         "refreshData": "Refresh Image Data",
         "historyTitle": "Generation History",
         "noHistory": "No image generation history yet.",
         "regenerate": "Regenerate",
-        "compareSelectionHint": "Select at least two history entries to compare.",
+        "compareSelectionHint": "Select at least two history items to compare.",
         "compareRun": "Run Comparison",
         "compareClear": "Clear Selection",
         "compareTitle": "Comparison Summary",
@@ -222,15 +222,15 @@ const sectionData = {
         "resourceBalanced": "Resource: Balanced",
         "resourceQuality": "Resource: Quality",
         "resourceSpeed": "Resource: Speed",
-        "queuePrioritySummary": "high: {{high}} · normal: {{normal}} · low: {{low}}",
+        "queuePrioritySummary": "High: {{high}} · Normal: {{normal}} · Low: {{low}}",
         "compareExport": "Export Compare",
         "compareShare": "Share Compare",
-        "compareQuality": "Avg bytes/pixel",
+        "compareQuality": "Avg. bytes per pixel",
         "compareEntryMeta": "{{width}}x{{height}} · {{steps}} steps · cfg {{cfg}}",
         "analyticsTitle": "Image Analytics",
         "analyticsTotal": "Total",
-        "analyticsAverageSteps": "Avg Steps",
-        "analyticsAverageDuration": "Avg Duration (ms)",
+        "analyticsAverageSteps": "Avg. steps",
+        "analyticsAverageDuration": "Avg. duration (ms)",
         "runtimeName": "Stable Diffusion (C++)",
         "runtimeVersion": "v1.5",
         "downloading": "Downloading",
@@ -241,12 +241,12 @@ const sectionData = {
         "noWorkflowTemplates": "No workflow templates saved yet.",
         "exportWorkflowTemplate": "Export Workflow Template",
         "workflowShareCode": "Workflow Share Code",
-        "workflowShareCodePlaceholder": "Paste workflow share code...",
+        "workflowShareCodePlaceholder": "Paste a workflow share code...",
         "importWorkflowTemplateShare": "Import Workflow Share"
     },
     "storageDashboard": {
         "title": "Storage Dashboard",
-        "subtitle": "Track database usage and total application records.",
+        "subtitle": "Track database usage and total app records.",
         "loadError": "Failed to load storage statistics.",
         "dbSize": "Database",
         "totalChats": "Chats",
@@ -255,7 +255,7 @@ const sectionData = {
     },
     "databaseSizeDashboard": {
         "title": "Database Size",
-        "subtitle": "Break down storage usage by record type.",
+        "subtitle": "Storage usage by record type.",
         "loadError": "Failed to load database statistics.",
         "dbSize": "Database",
         "chats": "Chats",
@@ -266,9 +266,9 @@ const sectionData = {
     },
     "performanceDashboard": {
         "title": "System Diagnostics",
-        "subtitle": "Real-time resource utilization and startup health",
-        "fetchError": "Failed to fetch performance data",
-        "gcError": "GC trigger failed",
+        "subtitle": "Real-time resource usage and startup health.",
+        "fetchError": "Failed to load performance data.",
+        "gcError": "Failed to trigger garbage collection.",
         "clearMemory": "Clear Memory",
         "processTree": "Process Tree",
         "diagnosticAlerts": "Diagnostic Alerts",
@@ -280,8 +280,8 @@ const sectionData = {
             "startupTime": "Startup Time",
             "readyTime": "Ready: {{duration}}",
             "alerts": "Alerts",
-            "issuesDetected": "Potential issues detected",
-            "healthOptimal": "Health status optimal"
+            "issuesDetected": "Potential issues found",
+            "healthOptimal": "System health is optimal"
         },
         "table": {
             "type": "Type",

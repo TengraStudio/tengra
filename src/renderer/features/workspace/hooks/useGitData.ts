@@ -1,11 +1,18 @@
 import { useCallback, useState } from 'react';
 
 import type { Workspace } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { DiffStats, GitCommitInfo, GitData, GitFile, Remote, TrackingInfo } from '../components/git/types';
 import { emptyGitData, fetchFullGitData, GitSectionErrors } from '../utils/git-utils';
 
-const useGitOperations = (workspacePath: string | undefined, fetchGitData: () => Promise<void>, selectedFile: GitFile | null, setSelectedFile: (file: GitFile | null) => void, loadFileDiff: (filePath: string, staged: boolean) => Promise<void>) => {
+const useGitOperations = (
+    workspacePath: string | undefined,
+    fetchGitData: () => Promise<void>,
+    selectedFile: GitFile | null,
+    setSelectedFile: (file: GitFile | null) => void,
+    loadFileDiff: (filePath: string, staged: boolean) => Promise<void>
+) => {
     const [commitMessage, setCommitMessage] = useState('');
     const [isCommitting, setIsCommitting] = useState(false);
     const [isPushing, setIsPushing] = useState(false);
@@ -28,7 +35,7 @@ const useGitOperations = (workspacePath: string | undefined, fetchGitData: () =>
                 setLastActionError(result.error ?? 'Failed to stage file');
             }
         } catch (e) {
-            window.electron.log.error('Failed to stage file', e as Error);
+            appLogger.error('useGitData', 'Failed to stage file', e as Error);
             setLastActionError((e as Error).message);
         }
     }, [workspacePath, fetchGitData, selectedFile, loadFileDiff, setSelectedFile]);
@@ -48,7 +55,7 @@ const useGitOperations = (workspacePath: string | undefined, fetchGitData: () =>
                 setLastActionError(result.error ?? 'Failed to unstage file');
             }
         } catch (e) {
-            window.electron.log.error('Failed to unstage file', e as Error);
+            appLogger.error('useGitData', 'Failed to unstage file', e as Error);
             setLastActionError((e as Error).message);
         }
     }, [workspacePath, fetchGitData, selectedFile, loadFileDiff, setSelectedFile]);
@@ -63,10 +70,10 @@ const useGitOperations = (workspacePath: string | undefined, fetchGitData: () =>
                 await fetchGitData();
             } else {
                 setLastActionError(result.error ?? 'Failed to checkout branch');
-                window.electron.log.error('Failed to checkout branch', new Error(result.error ?? 'Unknown error'));
+                appLogger.error('useGitData', 'Failed to checkout branch', new Error(result.error ?? 'Unknown error'));
             }
         } catch (e) {
-            window.electron.log.error('Failed to checkout branch', e as Error);
+            appLogger.error('useGitData', 'Failed to checkout branch', e as Error);
             setLastActionError((e as Error).message);
         } finally {
             setIsCheckingOut(false);
@@ -84,10 +91,10 @@ const useGitOperations = (workspacePath: string | undefined, fetchGitData: () =>
                 await fetchGitData();
             } else {
                 setLastActionError(result.error ?? 'Failed to commit');
-                window.electron.log.error('Failed to commit', new Error(result.error ?? 'Unknown error'));
+                appLogger.error('useGitData', 'Failed to commit', new Error(result.error ?? 'Unknown error'));
             }
         } catch (e) {
-            window.electron.log.error('Failed to commit', e as Error);
+            appLogger.error('useGitData', 'Failed to commit', e as Error);
             setLastActionError((e as Error).message);
         } finally {
             setIsCommitting(false);
@@ -104,10 +111,10 @@ const useGitOperations = (workspacePath: string | undefined, fetchGitData: () =>
                 await fetchGitData();
             } else {
                 setLastActionError(result.error ?? 'Failed to push');
-                window.electron.log.error('Failed to push', new Error(result.error ?? 'Unknown error'));
+                appLogger.error('useGitData', 'Failed to push', new Error(result.error ?? 'Unknown error'));
             }
         } catch (e) {
-            window.electron.log.error('Failed to push', e as Error);
+            appLogger.error('useGitData', 'Failed to push', e as Error);
             setLastActionError((e as Error).message);
         } finally {
             setIsPushing(false);
@@ -124,10 +131,10 @@ const useGitOperations = (workspacePath: string | undefined, fetchGitData: () =>
                 await fetchGitData();
             } else {
                 setLastActionError(result.error ?? 'Failed to pull');
-                window.electron.log.error('Failed to pull', new Error(result.error ?? 'Unknown error'));
+                appLogger.error('useGitData', 'Failed to pull', new Error(result.error ?? 'Unknown error'));
             }
         } catch (e) {
-            window.electron.log.error('Failed to pull', e as Error);
+            appLogger.error('useGitData', 'Failed to pull', e as Error);
             setLastActionError((e as Error).message);
         } finally {
             setIsPulling(false);
@@ -152,8 +159,8 @@ const useGitOperations = (workspacePath: string | undefined, fetchGitData: () =>
 };
 
 interface GitSectionState {
-    loading: boolean
-    error: string | null
+    loading: boolean;
+    error: string | null;
 }
 
 interface GitSectionStates {
@@ -208,7 +215,7 @@ export function useGitData(workspace: Workspace) {
             setCommitStats(data.commitStats);
             setSectionStates(createGitSectionStates(false, data.sectionErrors));
         } catch (error) {
-            window.electron.log.error('Failed to fetch git data', error as Error);
+            appLogger.error('useGitData', 'Failed to fetch git data', error as Error);
             setGitData(prev => ({ ...prev, loading: false }));
             setSectionStates(createGitSectionStates(false, {
                 status: 'fetch-failed',
@@ -229,7 +236,7 @@ export function useGitData(workspace: Workspace) {
                 setFileDiff({ original: result.original, modified: result.modified });
             }
         } catch (error) {
-            window.electron.log.error('Failed to load file diff', error as Error);
+            appLogger.error('useGitData', 'Failed to load file diff', error as Error);
         } finally {
             setLoadingDiff(false);
         }
@@ -273,7 +280,7 @@ export function useGitData(workspace: Workspace) {
                 setCommitDiff(result.diff);
             }
         } catch (e) {
-            window.electron.log.error('Failed to load commit diff', e as Error);
+            appLogger.error('useGitData', 'Failed to load commit diff', e as Error);
         } finally {
             setLoadingDiff(false);
         }

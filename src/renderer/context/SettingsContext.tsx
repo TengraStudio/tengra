@@ -31,9 +31,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     // Apply global appearances settings
     useEffect(() => {
         if (!settings?.general) { return; }
-        if (settings.general.fontSize) {
-            document.documentElement.style.setProperty('--font-size-base', `${settings.general.fontSize}px`);
-        }
         if (settings.general.theme) {
             document.documentElement.setAttribute('data-theme', settings.general.theme);
         }

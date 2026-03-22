@@ -1,21 +1,27 @@
+import type { FileSearchResult } from '@shared/types/common';
+import { X } from 'lucide-react';
 import React from 'react';
 
 import { CodeEditor } from '@/components/ui/CodeEditor';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { EditorTab } from '@/types';
+import { EditorTab, Workspace } from '@/types';
 import { getLanguageFromExtension } from '@/utils/language-map';
 
 import { useEditorAIReview } from './useEditorAIReview';
 import { useEditorMacros } from './useEditorMacros';
-import { useEditorSnippets } from './useEditorSnippets';
+
 
 export interface WorkspaceEditorProps {
     activeTab: EditorTab | null;
     updateTabContent: (value: string) => void;
+    saveActiveTab?: (options?: { silent?: boolean }) => Promise<void>;
+    autoSaveEnabled?: boolean;
     workspaceKey?: string;
     workspacePath?: string;
+    workspaceEditorSettings?: Workspace['editor'];
     emptyState: React.ReactNode;
+    onOpenFile?: (path: string, line?: number) => void;
 }
 
 interface EditorViewState {
@@ -23,6 +29,10 @@ interface EditorViewState {
     column: number;
     scrollTop: number;
 }
+
+const MAX_EDITOR_VIEW_STATE_ENTRIES = 40;
+const VIEW_STATE_SCROLL_PERSIST_DELAY_MS = 120;
+const AUTO_SAVE_DELAY_MS = 700;
 
 /* ------------------------------------------------------------------ */
 /*  Workspace tools reducer – groups rename, scratch, test, settings  */
@@ -107,20 +117,154 @@ function useUnsavedChangesGuard(hasUnsavedChanges: boolean): void {
 }
 
 /** Persists and restores per-file view state from localStorage. */
-function useViewStatePersistence(storageKey: string): Record<string, EditorViewState> {
-    const [viewStateMap] = React.useState<Record<string, EditorViewState>>(() => {
-        try {
-            const raw = localStorage.getItem(storageKey);
-            if (!raw) {
-                return {};
+function sanitizeViewStateEntry(value: RendererDataValue): EditorViewState | null {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        return null;
+    }
+
+    const entry = value as Record<string, RendererDataValue>;
+
+    const lineNumber =
+        typeof entry.lineNumber === 'number' && Number.isFinite(entry.lineNumber)
+            ? Math.max(1, Math.floor(entry.lineNumber))
+            : 1;
+    const column =
+        typeof entry.column === 'number' && Number.isFinite(entry.column)
+            ? Math.max(1, Math.floor(entry.column))
+            : 1;
+    const scrollTop =
+        typeof entry.scrollTop === 'number' && Number.isFinite(entry.scrollTop)
+            ? Math.max(0, Math.floor(entry.scrollTop))
+            : 0;
+
+    return {
+        lineNumber,
+        column,
+        scrollTop,
+    };
+}
+
+function sanitizeViewStateMap(raw: string | null): Record<string, EditorViewState> {
+    if (!raw) {
+        return {};
+    }
+
+    try {
+        const parsed = JSON.parse(raw) as Record<string, RendererDataValue>;
+        const nextState: Record<string, EditorViewState> = {};
+        for (const [filePath, value] of Object.entries(parsed)) {
+            const normalizedPath = filePath.trim();
+            const entry = sanitizeViewStateEntry(value);
+            if (!normalizedPath || !entry) {
+                continue;
             }
-            return JSON.parse(raw) as Record<string, EditorViewState>;
+            nextState[normalizedPath] = entry;
+        }
+        return nextState;
+    } catch {
+        return {};
+    }
+}
+
+function buildNextViewStateMap(
+    currentState: Record<string, EditorViewState>,
+    filePath: string,
+    nextEntry: EditorViewState
+): Record<string, EditorViewState> {
+    const preservedEntries = Object.entries(currentState)
+        .filter(([existingPath]) => existingPath !== filePath)
+        .slice(0, MAX_EDITOR_VIEW_STATE_ENTRIES - 1);
+
+    return Object.fromEntries([[filePath, nextEntry], ...preservedEntries]);
+}
+
+function useViewStatePersistence(
+    storageKey: string
+): [
+    Record<string, EditorViewState>,
+    (filePath: string, patch: Partial<EditorViewState>) => void
+] {
+    const [viewStateMap, setViewStateMap] = React.useState<Record<string, EditorViewState>>(() => {
+        try {
+            return sanitizeViewStateMap(localStorage.getItem(storageKey));
         } catch {
             return {};
         }
     });
 
-    return viewStateMap;
+    const persistViewState = React.useCallback(
+        (filePath: string, patch: Partial<EditorViewState>) => {
+            const normalizedPath = filePath.trim();
+            if (!normalizedPath) {
+                return;
+            }
+
+            setViewStateMap(prevState => {
+                const previousEntry = prevState[normalizedPath] ?? {
+                    lineNumber: 1,
+                    column: 1,
+                    scrollTop: 0,
+                };
+                const nextEntry: EditorViewState = {
+                    lineNumber: Math.max(1, Math.floor(patch.lineNumber ?? previousEntry.lineNumber)),
+                    column: Math.max(1, Math.floor(patch.column ?? previousEntry.column)),
+                    scrollTop: Math.max(0, Math.floor(patch.scrollTop ?? previousEntry.scrollTop)),
+                };
+
+                if (
+                    previousEntry.lineNumber === nextEntry.lineNumber &&
+                    previousEntry.column === nextEntry.column &&
+                    previousEntry.scrollTop === nextEntry.scrollTop
+                ) {
+                    return prevState;
+                }
+
+                const nextState = buildNextViewStateMap(prevState, normalizedPath, nextEntry);
+                try {
+                    localStorage.setItem(storageKey, JSON.stringify(nextState));
+                } catch {
+                    // Ignore persistence failures in restricted environments.
+                }
+                return nextState;
+            });
+        },
+        [storageKey]
+    );
+
+    return [viewStateMap, persistViewState];
+}
+
+function useEditorAutoSave(args: {
+    activeTab: EditorTab | null;
+    autoSaveEnabled: boolean;
+    saveActiveTab?: (options?: { silent?: boolean }) => Promise<void>;
+}): void {
+    const { activeTab, autoSaveEnabled, saveActiveTab } = args;
+    const autoSaveRequestIdRef = React.useRef(0);
+
+    React.useEffect(() => {
+        if (!autoSaveEnabled || activeTab?.type !== 'code') {
+            return undefined;
+        }
+        if (activeTab.content === activeTab.savedContent) {
+            return undefined;
+        }
+
+        autoSaveRequestIdRef.current += 1;
+        const requestId = autoSaveRequestIdRef.current;
+        const timeoutId = window.setTimeout(() => {
+            if (requestId !== autoSaveRequestIdRef.current) {
+                return;
+            }
+            if (saveActiveTab) {
+                void saveActiveTab({ silent: true });
+            }
+        }, AUTO_SAVE_DELAY_MS);
+
+        return () => {
+            window.clearTimeout(timeoutId);
+        };
+    }, [activeTab, autoSaveEnabled, saveActiveTab]);
 }
 
 /* ------------------------------------------------------------------ */
@@ -173,57 +317,6 @@ function useRefactorActions(deps: WorkspaceActionDeps) {
     return { previewSemanticRefactor, applySemanticRefactor, previewRename };
 }
 
-/** Test runner and scratchpad actions. */
-function useTestAndScratchActions({ activeTab, workspacePath, dispatch, tools, setStatusMessage }: WorkspaceActionDeps) {
-    const { t } = useTranslation();
-
-    const runTestCommand = React.useCallback(async (mode: 'nearest' | 'file' | 'suite') => {
-        if (!workspacePath) {
-            return;
-        }
-        const fileArg = activeTab?.name ?? '';
-        const commandByMode: Record<'nearest' | 'file' | 'suite', string[]> = {
-            nearest: ['test', '--', fileArg],
-            file: ['test', '--', fileArg],
-            suite: ['test'],
-        };
-        const result = await window.electron.runCommand('npm', commandByMode[mode], workspacePath);
-        const output = `${result.stdout}\n${result.stderr}`.trim();
-        const lines = output.split('\n').filter(line => /fail|pass|error/i.test(line)).slice(0, 20);
-        dispatch({ type: 'SET_TEST_RESULTS', output, lines });
-    }, [activeTab?.name, dispatch, workspacePath]);
-
-    const runScratchCommand = React.useCallback(async () => {
-        if (!workspacePath || !tools.scratchNote.trim()) {
-            return;
-        }
-        const parts = tools.scratchNote.trim().split(/\s+/);
-        const command = parts[0];
-        if (!command) {
-            return;
-        }
-        const result = await window.electron.runCommand(command, parts.slice(1), workspacePath);
-        dispatch({ type: 'SET_TEST_RESULTS', output: `${result.stdout}\n${result.stderr}`.trim(), lines: [] });
-    }, [dispatch, workspacePath, tools.scratchNote]);
-
-    const saveScratchAsDoc = React.useCallback(async () => {
-        if (!workspacePath) {
-            return;
-        }
-        await window.electron.files.writeFile(`${workspacePath}\\docs\\${tools.scratchName}.md`, tools.scratchNote);
-        setStatusMessage(t('workspaceDashboard.editor.scratchSavedDoc'));
-    }, [workspacePath, tools.scratchName, tools.scratchNote, setStatusMessage, t]);
-
-    const saveScratchAsTask = React.useCallback(async () => {
-        if (!workspacePath) {
-            return;
-        }
-        await window.electron.files.writeFile(`${workspacePath}\\tasks\\${tools.scratchName}.txt`, tools.scratchNote);
-        setStatusMessage(t('workspaceDashboard.editor.scratchSavedTask'));
-    }, [workspacePath, tools.scratchName, tools.scratchNote, setStatusMessage, t]);
-
-    return { runTestCommand, runScratchCommand, saveScratchAsDoc, saveScratchAsTask };
-}
 
 /* ------------------------------------------------------------------ */
 /*  Main component                                                    */
@@ -240,31 +333,69 @@ function useTestAndScratchActions({ activeTab, workspacePath, dispatch, tools, s
 export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
     activeTab,
     updateTabContent,
+    saveActiveTab,
+    autoSaveEnabled = false,
     workspaceKey = 'global',
     workspacePath,
-    emptyState
+    workspaceEditorSettings,
+    emptyState,
+    onOpenFile,
 }) => {
-    void useTranslation();
+    const { t } = useTranslation();
     const hasUnsavedChanges = Boolean(activeTab && activeTab.content !== activeTab.savedContent);
-    const activeLanguage = activeTab ? getLanguageFromExtension(activeTab.name) : 'typescript';
     const [statusMessage, setStatusMessage] = React.useState('');
     const [tools, dispatch] = React.useReducer(workspaceToolsReducer, WORKSPACE_TOOLS_INITIAL);
+    const [workspaceResults, setWorkspaceResults] = React.useState<{
+        symbol: string;
+        results: FileSearchResult[];
+    } | null>(null);
 
-    const viewStateMap = useViewStatePersistence(`workspace.editor.viewstate:${workspaceKey}`);
-    void (activeTab ? viewStateMap[activeTab.path] : undefined);
+    const [viewStateMap, persistViewState] = useViewStatePersistence(
+        `workspace.editor.viewstate:${workspaceKey}`
+    );
+    const activeViewState = activeTab ? viewStateMap[activeTab.path] : undefined;
+    const pendingScrollStateRef = React.useRef<{ path: string; scrollTop: number } | null>(null);
+    const scrollPersistTimeoutRef = React.useRef<number | null>(null);
     useUnsavedChangesGuard(hasUnsavedChanges);
+    useEditorAutoSave({ activeTab, autoSaveEnabled, saveActiveTab });
 
-    const snippetHook = useEditorSnippets({ activeTab, activeLanguage, workspaceKey, updateTabContent, setStatusMessage });
     const aiReview = useEditorAIReview({ activeTab, workspacePath });
     const macros = useEditorMacros({ updateTabContent, setStatusMessage });
     const actionDeps: WorkspaceActionDeps = { activeTab, workspacePath, updateTabContent, dispatch, tools, setStatusMessage };
-    const refactorActions = useRefactorActions(actionDeps);
-    const testScratchActions = useTestAndScratchActions(actionDeps);
-    void snippetHook;
+    const refactorActions = useRefactorActions(actionDeps); 
+    void macros;
     void refactorActions;
-    void testScratchActions;
 
     const performanceMode = !tools.performanceOverride && (activeTab?.content.length ?? 0) > 20000;
+
+    const flushPendingScrollState = React.useCallback(() => {
+        if (scrollPersistTimeoutRef.current !== null) {
+            window.clearTimeout(scrollPersistTimeoutRef.current);
+            scrollPersistTimeoutRef.current = null;
+        }
+
+        const pendingState = pendingScrollStateRef.current;
+        if (!pendingState) {
+            return;
+        }
+
+        pendingScrollStateRef.current = null;
+        persistViewState(pendingState.path, { scrollTop: pendingState.scrollTop });
+    }, [persistViewState]);
+
+    React.useEffect(() => {
+        return () => {
+            flushPendingScrollState();
+        };
+    }, [flushPendingScrollState]);
+
+    React.useEffect(() => {
+        flushPendingScrollState();
+    }, [activeTab?.path, flushPendingScrollState]);
+
+    React.useEffect(() => {
+        setWorkspaceResults(null);
+    }, [activeTab?.path]);
 
     const handleEditorChange = React.useCallback((val?: string) => {
         if (!activeTab) {
@@ -277,8 +408,46 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
         }
     }, [activeTab, macros, updateTabContent]);
 
+    const handleCursorPositionChange = React.useCallback(
+        (position: { lineNumber: number; column: number }) => {
+            if (!activeTab) {
+                return;
+            }
+            persistViewState(activeTab.path, position);
+        },
+        [activeTab, persistViewState]
+    );
+
+    const handleScrollPositionChange = React.useCallback(
+        (scrollTop: number) => {
+            if (!activeTab) {
+                return;
+            }
+
+            pendingScrollStateRef.current = {
+                path: activeTab.path,
+                scrollTop: Math.max(0, Math.floor(scrollTop)),
+            };
+            if (scrollPersistTimeoutRef.current !== null) {
+                window.clearTimeout(scrollPersistTimeoutRef.current);
+            }
+            scrollPersistTimeoutRef.current = window.setTimeout(() => {
+                flushPendingScrollState();
+            }, VIEW_STATE_SCROLL_PERSIST_DELAY_MS);
+        },
+        [activeTab, flushPendingScrollState]
+    );
+
+    const handleWorkspaceResultSelect = React.useCallback(
+        (path: string, line?: number) => {
+            setWorkspaceResults(null);
+            onOpenFile?.(path, line);
+        },
+        [onOpenFile]
+    );
+
     return (
-        <div className="absolute inset-0 overflow-hidden"> 
+        <div className="absolute inset-0 overflow-hidden">  
             {statusMessage && (
                 <div className="absolute top-12 right-2 z-20 text-xs text-muted-foreground rounded border border-border/40 bg-background/90 px-2 py-1">
                     {statusMessage}
@@ -303,12 +472,82 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
                         onChange={handleEditorChange}
                         readOnly={false}
                         initialLine={activeTab?.initialLine}
+                        initialPosition={
+                            activeTab?.initialLine
+                                ? null
+                                : activeViewState
+                                    ? {
+                                        lineNumber: activeViewState.lineNumber,
+                                        column: activeViewState.column,
+                                    }
+                                    : null
+                        }
+                        initialScrollTop={activeTab?.initialLine ? null : activeViewState?.scrollTop ?? null}
+                        onCursorPositionChange={handleCursorPositionChange}
+                        onScrollPositionChange={handleScrollPositionChange}
                         showMinimap={!performanceMode}
+                        savedValue={activeTab?.savedContent}
                         enableInlayHints={tools.enableInlayHints}
                         enableCodeLens={tools.enableCodeLens}
                         performanceMode={performanceMode}
                         performanceMarkPrefix="workspace:editor"
+                        workspacePath={workspacePath}
+                        filePath={activeTab?.path}
+                        workspaceEditorSettings={workspaceEditorSettings}
+                        onNavigateToLocation={target => {
+                            onOpenFile?.(target.filePath, target.lineNumber);
+                        }}
+                        onShowWorkspaceResults={payload => {
+                            setWorkspaceResults(payload);
+                        }}
                     />
+                </div>
+            )}
+            {workspaceResults && (
+                <div className="absolute bottom-2 left-2 z-20 w-[440px] max-w-[90%] rounded border border-border/40 bg-background/95 shadow-2xl backdrop-blur">
+                    <div className="flex items-center justify-between gap-3 border-b border-border/40 px-3 py-2">
+                        <div className="min-w-0">
+                            <div className="truncate text-xs font-semibold text-foreground">
+                                {workspaceResults.symbol}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground/70">
+                                {workspaceResults.results.length}
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setWorkspaceResults(null)}
+                            className="rounded p-1 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
+                            aria-label={t('common.close')}
+                        >
+                            <X className="h-3.5 w-3.5" />
+                        </button>
+                    </div>
+                    <div className="max-h-64 overflow-auto">
+                        {workspaceResults.results.map(result => {
+                            const resultFileName = result.file.split(/[\\/]/).pop() ?? result.file;
+                            return (
+                                <button
+                                    key={`${result.file}:${result.line}:${result.type ?? 'result'}`}
+                                    type="button"
+                                    onClick={() => handleWorkspaceResultSelect(result.file, result.line)}
+                                    className="flex w-full items-start gap-3 border-b border-border/20 px-3 py-2 text-left transition-colors hover:bg-white/5"
+                                >
+                                    <span className="min-w-0 flex-1">
+                                        <span className="block truncate text-[12px] font-medium text-foreground">
+                                            {resultFileName}
+                                        </span>
+                                        <span className="block truncate font-mono text-[11px] text-muted-foreground/80">
+                                            {result.text.trim()}
+                                        </span>
+                                    </span>
+                                    <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground/60">
+                                        {result.line}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
             )}
             {tools.testOutput && (

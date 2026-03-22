@@ -1,6 +1,0 @@
-[submodule "website/tengra-backend"]
-	path = website/tengra-backend
-	url = https://github.com/TengraStudio/tengra-backend.git
-[submodule "website/tengra-frontend"]
-	path = website/tengra-frontend
-	url = https://github.com/TengraStudio/tengra-frontend.git

@@ -41,7 +41,14 @@ export class SystemRepository extends BaseRepository {
             'CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp DESC)',
             'CREATE INDEX IF NOT EXISTS idx_audit_logs_category_timestamp ON audit_logs(category, timestamp DESC)',
             'CREATE INDEX IF NOT EXISTS idx_linked_accounts_provider_active ON linked_accounts(provider, is_active)',
-            'CREATE INDEX IF NOT EXISTS idx_prompts_created_at ON prompts(created_at DESC)'
+            'CREATE INDEX IF NOT EXISTS idx_prompts_created_at ON prompts(created_at DESC)',
+
+            // Workspace intelligence hot paths
+            'CREATE INDEX IF NOT EXISTS idx_code_symbols_workspace_path ON code_symbols(workspace_path)',
+            'CREATE INDEX IF NOT EXISTS idx_code_symbols_workspace_name ON code_symbols(workspace_path, name COLLATE NOCASE)',
+            'CREATE INDEX IF NOT EXISTS idx_code_symbols_workspace_file ON code_symbols(workspace_path, file_path)',
+            'CREATE INDEX IF NOT EXISTS idx_semantic_fragments_workspace_path ON semantic_fragments(workspace_path)',
+            'CREATE INDEX IF NOT EXISTS idx_semantic_fragments_workspace_source ON semantic_fragments(workspace_path, source)'
         ];
 
         for (const statement of indexStatements) {

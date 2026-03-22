@@ -32,7 +32,7 @@ export const CommandHeader: React.FC<CommandHeaderProps> = ({
             />
             <div className="flex items-center gap-1 text-foreground/30 text-xxs uppercase font-bold tracking-widest border border-border/20 px-1.5 py-0.5 rounded bg-foreground/5">
                 <Command className="w-3 h-3" />
-                <span>K</span>
+                <span>{t('commandPalette.searchKeyHint')}</span>
             </div>
             <button
                 onClick={onClose}

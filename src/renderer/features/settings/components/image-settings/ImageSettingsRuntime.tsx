@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { cn } from '@/lib/utils';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface ImageSettingsRuntimeProps {
     sdCppStatus: string;
@@ -25,12 +26,12 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
 }) => {
     const [isReinstallModalOpen, setIsReinstallModalOpen] = useState(false);
 
-    const handleReinstallClick = () => {
+    const handleReinstallClick = (): void => {
         if (isReinstalling || sdCppStatus === 'installing') { return; }
         setIsReinstallModalOpen(true);
     };
 
-    const handleReinstallConfirm = async () => {
+    const handleReinstallConfirm = async (): Promise<void> => {
         setIsReinstallModalOpen(false);
         setIsReinstalling(true);
         setDownloadProgress(null);
@@ -38,13 +39,13 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
             await window.electron.sdCpp.reinstall();
             await checkStatus();
         } catch (error) {
-            window.electron.log.error('Failed to reinstall SD-CPP:', error);
+            appLogger.error('ImageSettingsRuntime', 'Failed to reinstall SD-CPP', error as Error);
         } finally {
             setIsReinstalling(false);
         }
     };
 
-    const getStatusIcon = () => {
+    const getStatusIcon = (): JSX.Element => {
         switch (sdCppStatus) {
             case 'ready':
                 return <CheckCircle2 className="text-emerald-500 w-5 h-5 flex-shrink-0" />;
@@ -57,7 +58,7 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
         }
     };
 
-    const getStatusText = () => {
+    const getStatusText = (): string => {
         return t(`settings.images.status.${sdCppStatus}`);
     };
 

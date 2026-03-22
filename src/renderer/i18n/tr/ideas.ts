@@ -1,13 +1,13 @@
 const sectionData = {
     "title": "Çalışma Alanı Fikirleri",
-    "subtitle": "Pazar araştırması ile yapay zeka destekli çalışma alanı fikri üretimi",
+    "subtitle": "Pazar araştırmasıyla yapay zekâ destekli çalışma alanı fikirleri üretin",
     "newSession": "Yeni Oturum",
-    "backToSetup": "Kuruluma Dön",
-    "selectModel": "AI Model Seç",
-    "selectCategories": "Kategorileri Seç",
+    "backToSetup": "Kuruluma dön",
+    "selectModel": "Yapay zekâ modelini seçin",
+    "selectCategories": "Kategorileri seçin",
     "maxIdeas": "Maksimum Fikir",
-    "startResearch": "Araştırmayı Başlat",
-    "startGeneration": "Fikirleri Oluştur",
+    "startResearch": "Araştırmayı başlat",
+    "startGeneration": "Fikirleri oluştur",
     "cancel": "İptal",
     "categories": {
         "website": "Web Sitesi",
@@ -20,21 +20,21 @@ const sectionData = {
     },
     "research": {
         "title": "Araştırma Hattı",
-        "understanding": "Kategoriler Anlaşılıyor",
+        "understanding": "Kategoriler analiz ediliyor",
         "sectorAnalysis": "Sektör Analizi",
         "marketResearch": "Pazar Araştırması",
         "competitorAnalysis": "Rakip Analizi",
-        "complete": "Araştırma Tamamlandı"
+        "complete": "Araştırma tamamlandı"
     },
     "generation": {
         "title": "Fikirler Üretiliyor",
-        "progress": "{{total}} fikirden {{current}}. üretiliyor",
+        "progress": "{{total}} fikirden {{current}}. fikir üretiliyor",
         "enriching": "Fikir detayları zenginleştiriliyor...",
-        "complete": "Üretim Tamamlandı"
+        "complete": "Üretim tamamlandı"
     },
     "idea": {
-        "viewDetails": "Detayları Görüntüle",
-        "approve": "Onayla ve Çalışma Alanı Oluştur",
+        "viewDetails": "Detayları görüntüle",
+        "approve": "Onayla ve çalışma alanı oluştur",
         "reject": "Reddet",
         "archive": "Arşivle",
         "archiving": "Arşivleniyor...",
@@ -43,19 +43,19 @@ const sectionData = {
         "competitiveAdvantages": "Rekabet Avantajları",
         "marketTrends": "Pazar Trendleri",
         "competitors": "Rakipler",
-        "selectPath": "Çalışma Alanı Yolunu Seç",
+        "selectPath": "Çalışma alanı yolunu seçin",
         "pathPlaceholder": "C:\\\\Workspaces\\\\my-workspace",
-        "creating": "Çalışma Alanı oluşturuluyor...",
+        "creating": "Çalışma alanı oluşturuluyor...",
         "detailedDescription": "Detaylı Açıklama",
         "roadmap": "Çalışma Alanı Yol Haritası",
-        "techStack": "Teknoloji Stack'i",
+        "techStack": "Teknoloji yığını",
         "competitorAnalysis": "Rakip Analizi",
         "technicalDetails": "Teknik Detaylar",
         "impact": "Etki",
         "impactHigh": "Yüksek (Tahmini)",
         "effort": "Efor",
         "effortMedium": "Orta",
-        "openFullWorkspace": "Çalışma Alanını Aç"
+        "openFullWorkspace": "Çalışma alanını aç"
     },
     "techStack": {
         "frontend": "Frontend",
@@ -75,8 +75,8 @@ const sectionData = {
         "ideaResearch": "Bu fikir için pazar araştırılıyor...",
         "naming": "İsim önerileri oluşturuluyor...",
         "longDescription": "Detaylı açıklama yazılıyor...",
-        "roadmap": "Çalışma Alanı yol haritası hazırlanıyor...",
-        "techStack": "Teknoloji stack'i seçiliyor...",
+        "roadmap": "Çalışma alanı yol haritası hazırlanıyor...",
+        "techStack": "Teknoloji yığını seçiliyor...",
         "competitorAnalysis": "Rakipler analiz ediliyor...",
         "finalizing": "Fikir sonlandırılıyor...",
         "complete": "Fikir tamamlandı"
@@ -88,7 +88,7 @@ const sectionData = {
         "requiresAntigravity": "Logo oluşturma için Antigravity bağlantısı gereklidir",
         "promptPlaceholder": "Logo konseptinizi tanımlayın...",
         "generatedAlt": "Oluşturulan logo {{index}}",
-        "defaultPrompt": "{{title}} için modern minimalist logo",
+        "defaultPrompt": "{{title}} için modern ve minimalist logo",
         "styles": {
             "minimalist": "Minimalist",
             "corporate": "Kurumsal",
@@ -101,7 +101,7 @@ const sectionData = {
         "researching": "Araştırılıyor",
         "generating": "Üretiliyor",
         "completed": "Tamamlandı",
-        "cancelled": "İptal Edildi",
+        "cancelled": "İptal edildi",
         "pending": "Beklemede",
         "approved": "Onaylandı",
         "rejected": "Reddedildi",
@@ -134,32 +134,32 @@ const sectionData = {
     },
     "empty": {
         "noSessions": "Henüz fikir oturumu yok",
-        "noSessionsDesc": "Çalışma Alanı fikirleri üretmek için yeni bir oturum başlatın",
+        "noSessionsDesc": "Çalışma alanı fikirleri üretmek için yeni bir oturum başlatın.",
         "noIdeas": "Henüz fikir üretilmedi",
-        "noIdeasDesc": "Fikir üretmek için araştırma aşamasını tamamlayın"
+        "noIdeasDesc": "Fikir üretmek için araştırma aşamasını tamamlayın."
     },
     "search": {
         "placeholder": "Fikirleri başlık veya açıklamaya göre arayın..."
     },
     "filter": {
-        "allStatuses": "Tüm Durumlar",
-        "allCategories": "Tüm Kategoriler",
+        "allStatuses": "Tüm durumlar",
+        "allCategories": "Tüm kategoriler",
         "pending": "Beklemede",
         "approved": "Onaylandı",
         "rejected": "Reddedildi"
     },
     "export": {
-        "button": "Dışa Aktar",
-        "markdown": "Markdown Olarak Dışa Aktar",
-        "json": "JSON Olarak Dışa Aktar"
+        "button": "Dışa aktar",
+        "markdown": "Markdown olarak dışa aktar",
+        "json": "JSON olarak dışa aktar"
     },
     "customPrompt": {
         "label": "Özel Gereksinimler",
-        "optional": "İsteğe Bağlı",
+        "optional": "İsteğe bağlı",
         "placeholder": "ör., TypeScript kullanılmalı, erişilebilirliğe odaklanın, küçük işletmelere yönelik...",
-        "hint": "Fikir üretimi sırasında yapay zekanın dikkate alması için belirli kısıtlamalar veya gereksinimler ekleyin."
+        "hint": "Fikir üretimi sırasında yapay zekânın dikkate alması için belirli kısıtlamalar veya gereksinimler ekleyin."
     },
-    "previewMarket": "Pazar Araştırmasını Önizle",
+    "previewMarket": "Pazar araştırmasını önizle",
     "marketPreview": {
         "title": "Pazar Araştırması Önizlemesi",
         "subtitle": "Seçtiğiniz kategoriler için hızlı pazar özeti",
@@ -170,20 +170,20 @@ const sectionData = {
         "continue": "Tam Araştırmaya Devam Et"
     },
     "delete": {
-        "title": "Fikri Sil",
-        "bulkTitle": "Birden Fazla Fikri Sil",
+        "title": "Fikri sil",
+        "bulkTitle": "Birden fazla fikri sil",
         "message": "Bu fikri silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
         "bulkMessage": "{{count}} fikri silmek istediğinizden emin misiniz? Bu işlem geri alınamaz."
     },
     "history": {
         "title": "Fikir Geçmişi",
         "subtitle": "Tüm geçmiş fikir üretim oturumlarınızı inceleyin",
-        "view": "Geçmişi Gör",
+        "view": "Geçmişi görüntüle",
         "totalSessions": "Toplam Oturum",
         "completed": "Tamamlandı",
         "approvedIdeas": "Onaylanan Fikirler",
         "pendingReview": "İnceleme Bekleyen",
-        "viewDetails": "Detayları Gör",
+        "viewDetails": "Detayları gör",
         "noIdeasYet": "Henüz fikir üretilmedi",
         "daysAgo": "{{count}} gün önce",
         "ideasCount": "Üretilen Fikirler",
@@ -211,23 +211,23 @@ const sectionData = {
             "roadmap": "Yol Haritası"
         },
         "statusLabel": "Durum",
-        "readyForPilot": "Pilot İçin Hazır",
-        "workspaceCreated": "Çalışma Alanı Oluşturuldu",
-        "workspaceNamePlaceholder": "Çalışma Alanı Adı",
+        "readyForPilot": "Pilot için hazır",
+        "workspaceCreated": "Çalışma alanı oluşturuldu",
+        "workspaceNamePlaceholder": "Çalışma alanı adı",
         "regenerateTitle": "Bu fikri yeniden üret",
-        "regenerate": "Yeniden Üret",
+        "regenerate": "Yeniden üret",
         "regenerating": "Yeniden üretiliyor...",
-        "deleteTitle": "Fikri Sil",
+        "deleteTitle": "Fikri sil",
         "closeTitle": "Kapat (Esc)",
         "rejectTitle": "Bu fikri reddet?",
         "rejectBody": "\"{{title}}\" fikrini reddetmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
         "rejectReasonLabel": "Neden (İsteğe bağlı)",
         "rejectReasonPlaceholder": "Bu fikri neden reddediyorsunuz?",
-        "rejectAction": "Fikri Reddet",
+        "rejectAction": "Fikri reddet",
         "rejecting": "Reddediliyor...",
         "altLabel": "Alternatif:",
         "targetPersonas": "Hedef Personalar",
-        "painPoints": "Ağrı Noktaları",
+        "painPoints": "Sorun Noktaları",
         "userJourney": "Kullanıcı Yolculuğu Haritası",
         "benefitLabel": "Fayda: {{benefit}}",
         "swot": {
@@ -252,7 +252,7 @@ const sectionData = {
         "categoryAnalysis": "Kategori Analizi",
         "analysisPending": "Derinlemesine analiz bekleniyor..."
     },
-    "modelSelectorHint": "AI modelini değiştirmek için üst çubuktaki model seçiciyi kullanın.",
+    "modelSelectorHint": "Yapay zekâ modelini değiştirmek için üst çubuktaki model seçiciyi kullanın.",
     "detailsTitlePlaceholder": "Fikir başlığı girin...",
     "detailsDescriptionPlaceholder": "Fikir açıklaması girin..."
 };

@@ -1,10 +1,10 @@
 const sectionData = {
-    "unexpected": "Sorry, there was an error.",
+    "unexpected": "Sorry, an error occurred.",
     "somethingWentWrong": "Something went wrong:",
-    "unexpectedDescription": "The application encountered an unexpected error.",
-    "errorMessageLabel": "Error Message",
-    "technicalDetails": "TECHNICAL DETAILS (STACK TRACE)",
-    "copyDetails": "Copy Details",
+    "unexpectedDescription": "The app encountered an unexpected error.",
+    "errorMessageLabel": "Error message",
+    "technicalDetails": "Technical Details (Stack Trace)",
+    "copyDetails": "Copy details",
     "rootNotFound": "Root element not found",
     "ipcValidation": {
         "hostRequired": "Host is required.",
@@ -12,12 +12,12 @@ const sectionData = {
         "tokenRequired": "At least one token field must be present.",
         "invalidUrlOrProtocol": "Invalid URL or unsupported protocol."
     },
-    "rateLimitWarning": "Rate limit warning ({{provider}}): {{remaining}}/{{limit}} remaining",
+    "rateLimitWarning": "Rate limit warning ({{provider}}): {{remaining}}/{{limit}} requests remaining.",
     "rateLimit": {
         "exceeded": "Rate limit exceeded. Please wait and try again.",
         "retryAfterSeconds": "Rate limit exceeded. Please retry after {{seconds}} seconds.",
-        "requestThrottled": "Request throttled. Too many requests for {{provider}}.",
-        "limitReset": "Rate limit will reset in {{minutes}} minutes.",
+        "requestThrottled": "Request throttled: too many requests for {{provider}}.",
+        "limitReset": "Rate limit resets in {{minutes}} minutes.",
         "waitExceeded": "Rate limit wait time exceeded for {{provider}}. Please try again later.",
         "serviceNotInitialized": "Rate limit service is not initialized.",
         "tokenRejected": "Request denied for {{provider}} due to rate limiting.",
@@ -51,7 +51,7 @@ const sectionData = {
     },
     "quota": {
         "exceeded": "Quota has been exceeded. Please wait for the reset period.",
-        "limitApproaching": "Quota limit approaching for {{provider}}: {{remaining}} of {{limit}} remaining.",
+        "limitApproaching": "{{provider}} quota is almost reached: {{remaining}} of {{limit}} remaining.",
         "usageWarning": "You have used {{percentage}}% of your {{provider}} quota.",
         "authExpired": "Authentication has expired. Please re-authenticate to check quota.",
         "fetchFailed": "Failed to retrieve quota information. Please try again.",
@@ -66,7 +66,7 @@ const sectionData = {
     },
     "monitoring": {
         "initFailed": "Failed to initialize monitoring service.",
-        "metricCollectionFailed": "Failed to collect metric: {{metricName}}.",
+        "metricCollectionFailed": "Failed to collect metric {{metricName}}.",
         "thresholdExceeded": "Critical threshold exceeded for {{metricName}}: {{value}}{{unit}}.",
         "memoryWarning": "System memory usage at {{percentage}}%.",
         "gcNotAvailable": "Garbage collection not available.",
@@ -135,10 +135,10 @@ const sectionData = {
         "backupSuccess": "Database backup created successfully.",
         "restoreFailed": "Failed to restore database from backup.",
         "restoreSuccess": "Database restored successfully.",
-        "slowQuery": "Slow query detected: {{duration}}ms."
+        "slowQuery": "Slow query detected: {{duration}} ms."
     },
     "extension": {
-        "sandboxSizeLimit": "Extension script exceeds sandbox size limit ({{maxSizeKb}} KB)."
+        "sandboxSizeLimit": "Extension script exceeds the sandbox size limit ({{maxSizeKb}} KB)."
     }
 };
 

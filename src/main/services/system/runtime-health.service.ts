@@ -23,11 +23,11 @@ interface ExternalRuntimeDependencyProbe {
 
 export class RuntimeHealthService extends BaseService {
     private static readonly MESSAGE_KEY = {
-        UNSUPPORTED: 'images.runtimeHealth.unsupportedTarget',
-        INSTALL_PATH_MISSING: 'images.runtimeHealth.installPathMissing',
-        FILE_MISSING: 'images.runtimeHealth.fileMissing',
-        NOT_EXECUTABLE: 'images.runtimeHealth.notExecutable',
-        FILE_READY: 'images.runtimeHealth.fileReady',
+        UNSUPPORTED: 'runtime.health.unsupportedTarget',
+        INSTALL_PATH_MISSING: 'runtime.health.installPathMissing',
+        FILE_MISSING: 'runtime.health.fileMissing',
+        NOT_EXECUTABLE: 'runtime.health.notExecutable',
+        FILE_READY: 'runtime.health.fileReady',
     } as const;
 
     constructor(

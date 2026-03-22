@@ -5,7 +5,20 @@ import * as path from 'path';
 import { appLogger } from '@main/logging/logger';
 import { DatabaseService, SemanticFragment } from '@main/services/data/database.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
+import {
+    DEFAULT_WORKSPACE_SCAN_IGNORE_PATTERNS,
+    getWorkspaceIgnoreMatcher,
+} from '@main/services/workspace/workspace-ignore.util';
 import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
+import {
+    WorkspaceCodeMap,
+    WorkspaceCodeMapFile,
+    WorkspaceCodeMapFolder,
+    WorkspaceCodeMapSymbol,
+    WorkspaceDependencyGraph,
+    WorkspaceDependencyGraphEdge,
+    WorkspaceDependencyGraphNode,
+} from '@shared/types';
 import type { FileSearchResult } from '@shared/types/common';
 import { app, BrowserWindow } from 'electron';
 
@@ -64,13 +77,110 @@ const FULL_CHUNK_EXTENSIONS = new Set([
 const INCREMENTAL_CHUNK_EXTENSIONS = new Set([
     '.md', '.txt', '.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.rs'
 ]);
+const SKIPPED_INCREMENTAL_INDEX_EXTENSIONS = new Set([
+    '.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico', '.svg',
+    '.mp3', '.mp4', '.mov', '.avi', '.mkv', '.wav', '.flac',
+    '.zip', '.tar', '.gz', '.7z', '.rar',
+    '.pdf', '.db', '.sqlite', '.woff', '.woff2', '.ttf', '.eot',
+    '.exe', '.dll', '.so', '.dylib', '.bin', '.class',
+]);
 const SEMANTIC_CHUNK_SIZE = 1000;
 const SEMANTIC_CHUNK_OVERLAP = 200;
 const EMBEDDING_BATCH_SIZE = 4;
+const DEPENDENCY_SCAN_EXTENSIONS = new Set([
+    '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py', '.go', '.rs'
+]);
+const RESOLVABLE_IMPORT_EXTENSIONS = [
+    '', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py', '.go', '.rs',
+    '/index.ts', '/index.tsx', '/index.js', '/index.jsx', '/index.py', '/index.go', '/index.rs'
+] as const;
+
+function normalizeWorkspaceFilePath(filePath: string): string {
+    return path.normalize(filePath);
+}
+
+function toRelativeWorkspacePath(rootPath: string, filePath: string): string {
+    return path.relative(rootPath, filePath).replace(/\\/g, '/');
+}
+
+function isPackageDependency(specifier: string): boolean {
+    return !specifier.startsWith('.') && !specifier.startsWith('/');
+}
+
+function collectDependencySpecifiers(filePath: string, content: string): string[] {
+    const extension = path.extname(filePath).toLowerCase();
+    const matches = new Set<string>();
+    const pushMatch = (candidate: string | undefined): void => {
+        if (!candidate) {
+            return;
+        }
+        const trimmed = candidate.trim();
+        if (trimmed.length > 0) {
+            matches.add(trimmed);
+        }
+    };
+
+    if (['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'].includes(extension)) {
+        for (const match of content.matchAll(/(?:import|export)\s+(?:[^'"]+?\s+from\s+)?['"]([^'"]+)['"]/g)) {
+            pushMatch(match[1]);
+        }
+        for (const match of content.matchAll(/require\(\s*['"]([^'"]+)['"]\s*\)/g)) {
+            pushMatch(match[1]);
+        }
+    }
+
+    if (extension === '.py') {
+        for (const match of content.matchAll(/^\s*from\s+([A-Za-z0-9_./-]+)\s+import\s+/gm)) {
+            pushMatch(match[1]);
+        }
+        for (const match of content.matchAll(/^\s*import\s+([A-Za-z0-9_.,\s-]+)/gm)) {
+            const imports = match[1]?.split(',').map(item => item.trim().split(/\s+/)[0]);
+            imports?.forEach(pushMatch);
+        }
+    }
+
+    if (extension === '.go') {
+        for (const match of content.matchAll(/^\s*import\s+(?:[A-Za-z0-9_]+\s+)?["`]([^"`]+)["`]/gm)) {
+            pushMatch(match[1]);
+        }
+    }
+
+    if (extension === '.rs') {
+        for (const match of content.matchAll(/^\s*use\s+([A-Za-z0-9_:]+)\s*;/gm)) {
+            pushMatch(match[1]);
+        }
+    }
+
+    return Array.from(matches);
+}
+
+function resolveWorkspaceDependencyTarget(
+    filePath: string,
+    specifier: string,
+    workspaceFilesByNormalizedPath: Map<string, string>
+): string | null {
+    if (isPackageDependency(specifier)) {
+        return null;
+    }
+
+    const baseDirectory = path.dirname(filePath);
+    for (const extension of RESOLVABLE_IMPORT_EXTENSIONS) {
+        const candidatePath = normalizeWorkspaceFilePath(path.resolve(baseDirectory, `${specifier}${extension}`));
+        const matchedPath = workspaceFilesByNormalizedPath.get(candidatePath);
+        if (matchedPath) {
+            return matchedPath;
+        }
+    }
+
+    return null;
+}
 
 export class CodeIntelligenceService {
     private readonly indexingInProgress = new Set<string>();
     private readonly indexedWorkspaces = new Set<string>();
+    private readonly derivedArtifactsInProgress = new Set<string>();
+    private readonly dependencyGraphCache = new Map<string, WorkspaceDependencyGraph>();
+    private readonly codeMapCache = new Map<string, WorkspaceCodeMap>();
     private manifestPath = '';
 
     constructor(
@@ -107,6 +217,35 @@ export class CodeIntelligenceService {
         } catch {
             // Ignore write errors to cache
         }
+    }
+
+    private async getWorkspaceIndexingConfig(
+        workspaceId: string
+    ): Promise<{ enabled: boolean; ignorePatterns: string[] }> {
+        try {
+            const workspace = await this.db.getWorkspace(workspaceId);
+            return {
+                enabled: workspace?.advancedOptions?.indexingEnabled !== false,
+                ignorePatterns: workspace?.advancedOptions?.fileWatchIgnore ?? [],
+            };
+        } catch (error) {
+            appLogger.warn(
+                'CodeIntelligenceService',
+                `Failed to load workspace indexing config for ${workspaceId}`,
+                error as Error
+            );
+            return {
+                enabled: true,
+                ignorePatterns: [],
+            };
+        }
+    }
+
+    private async getIgnoreMatcher(rootPath: string, ignorePatterns: readonly string[] = []) {
+        return getWorkspaceIgnoreMatcher(rootPath, {
+            defaultPatterns: DEFAULT_WORKSPACE_SCAN_IGNORE_PATTERNS,
+            extraPatterns: ignorePatterns,
+        });
     }
 
     async queryIndexedSymbols(query: string): Promise<FileSearchResult[]> {
@@ -196,6 +335,26 @@ export class CodeIntelligenceService {
         }
     }
 
+    async getWorkspaceDependencyGraph(rootPath: string): Promise<WorkspaceDependencyGraph> {
+        const cachedGraph = this.dependencyGraphCache.get(rootPath);
+        if (cachedGraph) {
+            return cachedGraph;
+        }
+
+        await this.refreshDerivedArtifacts(rootPath);
+        return this.dependencyGraphCache.get(rootPath) ?? this.buildEmptyDependencyGraph(rootPath);
+    }
+
+    async getWorkspaceCodeMap(rootPath: string): Promise<WorkspaceCodeMap> {
+        const cachedCodeMap = this.codeMapCache.get(rootPath);
+        if (cachedCodeMap) {
+            return cachedCodeMap;
+        }
+
+        await this.refreshDerivedArtifacts(rootPath);
+        return this.codeMapCache.get(rootPath) ?? this.buildEmptyCodeMap(rootPath);
+    }
+
     async indexWorkspace(rootPath: string, workspaceId: string, force = false): Promise<void> {
         if (!await this.shouldStartIndexing(workspaceId, rootPath, force)) {
             return;
@@ -205,9 +364,22 @@ export class CodeIntelligenceService {
         appLogger.info('code-intelligence.service', `[CodeIntelligence] Indexing workspace ${workspaceId} at ${rootPath} (force=${force})`);
 
         try {
+            const indexingConfig = await this.getWorkspaceIndexingConfig(workspaceId);
+            if (!indexingConfig.enabled) {
+                appLogger.info(
+                    'code-intelligence.service',
+                    `[CodeIntelligence] Skipping indexing for ${workspaceId} because indexing is disabled`
+                );
+                return;
+            }
+
+            const ignoreMatcher = await this.getIgnoreMatcher(
+                rootPath,
+                indexingConfig.ignorePatterns
+            );
             this.sendIndexingProgress(workspaceId, 0, 0, 'Scanning files...');
             const files: string[] = [];
-            await scanDirRecursively(rootPath, files);
+            await scanDirRecursively(rootPath, files, ignoreMatcher);
 
             const total = files.length;
             
@@ -243,7 +415,7 @@ export class CodeIntelligenceService {
                 }
             }
 
-            appLogger.info('code-intelligence.service', `[CodeIntelligence] Found ${filesToIndex.length} files that need indexing.`);
+            appLogger.debug('code-intelligence.service', `[CodeIntelligence] Found ${filesToIndex.length} files that need indexing.`);
 
             for (let index = 0; index < filesToIndex.length; index++) {
                 const filePath = filesToIndex[index];
@@ -267,6 +439,7 @@ export class CodeIntelligenceService {
             await this.saveManifest(allManifests);
 
             this.indexedWorkspaces.add(workspaceId);
+            void this.refreshDerivedArtifacts(rootPath, files);
             this.sendIndexingProgress(workspaceId, total, total, 'Complete');
             appLogger.info('code-intelligence.service', `[CodeIntelligence] Indexing complete for ${workspaceId}`);
         } catch (error) {
@@ -280,10 +453,24 @@ export class CodeIntelligenceService {
     async updateFileIndex(workspaceId: string, rootPath: string, filePath: string): Promise<void> {
         try {
             void workspaceId;
-            appLogger.info('code-intelligence.service', `[CodeIntelligence] Updating index for ${filePath}`);
+            appLogger.debug('code-intelligence.service', `[CodeIntelligence] Updating index for ${filePath}`);
+            this.invalidateDerivedArtifacts(rootPath);
 
             await this.db.deleteCodeSymbolsForFile(rootPath, filePath);
             await this.db.deleteSemanticFragmentsForFile(rootPath, filePath);
+
+            const ignoreMatcher = await this.getIgnoreMatcher(rootPath);
+            if (ignoreMatcher.ignoresAbsolute(filePath)) {
+                return;
+            }
+
+            if (this.shouldSkipIncrementalIndex(filePath)) {
+                return;
+            }
+
+            if (!await this.isIndexableFile(filePath)) {
+                return;
+            }
 
             const content = await fs.readFile(filePath, 'utf-8');
             await this.storeCodeSymbols(rootPath, filePath, parseFileSymbols(filePath, content), 'update');
@@ -295,6 +482,253 @@ export class CodeIntelligenceService {
         } catch (error) {
             appLogger.error('CodeIntelligenceService', `Failed to update index for ${filePath}`, error as Error);
         }
+    }
+
+    private shouldSkipIncrementalIndex(filePath: string): boolean {
+        const extension = path.extname(filePath).toLowerCase();
+        return SKIPPED_INCREMENTAL_INDEX_EXTENSIONS.has(extension);
+    }
+
+    private async isIndexableFile(filePath: string): Promise<boolean> {
+        try {
+            const stats = await fs.stat(filePath);
+            return stats.isFile();
+        } catch {
+            return false;
+        }
+    }
+
+    private invalidateDerivedArtifacts(rootPath: string): void {
+        this.dependencyGraphCache.delete(rootPath);
+        this.codeMapCache.delete(rootPath);
+    }
+
+    private async refreshDerivedArtifacts(
+        rootPath: string,
+        scannedFiles?: readonly string[]
+    ): Promise<void> {
+        if (this.derivedArtifactsInProgress.has(rootPath)) {
+            return;
+        }
+
+        this.derivedArtifactsInProgress.add(rootPath);
+        try {
+            const files = scannedFiles ? [...scannedFiles] : await this.loadWorkspaceFiles(rootPath);
+            const symbols = await this.db.getCodeSymbolsByWorkspacePath(rootPath);
+            const symbolCountsByFile = new Map<string, number>();
+
+            for (const symbol of symbols) {
+                const filePath = typeof symbol.path === 'string' ? symbol.path.trim() : '';
+                if (!filePath) {
+                    continue;
+                }
+                symbolCountsByFile.set(filePath, (symbolCountsByFile.get(filePath) ?? 0) + 1);
+            }
+
+            const dependencyGraph = await this.buildWorkspaceDependencyGraph(
+                rootPath,
+                files,
+                symbolCountsByFile
+            );
+            const codeMap = this.buildWorkspaceCodeMap(rootPath, symbols);
+
+            this.dependencyGraphCache.set(rootPath, dependencyGraph);
+            this.codeMapCache.set(rootPath, codeMap);
+        } catch (error) {
+            appLogger.error(
+                'CodeIntelligenceService',
+                `Failed to refresh derived workspace artifacts for ${rootPath}`,
+                error as Error
+            );
+            this.dependencyGraphCache.set(rootPath, this.buildEmptyDependencyGraph(rootPath));
+            this.codeMapCache.set(rootPath, this.buildEmptyCodeMap(rootPath));
+        } finally {
+            this.derivedArtifactsInProgress.delete(rootPath);
+        }
+    }
+
+    private async loadWorkspaceFiles(rootPath: string): Promise<string[]> {
+        const ignoreMatcher = await this.getIgnoreMatcher(rootPath);
+        const files: string[] = [];
+        await scanDirRecursively(rootPath, files, ignoreMatcher);
+        return files;
+    }
+
+    private async buildWorkspaceDependencyGraph(
+        rootPath: string,
+        files: readonly string[],
+        symbolCountsByFile: ReadonlyMap<string, number>
+    ): Promise<WorkspaceDependencyGraph> {
+        const graphFiles = files.filter(filePath =>
+            DEPENDENCY_SCAN_EXTENSIONS.has(path.extname(filePath).toLowerCase())
+        );
+        const workspaceFilesByNormalizedPath = new Map<string, string>(
+            graphFiles.map(filePath => [normalizeWorkspaceFilePath(filePath), filePath])
+        );
+        const inboundCounts = new Map<string, number>();
+        const edges: WorkspaceDependencyGraphEdge[] = [];
+        const externalDependencies = new Set<string>();
+        const edgeKeys = new Set<string>();
+        const externalDependencyCounts = new Map<string, number>();
+        const outboundCounts = new Map<string, number>();
+
+        for (const filePath of graphFiles) {
+            try {
+                const content = await fs.readFile(filePath, 'utf-8');
+                const specifiers = collectDependencySpecifiers(filePath, content);
+                for (const specifier of specifiers) {
+                    const targetPath = resolveWorkspaceDependencyTarget(
+                        filePath,
+                        specifier,
+                        workspaceFilesByNormalizedPath
+                    );
+                    const edge = targetPath
+                        ? { from: filePath, to: targetPath, kind: 'workspace' as const, specifier }
+                        : { from: filePath, to: specifier, kind: 'package' as const, specifier };
+                    const edgeKey = `${edge.from}::${edge.kind}::${edge.to}`;
+                    if (edgeKeys.has(edgeKey)) {
+                        continue;
+                    }
+
+                    edgeKeys.add(edgeKey);
+                    edges.push(edge);
+                    outboundCounts.set(filePath, (outboundCounts.get(filePath) ?? 0) + 1);
+
+                    if (edge.kind === 'workspace') {
+                        inboundCounts.set(edge.to, (inboundCounts.get(edge.to) ?? 0) + 1);
+                        continue;
+                    }
+
+                    externalDependencies.add(edge.to);
+                    externalDependencyCounts.set(
+                        filePath,
+                        (externalDependencyCounts.get(filePath) ?? 0) + 1
+                    );
+                }
+            } catch (error) {
+                appLogger.warn(
+                    'CodeIntelligenceService',
+                    `Skipping dependency graph scan for ${path.basename(filePath)}`,
+                    error as Error
+                );
+            }
+        }
+
+        const nodes: WorkspaceDependencyGraphNode[] = graphFiles
+            .map(filePath => ({
+                path: filePath,
+                relativePath: toRelativeWorkspacePath(rootPath, filePath),
+                extension: path.extname(filePath).toLowerCase() || '(none)',
+                symbolCount: symbolCountsByFile.get(filePath) ?? 0,
+                outboundDependencyCount: outboundCounts.get(filePath) ?? 0,
+                inboundDependencyCount: inboundCounts.get(filePath) ?? 0,
+                externalDependencyCount: externalDependencyCounts.get(filePath) ?? 0,
+            }))
+            .sort((left, right) => left.relativePath.localeCompare(right.relativePath));
+
+        return {
+            rootPath,
+            indexedFileCount: graphFiles.length,
+            generatedAt: new Date().toISOString(),
+            nodes,
+            edges: edges.sort((left, right) => {
+                const leftKey = `${left.from}:${left.to}:${left.kind}`;
+                const rightKey = `${right.from}:${right.to}:${right.kind}`;
+                return leftKey.localeCompare(rightKey);
+            }),
+            externalDependencies: Array.from(externalDependencies).sort((left, right) =>
+                left.localeCompare(right)
+            ),
+        };
+    }
+
+    private buildWorkspaceCodeMap(
+        rootPath: string,
+        symbols: Array<{
+            path?: string;
+            name?: string;
+            kind?: string;
+            line?: number;
+            signature?: string;
+        }>
+    ): WorkspaceCodeMap {
+        const symbolsByFile = new Map<string, WorkspaceCodeMapSymbol[]>();
+        const foldersByPath = new Map<string, WorkspaceCodeMapFolder>();
+
+        for (const symbol of symbols) {
+            const filePath = typeof symbol.path === 'string' ? symbol.path.trim() : '';
+            if (!filePath) {
+                continue;
+            }
+
+            const symbolEntry: WorkspaceCodeMapSymbol = {
+                name: typeof symbol.name === 'string' ? symbol.name : '(anonymous)',
+                kind: typeof symbol.kind === 'string' ? symbol.kind : 'unknown',
+                line: typeof symbol.line === 'number' ? symbol.line : 1,
+                signature: typeof symbol.signature === 'string' ? symbol.signature : '',
+            };
+            const existingSymbols = symbolsByFile.get(filePath) ?? [];
+            existingSymbols.push(symbolEntry);
+            symbolsByFile.set(filePath, existingSymbols);
+        }
+
+        const files: WorkspaceCodeMapFile[] = Array.from(symbolsByFile.entries())
+            .map(([filePath, fileSymbols]) => {
+                const relativePath = toRelativeWorkspacePath(rootPath, filePath);
+                const folderPath = path.posix.dirname(relativePath);
+                const folderEntry = foldersByPath.get(folderPath) ?? {
+                    path: folderPath,
+                    fileCount: 0,
+                    symbolCount: 0,
+                };
+                folderEntry.fileCount += 1;
+                folderEntry.symbolCount += fileSymbols.length;
+                foldersByPath.set(folderPath, folderEntry);
+
+                return {
+                    path: filePath,
+                    relativePath,
+                    extension: path.extname(filePath).toLowerCase() || '(none)',
+                    symbolCount: fileSymbols.length,
+                    topLevelSymbols: [...fileSymbols]
+                        .sort((left, right) => left.line - right.line || left.name.localeCompare(right.name))
+                        .slice(0, 12),
+                };
+            })
+            .sort((left, right) => left.relativePath.localeCompare(right.relativePath));
+
+        return {
+            rootPath,
+            totalFiles: files.length,
+            totalSymbols: files.reduce((sum, fileEntry) => sum + fileEntry.symbolCount, 0),
+            generatedAt: new Date().toISOString(),
+            files,
+            folders: Array.from(foldersByPath.values()).sort((left, right) => {
+                return left.path.localeCompare(right.path);
+            }),
+        };
+    }
+
+    private buildEmptyDependencyGraph(rootPath: string): WorkspaceDependencyGraph {
+        return {
+            rootPath,
+            indexedFileCount: 0,
+            generatedAt: new Date().toISOString(),
+            nodes: [],
+            edges: [],
+            externalDependencies: [],
+        };
+    }
+
+    private buildEmptyCodeMap(rootPath: string): WorkspaceCodeMap {
+        return {
+            rootPath,
+            totalFiles: 0,
+            totalSymbols: 0,
+            generatedAt: new Date().toISOString(),
+            files: [],
+            folders: [],
+        };
     }
 
     async findSymbols(rootPath: string, query: string): Promise<FileSearchResult[]> {
@@ -462,7 +896,7 @@ export class CodeIntelligenceService {
             }
 
             if ((index + 1) % 50 === 0) {
-                appLogger.info('code-intelligence.service', `[CodeIntelligence] Indexed ${index + 1}/${total} files...`);
+                appLogger.debug('code-intelligence.service', `[CodeIntelligence] Indexed ${index + 1}/${total} files...`);
             }
         } catch (error) {
             appLogger.error('code-intelligence.service', `[CodeIntelligence] Failed to index ${relativeName}`, error as Error);

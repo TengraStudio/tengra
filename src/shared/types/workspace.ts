@@ -16,7 +16,14 @@ export type WorkspaceDashboardTab =
     | 'chat'
     | 'editor';
 
-export type WorkspaceMountType= 'local' | 'ssh';
+export interface WorkspaceFilesPageMeta {
+    offset: number;
+    limit: number;
+    total: number;
+    hasMore: boolean;
+}
+
+export type WorkspaceMountType = 'local' | 'ssh';
 
 export interface WorkspaceSshConfig {
     host: string;
@@ -58,6 +65,12 @@ export interface EditorTab {
     isPinned?: boolean;
     type: 'code' | 'image';
     initialLine?: number;
+}
+
+export interface WorkspaceDefinitionLocation {
+    file: string;
+    line: number;
+    column: number;
 }
 
 export interface ActivityEntry {
@@ -123,6 +136,29 @@ export interface Workspace {
         indexingEnabled?: boolean;      // Enable code indexing for AI
         indexingInterval?: number;      // Re-index interval in minutes
         autoSave?: boolean;             // Auto-save files
+        layoutProfile?: {
+            sidebarCollapsed?: boolean;
+            terminalVisible?: boolean;
+            terminalHeight?: number;
+            panel?: 'chat' | 'terminal' | 'files' | 'explorer' | 'search' | 'git' | 'logs' | 'settings' | 'none';
+        };
+    };
+    // Editor Settings
+    editor?: {
+        fontSize?: number;
+        lineHeight?: number;
+        minimap?: boolean;
+        wordWrap?: 'on' | 'off' | 'wordWrapColumn' | 'bounded';
+        lineNumbers?: 'on' | 'off' | 'relative' | 'interval';
+        tabSize?: number;
+        cursorBlinking?: 'blink' | 'smooth' | 'phase' | 'expand' | 'solid';
+        fontLigatures?: boolean;
+        formatOnPaste?: boolean;
+        smoothScrolling?: boolean;
+        folding?: boolean;
+        codeLens?: boolean;
+        inlayHints?: boolean;
+        additionalOptions?: Record<string, unknown>;
     };
 }
 
@@ -136,13 +172,36 @@ export interface WorkspaceStats {
     totalSize: number;
     loc: number; // approximate
     lastModified: number;
+    largestDirectories?: Array<{
+        path: string;
+        size: number;
+        fileCount: number;
+    }>;
+}
+
+export interface CodeAnnotation {
+    file: string;
+    line: number;
+    message: string;
+    type: 'todo' | 'fixme' | 'warn' | 'error';
 }
 
 export interface WorkspaceIssue {
-    type: 'error' | 'warning';
-    message: string;
     file: string;
     line: number;
+    column?: number;
+    message: string;
+    severity: 'error' | 'warning' | 'info' | 'hint';
+    source: string;
+    code?: string | number;
+}
+
+export interface WorkspaceLspServerSupport {
+    languageId: string;
+    serverId: string;
+    status: 'running' | 'available' | 'unavailable';
+    bundled: boolean;
+    fileCount: number;
 }
 
 export interface WorkspaceAnalysis {
@@ -153,12 +212,16 @@ export interface WorkspaceAnalysis {
     stats: WorkspaceStats;
     languages: Record<string, number>;
     files: string[];
+    filesPage?: WorkspaceFilesPageMeta;
     monorepo?: {
         type: 'npm' | 'yarn' | 'pnpm' | 'lerna' | 'turbo' | 'rush' | 'unknown';
         packages: string[];
     };
     todos: string[];
     issues?: WorkspaceIssue[];
+    annotations?: CodeAnnotation[];
+    lspDiagnostics?: WorkspaceIssue[];
+    lspServers?: WorkspaceLspServerSupport[];
 }
 
 export interface TodoItem {

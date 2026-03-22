@@ -1,4 +1,5 @@
 import { PromptTemplate } from '@shared/types/templates';
+import { Plus } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -73,21 +74,16 @@ export const PromptTemplateLibrary: React.FC = () => {
         <div className="space-y-6">
             <div className="bg-card p-6 rounded-xl border border-border space-y-4">
                 <div className="flex items-center justify-between">
-                    <div>
-                        <h3 className="text-lg font-bold text-foreground">{t('promptTemplates.title')}</h3>
-                        <p className="text-xs text-muted-foreground">{t('promptTemplates.description')}</p>
-                    </div>
-                    <button onClick={startCreate} className="px-3 py-2 rounded-lg text-xs font-bold bg-primary/20 text-primary border border-border/50">
-                        {t('promptTemplates.create')}
-                    </button>
+                    <div><h3 className="text-lg font-bold text-foreground">{t('prompts.library.title')}</h3><p className="text-xs text-muted-foreground">{t('prompts.library.subtitle')}</p></div>
+                    <button onClick={startCreate} className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold bg-primary/10 text-primary border border-primary/20"><Plus className="w-3.5 h-3.5" /> {t('prompts.library.newPrompt')}</button>
                 </div>
                 <div className="flex gap-2">
-                    <input type="text" placeholder={t('promptTemplates.searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)}
+                    <input type="text" placeholder={t('prompts.library.searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)}
                         className="flex-1 bg-muted/20 border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground" />
                     {categories.length > 0 && (
                         <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
                             className="bg-muted/20 border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground">
-                            <option value="">{t('promptTemplates.allCategories')}</option>
+                            <option value="">{t('prompts.library.allCategories')}</option>
                             {categories.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
                     )}
@@ -96,14 +92,14 @@ export const PromptTemplateLibrary: React.FC = () => {
 
             {isEditing && (
                 <div className="bg-card p-6 rounded-xl border border-border space-y-3">
-                    <h4 className="text-sm font-bold text-foreground">{editingId === '__new__' ? t('promptTemplates.createNew') : t('promptTemplates.editTemplate')}</h4>
-                    <input type="text" placeholder={t('promptTemplates.namePlaceholder')} value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}
+                    <h4 className="text-sm font-bold text-foreground">{editingId === '__new__' ? t('prompts.library.createNew') : t('prompts.library.editTemplate')}</h4>
+                    <input type="text" placeholder={t('prompts.library.namePlaceholder')} value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}
                         className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground" />
-                    <input type="text" placeholder={t('promptTemplates.categoryPlaceholder')} value={draft.category} onChange={e => setDraft({ ...draft, category: e.target.value })}
+                    <input type="text" placeholder={t('prompts.library.categoryPlaceholder')} value={draft.category} onChange={e => setDraft({ ...draft, category: e.target.value })}
                         className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground" />
-                    <input type="text" placeholder={t('promptTemplates.descriptionPlaceholder')} value={draft.description} onChange={e => setDraft({ ...draft, description: e.target.value })}
+                    <input type="text" placeholder={t('prompts.library.descriptionPlaceholder')} value={draft.description} onChange={e => setDraft({ ...draft, description: e.target.value })}
                         className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground" />
-                    <textarea placeholder={t('promptTemplates.templatePlaceholder')} value={draft.template} onChange={e => setDraft({ ...draft, template: e.target.value })}
+                    <textarea placeholder={t('prompts.library.templatePlaceholder')} value={draft.template} onChange={e => setDraft({ ...draft, template: e.target.value })}
                         className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground min-h-[120px] font-mono" />
                     <div className="flex gap-2">
                         <button onClick={() => void handleSave()} className="px-3 py-2 rounded-lg text-xs font-bold bg-primary/20 text-primary border border-border/50">{t('common.save')}</button>
@@ -132,7 +128,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                         )}
                     </div>
                 ))}
-                {filtered.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">{t('promptTemplates.empty')}</p>}
+                {filtered.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">{t('prompts.library.empty')}</p>}
             </div>
         </div>
     );

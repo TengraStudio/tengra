@@ -3,7 +3,7 @@ const sectionData = {
     "formatMarkdown": "Markdown",
     "formatPdf": "PDF",
     "exporting": "Exporting...",
-    "confirm": "Export successful"
+    "confirm": "Export completed successfully"
 };
 
 export default sectionData;

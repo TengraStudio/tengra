@@ -191,12 +191,12 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                     onChange={event => setComposerValue(event.target.value)}
                     onKeyDown={handleEnter}
                     placeholder={t('workspace.writeSomething')}
-                    className="min-h-[96px] flex-1 rounded-2xl border-white/5 bg-black/10 px-4 py-3 placeholder:text-muted-foreground/40 text-sm focus:border-border/20 transition-colors"
+                    className="min-h-[44px] h-11 flex-1 rounded-2xl border-white/5 bg-black/10 px-4 py-2.5 placeholder:text-muted-foreground/40 text-sm focus:border-border/20 transition-colors resize-none overflow-hidden"
                     disabled={isLoading}
                 />
                 <Button
                     onClick={isLoading ? onStop : onSend}
-                    className="h-24 w-12 rounded-2xl bg-primary/95 hover:bg-primary"
+                    className="h-11 w-11 rounded-2xl bg-primary/95 hover:bg-primary shrink-0"
                 >
                     {isLoading ? (
                         <Square className="h-4 w-4 fill-current" />
@@ -212,17 +212,10 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                         <Button
                             type="button"
                             variant="outline"
-                            className="h-10 min-w-0 flex-1 justify-start rounded-xl border-border/10 bg-black/5 px-3 text-left hover:bg-black/10 transition-colors"
+                            title={`${t('workspaceAgent.permissions.title')}: ${selectedPreset.title} · ${selectedCommandPolicy?.title} · ${selectedPathPolicy?.title}`}
+                            className="h-10 w-10 shrink-0 flex items-center justify-center rounded-xl border-border/10 bg-black/5 hover:bg-black/10 transition-colors p-0"
                         >
-                            <SlidersHorizontal className="mr-2 h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
-                            <span className="min-w-0">
-                                <span className="block truncate text-[12px] font-medium">
-                                    {t('workspaceAgent.permissions.title')}
-                                </span>
-                                <span className="block truncate text-[10px] text-muted-foreground/60">
-                                    {selectedPreset.title} · {selectedCommandPolicy?.title} · {selectedPathPolicy?.title}
-                                </span>
-                            </span>
+                            <SlidersHorizontal className="h-4 w-4 text-muted-foreground/60" />
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent
@@ -383,15 +376,15 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                 <Button
                     type="button"
                     variant={currentModes.council ? 'secondary' : 'outline'}
-                    className={`h-10 shrink-0 rounded-xl border-border/10 px-4 text-xs transition-colors ${
+                    title={t('agents.council')}
+                    className={`h-10 w-10 shrink-0 flex items-center justify-center rounded-xl border-border/10 transition-colors p-0 ${
                         currentModes.council 
                         ? 'bg-primary/10 border-primary/20 hover:bg-primary/20 text-primary' 
                         : 'bg-black/5 hover:bg-black/10'
                     }`}
                     onClick={onToggleCouncil}
                 >
-                    <Map className="mr-2 h-3.5 w-3.5 text-muted-foreground/60" />
-                    {t('agents.council')}
+                    <Map className="h-4 w-4 text-muted-foreground/60" />
                 </Button>
 
                 <div className="shrink-0 rounded-xl border border-border/10 bg-black/5 p-0.5 hover:bg-black/10 transition-colors">

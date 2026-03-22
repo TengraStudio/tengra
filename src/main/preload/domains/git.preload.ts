@@ -26,6 +26,21 @@ export interface GitBridge {
         commits?: Array<{ hash: string; message: string; author: string; date: string }>;
         error?: string;
     }>;
+    getFileHistory: (
+        cwd: string,
+        filePath: string,
+        count?: number
+    ) => Promise<{
+        success: boolean;
+        commits?: Array<{
+            hash: string;
+            message: string;
+            author: string;
+            relativeTime: string;
+            date: string;
+        }>;
+        error?: string;
+    }>;
     getBranches: (cwd: string) => Promise<{ success: boolean; branches?: string[]; error?: string }>;
     isRepository: (cwd: string) => Promise<{ success: boolean; isRepository?: boolean }>;
     getFileDiff: (
@@ -84,6 +99,8 @@ export function createGitBridge(ipc: IpcRenderer): GitBridge {
         getStatus: cwd => ipc.invoke('git:getStatus', cwd),
         getLastCommit: cwd => ipc.invoke('git:getLastCommit', cwd),
         getRecentCommits: (cwd, count) => ipc.invoke('git:getRecentCommits', cwd, count),
+        getFileHistory: (cwd, filePath, count) =>
+            ipc.invoke('git:getFileHistory', cwd, filePath, count),
         getBranches: cwd => ipc.invoke('git:getBranches', cwd),
         isRepository: cwd => ipc.invoke('git:isRepository', cwd),
         getFileDiff: (cwd, filePath, staged) => ipc.invoke('git:getFileDiff', cwd, filePath, staged),

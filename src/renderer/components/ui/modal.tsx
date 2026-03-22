@@ -170,7 +170,7 @@ const ModalBase: React.FC<ModalProps> = ({
 
     const modalContent = (
         <div
-            className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300"
+            className="fixed inset-0 z-[1000] flex items-center justify-center bg-background/60 backdrop-blur-md animate-in fade-in duration-300"
             onClick={handleBackdropClick}
             role="dialog"
             aria-modal="true"

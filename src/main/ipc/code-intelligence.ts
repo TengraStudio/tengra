@@ -1,5 +1,14 @@
 import { CodeIntelligenceService } from '@main/services/workspace/code-intelligence.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import {
+    CodeQualityAnalysisSchema,
+    DocumentationPreviewResultSchema,
+    FileSearchResultSchema,
+    RenameSymbolResultSchema,
+    SymbolAnalyticsSchema,
+    WorkspaceCodeMapSchema,
+    WorkspaceDependencyGraphSchema,
+} from '@shared/schemas/code-intelligence.schema';
 import { ipcMain } from 'electron';
 import { z } from 'zod';
 
@@ -18,7 +27,8 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
         return await codeIntelligenceService.findSymbols(rootPath, query);
     }, {
         defaultValue: [],
-        argsSchema: z.tuple([RootPathSchema, QuerySchema])
+        argsSchema: z.tuple([RootPathSchema, QuerySchema]),
+        responseSchema: z.array(FileSearchResultSchema),
     }));
 
     /**
@@ -34,7 +44,8 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
             QuerySchema,
             WorkspaceIdSchema.optional(),
             z.boolean().optional().default(false)
-        ])
+        ]),
+        responseSchema: z.array(FileSearchResultSchema),
     }));
 
     /**
@@ -49,7 +60,8 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
             RootPathSchema,
             WorkspaceIdSchema,
             z.boolean().optional().default(false)
-        ])
+        ]),
+        responseSchema: z.undefined(),
     }));
 
     /**
@@ -59,7 +71,8 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
         return await codeIntelligenceService.queryIndexedSymbols(query);
     }, {
         defaultValue: [],
-        argsSchema: z.tuple([QuerySchema])
+        argsSchema: z.tuple([QuerySchema]),
+        responseSchema: z.array(FileSearchResultSchema),
     }));
 
     /**
@@ -69,7 +82,8 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
         return await codeIntelligenceService.getFileOutline(filePath);
     }, {
         defaultValue: [],
-        argsSchema: z.tuple([z.string().min(1)])
+        argsSchema: z.tuple([z.string().min(1)]),
+        responseSchema: z.array(FileSearchResultSchema),
     }));
 
     /**
@@ -79,7 +93,8 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
         return await codeIntelligenceService.findDefinition(rootPath, symbol);
     }, {
         defaultValue: null,
-        argsSchema: z.tuple([RootPathSchema, QuerySchema])
+        argsSchema: z.tuple([RootPathSchema, QuerySchema]),
+        responseSchema: FileSearchResultSchema.nullable(),
     }));
 
     /**
@@ -89,7 +104,8 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
         return await codeIntelligenceService.findUsage(rootPath, symbol);
     }, {
         defaultValue: [],
-        argsSchema: z.tuple([RootPathSchema, QuerySchema])
+        argsSchema: z.tuple([RootPathSchema, QuerySchema]),
+        responseSchema: z.array(FileSearchResultSchema),
     }));
 
     /**
@@ -99,7 +115,8 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
         return await codeIntelligenceService.findReferences(rootPath, symbol);
     }, {
         defaultValue: [],
-        argsSchema: z.tuple([RootPathSchema, QuerySchema])
+        argsSchema: z.tuple([RootPathSchema, QuerySchema]),
+        responseSchema: z.array(FileSearchResultSchema),
     }));
 
     /**
@@ -109,7 +126,8 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
         return await codeIntelligenceService.findImplementations(rootPath, symbol);
     }, {
         defaultValue: [],
-        argsSchema: z.tuple([RootPathSchema, QuerySchema])
+        argsSchema: z.tuple([RootPathSchema, QuerySchema]),
+        responseSchema: z.array(FileSearchResultSchema),
     }));
 
     /**
@@ -119,7 +137,8 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
         return await codeIntelligenceService.getSymbolRelationships(rootPath, symbol, maxItems);
     }, {
         defaultValue: [],
-        argsSchema: z.tuple([RootPathSchema, QuerySchema, z.number().optional()])
+        argsSchema: z.tuple([RootPathSchema, QuerySchema, z.number().optional()]),
+        responseSchema: z.array(FileSearchResultSchema),
     }));
 
     /**
@@ -129,7 +148,8 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
         return await codeIntelligenceService.queryIndexedSymbols(query);
     }, {
         defaultValue: [],
-        argsSchema: z.tuple([QuerySchema])
+        argsSchema: z.tuple([QuerySchema]),
+        responseSchema: z.array(FileSearchResultSchema),
     }));
 
     /**
@@ -139,7 +159,24 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
         return await codeIntelligenceService.getSymbolAnalytics(rootPath);
     }, {
         defaultValue: null,
-        argsSchema: z.tuple([RootPathSchema])
+        argsSchema: z.tuple([RootPathSchema]),
+        responseSchema: SymbolAnalyticsSchema.nullable(),
+    }));
+
+    ipcMain.handle('code:getWorkspaceDependencyGraph', createValidatedIpcHandler('code:getWorkspaceDependencyGraph', async (_, rootPath: string) => {
+        return await codeIntelligenceService.getWorkspaceDependencyGraph(rootPath);
+    }, {
+        defaultValue: null,
+        argsSchema: z.tuple([RootPathSchema]),
+        responseSchema: WorkspaceDependencyGraphSchema.nullable(),
+    }));
+
+    ipcMain.handle('code:getWorkspaceCodeMap', createValidatedIpcHandler('code:getWorkspaceCodeMap', async (_, rootPath: string) => {
+        return await codeIntelligenceService.getWorkspaceCodeMap(rootPath);
+    }, {
+        defaultValue: null,
+        argsSchema: z.tuple([RootPathSchema]),
+        responseSchema: WorkspaceCodeMapSchema.nullable(),
     }));
 
     /**
@@ -149,7 +186,8 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
         return await codeIntelligenceService.scanTodos(rootPath);
     }, {
         defaultValue: [],
-        argsSchema: z.tuple([RootPathSchema])
+        argsSchema: z.tuple([RootPathSchema]),
+        responseSchema: z.array(FileSearchResultSchema),
     }));
 
     /**
@@ -159,7 +197,8 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
         return await codeIntelligenceService.analyzeCodeQuality(rootPath, maxFiles);
     }, {
         defaultValue: null,
-        argsSchema: z.tuple([RootPathSchema, z.number().optional()])
+        argsSchema: z.tuple([RootPathSchema, z.number().optional()]),
+        responseSchema: CodeQualityAnalysisSchema.nullable(),
     }));
 
     /**
@@ -169,7 +208,8 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
         return await codeIntelligenceService.renameSymbol(rootPath, symbol, newSymbol, false, maxFiles);
     }, {
         defaultValue: { success: false, applied: false, symbol: '', newSymbol: '', totalFiles: 0, totalOccurrences: 0, changes: [], updatedFiles: [], errors: [] },
-        argsSchema: z.tuple([RootPathSchema, QuerySchema, QuerySchema, z.number().optional()])
+        argsSchema: z.tuple([RootPathSchema, QuerySchema, QuerySchema, z.number().optional()]),
+        responseSchema: RenameSymbolResultSchema,
     }));
 
     /**
@@ -179,7 +219,8 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
         return await codeIntelligenceService.renameSymbol(rootPath, symbol, newSymbol, true, maxFiles);
     }, {
         defaultValue: { success: false, applied: false, symbol: '', newSymbol: '', totalFiles: 0, totalOccurrences: 0, changes: [], updatedFiles: [], errors: [] },
-        argsSchema: z.tuple([RootPathSchema, QuerySchema, QuerySchema, z.number().optional()])
+        argsSchema: z.tuple([RootPathSchema, QuerySchema, QuerySchema, z.number().optional()]),
+        responseSchema: RenameSymbolResultSchema,
     }));
 
     /**
@@ -189,7 +230,8 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
         return await codeIntelligenceService.generateFileDocumentation(filePath, format);
     }, {
         defaultValue: null,
-        argsSchema: z.tuple([z.string().min(1), z.enum(['markdown', 'jsdoc-comments']).optional()])
+        argsSchema: z.tuple([z.string().min(1), z.enum(['markdown', 'jsdoc-comments']).optional()]),
+        responseSchema: DocumentationPreviewResultSchema.nullable(),
     }));
 
     /**
@@ -199,6 +241,7 @@ export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelli
         return await codeIntelligenceService.generateWorkspaceDocumentation(rootPath, maxFiles);
     }, {
         defaultValue: null,
-        argsSchema: z.tuple([RootPathSchema, z.number().optional()])
+        argsSchema: z.tuple([RootPathSchema, z.number().optional()]),
+        responseSchema: DocumentationPreviewResultSchema.nullable(),
     }));
 }

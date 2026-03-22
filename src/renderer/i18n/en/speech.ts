@@ -11,20 +11,20 @@ const sectionData = {
     "microphoneSelection": "Microphone Input",
     "speakerSelection": "Audio Output",
     "voiceCloning": "Voice Cloning",
-    "voiceCloningDesc": "Integrate your own voice into the Tengra ecosystem.",
-    "voiceCloningTitle": "Use Your Own Voice!",
-    "voiceCloningTeaser": "Speak for 1 minute and let the AI imitate your voice This feature is now active!",
+    "voiceCloningDesc": "Bring your own voice into Tengra.",
+    "voiceCloningTitle": "Use your own voice",
+    "voiceCloningTeaser": "Speak for one minute and let AI mimic your voice. This feature is now available.",
     "record": "Start Recording",
     "stopRecord": "Stop Recording",
     "recording": "Recording...",
     "startTraining": "Start Cloning",
-    "training": "Modeling Voice...",
-    "trainingDesc": "Please wait, this may take a few minutes depending on your computer speed.",
+    "training": "Training voice model...",
+    "trainingDesc": "Please wait. This may take a few minutes depending on your computer speed.",
     "downloadModel": "Download Model (2GB)",
     "modelRequired": "XTTS v2 Model Required",
     "modelRequiredDesc": "To use the voice cloning feature, you need to download the AI model (~2GB).",
     "downloadingModel": "Downloading Model...",
-    "downloadComplete": "Download Complete"
+    "downloadComplete": "Download complete"
 };
 
 export default sectionData;

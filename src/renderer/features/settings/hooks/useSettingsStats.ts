@@ -1,9 +1,21 @@
 import { CommonBatches } from '@renderer/utils/ipc-batch.util';
-import { useEffect, useMemo, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
+
+import { appLogger } from '@/utils/renderer-logger';
 
 import { DetailedStats } from '../types';
 
-export function useSettingsStats() {
+export function useSettingsStats(): {
+    statsLoading: boolean;
+    statsPeriod: 'daily' | 'weekly' | 'monthly' | 'yearly';
+    setStatsPeriod: (period: 'daily' | 'weekly' | 'monthly' | 'yearly') => void;
+    statsData: DetailedStats | null;
+    quotaData: Awaited<ReturnType<Window['electron']['getQuota']>> | null;
+    copilotQuota: Awaited<ReturnType<Window['electron']['getCopilotQuota']>> | null;
+    codexUsage: Awaited<ReturnType<Window['electron']['getCodexUsage']>> | null;
+    claudeQuota: Awaited<ReturnType<Window['electron']['getClaudeQuota']>> | null;
+    setReloadTrigger: Dispatch<SetStateAction<number>>;
+} {
     const [statsLoading, setStatsLoading] = useState(false);
     const [statsPeriod, setStatsPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
     const [reloadTrigger, setReloadTrigger] = useState(0);
@@ -34,8 +46,7 @@ export function useSettingsStats() {
                     claudeQuota: batchedData.claudeQuota ?? null
                 });
             } catch (error) {
-                const message = error instanceof Error ? error : new Error(String(error));
-                window.electron.log.error('Failed to load stats', message);
+                appLogger.error('useSettingsStats', 'Failed to load stats', error as Error);
             } finally {
                 setStatsLoading(false);
             }

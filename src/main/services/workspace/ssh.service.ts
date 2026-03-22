@@ -74,21 +74,35 @@ interface ShellSession {
     onExit: () => void;
 }
 
+interface SSHDirectoryListResult {
+    success: boolean;
+    files?: SSHFile[];
+    error?: string;
+}
+
+interface SSHDirectoryMetadataCacheEntry {
+    files: SSHFile[];
+    cachedAt: number;
+    inflight?: Promise<SSHDirectoryListResult>;
+}
+
 const SSH_MESSAGE_KEY = {
     NOT_CONNECTED: 'mainProcess.sshService.notConnected',
     CONNECTION_PROFILE_NOT_FOUND: 'mainProcess.sshService.connectionProfileNotFound',
     RECONNECT_ATTEMPTS_EXHAUSTED: 'mainProcess.sshService.reconnectAttemptsExhausted'
 } as const;
 const SSH_ERROR_MESSAGE = {
-    NOT_CONNECTED: 'Not connected',
-    CONNECTION_PROFILE_NOT_FOUND: 'Connection profile not found',
-    RECONNECT_ATTEMPTS_EXHAUSTED: 'Reconnect attempts exhausted',
-    PATH_TRAVERSAL_DETECTED: 'Access denied: Path traversal detected',
-    PATH_MUST_BE_ABSOLUTE: 'Access denied: Path must be absolute',
-    PATH_MUST_BE_WITHIN_VAR_LOG: 'Access denied: Path must be within /var/log'
+    NOT_CONNECTED: 'error.ssh.not_connected',
+    CONNECTION_PROFILE_NOT_FOUND: 'error.ssh.connection_profile_not_found',
+    RECONNECT_ATTEMPTS_EXHAUSTED: 'error.ssh.reconnect_attempts_exhausted',
+    PATH_TRAVERSAL_DETECTED: 'error.ssh.path_traversal_detected',
+    PATH_MUST_BE_ABSOLUTE: 'error.ssh.path_must_be_absolute',
+    PATH_MUST_BE_WITHIN_VAR_LOG: 'error.ssh.path_must_be_within_var_log'
 } as const;
 
 export class SSHService extends EventEmitter {
+    private static readonly DIRECTORY_METADATA_CACHE_TTL_MS = 5_000;
+    private static readonly DIRECTORY_METADATA_STALE_TTL_MS = 60_000;
     private connections: Map<string, Client> = new Map();
     private connectionDetails: Map<string, SSHConnection> = new Map();
     private connectionStats: Map<string, SSHConnectionStats> = new Map();
@@ -97,6 +111,7 @@ export class SSHService extends EventEmitter {
     private transferQueue: SSHTransferTask[] = [];
     private transferQueueProcessing = false;
     private keepaliveTimers: Map<string, NodeJS.Timeout> = new Map();
+    private directoryMetadataCache: Map<string, SSHDirectoryMetadataCacheEntry> = new Map();
     private storagePath: string;
     private initPromise: Promise<void> | null = null;
     // Allowed base directories for file operations (prevents path traversal)
@@ -167,9 +182,7 @@ export class SSHService extends EventEmitter {
         );
 
         if (!isAllowed) {
-            throw new Error(
-                `Access denied: Path must be within allowed directories: ${this.allowedBasePaths.join(', ')}`
-            );
+            throw new Error('error.ssh.path_outside_allowed_directories');
         }
 
         return normalized;
@@ -505,7 +518,123 @@ export class SSHService extends EventEmitter {
         this.connectionDetails.delete(connectionId);
         this.connectionStats.delete(connectionId);
         this.shellSessions.delete(connectionId);
+        this.clearConnectionDirectoryCache(connectionId);
         this.emit('disconnected', connectionId);
+    }
+
+    private getDirectoryCacheKey(connectionId: string, remotePath: string): string {
+        return `${connectionId}:${remotePath}`;
+    }
+
+    private isDirectoryCacheFresh(entry: SSHDirectoryMetadataCacheEntry, now: number): boolean {
+        return now - entry.cachedAt <= SSHService.DIRECTORY_METADATA_CACHE_TTL_MS;
+    }
+
+    private canReuseStaleDirectoryCache(
+        entry: SSHDirectoryMetadataCacheEntry,
+        now: number
+    ): boolean {
+        return now - entry.cachedAt <= SSHService.DIRECTORY_METADATA_STALE_TTL_MS;
+    }
+
+    private setDirectoryCacheEntry(
+        connectionId: string,
+        remotePath: string,
+        files: SSHFile[]
+    ): SSHDirectoryMetadataCacheEntry {
+        const cacheEntry: SSHDirectoryMetadataCacheEntry = {
+            files,
+            cachedAt: Date.now(),
+        };
+        this.directoryMetadataCache.set(
+            this.getDirectoryCacheKey(connectionId, remotePath),
+            cacheEntry
+        );
+        return cacheEntry;
+    }
+
+    private clearConnectionDirectoryCache(connectionId: string): void {
+        for (const cacheKey of Array.from(this.directoryMetadataCache.keys())) {
+            if (cacheKey.startsWith(`${connectionId}:`)) {
+                this.directoryMetadataCache.delete(cacheKey);
+            }
+        }
+    }
+
+    private invalidateDirectoryMetadataCache(
+        connectionId: string,
+        remotePath: string
+    ): void {
+        const normalizedPath = path.posix.normalize(remotePath);
+        const parentPath = path.posix.dirname(normalizedPath);
+        const rootDirectory = path.posix.dirname(parentPath);
+        const pathsToInvalidate = new Set<string>([
+            normalizedPath,
+            parentPath,
+        ]);
+
+        if (parentPath !== normalizedPath) {
+            pathsToInvalidate.add(rootDirectory);
+        }
+
+        for (const candidatePath of pathsToInvalidate) {
+            this.directoryMetadataCache.delete(
+                this.getDirectoryCacheKey(connectionId, candidatePath)
+            );
+        }
+    }
+
+    private async fetchDirectoryListing(
+        conn: Client,
+        connectionId: string,
+        remotePath: string
+    ): Promise<SSHDirectoryListResult> {
+        const cacheKey = this.getDirectoryCacheKey(connectionId, remotePath);
+        const existing = this.directoryMetadataCache.get(cacheKey);
+        if (existing?.inflight) {
+            return existing.inflight;
+        }
+
+        const inflight = new Promise<SSHDirectoryListResult>(resolve => {
+            conn.sftp((err, sftp) => {
+                if (err) {
+                    this.directoryMetadataCache.delete(cacheKey);
+                    resolve({ success: false, error: err.message });
+                    return;
+                }
+                sftp.readdir(remotePath, (readdirError, list) => {
+                    if (readdirError) {
+                        this.directoryMetadataCache.delete(cacheKey);
+                        resolve({ success: false, error: readdirError.message });
+                        return;
+                    }
+                    const files = list.map(entry => this.mapSftpEntry(entry));
+                    this.setDirectoryCacheEntry(connectionId, remotePath, files);
+                    resolve({ success: true, files });
+                });
+            });
+        });
+
+        this.directoryMetadataCache.set(cacheKey, {
+            files: existing?.files ?? [],
+            cachedAt: existing?.cachedAt ?? 0,
+            inflight,
+        });
+
+        return inflight;
+    }
+
+    private hydrateDirectoryMetadataCache(
+        conn: Client,
+        connectionId: string,
+        remotePath: string
+    ): void {
+        void this.fetchDirectoryListing(conn, connectionId, remotePath).catch(error => {
+            appLogger.warn(
+                'SSHService',
+                `Background directory cache hydration failed for ${remotePath}: ${getErrorMessage(error as Error)}`
+            );
+        });
     }
 
     /**
@@ -667,20 +796,24 @@ export class SSHService extends EventEmitter {
         }
 
         const validPath = this.validateRemotePath(dirPath);
-        return new Promise(resolve => {
-            conn.sftp((err, sftp) => {
-                if (err) {
-                    return resolve({ success: false, error: err.message });
-                }
-                sftp.readdir(validPath, (err, list) => {
-                    if (err) {
-                        return resolve({ success: false, error: err.message });
-                    }
-                    const files = list.map(entry => this.mapSftpEntry(entry));
-                    resolve({ success: true, files });
-                });
-            });
-        });
+        const cacheKey = this.getDirectoryCacheKey(connectionId, validPath);
+        const cachedEntry = this.directoryMetadataCache.get(cacheKey);
+        const now = Date.now();
+
+        if (cachedEntry?.files && this.isDirectoryCacheFresh(cachedEntry, now)) {
+            return { success: true, files: cachedEntry.files };
+        }
+
+        if (cachedEntry?.inflight) {
+            return cachedEntry.inflight;
+        }
+
+        if (cachedEntry?.files && this.canReuseStaleDirectoryCache(cachedEntry, now)) {
+            this.hydrateDirectoryMetadataCache(conn, connectionId, validPath);
+            return { success: true, files: cachedEntry.files };
+        }
+
+        return this.fetchDirectoryListing(conn, connectionId, validPath);
     }
 
     private mapSftpEntry(entry: {
@@ -747,7 +880,10 @@ export class SSHService extends EventEmitter {
                 const stream = sftp.createWriteStream(validPath);
                 stream.write(content);
                 stream.end();
-                stream.on('close', () => resolve(true));
+                stream.on('close', () => {
+                    this.invalidateDirectoryMetadataCache(connectionId, validPath);
+                    resolve(true);
+                });
                 stream.on('error', (err: Error) => reject(err));
             });
         });
@@ -769,6 +905,7 @@ export class SSHService extends EventEmitter {
                     if (err) {
                         return reject(err);
                     }
+                    this.invalidateDirectoryMetadataCache(connectionId, validPath);
                     resolve(true);
                 });
             });
@@ -791,6 +928,7 @@ export class SSHService extends EventEmitter {
                     if (err) {
                         return reject(err);
                     }
+                    this.invalidateDirectoryMetadataCache(connectionId, validPath);
                     resolve(true);
                 });
             });
@@ -813,6 +951,7 @@ export class SSHService extends EventEmitter {
                     if (err) {
                         return reject(err);
                     }
+                    this.invalidateDirectoryMetadataCache(connectionId, validPath);
                     resolve(true);
                 });
             });
@@ -836,6 +975,8 @@ export class SSHService extends EventEmitter {
                     if (err) {
                         return reject(err);
                     }
+                    this.invalidateDirectoryMetadataCache(connectionId, validOldPath);
+                    this.invalidateDirectoryMetadataCache(connectionId, validNewPath);
                     resolve(true);
                 });
             });
@@ -903,6 +1044,7 @@ export class SSHService extends EventEmitter {
                         if (onProgress) {
                             onProgress(lastTransferred, lastTotal);
                         }
+                        this.invalidateDirectoryMetadataCache(connectionId, validRemotePath);
                         resolve(true);
                     }
                 );
@@ -1276,6 +1418,7 @@ export class SSHService extends EventEmitter {
         this.connectionStats.clear();
         this.shellSessions.clear();
         this.keepaliveTimers.clear();
+        this.directoryMetadataCache.clear();
         this.emit('connectionsChanged', []);
     }
 

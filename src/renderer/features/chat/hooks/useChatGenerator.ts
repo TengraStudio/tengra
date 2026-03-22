@@ -213,14 +213,10 @@ const executeToolCall = async (
 };
 
 const logRendererError = (message: string, error: Error): void => {
-    if (window.electron?.log?.error) {
-        window.electron.log.error(message, error);
-        return;
-    }
     appLogger.error('useChatGenerator', message, error);
 };
 
-const prepareMessages = (options: PrepareMessagesOptions) => {
+const prepareMessages = (options: PrepareMessagesOptions): { allMessages: Message[]; presetOptions: Record<string, RendererDataValue> } => {
     const {
         chatId,
         chats,
@@ -374,7 +370,13 @@ export const useChatGenerator = (
         | undefined;
         systemMode: 'thinking' | 'agent' | 'fast';
     }
-) => {
+): {
+    streamingStates: Record<string, StreamStreamingState>;
+    lastChatError: ChatError | null;
+    clearChatError: () => void;
+    generateResponse: (chatId: string, userMessage: Message, retryModel?: string) => Promise<void>;
+    stopGeneration: () => Promise<void>;
+} => {
     const {
         chats,
         setChats,
@@ -397,7 +399,7 @@ export const useChatGenerator = (
     const [lastChatError, setLastChatError] = useState<ChatError | null>(null);
     const clearChatError = useCallback(() => setLastChatError(null), []);
 
-    const generateResponse = async (chatId: string, userMessage: Message, retryModel?: string) => {
+    const generateResponse = async (chatId: string, userMessage: Message, retryModel?: string): Promise<void> => {
         setLastChatError(null);
         setStreamingStates(prev => ({
             ...prev,
@@ -513,7 +515,7 @@ export const useChatGenerator = (
         }
     };
 
-    const stopGeneration = async () => {
+    const stopGeneration = async (): Promise<void> => {
         try {
             for (const activeChatId of Object.keys(streamingStates)) {
                 window.electron.session.conversation.abort(activeChatId);

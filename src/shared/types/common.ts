@@ -39,3 +39,20 @@ export interface FileSearchResult {
     type?: string;
     name?: string;
 }
+
+export type RuntimeValue =
+    | string
+    | number
+    | boolean
+    | null
+    | undefined
+    | RuntimeObject
+    | RuntimeArray
+    | Record<string, unknown>
+    | unknown[];
+
+export interface RuntimeObject {
+    [key: string]: RuntimeValue;
+}
+
+export type RuntimeArray = Array<RuntimeValue>;

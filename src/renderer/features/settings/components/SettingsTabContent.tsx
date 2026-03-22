@@ -39,7 +39,7 @@ function renderSettingsTabContent({
     onRefreshModels,
     handleFactoryReset,
     groupedModels
-}: SettingsTabContentProps): React.ReactNode {
+}: SettingsTabContentProps): JSX.Element | null {
     switch (activeTab) {
         case 'general': return <GeneralTab {...sharedProps} />;
         case 'accounts': return <AccountsTab {...sharedProps} />;

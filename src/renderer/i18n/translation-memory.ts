@@ -6,14 +6,8 @@
  * This is a development-time utility, not a runtime feature.
  */
 
-import { ar } from '@renderer/i18n/ar';
-import { de } from '@renderer/i18n/de';
 import { en } from '@renderer/i18n/en';
-import { es } from '@renderer/i18n/es';
-import { fr } from '@renderer/i18n/fr';
-import { ja } from '@renderer/i18n/ja';
 import { tr } from '@renderer/i18n/tr';
-import { zh } from '@renderer/i18n/zh';
 
 /** Represents a stored translation pair */
 export interface TranslationEntry {
@@ -28,20 +22,14 @@ export interface ScoredTranslationEntry extends TranslationEntry {
 }
 
 /** Supported language codes for translation memory */
-type LangCode = 'tr' | 'de' | 'fr' | 'es' | 'ja' | 'zh' | 'ar';
+type LangCode = 'tr';
 
 function toTranslationRecord<T extends object>(value: T): Record<string, RendererDataValue> {
     return value as Record<string, RendererDataValue>;
 }
 
 const LANG_MAP: Record<LangCode, Record<string, RendererDataValue>> = {
-    tr: toTranslationRecord(tr),
-    de: toTranslationRecord(de),
-    fr: toTranslationRecord(fr),
-    es: toTranslationRecord(es),
-    ja: toTranslationRecord(ja),
-    zh: toTranslationRecord(zh),
-    ar: toTranslationRecord(ar),
+    tr: toTranslationRecord(tr)
 };
 
 /**

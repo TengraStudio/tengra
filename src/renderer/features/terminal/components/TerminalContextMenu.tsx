@@ -12,7 +12,6 @@ type TerminalContextMenuProps = {
     onSearch: () => void;
     onSemanticToggle: () => void;
     onGalleryToggle: () => void;
-    onFloatingToggle?: () => void;
     onHistoryToggle: () => void;
     onTaskRunnerToggle: () => void;
     onMultiplexerToggle: () => void;
@@ -32,8 +31,7 @@ type TerminalContextMenuProps = {
     workspacePath?: string;
     semanticIssueCount: number;
     semanticErrorCount: number;
-    semanticWarningCount: number;
-    isFloating?: boolean;
+    semanticWarningCount: number; 
     pasteHistory: string[];
     onPasteHistory: (entry: string) => void;
     labels: {
@@ -47,8 +45,7 @@ type TerminalContextMenuProps = {
         search: string;
         semanticIssues: string;
         galleryView: string;
-        exitGalleryView: string;
-        floatTerminal: string;
+        exitGalleryView: string; 
         dockTerminal: string;
         commandHistory: string;
         runTask: string;
@@ -81,8 +78,7 @@ export function TerminalContextMenu({
     onSelectAll,
     onSearch,
     onSemanticToggle,
-    onGalleryToggle,
-    onFloatingToggle,
+    onGalleryToggle, 
     onHistoryToggle,
     onTaskRunnerToggle,
     onMultiplexerToggle,
@@ -102,8 +98,7 @@ export function TerminalContextMenu({
     workspacePath,
     semanticIssueCount,
     semanticErrorCount,
-    semanticWarningCount,
-    isFloating,
+    semanticWarningCount, 
     pasteHistory,
     onPasteHistory,
     labels,
@@ -206,15 +201,7 @@ export function TerminalContextMenu({
                 className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
             >
                 {isGalleryView ? labels.exitGalleryView : labels.galleryView}
-            </button>
-            {onFloatingToggle && (
-                <button
-                    onClick={onFloatingToggle}
-                    className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground"
-                >
-                    {isFloating ? labels.dockTerminal : labels.floatTerminal}
-                </button>
-            )}
+            </button> 
             <button
                 onClick={onHistoryToggle}
                 disabled={!hasActiveSession}

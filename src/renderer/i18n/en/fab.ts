@@ -1,6 +1,6 @@
 const sectionData = {
-    "openMenu": "Open menu",
-    "closeMenu": "Close menu"
+    "openMenu": "Open Menu",
+    "closeMenu": "Close Menu"
 };
 
 export default sectionData;

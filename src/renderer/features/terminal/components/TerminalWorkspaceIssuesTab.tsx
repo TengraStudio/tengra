@@ -1,8 +1,8 @@
-import { AlertTriangle, CheckCircle2, RefreshCw } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, CheckCircle2, FileCode, Terminal } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
-import { WorkspaceIssue } from '@/types';
+import { CodeAnnotation,WorkspaceIssue } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 interface TerminalWorkspaceIssuesTabProps {
@@ -11,14 +11,14 @@ interface TerminalWorkspaceIssuesTabProps {
     onOpenFile?: (path: string, line?: number) => void;
 }
 
-const WORKSPACE_ISSUES_REFRESH_INTERVAL_MS = 90_000;
+const WORKSPACE_ISSUES_REFRESH_INTERVAL_MS = 60_000;
 
-function resolveIssuePath(workspacePath: string, issue: WorkspaceIssue): string {
-    if (/^[A-Za-z]:[\\/]/.test(issue.file) || issue.file.startsWith('\\\\')) {
-        return issue.file;
+function resolveIssuePath(workspacePath: string, file: string): string {
+    if (/^[A-Za-z]:[\\/]/.test(file) || file.startsWith('\\\\')) {
+        return file;
     }
     const separator = workspacePath.includes('\\') ? '\\' : '/';
-    return `${workspacePath}${workspacePath.endsWith(separator) ? '' : separator}${issue.file}`;
+    return `${workspacePath}${workspacePath.endsWith(separator) ? '' : separator}${file}`;
 }
 
 export function TerminalWorkspaceIssuesTab({
@@ -27,34 +27,38 @@ export function TerminalWorkspaceIssuesTab({
     onOpenFile,
 }: TerminalWorkspaceIssuesTabProps) {
     const { t } = useTranslation();
-    const [issues, setIssues] = useState<WorkspaceIssue[]>([]);
+    const [analysis, setAnalysis] = useState<{
+        issues: WorkspaceIssue[];
+        annotations: CodeAnnotation[];
+        lspDiagnostics: WorkspaceIssue[];
+    }>({ issues: [], annotations: [], lspDiagnostics: [] });
     const [isLoading, setIsLoading] = useState(false);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const loadIssues = useCallback(async () => {
         if (!workspacePath) {
-            setIssues([]);
-            setErrorMessage(null);
+            setAnalysis({ issues: [], annotations: [], lspDiagnostics: [] });
             return;
         }
 
         setIsLoading(true);
-        setErrorMessage(null);
         try {
-            const analysis = await window.electron.workspace.analyze(workspacePath, workspaceId ?? workspacePath);
-            setIssues(analysis.issues ?? []);
+            const results = await window.electron.workspace.analyze(workspacePath, workspaceId ?? workspacePath);
+            setAnalysis({
+                issues: results.issues ?? [],
+                annotations: results.annotations ?? [],
+                lspDiagnostics: results.lspDiagnostics ?? []
+            });
         } catch (error) {
             appLogger.error(
                 'TerminalWorkspaceIssuesTab',
                 `Failed to analyze workspace issues for ${workspacePath}`,
                 error as Error
             );
-            setIssues([]);
-            setErrorMessage(t('terminal.workspaceIssuesLoadFailed'));
+            setAnalysis({ issues: [], annotations: [], lspDiagnostics: [] });
         } finally {
             setIsLoading(false);
         }
-    }, [workspaceId, workspacePath, t]);
+    }, [workspaceId, workspacePath]);
 
     useEffect(() => {
         void loadIssues();
@@ -64,99 +68,101 @@ export function TerminalWorkspaceIssuesTab({
         if (!workspacePath) {
             return;
         }
-        const timer = window.setInterval(() => {
-            void loadIssues();
-        }, WORKSPACE_ISSUES_REFRESH_INTERVAL_MS);
-        return () => {
-            window.clearInterval(timer);
-        };
+        const timer = window.setInterval(() => void loadIssues(), WORKSPACE_ISSUES_REFRESH_INTERVAL_MS);
+        return () => window.clearInterval(timer);
     }, [loadIssues, workspacePath]);
 
-    const sortedIssues = useMemo(
-        () =>
-            [...issues].sort((left, right) => {
-                if (left.type !== right.type) {
-                    return left.type === 'error' ? -1 : 1;
-                }
-                return left.file.localeCompare(right.file) || left.line - right.line;
-            }),
-        [issues]
-    );
+    const totalCount = analysis.issues.length + analysis.annotations.length + analysis.lspDiagnostics.length;
+
+    const renderIssue = (issue: WorkspaceIssue | CodeAnnotation, key: string) => {
+        const severity = 'severity' in issue ? issue.severity : 'warning';
+        const isError = severity === 'error'
+            || ('type' in issue && (issue.type === 'error' || issue.type === 'fixme'));
+        const filePath = issue.file;
+        const line = issue.line;
+        const message = issue.message;
+
+        return (
+            <button
+                key={key}
+                className="w-full text-left rounded-lg border border-border/60 bg-card/50 px-3 py-2 hover:bg-accent/35 transition-all group"
+                onClick={() => workspacePath && onOpenFile?.(resolveIssuePath(workspacePath, filePath), line)}
+            >
+                <div className="flex items-start gap-3">
+                    <div className="mt-1 flex-shrink-0">
+                        <AlertTriangle className={`w-4 h-4 ${isError ? 'text-destructive' : 'text-warning'}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-[10px] font-black uppercase tracking-wider ${isError ? 'text-destructive/80' : 'text-warning/80'}`}>
+                                {isError ? t('terminal.workspaceIssuesError') : t('terminal.workspaceIssuesWarning')}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground font-mono truncate opacity-60 group-hover:opacity-100 transition-opacity">
+                                {filePath}:{line}
+                            </span>
+                            {'source' in issue && (
+                                <span className="px-1.5 py-0.5 bg-white/5 rounded text-[9px] uppercase font-bold text-muted-foreground/60 border border-white/10 ml-auto flex items-center gap-1">
+                                    {(issue as WorkspaceIssue).source}
+                                </span>
+                            )}
+                        </div>
+                        <div className="text-sm text-foreground/90 break-words leading-snug font-medium">
+                            {message}
+                        </div>
+                    </div>
+                </div>
+            </button>
+        );
+    };
 
     return (
         <div className="h-full flex flex-col bg-background/40">
-            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border/60">
-                <div className="min-w-0">
-                    <h3 className="text-sm font-semibold text-foreground">
-                        {t('terminal.workspaceIssuesTitle')}
-                    </h3>
-                    <p className="text-xs text-muted-foreground">
-                        {t('terminal.workspaceIssuesDescription')}
-                    </p>
-                </div>
-                <button
-                    onClick={() => {
-                        void loadIssues();
-                    }}
-                    disabled={isLoading}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border/70 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-                    {t('common.refresh')}
-                </button>
-            </div>
-
-            {!workspacePath ? (
-                <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground px-4 text-center">
-                    {t('terminal.workspaceIssuesNoWorkspace')}
-                </div>
-            ) : isLoading ? (
-                <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
-                    {t('terminal.workspaceIssuesLoading')}
-                </div>
-            ) : errorMessage ? (
-                <div className="flex-1 flex items-center justify-center text-sm text-destructive px-4 text-center">
-                    {errorMessage}
-                </div>
-            ) : sortedIssues.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center gap-2 px-4 text-center">
-                    <CheckCircle2 className="w-8 h-8 text-emerald-500" />
-                    <p className="text-sm text-foreground">{t('terminal.workspaceIssuesNoIssues')}</p>
-                </div>
-            ) : (
-                <div className="flex-1 overflow-auto p-3 space-y-2">
-                    {sortedIssues.map(issue => {
-                        const issuePath = resolveIssuePath(workspacePath, issue);
-                        return (
-                            <button
-                                key={`${issue.file}:${issue.line}:${issue.message}`}
-                                className="w-full text-left rounded-lg border border-border/60 bg-card/50 px-3 py-2 hover:bg-accent/35 transition-colors"
-                                onClick={() => {
-                                    onOpenFile?.(issuePath, issue.line);
-                                }}
-                            >
-                                <div className="flex items-start gap-2">
-                                    <AlertTriangle
-                                        className={
-                                            issue.type === 'error'
-                                                ? 'w-4 h-4 mt-0.5 text-destructive'
-                                                : 'w-4 h-4 mt-0.5 text-yellow-500'
-                                        }
-                                    />
-                                    <div className="min-w-0 flex-1">
-                                        <div className="text-xs font-semibold text-foreground break-words">
-                                            {issue.message}
-                                        </div>
-                                        <div className="text-[11px] text-muted-foreground font-mono mt-1 truncate">
-                                            {issue.file}:{issue.line}
-                                        </div>
-                                    </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                {!workspacePath ? (
+                    <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                        {t('terminal.workspaceIssuesNoWorkspace')}
+                    </div>
+                ) : isLoading && totalCount === 0 ? (
+                    <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                        {t('terminal.workspaceIssuesLoading')}
+                    </div>
+                ) : totalCount === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center gap-3 p-8">
+                        <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+                        <div className="text-sm font-bold">{t('terminal.workspaceIssuesNoIssues')}</div>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {analysis.lspDiagnostics.length > 0 && (
+                            <section className="space-y-2">
+                                <div className="text-[11px] font-black uppercase tracking-widest text-primary/80 flex items-center gap-2">
+                                    <FileCode className="w-3 h-3" />
+                                    {t('terminal.workspaceIssuesLanguageServer')} ({analysis.lspDiagnostics.length})
                                 </div>
-                            </button>
-                        );
-                    })}
-                </div>
-            )}
+                                {analysis.lspDiagnostics.map((issue, i) => renderIssue(issue, `lsp-${i}`))}
+                            </section>
+                        )}
+                        {analysis.issues.length > 0 && (
+                            <section className="space-y-2">
+                                <div className="text-[11px] font-black uppercase tracking-widest text-destructive/80 flex items-center gap-2">
+                                    <Terminal className="w-3 h-3" />
+                                    {t('terminal.workspaceIssuesTerminal')} ({analysis.issues.length})
+                                </div>
+                                {analysis.issues.map((issue, i) => renderIssue(issue, `term-${i}`))}
+                            </section>
+                        )}
+                        {analysis.annotations.length > 0 && (
+                            <section className="space-y-2">
+                                <div className="text-[11px] font-black uppercase tracking-widest text-warning/80 flex items-center gap-2">
+                                    <FileCode className="w-3 h-3" />
+                                    {t('terminal.workspaceIssuesAnnotations')} ({analysis.annotations.length})
+                                </div>
+                                {analysis.annotations.map((issue, i) => renderIssue(issue, `ann-${i}`))}
+                            </section>
+                        )}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

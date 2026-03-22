@@ -1,28 +1,16 @@
-import { ar } from '@renderer/i18n/ar';
-import { de } from '@renderer/i18n/de';
 import { en } from '@renderer/i18n/en';
-import { es } from '@renderer/i18n/es';
-import { fr } from '@renderer/i18n/fr';
-import { ja } from '@renderer/i18n/ja';
 import { tr } from '@renderer/i18n/tr';
-import { zh } from '@renderer/i18n/zh';
 import { JsonValue } from '@shared/types/common';
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo } from 'react';
 
 import { useSettings } from '@/context/SettingsContext';
 
-export type Language = 'tr' | 'en' | 'de' | 'fr' | 'es' | 'ja' | 'zh' | 'ar';
+export type Language = 'tr' | 'en';
 export type TranslationKeys = JsonValue;
 
 const translations: Partial<Record<Language, TranslationKeys>> = {
     tr,
-    en,
-    de,
-    fr,
-    es,
-    ja,
-    zh,
-    ar
+    en
 };
 
 const TRANSLATION_MEMORY_STORAGE_KEY = 'tengra.i18n.translation-memory.v1';
@@ -142,7 +130,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         }
 
         const browserLang = navigator.language.split('-')[0] as Language;
-        const supportedLanguages: Language[] = ['en', 'tr', 'de', 'fr', 'es', 'ja', 'zh', 'ar'];
+        const supportedLanguages: Language[] = ['en', 'tr'];
 
         return supportedLanguages.includes(browserLang) ? browserLang : 'en';
     }, [settings]);
@@ -160,7 +148,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         await updateSettings(updated, true);
     }, [settings, updateSettings]);
 
-    const isRTL = useMemo(() => language === 'ar', [language]);
+    const isRTL = false;
 
     // Sync HTML attributes
     useEffect(() => {

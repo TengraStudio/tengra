@@ -32,7 +32,7 @@ function validateExportInput(content: RuntimeValue, filePath: RuntimeValue): { c
  * Registers IPC handlers for file export operations
  */
 export function registerExportIpc(getMainWindow: () => BrowserWindow | null, exportService: ExportService): void {
-    appLogger.info('ExportIPC', 'Registering export IPC handlers');
+    appLogger.debug('ExportIPC', 'Registering export IPC handlers');
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'export operation');
 
     ipcMain.handle(

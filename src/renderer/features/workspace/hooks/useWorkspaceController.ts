@@ -17,7 +17,7 @@ export function useWorkspaceDetailsController({
     language,
 }: UseWorkspaceDetailsControllerProps) {
     const { t } = useTranslation(language);
-    const ps = useWorkspaceState();
+    const ps = useWorkspaceState(workspace.id);
     const { notify, logActivity } = ps;
 
     const wm = useWorkspaceManager({ workspace, notify, logActivity, t });
@@ -72,7 +72,7 @@ export function useWorkspaceDetailsController({
         const name = ps.entryName.trim();
 
         if (type !== 'delete' && !name) {
-            notify('error', t('workspace.errors.explorer.emptyEntryName'));
+            notify('error', t('workspace.errors.explorer.validationError'));
             return;
         }
 
@@ -96,23 +96,10 @@ export function useWorkspaceDetailsController({
                 await wm.renameEntry(entry, name);
             } else if (type === 'delete') {
                 const entriesToDelete = ps.selectedEntries.length > 1 ? ps.selectedEntries : [entry];
-                let deletedCount = 0;
-                for (const item of entriesToDelete) {
-                    try {
-                        await wm.deleteEntry(item);
-                        deletedCount++;
-                    } catch (e) {
-                        notify(
-                            'error',
-                            t('workspace.notifications.deleteEntryFailed', {
-                                name: item.name,
-                                error: String(e),
-                            })
-                        );
-                    }
-                }
                 if (entriesToDelete.length > 1) {
-                    notify('success', t('workspace.notifications.entriesDeleted', { count: deletedCount }));
+                    await wm.bulkDeleteEntries(entriesToDelete);
+                } else {
+                    await wm.deleteEntry(entry);
                 }
                 ps.setSelectedEntries([]);
             }

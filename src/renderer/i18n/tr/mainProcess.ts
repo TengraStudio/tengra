@@ -1,99 +1,99 @@
 const sectionData = {
     "dialog": {
-        "windowNotFound": "Window not found",
-        "canceled": "Canceled",
-        "operationFailed": "Dialog operation failed",
-        "invalidOptionsProvided": "Invalid options provided",
-        "saveOperationFailed": "Save operation failed"
+        "windowNotFound": "Pencere bulunamadı",
+        "canceled": "İptal edildi",
+        "operationFailed": "İletişim kutusu işlemi başarısız oldu",
+        "invalidOptionsProvided": "Geçersiz seçenekler sağlandı",
+        "saveOperationFailed": "Kaydetme işlemi başarısız oldu"
     },
     "files": {
-        "windowNotFound": "Window not found"
+        "windowNotFound": "Pencere bulunamadı"
     },
     "window": {
         "shellOpenExternal": {
-            "accessDenied": "Access denied",
-            "forbiddenProtocol": "Forbidden protocol",
-            "validationFailed": "Validation failed"
+            "accessDenied": "Erişim reddedildi",
+            "forbiddenProtocol": "Bu protokole izin verilmiyor",
+            "validationFailed": "Doğrulama başarısız oldu"
         },
         "shellRunCommand": {
-            "validationFailed": "Command validation failed",
-            "commandTooLong": "Command too long",
-            "tooManyArguments": "Too many arguments",
-            "argumentTooLong": "Argument too long",
-            "invalidArgument": "Invalid argument",
-            "executableNotAllowed": "Executable is not allowed",
-            "workingDirectoryNotAllowed": "Working directory is not allowed",
-            "argumentPolicyViolation": "Argument policy violation",
-            "rateLimitExceeded": "Rate limit exceeded"
+            "validationFailed": "Komut doğrulaması başarısız oldu",
+            "commandTooLong": "Komut çok uzun",
+            "tooManyArguments": "Çok fazla argüman var",
+            "argumentTooLong": "Argüman çok uzun",
+            "invalidArgument": "Geçersiz argüman",
+            "executableNotAllowed": "Bu yürütülebilir dosyaya izin verilmiyor",
+            "workingDirectoryNotAllowed": "Bu çalışma dizinine izin verilmiyor",
+            "argumentPolicyViolation": "Argüman politikası ihlali",
+            "rateLimitExceeded": "Hız sınırı aşıldı"
         }
     },
     "notificationService": {
-        "notSupported": "Notifications not supported"
+        "notSupported": "Bildirimler desteklenmiyor"
     },
     "clipboardService": {
-        "imageNotFound": "Clipboard does not contain an image"
+        "imageNotFound": "Panoda bir görsel bulunmuyor"
     },
     "mcpPlugin": {
-        "permissionRequestNotFound": "Permission request not found",
-        "pluginNotFound": "MCP Plugin '{{pluginName}}' not found.",
-        "pluginDisabled": "Plugin '{{pluginName}}' is disabled. Enable it in Settings > MCP.",
-        "actionForbiddenForProfile": "Action '{{actionName}}' is forbidden for profile '{{profile}}'. Change the server's permission profile in Settings.",
-        "permissionDeniedForAction": "Permission denied for action '{{actionName}}'",
-        "permissionRequiredForAction": "Permission required for '{{pluginName}}:{{actionName}}'. Approve it in MCP settings."
+        "permissionRequestNotFound": "İzin isteği bulunamadı",
+        "pluginNotFound": "'{{pluginName}}' MCP eklentisi bulunamadı.",
+        "pluginDisabled": "'{{pluginName}}' eklentisi devre dışı. Ayarlar > MCP bölümünden etkinleştirin.",
+        "actionForbiddenForProfile": "'{{actionName}}' işlemi '{{profile}}' profili için yasak. Sunucunun izin profilini Ayarlar'dan değiştirin.",
+        "permissionDeniedForAction": "'{{actionName}}' işlemi için izin reddedildi",
+        "permissionRequiredForAction": "'{{pluginName}}:{{actionName}}' için izin gerekiyor. MCP ayarlarından onaylayın."
     },
     "webServer": {
-        "invalidQuery": "Invalid query: must be non-empty string",
-        "queryTooLong": "Query too long (max 500 characters)",
-        "invalidUrlRequired": "Invalid URL: must be non-empty string",
-        "invalidUrlProtocol": "Invalid URL: only HTTP/HTTPS protocols allowed",
-        "invalidUrlFormat": "Invalid URL format"
+        "invalidQuery": "Geçersiz sorgu: boş olmayan bir metin olmalı",
+        "queryTooLong": "Sorgu çok uzun (en fazla 500 karakter)",
+        "invalidUrlRequired": "Geçersiz URL: boş olmayan bir metin olmalı",
+        "invalidUrlProtocol": "Geçersiz URL: yalnızca HTTP/HTTPS protokollerine izin verilir",
+        "invalidUrlFormat": "Geçersiz URL biçimi"
     },
     "internetServer": {
-        "invalidIpFormat": "Invalid IP address format (only IPv4 supported)",
-        "invalidIpOctets": "Invalid IP address octets",
-        "privateIpNotAllowed": "Private/local IP addresses not allowed (SSRF protection)",
-        "invalidTimezoneFormat": "Invalid timezone format (use Area/Location, e.g., Europe/London)",
-        "failedToFetchTopStories": "Failed to fetch top stories",
-        "invalidCoinOrCurrency": "Invalid coin or currency format"
+        "invalidIpFormat": "Geçersiz IP adresi biçimi (yalnızca IPv4 destekleniyor)",
+        "invalidIpOctets": "Geçersiz IP adresi oktetleri",
+        "privateIpNotAllowed": "Özel/yerel IP adreslerine izin verilmiyor (SSRF koruması)",
+        "invalidTimezoneFormat": "Geçersiz saat dilimi biçimi (Bölge/Konum kullanın, örn. Europe/London)",
+        "failedToFetchTopStories": "Öne çıkan haberler alınamadı",
+        "invalidCoinOrCurrency": "Geçersiz coin veya para birimi biçimi"
     },
     "networkService": {
-        "invalidHostnameOrIp": "Invalid hostname or IP address",
-        "invalidDomainName": "Invalid domain name",
-        "whoisCommandFailed": "WHOIS command failed. Is it installed?",
-        "invalidHost": "Invalid host",
-        "websocketStarted": "WebSocket server started on port {{port}}"
+        "invalidHostnameOrIp": "Geçersiz ana bilgisayar adı veya IP adresi",
+        "invalidDomainName": "Geçersiz alan adı",
+        "whoisCommandFailed": "WHOIS komutu başarısız oldu. Yüklü mü?",
+        "invalidHost": "Geçersiz ana bilgisayar",
+        "websocketStarted": "WebSocket sunucusu {{port}} portunda başlatıldı"
     },
     "sshService": {
-        "notConnected": "Not connected",
-        "connectionProfileNotFound": "Connection profile not found",
-        "reconnectAttemptsExhausted": "Reconnect attempts exhausted"
+        "notConnected": "Bağlı değil",
+        "connectionProfileNotFound": "Bağlantı profili bulunamadı",
+        "reconnectAttemptsExhausted": "Yeniden bağlanma denemeleri tükendi"
     },
     "chatExportService": {
-        "chatNotFound": "Chat not found"
+        "chatNotFound": "Sohbet bulunamadı"
     },
     "extensionService": {
-        "pathNotAllowed": "Extension path is not allowed",
-        "packageJsonNotFound": "package.json not found",
-        "noTengraConfiguration": "No tengra configuration found in package.json",
-        "extensionNotFound": "Extension not found",
-        "entryPointOutsideRoot": "Extension entry point resolves outside extension root",
-        "activateFunctionMissing": "Extension module must export an activate function"
+        "pathNotAllowed": "Eklenti yoluna izin verilmiyor",
+        "packageJsonNotFound": "package.json bulunamadı",
+        "noTengraConfiguration": "package.json içinde tengra yapılandırması bulunamadı",
+        "extensionNotFound": "Eklenti bulunamadı",
+        "entryPointOutsideRoot": "Eklenti giriş noktası, eklenti kök dizininin dışını işaret ediyor",
+        "activateFunctionMissing": "Eklenti modülü bir activate fonksiyonu dışa aktarmalıdır"
     },
     "utilityService": {
-        "rateNotFound": "Rate not found",
-        "monitorStarted": "Started monitoring {{url}}",
-        "reminderSet": "Reminder set for {{time}}",
-        "reminderCancelled": "Reminder cancelled",
-        "reminderNotFound": "Reminder not found",
-        "ghostModeEnabled": "Ghost Mode (DND) enabled. Notifications silenced.",
-        "ghostModeDisabled": "Ghost Mode disabled.",
-        "virusTotalApiKeyRequired": "VirusTotal API key required in arguments or settings",
-        "shodanApiKeyRequired": "Shodan API key required",
-        "pluginLoadingDisabled": "Plugin loading via eval is disabled for security reasons.",
-        "memoryStored": "Memory stored for \"{{key}}\" (encrypted)",
-        "deprecatedIndexDocument": "Deprecated. Use CodeIntelligenceService for indexing.",
-        "deprecatedSearchDocuments": "Deprecated. Use ContextRetrievalService for search.",
-        "deprecatedScanCodebase": "Deprecated. Use CodeIntelligenceService for scanning."
+        "rateNotFound": "Kur bulunamadı",
+        "monitorStarted": "{{url}} izlenmeye başlandı",
+        "reminderSet": "{{time}} için hatırlatıcı ayarlandı",
+        "reminderCancelled": "Hatırlatıcı iptal edildi",
+        "reminderNotFound": "Hatırlatıcı bulunamadı",
+        "ghostModeEnabled": "Ghost Modu (DND) etkinleştirildi. Bildirimler susturuldu.",
+        "ghostModeDisabled": "Ghost Modu devre dışı bırakıldı.",
+        "virusTotalApiKeyRequired": "Argümanlarda veya ayarlarda VirusTotal API anahtarı gerekli",
+        "shodanApiKeyRequired": "Shodan API anahtarı gerekli",
+        "pluginLoadingDisabled": "Güvenlik nedeniyle eval ile eklenti yükleme devre dışı bırakıldı.",
+        "memoryStored": "\"{{key}}\" için bellek kaydedildi (şifreli)",
+        "deprecatedIndexDocument": "Kullanımdan kaldırıldı. Dizinleme için CodeIntelligenceService kullanın.",
+        "deprecatedSearchDocuments": "Kullanımdan kaldırıldı. Arama için ContextRetrievalService kullanın.",
+        "deprecatedScanCodebase": "Kullanımdan kaldırıldı. Tarama için CodeIntelligenceService kullanın."
     }
 };
 

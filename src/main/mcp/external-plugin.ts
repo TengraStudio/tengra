@@ -198,7 +198,7 @@ export class ExternalMcpPlugin implements IMcpPlugin {
         this.verifyPluginConfig();
 
         const configHash = this.computeConfigHash();
-        appLogger.info('MCP', `Launching external plugin: ${this.name} (${this.config.command}) [hash: ${configHash}]`);
+        appLogger.debug('MCP', `Launching external plugin: ${this.name} (${this.config.command}) [hash: ${configHash}]`);
 
         const env = this.prepareEnvironment();
         const command = this.resolveCommand(this.config.command);
@@ -336,7 +336,7 @@ export class ExternalMcpPlugin implements IMcpPlugin {
             resolve({ success: false, error: msg.error.message });
         } else {
             const content = msg.result?.content?.[0]?.text ?? null;
-            appLogger.info('MCP', `Request Success: ${this.name}.${actionName}`, { id });
+            appLogger.debug('MCP', `Request Success: ${this.name}.${actionName}`, { id });
             resolve({ success: true, data: content, service: this.name, action: actionName });
         }
     }

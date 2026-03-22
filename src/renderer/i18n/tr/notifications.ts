@@ -1,15 +1,15 @@
 const sectionData = {
     "center": {
         "title": "Bildirim Merkezi",
-        "clearHistory": "Geçmişi temizle",
-        "preferences": "Tercihler",
+        "clearHistory": "Tümünü temizle",
+        "preferences": "Bildirim ayarları",
         "scheduled": "Zamanlanmış",
-        "noNotifications": "Henüz bildirim yok.",
+        "noNotifications": "Henüz bildiriminiz yok.",
         "analytics": {
-            "delivered": "İletildi",
+            "delivered": "Gönderildi",
             "dismissed": "Kapatıldı",
-            "actions": "Eylemler",
-            "suppressed": "Bastırıldı",
+            "actions": "Yapılan işlemler",
+            "suppressed": "Sessize alındı",
             "scheduled": "Zamanlanmış",
             "pending": "Beklemede"
         }

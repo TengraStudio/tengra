@@ -54,7 +54,7 @@ function validateArgs(value: RuntimeValue): JsonObject {
  * Registers IPC handlers for MCP operations
  */
 export function registerMcpIpc(mcpDispatcher: McpDispatcher, getMainWindow: () => BrowserWindow | null) {
-    appLogger.info('McpIPC', 'Registering MCP IPC handlers');
+    appLogger.debug('McpIPC', 'Registering MCP IPC handlers');
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'mcp operation');
     const createIpcHandler = <T = RuntimeValue, Args extends RuntimeValue[] = RuntimeValue[]>(
         channel: string,

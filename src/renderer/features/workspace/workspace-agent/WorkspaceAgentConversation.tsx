@@ -122,6 +122,7 @@ function ConversationMessageList({
             followOutput={isLoading ? 'smooth' : 'auto'}
             alignToBottom={true}
             initialTopMostItemIndex={Math.max(messages.length - 1, 0)}
+            computeItemKey={_index => messages[_index].id || `msg-${_index}`}
             itemContent={(index, message) => (
                 <div className="px-2 pb-2 sm:px-3 sm:pb-3">
                     <div className="mx-auto w-full max-w-full">
@@ -136,6 +137,12 @@ function ConversationMessageList({
                                     message.role === 'assistant'
                             )}
                             onSourceClick={onSourceClick}
+                            footerConfig={{
+                                showTimestamp: true,
+                                showModel: true,
+                                showTokens: false,
+                                showResponseTime: false,
+                            }}
                         />
                     </div>
                 </div>
@@ -173,12 +180,12 @@ export const WorkspaceAgentConversation: React.FC<WorkspaceAgentConversationProp
                         </div>
                     </div>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="flex flex-col h-full space-y-4">
                         {session?.contextTelemetry && (
                             <TelemetryCard telemetry={session.contextTelemetry} />
                         )}
 
-                        <div className="h-[min(52vh,28rem)] min-h-0 rounded-3xl border border-white/8 bg-black/10">
+                        <div className="flex-1 min-h-0">
                             <ConversationMessageList
                                 messages={messages}
                                 language={language}

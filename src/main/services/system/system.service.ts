@@ -18,7 +18,7 @@ export class SystemService extends BaseService implements ISystemService {
      * Initialize the SystemService
      */
     async initialize(): Promise<void> {
-        appLogger.info(this.name, 'Initializing system service...');
+        appLogger.debug(this.name, 'Initializing system service...');
 
         // Cache system info at startup
         try {
@@ -28,7 +28,7 @@ export class SystemService extends BaseService implements ISystemService {
             appLogger.error(this.name, 'Failed to cache system info', error as Error);
         }
 
-        appLogger.info(this.name, 'System service initialized');
+        appLogger.debug(this.name, 'System service initialized');
     }
 
     /**

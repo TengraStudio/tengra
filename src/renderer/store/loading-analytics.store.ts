@@ -1,8 +1,11 @@
 import { useSyncExternalStore } from 'react';
 
+import { createDeferredPersist } from './deferred-persist.util';
+
 const STORAGE_KEY = 'tengra.loading-analytics.v1';
 const STORE_VERSION = 1;
 const MAX_HISTORY = 300;
+const PERSIST_DELAY_MS = 120;
 
 export type LoadingOperationStatus = 'running' | 'completed' | 'cancelled' | 'failed';
 
@@ -48,6 +51,16 @@ const defaultSnapshot: LoadingAnalyticsSnapshot = {
 };
 
 let snapshot: LoadingAnalyticsSnapshot = defaultSnapshot;
+const persistController = createDeferredPersist({
+    delayMs: PERSIST_DELAY_MS,
+    persist: () => {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+        } catch {
+            // Ignore localStorage write failures.
+        }
+    },
+});
 
 function emit(): void {
     for (const listener of listeners) {
@@ -56,11 +69,7 @@ function emit(): void {
 }
 
 function persist(): void {
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
-    } catch {
-        // Ignore localStorage write failures.
-    }
+    persistController.schedule();
 }
 
 function isObject(value: RendererDataValue): value is Record<string, RendererDataValue> {
@@ -299,6 +308,7 @@ export function useLoadingAnalyticsStore<T>(
 }
 
 export function __resetLoadingAnalyticsForTests(): void {
+    persistController.cancel();
     snapshot = defaultSnapshot;
     try {
         localStorage.removeItem(STORAGE_KEY);

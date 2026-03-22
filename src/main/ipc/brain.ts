@@ -74,6 +74,6 @@ export function registerBrainIpcHandlers(getMainWindow: () => BrowserWindow | nu
         return { success: true, stats };
     }, { onError: handleError }));
 
-    appLogger.info('BrainIPC', 'Brain IPC handlers registered');
+    appLogger.debug('BrainIPC', 'Brain IPC handlers registered');
 }
 

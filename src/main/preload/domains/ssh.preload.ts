@@ -68,6 +68,11 @@ export interface SSHBridge {
         oldPath: string,
         newPath: string
     ) => Promise<{ success: boolean; error?: string }>;
+    copyPath: (
+        connectionId: string,
+        sourcePath: string,
+        destinationPath: string
+    ) => Promise<{ success: boolean; error?: string }>;
     getConnections: () => Promise<SSHConnection[]>;
     isConnected: (connectionId: string) => Promise<boolean>;
     onStdout: (callback: (data: string | Uint8Array) => void) => void;
@@ -206,6 +211,8 @@ export function createSSHBridge(ipc: IpcRenderer): SSHBridge {
         mkdir: (connectionId, path) => ipc.invoke('ssh:mkdir', { connectionId, path }),
         rename: (connectionId, oldPath, newPath) =>
             ipc.invoke('ssh:rename', { connectionId, oldPath, newPath }),
+        copyPath: (connectionId, sourcePath, destinationPath) =>
+            ipc.invoke('ssh:copyPath', { connectionId, sourcePath, destinationPath }),
         getConnections: () => ipc.invoke('ssh:getConnections'),
         isConnected: connectionId => ipc.invoke('ssh:isConnected', connectionId),
         onStdout: callback =>

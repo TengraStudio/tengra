@@ -1,18 +1,13 @@
 import { WorkspaceMountModals } from '@renderer/features/workspace/workspace-shell/WorkspaceMountModals';
 import React from 'react';
 
-import { LogoGeneratorModal } from '@/features/workspace/components/LogoGeneratorModal';
 import { useWorkspaceManager } from '@/features/workspace/hooks/useWorkspaceManager';
 import { useWorkspaceState } from '@/features/workspace/hooks/useWorkspaceState';
 import { Language } from '@/i18n';
-import type { Workspace } from '@/types';
-import { appLogger } from '@/utils/renderer-logger';
 
 interface WorkspaceDialogsProps {
     ps: ReturnType<typeof useWorkspaceState>;
     wm: ReturnType<typeof useWorkspaceManager>;
-    workspace: Workspace;
-    handleUpdateWorkspace: (updates: Partial<Workspace>) => Promise<void>;
     submitEntryModal: () => Promise<void>;
     entryBusy: boolean;
     language: Language;
@@ -22,8 +17,6 @@ interface WorkspaceDialogsProps {
 export const WorkspaceDialogs: React.FC<WorkspaceDialogsProps> = ({
     ps,
     wm,
-    workspace,
-    handleUpdateWorkspace,
     submitEntryModal,
     entryBusy,
     language,
@@ -49,20 +42,6 @@ export const WorkspaceDialogs: React.FC<WorkspaceDialogsProps> = ({
             }}
             entryBusy={entryBusy}
             selectedCount={ps.selectedEntries.length}
-            language={language}
-        />
-
-        <LogoGeneratorModal
-            isOpen={ps.showLogoModal}
-            onClose={() => ps.setShowLogoModal(false)}
-            workspace={workspace}
-            onApply={(logoPath: string) => {
-                void handleUpdateWorkspace({ logo: logoPath }).then(() =>
-                    ps.setShowLogoModal(false)
-                ).catch(error => {
-                    appLogger.error('WorkspaceDialogs', 'Failed to apply generated logo', error as Error);
-                });
-            }}
             language={language}
         />
     </>

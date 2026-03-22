@@ -1,8 +1,8 @@
 const sectionData = {
     "health": {
-        "ready": "Embedding servisi sağlıklı.",
-        "empty": "Embedding servisi hazır ve istek bekliyor.",
-        "failure": "Embedding servisi bozulmuş durumda. Yeniden deneyin veya kayıtları kontrol edin."
+        "ready": "Gömme servisi sağlıklı.",
+        "empty": "Gömme servisi hazır ve istek bekliyor.",
+        "failure": "Gömme servisinde sorun var. Lütfen yeniden deneyin veya günlük kayıtlarını kontrol edin."
     }
 };
 

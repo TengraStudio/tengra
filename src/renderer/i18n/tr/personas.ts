@@ -1,9 +1,9 @@
 const sectionData = {
     "title": "Kişilikler",
-    "description": "Yanıtları şekillendiren kişiselleştirme profilleri.",
+    "description": "Asistan yanıtlarını şekillendiren kişiselleştirme profilleri.",
     "namePlaceholder": "Kişilik adı",
     "descriptionPlaceholder": "Kısa açıklama",
-    "promptPlaceholder": "Prompt"
+    "promptPlaceholder": "Sistem istemi"
 };
 
 export default sectionData;

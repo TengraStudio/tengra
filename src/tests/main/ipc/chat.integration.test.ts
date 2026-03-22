@@ -492,7 +492,10 @@ describe('Session conversation IPC integration', () => {
         expect(result).toMatchObject({ success: true });
         expect(mockEvent.sender.send).toHaveBeenCalledWith(
             'session:conversation:stream-chunk',
-            expect.objectContaining({ type: 'error', content: expect.stringContaining('Failed to start Copilot stream') })
+            expect.objectContaining({
+                type: 'error',
+                content: 'error.copilot.stream_start_failed',
+            })
         );
         expect(mockEvent.sender.send).toHaveBeenCalledWith(
             'session:conversation:stream-chunk',

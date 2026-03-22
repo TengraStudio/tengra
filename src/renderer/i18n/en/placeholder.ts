@@ -2,12 +2,12 @@ const sectionData = {
     "sftpLocalPath": "C:\\path\\file.txt",
     "wakeWord": "tengra",
     "rejectReason": "Reject reason",
-    "stage": "stage",
-    "agent": "agent",
-    "model": "model",
-    "interrupt": "interrupt",
-    "envValue": "value",
-    "sessionName": "session name",
+    "stage": "Stage",
+    "agent": "Agent",
+    "model": "Model",
+    "interrupt": "Interrupt",
+    "envValue": "Value",
+    "sessionName": "Session name",
     "searchFailureSignatures": "Search failure signatures...",
     "enterTopic": "Enter a topic...",
     "symbolName": "Symbol (e.g. functionName)",
@@ -15,7 +15,7 @@ const sectionData = {
     "oldSymbol": "Old symbol",
     "newSymbol": "New symbol",
     "maxFiles": "Max files",
-    "filePathDocs": "File path for docs",
+    "filePathDocs": "File path for docs (e.g. docs/README.md)",
     "wakeWordExample": "e.g. Hey Tengra",
     "devCommand": "npm run dev",
     "portNumber": "3000",
@@ -38,8 +38,8 @@ const sectionData = {
     "base": "Base",
     "branchToFinish": "Branch to finish",
     "targetBranch": "Target branch",
-    "customHookScript": "Optional custom hook script",
-    "days": "Days"
+    "customHookScript": "Custom hook script (optional)",
+    "days": "Number of days"
 };
 
 export default sectionData;

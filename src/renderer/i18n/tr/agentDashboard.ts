@@ -5,8 +5,8 @@ const sectionData = {
     "start": "Başlat",
     "status": "Durum",
     "activeAgents": "Aktif Ajanlar",
-    "stopAuto": "Oto. Durdur",
-    "autoRun": "Oto. Çalıştır",
+    "stopAuto": "Otomatik durdur",
+    "autoRun": "Otomatik çalıştır",
     "step": "Adım",
     "currentPlan": "Mevcut Plan",
     "selectSession": "Başlamak için bir oturum seçin veya yeni bir oturum oluşturun."

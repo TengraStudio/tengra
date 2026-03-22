@@ -1,21 +1,21 @@
 const sectionData = {
-    "management": "MCP Management",
-    "myServers": "My Servers",
-    "addServer": "Add Server",
-    "systemServers": "System Servers",
+    "management": "MCP Manager",
+    "myServers": "My servers",
+    "addServer": "Add server",
+    "systemServers": "System servers",
     "searchPlaceholder": "Search for servers or tools...",
     "searchTools": "Search tools...",
     "storeSubtitle": "{{count}} tools installed and ready to use",
     "toolsInstalled": "{{count}} tools installed • Browse Model Context Protocol servers",
     "noTools": "No tools found",
     "noServers": "No servers connected",
-    "features": "FEATURES",
-    "rating": "rating",
-    "downloads": "downloads",
-    "version": "version",
+    "features": "Features",
+    "rating": "Rating",
+    "downloads": "Downloads",
+    "version": "Version",
     "configure": "Configure",
     "uninstall": "Uninstall",
-    "install": "Install Tool",
+    "install": "Install tool",
     "installTool": "Install",
     "close": "Close",
     "remove": "Remove",
@@ -23,7 +23,7 @@ const sectionData = {
     "byAuthor": "by {{author}} v{{version}}",
     "categories": {
         "title": "Categories",
-        "all": "All Tools",
+        "all": "All tools",
         "filesystem": "Filesystem",
         "database": "Database",
         "api": "APIs",
@@ -43,9 +43,9 @@ const sectionData = {
     "internalAlwaysEnabled": "Internal tools are always enabled",
     "noToolsFound": "No tools found matching your search.",
     "searchingTools": "Searching tools...",
-    "toolsAvailable": "Tools Available",
-    "installedTools": "Installed Tools",
-    "availableTools": "Available Tools"
+    "toolsAvailable": "Tools available",
+    "installedTools": "Installed tools",
+    "availableTools": "Available tools"
 };
 
 export default sectionData;

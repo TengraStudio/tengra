@@ -1,11 +1,5 @@
-import { ar } from '@renderer/i18n/ar';
-import { de } from '@renderer/i18n/de';
 import { en } from '@renderer/i18n/en';
-import { es } from '@renderer/i18n/es';
-import { fr } from '@renderer/i18n/fr';
-import { ja } from '@renderer/i18n/ja';
 import { tr } from '@renderer/i18n/tr';
-import { zh } from '@renderer/i18n/zh';
 import { JsonValue } from '@shared/types/common';
 import { getErrorMessage, getErrorRecoveryStrategy } from '@shared/utils/error.util';
 
@@ -15,28 +9,15 @@ interface CustomWindow extends Window {
     showToast?: (options: { type: string; message: string }) => void
 }
 
-type SupportedLanguage = 'tr' | 'en' | 'de' | 'fr' | 'es' | 'ja' | 'zh' | 'ar';
+type SupportedLanguage = 'tr' | 'en';
 
 const TRANSLATIONS: Record<SupportedLanguage, JsonValue> = {
     tr,
-    en,
-    de,
-    fr,
-    es,
-    ja,
-    zh,
-    ar
+    en
 };
 
 function isSupportedLanguage(value: string): value is SupportedLanguage {
-    return value === 'tr'
-        || value === 'en'
-        || value === 'de'
-        || value === 'fr'
-        || value === 'es'
-        || value === 'ja'
-        || value === 'zh'
-        || value === 'ar';
+    return value === 'tr' || value === 'en';
 }
 
 function getTranslationNode(root: JsonValue, path: string): string | null {

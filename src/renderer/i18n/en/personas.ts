@@ -1,9 +1,9 @@
 const sectionData = {
     "title": "Personas",
-    "description": "Customization profiles that shape responses.",
+    "description": "Custom profiles that shape assistant responses.",
     "namePlaceholder": "Persona name",
     "descriptionPlaceholder": "Short description",
-    "promptPlaceholder": "Prompt"
+    "promptPlaceholder": "System prompt"
 };
 
 export default sectionData;

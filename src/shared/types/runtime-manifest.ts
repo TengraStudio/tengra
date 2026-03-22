@@ -43,6 +43,8 @@ export interface RuntimeManifestComponent {
     description?: string;
     installUrl?: string;
     targets: RuntimeManifestTarget[];
+    supportedPlatforms?: RuntimePlatform[];
+    supportedArches?: RuntimeArch[];
 }
 
 export interface RuntimeManifest {

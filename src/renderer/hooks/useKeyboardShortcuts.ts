@@ -21,6 +21,9 @@ export interface KeyboardShortcutsConfig {
     onSwitchView: (view: AppView) => void
     onToggleSidebar: () => void
     onCloseModals: () => void
+    onZoomIn: () => void
+    onZoomOut: () => void
+    onResetZoom: () => void
     showCommandPalette: boolean
     showShortcuts: boolean
     showSSHManager: boolean
@@ -29,6 +32,14 @@ export interface KeyboardShortcutsConfig {
 
 function isInputElement(target: HTMLElement): boolean {
     return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+}
+
+function isZoomShortcut(event: KeyboardEvent, isMac: boolean): boolean {
+    const primaryKey = isMac ? event.metaKey : event.ctrlKey;
+    if (!primaryKey || event.altKey) {
+        return false;
+    }
+    return event.key === '-' || event.key === '=' || event.key === '+' || event.key === '0';
 }
 
 function handleEscape(
@@ -57,6 +68,9 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
         onSwitchView,
         onToggleSidebar,
         onCloseModals,
+        onZoomIn,
+        onZoomOut,
+        onResetZoom,
         showCommandPalette,
         showShortcuts,
         showSSHManager,
@@ -106,6 +120,20 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
             const target = e.target as HTMLElement;
             const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 
+            if (isZoomShortcut(e, isMac)) {
+                e.preventDefault();
+                if (e.key === '-' ) {
+                    onZoomOut();
+                    return;
+                }
+                if (e.key === '0') {
+                    onResetZoom();
+                    return;
+                }
+                onZoomIn();
+                return;
+            }
+
             // Allow only "show shortcuts" while typing.
             if (isInputElement(target)) {
                 if (matchesShortcut(e, bindings.showShortcuts, isMac)) {
@@ -145,6 +173,9 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
         onSwitchView,
         onToggleSidebar,
         onCloseModals,
+        onZoomIn,
+        onZoomOut,
+        onResetZoom,
         showCommandPalette,
         showShortcuts,
         showSSHManager,

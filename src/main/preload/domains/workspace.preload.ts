@@ -3,12 +3,20 @@ import type {
     InlineSuggestionResponse,
     InlineSuggestionTelemetry,
 } from '@shared/schemas/inline-suggestions.schema';
-import { IpcValue, WorkspaceAnalysis } from '@shared/types';
+import { IpcValue, WorkspaceAnalysis, WorkspaceDefinitionLocation, WorkspaceIssue } from '@shared/types';
 import { IpcRenderer, IpcRendererEvent } from 'electron';
 
 export interface WorkspaceBridge {
     analyze: (rootPath: string, workspaceId: string) => Promise<WorkspaceAnalysis>;
     analyzeSummary: (rootPath: string, workspaceId?: string) => Promise<WorkspaceAnalysis>;
+    getFileDiagnostics: (rootPath: string, filePath: string, content: string) => Promise<WorkspaceIssue[]>;
+    getFileDefinition: (
+        rootPath: string,
+        filePath: string,
+        content: string,
+        line: number,
+        column: number
+    ) => Promise<WorkspaceDefinitionLocation[]>;
     analyzeIdentity: (
         rootPath: string
     ) => Promise<{ suggestedPrompts: string[]; colors: string[] }>;
@@ -93,6 +101,16 @@ export function createWorkspaceBridge(ipc: IpcRenderer): WorkspaceBridge {
             ipc.invoke('workspace:analyze', rootPath, workspaceId).then(unwrapWorkspaceResponse),
         analyzeSummary: (rootPath, workspaceId) =>
             ipc.invoke('workspace:analyzeSummary', rootPath, workspaceId).then(unwrapWorkspaceResponse),
+        getFileDiagnostics: (rootPath, filePath, content) =>
+            ipc.invoke('workspace:getFileDiagnostics', rootPath, filePath, content).then(unwrapWorkspaceResponse),
+        getFileDefinition: (rootPath, filePath, content, line, column) =>
+            ipc.invoke(
+                'workspace:getFileDefinition',
+                rootPath,
+                filePath,
+                content,
+                { line, column }
+            ).then(unwrapWorkspaceResponse),
         analyzeIdentity: rootPath =>
             ipc.invoke('workspace:analyzeIdentity', rootPath).then(unwrapWorkspaceResponse),
         generateLogo: (workspacePath, options) =>

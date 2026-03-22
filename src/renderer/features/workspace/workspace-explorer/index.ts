@@ -9,8 +9,6 @@ export * from '@renderer/features/workspace/workspace-explorer/useEditorSnippets
 export * from '@renderer/features/workspace/workspace-explorer/WorkspaceContextMenu';
 export * from '@renderer/features/workspace/workspace-explorer/WorkspaceEditor';
 export * from '@renderer/features/workspace/workspace-explorer/WorkspaceExplorer';
-export * from '@renderer/features/workspace/workspace-explorer/WorkspaceExplorerPanel';
-export * from '@renderer/features/workspace/workspace-explorer/WorkspaceIssueBanner';
-export * from '@renderer/features/workspace/workspace-explorer/WorkspaceMountItem';
-export * from '@renderer/features/workspace/workspace-explorer/WorkspacePreflightBanner';
+export * from '@renderer/features/workspace/workspace-explorer/WorkspaceExplorerPanel'; 
+export * from '@renderer/features/workspace/workspace-explorer/WorkspaceMountItem'; 
 export * from '@renderer/features/workspace/workspace-explorer/WorkspaceTreeItem';

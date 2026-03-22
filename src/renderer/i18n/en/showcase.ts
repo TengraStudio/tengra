@@ -12,14 +12,14 @@ const sectionData = {
     },
     "story": {
         "button": "Button",
-        "rippleButton": "RippleButton",
+        "rippleButton": "Ripple Button",
         "card": "Card",
-        "animatedCard": "AnimatedCard",
+        "animatedCard": "Animated Card",
         "badge": "Badge",
         "input": "Input",
         "textarea": "Textarea",
         "modal": "Modal",
-        "confirmationModal": "ConfirmationModal",
+        "confirmationModal": "Confirmation Modal",
         "formModal": "Form Modal"
     },
     "variants": {
@@ -135,14 +135,14 @@ const sectionData = {
             "label": "Label"
         },
         "validation": {
-            "required": "This field is required"
+            "required": "This field is required."
         },
         "labels": {
             "email": "Email",
             "username": "Username"
         },
         "descriptions": {
-            "errorLabel": "Shows validation error below input"
+            "errorLabel": "Shows a validation error below the input"
         },
         "placeholders": {
             "enterText": "Enter text...",
@@ -187,20 +187,20 @@ const sectionData = {
         },
         "confirm": {
             "actions": {
-                "openVariant": "Open {{variant}} confirm"
+                "openVariant": "Open {{variant}} confirmation"
             },
             "fallback": {
                 "title": "Are you sure?",
                 "message": "This action cannot be undone."
             },
             "titles": {
-                "deleteItem": "Delete Item?",
+                "deleteItem": "Delete item?",
                 "unsavedChanges": "Unsaved Changes",
-                "headsUp": "Heads Up"
+                "headsUp": "Heads up"
             },
             "messages": {
                 "deletePermanent": "This will be permanently deleted.",
-                "unsavedChanges": "You have unsaved changes.",
+                "unsavedChanges": "You have unsaved changes. Continue?",
                 "updateRecords": "This will update all records."
             }
         },
@@ -219,7 +219,7 @@ const sectionData = {
                 "description": "Enter description..."
             },
             "descriptions": {
-                "withFields": "Modal with form fields and actions"
+                "withFields": "Modal with form fields and actions."
             }
         }
     }

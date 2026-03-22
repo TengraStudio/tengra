@@ -155,6 +155,7 @@ export class WorkspaceRepository extends BaseRepository {
             updates.metadata !== undefined ||
             updates.buildConfig !== undefined ||
             updates.devServer !== undefined ||
+            updates.editor !== undefined ||
             updates.advancedOptions !== undefined;
         if (shouldPersistMetadata) {
             const mergedMetadata = this.mergeWorkspaceMetadata(currentWorkspace?.metadata, updates);
@@ -204,6 +205,7 @@ export class WorkspaceRepository extends BaseRepository {
             this.parseRowJsonObjectField(row.build_config)
         );
         const rowDevServer = this.normalizeDevServer(this.parseRowJsonObjectField(row.dev_server));
+        const rowEditor = this.normalizeEditor(this.parseRowJsonObjectField(row.editor));
         const rowAdvancedOptions = this.normalizeAdvancedOptions(
             this.parseRowJsonObjectField(row.advanced_options)
         );
@@ -227,6 +229,7 @@ export class WorkspaceRepository extends BaseRepository {
             metadata,
             buildConfig: rowBuildConfig ?? metadataSettings.buildConfig,
             devServer: rowDevServer ?? metadataSettings.devServer,
+            editor: rowEditor ?? metadataSettings.editor,
             advancedOptions: rowAdvancedOptions ?? metadataSettings.advancedOptions,
             createdAt: Number(row.created_at ?? row.createdAt ?? Date.now()),
             updatedAt: Number(row.updated_at ?? row.updatedAt ?? Date.now()),
@@ -276,12 +279,18 @@ export class WorkspaceRepository extends BaseRepository {
             updates.devServer !== undefined
                 ? this.normalizeDevServer(updates.devServer)
                 : currentSettings.devServer;
+        const nextEditor =
+            updates.editor !== undefined
+                ? this.normalizeEditor(updates.editor)
+                : currentSettings.editor;
         const nextAdvancedOptions =
             updates.advancedOptions !== undefined
                 ? this.normalizeAdvancedOptions(updates.advancedOptions)
                 : currentSettings.advancedOptions;
 
-        const hasWorkspaceSettings = Boolean(nextBuildConfig ?? nextDevServer ?? nextAdvancedOptions);
+        const hasWorkspaceSettings = Boolean(
+            nextBuildConfig ?? nextDevServer ?? nextEditor ?? nextAdvancedOptions
+        );
         if (hasWorkspaceSettings) {
             const workspaceSettings: JsonObject = {};
             if (nextBuildConfig) {
@@ -289,6 +298,9 @@ export class WorkspaceRepository extends BaseRepository {
             }
             if (nextDevServer) {
                 workspaceSettings.devServer = nextDevServer as RuntimeValue as JsonObject;
+            }
+            if (nextEditor) {
+                workspaceSettings.editor = nextEditor as RuntimeValue as JsonObject;
             }
             if (nextAdvancedOptions) {
                 workspaceSettings.advancedOptions = nextAdvancedOptions as RuntimeValue as JsonObject;
@@ -301,6 +313,7 @@ export class WorkspaceRepository extends BaseRepository {
         // Remove legacy top-level keys to keep metadata shape stable.
         delete (baseMetadata as Record<string, RuntimeValue>).buildConfig;
         delete (baseMetadata as Record<string, RuntimeValue>).devServer;
+        delete (baseMetadata as Record<string, RuntimeValue>).editor;
         delete (baseMetadata as Record<string, RuntimeValue>).advancedOptions;
 
         return baseMetadata;
@@ -309,6 +322,7 @@ export class WorkspaceRepository extends BaseRepository {
     private extractSettingsFromMetadata(metadata?: JsonObject): {
         buildConfig?: Workspace['buildConfig'];
         devServer?: Workspace['devServer'];
+        editor?: Workspace['editor'];
         advancedOptions?: Workspace['advancedOptions'];
     } {
         if (!this.isObject(metadata)) {
@@ -324,6 +338,7 @@ export class WorkspaceRepository extends BaseRepository {
         return {
             buildConfig: this.normalizeBuildConfig(settingsContainer.buildConfig),
             devServer: this.normalizeDevServer(settingsContainer.devServer),
+            editor: this.normalizeEditor(settingsContainer.editor),
             advancedOptions: this.normalizeAdvancedOptions(settingsContainer.advancedOptions),
         };
     }
@@ -381,6 +396,81 @@ export class WorkspaceRepository extends BaseRepository {
                 ? { indexingInterval: v.indexingInterval }
                 : {}),
             ...(typeof v.autoSave === 'boolean' ? { autoSave: v.autoSave } : {}),
+            ...(this.isObject(v.layoutProfile)
+                ? {
+                    layoutProfile: {
+                        ...(typeof v.layoutProfile.sidebarCollapsed === 'boolean'
+                            ? { sidebarCollapsed: v.layoutProfile.sidebarCollapsed }
+                            : {}),
+                        ...(typeof v.layoutProfile.terminalVisible === 'boolean'
+                            ? { terminalVisible: v.layoutProfile.terminalVisible }
+                            : {}),
+                        ...(typeof v.layoutProfile.terminalHeight === 'number'
+                            ? { terminalHeight: v.layoutProfile.terminalHeight }
+                            : {}),
+                        ...(typeof v.layoutProfile.panel === 'string'
+                            ? {
+                                panel:
+                                    v.layoutProfile.panel as NonNullable<
+                                        NonNullable<Workspace['advancedOptions']>['layoutProfile']
+                                    >['panel'],
+                            }
+                            : {}),
+                    },
+                }
+                : {}),
+        };
+        return Object.keys(result).length > 0 ? result : undefined;
+    }
+
+    private normalizeEditor(value: RuntimeValue): Workspace['editor'] | undefined {
+        if (!this.isObject(value)) {
+            return undefined;
+        }
+        const entry = value as Record<string, RuntimeValue>;
+        type WorkspaceEditor = NonNullable<Workspace['editor']>;
+        const additionalOptions = this.isObject(entry.additionalOptions)
+            ? (entry.additionalOptions as WorkspaceEditor['additionalOptions'])
+            : undefined;
+        const lineHeight =
+            typeof entry.lineHeight === 'number' && Number.isFinite(entry.lineHeight)
+                ? entry.lineHeight
+                : undefined;
+        const tabSize =
+            typeof entry.tabSize === 'number' && Number.isFinite(entry.tabSize)
+                ? Math.max(1, Math.floor(entry.tabSize))
+                : undefined;
+        const fontSize =
+            typeof entry.fontSize === 'number' && Number.isFinite(entry.fontSize)
+                ? Math.max(10, Math.floor(entry.fontSize))
+                : undefined;
+        const result: WorkspaceEditor = {
+            ...(fontSize !== undefined ? { fontSize } : {}),
+            ...(lineHeight !== undefined ? { lineHeight } : {}),
+            ...(typeof entry.minimap === 'boolean' ? { minimap: entry.minimap } : {}),
+            ...(typeof entry.wordWrap === 'string'
+                ? { wordWrap: entry.wordWrap as WorkspaceEditor['wordWrap'] }
+                : {}),
+            ...(typeof entry.lineNumbers === 'string'
+                ? { lineNumbers: entry.lineNumbers as WorkspaceEditor['lineNumbers'] }
+                : {}),
+            ...(tabSize !== undefined ? { tabSize } : {}),
+            ...(typeof entry.cursorBlinking === 'string'
+                ? { cursorBlinking: entry.cursorBlinking as WorkspaceEditor['cursorBlinking'] }
+                : {}),
+            ...(typeof entry.fontLigatures === 'boolean'
+                ? { fontLigatures: entry.fontLigatures }
+                : {}),
+            ...(typeof entry.formatOnPaste === 'boolean'
+                ? { formatOnPaste: entry.formatOnPaste }
+                : {}),
+            ...(typeof entry.smoothScrolling === 'boolean'
+                ? { smoothScrolling: entry.smoothScrolling }
+                : {}),
+            ...(typeof entry.folding === 'boolean' ? { folding: entry.folding } : {}),
+            ...(typeof entry.codeLens === 'boolean' ? { codeLens: entry.codeLens } : {}),
+            ...(typeof entry.inlayHints === 'boolean' ? { inlayHints: entry.inlayHints } : {}),
+            ...(additionalOptions ? { additionalOptions } : {}),
         };
         return Object.keys(result).length > 0 ? result : undefined;
     }

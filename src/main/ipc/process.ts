@@ -96,7 +96,7 @@ export const registerProcessIpc = (getMainWindow: () => BrowserWindow | null, pr
         async (_event: IpcMainInvokeEvent, commandRaw: RuntimeValue, argsRaw: RuntimeValue, cwdRaw: RuntimeValue) => {
             const command = validateCommand(commandRaw);
             if (!command) {
-                throw new Error('Invalid command: must be a non-empty string without shell control characters');
+                throw new Error('error.process.invalid_command');
             }
 
             const args = validateArgs(argsRaw);

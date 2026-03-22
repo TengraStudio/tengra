@@ -115,7 +115,6 @@ interface VirtualizedRowProps {
     selectedEntries?: WorkspaceEntry[] | null;
     onEnsureMount?: (mount: WorkspaceMount) => Promise<boolean> | boolean;
     onContextMenu: (e: React.MouseEvent, entry: WorkspaceEntry) => void;
-    onMove?: (entry: WorkspaceEntry, targetDirPath: string) => void;
     expandedTreeNodes?: Record<string, boolean>;
     onExpandedTreeNodeChange?: (nodeKey: string, expanded: boolean) => void;
     t: (key: string) => string;
@@ -133,7 +132,6 @@ const VirtualizedTreeRow: React.FC<RowComponentProps<VirtualizedRowProps>> = ({
     selectedEntries,
     onEnsureMount,
     onContextMenu,
-    onMove,
     expandedTreeNodes,
     onExpandedTreeNodeChange,
     t,
@@ -154,7 +152,6 @@ const VirtualizedTreeRow: React.FC<RowComponentProps<VirtualizedRowProps>> = ({
                 selectedEntries={selectedEntries}
                 onEnsureMount={onEnsureMount}
                 onContextMenu={onContextMenu}
-                onMove={onMove}
                 expandedTreeNodes={expandedTreeNodes}
                 onExpandedTreeNodeChange={onExpandedTreeNodeChange}
                 t={t}
@@ -178,15 +175,23 @@ export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
     selectedEntries,
     onEnsureMount,
     onTreeItemContextMenu,
-    onMove,
     expandedTreeNodes,
     onExpandedTreeNodeChange,
     t,
 }) => {
     const showHeader = mountsCount > 1 || mount.type !== 'local';
 
-    // PERF-001-3: Use virtualization for large root node lists
-    const shouldVirtualize = rootNodes.length > VIRTUALIZATION_THRESHOLD;
+    const hasExpandedRootNode = useMemo(
+        () =>
+            rootNodes.some(node =>
+                Boolean(expandedTreeNodes?.[`${mount.id}:${node.path}`])
+            ),
+        [expandedTreeNodes, mount.id, rootNodes]
+    );
+
+    // react-window rows assume fixed heights; expanded folders break that assumption and overlap.
+    const shouldVirtualize =
+        rootNodes.length > VIRTUALIZATION_THRESHOLD && !hasExpandedRootNode;
 
     // PERF-001-3: Memoize row props to prevent re-renders
     const rowProps = useMemo<VirtualizedRowProps>(
@@ -199,7 +204,6 @@ export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
             selectedEntries,
             onEnsureMount,
             onContextMenu: onTreeItemContextMenu,
-            onMove,
             expandedTreeNodes,
             onExpandedTreeNodeChange,
             t,
@@ -213,7 +217,6 @@ export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
             selectedEntries,
             onEnsureMount,
             onTreeItemContextMenu,
-            onMove,
             expandedTreeNodes,
             onExpandedTreeNodeChange,
             t,
@@ -292,7 +295,6 @@ export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
                                 selectedEntries={selectedEntries}
                                 onEnsureMount={onEnsureMount}
                                 onContextMenu={onTreeItemContextMenu}
-                                onMove={onMove}
                                 expandedTreeNodes={expandedTreeNodes}
                                 onExpandedTreeNodeChange={onExpandedTreeNodeChange}
                                 t={t}

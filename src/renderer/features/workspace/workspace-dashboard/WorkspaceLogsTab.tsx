@@ -51,11 +51,45 @@ export const WorkspaceLogsTab: React.FC<WorkspaceLogsTabProps> = ({ workspacePat
 
         const listener = handleTerminalData as Parameters<typeof window.electron.ipcRenderer.on>[1];
         window.electron.ipcRenderer.on('terminal:data', listener);
+        const removeProcessDataListener = window.electron.process.onData(data => {
+            const lines = data.data.split('\n').filter(line => line.trim());
+            const newEntries: LogEntry[] = lines.map(line => ({
+                timestamp: new Date().toISOString(),
+                level: /error/i.test(line)
+                    ? 'error'
+                    : /warn/i.test(line)
+                        ? 'warn'
+                        : /debug/i.test(line)
+                            ? 'debug'
+                            : 'info',
+                source: data.id,
+                message: line,
+            }));
+            setLogs(prev => [...prev.slice(-500), ...newEntries]);
+        });
+        const removeProcessExitListener = window.electron.process.onExit(data => {
+            setLogs(prev => [
+                ...prev.slice(-499),
+                {
+                    timestamp: new Date().toISOString(),
+                    level: data.code === 0 ? 'info' : 'error',
+                    source: data.id,
+                    message:
+                        data.code === 0
+                            ? t('workspace.issueBanner.runbookTimelineMessages.completedSuccessfully')
+                            : t('workspace.issueBanner.runbookTimelineMessages.failedWithCode', {
+                                code: data.code,
+                            }),
+                },
+            ]);
+        });
 
         return () => {
             window.electron.ipcRenderer.off('terminal:data', listener);
+            removeProcessDataListener();
+            removeProcessExitListener();
         };
-    }, [workspacePath]);
+    }, [t, workspacePath]);
 
     useEffect(() => {
         if (autoScroll && logsEndRef.current) {

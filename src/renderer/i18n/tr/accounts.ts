@@ -1,12 +1,13 @@
 const sectionData = {
     "title": "Bağlı Hesaplar",
-    "subtitle": "Harici servisleri ve API bağlantılarını yönetin.",
+    "subtitle": "Harici servisleri ve API bağlantılarını buradan yönetin.",
     "management": "Hesap Yönetimi",
-    "refreshAccounts": "Hesapları Yenile",
+    "refreshAccounts": "Hesapları yenile",
     "activeAccounts": "Aktif Hesaplar",
-    "addNewAccount": "Yeni Hesap Ekle",
+    "addNewAccount": "Yeni hesap ekle",
     "accountNamePlaceholder": "Hesap Adı (Örn. İş, Kişisel)",
-    "unnamed": "Adsız Hesap",
+    "unnamed": "İsimsiz Hesap",
+    "account": "Hesap",
     "create": "Oluştur",
     "switch": "Değiştir",
     "idPrefix": "ID:",
@@ -16,8 +17,8 @@ const sectionData = {
     "switchSuccess": "\"{{name}}\" hesabına geçildi",
     "switchFailed": "Hesap değiştirilemedi",
     "categories": {
-        "aiProviders": "AI Sağlayıcılar",
-        "aiProvidersNvidia": "AI Sağlayıcılar (NVIDIA)",
+        "aiProviders": "Yapay Zekâ Sağlayıcıları",
+        "aiProvidersNvidia": "Yapay Zekâ Sağlayıcıları (NVIDIA)",
         "developerTools": "Geliştirici Araçları",
         "localModels": "Yerel Modeller"
     },
@@ -28,11 +29,11 @@ const sectionData = {
         },
         "copilot": {
             "name": "GitHub Copilot",
-            "description": "Yapay zeka destekli kod tamamlama"
+            "description": "Yapay zekâ destekli kod tamamlama"
         },
         "antigravity": {
             "name": "Antigravity",
-            "description": "Bulut AI servisleri ve web erişimi"
+            "description": "Bulut tabanlı yapay zekâ servisleri ve web erişimi"
         },
         "codex": {
             "name": "OpenAI / ChatGPT",
@@ -44,7 +45,7 @@ const sectionData = {
         },
         "ollama": {
             "name": "Ollama",
-            "description": "AI modellerini yerel olarak çalıştırın"
+            "description": "Yapay zekâ modellerini yerelde çalıştırın"
         },
         "nvidia": {
             "name": "NVIDIA",
@@ -66,13 +67,13 @@ const sectionData = {
     "accountCountPlural": "{{count}} hesap",
     "noAccounts": "Bağlı hesap yok",
     "noEmail": "E-posta belirtilmemiş",
-    "serverAddress": "SUNUCU ADRESİ",
-    "contextLimit": "BAĞLAM LİMİTİ",
+    "serverAddress": "Sunucu Adresi",
+    "contextLimit": "Bağlam Limiti",
     "check": "Kontrol Et",
     "start": "Başlat",
     "apiKey": "API Anahtarları",
     "enterApiKey": "API anahtarını girin...",
-    "githubDesc": "GitHub profiliniz ve depolarınız.",
+    "githubDesc": "GitHub profilinizi ve depolarınızı bağlayın.",
     "copilotDesc": "GitHub Copilot entegrasyonu.",
     "antigravityDesc": "Antigravity bulut servisleri.",
     "codexDesc": "OpenAI Codex API erişimi.",

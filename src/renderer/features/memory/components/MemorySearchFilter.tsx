@@ -13,6 +13,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { useTranslation } from '@/i18n';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { CATEGORY_CONFIG } from './constants';
 
@@ -33,7 +34,7 @@ const getInitialSearchHistory = (): string[] => {
             .filter((value): value is string => typeof value === 'string')
             .slice(0, MAX_MEMORY_SEARCH_HISTORY);
     } catch (error) {
-        window.electron.log.error('Failed to read memory search history', error as Error);
+        appLogger.error('MemorySearchFilter', 'Failed to read memory search history', error as Error);
         return [];
     }
 };
@@ -60,11 +61,11 @@ export const MemorySearchFilter: React.FC<MemorySearchFilterProps> = ({
         try {
             window.localStorage.setItem(MEMORY_SEARCH_HISTORY_KEY, JSON.stringify(searchHistory));
         } catch (error) {
-            window.electron.log.error('Failed to persist memory search history', error as Error);
+            appLogger.error('MemorySearchFilter', 'Failed to persist memory search history', error as Error);
         }
     }, [searchHistory]);
 
-    const rememberSearch = useCallback(() => {
+    const rememberSearch = useCallback((): void => {
         const normalizedQuery = searchQuery.trim();
         if (normalizedQuery.length < 2) {
             return;
@@ -75,13 +76,13 @@ export const MemorySearchFilter: React.FC<MemorySearchFilterProps> = ({
         });
     }, [searchQuery]);
 
-    const handleSubmit = useCallback((event: React.FormEvent) => {
+    const handleSubmit = useCallback((event: React.FormEvent): void => {
         event.preventDefault();
         rememberSearch();
         onSearch(event);
     }, [onSearch, rememberSearch]);
 
-    const clearSearchHistory = useCallback(() => {
+    const clearSearchHistory = useCallback((): void => {
         setSearchHistory([]);
     }, []);
 

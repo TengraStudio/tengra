@@ -7,9 +7,28 @@ import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 
 type MonacoModule = typeof import('monaco-editor');
 type MonacoWorkerFactory = new () => Worker;
+interface MonacoTypeScriptDefaults {
+    setEagerModelSync(value: boolean): void;
+    setCompilerOptions(options: Record<string, boolean | number>): void;
+    setDiagnosticsOptions(options: {
+        noSemanticValidation: boolean;
+        noSyntaxValidation: boolean;
+        noSuggestionDiagnostics: boolean;
+    }): void;
+}
+
+interface MonacoTypeScriptApi {
+    JsxEmit: { ReactJSX: number };
+    ModuleResolutionKind: { NodeJs: number };
+    ModuleKind: { ESNext: number };
+    ScriptTarget: { ES2022: number };
+    javascriptDefaults: MonacoTypeScriptDefaults;
+    typescriptDefaults: MonacoTypeScriptDefaults;
+}
 
 let monacoInitPromise: Promise<MonacoModule> | null = null;
 let monacoEnvironmentConfigured = false;
+let monacoDefaultsConfigured = false;
 
 function getMonacoWorker(label: string): Worker {
     const workerFactory: MonacoWorkerFactory =
@@ -35,6 +54,45 @@ function ensureMonacoEnvironment(): void {
     monacoEnvironmentConfigured = true;
 }
 
+function configureMonacoLanguageDefaults(monaco: MonacoModule): void {
+    if (monacoDefaultsConfigured) {
+        return;
+    }
+
+    const typeScriptApi = monaco.languages.typescript as never as MonacoTypeScriptApi;
+    const compilerOptions: Record<string, boolean | number> = {
+        allowJs: true,
+        allowNonTsExtensions: true,
+        jsx: typeScriptApi.JsxEmit.ReactJSX,
+        moduleResolution: typeScriptApi.ModuleResolutionKind.NodeJs,
+        module: typeScriptApi.ModuleKind.ESNext,
+        target: typeScriptApi.ScriptTarget.ES2022,
+        strict: true,
+        noEmit: true,
+        skipLibCheck: true,
+        esModuleInterop: true,
+        resolveJsonModule: true,
+        isolatedModules: true,
+    };
+
+    typeScriptApi.javascriptDefaults.setEagerModelSync(true);
+    typeScriptApi.typescriptDefaults.setEagerModelSync(true);
+    typeScriptApi.javascriptDefaults.setCompilerOptions(compilerOptions);
+    typeScriptApi.typescriptDefaults.setCompilerOptions(compilerOptions);
+    typeScriptApi.javascriptDefaults.setDiagnosticsOptions({
+        noSemanticValidation: true,
+        noSyntaxValidation: true,
+        noSuggestionDiagnostics: true,
+    });
+    typeScriptApi.typescriptDefaults.setDiagnosticsOptions({
+        noSemanticValidation: true,
+        noSyntaxValidation: true,
+        noSuggestionDiagnostics: true,
+    });
+
+    monacoDefaultsConfigured = true;
+}
+
 /**
  * Configure Monaco loader to use local bundled Monaco instead of CDN.
  * Prevents CSP violations (blocked jsdelivr loader.js).
@@ -51,6 +109,7 @@ export async function ensureMonacoInitialized(): Promise<MonacoModule> {
         ]);
 
         ensureMonacoEnvironment();
+        configureMonacoLanguageDefaults(monaco);
         const monacoForLoader: MonacoReactType = monaco;
         loader.config({ monaco: monacoForLoader });
         await loader.init();

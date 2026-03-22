@@ -1,6 +1,8 @@
 import { AppSettings } from '@shared/types/settings';
 import { useCallback, useEffect, useState } from 'react';
 
+import { appLogger } from '@/utils/renderer-logger';
+
 import {
     ImageComparisonResult,
     ImageHistoryEntry,
@@ -69,7 +71,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
             const status = await window.electron.sdCpp.getStatus();
             setSdCppStatus(status);
         } catch (error) {
-            window.electron.log.error('Failed to get SD-CPP status:', error);
+            appLogger.error('useImageSettingsHandlers', 'Failed to get SD-CPP status', error as Error);
             setSdCppStatus('failed');
         }
     }, []);
@@ -95,7 +97,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
             setImageAnalytics(analytics);
             setWorkflowTemplates(Array.isArray(templatesRaw) ? (templatesRaw as ImageWorkflowTemplateEntry[]) : []);
         } catch (error) {
-            window.electron.log.error('Failed to refresh image data:', error);
+            appLogger.error('useImageSettingsHandlers', 'Failed to refresh image data', error as Error);
         } finally {
             setIsDataRefreshing(false);
         }
@@ -155,7 +157,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
                 setActionMessage(t('common.success'));
                 await refreshImageData();
             } catch (error) {
-                window.electron.log.error('Failed to regenerate image:', error);
+                appLogger.error('useImageSettingsHandlers', 'Failed to regenerate image', error as Error);
                 setActionMessage(t('common.error'));
             }
         },
@@ -182,7 +184,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
             setActionMessage(t('common.success'));
             await refreshImageData();
         } catch (error) {
-            window.electron.log.error('Failed to save image preset:', error);
+            appLogger.error('useImageSettingsHandlers', 'Failed to save image preset', error as Error);
             setActionMessage(t('common.error'));
         }
     }, [presetName, presetPromptPrefix, currentProvider, refreshImageData, t]);
@@ -194,7 +196,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
                 setActionMessage(t('common.success'));
                 await refreshImageData();
             } catch (error) {
-                window.electron.log.error('Failed to delete image preset:', error);
+                appLogger.error('useImageSettingsHandlers', 'Failed to delete image preset', error as Error);
                 setActionMessage(t('common.error'));
             }
         },
@@ -208,7 +210,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
             await window.electron.clipboard.writeText(String(code));
             setActionMessage(t('common.copied'));
         } catch (error) {
-            window.electron.log.error('Failed to export preset share code:', error);
+            appLogger.error('useImageSettingsHandlers', 'Failed to export preset share code', error as Error);
             setActionMessage(t('common.error'));
         }
     }, [t]);
@@ -224,7 +226,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
             setActionMessage(t('common.success'));
             await refreshImageData();
         } catch (error) {
-            window.electron.log.error('Failed to import preset share code:', error);
+            appLogger.error('useImageSettingsHandlers', 'Failed to import preset share code', error as Error);
             setActionMessage(t('common.error'));
         }
     }, [presetShareCode, refreshImageData, t]);
@@ -254,7 +256,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
             setActionMessage(t('common.success'));
             await refreshImageData();
         } catch (error) {
-            window.electron.log.error('Failed to create image schedule:', error);
+            appLogger.error('useImageSettingsHandlers', 'Failed to create image schedule', error as Error);
             setActionMessage(t('common.error'));
         }
     }, [schedulePrompt, scheduleAt, schedulePriority, scheduleResourceProfile, refreshImageData, t]);
@@ -266,7 +268,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
                 setActionMessage(t('common.success'));
                 await refreshImageData();
             } catch (error) {
-                window.electron.log.error('Failed to cancel image schedule:', error);
+                appLogger.error('useImageSettingsHandlers', 'Failed to cancel image schedule', error as Error);
                 setActionMessage(t('common.error'));
             }
         },
@@ -283,7 +285,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
             setComparisonResult(result as ImageComparisonResult);
             setActionMessage(t('common.success'));
         } catch (error) {
-            window.electron.log.error('Failed to compare generations:', error);
+            appLogger.error('useImageSettingsHandlers', 'Failed to compare generations', error as Error);
             setActionMessage(t('common.error'));
         }
     }, [selectedCompareIds, t]);
@@ -301,7 +303,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
             await window.electron.clipboard.writeText(csv as string);
             setActionMessage(t('common.copied'));
         } catch (error) {
-            window.electron.log.error('Failed to export comparison:', error);
+            appLogger.error('useImageSettingsHandlers', 'Failed to export comparison', error as Error);
             setActionMessage(t('common.error'));
         }
     }, [selectedCompareIds, t]);
@@ -317,7 +319,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
             await window.electron.clipboard.writeText(String(code));
             setActionMessage(t('common.copied'));
         } catch (error) {
-            window.electron.log.error('Failed to share comparison:', error);
+            appLogger.error('useImageSettingsHandlers', 'Failed to share comparison', error as Error);
             setActionMessage(t('common.error'));
         }
     }, [selectedCompareIds, t]);
@@ -328,7 +330,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
             await window.electron.clipboard.writeText(String(report));
             setActionMessage(t('common.copied'));
         } catch (error) {
-            window.electron.log.error('Failed to export history:', error);
+            appLogger.error('useImageSettingsHandlers', 'Failed to export history', error as Error);
             setActionMessage(t('common.error'));
         }
     }, [t]);
@@ -351,7 +353,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
             setActionMessage(t('common.success'));
             await refreshImageData();
         } catch (error) {
-            window.electron.log.error('Failed to save workflow template:', error);
+            appLogger.error('useImageSettingsHandlers', 'Failed to save workflow template', error as Error);
             setActionMessage(t('common.error'));
         }
     }, [workflowTemplateName, workflowTemplateJson, refreshImageData, t]);
@@ -362,7 +364,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
             setActionMessage(t('common.success'));
             await refreshImageData();
         } catch (error) {
-            window.electron.log.error('Failed to delete workflow template:', error);
+            appLogger.error('useImageSettingsHandlers', 'Failed to delete workflow template', error as Error);
             setActionMessage(t('common.error'));
         }
     }, [refreshImageData, t]);
@@ -374,7 +376,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
             await window.electron.clipboard.writeText(String(code));
             setActionMessage(t('common.copied'));
         } catch (error) {
-            window.electron.log.error('Failed to export workflow template share:', error);
+            appLogger.error('useImageSettingsHandlers', 'Failed to export workflow template share', error as Error);
             setActionMessage(t('common.error'));
         }
     }, [t]);
@@ -390,7 +392,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
             setActionMessage(t('common.success'));
             await refreshImageData();
         } catch (error) {
-            window.electron.log.error('Failed to import workflow template share:', error);
+            appLogger.error('useImageSettingsHandlers', 'Failed to import workflow template share', error as Error);
             setActionMessage(t('common.error'));
         }
     }, [workflowShareCode, refreshImageData, t]);
@@ -417,7 +419,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
             setActionMessage(t('common.success'));
             await refreshImageData();
         } catch (error) {
-            window.electron.log.error('Failed to run batch generation:', error);
+            appLogger.error('useImageSettingsHandlers', 'Failed to run batch generation', error as Error);
             setActionMessage(t('common.error'));
         }
     }, [batchPrompts, refreshImageData, t]);
@@ -439,7 +441,7 @@ export function useImageSettingsHandlers({ settings, handleSave, t }: UseImageSe
             setActionMessage(t('common.success'));
             await refreshImageData();
         } catch (error) {
-            window.electron.log.error('Failed to edit image:', error);
+            appLogger.error('useImageSettingsHandlers', 'Failed to edit image', error as Error);
             setActionMessage(t('common.error'));
         }
     }, [editSource, editPrompt, editMode, editStrength, refreshImageData, t]);

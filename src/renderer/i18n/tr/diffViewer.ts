@@ -1,5 +1,5 @@
 const sectionData = {
-    "loading": "Farklar yükleniyor..."
+    "loading": "Değişiklikler yükleniyor..."
 };
 
 export default sectionData;

@@ -80,7 +80,7 @@ export function pushLogEntry(level: 'debug' | 'info' | 'warn' | 'error', source:
  * Registers IPC handlers for log streaming and buffer management
  */
 export function registerLoggingIpc() {
-    appLogger.info('LoggingIPC', 'Registering logging IPC handlers');
+    appLogger.debug('LoggingIPC', 'Registering logging IPC handlers');
 
     ipcMain.on('log:write', handleLogWrite);
 

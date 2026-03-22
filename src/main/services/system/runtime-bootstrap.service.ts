@@ -1,10 +1,14 @@
+import { Buffer } from 'buffer';
 import { spawn } from 'child_process';
-import { createHash } from 'crypto';
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as fsPromises from 'fs/promises';
 import * as path from 'path';
 
 import { BaseService } from '@main/services/base.service';
+import {
+    startOllama,
+} from '@main/startup/ollama';
 import { NETWORK_DEFAULTS } from '@shared/constants/app-config';
 import { JsonObject } from '@shared/types/common';
 import {
@@ -18,6 +22,7 @@ import {
     RuntimeTargetEnvironment,
 } from '@shared/types/runtime-manifest';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
+import type { BrowserWindow } from 'electron';
 
 import { RuntimeHealthService } from './runtime-health.service';
 import { RuntimeManifestService } from './runtime-manifest.service';
@@ -58,6 +63,23 @@ export class RuntimeBootstrapService extends BaseService {
 
     getLatestExecutionResult(): RuntimeBootstrapExecutionResult | null {
         return this.latestExecutionResult;
+    }
+
+    async runComponentAction(
+        componentId: string,
+        options?: { getMainWindow?: () => BrowserWindow | null }
+    ): Promise<{ success: boolean; message: string }> {
+        if (componentId === 'ollama') {
+            const result = await startOllama(options?.getMainWindow ?? (() => null), false);
+            return { success: result.success, message: result.message };
+        }
+
+        if (componentId === 'sd-cpp') {
+            await this.ensureManagedRuntime();
+            return { success: true, message: 'Stable Diffusion CPP runtime install triggered' };
+        }
+
+        return { success: false, message: `No runtime action is registered for ${componentId}` };
     }
 
     buildInstallPlan(
@@ -102,7 +124,39 @@ export class RuntimeBootstrapService extends BaseService {
         component: RuntimeManifest['components'][number],
         environment: RuntimeTargetEnvironment
     ): RuntimeBootstrapPlanEntry {
+        const isPlatformSupported =
+            !component.supportedPlatforms || component.supportedPlatforms.includes(environment.platform);
+        const isArchSupported =
+            !component.supportedArches || component.supportedArches.includes(environment.arch);
+        if (!isPlatformSupported || !isArchSupported) {
+            return {
+                componentId: component.id,
+                displayName: component.displayName,
+                version: component.version,
+                status: 'unsupported',
+                source: component.source,
+                requirement: component.requirement,
+                reason: 'unsupported-platform',
+                installUrl: component.installUrl,
+            };
+        }
+
         if (component.source === 'external') {
+            if (component.targets.length > 0) {
+                const target = this.runtimeManifestService.selectTarget(component, environment);
+                if (!target) {
+                    return {
+                        componentId: component.id,
+                        displayName: component.displayName,
+                        version: component.version,
+                        status: 'unsupported',
+                        source: component.source,
+                        requirement: component.requirement,
+                        reason: 'unsupported-platform',
+                        installUrl: component.installUrl,
+                    };
+                }
+            }
             return {
                 componentId: component.id,
                 displayName: component.displayName,
@@ -161,7 +215,7 @@ export class RuntimeBootstrapService extends BaseService {
             this.validateDownloadUrl(resolvedManifestUrl);
             const response = await fetch(resolvedManifestUrl, { redirect: 'follow' });
             if (!response.ok) {
-                throw new Error(`Failed to fetch runtime manifest: ${response.status}`);
+                throw new Error('error.system.manifest_read_failed');
             }
             const manifestText = await response.text();
             await this.cacheManifest(manifestText);
@@ -193,7 +247,7 @@ export class RuntimeBootstrapService extends BaseService {
             );
         } catch (cacheError) {
             if (!allowEmptyFallback) {
-                throw (cacheError instanceof Error ? cacheError : new Error('Runtime manifest cache read failed'));
+                throw (cacheError instanceof Error ? cacheError : new Error('error.system.manifest_read_failed'));
             }
 
             this.logInfo(
@@ -291,20 +345,22 @@ export class RuntimeBootstrapService extends BaseService {
         this.validateDownloadUrl(target.downloadUrl);
         const response = await fetch(target.downloadUrl, { redirect: 'follow' });
         if (!response.ok) {
-            throw new Error(`Failed to download runtime asset ${target.assetName}: ${response.status}`);
+            throw new Error('error.llm.download_failed');
         }
         const downloadPath = path.join(getManagedRuntimeDownloadsDir(), target.assetName);
         const buffer = Buffer.from(await response.arrayBuffer());
-        this.verifyChecksum(buffer, target.sha256, target.assetName);
+        this._performChecksumVerification(buffer, target.sha256);
         await fsPromises.mkdir(path.dirname(downloadPath), { recursive: true });
         await fsPromises.writeFile(downloadPath, buffer);
         return downloadPath;
     }
 
-    private verifyChecksum(buffer: Buffer, expectedSha256: string, assetName: string): void {
-        const digest = createHash('sha256').update(buffer).digest('hex');
+    private _performChecksumVerification(data: Buffer, expectedSha256: string): void {
+        const hash = crypto.createHash('sha256');
+        hash.update(data);
+        const digest = hash.digest('hex');
         if (digest !== expectedSha256.toLowerCase()) {
-            throw new Error(`Checksum verification failed for ${assetName}`);
+            throw new Error('error.terminal.hash_verification_failed');
         }
     }
 
@@ -334,7 +390,7 @@ export class RuntimeBootstrapService extends BaseService {
             await this.runProcess('tar', ['-xzf', downloadPath, '-C', installRoot]);
             return;
         }
-        throw new Error(`Unsupported archive type: ${downloadPath}`);
+        throw new Error('error.terminal.unsupported');
     }
 
     private async extractZip(downloadPath: string, installRoot: string): Promise<void> {
@@ -355,7 +411,7 @@ export class RuntimeBootstrapService extends BaseService {
                     resolve();
                     return;
                 }
-                reject(new Error(`Process ${command} exited with code ${code}`));
+                reject(new Error('error.process.exit_failed'));
             });
         });
     }
@@ -370,10 +426,10 @@ export class RuntimeBootstrapService extends BaseService {
     private validateDownloadUrl(url: string): void {
         const parsed = new URL(url);
         if (parsed.protocol !== 'https:') {
-            throw new Error('Runtime downloads must use https');
+            throw new Error('error.system.https_required');
         }
         if (!this.allowedDownloadHosts.has(parsed.hostname.toLowerCase())) {
-            throw new Error(`Runtime download host is not allowed: ${parsed.hostname}`);
+            throw new Error('error.system.https_required');
         }
     }
 

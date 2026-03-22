@@ -42,7 +42,7 @@ export class AlacrittyBackend implements ITerminalBackend {
         }
 
         if (!this.alacrittyPath) {
-            throw new Error('Alacritty is not installed or not in PATH');
+            throw new Error('error.terminal.backend_not_found');
         }
 
         appLogger.info('AlacrittyBackend', `Opening Alacritty session: ${options.id}`);
@@ -97,7 +97,7 @@ export class AlacrittyBackend implements ITerminalBackend {
     private async discoverAlacrittyPath(): Promise<string | null> {
         const discoveredPath = await findExecutableInPath('alacritty');
         if (discoveredPath) {
-            appLogger.info('AlacrittyBackend', `Found Alacritty at: ${discoveredPath}`);
+            appLogger.debug('AlacrittyBackend', `Found Alacritty at: ${discoveredPath}`);
             return discoveredPath;
         }
 
@@ -116,7 +116,7 @@ export class AlacrittyBackend implements ITerminalBackend {
 
         const commonPath = await findFirstExistingPath(commonPaths);
         if (commonPath) {
-            appLogger.info('AlacrittyBackend', `Found Alacritty at common location: ${commonPath}`);
+            appLogger.debug('AlacrittyBackend', `Found Alacritty at common location: ${commonPath}`);
             return commonPath;
         }
 

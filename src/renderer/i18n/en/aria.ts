@@ -1,8 +1,8 @@
 const sectionData = {
-    "closeModal": "Close modal",
+    "closeModal": "Close dialog",
     "closeTab": "Close tab",
-    "previousPage": "Previous page",
-    "nextPage": "Next page",
+    "previousPage": "Go to previous page",
+    "nextPage": "Go to next page",
     "exportChat": "Export chat",
     "moveToFolder": "Move to folder",
     "togglePin": "Toggle pin",
@@ -33,9 +33,9 @@ const sectionData = {
     "workspaceSettingsContent": "Workspace settings content",
     "findPrevious": "Find previous",
     "findNext": "Find next",
-    "messageListKeyboardHelp": "Use ArrowUp and ArrowDown to navigate, Home and End to jump, Enter to select, and R to regenerate assistant messages.",
-    "messageListStreaming": "Assistant is streaming a new message.",
-    "messageListCount": "Message list now has {{count}} messages."
+    "messageListKeyboardHelp": "Use Arrow Up and Arrow Down to navigate, Home and End to jump, Enter to select, and R to regenerate assistant responses.",
+    "messageListStreaming": "Assistant is streaming a new response.",
+    "messageListCount": "The message list now contains {{count}} messages."
 };
 
 export default sectionData;

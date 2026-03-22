@@ -130,7 +130,7 @@ export async function startOllama(
             }
         }
 
-        appLogger.info('Ollama', 'Attempting to start Ollama...');
+        appLogger.debug('Ollama', 'Attempting to start Ollama...');
         const commandSuccess = await executeStartCommand();
         if (!commandSuccess) {
             return {

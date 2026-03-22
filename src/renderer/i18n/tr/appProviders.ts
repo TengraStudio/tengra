@@ -1,6 +1,6 @@
 const sectionData = {
-    startupProviderCrash: 'Başlatma Sağlayıcı Hatası',
-    providerFailedPrefix: 'Sağlayıcı başarısız oldu',
+    startupProviderCrash: 'Başlatma sağlayıcısı hatası',
+    providerFailedPrefix: 'Sağlayıcı çalıştırılamadı',
 };
 
 export default sectionData;

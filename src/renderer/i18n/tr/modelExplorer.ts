@@ -6,14 +6,14 @@ const sectionData = {
     "subtitle": "Açık kaynak modelleri keşfedin ve yükleyin",
     "noModels": "Model bulunamadı",
     "scanningFiles": "Dosyalar taranıyor...",
-    "allSources": "Tüm Kaynaklar",
+    "allSources": "Tüm kaynaklar",
     "provider": "Sağlayıcı",
     "sourceOllama": "Ollama",
     "sourceHuggingFace": "Hugging Face",
     "sort": "Sırala",
     "popularity": "Popülerlik",
-    "newest": "En Yeni",
-    "bestChoice": "En İyi Seçim",
+    "newest": "En yeni",
+    "bestChoice": "En iyi seçim",
     "page": "Sayfa {{page}}",
     "name": "Ad",
     "updated": "Güncellendi",
@@ -53,10 +53,10 @@ const sectionData = {
     "downloadMissingParts": "Eksik Parçaları İndir",
     "digest": "Özet",
     "action": "Eylem",
-    "recommended": "Recommended",
-    "watchlist": "Watchlist",
+    "recommended": "Önerilen",
+    "watchlist": "İzleme listesi",
     "paramsSuffix": "params",
-    "benchmarkScore": "Benchmark Score"
+    "benchmarkScore": "Kıyaslama puanı"
 };
 
 export default sectionData;

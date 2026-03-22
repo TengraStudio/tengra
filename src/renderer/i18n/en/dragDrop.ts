@@ -1,6 +1,6 @@
 const sectionData = {
-    "title": "DROP THE ORDER",
-    "description": "Send files to the center for analysis."
+    "title": "Drop files here",
+    "description": "Drop files in the center to analyze them."
 };
 
 export default sectionData;

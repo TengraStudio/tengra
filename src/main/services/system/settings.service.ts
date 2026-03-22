@@ -58,6 +58,8 @@ const DEFAULT_SETTINGS: AppSettings = {
         inlineSuggestionsProvider: 'openai',
         inlineSuggestionsModel: 'gpt-4o-mini',
         hiddenModels: [],
+        dismissedRuntimeInstallPrompts: [],
+        completedRuntimeInstalls: [],
     },
     github: {
         username: '',
@@ -122,6 +124,7 @@ const DEFAULT_SETTINGS: AppSettings = {
         height: 800,
         x: 0,
         y: 0,
+        zoomFactor: 1,
         startOnStartup: true,
         workAtBackground: true,
         lowPowerMode: true,
@@ -530,7 +533,7 @@ export class SettingsService extends BaseService {
      */
     async saveSettings(newSettings: Partial<AppSettings>): Promise<AppSettings> {
         if (!newSettings || typeof newSettings !== 'object' || Array.isArray(newSettings)) {
-            throw new Error('Settings payload must be a non-array object');
+            throw new Error('error.settings.invalid_payload');
         }
 
         if (this.saveInProgress) {
@@ -912,6 +915,7 @@ export class SettingsService extends BaseService {
             height: DEFAULT_SETTINGS.window?.height ?? 800,
             x: DEFAULT_SETTINGS.window?.x ?? 0,
             y: DEFAULT_SETTINGS.window?.y ?? 0,
+            zoomFactor: DEFAULT_SETTINGS.window?.zoomFactor ?? 1,
             fullscreen: DEFAULT_SETTINGS.window?.fullscreen ?? false,
             startOnStartup: DEFAULT_SETTINGS.window?.startOnStartup ?? true,
             workAtBackground: DEFAULT_SETTINGS.window?.workAtBackground ?? true,
@@ -954,11 +958,19 @@ export class SettingsService extends BaseService {
             return Math.floor(value);
         };
 
+        const resolveZoomFactor = (value: RuntimeValue, fallbackValue: number): number => {
+            if (typeof value !== 'number' || !Number.isFinite(value)) {
+                return fallbackValue;
+            }
+            return Math.max(0.5, Math.min(2, Math.round(value * 100) / 100));
+        };
+
         return {
             width,
             height,
             x: resolvePosition(record.x ?? legacyBounds?.x, fallback.x),
             y: resolvePosition(record.y ?? legacyBounds?.y, fallback.y),
+            zoomFactor: resolveZoomFactor(record.zoomFactor, fallback.zoomFactor),
             fullscreen:
                 typeof record.fullscreen === 'boolean' ? record.fullscreen : fallback.fullscreen,
             startOnStartup:

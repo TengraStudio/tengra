@@ -1,7 +1,7 @@
 const sectionData = {
     "confirm": "Dışa Aktar",
     "exporting": "Dışa aktarılıyor...",
-    "title": "Sohbeti Dışa Aktar",
+    "title": "Sohbeti dışa aktar",
     "formatMarkdown": "Markdown (.md)",
     "formatPdf": "PDF (.pdf)"
 };

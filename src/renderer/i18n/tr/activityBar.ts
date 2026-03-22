@@ -1,8 +1,8 @@
 const sectionData = {
     "chat": "Sohbet",
-    "explorer": "Gezgin",
+    "explorer": "Keşfet",
     "search": "Ara",
-    "sourceControl": "Kaynak Kontrol",
+    "sourceControl": "Kaynak Denetimi",
     "debug": "Hata Ayıklama",
     "extensions": "Uzantılar",
     "settings": "Ayarlar"

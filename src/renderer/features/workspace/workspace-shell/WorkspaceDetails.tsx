@@ -8,13 +8,16 @@ import { WorkspaceQuickSwitch } from '@renderer/features/workspace/workspace-she
 import { WorkspaceSidebar } from '@renderer/features/workspace/workspace-shell/WorkspaceSidebar';
 import { WorkspaceTerminalLayer } from '@renderer/features/workspace/workspace-shell/WorkspaceTerminalLayer';
 import { WorkspaceToolbar } from '@renderer/features/workspace/workspace-shell/WorkspaceToolbar';
+import { Square } from 'lucide-react';
 import React from 'react';
 
 import { useQuickSwitch } from '@/features/workspace/hooks/useQuickSwitch';
 import { useTerminalLayout } from '@/features/workspace/hooks/useTerminalLayout';
 import { useWorkspaceBranchState } from '@/features/workspace/hooks/useWorkspaceBranchState';
 import { useWorkspaceShortcuts } from '@/features/workspace/hooks/useWorkspaceShortcuts';
+import { useWorkspaceTaskRunner } from '@/features/workspace/hooks/useWorkspaceTaskRunner';
 import { useWorkspaceDetailsController } from '@/features/workspace/hooks/useWorkspaceWorkspaceController';
+import { runWorkspaceStartupPreflight, WorkspaceStartupPreflightResult } from '@/features/workspace/utils/workspace-startup-preflight';
 import { useRenderTracker } from '@/hooks/useRenderTracker';
 import { useWorkspaceProfiler } from '@/hooks/useWorkspaceProfiler';
 import { Language } from '@/i18n';
@@ -57,6 +60,7 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
     useRenderTracker('WorkspaceDetails');
     const { onRender } = useWorkspaceProfiler();
     const [branchStateEnabled, setBranchStateEnabled] = React.useState(false);
+    const [preflightResult, setPreflightResult] = React.useState<WorkspaceStartupPreflightResult | null>(null);
     const workspacePath = workspace.path;
 
     React.useEffect(() => {
@@ -90,12 +94,18 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
 
     const { ps, wm, handleUpdateWorkspace, submitEntryModal, entryBusy, t } =
         useWorkspaceDetailsController({ workspace, language });
+    const taskRunner = useWorkspaceTaskRunner({
+        workspace,
+        notify: ps.notify,
+    });
 
     const tl = useTerminalLayout({
         showTerminal: ps.showTerminal,
         setShowTerminal: ps.setShowTerminal,
         terminalHeight: ps.terminalHeight,
         setTerminalHeight: ps.setTerminalHeight,
+        initialMaximizedTerminal: ps.terminalMaximized,
+        onTerminalLayoutStateChange: ps.setTerminalLayoutState,
         showAgentPanel: ps.showAgentPanel,
         sidebarCollapsed: ps.sidebarCollapsed,
         tabsCount: tabs.length,
@@ -122,9 +132,7 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
         setQuickSwitchQuery: qs.setQuickSwitchQuery,
         setQuickSwitchIndex: qs.setQuickSwitchIndex,
         showTerminal: ps.showTerminal,
-        setShowTerminal: ps.setShowTerminal,
-        isFloatingTerminal: tl.isFloatingTerminal,
-        setIsFloatingTerminal: tl.setIsFloatingTerminal,
+        setShowTerminal: ps.setShowTerminal, 
         setIsMaximizedTerminal: tl.setIsMaximizedTerminal,
         setTerminalHeight: ps.setTerminalHeight,
         lastExpandedTerminalHeightRef: tl.lastExpandedTerminalHeightRef,
@@ -169,18 +177,59 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
         [wm]
     );
 
+    const handleLogoUpload = React.useCallback(() => {
+        void window.electron.workspace.uploadLogo(workspace.path)
+            .then(uploadedLogoPath => {
+                if (!uploadedLogoPath) {
+                    return;
+                }
+                return handleUpdateWorkspace({ logo: uploadedLogoPath });
+            })
+            .catch(error => {
+                appLogger.error('WorkspaceDetails', 'Failed to upload workspace logo', error as Error);
+            });
+    }, [handleUpdateWorkspace, workspace.path]);
+
+    React.useEffect(() => {
+        let cancelled = false;
+        void runWorkspaceStartupPreflight(workspace)
+            .then(result => {
+                if (!cancelled) {
+                    setPreflightResult(result);
+                }
+            })
+            .catch(error => {
+                appLogger.error('WorkspaceDetails', 'Workspace preflight failed', error as Error);
+                if (!cancelled) {
+                    setPreflightResult(null);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [workspace]);
+
+    const commandStripStatus: 'ready' | 'busy' | 'error' = React.useMemo(() => {
+        if (preflightResult?.issues.some(issue => issue.blocking || issue.severity === 'error')) {
+            return 'error';
+        }
+        if (taskRunner.runningTaskCount > 0) {
+            return 'busy';
+        }
+        return 'ready';
+    }, [preflightResult, taskRunner.runningTaskCount]);
+
     return (
         <div className="h-full flex flex-col bg-background relative overflow-hidden">
             <React.Profiler id="WorkspaceToolbar" onRender={onRender}>
                 <WorkspaceToolbar
-                    workspace={workspace}
                     workspaceName={workspace.title}
                     onNameChange={title => {
                         void handleUpdateWorkspace({ title });
                     }}
                     handleRunWorkspace={() => {
-                        performanceMonitor.mark('workspace:terminal:requested');
-                        tl.setIsFloatingTerminal(false);
+                        performanceMonitor.mark('workspace:terminal:requested'); 
                         ps.setShowTerminal(true);
                     }}
                     onBack={onBack}
@@ -190,7 +239,7 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                     sidebarCollapsed={ps.sidebarCollapsed}
                     toggleSidebar={() => ps.setSidebarCollapsed(!ps.sidebarCollapsed)}
                     showAgentPanel={ps.showAgentPanel}
-                    toggleAgentPanel={() => ps.setShowAgentPanel(!ps.showAgentPanel)} 
+                    toggleAgentPanel={() => ps.setShowAgentPanel(!ps.showAgentPanel)}
                 />
             </React.Profiler>
 
@@ -198,9 +247,11 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                 <React.Profiler id="WorkspaceExplorerPanel" onRender={onRender}>
                     <WorkspaceExplorerPanel
                         workspaceId={workspace.id}
+                        workspacePath={workspace.path}
                         ps={ps}
                         wm={wm}
                         language={language}
+                        activeFilePath={wm.activeTab?.path}
                         onMove={handleExplorerMove}
                     />
                 </React.Profiler>
@@ -223,10 +274,11 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                         }}
                         activeTab={wm.activeTab}
                         updateTabContent={wm.updateTabContent}
+                        saveActiveTab={wm.saveActiveTab}
                         workspace={workspace}
                         handleUpdateWorkspace={handleUpdateWorkspace}
                         onAddMount={() => ps.setShowMountModal(true)}
-                        setShowLogoModal={ps.setShowLogoModal}
+                        onUploadLogo={handleLogoUpload}
                         t={t}
                         language={language}
                         setDashboardTab={wm.setDashboardTab}
@@ -251,19 +303,16 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
 
             <React.Profiler id="WorkspaceTerminalLayer" onRender={onRender}>
                 <WorkspaceTerminalLayer
-                    showTerminal={ps.showTerminal}
-                    isFloatingTerminal={tl.isFloatingTerminal}
+                    showTerminal={ps.showTerminal} 
                     isMaximizedTerminal={tl.isMaximizedTerminal}
                     isResizingTerminal={tl.isResizingTerminal}
                     sidebarCollapsed={ps.sidebarCollapsed}
-                    terminalHeight={ps.terminalHeight}
-                    floatingTerminalLayout={tl.floatingTerminalLayout}
+                    terminalHeight={ps.terminalHeight} 
                     dockedTerminalRightInsetPx={tl.dockedTerminalRightInsetPx}
                     lastExpandedTerminalHeightRef={tl.lastExpandedTerminalHeightRef}
                     setShowTerminal={ps.setShowTerminal}
                     setIsMaximizedTerminal={tl.setIsMaximizedTerminal}
-                    setIsResizingTerminal={tl.setIsResizingTerminal}
-                    setIsFloatingTerminal={tl.setIsFloatingTerminal}
+                    setIsResizingTerminal={tl.setIsResizingTerminal} 
                     setTerminalHeight={ps.setTerminalHeight}
                     workspaceId={workspace.id}
                     workspacePath={workspacePath}
@@ -278,12 +327,50 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
             <WorkspaceDialogs
                 ps={ps}
                 wm={wm}
-                workspace={workspace}
-                handleUpdateWorkspace={handleUpdateWorkspace}
                 submitEntryModal={submitEntryModal}
                 entryBusy={entryBusy}
                 language={language}
             />
+            {taskRunner.tasks.length > 0 && (
+                <div className="border-t border-white/5 bg-background/70 px-3 py-2">
+                    <div className="flex items-center gap-2 overflow-x-auto">
+                        {taskRunner.tasks.map(task => {
+                            const latestLine = task.output.trim().split(/\r?\n/).filter(Boolean).slice(-1)[0] ?? '';
+                            return (
+                                <div
+                                    key={task.id}
+                                    className="min-w-[220px] max-w-[320px] rounded-lg border border-border/40 bg-background/80 px-3 py-2"
+                                >
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <div className="truncate text-[11px] font-semibold text-foreground">
+                                                {task.command}
+                                            </div>
+                                            {latestLine && (
+                                                <div className="truncate text-[10px] text-muted-foreground">
+                                                    {latestLine}
+                                                </div>
+                                            )}
+                                        </div>
+                                        {task.status === 'running' && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    void taskRunner.stopTask(task.id);
+                                                }}
+                                                className="rounded p-1 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
+                                                title={t('common.stop')}
+                                            >
+                                                <Square className="h-3.5 w-3.5" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
             <CommandStrip
                 language={language}
                 branchName={currentBranchName}
@@ -291,10 +378,14 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                 isBranchLoading={isBranchLoading}
                 isBranchSwitching={isBranchSwitching}
                 notificationCount={ps.notifications.length}
-                status="ready"
+                status={commandStripStatus}
                 activeFilePath={wm.activeTab?.path}
                 activeFileContent={wm.activeTab?.content}
                 activeFileType={wm.activeTab?.type}
+                runningTaskCount={taskRunner.runningTaskCount}
+                onRunWorkspace={() => {
+                    void taskRunner.runDefaultTask();
+                }}
                 onBranchSelect={handleBranchSelect}
                 onCommandClick={() => {
                     window.dispatchEvent(new CustomEvent('app:open-command-palette'));
@@ -331,4 +422,3 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
 };
 
 // Workspace alias for the new naming convention
-

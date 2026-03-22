@@ -1,6 +1,8 @@
 import { IdeaSession, WorkspaceIdea } from '@shared/types/ideas';
 
-export const exportIdeas = (currentSession: IdeaSession, ideas: WorkspaceIdea[], format: 'markdown' | 'json') => {
+import { appLogger } from '@/utils/renderer-logger';
+
+export const exportIdeas = (currentSession: IdeaSession, ideas: WorkspaceIdea[], format: 'markdown' | 'json'): void => {
     try {
         const timestamp = new Date().toISOString().split('T')[0];
         const filename = `ideas-${currentSession.id}-${timestamp}.${format === 'markdown' ? 'md' : 'json'}`;
@@ -65,7 +67,7 @@ export const exportIdeas = (currentSession: IdeaSession, ideas: WorkspaceIdea[],
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     } catch (err) {
-        window.electron.log.error('Failed to export ideas:', err);
+        appLogger.error('ExportIdeas', 'Failed to export ideas', err as Error);
     }
 };
 

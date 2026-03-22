@@ -3,7 +3,7 @@ const sectionData = {
     "explorer": "Explorer",
     "search": "Search",
     "sourceControl": "Source Control",
-    "debug": "Debug",
+    "debug": "Debugging",
     "extensions": "Extensions",
     "settings": "Settings"
 };

@@ -8,6 +8,7 @@ export type WorkspaceSystemSource = 'mount' | 'git' | 'task' | 'analysis' | 'ter
 export interface LocalizedText {
     key: string;
     params?: Record<string, string | number>;
+    fallback?: string;
 }
 
 export interface WorkspaceStartupPreflightIssue {
@@ -60,10 +61,425 @@ interface ToolCheckDefinition {
     fixAction: LocalizedText;
 }
 
+interface WorkspaceDirectorySnapshot {
+    fileCount: number;
+    openingMode: 'fast' | 'full';
+}
+
+interface WorkspaceTrackedFileSignals {
+    hasPackageJson: boolean;
+    hasLockFile: boolean;
+    hasEnvFiles: boolean;
+    hasConfiguredEnvFile: boolean;
+    envFiles: string[];
+    gitIgnoreContent: string | null;
+}
+
 const PYTHON_WORKSPACE_FILES = [
     WORKSPACE_COMPAT_FILE_VALUES.REQUIREMENTS_TXT,
     WORKSPACE_COMPAT_FILE_VALUES.PY_SINGULAR_TOML
 ] as const;
+const WATCH_LIMIT_FILE_THRESHOLD = 20_000;
+const SECRET_SCAN_FILE_LIMIT = 6;
+const COMMAND_SNIPPET_LIMIT = 120;
+const SECRET_PATTERNS = [
+    /\b(?:api[_-]?key|secret|token|password)\s*[:=]\s*['"]?[A-Za-z0-9/_+=.-]{8,}/i,
+    /\bgh[pousr]_[A-Za-z0-9]{20,}\b/,
+    /\bAKIA[0-9A-Z]{16}\b/,
+    /\bxox[baprs]-[A-Za-z0-9-]{10,}\b/,
+] as const;
+const DANGEROUS_COMMAND_PATTERNS = [
+    {
+        id: 'destructive-delete',
+        regex: /\brm\s+-rf\b|\bdel\s+\/[a-z]*\b|\brmdir\s+\/s\b/i,
+        fixAction: 'Review destructive delete commands before running workspace automation.',
+    },
+    {
+        id: 'pipe-to-shell',
+        regex: /\b(?:curl|wget)\b[^|]*\|\s*(?:bash|sh|zsh|pwsh|powershell)\b/i,
+        fixAction: 'Download and inspect remote scripts before execution.',
+    },
+    {
+        id: 'dangerous-permissions',
+        regex: /\bchmod\s+777\b/i,
+        fixAction: 'Avoid world-writable permissions in workspace automation.',
+    },
+    {
+        id: 'encoded-shell',
+        regex: /\bpowershell(?:\.exe)?\s+-enc(?:odedcommand)?\b/i,
+        fixAction: 'Prefer plain-text reviewed scripts instead of encoded shell payloads.',
+    },
+] as const;
+
+function normalizeWorkspacePath(value: string): string {
+    return value.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/\/$/, '').toLowerCase();
+}
+
+function getWorkspacePathSeparator(workspacePath: string): '/' | '\\' {
+    return workspacePath.includes('\\') ? '\\' : '/';
+}
+
+function joinWorkspacePath(workspacePath: string, relativePath: string): string {
+    const separator = getWorkspacePathSeparator(workspacePath);
+    const trimmedRoot = workspacePath.replace(/[\\/]+$/, '');
+    const normalizedRelativePath = relativePath
+        .replace(/^[\\/]+/, '')
+        .replace(/[\\/]+/g, separator);
+    return `${trimmedRoot}${separator}${normalizedRelativePath}`;
+}
+
+function isAbsoluteWorkspacePath(targetPath: string): boolean {
+    return /^[a-z]:[\\/]/i.test(targetPath) || targetPath.startsWith('/') || targetPath.startsWith('\\\\');
+}
+
+function resolveWorkspaceConfigPath(workspacePath: string, targetPath: string): string {
+    const normalizedTargetPath = targetPath.replace(/[\\/]+/g, getWorkspacePathSeparator(workspacePath));
+    if (isAbsoluteWorkspacePath(normalizedTargetPath)) {
+        return normalizedTargetPath;
+    }
+    return joinWorkspacePath(workspacePath, normalizedTargetPath);
+}
+
+function isWorkspaceSubpath(workspacePath: string, candidatePath: string): boolean {
+    const normalizedWorkspacePath = normalizeWorkspacePath(workspacePath);
+    const normalizedCandidatePath = normalizeWorkspacePath(candidatePath);
+    return (
+        normalizedCandidatePath === normalizedWorkspacePath
+        || normalizedCandidatePath.startsWith(`${normalizedWorkspacePath}/`)
+    );
+}
+
+function truncateCommand(command: string): string {
+    if (command.length <= COMMAND_SNIPPET_LIMIT) {
+        return command;
+    }
+    return `${command.slice(0, COMMAND_SNIPPET_LIMIT - 3)}...`;
+}
+
+function hasGitIgnoreMatch(gitIgnoreContent: string | null, fileName: string): boolean {
+    if (!gitIgnoreContent) {
+        return false;
+    }
+    const baseName = fileName.replace(/\\/g, '/').split('/').pop() ?? fileName;
+    const normalizedBaseName = baseName.toLowerCase();
+    const lines = gitIgnoreContent
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(line => line.length > 0 && !line.startsWith('#'));
+
+    return lines.some(line => {
+        const normalizedLine = line.replace(/\\/g, '/').replace(/^\/+/, '').toLowerCase();
+        return (
+            normalizedLine === '.env'
+            || normalizedLine === '.env.*'
+            || normalizedLine === normalizedBaseName
+            || normalizedLine.endsWith(`/${normalizedBaseName}`)
+        );
+    });
+}
+
+async function readWorkspaceTextFile(filePath: string): Promise<string | null> {
+    try {
+        const response = await window.electron.files.readFile(filePath);
+        return response.success && typeof response.content === 'string'
+            ? response.content
+            : null;
+    } catch {
+        return null;
+    }
+}
+
+async function readWorkspaceRelativeFile(
+    workspacePath: string,
+    relativePath: string
+): Promise<string | null> {
+    return await readWorkspaceTextFile(joinWorkspacePath(workspacePath, relativePath));
+}
+
+async function getWorkspaceDirectorySnapshot(
+    workspacePath: string
+): Promise<WorkspaceDirectorySnapshot> {
+    try {
+        const analysis = await window.electron.workspace.analyzeDirectory(workspacePath);
+        return {
+            fileCount: analysis.stats.fileCount,
+            openingMode: analysis.stats.fileCount > 3000 ? 'fast' : 'full',
+        };
+    } catch {
+        return {
+            fileCount: 0,
+            openingMode: 'fast',
+        };
+    }
+}
+
+async function getWorkspaceTrackedFileSignals(
+    workspacePath: string,
+    workspace: Workspace
+): Promise<WorkspaceTrackedFileSignals> {
+    const configuredEnvFile = workspace.buildConfig?.envFile?.trim() || '';
+    const envFiles = ['.env', '.env.local'];
+    if (configuredEnvFile.length > 0) {
+        envFiles.push(configuredEnvFile);
+    }
+
+    const [hasPackageJson, packageLock, pnpmLock, yarnLock, gitIgnoreContent, envFileFlags] = await Promise.all([
+        isToolRequiredForPath(workspacePath, 'package.json'),
+        isToolRequiredForPath(workspacePath, 'package-lock.json'),
+        isToolRequiredForPath(workspacePath, 'pnpm-lock.yaml'),
+        isToolRequiredForPath(workspacePath, 'yarn.lock'),
+        readWorkspaceRelativeFile(workspacePath, '.gitignore'),
+        Promise.all(envFiles.map(fileName => isToolRequiredForPath(workspacePath, fileName))),
+    ]);
+
+    return {
+        hasPackageJson,
+        hasLockFile: packageLock || pnpmLock || yarnLock,
+        hasEnvFiles: envFileFlags.some(Boolean),
+        hasConfiguredEnvFile: configuredEnvFile.length > 0 && Boolean(envFileFlags[envFiles.length - 1]),
+        envFiles: envFiles.filter((_, index) => envFileFlags[index]),
+        gitIgnoreContent,
+    };
+}
+
+function collectCommandSecurityIssues(workspace: Workspace): WorkspaceStartupPreflightIssue[] {
+    const commandEntries = [
+        { id: 'build', label: 'build', command: workspace.buildConfig?.buildCommand?.trim() || '' },
+        { id: 'test', label: 'test', command: workspace.buildConfig?.testCommand?.trim() || '' },
+        { id: 'lint', label: 'lint', command: workspace.buildConfig?.lintCommand?.trim() || '' },
+        { id: 'dev', label: 'dev server', command: workspace.devServer?.command?.trim() || '' },
+    ].filter(entry => entry.command.length > 0);
+
+    const issues: WorkspaceStartupPreflightIssue[] = [];
+    for (const commandEntry of commandEntries) {
+        for (const pattern of DANGEROUS_COMMAND_PATTERNS) {
+            if (!pattern.regex.test(commandEntry.command)) {
+                continue;
+            }
+            issues.push({
+                id: `security-command-${commandEntry.id}-${pattern.id}`,
+                source: 'security',
+                severity: 'warning',
+                message: {
+                    key: `workspace.issueBanner.dynamic.security.command.${commandEntry.id}.${pattern.id}`,
+                    fallback: `The ${commandEntry.label} command contains a risky shell pattern: ${truncateCommand(commandEntry.command)}`,
+                },
+                fixAction: {
+                    key: `workspace.issueBanner.dynamic.security.command.${commandEntry.id}.${pattern.id}.fix`,
+                    fallback: pattern.fixAction,
+                },
+                blocking: false,
+            });
+            break;
+        }
+    }
+
+    return issues;
+}
+
+function collectWritablePathIssues(workspace: Workspace): WorkspaceStartupPreflightIssue[] {
+    if (!workspace.path) {
+        return [];
+    }
+
+    const issues: WorkspaceStartupPreflightIssue[] = [];
+    const outputDir = workspace.buildConfig?.outputDir?.trim() || '';
+    const envFile = workspace.buildConfig?.envFile?.trim() || '';
+    const writableTargets = [
+        { id: 'output-dir', label: 'output directory', value: outputDir },
+        { id: 'env-file', label: 'environment file', value: envFile },
+    ].filter(target => target.value.length > 0);
+
+    for (const target of writableTargets) {
+        const resolvedPath = resolveWorkspaceConfigPath(workspace.path, target.value);
+        if (isWorkspaceSubpath(workspace.path, resolvedPath)) {
+            continue;
+        }
+        issues.push({
+            id: `security-${target.id}-outside-root`,
+            source: 'security',
+            severity: 'warning',
+            message: {
+                key: `workspace.issueBanner.dynamic.security.${target.id}.outsideRoot`,
+                fallback: `The configured ${target.label} resolves outside the workspace root: ${target.value}`,
+            },
+            fixAction: {
+                key: `workspace.issueBanner.dynamic.security.${target.id}.outsideRoot.fix`,
+                fallback: `Keep the ${target.label} inside the workspace root or disable the automated write target.`,
+            },
+            blocking: false,
+        });
+    }
+
+    return issues;
+}
+
+function collectRemoteTrustFindings(workspace: Workspace): {
+    issues: WorkspaceStartupPreflightIssue[];
+    findings: LocalizedText[];
+} {
+    const sshMounts = workspace.mounts.filter(mount => mount.type === 'ssh');
+    if (sshMounts.length === 0) {
+        return { issues: [], findings: [] };
+    }
+
+    const findings: LocalizedText[] = [{
+        key: 'workspace.issueBanner.dynamic.security.remoteMountsDetected',
+        fallback: `This workspace includes ${sshMounts.length} SSH mount(s). Treat remote file operations as a higher trust boundary.`,
+    }];
+    const issues: WorkspaceStartupPreflightIssue[] = sshMounts.flatMap(mount => {
+        if (mount.ssh?.authType !== 'password') {
+            return [];
+        }
+        return [{
+            id: `security-ssh-password-${mount.id}`,
+            source: 'security' as const,
+            severity: 'warning' as const,
+            message: {
+                key: `workspace.issueBanner.dynamic.security.sshPassword.${mount.id}`,
+                fallback: `SSH mount "${mount.name}" uses password authentication. Remote trust is weaker without managed keys.`,
+            },
+            fixAction: {
+                key: `workspace.issueBanner.dynamic.security.sshPassword.${mount.id}.fix`,
+                fallback: 'Prefer SSH keys with passphrases for remote workspace mounts.',
+            },
+            blocking: false,
+        }];
+    });
+
+    if (sshMounts.some(mount => mount.ssh?.authType === 'key' && !mount.ssh?.passphrase?.trim())) {
+        findings.push({
+            key: 'workspace.issueBanner.dynamic.security.unprotectedSshKey',
+            fallback: 'At least one SSH mount uses an unprotected private key. Add a passphrase if possible.',
+        });
+    }
+
+    return { issues, findings };
+}
+
+async function detectTrackedSymlinkIssue(
+    workspacePath: string
+): Promise<WorkspaceStartupPreflightIssue | null> {
+    try {
+        const result = await window.electron.runCommand('git', ['ls-files', '--stage'], workspacePath);
+        if (result.code !== 0 || !result.stdout.includes('120000 ')) {
+            return null;
+        }
+        return {
+            id: 'mount-tracked-symlinks',
+            source: 'mount',
+            severity: 'warning',
+            message: {
+                key: 'workspace.issueBanner.dynamic.mount.trackedSymlinks',
+                fallback: 'Tracked symbolic links were detected. File watching and path resolution may behave differently across machines.',
+            },
+            fixAction: {
+                key: 'workspace.issueBanner.dynamic.mount.trackedSymlinks.fix',
+                fallback: 'Verify symlink targets on this machine before editing or running workspace tasks.',
+            },
+            blocking: false,
+        };
+    } catch {
+        return null;
+    }
+}
+
+function collectWatchLimitIssue(
+    workspace: Workspace,
+    directorySnapshot: WorkspaceDirectorySnapshot
+): WorkspaceStartupPreflightIssue | null {
+    if (workspace.advancedOptions?.fileWatchEnabled === false) {
+        return null;
+    }
+    if (directorySnapshot.fileCount < WATCH_LIMIT_FILE_THRESHOLD) {
+        return null;
+    }
+    return {
+        id: 'analysis-watch-limit-risk',
+        source: 'analysis',
+        severity: 'warning',
+        message: {
+            key: 'workspace.issueBanner.dynamic.analysis.watchLimitRisk',
+            fallback: `This workspace has ${directorySnapshot.fileCount} files. File watching may hit platform limits or degrade responsiveness.`,
+        },
+        fixAction: {
+            key: 'workspace.issueBanner.dynamic.analysis.watchLimitRisk.fix',
+            fallback: 'Tighten ignore rules or disable file watching for oversized generated folders.',
+        },
+        blocking: false,
+    };
+}
+
+function collectEnvExposureIssue(
+    trackedFileSignals: WorkspaceTrackedFileSignals
+): WorkspaceStartupPreflightIssue | null {
+    const envFile = trackedFileSignals.envFiles.find(fileName => !hasGitIgnoreMatch(trackedFileSignals.gitIgnoreContent, fileName));
+    if (!envFile) {
+        return null;
+    }
+    return {
+        id: 'security-env-file-unignored',
+        source: 'security',
+        severity: 'warning',
+        message: {
+            key: 'workspace.issueBanner.dynamic.security.envFileUnignored',
+            fallback: `Environment file "${envFile}" exists but is not clearly protected by .gitignore.`,
+        },
+        fixAction: {
+            key: 'workspace.issueBanner.dynamic.security.envFileUnignored.fix',
+            fallback: 'Ignore environment files in git before running workspace automation or collaboration flows.',
+        },
+        blocking: false,
+    };
+}
+
+async function collectSecretExposureFindings(
+    workspacePath: string,
+    trackedFileSignals: WorkspaceTrackedFileSignals
+): Promise<LocalizedText[]> {
+    const filesToScan = [
+        ...trackedFileSignals.envFiles,
+        '.npmrc',
+        '.git-credentials',
+        '.pypirc',
+    ].slice(0, SECRET_SCAN_FILE_LIMIT);
+    const findings: LocalizedText[] = [];
+
+    for (const relativePath of filesToScan) {
+        const content = await readWorkspaceRelativeFile(workspacePath, relativePath);
+        if (!content) {
+            continue;
+        }
+        if (!SECRET_PATTERNS.some(pattern => pattern.test(content))) {
+            continue;
+        }
+        findings.push({
+            key: `workspace.issueBanner.dynamic.security.secretExposure.${relativePath}`,
+            fallback: `Potential secrets were detected in ${relativePath}. Review the file before syncing, indexing, or sharing this workspace.`,
+        });
+    }
+
+    return findings;
+}
+
+export function resolveLocalizedText(
+    translate: (key: string, options?: Record<string, string | number>) => string,
+    text: LocalizedText
+): string {
+    const translated = translate(text.key, text.params);
+    if (translated !== text.key) {
+        return translated;
+    }
+    if (!text.fallback) {
+        return translated;
+    }
+    if (!text.params) {
+        return text.fallback;
+    }
+    return Object.entries(text.params).reduce((accumulator, [paramKey, paramValue]) => {
+        return accumulator.replace(new RegExp(`{{${paramKey}}}`, 'g'), String(paramValue));
+    }, text.fallback);
+}
 
 class WorkspaceOperationsOrchestrator {
     private running = 0;
@@ -109,7 +525,7 @@ async function canRunTool(command: string, cwd: string): Promise<boolean> {
 }
 
 async function isToolRequiredForPath(workspacePath: string, fileName: string): Promise<boolean> {
-    const result = await window.electron.files.exists(`${workspacePath}\\${fileName}`);
+    const result = await window.electron.files.exists(joinWorkspacePath(workspacePath, fileName));
     return result.success && result.data;
 }
 
@@ -118,6 +534,15 @@ async function hasPythonWorkspaceFiles(workspacePath: string): Promise<boolean> 
         PYTHON_WORKSPACE_FILES.map(fileName => isToolRequiredForPath(workspacePath, fileName))
     );
     return requiredFiles.some(Boolean);
+}
+
+async function canListWorkspaceRoot(workspacePath: string): Promise<boolean> {
+    try {
+        const response = await window.electron.files.listDirectory(workspacePath);
+        return response.success;
+    } catch {
+        return false;
+    }
 }
 
 function getToolDefinitions(): ToolCheckDefinition[] {
@@ -213,15 +638,6 @@ function toRisk(findings: LocalizedText[]): 'low' | 'medium' | 'high' {
     return 'low';
 }
 
-async function deriveOpeningMode(workspacePath: string): Promise<'fast' | 'full'> {
-    try {
-        const analysis = await window.electron.workspace.analyzeDirectory(workspacePath);
-        return analysis.stats.fileCount > 3000 ? 'fast' : 'full';
-    } catch {
-        return 'fast';
-    }
-}
-
 async function buildRunbooks(workspacePath: string, workspace: Workspace): Promise<WorkspaceRunbook[]> {
     const runbooks: WorkspaceRunbook[] = [];
     const hasPackageJson = await isToolRequiredForPath(workspacePath, 'package.json');
@@ -261,25 +677,115 @@ async function buildRunbooks(workspacePath: string, workspace: Workspace): Promi
     return runbooks;
 }
 
-async function collectSecurityPosture(workspacePath: string): Promise<WorkspaceSecurityPosture> {
+async function collectSecurityPosture(
+    workspacePath: string,
+    workspace: Workspace
+): Promise<WorkspaceSecurityPosture> {
     const findings: LocalizedText[] = [];
-    const hasEnv = await isToolRequiredForPath(workspacePath, '.env');
-    const hasEnvLocal = await isToolRequiredForPath(workspacePath, '.env.local');
-    const hasPackageJson = await isToolRequiredForPath(workspacePath, 'package.json');
-    const hasLock = await isToolRequiredForPath(workspacePath, 'package-lock.json')
-        || await isToolRequiredForPath(workspacePath, 'pnpm-lock.yaml')
-        || await isToolRequiredForPath(workspacePath, 'yarn.lock');
-    if (hasEnv || hasEnvLocal) {
+    const trackedFileSignals = await getWorkspaceTrackedFileSignals(workspacePath, workspace);
+    if (trackedFileSignals.hasEnvFiles || trackedFileSignals.hasConfiguredEnvFile) {
         findings.push({ key: 'workspace.issueBanner.securityFindings.envFilesDetected' });
     }
-    if (hasPackageJson && !hasLock) {
+    if (trackedFileSignals.hasPackageJson && !trackedFileSignals.hasLockFile) {
         findings.push({ key: 'workspace.issueBanner.securityFindings.lockFileMissing' });
     }
+    if (trackedFileSignals.envFiles.every(fileName => hasGitIgnoreMatch(trackedFileSignals.gitIgnoreContent, fileName))) {
+        findings.push({
+            key: 'workspace.issueBanner.dynamic.security.envFilesProtected',
+            fallback: 'Environment files are present and appear to be protected by .gitignore.',
+        });
+    }
+
+    const remoteTrust = collectRemoteTrustFindings(workspace);
+    findings.push(...remoteTrust.findings);
+    findings.push(...(await collectSecretExposureFindings(workspacePath, trackedFileSignals)));
+
     return {
         risk: toRisk(findings),
         findings,
-        remediatedCount: 0,
+        remediatedCount: Number(trackedFileSignals.hasLockFile)
+            + Number(trackedFileSignals.envFiles.every(fileName => hasGitIgnoreMatch(trackedFileSignals.gitIgnoreContent, fileName))),
     };
+}
+
+async function collectNonBlockingIssues(
+    workspace: Workspace,
+    directorySnapshot: WorkspaceDirectorySnapshot
+): Promise<WorkspaceStartupPreflightIssue[]> {
+    const issues: WorkspaceStartupPreflightIssue[] = [];
+    const rootListable = await canListWorkspaceRoot(workspace.path);
+    if (!rootListable) {
+        issues.push({
+            id: 'mount-permission-denied',
+            source: 'mount',
+            severity: 'error',
+            message: { key: 'workspace.errors.explorer.permissionDenied' },
+            fixAction: { key: 'workspace.errors.explorer.permissionDenied' },
+            blocking: true,
+        });
+    }
+
+    const trackedFileSignals = await getWorkspaceTrackedFileSignals(workspace.path, workspace);
+    const envExposureIssue = collectEnvExposureIssue(trackedFileSignals);
+    if (envExposureIssue) {
+        issues.push(envExposureIssue);
+    }
+
+    const watchLimitIssue = collectWatchLimitIssue(workspace, directorySnapshot);
+    if (watchLimitIssue) {
+        issues.push(watchLimitIssue);
+    }
+
+    const symlinkIssue = await detectTrackedSymlinkIssue(workspace.path);
+    if (symlinkIssue) {
+        issues.push(symlinkIssue);
+    }
+
+    issues.push(...collectCommandSecurityIssues(workspace));
+    issues.push(...collectWritablePathIssues(workspace));
+    issues.push(...collectRemoteTrustFindings(workspace).issues);
+
+    if (workspace.advancedOptions?.indexingEnabled === false) {
+        issues.push({
+            id: 'indexing-disabled',
+            source: 'analysis',
+            severity: 'warning',
+            message: { key: 'workspace.issueBanner.preflightIssues.analysis.indexingDisabled.message' },
+            fixAction: { key: 'workspace.issueBanner.preflightIssues.analysis.indexingDisabled.fixAction' },
+            blocking: false,
+        });
+    }
+
+    const gitRepository = await window.electron.git.isRepository(workspace.path);
+    if (!gitRepository.success || !gitRepository.isRepository) {
+        issues.push({
+            id: 'git-repo-missing',
+            source: 'git',
+            severity: 'warning',
+            message: { key: 'workspace.issueBanner.preflightIssues.git.repositoryMissing.message' },
+            fixAction: { key: 'workspace.issueBanner.preflightIssues.git.repositoryMissing.fixAction' },
+            blocking: false,
+        });
+    } else {
+        const branchInfo = await window.electron.git.getBranch(workspace.path);
+        const status = await window.electron.git.getStatus(workspace.path);
+        if ((branchInfo.branch === 'main' || branchInfo.branch === 'master') && status.changes && status.changes > 0) {
+            issues.push({
+                id: 'policy-main-dirty',
+                source: 'policy',
+                severity: 'warning',
+                message: {
+                    key: 'workspace.issueBanner.preflightIssues.policy.mainDirty.message',
+                    params: { branch: branchInfo.branch }
+                },
+                fixAction: { key: 'workspace.issueBanner.preflightIssues.policy.mainDirty.fixAction' },
+                blocking: false,
+            });
+        }
+    }
+
+    issues.push(...(await checkRequiredTools(workspace.path)));
+    return issues;
 }
 
 export async function runWorkspaceStartupPreflight(
@@ -354,47 +860,11 @@ export async function runWorkspaceStartupPreflight(
     let runbooks: WorkspaceRunbook[] = [];
     let securityPosture = fallbackPosture;
     if (pathExists && includeNonBlockingChecks) {
-        openingMode = await deriveOpeningMode(workspace.path);
+        const directorySnapshot = await getWorkspaceDirectorySnapshot(workspace.path);
+        openingMode = directorySnapshot.openingMode;
         runbooks = await buildRunbooks(workspace.path, workspace);
-        securityPosture = await collectSecurityPosture(workspace.path);
-        if (workspace.advancedOptions?.indexingEnabled === false) {
-            issues.push({
-                id: 'indexing-disabled',
-                source: 'analysis',
-                severity: 'warning',
-                message: { key: 'workspace.issueBanner.preflightIssues.analysis.indexingDisabled.message' },
-                fixAction: { key: 'workspace.issueBanner.preflightIssues.analysis.indexingDisabled.fixAction' },
-                blocking: false,
-            });
-        }
-        const gitRepository = await window.electron.git.isRepository(workspace.path);
-        if (!gitRepository.success || !gitRepository.isRepository) {
-            issues.push({
-                id: 'git-repo-missing',
-                source: 'git',
-                severity: 'warning',
-                message: { key: 'workspace.issueBanner.preflightIssues.git.repositoryMissing.message' },
-                fixAction: { key: 'workspace.issueBanner.preflightIssues.git.repositoryMissing.fixAction' },
-                blocking: false,
-            });
-        } else {
-            const branchInfo = await window.electron.git.getBranch(workspace.path);
-            const status = await window.electron.git.getStatus(workspace.path);
-            if ((branchInfo.branch === 'main' || branchInfo.branch === 'master') && status.changes && status.changes > 0) {
-                issues.push({
-                    id: 'policy-main-dirty',
-                    source: 'policy',
-                    severity: 'warning',
-                    message: {
-                        key: 'workspace.issueBanner.preflightIssues.policy.mainDirty.message',
-                        params: { branch: branchInfo.branch }
-                    },
-                    fixAction: { key: 'workspace.issueBanner.preflightIssues.policy.mainDirty.fixAction' },
-                    blocking: false,
-                });
-            }
-        }
-        issues.push(...(await checkRequiredTools(workspace.path)));
+        securityPosture = await collectSecurityPosture(workspace.path, workspace);
+        issues.push(...(await collectNonBlockingIssues(workspace, directorySnapshot)));
     }
 
     return {

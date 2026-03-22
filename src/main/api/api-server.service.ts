@@ -112,7 +112,7 @@ export class ApiServerService extends BaseService {
      * Generates a session token, checks proxy status, and starts listening.
      */
     async initialize(): Promise<void> {
-        appLogger.info(this.name, 'Initializing API server...');
+        appLogger.debug(this.name, 'Initializing API server...');
 
         // Check if proxy is running
         const proxyStatus = this.options.proxyProcessManager.getStatus();
@@ -199,7 +199,7 @@ export class ApiServerService extends BaseService {
 
             if (this.httpServer) {
                 this.httpServer.close(() => {
-                    appLogger.info(this.name, 'API server stopped');
+                    appLogger.debug(this.name, 'API server stopped');
                     resolve();
                 });
             } else {
@@ -872,7 +872,7 @@ export class ApiServerService extends BaseService {
                 return;
             }
             const clientId = randomBytes(8).toString('hex');
-            appLogger.info(this.name, `WebSocket client connected: ${clientId}`);
+            appLogger.debug(this.name, `WebSocket client connected: ${clientId}`);
 
             ws.on('message', (data) => {
                 try {
@@ -917,7 +917,7 @@ export class ApiServerService extends BaseService {
             });
 
             ws.on('close', () => {
-                appLogger.info(this.name, `WebSocket client disconnected: ${clientId}`);
+                appLogger.debug(this.name, `WebSocket client disconnected: ${clientId}`);
             });
 
             ws.on('error', (error) => {

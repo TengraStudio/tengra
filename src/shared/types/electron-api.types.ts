@@ -57,6 +57,10 @@ import {
     SSHTunnelPreset,
     TodoItem,
     WorkspaceAnalysis,
+    WorkspaceCodeMap,
+    WorkspaceDefinitionLocation,
+    WorkspaceDependencyGraph,
+    WorkspaceIssue,
 } from './index';
 import { RuntimeBootstrapExecutionResult } from './runtime-manifest';
 
@@ -123,6 +127,10 @@ export interface ElectronAPI {
     close: () => void;
     resizeWindow: (resolution: string) => void;
     toggleCompact: (enabled: boolean) => void;
+    getZoomFactor: () => Promise<{ zoomFactor: number }>;
+    setZoomFactor: (zoomFactor: number) => Promise<{ zoomFactor: number }>;
+    stepZoomFactor: (direction: -1 | 1) => Promise<{ zoomFactor: number }>;
+    resetZoomFactor: () => Promise<{ zoomFactor: number }>;
 
     // Auth
     githubLogin: (appId?: 'profile' | 'copilot') => Promise<{
@@ -271,6 +279,8 @@ export interface ElectronAPI {
             topSymbols: Array<{ name: string; count: number }>;
             generatedAt: string;
         }>;
+        getWorkspaceDependencyGraph: (rootPath: string) => Promise<WorkspaceDependencyGraph | null>;
+        getWorkspaceCodeMap: (rootPath: string) => Promise<WorkspaceCodeMap | null>;
     };
 
     // Proxy
@@ -324,6 +334,21 @@ export interface ElectronAPI {
         ) => Promise<{
             success: boolean;
             commits?: Array<{ hash: string; message: string; author: string; date: string }>;
+            error?: string;
+        }>;
+        getFileHistory: (
+            cwd: string,
+            filePath: string,
+            count?: number
+        ) => Promise<{
+            success: boolean;
+            commits?: Array<{
+                hash: string;
+                message: string;
+                author: string;
+                relativeTime: string;
+                date: string;
+            }>;
             error?: string;
         }>;
         getBranches: (
@@ -780,6 +805,11 @@ export interface ElectronAPI {
         putFile: (connectionId: string, localPath: string, remotePath: string) => Promise<boolean>;
         getFile: (connectionId: string, remotePath: string, localPath: string) => Promise<boolean>;
         listDirectory: (connectionId: string, path: string) => Promise<SSHFile[]>;
+        copyPath: (
+            connectionId: string,
+            sourcePath: string,
+            destinationPath: string
+        ) => Promise<{ success: boolean; error?: string }>;
         getSystemStats: (connectionId: string) => Promise<SSHSystemStats>;
         onSystemStats: (callback: (data: { connectionId: string; stats: SSHSystemStats }) => void) => () => void;
         getLogFiles: (connectionId: string) => Promise<string[]>;
@@ -860,10 +890,18 @@ export interface ElectronAPI {
     selectFile: (options?: RuntimeValue) => Promise<{ success: boolean; path?: string }>;
     listDirectory: (path: string) => Promise<{ success: boolean; files?: FileEntry[]; error?: string }>;
     readFile: (path: string) => Promise<{ success: boolean; content?: string; error?: string }>;
-    writeFile: (path: string, content: string) => Promise<{ success: boolean; error?: string }>;
+    writeFile: (
+        path: string,
+        content: string,
+        context?: { aiSystem?: string; chatSessionId?: string; changeReason?: string }
+    ) => Promise<{ success: boolean; error?: string }>;
     createDirectory: (path: string) => Promise<{ success: boolean; error?: string }>;
     deleteFile: (path: string) => Promise<{ success: boolean; error?: string }>;
     deleteDirectory: (path: string) => Promise<{ success: boolean; error?: string }>;
+    copyPath: (
+        sourcePath: string,
+        destinationPath: string
+    ) => Promise<{ success: boolean; error?: string }>;
     renamePath: (oldPath: string, newPath: string) => Promise<{ success: boolean; error?: string }>;
     searchFiles: (rootPath: string, pattern: string) => Promise<{ success: boolean; matches?: string[]; error?: string }>;
     saveFile: (content: string, filename: string) => Promise<{ success: boolean; path?: string; error?: string }>;
@@ -876,13 +914,33 @@ export interface ElectronAPI {
         listDirectory: (path: string) => Promise<FileEntry[]>;
         readFile: (path: string) => Promise<string>;
         readImage: (path: string) => Promise<{ success: boolean; content?: string; error?: string }>;
-        writeFile: (path: string, content: string) => Promise<void>;
+        writeFile: (
+            path: string,
+            content: string,
+            context?: { aiSystem?: string; chatSessionId?: string; changeReason?: string }
+        ) => Promise<void>;
         exists: (path: string) => Promise<boolean>;
+        copyPath: (
+            sourcePath: string,
+            destinationPath: string
+        ) => Promise<{ success: boolean; error?: string }>;
     };
 
     workspace: {
         analyze: (rootPath: string, workspaceId: string) => Promise<WorkspaceAnalysis>;
         analyzeSummary: (rootPath: string, workspaceId?: string) => Promise<WorkspaceAnalysis>;
+        getFileDiagnostics: (
+            rootPath: string,
+            filePath: string,
+            content: string
+        ) => Promise<WorkspaceIssue[]>;
+        getFileDefinition: (
+            rootPath: string,
+            filePath: string,
+            content: string,
+            line: number,
+            column: number
+        ) => Promise<WorkspaceDefinitionLocation[]>;
         analyzeIdentity: (rootPath: string) => Promise<{ suggestedPrompts: string[]; colors: string[] }>;
         generateLogo: (
             workspacePath: string,
@@ -916,8 +974,8 @@ export interface ElectronAPI {
         scanScripts: (rootPath: string) => Promise<Record<string, string>>;
         resize: (id: string, cols: number, rows: number) => Promise<void>;
         write: (id: string, data: string) => Promise<void>;
-        onData: (callback: (data: { id: string; data: string }) => void) => void;
-        onExit: (callback: (data: { id: string; code: number }) => void) => void;
+        onData: (callback: (data: { id: string; data: string }) => void) => () => void;
+        onExit: (callback: (data: { id: string; code: number }) => void) => () => void;
         removeListeners: () => void;
     };
 
@@ -1205,6 +1263,8 @@ export interface ElectronAPI {
         joinRoom: (params: JoinCollaborationRoom) => Promise<CollaborationResponse>;
         leaveRoom: (roomId: string) => Promise<CollaborationResponse>;
         sendUpdate: (params: CollaborationSyncUpdate) => Promise<CollaborationResponse>;
+        onJoined: (callback: (payload: { roomId: string }) => void) => () => void;
+        onLeft: (callback: (payload: { roomId: string }) => void) => () => void;
         onSyncUpdate: (callback: (payload: { roomId: string; data: string }) => void) => () => void;
         onError: (callback: (payload: { roomId: string; error: string }) => void) => () => void;
     };
@@ -1212,6 +1272,7 @@ export interface ElectronAPI {
         getStatus: () => Promise<RuntimeBootstrapExecutionResult | null>;
         refreshStatus: () => Promise<RuntimeBootstrapExecutionResult | null>;
         repair: (manifestUrl?: string) => Promise<RuntimeBootstrapExecutionResult | null>;
+        runComponentAction: (componentId: string) => Promise<{ success: boolean; message: string }>;
     };
     liveCollaboration: ElectronAPI['userCollaboration'];
 }

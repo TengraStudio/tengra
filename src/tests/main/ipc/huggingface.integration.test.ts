@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // Mock modules
 vi.mock('@main/logging/logger', () => ({
     appLogger: {
+        debug: vi.fn(),
         info: vi.fn(),
         error: vi.fn(),
         warn: vi.fn()

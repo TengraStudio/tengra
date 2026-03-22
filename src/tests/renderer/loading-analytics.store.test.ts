@@ -8,14 +8,18 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('loading analytics store', () => {
+    let setItemSpy: ReturnType<typeof vi.spyOn>;
+
     beforeEach(() => {
         vi.useFakeTimers();
         vi.setSystemTime(new Date('2026-02-13T00:00:00.000Z'));
+        setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
         __resetLoadingAnalyticsForTests();
     });
 
     afterEach(() => {
         __resetLoadingAnalyticsForTests();
+        setItemSpy.mockRestore();
         vi.useRealTimers();
     });
 
@@ -37,6 +41,9 @@ describe('loading analytics store', () => {
         expect(snapshot.stats.started).toBe(1);
         expect(snapshot.stats.completed).toBe(1);
         expect(snapshot.stats.avgDurationMs).toBe(1200);
+        expect(setItemSpy).toHaveBeenCalledTimes(1);
+        vi.advanceTimersByTime(120);
+        expect(setItemSpy).toHaveBeenCalledTimes(2);
     });
 
     it('tracks cancelled operations separately', () => {

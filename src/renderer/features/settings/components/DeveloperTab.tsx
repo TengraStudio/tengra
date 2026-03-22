@@ -15,16 +15,17 @@ import {
 import { exportUiLayoutState } from '@/store/ui-layout.store';
 import { AppSettings } from '@/types/settings';
 import { isAppSettings } from '@/utils/app-settings.util';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { PerformanceDashboard } from './PerformanceDashboard';
 
 interface DeveloperTabProps {
-    settings: AppSettings | null
-    setStatusMessage: (m: string) => void
-    onRefreshModels: (bypassCache?: boolean) => void
-    loadSettings: () => Promise<void>
-    setIsLoading: (v: boolean) => void
-    t: (key: string, options?: Record<string, string | number>) => string
+    settings: AppSettings | null;
+    setStatusMessage: (m: string) => void;
+    onRefreshModels: (bypassCache?: boolean) => void;
+    loadSettings: () => Promise<void>;
+    setIsLoading: (v: boolean) => void;
+    t: (key: string, options?: Record<string, string | number>) => string;
 }
 
 export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusMessage, onRefreshModels, loadSettings, setIsLoading, t }) => {
@@ -108,7 +109,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                     </div>
                     <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50">
                         <div><div className="text-sm font-bold text-foreground">{t('developer.importSettings')}</div><div className="text-xs text-muted-foreground">{t('developer.importSettingsDesc')}</div></div>
-                        <label className="px-3 py-2 rounded-lg text-xs font-bold bg-muted/30 text-muted-foreground border border-border/50 cursor-pointer">{t('developer.import')}<input type="file" accept=".json" className="hidden" onChange={(e) => { void (async () => { const file = e.target.files?.[0]; if (!file) { return; } try { const imported = safeJsonParse<JsonValue | null>(await file.text(), null); if (!isAppSettings(imported)) { throw new Error(t('developer.invalidSettingsFile')); } await window.electron.saveSettings(imported); await loadSettings(); setStatusMessage(t('developer.settingsImported')); setTimeout(() => setStatusMessage(''), 3000); } catch { window.electron.log.warn(t('developer.invalidSettingsFile')); } })(); }} /></label>
+                        <label className="px-3 py-2 rounded-lg text-xs font-bold bg-muted/30 text-muted-foreground border border-border/50 cursor-pointer">{t('developer.import')}<input type="file" accept=".json" className="hidden" onChange={(e) => { void (async () => { const file = e.target.files?.[0]; if (!file) { return; } try { const imported = safeJsonParse<JsonValue | null>(await file.text(), null); if (!isAppSettings(imported)) { throw new Error(t('developer.invalidSettingsFile')); } await window.electron.saveSettings(imported); await loadSettings(); setStatusMessage(t('developer.settingsImported')); setTimeout(() => setStatusMessage(''), 3000); } catch { appLogger.warn('DeveloperTab', t('developer.invalidSettingsFile')); } })(); }} /></label>
                     </div>
                     <div className="p-4 bg-muted/30 rounded-lg border border-border/50 space-y-3">
                         <div className="text-sm font-bold text-foreground">{t('developer.animationDiagnostics')}</div>

@@ -23,7 +23,7 @@ export function registerTokenEstimationIpc() {
      */
     ipcMain.handle('token-estimation:estimateMessages', createSafeIpcHandler('token-estimation:estimateMessages', async (_event: IpcMainInvokeEvent, messages: Message[]) => {
         if (!Array.isArray(messages)) {
-            throw new Error('Messages must be an array');
+            throw new Error('error.chat.invalid_messages_array');
         }
         return tokenEstimator.estimateMessagesTokens(messages);
     }, { estimatedInputTokens: 0, estimatedOutputTokens: 0, estimatedTotalTokens: 0 }));
@@ -33,7 +33,7 @@ export function registerTokenEstimationIpc() {
      */
     ipcMain.handle('token-estimation:estimateString', createSafeIpcHandler('token-estimation:estimateString', async (_event: IpcMainInvokeEvent, text: string) => {
         if (typeof text !== 'string') {
-            throw new Error('Text must be a string');
+            throw new Error('error.chat.invalid_text');
         }
         return tokenEstimator.estimateStringTokens(text);
     }, 0));
@@ -43,7 +43,7 @@ export function registerTokenEstimationIpc() {
      */
     ipcMain.handle('token-estimation:getContextWindowSize', createSafeIpcHandler('token-estimation:getContextWindowSize', async (_event: IpcMainInvokeEvent, model: string) => {
         if (typeof model !== 'string') {
-            throw new Error('Model must be a string');
+            throw new Error('error.chat.invalid_model_string');
         }
         return tokenEstimator.getContextWindowSize(model);
     }, 8192));
@@ -53,10 +53,10 @@ export function registerTokenEstimationIpc() {
      */
     ipcMain.handle('token-estimation:fitsInContextWindow', createSafeIpcHandler('token-estimation:fitsInContextWindow', async (_event: IpcMainInvokeEvent, messages: Message[], model: string, reservedTokens?: number) => {
         if (!Array.isArray(messages)) {
-            throw new Error('Messages must be an array');
+            throw new Error('error.chat.invalid_messages_array');
         }
         if (typeof model !== 'string') {
-            throw new Error('Model must be a string');
+            throw new Error('error.chat.invalid_model_string');
         }
         return tokenEstimator.fitsInContextWindow(messages, model, reservedTokens ?? 0);
     }, { fits: false, estimatedTokens: 0, contextWindow: 8192, remainingTokens: 0 }));
@@ -66,10 +66,10 @@ export function registerTokenEstimationIpc() {
      */
     ipcMain.handle('context-window:getInfo', createSafeIpcHandler('context-window:getInfo', async (_event: IpcMainInvokeEvent, messages: Message[], model: string, reservedTokens?: number) => {
         if (!Array.isArray(messages)) {
-            throw new Error('Messages must be an array');
+            throw new Error('error.chat.invalid_messages_array');
         }
         if (typeof model !== 'string') {
-            throw new Error('Model must be a string');
+            throw new Error('error.chat.invalid_model_string');
         }
         return contextWindowService.getContextWindowInfo(messages, model, reservedTokens ?? 0);
     }, {
@@ -91,10 +91,10 @@ export function registerTokenEstimationIpc() {
         strategy?: 'recent-first' | 'importance-based'
     }) => {
         if (!Array.isArray(messages)) {
-            throw new Error('Messages must be an array');
+            throw new Error('error.chat.invalid_messages_array');
         }
         if (typeof model !== 'string') {
-            throw new Error('Model must be a string');
+            throw new Error('error.chat.invalid_model_string');
         }
         return contextWindowService.truncateMessages(messages, model, options);
     }));
@@ -104,10 +104,10 @@ export function registerTokenEstimationIpc() {
      */
     ipcMain.handle('context-window:needsTruncation', createSafeIpcHandler('context-window:needsTruncation', async (_event: IpcMainInvokeEvent, messages: Message[], model: string, reservedTokens?: number) => {
         if (!Array.isArray(messages)) {
-            throw new Error('Messages must be an array');
+            throw new Error('error.chat.invalid_messages_array');
         }
         if (typeof model !== 'string') {
-            throw new Error('Model must be a string');
+            throw new Error('error.chat.invalid_model_string');
         }
         return contextWindowService.needsTruncation(messages, model, reservedTokens ?? 0);
     }, false));

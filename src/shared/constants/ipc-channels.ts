@@ -163,6 +163,8 @@ export const SESSION_CONVERSATION_CHANNELS = {
   STREAM: 'session:conversation:stream',
   /** Renderer event channel for streamed conversation chunks */
   STREAM_CHUNK: 'session:conversation:stream-chunk',
+  /** Renderer event channel for binary-encoded streamed conversation chunks */
+  STREAM_CHUNK_BINARY: 'session:conversation:stream-chunk-binary',
   /** Cancel an in-flight conversation */
   CANCEL: 'session:conversation:cancel',
   /** Retry a previous response with a different model */
@@ -943,6 +945,30 @@ export const PROCESS_CHANNELS = {
   WRITE: 'process:write',
 } as const;
 
+/** Workspace analysis, watching, and editor assistance channels */
+export const WORKSPACE_CHANNELS = {
+  ANALYZE: 'workspace:analyze',
+  ANALYZE_SUMMARY: 'workspace:analyzeSummary',
+  GET_FILE_DIAGNOSTICS: 'workspace:getFileDiagnostics',
+  GET_FILE_DEFINITION: 'workspace:getFileDefinition',
+  ANALYZE_IDENTITY: 'workspace:analyzeIdentity',
+  GENERATE_LOGO: 'workspace:generateLogo',
+  ANALYZE_DIRECTORY: 'workspace:analyzeDirectory',
+  APPLY_LOGO: 'workspace:applyLogo',
+  GET_COMPLETION: 'workspace:getCompletion',
+  GET_INLINE_SUGGESTION: 'workspace:getInlineSuggestion',
+  TRACK_INLINE_SUGGESTION_TELEMETRY: 'workspace:trackInlineSuggestionTelemetry',
+  IMPROVE_LOGO_PROMPT: 'workspace:improveLogoPrompt',
+  UPLOAD_LOGO: 'workspace:uploadLogo',
+  WATCH: 'workspace:watch',
+  UNWATCH: 'workspace:unwatch',
+  SET_ACTIVE: 'workspace:setActive',
+  CLEAR_ACTIVE: 'workspace:clearActive',
+  GET_ENV: 'workspace:getEnv',
+  SAVE_ENV: 'workspace:saveEnv',
+  FILE_CHANGE_EVENT: 'workspace:file-change',
+} as const;
+
 // ---------------------------------------------------------------------------
 // Proxy & Usage
 // ---------------------------------------------------------------------------
@@ -1211,6 +1237,10 @@ export const CODE_CHANNELS = {
   GET_FILE_OUTLINE: 'code:getFileOutline',
   /** Get symbol analytics */
   GET_SYMBOL_ANALYTICS: 'code:getSymbolAnalytics',
+  /** Get a workspace dependency graph derived from indexed files */
+  GET_WORKSPACE_DEPENDENCY_GRAPH: 'code:getWorkspaceDependencyGraph',
+  /** Get a workspace code map derived from indexed symbols */
+  GET_WORKSPACE_CODE_MAP: 'code:getWorkspaceCodeMap',
   /** Get relationships between symbols */
   GET_SYMBOL_RELATIONSHIPS: 'code:getSymbolRelationships',
   /** Index the workspace for code intelligence */
@@ -1333,6 +1363,7 @@ export const IPC_CHANNELS = {
   MODEL_REGISTRY: MODEL_REGISTRY_CHANNELS,
   OLLAMA: OLLAMA_CHANNELS,
   PROCESS: PROCESS_CHANNELS,
+  WORKSPACE: WORKSPACE_CHANNELS,
   SESSION: SESSION_CHANNELS,
   SESSION_CONVERSATION: SESSION_CONVERSATION_CHANNELS,
   SESSION_AUTOMATION: SESSION_AUTOMATION_CHANNELS,

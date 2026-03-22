@@ -2,6 +2,7 @@ import { Server } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
 import { SSHConnection } from '@/types/ssh';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface SavedProfileSelectorProps {
     onSelect: (profile: SSHConnection) => void;
@@ -29,7 +30,7 @@ export const SavedProfileSelector: React.FC<SavedProfileSelectorProps> = ({ onSe
                     setLoadFailed(false);
                 }
             } catch (error) {
-                window.electron.log.error('Failed to fetch SSH profiles', error);
+                appLogger.error('SavedProfileSelector', 'Failed to fetch SSH profiles', error as Error);
                 if (isMounted) {
                     setLoadFailed(true);
                 }

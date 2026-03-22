@@ -1,25 +1,25 @@
 const sectionData = {
     "titles": {
-        "createFile": "Dosya Oluştur",
-        "createFolder": "Klasör Oluştur",
-        "rename": "Yeniden Adlandır",
+        "createFile": "Dosya oluştur",
+        "createFolder": "Klasör oluştur",
+        "rename": "Yeniden adlandır",
         "delete": "Sil"
     },
-    "mountTitle": "Mevcut Klasör veya Sunucu Ekle",
-    "existingFolder": "Mevcut Klasör",
-    "sshServer": "SSH Sunucu",
-    "folderPath": "Klasör Yolu",
+    "mountTitle": "Mevcut klasör veya sunucu ekle",
+    "existingFolder": "Mevcut klasör",
+    "sshServer": "SSH sunucu",
+    "folderPath": "Klasör yolu",
     "pick": "Seç",
-    "host": "Host",
+    "host": "Sunucu",
     "port": "Port",
-    "username": "Kullanıcı Adı",
+    "username": "Kullanıcı adı",
     "cancel": "İptal",
     "add": "Ekle",
     "closeModal": "Modalı kapat",
     "inputAriaLabel": "{{type}} adı",
-    "deleteConfirm": "{name} silmek istediğinizden emin misiniz?",
+    "deleteConfirm": "{name} öğesini silmek istediğinizden emin misiniz?",
     "deleteMultipleConfirm": "{count} öğeyi silmek istediğinizden emin misiniz?",
-    "permanentDeletionWarning": "This cannot be undone and permanently removes files from disk.",
+    "permanentDeletionWarning": "Bu işlem geri alınamaz ve dosyaları diskten kalıcı olarak siler.",
     "confirm": "Onayla"
 };
 

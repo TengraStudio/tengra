@@ -1,23 +1,23 @@
 const sectionData = {
     "title": "Telemetri",
-    "subtitle": "Kullanım analitiği ve tanılama",
+    "subtitle": "Kullanım analizi ve tanılama",
     "status": {
-        "enabled": "Telemetri etkin",
-        "disabled": "Telemetri devre dışı",
+        "enabled": "Telemetri açık",
+        "disabled": "Telemetri kapalı",
         "paused": "Telemetri duraklatıldı"
     },
     "settings": {
-        "enableTelemetry": "Telemetriyi Etkinleştir",
+        "enableTelemetry": "Telemetriyi etkinleştir",
         "enableDescription": "Anonim kullanım verileri göndererek Tengra'nın geliştirilmesine yardımcı olun.",
-        "dataCollection": "Veri Toplama",
-        "crashReports": "Çökme Raporları",
-        "usageStatistics": "Kullanım İstatistikleri",
-        "performanceData": "Performans Verileri"
+        "dataCollection": "Veri toplama",
+        "crashReports": "Çökme raporları",
+        "usageStatistics": "Kullanım istatistikleri",
+        "performanceData": "Performans verileri"
     },
     "events": {
         "queued": "{{count}} olay kuyruğa alındı",
         "sent": "{{count}} olay gönderildi",
-        "dropped": "{{count}} olay kaybedildi",
+        "dropped": "{{count}} olay atıldı",
         "flushing": "Telemetri verileri gönderiliyor...",
         "flushSuccess": "Telemetri verileri başarıyla gönderildi.",
         "flushFailed": "Telemetri verileri gönderilemedi. Daha sonra tekrar denenecek.",
@@ -26,9 +26,9 @@ const sectionData = {
     "consent": {
         "title": "Telemetri İzni",
         "description": "Uygulamayı geliştirmek için anonim kullanım verileri topluyoruz.",
-        "accept": "Kabul Et",
+        "accept": "Kabul et",
         "decline": "Reddet",
-        "learnMore": "Daha Fazla Bilgi"
+        "learnMore": "Daha fazla bilgi"
     }
 };
 

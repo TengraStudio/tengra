@@ -1,7 +1,7 @@
 const sectionData = {
     "dialog": {
         "windowNotFound": "Window not found",
-        "canceled": "Canceled",
+        "canceled": "Cancelled",
         "operationFailed": "Dialog operation failed",
         "invalidOptionsProvided": "Invalid options provided",
         "saveOperationFailed": "Save operation failed"
@@ -35,7 +35,7 @@ const sectionData = {
     },
     "mcpPlugin": {
         "permissionRequestNotFound": "Permission request not found",
-        "pluginNotFound": "MCP Plugin '{{pluginName}}' not found.",
+        "pluginNotFound": "MCP plugin '{{pluginName}}' not found.",
         "pluginDisabled": "Plugin '{{pluginName}}' is disabled. Enable it in Settings > MCP.",
         "actionForbiddenForProfile": "Action '{{actionName}}' is forbidden for profile '{{profile}}'. Change the server's permission profile in Settings.",
         "permissionDeniedForAction": "Permission denied for action '{{actionName}}'",
@@ -74,7 +74,7 @@ const sectionData = {
     "extensionService": {
         "pathNotAllowed": "Extension path is not allowed",
         "packageJsonNotFound": "package.json not found",
-        "noTengraConfiguration": "No tengra configuration found in package.json",
+        "noTengraConfiguration": "No Tengra configuration found in package.json",
         "extensionNotFound": "Extension not found",
         "entryPointOutsideRoot": "Extension entry point resolves outside extension root",
         "activateFunctionMissing": "Extension module must export an activate function"

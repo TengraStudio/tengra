@@ -11,22 +11,22 @@ import { appLogger } from '@/utils/renderer-logger';
 import '@xterm/xterm/css/xterm.css';
 
 interface TerminalComponentProps {
-    cwd?: string | undefined
-    workspaceId?: string | undefined  // For persistent command history
+    cwd?: string | undefined;
+    workspaceId?: string | undefined; // For persistent command history
 }
 
 interface TerminalCleanups {
-    data: () => void
-    exit: () => void
+    data: () => void;
+    exit: () => void;
 }
 
 interface TerminalStateRefs {
-    terminalInstanceRef: React.MutableRefObject<Terminal | null>
-    pidRef: React.MutableRefObject<string | null>
-    historyRef: React.MutableRefObject<string[]>
-    historyIndexRef: React.MutableRefObject<number>
-    currentInputRef: React.MutableRefObject<string>
-    lineBuffer: string
+    terminalInstanceRef: React.MutableRefObject<Terminal | null>;
+    pidRef: React.MutableRefObject<string | null>;
+    historyRef: React.MutableRefObject<string[]>;
+    historyIndexRef: React.MutableRefObject<number>;
+    currentInputRef: React.MutableRefObject<string>;
+    lineBuffer: string;
 }
 
 // Terminal history persistence keys
@@ -46,7 +46,7 @@ const loadHistory = (workspaceId?: string): string[] => {
             return safeJsonParse<string[]>(stored, []);
         }
     } catch (error) {
-        window.electron.log.warn('Failed to load terminal history:', error);
+        appLogger.warn('TerminalComponent', 'Failed to load terminal history', error as Error);
     }
     return [];
 };
@@ -58,7 +58,7 @@ const saveHistory = (history: string[], workspaceId?: string) => {
         const trimmed = history.slice(-MAX_HISTORY_SIZE);
         localStorage.setItem(getHistoryKey(workspaceId), JSON.stringify(trimmed));
     } catch (error) {
-        window.electron.log.warn('Failed to save terminal history:', error);
+        appLogger.warn('TerminalComponent', 'Failed to save terminal history', error as Error);
     }
 };
 
@@ -107,7 +107,7 @@ const initializeFitAddon = (term: Terminal, containerRef: React.RefObject<HTMLDi
                 fitAddon.fit();
             }
         } catch {
-            window.electron.log.warn('ide/Terminal: Initial fit failed');
+            appLogger.warn('TerminalComponent', 'Initial fit failed');
         }
     }
 

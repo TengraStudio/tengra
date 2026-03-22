@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import { recordSettingsPageHealthEvent } from '@/store/settings-page-health.store';
 import type { GroupedModels, ModelInfo } from '@/types';
 
-import { ManualSessionModal } from './components/ManualSessionModal';
+import { ManualSessionModal, ManualSessionModalState } from './components/ManualSessionModal';
 
 import '@renderer/features/settings/SettingsPage.css';
 
@@ -84,18 +84,18 @@ export function SettingsPage({
 
     // Define tabs with icons for filtering and sidebar
     const allTabs = useMemo(() => [
-        { id: 'general', label: t('settings.tabs.general'), icon: Settings, category: 'General' },
-        { id: 'accounts', label: t('settings.tabs.accounts'), icon: User, category: 'Security' },
-        { id: 'appearance', label: t('settings.tabs.appearance'), icon: Palette, category: 'Visuals' },
-        { id: 'models', label: t('settings.tabs.models'), icon: Sparkles, category: 'AI' },
-        { id: 'statistics', label: t('settings.tabs.statistics'), icon: BarChart, category: 'Insights' },
-        { id: 'personas', label: t('settings.tabs.personas'), icon: Users, category: 'Customization' },
-        { id: 'speech', label: t('settings.tabs.speech'), icon: Mic, category: 'Interaction' },
-        { id: 'voice', label: t('voice.interfaceTitle'), icon: Mic, category: 'Interaction' },
-        { id: 'developer', label: t('settings.tabs.developer'), icon: Code, category: 'Tools' },
-        { id: 'advanced', label: t('settings.tabs.advanced'), icon: Shield, category: 'Security' },
-        { id: 'images', label: t('settings.tabs.images'), icon: Palette, category: 'Visuals' },
-        { id: 'about', label: t('settings.tabs.about'), icon: Rocket, category: 'App' }
+        { id: 'general', label: t('settings.tabs.general'), icon: Settings, category: t('settings.categories.general') },
+        { id: 'accounts', label: t('settings.tabs.accounts'), icon: User, category: t('settings.categories.security') },
+        { id: 'appearance', label: t('settings.tabs.appearance'), icon: Palette, category: t('settings.categories.visuals') },
+        { id: 'models', label: t('settings.tabs.models'), icon: Sparkles, category: t('settings.categories.ai') },
+        { id: 'statistics', label: t('settings.tabs.statistics'), icon: BarChart, category: t('settings.categories.insights') },
+        { id: 'personas', label: t('settings.tabs.personas'), icon: Users, category: t('settings.categories.customization') },
+        { id: 'speech', label: t('settings.tabs.speech'), icon: Mic, category: t('settings.categories.interaction') },
+        { id: 'voice', label: t('voice.interfaceTitle'), icon: Mic, category: t('settings.categories.interaction') },
+        { id: 'developer', label: t('settings.tabs.developer'), icon: Code, category: t('settings.categories.tools') },
+        { id: 'advanced', label: t('settings.tabs.advanced'), icon: Shield, category: t('settings.categories.security') },
+        { id: 'images', label: t('settings.tabs.images'), icon: Palette, category: t('settings.categories.visuals') },
+        { id: 'about', label: t('settings.tabs.about'), icon: Rocket, category: t('settings.categories.app') }
     ], [t]);
 
     const filteredTabs = useMemo(() => {
@@ -184,15 +184,26 @@ export function SettingsPage({
     }, [setSettings, setStatusMessage]);
 
     const sharedProps = useMemo(() => ({
-        settings, setSettings, isLoading, settingsUiState, lastErrorCode, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
+        settings, setSettings, isLoading, settingsUiState, lastErrorCode, statusMessage, 
+        setStatusMessage: (m: string) => { setStatusMessage(m); }, 
+        authBusy, authMessage, isOllamaRunning, authStatus,
         updateGeneral, updateSpeech, handleSave, startOllama, checkOllama, refreshAuthStatus,
         connectGitHubProfile, connectCopilot, connectBrowserProvider, cancelAuthFlow, disconnectProvider,
-        statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, setReloadTrigger,
+        statsLoading, statsPeriod, 
+        setStatsPeriod: (p: 'daily' | 'weekly' | 'monthly' | 'yearly') => { setStatsPeriod(p); }, 
+        statsData, quotaData, copilotQuota, codexUsage, claudeQuota, 
+        setReloadTrigger: (trigger: number | ((prev: number) => number)) => { setReloadTrigger(trigger); },
         benchmarkResult, isBenchmarking, handleRunBenchmark,
-        editingPersonaId, setEditingPersonaId, personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona,
+        editingPersonaId, 
+        setEditingPersonaId: (id: string | null) => { setEditingPersonaId(id); }, 
+        personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona,
         linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
-        manualSessionModal, setManualSessionModal, handleSaveClaudeSession,
-        t, onRefreshModels, loadSettings, setIsLoading: (_value: boolean) => { }, onReset: handleFactoryReset
+        manualSessionModal, 
+        setManualSessionModal: (m: ManualSessionModalState) => { setManualSessionModal(m); }, 
+        handleSaveClaudeSession,
+        t, 
+        onRefreshModels: (bypassCache?: boolean) => { onRefreshModels?.(bypassCache); }, 
+        loadSettings, setIsLoading: (_value: boolean) => { }, onReset: handleFactoryReset
     }), [
         settings, setSettings, isLoading, settingsUiState, lastErrorCode, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
         updateGeneral, updateSpeech, handleSave, startOllama, checkOllama, refreshAuthStatus,

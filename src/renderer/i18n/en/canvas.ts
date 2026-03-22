@@ -1,5 +1,5 @@
 const sectionData = {
-    "selectArea": "Select Area"
+    "selectArea": "Select area"
 };
 
 export default sectionData;

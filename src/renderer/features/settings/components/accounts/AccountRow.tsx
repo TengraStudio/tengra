@@ -40,7 +40,7 @@ export const AccountRow: React.FC<AccountRowProps> = ({
             {/* Account Info */}
             <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-foreground truncate">
-                    {account.displayName ?? account.email ?? 'Account'}
+                    {account.displayName ?? account.email ?? t('accounts.account')}
                 </div>
                 {/* Always show email for clear account identification */}
                 <div className="text-xs text-muted-foreground truncate">

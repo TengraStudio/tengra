@@ -47,7 +47,7 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
             initial={{ opacity: 0, x: 14 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 18 }}
-            className="flex h-full min-w-0 flex-col overflow-hidden bg-black/[0.65] backdrop-blur-2xl"
+            className="flex h-full min-w-3 flex-col overflow-hidden bg-background backdrop-blur-2xl"
         >
             <WorkspaceAgentPanelHeader
                 recentSessions={panel.recentSessions}

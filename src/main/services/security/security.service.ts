@@ -61,7 +61,7 @@ export class SecurityService extends BaseService implements ISecurityService {
                 if (rawContent.startsWith('v2:')) {
                     this.loadEncryptedKey(rawContent);
                 } else {
-                    throw new Error('Legacy plaintext master key format is no longer supported');
+                    throw new Error('error.auth.legacy_key_unsupported');
                 }
             } else {
                 await this.generateNewMasterKey();
@@ -74,7 +74,7 @@ export class SecurityService extends BaseService implements ISecurityService {
 
     private loadEncryptedKey(encryptedContent: string) {
         if (!safeStorage.isEncryptionAvailable()) {
-            throw new Error('safeStorage encryption not available - cannot decrypt master key');
+            throw new Error('error.auth.encryption_unavailable');
         }
 
         const ciphertext = encryptedContent.substring(3);
@@ -83,7 +83,7 @@ export class SecurityService extends BaseService implements ISecurityService {
 
         this.masterKey = Buffer.from(hexKey, 'hex');
         if (this.masterKey.length !== 32) {
-            throw new Error('Invalid master key length after decryption');
+            throw new Error('error.auth.invalid_key_length');
         }
         appLogger.info('SecurityService', 'Master Key (Encrypted V2) loaded successfully.');
     }
@@ -103,7 +103,7 @@ export class SecurityService extends BaseService implements ISecurityService {
             const content = `v2:${encryptedBuffer.toString('base64')}`;
             await fs.promises.writeFile(this.keyPath, content, 'utf8');
         } else {
-            throw new Error('safeStorage not available for saving master key securely');
+            throw new Error('error.auth.storage_not_available');
         }
     }
 
@@ -404,7 +404,7 @@ export class SecurityService extends BaseService implements ISecurityService {
         }
         try {
             const parts = encryptedText.split(':');
-            if (parts.length < 5) { throw new Error('Invalid Tengra:v1 format'); }
+            if (parts.length < 5) { throw new Error('error.auth.invalid_format'); }
 
             const iv = Buffer.from(parts[2], 'base64');
             const tag = Buffer.from(parts[3], 'base64');

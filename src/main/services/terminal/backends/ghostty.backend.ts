@@ -68,7 +68,7 @@ export class GhosttyBackend implements ITerminalBackend {
         }
 
         if (!this.ghosttyPath) {
-            throw new Error('Ghostty is not installed or not in PATH');
+            throw new Error('error.terminal.backend_not_found');
         }
 
         appLogger.info('GhosttyBackend', `Opening Ghostty session: ${options.id}`);
@@ -216,7 +216,7 @@ export class GhosttyBackend implements ITerminalBackend {
     private async discoverGhosttyPath(): Promise<string | null> {
         const discoveredPath = await findExecutableInPath('ghostty');
         if (discoveredPath) {
-            appLogger.info('GhosttyBackend', `Found Ghostty at: ${discoveredPath}`);
+            appLogger.debug('GhosttyBackend', `Found Ghostty at: ${discoveredPath}`);
             return discoveredPath;
         }
 
@@ -235,7 +235,7 @@ export class GhosttyBackend implements ITerminalBackend {
 
         const commonPath = await findFirstExistingPath(commonPaths);
         if (commonPath) {
-            appLogger.info('GhosttyBackend', `Found Ghostty at common location: ${commonPath}`);
+            appLogger.debug('GhosttyBackend', `Found Ghostty at common location: ${commonPath}`);
             return commonPath;
         }
 

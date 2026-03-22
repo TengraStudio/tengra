@@ -62,10 +62,10 @@ export function registerLifecycleHandlers(settingsService: SettingsService) {
             }
             setMainWindow(null);
 
-            appLogger.info('Lifecycle', 'Disposing service container...');
+            appLogger.debug('Lifecycle', 'Disposing service container...');
             const start = Date.now();
             await container.dispose();
-            appLogger.info('Lifecycle', `Service container disposed in ${Date.now() - start}ms`);
+            appLogger.debug('Lifecycle', `Service container disposed in ${Date.now() - start}ms`);
 
             appLogger.info('Lifecycle', 'Destroying tray...');
             destroyTray();

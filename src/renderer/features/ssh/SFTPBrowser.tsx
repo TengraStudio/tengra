@@ -5,8 +5,8 @@ import { ServiceResponse, SSHFile } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 interface SFTPBrowserProps {
-    connectionId: string
-    onClose?: () => void
+    connectionId: string;
+    onClose?: () => void;
 }
 
 interface DirectoryCacheEntry {
@@ -34,7 +34,7 @@ interface TransferItem {
 const REMOTE_TREE_CACHE_TTL_MS = 30_000;
 const TRANSFER_DOWNLOAD_BASE = 'C:\\Users\\agnes\\Downloads';
 
-export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
+export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
     const { t } = useTranslation();
     const [currentPath, setCurrentPath] = useState('/');
     const [files, setFiles] = useState<SSHFile[]>([]);
@@ -127,19 +127,19 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
         void loadFiles(currentPath, { forceRefresh });
     }, [clearDirectoryCache, currentPath, loadFiles]);
 
-    const handleNavigate = (name: string) => {
+    const handleNavigate = (name: string): void => {
         const newPath = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`;
         setCurrentPath(newPath);
     };
 
-    const handleBack = () => {
+    const handleBack = (): void => {
         if (currentPath === '/') { return; }
         const parts = currentPath.split('/').filter(p => p.length > 0);
         parts.pop();
         setCurrentPath('/' + parts.join('/'));
     };
 
-    const handleDelete = async (item: SSHFile) => {
+    const handleDelete = async (item: SSHFile): Promise<void> => {
         appLogger.warn('SFTPBrowser', t('ssh.confirmDeleteFile', { name: item.name }));
 
         const path = currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`;
@@ -151,7 +151,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
             clearDirectoryCache(currentPath);
             void loadFiles(currentPath);
         } else {
-            window.electron.log.warn(t('ssh.connectionError', { error: result.error ?? 'Unknown error' }));
+            appLogger.warn('SFTPBrowser', t('ssh.connectionError', { error: result.error ?? 'Unknown error' }));
         }
     };
 

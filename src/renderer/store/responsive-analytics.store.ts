@@ -2,8 +2,11 @@ import { useSyncExternalStore } from 'react';
 
 import type { BreakpointId } from '@/lib/responsive';
 
+import { createDeferredPersist } from './deferred-persist.util';
+
 const STORAGE_KEY = 'tengra.responsive-analytics.v1';
 const MAX_TRANSITIONS = 200;
+const PERSIST_DELAY_MS = 120;
 
 type Listener = () => void;
 
@@ -42,6 +45,16 @@ const defaultSnapshot: ResponsiveAnalyticsSnapshot = {
 };
 
 let snapshot: ResponsiveAnalyticsSnapshot = defaultSnapshot;
+const persistController = createDeferredPersist({
+    delayMs: PERSIST_DELAY_MS,
+    persist: () => {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+        } catch {
+            // Ignore localStorage failures.
+        }
+    },
+});
 
 function emit(): void {
     for (const listener of listeners) {
@@ -50,11 +63,7 @@ function emit(): void {
 }
 
 function persist(): void {
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
-    } catch {
-        // Ignore localStorage failures.
-    }
+    persistController.schedule();
 }
 
 function isObject(value: RendererDataValue): value is Record<string, RendererDataValue> {
@@ -200,6 +209,7 @@ export function useResponsiveAnalyticsStore<T>(
 }
 
 export function __resetResponsiveAnalyticsForTests(): void {
+    persistController.cancel();
     snapshot = defaultSnapshot;
     try {
         localStorage.removeItem(STORAGE_KEY);

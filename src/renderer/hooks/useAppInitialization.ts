@@ -22,7 +22,7 @@ export function useAppInitialization() {
     }, [handleSpeak]);
 
     useEffect(() => {
-        document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+        document.documentElement.dir = 'ltr';
         document.documentElement.lang = language;
     }, [language]);
 
@@ -58,7 +58,7 @@ export function useAppInitialization() {
             const settings = await window.electron.getSettings();
             if (!abortController.signal.aborted && !settings?.general?.language) {
                 const browserLang = window.navigator.language.split('-')[0];
-                const supported = ['tr', 'en', 'de', 'fr', 'es', 'ja', 'zh', 'ar'];
+                const supported = ['tr', 'en'];
                 if (supported.includes(browserLang)) {
                     void setLanguageRef.current(browserLang as Language);
                 }

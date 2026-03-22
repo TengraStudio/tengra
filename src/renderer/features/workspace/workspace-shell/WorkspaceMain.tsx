@@ -28,16 +28,17 @@ interface WorkspaceMainProps {
     revealTabInExplorer: (id: string) => Promise<void>;
     activeTab: EditorTab | null;
     updateTabContent: (content: string) => void;
+    saveActiveTab: (options?: { silent?: boolean }) => Promise<void>;
     workspace: Workspace;
     handleUpdateWorkspace: (updates: Partial<Workspace>) => Promise<void>;
     onAddMount?: () => void;
-    setShowLogoModal: (show: boolean) => void;
+    onUploadLogo: () => void;
     t: (key: string) => string;
     language: Language;
     setDashboardTab: (tab: WorkspaceDashboardTab) => void;
     onDeleteWorkspace?: () => void;
     selectedEntry?: { path: string; isDirectory: boolean } | null;
-    onOpenFile?: (path: string) => void;
+    onOpenFile?: (path: string, line?: number) => void;
 }
 
 export const WorkspaceMain: React.FC<WorkspaceMainProps> = ({
@@ -55,10 +56,11 @@ export const WorkspaceMain: React.FC<WorkspaceMainProps> = ({
     revealTabInExplorer,
     activeTab,
     updateTabContent,
+    saveActiveTab,
     workspace,
     handleUpdateWorkspace,
     onAddMount,
-    setShowLogoModal,
+    onUploadLogo,
     t,
     language,
     setDashboardTab,
@@ -146,8 +148,12 @@ export const WorkspaceMain: React.FC<WorkspaceMainProps> = ({
                         <LazyWorkspaceEditor
                             activeTab={activeTab}
                             updateTabContent={updateTabContent}
+                            saveActiveTab={saveActiveTab}
+                            autoSaveEnabled={Boolean(workspace.advancedOptions?.autoSave)}
                             workspaceKey={workspace.id}
                             workspacePath={workspace.path}
+                            workspaceEditorSettings={workspace.editor}
+                            onOpenFile={onOpenFile}
                             emptyState={null}
                         />
                     </div>
@@ -168,7 +174,7 @@ export const WorkspaceMain: React.FC<WorkspaceMainProps> = ({
                                 workspace={workspace}
                                 onUpdate={handleUpdateWorkspace}
                                 onAddMount={onAddMount}
-                                onOpenLogoGenerator={() => setShowLogoModal(true)}
+                                onUploadLogo={onUploadLogo}
                                 language={language}
                                 activeTab={
                                     dashboardTab === 'terminal'

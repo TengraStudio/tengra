@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 
 import { AppSettings, JsonValue } from '@/types';
 import { unwrapSettingsResponse } from '@/utils/app-settings.util';
+import { appLogger } from '@/utils/renderer-logger';
 
 const SETTINGS_DRAFT_STORAGE_KEY = 'tengra.settings.draft.v1';
 const AUTO_SAVE_DELAY_MS = 2000;
@@ -128,7 +129,7 @@ export async function loadSettings(): Promise<void> {
             originalSettings: structuredClone(persisted)
         });
     } catch (error) {
-        window.electron.log.error('Failed to load settings', error as Error);
+        appLogger.error('SettingsStore', 'Failed to load settings', error as Error);
     } finally {
         setState({ isLoading: false });
     }
@@ -149,7 +150,7 @@ export async function flushSettings(): Promise<void> {
         setState({ originalSettings: structuredClone(saved) });
         clearDraft();
     } catch (error) {
-        window.electron.log.error('Failed to save settings', error as Error);
+        appLogger.error('SettingsStore', 'Failed to save settings', error as Error);
         persistDraft(current);
     }
 }

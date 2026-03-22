@@ -1,6 +1,6 @@
 const sectionData = {
     "title": "Tengra",
-    "tagline": "Intelligence meets elegance.",
+    "tagline": "Intelligence, beautifully designed.",
     "logoAlt": "Tengra logo"
 };
 

@@ -7,6 +7,7 @@ import { VoiceCommand, VoiceEvent, VoiceInfo, VoiceSettings, VoiceSynthesisOptio
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 import { voiceStore } from '@/store/voice.store';
+import { appLogger } from '@/utils/renderer-logger';
 
 /** Speech recognition interface */
 interface BrowserSpeechRecognition extends EventTarget {
@@ -101,7 +102,7 @@ export function useVoice() {
     /** Speak text using synthesis */
     const speak = useCallback((options: VoiceSynthesisOptions) => {
         if (!isSpeechSynthesisAvailable()) {
-            voiceStore.setError('Speech synthesis not available');
+            voiceStore.setError('error.voice.synthesis_unavailable');
             return;
         }
 
@@ -175,8 +176,8 @@ export function useVoice() {
                 await executeCommand(result.command);
             }
         } catch (error) {
-            window.electron.log.error(`Voice: Failed to process transcript: ${error instanceof Error ? error.message : String(error)}`);
-            voiceStore.setError(error instanceof Error ? error.message : 'Processing error');
+            appLogger.error('Voice', `Failed to process transcript: ${error instanceof Error ? error.message : String(error)}`, error as Error);
+            voiceStore.setError(error instanceof Error ? error.message : 'error.voice.processing_failed');
         } finally {
             voiceStore.setProcessing(false);
         }
@@ -255,7 +256,7 @@ export function useVoice() {
     /** Start listening */
     const startListening = useCallback(() => {
         if (!recognitionRef.current) {
-            voiceStore.setError('Speech recognition not available');
+            voiceStore.setError('error.voice.recognition_unavailable');
             return;
         }
 

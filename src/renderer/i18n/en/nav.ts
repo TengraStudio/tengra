@@ -2,8 +2,8 @@ const sectionData = {
     "chat": "Chat",
     "workspaces": "Workspaces",
     "settings": "Settings",
-    "council": "Council",
-    "mcp": "MCP Management"
+    "council": "Agent Council",
+    "mcp": "MCP Servers"
 };
 
 export default sectionData;

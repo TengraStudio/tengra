@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 
 import { recordWorkspacesPageHealthEvent } from '@/store/workspaces-page-health.store';
 import { MountForm, WorkspaceMount } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 import {
     validateWorkspaceMountForm,
@@ -43,7 +44,7 @@ function usePersistMounts(
     setMounts: (mounts: WorkspaceMount[]) => void,
     notify: (type: 'success' | 'error' | 'info', message: string) => void,
     t: (key: string) => string
-) {
+): (nextMounts: WorkspaceMount[]) => Promise<boolean> {
     return useCallback(
         async (nextMounts: WorkspaceMount[]): Promise<boolean> => {
             const startedAt = Date.now();
@@ -57,7 +58,7 @@ function usePersistMounts(
                 });
                 return true;
             } catch (error) {
-                window.electron.log.error('Failed to save mounts', error);
+                appLogger.error('useMountManagement', 'Failed to save mounts', error as Error);
                 notify('error', t('errors.unexpected'));
                 recordWorkspacesPageHealthEvent({
                     channel: 'workspace.persistMounts',
@@ -98,7 +99,7 @@ async function saveSSHProfileIfNeeded(
         });
         notify('success', t('workspaceModals.profileSaved'));
     } catch (error) {
-        window.electron.log.error('Failed to save SSH profile', error);
+        appLogger.error('useMountManagement', 'Failed to save SSH profile', error as Error);
         notify('error', t('errors.unexpected'));
         recordWorkspacesPageHealthEvent({
             channel: 'workspace.addMount',

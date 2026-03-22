@@ -94,7 +94,7 @@ function validateConfig(value: RuntimeValue): Record<string, IpcValue> {
  * Registers IPC handlers for Llama model operations
  */
 export function registerLlamaIpc(getMainWindow: () => BrowserWindow | null, llamaService: LlamaService): void {
-    appLogger.info('LlamaIPC', 'Registering Llama IPC handlers');
+    appLogger.debug('LlamaIPC', 'Registering Llama IPC handlers');
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'llama operation');
 
     ipcMain.handle(

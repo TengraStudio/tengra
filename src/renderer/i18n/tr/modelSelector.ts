@@ -1,13 +1,13 @@
 const sectionData = {
-    "searchModels": "Model Ara...",
+    "searchModels": "Model ara...",
     "image": "Görsel",
     "limit": "Limit",
     "ollamaLocal": "Ollama (Yerel)",
     "openCode": "OpenCode",
     "proxyCustom": "Özel Proxy / Diğer",
     "model": "Model",
-    "selectModel": "Model Seçin",
-    "recentModels": "Son Kullanılanlar",
+    "selectModel": "Model seçin",
+    "recentModels": "Son kullanılanlar",
     "noModelsFound": "Model bulunamadı",
     "shiftClickMulti": "Birden fazla model seçmek için Shift+tıklayın",
     "mode": "Mod",
@@ -22,22 +22,22 @@ const sectionData = {
     },
     "reasoning": "Düşünme",
     "quota": {
-        "day": "GÜN",
-        "week": "HAFTA"
+        "day": "Gün",
+        "week": "Hafta"
     },
     "categoryLabelSuffix": "kategorisi",
-    "selectReasoningLevel": "Düşünme Seviyesi Seçin",
+    "selectReasoningLevel": "Düşünme seviyesi seçin",
     "reasoningRequired": "Bu model kullanılmadan önce bir düşünme seviyesi seçilmesini gerektirir.",
-    "confirmModel": "Seçimi Onayla",
+    "confirmModel": "Seçimi onayla",
     "selectLevelFirst": "Önce bir seviye seçin",
     "mustSelectReasoning": "Devam etmek için bir düşünme seviyesi seçin",
     "reasoningLevels": {
-        "none": "None",
-        "minimal": "Minimal",
-        "low": "Low",
-        "medium": "Medium",
-        "high": "High",
-        "max": "Max"
+        "none": "Yok",
+        "minimal": "Minimum",
+        "low": "Düşük",
+        "medium": "Orta",
+        "high": "Yüksek",
+        "max": "Maksimum"
     },
     "providerLabels": {
         "ollama": "Ollama",
@@ -50,9 +50,9 @@ const sectionData = {
     },
     "reasoningBadge": "Düşünme",
     "free": "Ücretsiz",
-    "creditsLeft": "Kredi Kaldı",
-    "deprecated": "Deprecated",
-    "allModels": "All Models",
+    "creditsLeft": "Kalan kredi",
+    "deprecated": "Kullanımdan kaldırıldı",
+    "allModels": "Tüm modeller",
 };
 
 export default sectionData;

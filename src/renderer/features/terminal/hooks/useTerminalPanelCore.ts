@@ -54,8 +54,7 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
     const {
         isOpen, onToggle,
         isMaximized: isMaximizedProp = false,
-        onMaximizeChange: onMaximizeChangeProp,
-        isFloating = false, onFloatingChange,
+        onMaximizeChange: onMaximizeChangeProp, 
         workspaceId, workspacePath,
         tabs, activeTabId,
         setTabs, setActiveTabId,
@@ -272,7 +271,7 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
     });
 
     const panelToggles = useTerminalPanelToggles({
-        hasActiveSession, isFloating, onToggle, onFloatingChange,
+        hasActiveSession, onToggle, 
         completeRecording: recording.completeRecording,
         stopReplay: recording.stopReplay,
         setTerminalContextMenu, setIsNewTerminalMenuOpen,
@@ -326,7 +325,7 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
 
     return {
         // Props passthrough
-        isOpen, onToggle, isFloating, onFloatingChange,
+        isOpen, onToggle,
         workspaceId, workspacePath, tabs, activeTabId,
         setTabs, setActiveTabId, onOpenFile,
         // Core

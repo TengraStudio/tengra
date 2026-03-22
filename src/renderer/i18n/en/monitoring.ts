@@ -1,6 +1,6 @@
 const sectionData = {
     "title": "Monitoring",
-    "subtitle": "System performance and health metrics",
+    "subtitle": "System performance and health status",
     "status": {
         "healthy": "All systems healthy",
         "degraded": "Performance degraded",
@@ -8,23 +8,23 @@ const sectionData = {
         "unknown": "Status unknown"
     },
     "metrics": {
-        "cpuUsage": "CPU Usage",
-        "memoryUsage": "Memory Usage",
-        "diskUsage": "Disk Usage",
-        "networkLatency": "Network Latency",
-        "ipcLatency": "IPC Latency",
+        "cpuUsage": "CPU usage",
+        "memoryUsage": "Memory usage",
+        "diskUsage": "Disk usage",
+        "networkLatency": "Network latency",
+        "ipcLatency": "IPC latency",
         "uptime": "Uptime",
-        "responseTime": "Response Time",
+        "responseTime": "Response time",
         "requestsPerSecond": "Requests/sec",
-        "errorRate": "Error Rate",
-        "activeConnections": "Active Connections"
+        "errorRate": "Error rate",
+        "activeConnections": "Active connections"
     },
     "actions": {
-        "refresh": "Refresh Metrics",
-        "exportReport": "Export Report",
-        "clearAlerts": "Clear Alerts",
-        "configureAlerts": "Configure Alerts",
-        "viewHistory": "View History"
+        "refresh": "Refresh metrics",
+        "exportReport": "Export report",
+        "clearAlerts": "Clear alerts",
+        "configureAlerts": "Configure alerts",
+        "viewHistory": "View history"
     },
     "alerts": {
         "title": "Alerts",
@@ -35,11 +35,11 @@ const sectionData = {
         "acknowledged": "Alert acknowledged"
     },
     "summary": {
-        "title": "Performance Summary",
+        "title": "Performance summary",
         "uptimeLabel": "Uptime: {{duration}}",
         "memoryLabel": "Memory: {{used}} / {{total}}",
-        "avgLatency": "Average Latency: {{value}}ms",
-        "peakLatency": "Peak Latency: {{value}}ms"
+        "avgLatency": "Average latency: {{value}}ms",
+        "peakLatency": "Peak latency: {{value}}ms"
     }
 };
 

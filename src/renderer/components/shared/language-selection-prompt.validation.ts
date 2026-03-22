@@ -3,12 +3,6 @@ import type { Language } from '@renderer/i18n';
 export const SUPPORTED_PROMPT_LANGUAGES: Language[] = [
     'en',
     'tr',
-    'de',
-    'fr',
-    'es',
-    'ja',
-    'zh',
-    'ar',
 ];
 
 export type LanguageSelectionPromptErrorCode =

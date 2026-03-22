@@ -171,7 +171,7 @@ function validateConversionQuantization(value: RuntimeValue): 'F16' | 'Q8_0' | '
  * Registers IPC handlers for HuggingFace model operations
  */
 export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFaceService) {
-    appLogger.info('HuggingFaceIPC', 'Registering HuggingFace IPC handlers');
+    appLogger.debug('HuggingFaceIPC', 'Registering HuggingFace IPC handlers');
 
     ipcMain.handle('hf:search-models', createSafeIpcHandler('hf:search-models',
         async (_event: IpcMainInvokeEvent, queryRaw: RuntimeValue, limitRaw: RuntimeValue, pageRaw: RuntimeValue, sortRaw: RuntimeValue) => {

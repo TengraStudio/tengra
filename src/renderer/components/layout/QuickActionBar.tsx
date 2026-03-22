@@ -173,11 +173,11 @@ export function QuickActionBar({ onExplain, onTranslate, language }: QuickAction
                 role="toolbar"
                 aria-label={t('quickAction.toolbar')}
             >
-                <ActionButton onClick={handleExplain} icon={Sparkles} iconClass="text-primary" label={`${t('quickAction.explain')} (Alt+E)`} />
+                <ActionButton onClick={handleExplain} icon={Sparkles} iconClass="text-primary" label={t('quickAction.explainWithHotkey', { hotkey: 'Alt+E' })} />
                 <div className="w-px h-4 bg-border/50 mx-0.5" />
-                <ActionButton onClick={handleTranslate} icon={Globe} iconClass="text-success" label={`${t('quickAction.translate')} (Alt+T)`} />
+                <ActionButton onClick={handleTranslate} icon={Globe} iconClass="text-success" label={t('quickAction.translateWithHotkey', { hotkey: 'Alt+T' })} />
                 <div className="w-px h-4 bg-border/50 mx-0.5" />
-                <button onClick={handleCopy} className="p-1.5 hover:bg-muted/50 text-muted-foreground hover:text-foreground rounded-lg transition-colors" title={`${t('common.copy')} (Alt+C)`} aria-label={`${t('common.copy')} (Alt+C)`}>
+                <button onClick={handleCopy} className="p-1.5 hover:bg-muted/50 text-muted-foreground hover:text-foreground rounded-lg transition-colors" title={t('quickAction.copyWithHotkey', { hotkey: 'Alt+C' })} aria-label={t('quickAction.copyWithHotkey', { hotkey: 'Alt+C' })}>
                     <Copy className="w-3.5 h-3.5" />
                 </button>
                 <button onClick={hide} className="p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors" aria-label={t('common.close')}>

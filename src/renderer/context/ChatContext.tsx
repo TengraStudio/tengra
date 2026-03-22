@@ -1,14 +1,14 @@
-import { useAuth } from '@renderer/context/AuthContext';
-import { useModel } from '@renderer/context/ModelContext';
-import { useWorkspace } from '@renderer/context/WorkspaceContext';
-import { useChatHistory } from '@renderer/features/chat/hooks/useChatHistory';
-import { useChatManager } from '@renderer/features/chat/hooks/useChatManager';
-import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech';
-import { useTranslation } from '@renderer/i18n';
 import { CatchError } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 
+import { useAuth } from '@/context/AuthContext';
+import { useModel } from '@/context/ModelContext';
+import { useWorkspace } from '@/context/WorkspaceContext';
+import { useChatHistory } from '@/features/chat/hooks/useChatHistory';
+import { useChatManager } from '@/features/chat/hooks/useChatManager';
+import { useTextToSpeech } from '@/features/chat/hooks/useTextToSpeech';
+import { useTranslation } from '@/i18n';
 import { Chat, Workspace } from '@/types';
 
 // We extend the return type to include TTS functions since they are closely related

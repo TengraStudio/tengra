@@ -1,5 +1,5 @@
 const sectionData = {
-    startupProviderCrash: 'Startup Provider Crash',
+    startupProviderCrash: 'Startup provider error',
     providerFailedPrefix: 'Provider failed',
 };
 

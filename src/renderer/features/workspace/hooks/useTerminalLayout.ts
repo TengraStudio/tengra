@@ -12,13 +12,17 @@ const COLLAPSED_EXPLORER_LEFT_INSET_PX = 8;
 export const MIN_RESIZABLE_TERMINAL_HEIGHT = 56;
 
 /** Bottom offset for docked terminal positioning. */
-export const DOCKED_TERMINAL_BOTTOM_OFFSET_PX = 31;
+export const DOCKED_TERMINAL_BOTTOM_OFFSET_PX = 40;
 
 interface UseTerminalLayoutParams {
     showTerminal: boolean;
     setShowTerminal: (show: boolean) => void;
     terminalHeight: number;
     setTerminalHeight: (height: number) => void;
+    initialMaximizedTerminal: boolean;
+    onTerminalLayoutStateChange: (update: {
+        terminalMaximized?: boolean;
+    }) => void;
     showAgentPanel: boolean;
     sidebarCollapsed: boolean;
     tabsCount: number;
@@ -32,13 +36,14 @@ export function useTerminalLayout({
     setShowTerminal,
     terminalHeight,
     setTerminalHeight,
+    initialMaximizedTerminal,
+    onTerminalLayoutStateChange,
     showAgentPanel,
     sidebarCollapsed,
     tabsCount,
 }: UseTerminalLayoutParams) {
-    const [isMaximizedTerminal, setIsMaximizedTerminal] = React.useState(false);
-    const [isResizingTerminal, setIsResizingTerminal] = React.useState(false);
-    const [isFloatingTerminal, setIsFloatingTerminal] = React.useState(false);
+    const [isMaximizedTerminal, setIsMaximizedTerminal] = React.useState(initialMaximizedTerminal);
+    const [isResizingTerminal, setIsResizingTerminal] = React.useState(false); 
     const [viewportWidth, setViewportWidth] = React.useState(() => window.innerWidth);
     const prevTabsCountRef = React.useRef(tabsCount);
     const lastExpandedTerminalHeightRef = React.useRef(
@@ -54,8 +59,7 @@ export function useTerminalLayout({
     const { stopCommandStripResize, handleCommandStripResizeStart } = useCommandStripResize({
         showTerminal,
         setShowTerminal,
-        setIsMaximizedTerminal,
-        setIsFloatingTerminal,
+        setIsMaximizedTerminal, 
         setIsResizingTerminal,
         setTerminalHeight,
         calculateTerminalHeight,
@@ -101,8 +105,7 @@ export function useTerminalLayout({
     // Reset floating/maximized state when terminal is hidden
     React.useEffect(() => {
         if (!showTerminal) {
-            setIsMaximizedTerminal(false);
-            setIsFloatingTerminal(false);
+            setIsMaximizedTerminal(false); 
             stopCommandStripResize();
         }
     }, [showTerminal, stopCommandStripResize]);
@@ -131,21 +134,21 @@ export function useTerminalLayout({
             window.removeEventListener('resize', onResize);
         };
     }, []);
-
-    // Collapse floating terminal when viewport is too narrow
+ 
     React.useEffect(() => {
-        if (isFloatingTerminal && floatingTerminalLayout.widthPx < 320) {
-            setIsFloatingTerminal(false);
-        }
-    }, [floatingTerminalLayout.widthPx, isFloatingTerminal]);
+        onTerminalLayoutStateChange({ 
+            terminalMaximized: isMaximizedTerminal,
+        });
+    }, [ 
+        isMaximizedTerminal,
+        onTerminalLayoutStateChange,
+    ]);
 
     return {
         isMaximizedTerminal,
         setIsMaximizedTerminal,
         isResizingTerminal,
-        setIsResizingTerminal,
-        isFloatingTerminal,
-        setIsFloatingTerminal,
+        setIsResizingTerminal, 
         lastExpandedTerminalHeightRef,
         dockedTerminalRightInsetPx,
         floatingTerminalLayout,

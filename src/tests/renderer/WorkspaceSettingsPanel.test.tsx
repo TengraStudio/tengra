@@ -29,7 +29,7 @@ vi.mock('@/features/workspace/components/settings/SettingsSidebar', () => ({
     SettingsSidebar: ({
         setActiveSection,
     }: {
-        setActiveSection: (section: 'general' | 'advanced') => void
+        setActiveSection: (section: 'general' | 'advanced' | 'editor') => void
     }) => (
         <button type="button" onClick={() => setActiveSection('advanced')}>
             open advanced
@@ -55,6 +55,10 @@ vi.mock('@/features/workspace/components/settings/BuildSection', () => ({
 
 vi.mock('@/features/workspace/components/settings/DevServerSection', () => ({
     DevServerSection: () => null,
+}));
+
+vi.mock('@/features/workspace/components/settings/EditorSection', () => ({
+    EditorSection: () => null,
 }));
 
 vi.mock('@/features/workspace/components/settings/WorkspaceSection', () => ({

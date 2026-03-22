@@ -1,6 +1,5 @@
 import { WorkspaceDashboardHeader } from '@renderer/features/workspace/components/WorkspaceDashboardHeader';
 import { WorkspaceStatsCards } from '@renderer/features/workspace/components/WorkspaceStatsCards';
-import { Trash2 } from 'lucide-react';
 
 import type { Workspace, WorkspaceAnalysis, WorkspaceStats } from '@/types';
 
@@ -32,7 +31,7 @@ interface WorkspaceOverviewTabProps {
     editDesc: string;
     setEditDesc: (v: string) => void;
     handleSaveDesc: () => Promise<void>;
-    onOpenLogoGenerator?: () => void;
+    onUploadLogo?: () => void;
     analyzeWorkspace: () => Promise<void>;
     onDelete?: () => void;
     t: (key: string) => string;
@@ -54,9 +53,8 @@ export const WorkspaceOverviewTab = ({
     editDesc,
     setEditDesc,
     handleSaveDesc,
-    onOpenLogoGenerator,
+    onUploadLogo,
     analyzeWorkspace,
-    onDelete,
     t
 }: WorkspaceOverviewTabProps) => {
     if (!analysis) {
@@ -85,7 +83,7 @@ export const WorkspaceOverviewTab = ({
                 editDesc={editDesc}
                 setEditDesc={setEditDesc}
                 handleSaveDesc={handleSaveDesc}
-                onOpenLogoGenerator={onOpenLogoGenerator}
+                onUploadLogo={onUploadLogo}
                 analyzeWorkspace={analyzeWorkspace}
             />
 
@@ -101,6 +99,16 @@ export const WorkspaceOverviewTab = ({
                         <div className="w-1.5 h-1.5 rounded-full bg-primary" />
                         {t('workspaceDashboard.techStack')}
                     </h3>
+                    <div className="flex flex-wrap gap-2">
+                        <span className="px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-[11px] font-semibold text-primary">
+                            {analysis.type}
+                        </span>
+                        {analysis.monorepo && (
+                            <span className="px-3 py-1 rounded-full border border-border/60 bg-muted/20 text-[11px] font-semibold text-foreground/80">
+                                {analysis.monorepo.type}
+                            </span>
+                        )}
+                    </div>
                     <div className="flex flex-wrap gap-2">
                         {analysis.frameworks.map((fw: string) => (
                             <span key={fw} className="px-3 py-1 bg-muted/30 border border-border rounded-full text-xs text-primary font-medium">
@@ -157,25 +165,6 @@ export const WorkspaceOverviewTab = ({
                     </div>
                 </div>
             )}
-
-            <div className="mt-12 pt-8 border-t border-destructive/20">
-                <h3 className="text-lg font-bold text-destructive mb-4 flex items-center gap-2">
-                    <Trash2 className="w-5 h-5" />
-                    {t('workspace.dangerZone')}
-                </h3>
-                <div className="bg-destructive/5 border border-destructive/10 rounded-xl p-6 flex items-center justify-between">
-                    <div>
-                        <h4 className="text-foreground font-medium mb-1">{t('workspaces.deleteWorkspace')}</h4>
-                        <p className="text-sm text-muted-foreground">{t('workspaces.deleteWarning').trim()}</p>
-                    </div>
-                    <button
-                        onClick={() => { void onDelete?.(); }}
-                        className="px-4 py-2 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-lg border border-destructive/20 transition-colors text-sm font-medium"
-                    >
-                        {t('common.delete')}
-                    </button>
-                </div>
-            </div>
         </div>
     );
 };

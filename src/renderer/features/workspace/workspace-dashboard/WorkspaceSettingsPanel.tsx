@@ -9,6 +9,7 @@ import {
     BuildSection,
     CouncilSection,
     DevServerSection,
+    EditorSection,
     GeneralSection,
     SettingsHeader,
     SettingsSidebar,
@@ -22,13 +23,14 @@ interface WorkspaceSettingsPanelProps {
     language: Language
     onAddMount: () => void
     onRemoveMount: (id: string) => void
+    onDelete?: () => void
 }
 
 /**
  * Workspace settings surface with section-based navigation.
  */
 const WorkspaceSettingsPanelBase: React.FC<WorkspaceSettingsPanelProps> = ({
-    workspace, onUpdate, language, onAddMount, onRemoveMount
+    workspace, onUpdate, language, onAddMount, onRemoveMount, onDelete
 }) => {
     const { t } = useTranslation(language);
     const [activeSection, setActiveSection] = useState<WorkspaceSettingsSection>('general');
@@ -83,6 +85,7 @@ const WorkspaceSettingsPanelBase: React.FC<WorkspaceSettingsPanelProps> = ({
                                 workspace={workspace}
                                 onAddMount={onAddMount}
                                 onRemoveMount={onRemoveMount}
+                                onDelete={onDelete}
                                 t={t}
                             />
                         )}
@@ -93,6 +96,10 @@ const WorkspaceSettingsPanelBase: React.FC<WorkspaceSettingsPanelProps> = ({
 
                         {activeSection === 'dev' && (
                             <DevServerSection formData={formData} setFormData={setFormData} t={t} />
+                        )}
+
+                        {activeSection === 'editor' && (
+                            <EditorSection formData={formData} setFormData={setFormData} t={t} />
                         )}
 
                         {activeSection === 'advanced' && (

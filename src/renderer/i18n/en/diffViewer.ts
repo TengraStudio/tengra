@@ -1,5 +1,5 @@
 const sectionData = {
-    "loading": "Loading Diff..."
+    "loading": "Loading diff…"
 };
 
 export default sectionData;

@@ -49,7 +49,6 @@ import { registerThemeIpc } from '@main/ipc/theme';
 import { registerTokenEstimationIpc } from '@main/ipc/token-estimation';
 import { registerToolsIpc } from '@main/ipc/tools';
 import { registerUsageIpc } from '@main/ipc/usage';
-import { registerUserCollaborationIpc } from '@main/ipc/user-collaboration';
 import { registerVoiceIpc } from '@main/ipc/voice';
 import { registerWindowIpc } from '@main/ipc/window';
 import { registerWorkspaceIpc } from '@main/ipc/workspace';
@@ -59,7 +58,6 @@ import { McpDispatcher } from '@main/mcp/dispatcher';
 import { SharedPromptsService } from '@main/services/data/shared-prompts.service';
 import type { LogoService } from '@main/services/external/logo.service';
 import type { DockerService } from '@main/services/workspace/docker.service';
-import { UserCollaborationService } from '@main/services/workspace/user-collaboration.service';
 import { container, Services } from '@main/startup/services';
 import { ToolExecutor } from '@main/tools/tool-executor';
 import { registerBatchIpc } from '@main/utils/ipc-batch.util';
@@ -76,14 +74,10 @@ export async function registerIpcHandlers(
     setIpcEventBus(services.eventBusService);
     const logoService = container.resolve<LogoService>('logoService');
     const dockerService = container.resolve<DockerService>('dockerService');
-    const userCollaborationService = new UserCollaborationService(
-        services.authService,
-        services.eventBusService
-    );
     const sharedPromptsService = new SharedPromptsService(services.databaseService);
 
     // Registers
-    registerWindowIpc(getMainWindow, allowedFileRoots);
+    registerWindowIpc(getMainWindow, allowedFileRoots, services.settingsService);
     registerLazyServicesIpc();
     registerContractIpc();
     registerCodeSandboxIpc(getMainWindow);
@@ -233,11 +227,6 @@ export async function registerIpcHandlers(
 
     registerDialogIpc(getMainWindow);
     registerExtensionIpc();
-    registerUserCollaborationIpc(
-        getMainWindow,
-        userCollaborationService,
-        services.eventBusService
-    );
 
     registerProxyEmbedIpc(services.proxyService);
     registerExportIpc(getMainWindow, services.exportService);

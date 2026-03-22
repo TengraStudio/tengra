@@ -1,11 +1,11 @@
 const sectionData = {
     "modelConfiguration": "Model Configuration",
-    "modelConfigurationDesc": "Custom system commands and parameters for the selected model.",
+    "modelConfigurationDesc": "Customize system instructions and parameters for the selected model.",
     "customSystemMessage": "Custom System Message",
-    "systemPromptPlaceholder": "Custom system command for this model...",
+    "systemPromptPlaceholder": "Enter a custom system prompt for this model…",
     "parameterPreset": "Parameter Preset",
-    "presetTemperature": "Temp",
-    "presetTopP": "TopP"
+    "presetTemperature": "Temperature",
+    "presetTopP": "Top P"
 };
 
 export default sectionData;

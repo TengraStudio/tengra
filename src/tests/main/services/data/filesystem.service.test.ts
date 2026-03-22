@@ -2,6 +2,10 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 
 import { FileSystemService } from '@main/services/data/filesystem.service';
+import {
+    clearWorkspaceIgnoreMatcherCache,
+    getWorkspaceIgnoreMatcher,
+} from '@main/services/workspace/workspace-ignore.util';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@main/logging/logger', () => ({
@@ -11,6 +15,17 @@ vi.mock('@main/logging/logger', () => ({
         warn: vi.fn(),
         debug: vi.fn()
     }
+}));
+
+vi.mock('@main/services/workspace/workspace-ignore.util', () => ({
+    DEFAULT_WORKSPACE_EXPLORER_IGNORE_PATTERNS: [],
+    getWorkspaceIgnoreMatcher: vi.fn(async (rootPath: string) => ({
+        rootPath,
+        patterns: [],
+        ignoresAbsolute: () => false,
+        ignoresRelative: () => false,
+    })),
+    clearWorkspaceIgnoreMatcherCache: vi.fn(),
 }));
 
 vi.mock('fs/promises');
@@ -36,6 +51,7 @@ describe('FileSystemService', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        clearWorkspaceIgnoreMatcherCache();
         service = new FileSystemService([allowedRoot]);
     });
 
@@ -111,6 +127,46 @@ describe('FileSystemService', () => {
         });
     });
 
+    describe('listDirectory', () => {
+        it('returns directory entries without per-entry stat calls', async () => {
+            vi.mocked(fs.readdir).mockResolvedValue([
+                { name: 'src', isDirectory: () => true },
+                { name: 'README.md', isDirectory: () => false },
+            ] as never);
+
+            const result = await service.listDirectory(allowedRoot);
+
+            expect(result).toEqual({
+                success: true,
+                data: [
+                    { name: 'src', isDirectory: true },
+                    { name: 'README.md', isDirectory: false },
+                ],
+            });
+            expect(fs.stat).not.toHaveBeenCalled();
+        });
+
+        it('filters files ignored by workspace ignore files', async () => {
+            vi.mocked(fs.readdir).mockResolvedValue([
+                { name: 'src', isDirectory: () => true },
+                { name: 'debug.log', isDirectory: () => false },
+            ] as never);
+            vi.mocked(getWorkspaceIgnoreMatcher).mockResolvedValue({
+                rootPath: allowedRoot,
+                patterns: ['*.log'],
+                ignoresAbsolute: (candidatePath: string) => candidatePath.endsWith('.log'),
+                ignoresRelative: (candidatePath: string) => candidatePath.endsWith('.log'),
+            });
+
+            const result = await service.listDirectory(allowedRoot);
+
+            expect(result).toEqual({
+                success: true,
+                data: [{ name: 'src', isDirectory: true }],
+            });
+        });
+    });
+
     describe('deleteFile', () => {
         it('should delete a file', async () => {
             vi.mocked(fs.unlink).mockResolvedValue(undefined);
@@ -121,12 +177,36 @@ describe('FileSystemService', () => {
 
     describe('copyFile', () => {
         it('should copy a file within allowed roots', async () => {
+            vi.mocked(fs.mkdir).mockResolvedValue(undefined);
             vi.mocked(fs.copyFile).mockResolvedValue(undefined);
             const result = await service.copyFile(
                 path.join(allowedRoot, 'a.txt'),
                 path.join(allowedRoot, 'b.txt')
             );
             expect(result.success).toBe(true);
+            expect(fs.mkdir).toHaveBeenCalled();
+        });
+    });
+
+    describe('copyPath', () => {
+        it('should copy a directory recursively within allowed roots', async () => {
+            vi.mocked(fs.stat).mockResolvedValue({
+                isDirectory: () => true,
+            } as Awaited<ReturnType<typeof fs.stat>>);
+            vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+            vi.mocked(fs.cp).mockResolvedValue(undefined);
+
+            const result = await service.copyPath(
+                path.join(allowedRoot, 'source-dir'),
+                path.join(allowedRoot, 'target-dir')
+            );
+
+            expect(result.success).toBe(true);
+            expect(fs.cp).toHaveBeenCalledWith(
+                path.join(allowedRoot, 'source-dir'),
+                path.join(allowedRoot, 'target-dir'),
+                expect.objectContaining({ recursive: true, force: true })
+            );
         });
     });
 

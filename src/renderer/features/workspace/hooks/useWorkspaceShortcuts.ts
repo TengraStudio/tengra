@@ -10,9 +10,7 @@ interface UseWorkspaceShortcutsParams {
     setQuickSwitchQuery: React.Dispatch<React.SetStateAction<string>>;
     setQuickSwitchIndex: React.Dispatch<React.SetStateAction<number>>;
     showTerminal: boolean;
-    setShowTerminal: (show: boolean) => void;
-    isFloatingTerminal: boolean;
-    setIsFloatingTerminal: React.Dispatch<React.SetStateAction<boolean>>;
+    setShowTerminal: (show: boolean) => void; 
     setIsMaximizedTerminal: React.Dispatch<React.SetStateAction<boolean>>;
     setTerminalHeight: (height: number) => void;
     lastExpandedTerminalHeightRef: React.MutableRefObject<number>;
@@ -25,9 +23,7 @@ export function useWorkspaceShortcuts({
     setQuickSwitchQuery,
     setQuickSwitchIndex,
     showTerminal,
-    setShowTerminal,
-    isFloatingTerminal,
-    setIsFloatingTerminal,
+    setShowTerminal, 
     setIsMaximizedTerminal,
     setTerminalHeight,
     lastExpandedTerminalHeightRef,
@@ -54,7 +50,6 @@ export function useWorkspaceShortcuts({
             event.preventDefault();
 
             if (!showTerminal) {
-                setIsFloatingTerminal(true);
                 setIsMaximizedTerminal(false);
                 setShowTerminal(true);
                 const fallbackHeight = Math.max(
@@ -63,22 +58,14 @@ export function useWorkspaceShortcuts({
                 );
                 setTerminalHeight(fallbackHeight);
                 return;
-            }
-
-            if (isFloatingTerminal) {
-                setShowTerminal(false);
-                setIsFloatingTerminal(false);
-                return;
-            }
-
-            setIsFloatingTerminal(true);
+            } 
         };
 
         window.addEventListener('keydown', onQuickTerminal);
         return () => {
             window.removeEventListener('keydown', onQuickTerminal);
         };
-    }, [isFloatingTerminal, setShowTerminal, setTerminalHeight, showTerminal, lastExpandedTerminalHeightRef, setIsFloatingTerminal, setIsMaximizedTerminal]);
+    }, [setShowTerminal, setTerminalHeight, showTerminal, lastExpandedTerminalHeightRef, setIsMaximizedTerminal]);
 
     React.useEffect(() => {
         const onWorkspaceShortcut = (event: KeyboardEvent) => {

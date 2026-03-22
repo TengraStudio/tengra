@@ -1,18 +1,18 @@
 const sectionData = {
     "code": {
         "title": "Coding",
-        "description": "Create components and algorithms.",
-        "prompt": "Can you create a modern React component for me? With a stylish card design."
+        "description": "Build components and algorithms.",
+        "prompt": "Can you create a modern React component with a stylish card design?"
     },
     "analyze": {
         "title": "Analyze",
-        "description": "Inspect files and data.",
-        "prompt": "Can you analyze the architecture in this workspace and provide improvement suggestions?"
+        "description": "Review files and data.",
+        "prompt": "Can you analyze this workspace architecture and suggest improvements?"
     },
     "creative": {
         "title": "Creative Writing",
-        "description": "Generate text and content.",
-        "prompt": "Can you write an impressive intro text for an AI assistant named Tengra?"
+        "description": "Generate copy and content.",
+        "prompt": "Can you write a compelling intro for an AI assistant named Tengra?"
     },
     "debug": {
         "title": "Debug",

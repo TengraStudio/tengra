@@ -77,10 +77,15 @@ export interface FileEntry {
 
 export interface ProcessInfo {
     pid: number;
-    name: string;
-    cmd: string;
-    cpu: number;
-    memory: number;
+    name?: string;
+    cmd?: string;
+    command?: string;
+    cpu?: number;
+    memory?: number;
+    id?: string;
+    cwd?: string;
+    status?: string;
+    startTime?: number;
 }
 
 export interface ModelDefinition {
@@ -168,6 +173,7 @@ export interface ElectronAPI {
      */
     close: () => void;
 
+    getZoomFactor: () => Promise<{ zoomFactor: number }>;
     getSettings: () => Promise<AppSettings>;
 
     /**
@@ -175,6 +181,9 @@ export interface ElectronAPI {
      * @param resolution - Resolution string in format "WIDTHxHEIGHT" (e.g., "1920x1080")
      */
     resizeWindow: (resolution: string) => void;
+    resetZoomFactor: () => Promise<{ zoomFactor: number }>;
+    setZoomFactor: (zoomFactor: number) => Promise<{ zoomFactor: number }>;
+    stepZoomFactor: (direction: -1 | 1) => Promise<{ zoomFactor: number }>;
 
     /**
      * Toggles compact mode for the window.
@@ -444,6 +453,10 @@ export interface ElectronAPI {
     createDirectory: (path: string) => Promise<{ success: boolean; error?: string }>;
     deleteFile: (path: string) => Promise<{ success: boolean; error?: string }>;
     deleteDirectory: (path: string) => Promise<{ success: boolean; error?: string }>;
+    copyPath: (
+        sourcePath: string,
+        destinationPath: string
+    ) => Promise<{ success: boolean; error?: string }>;
     renamePath: (oldPath: string, newPath: string) => Promise<{ success: boolean; error?: string }>;
     searchFiles: (
         rootPath: string,
@@ -505,6 +518,7 @@ export interface ElectronAPI {
         getStatus: () => Promise<RuntimeBootstrapExecutionResult | null>;
         refreshStatus: () => Promise<RuntimeBootstrapExecutionResult | null>;
         repair: (manifestUrl?: string) => Promise<RuntimeBootstrapExecutionResult | null>;
+        runComponentAction: (componentId: string) => Promise<{ success: boolean; message: string }>;
     };
     userCollaboration: ElectronApiIntegrationsDomain['userCollaboration'];
     liveCollaboration: ElectronApiIntegrationsDomain['liveCollaboration'];

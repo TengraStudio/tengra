@@ -63,18 +63,78 @@ vi.mock('@/components/ui/CodeEditor', () => ({
         value,
         language,
         onChange,
+        initialPosition,
+        initialScrollTop,
+        onCursorPositionChange,
+        onScrollPositionChange,
+        onNavigateToLocation,
+        onShowWorkspaceResults,
     }: {
         value: string;
         language: string;
         onChange: (value?: string) => void;
+        initialPosition?: { lineNumber: number; column: number } | null;
+        initialScrollTop?: number | null;
+        onCursorPositionChange?: (position: { lineNumber: number; column: number }) => void;
+        onScrollPositionChange?: (scrollTop: number) => void;
+        onNavigateToLocation?: (target: { filePath: string; lineNumber: number }) => void;
+        onShowWorkspaceResults?: (payload: {
+            symbol: string;
+            results: Array<{ file: string; line: number; text: string; type?: string }>;
+        }) => void;
     }) => (
-        <div data-testid="code-editor" data-language={language}>
+        <div
+            data-testid="code-editor"
+            data-language={language}
+            data-initial-line={initialPosition?.lineNumber ?? ''}
+            data-initial-column={initialPosition?.column ?? ''}
+            data-initial-scroll-top={initialScrollTop ?? ''}
+        >
             <textarea
                 aria-label="code-editor-input"
                 data-testid="code-editor-input"
                 value={value}
                 onChange={event => onChange(event.target.value)}
             />
+            <button
+                type="button"
+                onClick={() => onCursorPositionChange?.({ lineNumber: 8, column: 3 })}
+            >
+                trigger-cursor-change
+            </button>
+            <button
+                type="button"
+                onClick={() => onScrollPositionChange?.(240)}
+            >
+                trigger-scroll-change
+            </button>
+            <button
+                type="button"
+                onClick={() =>
+                    onNavigateToLocation?.({
+                        filePath: 'C:\\workspace\\related.ts',
+                        lineNumber: 27,
+                    })}
+            >
+                trigger-open-location
+            </button>
+            <button
+                type="button"
+                onClick={() =>
+                    onShowWorkspaceResults?.({
+                        symbol: 'Widget',
+                        results: [
+                            {
+                                file: 'C:\\workspace\\related.ts',
+                                line: 27,
+                                text: 'const widget = new Widget();',
+                                type: 'content',
+                            },
+                        ],
+                    })}
+            >
+                trigger-workspace-results
+            </button>
         </div>
     ),
 }));
@@ -140,6 +200,7 @@ function createMockProps(overrides?: Partial<WorkspaceEditorProps>): WorkspaceEd
     return {
         activeTab: null,
         updateTabContent: vi.fn(),
+        saveActiveTab: vi.fn().mockResolvedValue(undefined),
         workspaceKey: 'test-workspace',
         workspacePath: 'C:\\workspace',
         emptyState: <div data-testid="empty-state">empty-state</div>,
@@ -160,15 +221,41 @@ describe('WorkspaceEditor', () => {
         localStorage.clear();
     });
 
+    it('auto-saves dirty code tabs when workspace auto-save is enabled', async () => {
+        vi.useFakeTimers();
+        const saveActiveTab = vi.fn().mockResolvedValue(undefined);
+
+        render(
+            <WorkspaceEditor
+                {...createMockProps({
+                    activeTab: createMockTab({
+                        content: 'const x = 2;',
+                        savedContent: 'const x = 1;',
+                    }),
+                    autoSaveEnabled: true,
+                    saveActiveTab,
+                })}
+            />
+        );
+
+        await act(async () => {
+            vi.advanceTimersByTime(701);
+            await Promise.resolve();
+        });
+
+        expect(saveActiveTab).toHaveBeenCalledTimes(1);
+        vi.useRealTimers();
+    });
+
     it('renders action controls for snippet and AI workflows', () => {
         render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
 
         expect(screen.getByRole('combobox')).toBeInTheDocument();
         expect(screen.getByText('workspaceDashboard.editor.insertSnippet')).toBeInTheDocument();
         expect(screen.getByText('workspaceDashboard.editor.saveSnippet')).toBeInTheDocument();
-        expect(screen.getByText('AI Review')).toBeInTheDocument();
-        expect(screen.getByText('AI Bug Scan')).toBeInTheDocument();
-        expect(screen.getByText('AI Perf')).toBeInTheDocument();
+        expect(screen.getByText('workspaceDashboard.editor.aiReview')).toBeInTheDocument();
+        expect(screen.getByText('workspaceDashboard.editor.aiBugScan')).toBeInTheDocument();
+        expect(screen.getByText('workspaceDashboard.editor.aiPerf')).toBeInTheDocument();
     });
 
     it('saves the current file as a snippet from the action controls', () => {
@@ -213,6 +300,86 @@ describe('WorkspaceEditor', () => {
         });
 
         expect(updateTabContent).toHaveBeenCalledWith('const y = 2;');
+    });
+
+    it('restores persisted editor cursor and scroll state for the active file', () => {
+        localStorage.setItem(
+            'workspace.editor.viewstate:test-workspace',
+            JSON.stringify({
+                'C:\\workspace\\file.ts': {
+                    lineNumber: 14,
+                    column: 6,
+                    scrollTop: 320,
+                },
+            })
+        );
+
+        render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
+
+        const editor = screen.getByTestId('code-editor');
+        expect(editor).toHaveAttribute('data-initial-line', '14');
+        expect(editor).toHaveAttribute('data-initial-column', '6');
+        expect(editor).toHaveAttribute('data-initial-scroll-top', '320');
+    });
+
+    it('persists editor cursor and scroll state per workspace file', () => {
+        vi.useFakeTimers();
+        try {
+            render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
+
+            fireEvent.click(screen.getByText('trigger-cursor-change'));
+            fireEvent.click(screen.getByText('trigger-scroll-change'));
+            act(() => {
+                vi.runAllTimers();
+            });
+
+            const persistedState = JSON.parse(
+                localStorage.getItem('workspace.editor.viewstate:test-workspace') ?? '{}'
+            ) as Record<string, { lineNumber: number; column: number; scrollTop: number }>;
+
+            expect(persistedState['C:\\workspace\\file.ts']).toMatchObject({
+                lineNumber: 8,
+                column: 3,
+                scrollTop: 240,
+            });
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('opens resolved editor navigation targets through the workspace shell callback', () => {
+        const onOpenFile = vi.fn();
+
+        render(
+            <WorkspaceEditor
+                {...createMockProps({
+                    activeTab: createMockTab(),
+                    onOpenFile,
+                })}
+            />
+        );
+
+        fireEvent.click(screen.getByText('trigger-open-location'));
+
+        expect(onOpenFile).toHaveBeenCalledWith('C:\\workspace\\related.ts', 27);
+    });
+
+    it('renders workspace intelligence results and opens the selected result', () => {
+        const onOpenFile = vi.fn();
+
+        render(
+            <WorkspaceEditor
+                {...createMockProps({
+                    activeTab: createMockTab(),
+                    onOpenFile,
+                })}
+            />
+        );
+
+        fireEvent.click(screen.getByText('trigger-workspace-results'));
+        fireEvent.click(screen.getByText('related.ts'));
+
+        expect(onOpenFile).toHaveBeenCalledWith('C:\\workspace\\related.ts', 27);
     });
 
     it('renders the image preview in the main area for image tabs', () => {
@@ -264,7 +431,7 @@ describe('WorkspaceEditor', () => {
     it('renders bug scan output in the report panel', () => {
         render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
 
-        fireEvent.click(screen.getByText('AI Bug Scan'));
+        fireEvent.click(screen.getByText('workspaceDashboard.editor.aiBugScan'));
 
         expect(mockRunBugDetectionAnalysis).toHaveBeenCalledWith('const x = 1;');
         expect(screen.getByText(/classification: safe/)).toBeInTheDocument();

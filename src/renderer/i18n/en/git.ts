@@ -13,7 +13,7 @@ const sectionData = {
     "operationControls": "Operation Controls",
     "timeoutMs": "Timeout (ms)",
     "applyTimeout": "Apply timeout",
-    "cancelActive": "Cancel active",
+    "cancelActive": "Cancel active operation",
     "running": "Running: {{id}}",
     "noActiveOperation": "No active operation",
     "conflictResolution": "Conflict Resolution",
@@ -24,7 +24,7 @@ const sectionData = {
     "useTheirs": "Use Theirs",
     "markResolved": "Mark Resolved",
     "mergeTool": "Merge Tool",
-    "noAnalytics": "No analytics yet",
+    "noAnalytics": "No analytics available yet",
     "export": "Export",
     "stashManagement": "Stash Management",
     "stashMessage": "Stash message",
@@ -93,7 +93,7 @@ const sectionData = {
     "exportHooks": "Export Hooks",
     "repoStatistics": "Repository Statistics",
     "days": "Days",
-    "refreshStats": "Refresh Stats",
+    "refreshStats": "Refresh stats",
     "exportCsv": "Export CSV",
     "totalCommits": "Total commits",
     "authors": "Authors",
@@ -101,7 +101,7 @@ const sectionData = {
     "topAuthors": "Top Authors",
     "topFiles": "Top Files",
     "noData": "No data",
-    "statsNotLoaded": "Statistics not loaded.",
+    "statsNotLoaded": "Stats not loaded.",
     "refreshingData": "Refreshing advanced Git data..."
 };
 

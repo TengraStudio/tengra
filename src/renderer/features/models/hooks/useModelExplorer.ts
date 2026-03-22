@@ -17,7 +17,7 @@ interface HFInstallOptions {
     profile?: 'balanced' | 'quality' | 'speed';
 }
 
-const getFilteredOllama = (ollamaLibrary: OllamaLibraryModel[], query: string, activeSource: string, page: number) => {
+const getFilteredOllama = (ollamaLibrary: OllamaLibraryModel[], query: string, activeSource: string, page: number): OllamaLibraryModel[] => {
     if (activeSource === 'huggingface' || page > 0) { return []; }
 
     let filtered = ollamaLibrary;
@@ -34,7 +34,7 @@ const getFilteredOllama = (ollamaLibrary: OllamaLibraryModel[], query: string, a
     return Array.isArray(filtered) ? filtered : [];
 };
 
-const getSortedModels = (hfResults: HFModel[], filteredOllama: OllamaLibraryModel[], sortBy: string, activeSource: string) => {
+const getSortedModels = (hfResults: HFModel[], filteredOllama: OllamaLibraryModel[], sortBy: string, activeSource: string): UnifiedModel[] => {
     const safeHf = Array.isArray(hfResults) ? hfResults : [];
     const safeOllama = Array.isArray(filteredOllama) ? filteredOllama : [];
     const base = [...safeHf, ...(activeSource === 'all' || activeSource === 'ollama' ? safeOllama : [])];
@@ -134,7 +134,7 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
                 setRecommendedIds(new Set());
             }
         } catch (e) {
-            window.electron.log.error('Failed to fetch HuggingFace models', e as Error);
+            appLogger.error('useModelExplorer', 'Failed to fetch HuggingFace models', e as Error);
             setHfResults([]);
             setRecommendedIds(new Set());
         } finally {
@@ -175,7 +175,7 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
                 setFiles(filesWithCompatibility.sort((a, b) => a.size - b.size));
                 const preview = await window.electron.huggingface.getModelPreview(model.id);
                 setModelPreview(preview);
-            } catch (e) { window.electron.log.error('Failed to load HuggingFace model files', e as Error); } finally { setLoadingFiles(false); }
+            } catch (e) { appLogger.error('useModelExplorer', 'Failed to load HuggingFace model files', e as Error); } finally { setLoadingFiles(false); }
         }
     };
 
@@ -185,7 +185,7 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
         try {
             await window.electron.pullModel(fullModelName);
             onRefreshModels?.(true);
-        } catch (e) { window.electron.log.error(`Failed to pull Ollama model: ${fullModelName}`, e as Error); } finally { setPullingOllama(null); }
+        } catch (e) { appLogger.error('useModelExplorer', `Failed to pull Ollama model: ${fullModelName}`, e as Error); } finally { setPullingOllama(null); }
     };
 
     const handleDownloadHF = async (file: HFFile, options: HFInstallOptions = {}) => {
@@ -217,7 +217,7 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
                 }
                 onRefreshModels?.(true);
             }
-        } catch (e) { window.electron.log.error(`Failed to download HuggingFace file: ${file.path}`, e as Error); }
+        } catch (e) { appLogger.error('useModelExplorer', `Failed to download HuggingFace file: ${file.path}`, e as Error); }
     };
 
     const toggleComparison = (modelId: string) => {
@@ -242,7 +242,7 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
             const result = await window.electron.huggingface.compareModels(comparisonIds);
             setComparisonResult(result);
         } catch (error) {
-            window.electron.log.error('Failed to compare HuggingFace models', error as Error);
+            appLogger.error('useModelExplorer', 'Failed to compare HuggingFace models', error as Error);
             setComparisonResult(null);
         } finally {
             setComparisonLoading(false);

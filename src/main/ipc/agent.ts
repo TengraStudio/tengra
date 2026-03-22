@@ -178,5 +178,5 @@ export function registerAgentIpc(getMainWindow: () => BrowserWindow | null, agen
         wrapResponse: true
     }));
 
-    appLogger.info('registerAgentIpc', 'Agent IPC handlers registered with Zod validation');
+    appLogger.debug('registerAgentIpc', 'Agent IPC handlers registered with Zod validation');
 }

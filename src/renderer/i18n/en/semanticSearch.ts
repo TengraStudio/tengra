@@ -1,11 +1,11 @@
 const sectionData = {
     "title": "Semantic Search",
     "placeholder": "Ask about the codebase...",
-    "indexing": "Indexing Workspace...",
+    "indexing": "Indexing workspace...",
     "results": "Search Results",
     "noResults": "No semantic matches found.",
     "relevance": "Relevance",
-    "filesIndex": "Files Indexed"
+    "filesIndex": "Indexed files"
 };
 
 export default sectionData;

@@ -1,6 +1,6 @@
 const sectionData = {
     "title": "Agent Council",
-    "subtitle": "Collaborative AI agents working together",
+    "subtitle": "Collaborative AI agents working together.",
     "taskPlaceholder": "Describe a task for the council...",
     "starting": "Starting...",
     "start": "Start",
@@ -8,7 +8,7 @@ const sectionData = {
     "entry": "entry",
     "entries": "entries",
     "noActiveSession": "No active session",
-    "noActiveSessionDesc": "Start a task to see the council agents in action. Activity logs will appear here.",
+    "noActiveSessionDesc": "Start a task to see council agents in action. Activity logs will appear here.",
     "status": {
         "planning": "Planning",
         "working": "Working",
@@ -27,11 +27,11 @@ const sectionData = {
         "balanced": "Blends models to balance cost, speed, and quality.",
         "local-first-simple": "Resolves basic tasks quickly using low-latency local or lightweight models."
     },
-    "requestedSubagents": "Requested Subagents",
+    "requestedSubagents": "Requested Agents",
     "runCouncil": "Run Council",
-    "chairman": "Council Chairman",
+    "chairman": "Council Chair",
     "setupTitle": "Council Configuration",
-    "setupSubtitle": "Optimize your agent council based on project needs"
+    "setupSubtitle": "Optimize your agent council based on your project needs."
 };
 
 export default sectionData;

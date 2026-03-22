@@ -43,7 +43,7 @@ export class UserCollaborationService extends BaseService {
             // Get token for the native antigravity platform
             const token = await this.authService.getActiveToken('antigravity');
             if (!token) {
-                throw new Error('Authentication required for collaboration (No active Tengra account)');
+                throw new Error('error.collaboration.auth_required');
             }
 
             const url = `${this.backendUrl}/${type}/${id}`;
@@ -90,7 +90,7 @@ export class UserCollaborationService extends BaseService {
     async sendUpdate(roomId: string, data: JsonValue): Promise<void> {
         const ws = this.websockets.get(roomId);
         if (ws?.readyState !== WebSocket.OPEN) {
-            throw new Error(`Not connected to collaborative room: ${roomId}`);
+            throw new Error('error.collaboration.not_connected');
         }
 
         const message = typeof data === 'string' ? data : JSON.stringify(data);

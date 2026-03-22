@@ -1,5 +1,5 @@
 import { Brain, Lightbulb, MessageSquare, Rocket } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 
 import { AppView } from '@/hooks/useAppState';
 import { preloadViewResources } from '@/views/view-manager/view-loaders';
@@ -28,8 +28,13 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
         { view: 'ideas' as const, icon: Lightbulb, label: t('sidebar.ideas') }
     ]), [chatsCount, t]);
     const [focusedIndex, setFocusedIndex] = useState(0);
+    const preloadedViewsRef = useRef<Set<AppView>>(new Set());
 
     const preloadView = (view: AppView) => {
+        if (preloadedViewsRef.current.has(view)) {
+            return;
+        }
+        preloadedViewsRef.current.add(view);
         void preloadViewResources(view);
     };
 
@@ -65,7 +70,6 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                     active={currentView === item.view}
                     onClick={() => onChangeView(item.view)}
                     onMouseEnter={() => preloadView(item.view)}
-                    onPointerDown={() => preloadView(item.view)}
                     badge={item.badge}
                     isCollapsed={isCollapsed}
                     tabIndex={focusedIndex === index ? 0 : -1}

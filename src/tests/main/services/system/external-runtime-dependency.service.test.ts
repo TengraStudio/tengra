@@ -33,7 +33,7 @@ describe('ExternalRuntimeDependencyService', () => {
             running: true,
             action: 'none',
             message: 'Ollama is installed and running',
-            messageKey: 'images.runtimeHealth.ollama.running',
+            messageKey: 'runtime.health.ollama.running',
         });
     });
 
@@ -60,7 +60,7 @@ describe('ExternalRuntimeDependencyService', () => {
             running: false,
             action: 'install',
             message: 'Ollama is not installed',
-            messageKey: 'images.runtimeHealth.ollama.notInstalled',
+            messageKey: 'runtime.health.ollama.notInstalled',
         });
     });
 
@@ -76,7 +76,7 @@ describe('ExternalRuntimeDependencyService', () => {
             running: false,
             action: 'start',
             message: 'Ollama is installed but not running',
-            messageKey: 'images.runtimeHealth.ollama.notRunning',
+            messageKey: 'runtime.health.ollama.notRunning',
         });
     });
 });

@@ -89,7 +89,7 @@ export class KittyBackend implements ITerminalBackend {
     private async discoverKittyPath(): Promise<string | null> {
         const discoveredPath = await findExecutableInPath('kitty');
         if (discoveredPath) {
-            appLogger.info('KittyBackend', `Found Kitty at: ${discoveredPath}`);
+            appLogger.debug('KittyBackend', `Found Kitty at: ${discoveredPath}`);
             return discoveredPath;
         }
 
@@ -111,7 +111,7 @@ export class KittyBackend implements ITerminalBackend {
 
         const commonPath = await findFirstExistingPath(commonPaths);
         if (commonPath) {
-            appLogger.info('KittyBackend', `Found Kitty at common location: ${commonPath}`);
+            appLogger.debug('KittyBackend', `Found Kitty at common location: ${commonPath}`);
             return commonPath;
         }
 

@@ -129,7 +129,9 @@ describe('SettingsService - Persistence', () => {
         const service = new SettingsService(mockDataService as never, mockAuthService as never);
         await service.initialize();
 
-        await expect(service.saveSettings(null as never as never)).rejects.toThrow('Settings payload must be a non-array object');
+        await expect(service.saveSettings(null as never as never)).rejects.toThrow(
+            'error.settings.invalid_payload'
+        );
     });
 
     it('should reload settings from disk', async () => {

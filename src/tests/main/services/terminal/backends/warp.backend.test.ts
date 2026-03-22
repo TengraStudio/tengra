@@ -158,7 +158,9 @@ describe('WarpBackend', () => {
             mockExistsSync.mockReturnValue(false);
 
             const options = createDefaultOptions();
-            await expect(backend.create(options)).rejects.toThrow('Warp is not installed or not in PATH');
+            await expect(backend.create(options)).rejects.toThrow(
+                'error.terminal.backend_not_found'
+            );
         });
 
         it('should spawn warp process with correct arguments', async () => {

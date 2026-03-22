@@ -6,14 +6,18 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('responsive analytics store', () => {
+    let setItemSpy: ReturnType<typeof vi.spyOn>;
+
     beforeEach(() => {
         vi.useFakeTimers();
         vi.setSystemTime(new Date('2026-02-13T00:00:00.000Z'));
+        setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
         __resetResponsiveAnalyticsForTests();
     });
 
     afterEach(() => {
         __resetResponsiveAnalyticsForTests();
+        setItemSpy.mockRestore();
         vi.useRealTimers();
     });
 
@@ -33,5 +37,8 @@ describe('responsive analytics store', () => {
             to: 'desktop',
             width: 1200,
         });
+        expect(setItemSpy).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(120);
+        expect(setItemSpy).toHaveBeenCalled();
     });
 });

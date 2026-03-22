@@ -4,6 +4,8 @@
 import type { WorkspaceIdea } from '@shared/types/ideas';
 import { useCallback, useState } from 'react';
 
+import { appLogger } from '@/utils/renderer-logger';
+
 import type { DeleteConfirmType } from '../components/DeleteConfirmation';
 
 export interface DeleteConfirmState {
@@ -35,15 +37,15 @@ export function useDeleteConfirmation(
         type: 'idea'
     });
 
-    const handleDeleteRequest = useCallback((id: string) => {
+    const handleDeleteRequest = useCallback((id: string): void => {
         setDeleteConfirm({ isOpen: true, type: 'idea', id });
     }, []);
 
-    const handleBulkDeleteRequest = useCallback((ids: string[]) => {
+    const handleBulkDeleteRequest = useCallback((ids: string[]): void => {
         setDeleteConfirm({ isOpen: true, type: 'bulk', ids });
     }, []);
 
-    const closeDeleteConfirm = useCallback(() => {
+    const closeDeleteConfirm = useCallback((): void => {
         setDeleteConfirm({ isOpen: false, type: 'idea' });
     }, []);
 
@@ -60,7 +62,7 @@ export function useDeleteConfirmation(
                 }
                 void onLoadIdeas(currentSessionId);
             } catch (err) {
-                window.electron.log.error('Failed to delete:', err);
+                appLogger.error('DeleteConfirmation', 'Failed to delete', err as Error);
             } finally {
                 closeDeleteConfirm();
                 onAfter();

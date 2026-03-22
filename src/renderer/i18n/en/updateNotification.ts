@@ -1,14 +1,14 @@
 const sectionData = {
     "checkingTitle": "Checking for updates...",
-    "availableTitle": "Update Available: v{{version}}",
+    "availableTitle": "Update available: v{{version}}",
     "availableContent": "A new version of Tengra is available.",
     "downloadingTitle": "Downloading update...",
-    "downloadedTitle": "Update Ready",
+    "downloadedTitle": "Update ready",
     "downloadedContent": "Restart Tengra to apply the latest update.",
-    "errorTitle": "Update Failed",
+    "errorTitle": "Update failed",
     "uptodateTitle": "You are up to date",
     "downloadAction": "Download",
-    "restartAction": "Restart Now"
+    "restartAction": "Restart now"
 };
 
 export default sectionData;

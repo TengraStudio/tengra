@@ -1,20 +1,20 @@
 const sectionData = {
     "title": "Connected Accounts",
-    "subtitle": "Manage external services and API connections.",
-    "management": "Account Management",
-    "refreshAccounts": "Refresh Accounts",
-    "activeAccounts": "Active Accounts",
-    "addNewAccount": "Add New Account",
-    "accountNamePlaceholder": "Account Name (e.g. Work, Personal)",
-    "unnamed": "Unnamed Account",
+    "subtitle": "Manage connected services and API accounts.",
+    "management": "Manage Accounts",
+    "refreshAccounts": "Refresh accounts",
+    "activeAccounts": "Active accounts",
+    "addNewAccount": "Add account",
+    "accountNamePlaceholder": "Account name (e.g., Work, Personal)",
+    "unnamed": "Unnamed account",
     "create": "Create",
     "switch": "Switch",
     "idPrefix": "ID:",
-    "loadFailed": "Failed to load accounts",
+    "loadFailed": "Failed to load accounts.",
     "createSuccess": "Account \"{{name}}\" created",
-    "createFailed": "Failed to create account",
+    "createFailed": "Failed to create account.",
     "switchSuccess": "Switched to \"{{name}}\"",
-    "switchFailed": "Failed to switch account",
+    "switchFailed": "Failed to switch account.",
     "categories": {
         "aiProviders": "AI Providers",
         "aiProvidersNvidia": "AI Providers (NVIDIA)",
@@ -24,19 +24,19 @@ const sectionData = {
     "providers": {
         "github": {
             "name": "GitHub",
-            "description": "Source code hosting and collaboration"
+            "description": "Source code hosting and collaboration tools"
         },
         "copilot": {
             "name": "GitHub Copilot",
-            "description": "AI-powered code completion"
+            "description": "AI-powered code suggestions and completion assistant"
         },
         "antigravity": {
             "name": "Antigravity",
-            "description": "Cloud AI services and web access"
+            "description": "Cloud AI services and web access tools"
         },
         "codex": {
             "name": "OpenAI / ChatGPT",
-            "description": "GPT-4 and advanced language models"
+            "description": "GPT models and advanced language capabilities"
         },
         "claude": {
             "name": "Claude",
@@ -44,7 +44,7 @@ const sectionData = {
         },
         "ollama": {
             "name": "Ollama",
-            "description": "Run AI models locally on your machine"
+            "description": "Run AI models locally on your device"
         },
         "nvidia": {
             "name": "NVIDIA",
@@ -64,18 +64,18 @@ const sectionData = {
     "removeAccount": "Remove",
     "accountCount": "{{count}} account",
     "accountCountPlural": "{{count}} accounts",
-    "noAccounts": "No accounts linked",
+    "noAccounts": "No connected accounts",
     "noEmail": "No email provided",
-    "serverAddress": "SERVER ADDRESS",
-    "contextLimit": "CONTEXT LIMIT",
+    "serverAddress": "Server Address",
+    "contextLimit": "Context Limit",
     "check": "Check",
     "start": "Start",
     "apiKey": "API Keys",
-    "enterApiKey": "Enter API key...",
+    "enterApiKey": "Enter API key…",
     "githubDesc": "GitHub profile and repositories.",
     "copilotDesc": "GitHub Copilot integration.",
     "antigravityDesc": "Antigravity cloud services.",
-    "codexDesc": "OpenAI Codex API access.",
+    "codexDesc": "OpenAI API access.",
     "claudeDesc": "Anthropic Claude models.",
     "services": {
         "github": "GitHub Profile",

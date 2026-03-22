@@ -34,4 +34,12 @@ describe('Db preload bridge', () => {
         expect(mockInvoke).toHaveBeenNthCalledWith(1, 'db:updateWorkspace', 'ws-1', { title: 'Updated' });
         expect(mockInvoke).toHaveBeenNthCalledWith(2, 'db:archiveWorkspace', 'ws-1', true);
     });
+
+    it('forwards deleteWorkspace with the deleteFiles flag', async () => {
+        const bridge = createDbBridge(ipcRenderer);
+
+        await bridge.deleteWorkspace('ws-1', true);
+
+        expect(mockInvoke).toHaveBeenCalledWith('db:deleteWorkspace', 'ws-1', true);
+    });
 });

@@ -27,11 +27,9 @@ import type { GroupedModels } from '@/types';
 import {
     ChatViewWrapperView,
     DockerDashboardView,
-    getDefaultPreloadViews,
     IdeasPageView,
     MemoryInspectorView,
     ModelsPageView,
-    preloadViewResources,
     SettingsRouteView,
     WorkspaceRouteView,
 } from './view-manager/view-loaders';
@@ -212,27 +210,6 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
             reducedMotion: prefersReducedMotion,
         });
     }, [currentView, prefersReducedMotion]);
-
-    useEffect(() => {
-        const preloadTargets = getDefaultPreloadViews(currentView);
-        const preload = () => {
-            for (const view of preloadTargets) {
-                void preloadViewResources(view);
-            }
-        };
-
-        if (typeof window.requestIdleCallback === 'function') {
-            const idleId = window.requestIdleCallback(preload, { timeout: 1200 });
-            return () => {
-                window.cancelIdleCallback(idleId);
-            };
-        }
-
-        const timeoutId = window.setTimeout(preload, 180);
-        return () => {
-            window.clearTimeout(timeoutId);
-        };
-    }, [currentView]);
 
     const renderView = () => {
         switch (currentView) {

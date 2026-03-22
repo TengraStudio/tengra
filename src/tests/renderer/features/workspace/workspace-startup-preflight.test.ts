@@ -24,6 +24,10 @@ const baseWorkspace: Workspace = {
 interface PreflightMockOptions {
     existingPaths: Set<string>;
     commandExitCodes?: Partial<Record<string, number>>;
+    commandStdout?: Partial<Record<string, string>>;
+    listDirectorySuccess?: boolean;
+    readFiles?: Partial<Record<string, string>>;
+    fileCount?: number;
 }
 
 function mountPreflightElectronMock(options: PreflightMockOptions) {
@@ -34,7 +38,7 @@ function mountPreflightElectronMock(options: PreflightMockOptions) {
     }));
     const runCommand = vi.fn(async (command: string) => ({
         code: options.commandExitCodes?.[command] ?? 0,
-        stdout: '',
+        stdout: options.commandStdout?.[command] ?? '',
         stderr: '',
     }));
 
@@ -43,6 +47,14 @@ function mountPreflightElectronMock(options: PreflightMockOptions) {
         files: {
             ...base.files,
             exists,
+            listDirectory: vi.fn(async () => ({
+                success: options.listDirectorySuccess !== false,
+                data: [],
+            })),
+            readFile: vi.fn(async (path: string) => ({
+                success: typeof options.readFiles?.[path] === 'string',
+                content: options.readFiles?.[path] ?? '',
+            })),
         },
         runCommand,
         terminal: {
@@ -63,7 +75,12 @@ function mountPreflightElectronMock(options: PreflightMockOptions) {
                 hasPackageJson: true,
                 pkg: {},
                 readme: null,
-                stats: { fileCount: 50, totalSize: 0, loc: 0, lastModified: Date.now() },
+                stats: {
+                    fileCount: options.fileCount ?? 50,
+                    totalSize: 0,
+                    loc: 0,
+                    lastModified: Date.now(),
+                },
             })),
         },
         git: {
@@ -159,5 +176,121 @@ describe('workspace-startup-preflight runbook and issue filtering', () => {
         expect(result.canOpen).toBe(true);
         expect(result.issues).toEqual([]);
         expect(runCommand).not.toHaveBeenCalled();
+    });
+
+    it('blocks workspace open when the root cannot be listed', async () => {
+        mountPreflightElectronMock({
+            existingPaths: new Set([
+                baseWorkspace.path,
+                `${baseWorkspace.path}\\package.json`,
+                `${baseWorkspace.path}\\package-lock.json`,
+            ]),
+            listDirectorySuccess: false,
+        });
+
+        const result = await runWorkspaceStartupPreflight(baseWorkspace);
+
+        expect(result.canOpen).toBe(false);
+        expect(result.issues).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    id: 'mount-permission-denied',
+                    blocking: true,
+                    message: { key: 'workspace.errors.explorer.permissionDenied' },
+                }),
+            ])
+        );
+    });
+
+    it('warns when environment files are not protected by gitignore', async () => {
+        mountPreflightElectronMock({
+            existingPaths: new Set([
+                baseWorkspace.path,
+                `${baseWorkspace.path}\\package.json`,
+                `${baseWorkspace.path}\\package-lock.json`,
+                `${baseWorkspace.path}\\.env`,
+            ]),
+            readFiles: {
+                [`${baseWorkspace.path}\\.gitignore`]: 'node_modules/\ndist/\n',
+            },
+        });
+
+        const result = await runWorkspaceStartupPreflight(baseWorkspace);
+
+        expect(result.issues).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    id: 'security-env-file-unignored',
+                    source: 'security',
+                }),
+            ])
+        );
+    });
+
+    it('adds remote trust warnings for ssh mounts using password auth', async () => {
+        mountPreflightElectronMock({
+            existingPaths: new Set([
+                baseWorkspace.path,
+                `${baseWorkspace.path}\\package.json`,
+                `${baseWorkspace.path}\\package-lock.json`,
+            ]),
+        });
+
+        const result = await runWorkspaceStartupPreflight({
+            ...baseWorkspace,
+            mounts: [
+                {
+                    id: 'ssh-1',
+                    name: 'Prod',
+                    type: 'ssh',
+                    rootPath: '/srv/app',
+                    ssh: {
+                        host: 'prod.internal',
+                        username: 'deploy',
+                        authType: 'password',
+                        password: 'secret',
+                    },
+                },
+            ],
+        });
+
+        expect(result.issues).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    id: 'security-ssh-password-ssh-1',
+                    source: 'security',
+                }),
+            ])
+        );
+        expect(result.securityPosture.findings).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    key: 'workspace.issueBanner.dynamic.security.remoteMountsDetected',
+                }),
+            ])
+        );
+    });
+
+    it('warns when workspace size approaches watch pressure limits', async () => {
+        mountPreflightElectronMock({
+            existingPaths: new Set([
+                baseWorkspace.path,
+                `${baseWorkspace.path}\\package.json`,
+                `${baseWorkspace.path}\\package-lock.json`,
+            ]),
+            fileCount: 25_000,
+        });
+
+        const result = await runWorkspaceStartupPreflight(baseWorkspace);
+
+        expect(result.openingMode).toBe('fast');
+        expect(result.issues).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    id: 'analysis-watch-limit-risk',
+                    source: 'analysis',
+                }),
+            ])
+        );
     });
 });

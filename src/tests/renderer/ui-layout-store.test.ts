@@ -2,6 +2,7 @@ import {
     __resetUiLayoutStoreForTests,
     exportUiLayoutState,
     getUiLayoutSnapshot,
+    getWorkspaceShellState,
     importUiLayoutState,
     sanitizeUiLayoutState,
     setAppShellState,
@@ -34,16 +35,24 @@ describe('ui layout store', () => {
             appShell: { sidebarCollapsed: true },
             workspaceShell: {
                 sidebarCollapsed: true,
+                showAgentPanel: true,
                 agentPanelWidth: 9999,
+                showTerminal: true,
                 terminalHeight: 10,
+                terminalFloating: true,
+                terminalMaximized: true,
             },
         });
 
         const snapshot = getUiLayoutSnapshot();
         expect(snapshot.appShell.sidebarCollapsed).toBe(true);
         expect(snapshot.workspaceShell.sidebarCollapsed).toBe(true);
+        expect(snapshot.workspaceShell.showAgentPanel).toBe(true);
         expect(snapshot.workspaceShell.agentPanelWidth).toBe(640);
+        expect(snapshot.workspaceShell.showTerminal).toBe(true);
         expect(snapshot.workspaceShell.terminalHeight).toBe(150);
+        expect(snapshot.workspaceShell.terminalFloating).toBe(true);
+        expect(snapshot.workspaceShell.terminalMaximized).toBe(true);
     });
 
     it('exports current state snapshots', () => {
@@ -53,6 +62,31 @@ describe('ui layout store', () => {
         const exported = exportUiLayoutState();
         expect(exported.state.appShell.sidebarCollapsed).toBe(true);
         expect(exported.state.workspaceShell.terminalHeight).toBe(420);
-        expect(exported.state.version).toBe(2);
+        expect(exported.state.version).toBe(3);
+    });
+
+    it('persists isolated workspace layout profiles', () => {
+        setWorkspaceShellState('workspace-a', {
+            sidebarCollapsed: true,
+            showTerminal: true,
+            terminalHeight: 480,
+        });
+        setWorkspaceShellState('workspace-b', {
+            showAgentPanel: true,
+            agentPanelWidth: 420,
+        });
+
+        expect(getWorkspaceShellState('workspace-a')).toMatchObject({
+            sidebarCollapsed: true,
+            showTerminal: true,
+            terminalHeight: 480,
+            showAgentPanel: false,
+        });
+        expect(getWorkspaceShellState('workspace-b')).toMatchObject({
+            sidebarCollapsed: false,
+            showAgentPanel: true,
+            agentPanelWidth: 420,
+            showTerminal: false,
+        });
     });
 });

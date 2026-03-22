@@ -1,11 +1,11 @@
 const sectionData = {
     "title": "Anlamsal Arama",
     "placeholder": "Kod tabanı hakkında soru sorun...",
-    "indexing": "Çalışma Alanı İndeksleniyor...",
+    "indexing": "Çalışma alanı dizine ekleniyor...",
     "results": "Arama Sonuçları",
     "noResults": "Anlamsal eşleşme bulunamadı.",
-    "relevance": "Alaka Düzeyi",
-    "filesIndex": "Dosya İndekslendi"
+    "relevance": "Alaka düzeyi",
+    "filesIndex": "Dizine eklenen dosya sayısı"
 };
 
 export default sectionData;

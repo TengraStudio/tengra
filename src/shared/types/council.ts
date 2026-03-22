@@ -41,7 +41,7 @@ export interface AgentCollaborationMessage {
     expiresAt?: number;
 }
 
-export interface PlanCostBreakdown {
+export type PlanCostBreakdown = {
     totalEstimatedCost: number;
     inputCost: number;
     outputCost: number;
@@ -65,7 +65,7 @@ export type CouncilStepStatus =
     | 'awaiting_step_approval';
 
 /** Confidence scoring for a step */
-export interface StepConfidence {
+export type StepConfidence = {
     [key: string]: JsonValue | undefined;
     score: number; // 0-100
     factors: {
@@ -79,7 +79,7 @@ export interface StepConfidence {
 }
 
 /** Cost estimate for a step or plan */
-export interface CostEstimate {
+export type CostEstimate = {
     [key: string]: JsonValue | undefined;
     inputTokens: number;
     outputTokens: number;
@@ -88,7 +88,7 @@ export interface CostEstimate {
 }
 
 /** Model configuration for a specific step */
-export interface StepModelConfig {
+export type StepModelConfig = {
     [key: string]: JsonValue | undefined;
     provider: string;
     model: string;
@@ -116,7 +116,7 @@ export interface ModelRoutingRule {
     priority: number; // Higher priority = preferred
 }
 
-export interface CouncilStep {
+export type CouncilStep = {
     [key: string]: JsonValue | undefined;
     id: string;
     text: string;
@@ -144,7 +144,7 @@ export interface CouncilStep {
 export type WorkspaceStep = CouncilStep;
 export type WorkspaceStepStatus = CouncilStepStatus;
 
-export interface CouncilStartOptions {
+export type CouncilStartOptions = {
     task: string;
     nodeId?: string;
     priority?: 'low' | 'normal' | 'high' | 'critical';
@@ -160,7 +160,7 @@ export interface CouncilStartOptions {
 
 export type AgentStartOptions = CouncilStartOptions;
 
-export interface CouncilState {
+export type CouncilState = {
     status:
     | 'idle'
     | 'planning'

@@ -2,6 +2,7 @@ export * from './AdvancedSection';
 export * from './BuildSection';
 export * from './CouncilSection';
 export * from './DevServerSection';
+export * from './EditorSection';
 export * from './GeneralSection';
 export * from './SettingsHeader';
 export * from './SettingsSidebar';

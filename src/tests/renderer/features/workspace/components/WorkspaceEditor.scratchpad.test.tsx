@@ -86,6 +86,7 @@ function createMockProps(overrides?: Partial<WorkspaceEditorProps>): WorkspaceEd
     return {
         activeTab: createMockTab(),
         updateTabContent: vi.fn(),
+        saveActiveTab: vi.fn().mockResolvedValue(undefined),
         workspaceKey: 'test-workspace',
         workspacePath: 'C:\\workspace',
         emptyState: <div data-testid="empty-state">empty</div>,

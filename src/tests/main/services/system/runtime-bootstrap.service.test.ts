@@ -144,29 +144,34 @@ describe('RuntimeBootstrapService', () => {
         expect(plan.summary).toEqual({
             ready: 1,
             install: 1,
-            external: 1,
+            external: 6,
             unsupported: 1,
         });
 
-        expect(plan.entries[0]).toMatchObject({
+        const cliproxyEntry = plan.entries.find(entry => entry.componentId === 'cliproxy-embed');
+        const llamaEntry = plan.entries.find(entry => entry.componentId === 'llama-server');
+        const ollamaEntry = plan.entries.find(entry => entry.componentId === 'ollama');
+        const memoryEntry = plan.entries.find(entry => entry.componentId === 'tengra-memory-service');
+
+        expect(cliproxyEntry).toMatchObject({
             componentId: 'cliproxy-embed',
             status: 'ready',
             reason: 'file-present',
             installPath: '/mock/appData/Tengra/runtime/bin/cliproxy-embed.exe',
         });
-        expect(plan.entries[1]).toMatchObject({
+        expect(llamaEntry).toMatchObject({
             componentId: 'llama-server',
             status: 'install',
             reason: 'missing-file',
             installPath: '/mock/appData/Tengra/runtime/bin/llama-server.exe',
         });
-        expect(plan.entries[2]).toMatchObject({
+        expect(ollamaEntry).toMatchObject({
             componentId: 'ollama',
             status: 'external',
             reason: 'external-dependency',
             installUrl: 'https://ollama.com/download',
         });
-        expect(plan.entries[3]).toMatchObject({
+        expect(memoryEntry).toMatchObject({
             componentId: 'tengra-memory-service',
             status: 'unsupported',
             reason: 'unsupported-platform',
@@ -189,11 +194,12 @@ describe('RuntimeBootstrapService', () => {
             installed: 0,
             installRequired: 1,
             failed: 0,
-            external: 1,
+            external: 6,
             unsupported: 1,
             blockingFailures: 1,
         });
-        expect(result.entries[1]).toMatchObject({
+        const llamaEntry = result.entries.find(entry => entry.componentId === 'llama-server');
+        expect(llamaEntry).toMatchObject({
             componentId: 'llama-server',
             status: 'install-required',
             error: 'Managed runtime install required',
@@ -316,13 +322,14 @@ describe('RuntimeBootstrapService', () => {
         const result = await service.scanManagedRuntime();
 
         expect(result.manifestVersion).toBe('runtime-unavailable');
-        expect(result.entries).toEqual([]);
+        expect(result.entries).toHaveLength(6);
+        expect(result.entries.every(entry => entry.status === 'external')).toBe(true);
         expect(result.summary).toEqual({
             ready: 0,
             installed: 0,
             installRequired: 0,
             failed: 0,
-            external: 0,
+            external: 6,
             unsupported: 0,
             blockingFailures: 0,
         });

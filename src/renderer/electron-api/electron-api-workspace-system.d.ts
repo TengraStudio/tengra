@@ -15,6 +15,10 @@ import type {
     TodoFile,
     Workspace,
     WorkspaceAnalysis,
+    WorkspaceCodeMap,
+    WorkspaceDefinitionLocation,
+    WorkspaceDependencyGraph,
+    WorkspaceIssue,
 } from '@/shared/types';
 
 export interface ElectronApiWorkspaceSystemDomain {
@@ -128,48 +132,22 @@ export interface ElectronApiWorkspaceSystemDomain {
             topSymbols: Array<{ name: string; count: number }>;
             generatedAt: string;
         }>;
+        getWorkspaceDependencyGraph: (rootPath: string) => Promise<WorkspaceDependencyGraph | null>;
+        getWorkspaceCodeMap: (rootPath: string) => Promise<WorkspaceCodeMap | null>;
     };
 
     // Workspace System
     workspace: {
         analyze: (rootPath: string, workspaceId: string) => Promise<WorkspaceAnalysis>;
         analyzeSummary: (rootPath: string, workspaceId?: string) => Promise<WorkspaceAnalysis>;
-        generateLogo: (
-            workspacePath: string,
-            options: { prompt: string; style: string; model: string; count: number }
-        ) => Promise<string[]>;
-        analyzeIdentity: (
-            workspacePath: string
-        ) => Promise<{ suggestedPrompts: string[]; colors: string[] }>;
-        applyLogo: (workspacePath: string, tempLogoPath: string) => Promise<string>;
-        getCompletion: (text: string) => Promise<string>;
-        getInlineSuggestion: (request: InlineSuggestionRequest) => Promise<InlineSuggestionResponse>;
-        trackInlineSuggestionTelemetry: (
-            event: InlineSuggestionTelemetry
-        ) => Promise<{ success: boolean }>;
-        improveLogoPrompt: (prompt: string) => Promise<string>;
-        uploadLogo: (workspacePath: string) => Promise<string | null>;
-        analyzeDirectory: (dirPath: string) => Promise<{
-            hasPackageJson: boolean;
-            pkg: Record<string, IpcValue>;
-            readme: string | null;
-            stats: { fileCount: number; totalSize: number };
-        }>;
-        watch: (rootPath: string) => Promise<boolean>;
-        unwatch: (rootPath: string) => Promise<boolean>;
-        setActive: (rootPath: string | null) => Promise<{ rootPath: string | null }>;
-        clearActive: (rootPath?: string) => Promise<{ rootPath: string | null }>;
-        getEnv: (rootPath: string) => Promise<Record<string, string>>;
-        saveEnv: (rootPath: string, vars: Record<string, string>) => Promise<{ success: boolean }>;
-        onFileChange: (
-            callback: (event: string, path: string, rootPath: string) => void
-        ) => () => void;
-    };
-
-    // Workspace System
-    workspace: {
-        analyze: (rootPath: string, workspaceId: string) => Promise<WorkspaceAnalysis>;
-        analyzeSummary: (rootPath: string, workspaceId?: string) => Promise<WorkspaceAnalysis>;
+        getFileDiagnostics: (rootPath: string, filePath: string, content: string) => Promise<WorkspaceIssue[]>;
+        getFileDefinition: (
+            rootPath: string,
+            filePath: string,
+            content: string,
+            line: number,
+            column: number
+        ) => Promise<WorkspaceDefinitionLocation[]>;
         generateLogo: (
             workspacePath: string,
             options: { prompt: string; style: string; model: string; count: number }
@@ -209,8 +187,8 @@ export interface ElectronApiWorkspaceSystemDomain {
         scanScripts: (rootPath: string) => Promise<Record<string, string>>;
         resize: (id: string, cols: number, rows: number) => Promise<void>;
         write: (id: string, data: string) => Promise<void>;
-        onData: (callback: (data: { id: string; data: string }) => void) => void;
-        onExit: (callback: (data: { id: string; code: number }) => void) => void;
+        onData: (callback: (data: { id: string; data: string }) => void) => () => void;
+        onExit: (callback: (data: { id: string; code: number }) => void) => () => void;
         removeListeners: () => void;
     };
 
@@ -220,11 +198,19 @@ export interface ElectronApiWorkspaceSystemDomain {
         readImage: (
             path: string
         ) => Promise<{ success: boolean; content?: string; error?: string }>;
-        writeFile: (path: string, content: string) => Promise<{ success: boolean; error?: string }>;
+        writeFile: (
+            path: string,
+            content: string,
+            context?: { aiSystem?: string; chatSessionId?: string; changeReason?: string }
+        ) => Promise<{ success: boolean; error?: string }>;
         exists: (path: string) => Promise<{ success: boolean; data: boolean; error?: string }>;
         createDirectory: (path: string) => Promise<{ success: boolean; error?: string }>;
         deleteFile: (path: string) => Promise<{ success: boolean; error?: string }>;
         deleteDirectory: (path: string) => Promise<{ success: boolean; error?: string }>;
+        copyPath: (
+            sourcePath: string,
+            destinationPath: string
+        ) => Promise<{ success: boolean; error?: string }>;
         renamePath: (oldPath: string, newPath: string) => Promise<{ success: boolean; error?: string }>;
         searchFiles: (
             rootPath: string,
@@ -265,6 +251,21 @@ export interface ElectronApiWorkspaceSystemDomain {
         ) => Promise<{
             success: boolean;
             commits?: Array<{ hash: string; message: string; author: string; date: string }>;
+            error?: string;
+        }>;
+        getFileHistory: (
+            cwd: string,
+            filePath: string,
+            count?: number
+        ) => Promise<{
+            success: boolean;
+            commits?: Array<{
+                hash: string;
+                message: string;
+                author: string;
+                relativeTime: string;
+                date: string;
+            }>;
             error?: string;
         }>;
         getBranches: (

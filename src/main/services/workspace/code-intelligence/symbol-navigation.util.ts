@@ -3,15 +3,108 @@
  */
 
 import { promises as fs } from 'fs';
+import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { DatabaseService } from '@main/services/data/database.service';
 import { FileSearchResult } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 
-import { scanDirForSymbols, scanDirForText,scanDirRecursively } from './file-scanner.util';
+import { scanDirForSymbols, scanDirForText, scanDirRecursively } from './file-scanner.util';
 
 const CODE_FILE_PATTERN = /\.(ts|tsx|js|jsx|py|go|rs|java|kt|kts|cpp|c|h|hpp|cs)$/i;
+const MAX_FILE_PATH_RESULTS = 80;
+
+function normalizeSearchValue(value: string): string {
+    return value.trim().toLowerCase().replace(/\\/g, '/');
+}
+
+function calculateSubsequenceScore(candidate: string, query: string): number {
+    let searchIndex = 0;
+    let totalGapPenalty = 0;
+
+    for (let queryIndex = 0; queryIndex < query.length; queryIndex++) {
+        const character = query[queryIndex];
+        if (!character) {
+            break;
+        }
+        const matchIndex = candidate.indexOf(character, searchIndex);
+        if (matchIndex === -1) {
+            return -1;
+        }
+        totalGapPenalty += Math.max(0, matchIndex - searchIndex);
+        searchIndex = matchIndex + 1;
+    }
+
+    return Math.max(5, 60 - totalGapPenalty);
+}
+
+export function scoreFilePathMatch(relativePath: string, query: string): number {
+    const normalizedQuery = normalizeSearchValue(query);
+    const normalizedPath = normalizeSearchValue(relativePath);
+    const fileName = path.basename(normalizedPath);
+
+    if (!normalizedQuery || !normalizedPath) {
+        return -1;
+    }
+
+    if (fileName === normalizedQuery) {
+        return 200;
+    }
+    if (fileName.startsWith(normalizedQuery)) {
+        return 170;
+    }
+    if (fileName.includes(normalizedQuery)) {
+        return 145;
+    }
+    if (normalizedPath.startsWith(normalizedQuery)) {
+        return 120;
+    }
+    if (normalizedPath.includes(normalizedQuery)) {
+        return 100;
+    }
+
+    const queryParts = normalizedQuery.split(/[\s/._-]+/).filter(Boolean);
+    if (queryParts.length === 0) {
+        return -1;
+    }
+
+    let score = 0;
+    for (const part of queryParts) {
+        const baseScore = calculateSubsequenceScore(fileName, part);
+        const pathScore = calculateSubsequenceScore(normalizedPath, part);
+        const partScore = Math.max(baseScore, pathScore);
+        if (partScore < 0) {
+            return -1;
+        }
+        score += partScore;
+    }
+
+    return score;
+}
+
+async function findFilePathMatches(rootPath: string, query: string): Promise<FileSearchResult[]> {
+    const files: string[] = [];
+    await scanDirRecursively(rootPath, files);
+
+    return files
+        .map(filePath => {
+            const relativePath = path.relative(rootPath, filePath).replace(/\\/g, '/');
+            const score = scoreFilePathMatch(relativePath, query);
+            return {
+                file: filePath,
+                line: 1,
+                text: relativePath,
+                type: 'file',
+                name: relativePath,
+                score,
+            };
+        })
+        .filter(result => result.score >= 0)
+        .sort((left, right) => right.score - left.score || left.text.localeCompare(right.text))
+        .slice(0, MAX_FILE_PATH_RESULTS)
+        .map(({ score: _score, ...result }) => result);
+}
 
 /** Find symbols by name with indexed fallback to regex */
 export async function findSymbols(
@@ -53,18 +146,22 @@ export async function searchFiles(
     isRegex: boolean = false
 ): Promise<FileSearchResult[]> {
     const results: FileSearchResult[] = [];
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) {
+        return [];
+    }
     appLogger.info('SymbolNavigation', `Starting search for "${query}" (regex=${isRegex}) workspace=${workspaceId} root=${rootPath}`);
 
     try {
         if (workspaceId || rootPath) {
-            const symbols = await db.findCodeSymbolsByName(rootPath, query);
+            const symbols = await db.findCodeSymbolsByName(rootPath, trimmedQuery);
             results.push(...symbols.map(s => ({
                 file: s.path, line: s.line,
                 text: (s.signature && s.signature.length > 0) ? s.signature : s.name,
                 name: s.name, type: s.kind
             })));
 
-            const fragments = await db.searchCodeContentByText(rootPath, query);
+            const fragments = await db.searchCodeContentByText(rootPath, trimmedQuery);
             results.push(...fragments.map(f => ({
                 file: f.path, line: f.line, text: f.docstring, type: 'content'
             })));
@@ -73,8 +170,17 @@ export async function searchFiles(
         appLogger.warn('SymbolNavigation', `Indexed search failed: ${getErrorMessage(e as Error)}`);
     }
 
+    try {
+        results.push(...await findFilePathMatches(rootPath, trimmedQuery));
+    } catch (error) {
+        appLogger.warn(
+            'SymbolNavigation',
+            `File path search failed for ${trimmedQuery}: ${getErrorMessage(error as Error)}`
+        );
+    }
+
     if (results.length < 20 || isRegex) {
-        await scanDirForText(rootPath, query, isRegex, results);
+        await scanDirForText(rootPath, trimmedQuery, isRegex, results);
     }
 
     return deduplicateResults(results, 500);

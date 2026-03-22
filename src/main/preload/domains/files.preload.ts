@@ -29,6 +29,7 @@ export interface FilesBridge {
     createDirectory: (path: string) => Promise<FileWriteResponse>;
     deleteFile: (path: string) => Promise<FileWriteResponse>;
     deleteDirectory: (path: string) => Promise<FileWriteResponse>;
+    copyPath: (sourcePath: string, destinationPath: string) => Promise<FileWriteResponse>;
     renamePath: (oldPath: string, newPath: string) => Promise<FileWriteResponse>;
     searchFiles: (rootPath: string, pattern: string) => Promise<SearchFilesResponse>;
     searchFilesStream: (
@@ -50,7 +51,11 @@ export function createFilesBridge(ipc: IpcRenderer): FilesBridge {
         listDirectory: (path: string) => ipc.invoke('files:listDirectory', path),
         readFile: (path: string) => ipc.invoke('files:readFile', path),
         readImage: (path: string) => ipc.invoke('files:readImage', path),
-        writeFile: (path: string, content: string) => ipc.invoke('files:writeFile', path, content),
+        writeFile: (
+            path: string,
+            content: string,
+            context?: { aiSystem?: string; chatSessionId?: string; changeReason?: string }
+        ) => ipc.invoke('files:writeFile', path, content, context),
         exists: (path: string) => ipc.invoke('files:exists', path),
         readPdf: (path: string) => ipc.invoke('files:readPdf', path),
         selectDirectory: () => ipc.invoke('files:selectDirectory'),
@@ -58,6 +63,8 @@ export function createFilesBridge(ipc: IpcRenderer): FilesBridge {
         createDirectory: (path: string) => ipc.invoke('files:createDirectory', path),
         deleteFile: (path: string) => ipc.invoke('files:deleteFile', path),
         deleteDirectory: (path: string) => ipc.invoke('files:deleteDirectory', path),
+        copyPath: (sourcePath: string, destinationPath: string) =>
+            ipc.invoke('files:copyPath', sourcePath, destinationPath),
         renamePath: (oldPath: string, newPath: string) => ipc.invoke('files:renamePath', oldPath, newPath),
         searchFiles: (rootPath: string, pattern: string) => ipc.invoke('files:searchFiles', rootPath, pattern),
         searchFilesStream: (rootPath, pattern, onResult, onComplete) => {
@@ -71,8 +78,7 @@ export function createFilesBridge(ipc: IpcRenderer): FilesBridge {
             ipc.on(`files:searchResult:${jobId}`, listener);
             ipc.on(`files:searchComplete:${jobId}`, completeListener);
 
-            ipc.invoke('files:searchFilesStream', rootPath, pattern, jobId).catch(err => {
-                console.error('Search stream failed:', err);
+            void ipc.invoke('files:searchFilesStream', rootPath, pattern, jobId).catch(() => {
                 completeListener();
             });
 

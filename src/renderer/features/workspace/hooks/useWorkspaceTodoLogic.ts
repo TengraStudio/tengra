@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { TodoFile, TodoItem } from '../components/todo/types';
 
@@ -46,11 +47,13 @@ export function useWorkspaceTodoLogic(workspaceRoot: string) {
 
             // Auto expand all by default
             const expanded: Record<string, boolean> = {};
-            validFiles.forEach(f => expanded[f.path] = true);
+            validFiles.forEach((f) => {
+                expanded[f.path] = true;
+            });
             setExpandedFiles(expanded);
 
         } catch (err) {
-            window.electron.log.error('useWorkspaceTodoLogic: fetchTodos failed', { error: err });
+            appLogger.error('useWorkspaceTodoLogic', 'fetchTodos failed', err as Error);
             setError(err instanceof Error ? err.message : String(err));
         } finally {
             setLoading(false);
@@ -126,9 +129,13 @@ export function useWorkspaceTodoLogic(workspaceRoot: string) {
     const totalStats = useMemo(() => {
         let total = 0;
         let completed = 0;
-        todoFiles.forEach(f => {
+        todoFiles.forEach((f) => {
             total += f.items.length;
-            f.items.forEach(i => { if (i.completed) { completed++; } });
+            f.items.forEach((i) => {
+                if (i.completed) {
+                    completed++;
+                }
+            });
         });
         return { total, completed, pending: total - completed };
     }, [todoFiles]);

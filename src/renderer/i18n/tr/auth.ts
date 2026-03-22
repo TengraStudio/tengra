@@ -1,12 +1,12 @@
 const sectionData = {
-    "authError": "Kimlik Doğrulama Hatası",
-    "goToAccounts": "Hesaplara Git",
+    "authError": "Kimlik doğrulama hatası",
+    "goToAccounts": "Hesaplara git",
     "connectionFailed": "Antigravity sunucusuyla bağlantı kurulamadı. Lütfen oturum açın veya API anahtarınızı kontrol edin.",
     "logout": "Çıkış yap",
-    "sessionKeyRequired": "Claude Oturum Anahtarı Gerekli",
-    "completeConnection": "{{email}} için Bağlantıyı Tamamla",
+    "sessionKeyRequired": "Claude oturum anahtarı gerekli",
+    "completeConnection": "{{email}} için bağlantıyı tamamla",
     "yourAccount": "hesabınız",
-    "sessionKeyDescription": "Kota takibi ve doğrudan etkileşim için Tengra, Claude oturum anahtarınıza ihtiyaç duyar. Bu anahtar cihazınızda şifrelenmiş olarak saklanır.",
+    "sessionKeyDescription": "Kota takibi ve doğrudan etkileşim için Tengra, Claude oturum anahtarınıza ihtiyaç duyar. Bu anahtar cihazınızda şifrelenerek saklanır.",
     "howToFindKey": "Oturum anahtarınızı nasıl bulursunuz",
     "sessionKeyInstructions": {
         "step1": "claude.ai adresini açın ve giriş yapın",
@@ -19,16 +19,24 @@ const sectionData = {
     "sessionKeyPlaceholder": "sk-ant-sid-...",
     "enterSessionKey": "Lütfen bir oturum anahtarı girin",
     "invalidSessionFormat": "Geçersiz format. Anahtar \"sk-ant-sid\" ile başlamalıdır",
-    "saveSessionKey": "Oturum Anahtarını Kaydet",
+    "saveSessionKey": "Oturum anahtarını kaydet",
     "saveSessionKeyFailed": "Oturum anahtarı kaydedilemedi",
-    "validatedAndSaved": "Doğrulandı ve Kaydedildi",
-    "connectProvider": "{{provider}} Bağla",
+    "validatedAndSaved": "Doğrulandı ve kaydedildi",
+    "connectProvider": "{{provider}} bağla",
     "enterCodeOnGithub": "Bağlantıyı tamamlamak için aşağıdaki kodu GitHub'a girin:",
     "copyCode": "Kodu kopyala",
     "openGithubToEnter": "Kodu girmek için GitHub'ı aç",
     "waitingForLogin": "Giriş bekleniyor...",
-    "connectedSuccessfully": "Başarıyla bağlandı!",
-    "connectionFailedGeneric": "Bağlantı başarısız"
+    "connectedSuccessfully": "Bağlantı başarıyla tamamlandı!",
+    "connectionFailedGeneric": "Bağlantı kurulamadı",
+    "authType": "Kimlik doğrulama türü",
+    "connect": "Bağlan",
+    "host": "Sunucu",
+    "port": "Port",
+    "username": "Kullanıcı Adı",
+    "password": "Şifre",
+    "passphrase": "Parola",
+    "privateKey": "Özel Anahtar"
 };
 
 export default sectionData;

@@ -51,6 +51,17 @@ const FILE_PERFORMANCE_BUDGET_MS = {
     SEARCH: 200
 } as const;
 const MAX_FILE_TELEMETRY_EVENTS = 200;
+const AUDITED_FILE_ACTIONS = new Set([
+    'files.selectDirectory',
+    'files.selectFile',
+    'files.writeFileWithTracking',
+    'files.writeFile',
+    'files.createDirectory',
+    'files.deleteFile',
+    'files.deleteDirectory',
+    'files.copyPath',
+    'files.renamePath',
+]);
 
 type ErrorCodePayload = { errorCode?: string; messageKey?: string; uiState?: string };
 type ExistsResponse = { success: boolean; data: boolean; errorCode?: string; messageKey?: string; uiState?: string };
@@ -66,7 +77,7 @@ export function registerFilesIpc(
     allowedRoots: Set<string>,
     auditLogService?: AuditLogService
 ): void {
-    appLogger.info('FilesIPC', 'Registering files IPC handlers');
+    appLogger.debug('FilesIPC', 'Registering files IPC handlers');
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'file operation');
     const fileTelemetry = {
         totalCalls: 0,
@@ -174,6 +185,9 @@ export function registerFilesIpc(
         return true;
     };
     const auditFileOperation = async (action: string, targetPath: string | undefined, result: RuntimeValue) => {
+        if (!auditLogService || !AUDITED_FILE_ACTIONS.has(action)) {
+            return;
+        }
         await auditLogService?.logFileSystemOperation(action, isResultSuccessful(result), {
             targetPath,
         });
@@ -426,6 +440,15 @@ export function registerFilesIpc(
     }, {
         defaultValue: { success: false },
         argsSchema: z.tuple([PathSchema])
+    }));
+
+    ipcMain.handle('files:copyPath', createValidatedIpcHandler('files:copyPath', async (_event, sourcePath: string, destinationPath: string) => {
+        return await runWithFileAudit('files.copyPath', `${sourcePath} -> ${destinationPath}`, async () => {
+            return await fileSystemService.copyPath(sourcePath, destinationPath);
+        });
+    }, {
+        defaultValue: { success: false },
+        argsSchema: z.tuple([PathSchema, PathSchema])
     }));
 
     ipcMain.handle('files:renamePath', createValidatedIpcHandler('files:renamePath', async (_event, oldPath: string, newPath: string) => {

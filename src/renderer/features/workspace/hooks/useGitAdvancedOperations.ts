@@ -48,7 +48,7 @@ export function useGitAdvancedOperations(
     const runControlledOperation = useCallback(
         async (command: string) => {
             if (!canRun || !workspacePath) {
-                return { success: false, error: 'Workspace is not ready' };
+                return { success: false, error: 'error.workspace.not_ready' };
             }
             const operationId = `git-op-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
             setActiveOperationId(operationId);
@@ -185,7 +185,7 @@ export function useGitAdvancedOperations(
         }
         const response = await invokeGit<{ success: boolean }>('git:cancelOperation', activeOperationId);
         if (!response.success) {
-            setLastOperationError('Failed to cancel active Git operation');
+            setLastOperationError('error.git.cancel_failed');
         }
         return response.success;
     }, [activeOperationId, invokeGit]);
@@ -354,7 +354,7 @@ export function useGitAdvancedOperations(
     const createBranch = useCallback(
         async (name: string, startPoint?: string) => {
             if (!canRun || !workspacePath || !name.trim()) {
-                return { success: false, error: 'Invalid branch name' };
+                return { success: false, error: 'error.git.invalid_branch_name' };
             }
             return await invokeGit<{ success: boolean; error?: string }>('git:createBranch', workspacePath, name, startPoint || '');
         },
@@ -384,7 +384,7 @@ export function useGitAdvancedOperations(
     const setUpstream = useCallback(
         async (branch: string, remote: string, upstreamBranch: string) => {
             if (!canRun || !workspacePath || !branch.trim() || !remote.trim() || !upstreamBranch.trim()) {
-                return { success: false, error: 'Invalid parameters' };
+                return { success: false, error: 'error.git.invalid_parameters' };
             }
             return await invokeGit<{ success: boolean; error?: string }>('git:setUpstream', workspacePath, branch, remote, upstreamBranch);
         },
@@ -394,7 +394,7 @@ export function useGitAdvancedOperations(
     const generatePrSummary = useCallback(
         async (base: string, head: string) => {
             if (!canRun || !workspacePath || !base.trim() || !head.trim()) {
-                return { success: false, error: 'Invalid branch names' };
+                return { success: false, error: 'error.git.invalid_branch_names' };
             }
             return await invokeGit<{ success: boolean; summary?: string; error?: string }>('git:generatePrSummary', workspacePath, base, head);
         },

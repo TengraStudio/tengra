@@ -91,7 +91,7 @@ function validateTags(value: RuntimeValue): string[] {
  * Registers IPC handlers for memory operations
  */
 export function registerMemoryIpc(getMainWindow: () => BrowserWindow | null, memoryService: MemoryService): void {
-    appLogger.info('MemoryIPC', 'Registering memory IPC handlers');
+    appLogger.debug('MemoryIPC', 'Registering memory IPC handlers');
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'memory operation');
 
     ipcMain.handle(

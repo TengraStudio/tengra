@@ -17,12 +17,20 @@ describe('Preload contract regression', () => {
         bridge.close();
         bridge.toggleCompact(true);
         bridge.resizeWindow('1920x1080');
+        void bridge.getZoomFactor();
+        void bridge.setZoomFactor(1.1);
+        void bridge.stepZoomFactor(1);
+        void bridge.resetZoomFactor();
 
         expect(ipc.send).toHaveBeenCalledWith('window:minimize');
         expect(ipc.send).toHaveBeenCalledWith('window:maximize');
         expect(ipc.send).toHaveBeenCalledWith('window:close');
         expect(ipc.send).toHaveBeenCalledWith('window:toggle-compact', true);
         expect(ipc.send).toHaveBeenCalledWith('window:resize', '1920x1080');
+        expect(ipc.invoke).toHaveBeenCalledWith('window:get-zoom-factor');
+        expect(ipc.invoke).toHaveBeenCalledWith('window:set-zoom-factor', 1.1);
+        expect(ipc.invoke).toHaveBeenCalledWith('window:step-zoom-factor', 1);
+        expect(ipc.invoke).toHaveBeenCalledWith('window:reset-zoom-factor');
     });
 
     it('maps auth bridge methods to expected IPC channels', async () => {

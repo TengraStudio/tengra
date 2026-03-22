@@ -1,15 +1,15 @@
 const sectionData = {
     "center": {
         "title": "Notification Center",
-        "clearHistory": "Clear history",
-        "preferences": "Preferences",
+        "clearHistory": "Clear all",
+        "preferences": "Notification settings",
         "scheduled": "Scheduled",
-        "noNotifications": "No notifications yet.",
+        "noNotifications": "You have no notifications yet.",
         "analytics": {
-            "delivered": "Delivered",
+            "delivered": "Sent",
             "dismissed": "Dismissed",
-            "actions": "Actions",
-            "suppressed": "Suppressed",
+            "actions": "Actions taken",
+            "suppressed": "Muted",
             "scheduled": "Scheduled",
             "pending": "Pending"
         }

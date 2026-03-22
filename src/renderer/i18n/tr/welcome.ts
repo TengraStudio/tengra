@@ -1,7 +1,7 @@
 const sectionData = {
     "title": "Tengra",
     "tagline": "Zeka ve zarafetin buluştuğu nokta.",
-    "logoAlt": "Tengra logo"
+    "logoAlt": "Tengra logosu"
 };
 
 export default sectionData;

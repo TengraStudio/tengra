@@ -1,14 +1,14 @@
 const sectionData = {
     "titles": {
-        "createFile": "Create File",
-        "createFolder": "Create Folder",
+        "createFile": "Create file",
+        "createFolder": "Create folder",
         "rename": "Rename",
         "delete": "Delete"
     },
-    "mountTitle": "Add Existing Folder or Server",
-    "existingFolder": "Existing Folder",
-    "sshServer": "SSH Server",
-    "folderPath": "Folder Path",
+    "mountTitle": "Add existing folder or server",
+    "existingFolder": "Existing folder",
+    "sshServer": "SSH server",
+    "folderPath": "Folder path",
     "pick": "Select",
     "host": "Host",
     "port": "Port",

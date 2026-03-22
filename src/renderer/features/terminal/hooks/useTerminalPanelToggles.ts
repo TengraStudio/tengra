@@ -2,9 +2,7 @@ import { useCallback } from 'react';
 
 interface UseTerminalPanelTogglesParams {
     hasActiveSession: boolean;
-    isFloating: boolean;
     onToggle: () => void;
-    onFloatingChange?: (isFloating: boolean) => void;
     completeRecording: () => void;
     stopReplay: () => void;
     setTerminalContextMenu: (menu: { x: number; y: number } | null) => void;
@@ -23,9 +21,7 @@ interface UseTerminalPanelTogglesParams {
 
 export function useTerminalPanelToggles({
     hasActiveSession,
-    isFloating,
     onToggle,
-    onFloatingChange,
     completeRecording,
     stopReplay,
     setTerminalContextMenu,
@@ -68,13 +64,6 @@ export function useTerminalPanelToggles({
         setIsGalleryView(prev => !prev);
     }, [setIsCommandHistoryOpen, setIsTaskRunnerOpen, setTerminalContextMenu, setIsSearchOpen, setIsSemanticPanelOpen, setIsMultiplexerOpen, setIsRecordingPanelOpen, setIsGalleryView]);
 
-    const toggleFloatingMode = useCallback(() => {
-        if (!onFloatingChange) {
-            return;
-        }
-        onFloatingChange(!isFloating);
-    }, [isFloating, onFloatingChange]);
-
     const toggleSemanticPanel = useCallback(() => {
         if (!hasActiveSession) {
             return;
@@ -106,7 +95,6 @@ export function useTerminalPanelToggles({
     return {
         hideTerminalPanel,
         toggleGalleryView,
-        toggleFloatingMode,
         toggleSemanticPanel,
         clearActiveSemanticIssues,
         openTerminalContextMenu,

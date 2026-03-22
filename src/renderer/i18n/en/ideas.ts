@@ -1,6 +1,6 @@
 const sectionData = {
     "title": "Workspace Ideas",
-    "subtitle": "AI-powered workspace idea generation with market research",
+    "subtitle": "Generate workspace ideas with AI and market research",
     "newSession": "New Session",
     "backToSetup": "Back to Setup",
     "selectModel": "Select AI Model",
@@ -19,22 +19,22 @@ const sectionData = {
         "other": "Other"
     },
     "research": {
-        "title": "Research Pipeline",
-        "understanding": "Understanding Categories",
+        "title": "Research Workflow",
+        "understanding": "Understanding categories",
         "sectorAnalysis": "Sector Analysis",
         "marketResearch": "Market Research",
         "competitorAnalysis": "Competitor Analysis",
-        "complete": "Research Complete"
+        "complete": "Research complete"
     },
     "generation": {
         "title": "Generating Ideas",
         "progress": "Generating idea {{current}} of {{total}}",
         "enriching": "Enriching idea details...",
-        "complete": "Generation Complete"
+        "complete": "Generation complete"
     },
     "idea": {
         "viewDetails": "View Details",
-        "approve": "Approve & Create Workspace",
+        "approve": "Approve & create workspace",
         "reject": "Reject",
         "archive": "Archive",
         "archiving": "Archiving...",
@@ -52,7 +52,7 @@ const sectionData = {
         "competitorAnalysis": "Competitor Analysis",
         "technicalDetails": "Technical Details",
         "impact": "Impact",
-        "impactHigh": "High (Estimated)",
+        "impactHigh": "High (estimated)",
         "effort": "Effort",
         "effortMedium": "Medium",
         "openFullWorkspace": "Open Full Workspace"
@@ -85,7 +85,7 @@ const sectionData = {
         "title": "Logo Generation",
         "generate": "Generate Logo",
         "generating": "Generating logo...",
-        "requiresAntigravity": "Logo generation requires Antigravity connection",
+        "requiresAntigravity": "Logo generation requires an Antigravity connection",
         "promptPlaceholder": "Describe your logo concept...",
         "generatedAlt": "Generated logo {{index}}",
         "defaultPrompt": "Modern minimalist logo for {{title}}",
@@ -114,7 +114,7 @@ const sectionData = {
         "generationFailed": "Idea generation failed. Please try again.",
         "approvalFailed": "Failed to create workspace. Please try again.",
         "logoFailed": "Logo generation failed. Please try again.",
-        "logoUnavailable": "Logo generation is not available.",
+        "logoUnavailable": "Logo generation is currently unavailable.",
         "enrichmentFailed": "Idea enrichment failed. Please try again.",
         "loadIdeasFailed": "Failed to load ideas. Please try again.",
         "loadSessionsFailed": "Failed to load sessions. Please try again.",
@@ -129,14 +129,14 @@ const sectionData = {
     },
     "categorySelector": {
         "incompatibleWith": "Incompatible with {{category}}",
-        "maxCategories": "Max 3 categories",
+        "maxCategories": "Maximum 3 categories",
         "selectedCount": "{{count}}/3 categories selected"
     },
     "empty": {
         "noSessions": "No idea sessions yet",
-        "noSessionsDesc": "Start a new session to generate workspace ideas",
+        "noSessionsDesc": "Start a new session to generate workspace ideas.",
         "noIdeas": "No ideas generated",
-        "noIdeasDesc": "Complete the research phase to generate ideas"
+        "noIdeasDesc": "Complete the research phase to generate ideas."
     },
     "search": {
         "placeholder": "Search ideas by title or description..."
@@ -157,17 +157,17 @@ const sectionData = {
         "label": "Custom Requirements",
         "optional": "Optional",
         "placeholder": "e.g., Must use TypeScript, focus on accessibility, target small businesses...",
-        "hint": "Add specific constraints or requirements for the AI to consider during idea generation."
+        "hint": "Add any specific constraints or requirements for AI idea generation."
     },
     "previewMarket": "Preview Market Research",
     "marketPreview": {
         "title": "Market Research Preview",
-        "subtitle": "Quick market overview for your selected categories",
+        "subtitle": "Quick market overview for your selected categories.",
         "loading": "Analyzing market conditions...",
         "keyTrends": "Key Trends",
         "marketSize": "Market Size",
         "empty": "No preview data available",
-        "continue": "Continue with Full Research"
+        "continue": "Continue with full research"
     },
     "delete": {
         "title": "Delete Idea",
@@ -177,7 +177,7 @@ const sectionData = {
     },
     "history": {
         "title": "Idea History",
-        "subtitle": "Browse all your past idea generation sessions",
+        "subtitle": "Browse all your past idea-generation sessions",
         "view": "View History",
         "totalSessions": "Total Sessions",
         "completed": "Completed",
@@ -186,7 +186,7 @@ const sectionData = {
         "viewDetails": "View Details",
         "noIdeasYet": "No ideas generated yet",
         "daysAgo": "{{count}} days ago",
-        "ideasCount": "Ideas Generated",
+        "ideasCount": "Ideas generated",
         "ideasSelected": "{{count}} idea(s) selected",
         "clearSelection": "Clear selection",
         "deleteSelected": "Delete Selected",
@@ -221,7 +221,7 @@ const sectionData = {
         "closeTitle": "Close (Esc)",
         "rejectTitle": "Reject this idea?",
         "rejectBody": "Are you sure you want to reject \"{{title}}\"? This action cannot be undone.",
-        "rejectReasonLabel": "Reason (Optional)",
+        "rejectReasonLabel": "Reason (optional)",
         "rejectReasonPlaceholder": "Why are you rejecting this idea?",
         "rejectAction": "Reject Idea",
         "rejecting": "Rejecting...",
@@ -242,15 +242,15 @@ const sectionData = {
         "costStructure": "Cost Structure",
         "goToMarket": "Go-To-Market Plan",
         "first100Users": "First 100 Users Strategy",
-        "researchAssistant": "Research Assistant",
-        "researchEmpty": "Ask me anything about the market research, competition, or tech stack for this idea!",
+        "researchAssistant": "Research assistant",
+        "researchEmpty": "Ask anything about this idea's market research, competition, or tech stack.",
         "researchPlaceholder": "Ask about competitors, gaps, or logic...",
-        "researchError": "I'm sorry, I couldn't reach the research laboratory right now.",
+        "researchError": "Sorry, I couldn't reach the research service right now.",
         "coreConcept": "Core Concept",
         "visualIdentity": "Visual Identity",
         "editDescriptionPlaceholder": "Edit description...",
         "categoryAnalysis": "Category Analysis",
-        "analysisPending": "Analysis pending deep dive..."
+        "analysisPending": "Detailed analysis is pending..."
     },
     "modelSelectorHint": "Use the model selector in the top bar to change the AI model.",
     "detailsTitlePlaceholder": "Enter idea title...",

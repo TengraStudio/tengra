@@ -421,7 +421,7 @@ export class LocalAuthServer {
                                 const claims = await LocalAuthServer.verifyGoogleIdToken(json.id_token);
                                 if (claims['email']) {
                                     json.email = String(claims['email']);
-                                    appLogger.info('LocalAuthServer', `Captured verified email from id_token: ${json.email}`);
+                                    appLogger.debug('LocalAuthServer', `Captured verified email from id_token: ${json.email}`);
                                 }
                             } catch (verifyErr) {
                                 appLogger.warn('LocalAuthServer', `id_token signature verification failed, will use userinfo fallback: ${verifyErr instanceof Error ? verifyErr.message : 'unknown'}`);
@@ -543,7 +543,7 @@ export class LocalAuthServer {
                     try {
                         const json = safeJsonParse<AuthCallbackData & { account?: { email_address?: string }; id_token?: string }>(data, {} as AuthCallbackData);
                         if (Object.keys(json).length === 0) { throw new Error('Malformed token response'); }
-                        appLogger.info('LocalAuthServer', 'Token exchange successful');
+                        appLogger.debug('LocalAuthServer', 'Token exchange successful');
 
                         json.email = LocalAuthServer.extractEmailFromTokenData(json);
 

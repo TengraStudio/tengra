@@ -55,8 +55,14 @@ interface PortFileCacheEntry {
     timestamp: number;
 }
 
+interface WorkspaceListCacheEntry {
+    data: DbWorkspace[];
+    expiresAt: number;
+}
+
 /** PERF-117: TTL for port file cache in milliseconds */
 const PORT_FILE_CACHE_TTL_MS = 5_000;
+const WORKSPACE_LIST_CACHE_TTL_MS = 5_000;
 
 const SERVICE_NAME = 'db-service';
 const MAX_HEALTH_RETRIES = 30;
@@ -89,6 +95,7 @@ export class DatabaseClientService extends BaseService {
 
     /** PERF-117: Cache for port file reads to avoid repeated synchronous I/O */
     private portFileCache = new Map<string, PortFileCacheEntry>();
+    private workspaceListCache: WorkspaceListCacheEntry | null = null;
 
     constructor(
         private eventBus: EventBusService,
@@ -387,6 +394,34 @@ export class DatabaseClientService extends BaseService {
         return response.data;
     }
 
+    private cloneWorkspaceList(workspaces: DbWorkspace[]): DbWorkspace[] {
+        return workspaces.map(workspace => ({ ...workspace }));
+    }
+
+    private readWorkspaceListCache(): DbWorkspace[] | null {
+        if (!this.workspaceListCache) {
+            return null;
+        }
+        if (this.workspaceListCache.expiresAt <= Date.now()) {
+            this.workspaceListCache = null;
+            return null;
+        }
+        return this.cloneWorkspaceList(this.workspaceListCache.data);
+    }
+
+    private writeWorkspaceListCache(workspaces: DbWorkspace[]): DbWorkspace[] {
+        const clonedWorkspaces = this.cloneWorkspaceList(workspaces);
+        this.workspaceListCache = {
+            data: clonedWorkspaces,
+            expiresAt: Date.now() + WORKSPACE_LIST_CACHE_TTL_MS,
+        };
+        return this.cloneWorkspaceList(clonedWorkspaces);
+    }
+
+    private invalidateWorkspaceListCache(): void {
+        this.workspaceListCache = null;
+    }
+
     setPoolLimits(config: { maxSockets?: number; maxFreeSockets?: number; maxPendingRequests?: number }): void {
         if (typeof config.maxPendingRequests === 'number') {
             this.maxPendingRequests = Math.max(1, config.maxPendingRequests);
@@ -538,8 +573,14 @@ export class DatabaseClientService extends BaseService {
     // ========================================================================
 
     async getWorkspaces(): Promise<DbWorkspace[]> {
+        const cachedWorkspaces = this.readWorkspaceListCache();
+        if (cachedWorkspaces) {
+            return cachedWorkspaces;
+        }
         const response = await this.apiCall<DbWorkspace[]>('GET', '/api/v1/workspaces');
-        return this.requireResponseData(response, 'List workspaces');
+        return this.writeWorkspaceListCache(
+            this.requireResponseData(response, 'List workspaces')
+        );
     }
 
     async getWorkspace(id: string): Promise<DbWorkspace | null> {
@@ -552,18 +593,21 @@ export class DatabaseClientService extends BaseService {
         this.validateRequiredString(req.title, 'title');
         this.validateRequiredString(req.path, 'path');
         const response = await this.apiCall<DbWorkspace>('POST', '/api/v1/workspaces', req);
+        this.invalidateWorkspaceListCache();
         return this.requireResponseData(response, 'Create workspace');
     }
 
     async updateWorkspace(id: string, updates: DbUpdateWorkspaceRequest): Promise<boolean> {
         this.validatePathId(id, 'workspaceId');
         const response = await this.apiCall<boolean>('PUT', `/api/v1/workspaces/${id}`, updates);
+        this.invalidateWorkspaceListCache();
         return response.data ?? false;
     }
 
     async deleteWorkspace(id: string): Promise<boolean> {
         this.validatePathId(id, 'workspaceId');
         const response = await this.apiCall<boolean>('DELETE', `/api/v1/workspaces/${id}`);
+        this.invalidateWorkspaceListCache();
         return response.data ?? false;
     }
 
@@ -719,6 +763,7 @@ export class DatabaseClientService extends BaseService {
 
         // PERF-117: Clear port file cache
         this.portFileCache.clear();
+        this.invalidateWorkspaceListCache();
 
         // Note: We don't stop the service as it's persistent
     }

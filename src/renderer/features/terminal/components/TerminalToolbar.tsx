@@ -4,11 +4,10 @@ import {
     recordTerminalToolbarFallback,
     recordTerminalToolbarSuccess,
     setTerminalToolbarUiState,
-    useTerminalToolbarHealth,
 } from '@renderer/store/terminal-toolbar-health.store';
 import { Check, ChevronDown, Maximize2, Minimize2, Plus, Rows2, TerminalSquare } from 'lucide-react';
 import type { ComponentProps } from 'react';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -47,10 +46,10 @@ interface TerminalToolbarProps {
     draggingTabId: string | null;
     dragOverTabId: string | null;
     handleTabSelect: (tabId: string) => void;
-    closeTab: (tabId: string) => void;
-    handleTabDragStart: ComponentProps<typeof TerminalTabsBar>['onTabDragStart'];
-    handleTabDragOver: ComponentProps<typeof TerminalTabsBar>['onTabDragOver'];
-    handleTabDrop: ComponentProps<typeof TerminalTabsBar>['onTabDrop'];
+    closeTab: (id: string) => void;
+    handleTabDragStart: (event: React.DragEvent<HTMLButtonElement>, tabId: string) => void;
+    handleTabDragOver: (event: React.DragEvent<HTMLButtonElement>, tabId: string) => void;
+    handleTabDrop: (event: React.DragEvent<HTMLButtonElement>, tabId: string) => void;
     resetTabDragState: () => void;
     isNewTerminalMenuOpen: boolean;
     setIsNewTerminalMenuOpen: (open: boolean) => void;
@@ -94,9 +93,6 @@ interface TerminalToolbarProps {
     closeSplitView: () => void;
     isGalleryView: boolean;
     toggleGalleryView: () => void;
-    onFloatingChange?: (floating: boolean) => void;
-    toggleFloatingMode: () => void;
-    isFloating: boolean;
     toggleSemanticPanel: () => void;
     hasActiveSession: boolean;
     activeSemanticIssuesLength: number;
@@ -153,11 +149,8 @@ export function TerminalToolbar({
     resetSplitAnalytics,
     toggleSynchronizedInput,
     toggleSplitOrientation,
-    closeSplitView,
-    onFloatingChange,
-    toggleFloatingMode,
-    isFloating, 
-    hasActiveSession, 
+    closeSplitView, 
+    hasActiveSession,
     openMultiplexerPanel,
     isMultiplexerOpen,
     toggleRecording,
@@ -169,20 +162,11 @@ export function TerminalToolbar({
 }: TerminalToolbarProps) {
     void toggleRecording;
     void activeRecordingTabId;
-    const healthSummary = useTerminalToolbarHealth(snapshot => snapshot);
+    void appearanceProps;
 
     useEffect(() => {
         setTerminalToolbarUiState('ready');
     }, []);
-    const healthTone = useMemo(() => {
-        if (healthSummary.uiState === 'failure') {
-            return 'text-destructive';
-        }
-        if (healthSummary.budgetExceededCount > 0) {
-            return 'text-yellow-500';
-        }
-        return 'text-muted-foreground';
-    }, [healthSummary.budgetExceededCount, healthSummary.uiState]);
 
     return (
         <div className="flex items-center justify-between px-2 py-1.5 border-b border-border/70">
@@ -209,7 +193,7 @@ export function TerminalToolbar({
                         side="top"
                         align="start"
                         sideOffset={8}
-                        className="w-auto min-w-[220px] p-1 bg-popover border border-border rounded-lg"
+                        className="w-[280px] max-h-[min(70vh,520px)] overflow-y-auto p-1 bg-popover border border-border rounded-lg"
                     >
                         {isLoadingLaunchOptions ? (
                             <div className="px-3 py-2 text-xs text-muted-foreground">
@@ -360,7 +344,6 @@ export function TerminalToolbar({
                     </PopoverContent>
                 </Popover>
                 <div className="flex items-center gap-1">
-                    <TerminalAppearanceModals {...appearanceProps} />
                     <TerminalSplitControls
                         t={t}
                         isSplitPresetMenuOpen={isSplitPresetMenuOpen}
@@ -378,20 +361,7 @@ export function TerminalToolbar({
                         toggleSplitOrientation={toggleSplitOrientation}
                         closeSplitView={closeSplitView}
                     /> 
-                    {onFloatingChange && (
-                        <button
-                            onClick={toggleFloatingMode}
-                            className={cn(
-                                'p-1.5 text-muted-foreground hover:text-foreground transition-colors',
-                                isFloating && 'text-primary'
-                            )}
-                            title={
-                                isFloating ? t('terminal.dockTerminal') : t('terminal.floatTerminal')
-                            }
-                        >
-                            <TerminalSquare className="w-3.5 h-3.5" />
-                        </button>
-                    )} 
+                     
                     <button
                         onClick={openMultiplexerPanel}
                         disabled={!hasActiveSession}
@@ -422,14 +392,7 @@ export function TerminalToolbar({
                     >
                         <ChevronDown className="w-3.5 h-3.5" />
                     </button>
-                </div>
-                <div className={cn('ml-2 text-[10px]', healthTone)}>
-                    {t('terminal.healthSummary', {
-                        state: healthSummary.uiState,
-                        avg: healthSummary.avgDurationMs,
-                        budget: healthSummary.budgetMs,
-                    })}
-                </div>
+                </div> 
             </div>
         </div>
     );

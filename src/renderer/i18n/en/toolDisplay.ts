@@ -1,5 +1,5 @@
 const sectionData = {
-    "markdownView": "Markdown View",
+    "markdownView": "Markdown view",
     "text": "Text",
     "markdown": "Markdown"
 };

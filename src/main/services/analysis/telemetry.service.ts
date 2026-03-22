@@ -4,9 +4,12 @@ import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
 import { PowerManagerService } from '@main/services/system/power-manager.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { UtilityProcessService } from '@main/services/system/utility-process.service';
+import { getBundledUtilityWorkerPath } from '@main/services/system/utility-worker-path.util';
 import { withRetry } from '@main/utils/retry.util';
 import { RETRY_DEFAULTS } from '@shared/constants/defaults';
 import { JsonObject } from '@shared/types/common';
+import { getErrorMessage } from '@shared/utils/error.util';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -89,12 +92,15 @@ export interface TelemetryEvent {
 
 export class TelemetryService extends BaseService {
     private static readonly FLUSH_JOB_ID = 'telemetry:flush';
+    private static readonly WORKER_FILE_NAME = 'telemetry.worker.cjs';
     private sessionId: string;
     private queue: TelemetryEvent[] = [];
     private flushInterval: NodeJS.Timeout | null = null;
     private totalTrackedEvents = 0;
     private totalFlushedEvents = 0;
     private lastFlushTime: number | null = null;
+    private workerProcessId: string | null = null;
+    private workerQueueSize = 0;
     private readonly flushIntervalMs = 60000; // Flush every minute
     private readonly maxQueueSize = MAX_QUEUE_SIZE;
 
@@ -113,18 +119,21 @@ export class TelemetryService extends BaseService {
     private readonly powerManager: PowerManagerService;
     private readonly eventBus: EventBusService;
     private readonly jobScheduler?: JobSchedulerService;
+    private readonly utilityProcessService?: UtilityProcessService;
 
     constructor(
         settingsService?: SettingsService,
         powerManager?: PowerManagerService,
         eventBus?: EventBusService,
-        jobScheduler?: JobSchedulerService
+        jobScheduler?: JobSchedulerService,
+        utilityProcessService?: UtilityProcessService
     ) {
         super('TelemetryService');
         this.eventBus = eventBus ?? new EventBusService();
         this.settingsService = settingsService ?? this.createFallbackSettingsService();
         this.powerManager = powerManager ?? this.createFallbackPowerManager();
         this.jobScheduler = jobScheduler;
+        this.utilityProcessService = utilityProcessService;
         this.sessionId = uuidv4();
     }
 
@@ -182,9 +191,10 @@ export class TelemetryService extends BaseService {
      * Gets the current health status of the telemetry service
      */
     getHealth(): TelemetryHealth {
+        const queueSize = this.getTrackedQueueSize();
         return {
-            isHealthy: this.queue.length < this.maxQueueSize * 0.9,
-            queueSize: this.queue.length,
+            isHealthy: queueSize < this.maxQueueSize * 0.9,
+            queueSize,
             maxQueueSize: this.maxQueueSize,
             sessionId: this.sessionId,
             flushIntervalMs: this.flushIntervalMs,
@@ -199,7 +209,7 @@ export class TelemetryService extends BaseService {
      * Gets current queue size
      */
     getQueueSize(): number {
-        return this.queue.length;
+        return this.getTrackedQueueSize();
     }
 
     /**
@@ -246,6 +256,7 @@ export class TelemetryService extends BaseService {
     override async initialize(): Promise<void> {
         const start = performance.now();
         this.logInfo('Initializing Telemetry Service...');
+        await this.startWorkerIfAvailable();
         this.startFlushing();
 
         this.checkPerformanceBudget('initialize', performance.now() - start, TELEMETRY_PERFORMANCE_BUDGETS.initialize);
@@ -259,6 +270,11 @@ export class TelemetryService extends BaseService {
             this.flushInterval = null;
         }
         await this.flush();
+        if (this.workerProcessId && this.utilityProcessService) {
+            this.utilityProcessService.terminate(this.workerProcessId);
+            this.workerProcessId = null;
+            this.workerQueueSize = 0;
+        }
         this.checkPerformanceBudget('cleanup', performance.now() - start, TELEMETRY_PERFORMANCE_BUDGETS.cleanup);
     }
 
@@ -297,9 +313,9 @@ export class TelemetryService extends BaseService {
         }
 
         // Check queue overflow
-        if (this.queue.length >= this.maxQueueSize) {
+        if (this.getTrackedQueueSize() >= this.maxQueueSize) {
             this.metaOverflowDrops++;
-            appLogger.warn('Telemetry', 'Queue overflow, dropping event', { queueSize: this.queue.length });
+            appLogger.warn('Telemetry', 'Queue overflow, dropping event', { queueSize: this.getTrackedQueueSize() });
             return { success: false, error: TelemetryErrorCode.QUEUE_OVERFLOW };
         }
 
@@ -311,7 +327,7 @@ export class TelemetryService extends BaseService {
             sessionId: this.sessionId
         };
 
-        this.queue.push(event);
+        this.enqueueTelemetryEvent(event);
         this.totalTrackedEvents++;
         this.metaLastOperationAt = Date.now();
 
@@ -366,6 +382,84 @@ export class TelemetryService extends BaseService {
         return { success: allSucceeded, results };
     }
 
+    private getTrackedQueueSize(): number {
+        return this.workerProcessId ? this.workerQueueSize : this.queue.length;
+    }
+
+    private enqueueTelemetryEvent(event: TelemetryEvent): void {
+        if (!this.workerProcessId || !this.utilityProcessService) {
+            this.queue.push(event);
+            return;
+        }
+
+        this.workerQueueSize += 1;
+        this.utilityProcessService.postMessage(this.workerProcessId, {
+            type: 'telemetry.track',
+            payload: { event },
+        });
+    }
+
+    private async startWorkerIfAvailable(): Promise<void> {
+        if (!this.utilityProcessService || this.workerProcessId) {
+            return;
+        }
+
+        try {
+            this.workerProcessId = this.utilityProcessService.spawn({
+                name: 'telemetry-worker',
+                entryPoint: getBundledUtilityWorkerPath(TelemetryService.WORKER_FILE_NAME),
+            });
+            this.workerQueueSize = 0;
+
+            if (this.queue.length > 0) {
+                await this.utilityProcessService.request(this.workerProcessId, 'telemetry.track', {
+                    events: [...this.queue],
+                });
+                this.workerQueueSize = this.queue.length;
+                this.queue = [];
+            }
+        } catch (error) {
+            this.workerProcessId = null;
+            this.workerQueueSize = 0;
+            appLogger.warn(
+                'TelemetryService',
+                `Falling back to main-process telemetry queue: ${getErrorMessage(error as Error)}`
+            );
+        }
+    }
+
+    private readWorkerFlushedCount(response: RuntimeValue): number {
+        if (typeof response !== 'object' || response === null || !('flushedCount' in response)) {
+            return 0;
+        }
+        const flushedCount = (response as { flushedCount?: RuntimeValue }).flushedCount;
+        return typeof flushedCount === 'number' ? flushedCount : 0;
+    }
+
+    private readWorkerQueueSize(response: RuntimeValue): number {
+        if (typeof response !== 'object' || response === null || !('state' in response)) {
+            return 0;
+        }
+        const state = (response as { state?: RuntimeValue }).state;
+        if (typeof state !== 'object' || state === null || !('queueSize' in state)) {
+            return 0;
+        }
+        const queueSize = (state as { queueSize?: RuntimeValue }).queueSize;
+        return typeof queueSize === 'number' ? queueSize : 0;
+    }
+
+    private readWorkerLastFlushTime(response: RuntimeValue): number {
+        if (typeof response !== 'object' || response === null || !('state' in response)) {
+            return Date.now();
+        }
+        const state = (response as { state?: RuntimeValue }).state;
+        if (typeof state !== 'object' || state === null || !('lastFlushTime' in state)) {
+            return Date.now();
+        }
+        const lastFlushTime = (state as { lastFlushTime?: RuntimeValue }).lastFlushTime;
+        return typeof lastFlushTime === 'number' ? lastFlushTime : Date.now();
+    }
+
     private startFlushing() {
         if (this.jobScheduler) {
             this.jobScheduler.registerRecurringJob(
@@ -395,7 +489,7 @@ export class TelemetryService extends BaseService {
     }
 
     private async flushWithRetry(): Promise<boolean> {
-        if (this.queue.length === 0) { return true; }
+        if (this.getTrackedQueueSize() === 0) { return true; }
 
         this.metaFlushAttempts++;
         const batch = [...this.queue];
@@ -404,6 +498,19 @@ export class TelemetryService extends BaseService {
         try {
             await withRetry(
                 async () => {
+                    if (this.workerProcessId && this.utilityProcessService) {
+                        const result = await this.utilityProcessService.request(
+                            this.workerProcessId,
+                            'telemetry.flush'
+                        );
+                        const flushedCount = this.readWorkerFlushedCount(result);
+                        this.totalFlushedEvents += flushedCount;
+                        this.lastFlushTime = this.readWorkerLastFlushTime(result);
+                        this.workerQueueSize = this.readWorkerQueueSize(result);
+                        this.metaLastOperationAt = Date.now();
+                        return;
+                    }
+
                     // In a real app, this would send to an endpoint (PostHog, Mixpanel, etc.)
                     this.totalFlushedEvents += batch.length;
                     this.lastFlushTime = Date.now();
@@ -423,7 +530,7 @@ export class TelemetryService extends BaseService {
             // All retries failed
             this.metaFlushFailures++;
             const lastError = error instanceof Error ? error : new Error(String(error));
-            if (this.queue.length + batch.length <= this.maxQueueSize) {
+            if (!this.workerProcessId && this.queue.length + batch.length <= this.maxQueueSize) {
                 this.queue = [...batch, ...this.queue];
                 this.logError('All flush attempts failed, re-queued events', lastError);
             } else {

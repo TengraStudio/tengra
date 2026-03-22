@@ -1,5 +1,5 @@
 const sectionData = {
-    "createNew": "Create New Task"
+    "createNew": "Create new task"
 };
 
 export default sectionData;

@@ -1,7 +1,7 @@
 const sectionData = {
     "title": "Modeller",
-    "subtitle": "Tüm sağlayıcılardaki AI modellerinizi yönetin",
-    "installedModels": "Kurulu Modeller",
+    "subtitle": "Tüm sağlayıcılardaki yapay zekâ modellerinizi yönetin",
+    "installedModels": "Kurulu modeller",
     "modelsAvailable": "model mevcut",
     "modelsCount": "model",
     "accounts": "hesap",
@@ -12,21 +12,21 @@ const sectionData = {
     "context": "Bağlam",
     "pricing": "Fiyat",
     "thinkingLevels": "Düşünme",
-    "quotaReset": "Kota Sıfırlanma",
+    "quotaReset": "Kota sıfırlama",
     "free": "Ücretsiz",
     "default": "Varsayılan",
-    "setDefault": "Varsayılan Yap",
+    "setDefault": "Varsayılan yap",
     "isDefault": "Bu varsayılan model",
     "favorite": "Favorilere ekle",
     "unfavorite": "Favorilerden çıkar",
     "hide": "Modeli gizle",
     "show": "Modeli göster",
-    "showHidden": "Gizlileri Göster",
-    "hideHidden": "Gizlileri Gizle",
+    "showHidden": "Gizlileri göster",
+    "hideHidden": "Gizlileri gizle",
     "defaultModelSwitchedTitle": "Varsayılan model değiştirildi",
     "defaultModelSwitchedMessage": "Önceki varsayılan model kullanılamıyor. {{model}} modeline geçildi.",
-    "modelValidationSucceeded": "Model file validation succeeded",
-    "modelValidationFailed": "Model validation failed"
+    "modelValidationSucceeded": "Model dosyası doğrulaması başarılı oldu",
+    "modelValidationFailed": "Model doğrulaması başarısız oldu"
 };
 
 export default sectionData;

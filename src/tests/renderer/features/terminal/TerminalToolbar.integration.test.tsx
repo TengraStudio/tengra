@@ -92,9 +92,6 @@ function createBaseProps(): ComponentProps<typeof TerminalToolbar> {
         closeSplitView: vi.fn(),
         isGalleryView: false,
         toggleGalleryView: vi.fn(),
-        onFloatingChange: vi.fn(),
-        toggleFloatingMode: vi.fn(),
-        isFloating: false,
         toggleSemanticPanel: vi.fn(),
         hasActiveSession: true,
         activeSemanticIssuesLength: 0,
@@ -238,25 +235,5 @@ describe('TerminalToolbar integration flows', () => {
                 shell: '/bin/sh',
             },
         });
-    });
-
-    it('toggles floating mode and opens multiplexer panel from toolbar actions', async () => {
-        const user = userEvent.setup();
-        const toggleFloatingMode = vi.fn();
-        const openMultiplexerPanel = vi.fn();
-
-        render(
-            <TerminalToolbar
-                {...createBaseProps()}
-                toggleFloatingMode={toggleFloatingMode}
-                openMultiplexerPanel={openMultiplexerPanel}
-            />
-        );
-
-        await user.click(screen.getByTitle('terminal.floatTerminal'));
-        await user.click(screen.getByTitle('terminal.multiplexerTitle'));
-
-        expect(toggleFloatingMode).toHaveBeenCalledTimes(1);
-        expect(openMultiplexerPanel).toHaveBeenCalledTimes(1);
     });
 });

@@ -4,7 +4,6 @@ import {
     LayoutGrid,
     MessageSquare,
     Minus,
-    Puzzle,
     Search,
     Settings as SettingsIcon,
     Square,
@@ -22,14 +21,12 @@ interface AppHeaderProps {
     currentView: AppView;
     settingsSearchQuery?: string;
     setSettingsSearchQuery?: (query: string) => void;
-    onExtensionClick?: () => void;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
     currentView,
     settingsSearchQuery,
     setSettingsSearchQuery,
-    onExtensionClick,
 }) => {
     const { currentChatId, currentChatTitle, clearMessages } = useChatHeader();
     const { language } = useAuthLanguage();
@@ -112,19 +109,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                     <div className="h-4 w-[1px] bg-border/50 mx-2" />
 
                     <div className="flex items-center gap-1">
-
-                        {onExtensionClick && (
-                            <>
-                                <button
-                                    onClick={onExtensionClick}
-                                    className="p-2 hover:bg-info/10 hover:text-info rounded-lg text-muted-foreground transition-colors group"
-                                    title={t('extensionPrompt.buttonTitle')}
-                                >
-                                    <Puzzle className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-                                </button>
-                                <div className="h-4 w-[1px] bg-border/50 mx-1" />
-                            </>
-                        )}
                         <button
                             data-testid="window-minimize"
                             onClick={handleMinimize}
@@ -149,12 +133,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                     </div>
                 </div>
             </header >
-
-
         </>
     );
 };
-
-
 
 export const MemoizedAppHeader = React.memo(AppHeader);

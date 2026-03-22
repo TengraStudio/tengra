@@ -1,18 +1,18 @@
 const sectionData = {
-    "description": "Tengra, yerel ve bulut tabanlı yapay zeka modellerini tek bir arayüzde birleştiren, geliştiriciler için tasarlanmış yeni nesil bir AI IDE asistanıdır.",
-    "checkUpdates": "Güncellemeleri Kontrol Et",
+    "description": "Tengra, yerel ve bulut tabanlı yapay zekâ modellerini tek bir arayüzde buluşturan, geliştiriciler için tasarlanmış yeni nesil bir AI IDE asistanıdır.",
+    "checkUpdates": "Güncellemeleri kontrol et",
     "privacyPolicy": "Gizlilik Politikası",
     "github": "GitHub",
     "copyright": "© 2025 Tengra",
-    "factoryReset": "Fabrika Ayarlarına Dön",
+    "factoryReset": "Fabrika ayarlarına dön",
     "factoryResetDesc": "Tüm ayarları ve verileri silerek uygulamayı sıfırlar.",
-    "updateCheckAlert": "Güncelleme kontrolü prodüksiyon sürümünde aktiftir.",
-    "locale": "Yerel Ayar",
-    "buildSync": "Derleme Senk.",
-    "forceReload": "ZORLA YENİLE",
-    "sessionStart": "Oturum Başlangıcı",
-    "buildVersion": "Derleme Sür.",
-    "notAvailable": "Yok"
+    "updateCheckAlert": "Güncelleme denetimi yalnızca üretim sürümünde etkindir.",
+    "locale": "Dil ve Bölge",
+    "buildSync": "Derleme senkronizasyonu",
+    "forceReload": "Zorla yenile",
+    "sessionStart": "Oturum başlangıcı",
+    "buildVersion": "Derleme sürümü",
+    "notAvailable": "Mevcut değil"
 };
 
 export default sectionData;

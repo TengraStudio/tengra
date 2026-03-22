@@ -1,6 +1,7 @@
 /**
  * Comprehensive unit tests for AuditLogService
  */
+import { createHash } from 'crypto';
 import * as fs from 'fs';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -23,10 +24,9 @@ vi.mock('@main/logging/logger', () => ({
     appLogger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() }
 }));
 
-import { createHash } from 'crypto';
-
 import { AuditLogEntry, AuditLogService } from '@main/services/analysis/audit-log.service';
 import { DatabaseService } from '@main/services/data/database.service';
+import { UtilityProcessService } from '@main/services/system/utility-process.service';
 
 interface IntegrityBlock { prevHash: string; hash: string }
 
@@ -219,6 +219,22 @@ describe('AuditLogService', () => {
             await service.log({ action: 'r', category: 'system', success: true });
             expect(mockDbService.pruneAuditLogsOlderThan).not.toHaveBeenCalled();
             spy.mockRestore();
+        });
+
+        it('disables the worker after the first request timeout and falls back locally', async () => {
+            const mockUtilityProcessService = {
+                request: vi.fn().mockRejectedValue(new Error('Utility process request timed out: audit.prepareEntry')),
+                terminate: vi.fn(),
+            } as never as UtilityProcessService;
+            const workerBackedService = new AuditLogService(mockDbService, mockUtilityProcessService);
+            (workerBackedService as never as { workerProcessId: string | null }).workerProcessId = 'worker-1';
+
+            await workerBackedService.log({ action: 'first', category: 'data', success: true });
+            await workerBackedService.log({ action: 'second', category: 'data', success: true });
+
+            expect(vi.mocked(mockUtilityProcessService.request)).toHaveBeenCalledTimes(1);
+            expect(vi.mocked(mockUtilityProcessService.terminate)).toHaveBeenCalledWith('worker-1');
+            expect(mockDbService.addAuditLog).toHaveBeenCalledTimes(2);
         });
     });
 

@@ -78,9 +78,6 @@ export function TerminalPanelContentImpl(props: TerminalPanelProps) {
                 closeSplitView={core.splitActions.closeSplitView}
                 isGalleryView={core.isGalleryView}
                 toggleGalleryView={core.panelToggles.toggleGalleryView}
-                onFloatingChange={core.onFloatingChange}
-                toggleFloatingMode={core.panelToggles.toggleFloatingMode}
-                isFloating={core.isFloating}
                 toggleSemanticPanel={core.panelToggles.toggleSemanticPanel}
                 hasActiveSession={core.hasActiveSession}
                 activeSemanticIssuesLength={behavior.activeSemanticIssues.length}
@@ -142,7 +139,6 @@ export function TerminalPanelContentImpl(props: TerminalPanelProps) {
                 displayTabs={core.displayTabs}
                 isGalleryView={core.isGalleryView}
                 hasActiveSession={core.hasActiveSession}
-                isFloating={core.isFloating}
                 workspacePath={core.workspacePath}
                 splitView={core.splitLayout.splitView}
                 isSynchronizedInputEnabled={core.splitLayout.isSynchronizedInputEnabled}
@@ -175,8 +171,6 @@ export function TerminalPanelContentImpl(props: TerminalPanelProps) {
                 openTerminalSearch={core.searchActions.openTerminalSearch}
                 toggleSemanticPanel={core.panelToggles.toggleSemanticPanel}
                 toggleGalleryView={core.panelToggles.toggleGalleryView}
-                toggleFloatingMode={core.panelToggles.toggleFloatingMode}
-                onFloatingChange={core.onFloatingChange}
                 openCommandHistory={core.commandTools.openCommandHistory}
                 openTaskRunner={core.commandTools.openTaskRunner}
                 openMultiplexerPanel={core.openMultiplexerPanel}

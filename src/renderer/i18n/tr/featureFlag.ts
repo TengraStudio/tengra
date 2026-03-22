@@ -2,7 +2,7 @@ const sectionData = {
     "enabled": "Özellik etkinleştirildi: {{featureId}}",
     "disabled": "Özellik devre dışı bırakıldı: {{featureId}}",
     "notFound": "\"{{featureId}}\" özellik bayrağı bulunamadı",
-    "evaluationFailed": "Özellik bayrağı değerlendirmesi başarısız oldu, varsayılan olarak devre dışı",
+    "evaluationFailed": "Özellik bayrağı değerlendirilemedi; varsayılan olarak devre dışı bırakıldı",
     "overrideSet": "{{featureId}} için geçersiz kılma ayarlandı: {{value}}",
     "overrideCleared": "{{featureId}} için geçersiz kılma temizlendi",
     "flagsLoaded": "Özellik bayrakları yüklendi",
@@ -18,7 +18,7 @@ const sectionData = {
         "fieldEmpty": "{{fieldName}} boş olmayan bir dize olmalıdır",
         "fieldTooLong": "{{fieldName}} maksimum {{maxLength}} uzunluğunu aşıyor",
         "attributesNotObject": "Öznitelikler düz bir nesne olmalıdır",
-        "attributesTooMany": "Öznitelikler maksimum {{maxCount}} girişi aşıyor",
+        "attributesTooMany": "Öznitelikler en fazla {{maxCount}} giriş içerebilir",
         "attributeInvalidType": "\"{{key}}\" özniteliği dize, sayı veya boolean olmalıdır",
         "attributeTooLong": "\"{{key}}\" özniteliği maksimum {{maxLength}} uzunluğunu aşıyor"
     }

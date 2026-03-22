@@ -10,16 +10,16 @@ const sectionData = {
     "apply": "Temayı Uygula",
     "active": "Aktif",
     "pro": "PRO",
-    "by": "by",
-    "authorTengraTeam": "Tengra Team",
+    "by": "yazan",
+    "authorTengraTeam": "Tengra Ekibi",
     "themes": {
         "black": {
             "name": "Tengra Black",
-            "description": "The default pure black theme"
+            "description": "Varsayılan saf siyah tema"
         },
         "white": {
             "name": "Tengra White",
-            "description": "Clean and minimal white theme"
+            "description": "Temiz ve sade beyaz tema"
         },
         "dark-default": {
             "name": "Koyu Varsayılan",
@@ -50,7 +50,7 @@ const sectionData = {
             "description": "Makineler ve insanlar için hassas renkler"
         },
         "tokyo-night": {
-            "name": "Tokyo Gece",
+            "name": "Tokyo Gecesi",
             "description": "Tokyo ışıklarını yansıtan temiz bir tema"
         }
     }

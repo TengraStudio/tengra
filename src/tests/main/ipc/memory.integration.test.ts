@@ -30,6 +30,7 @@ vi.mock('electron', () => ({
 // Mock logger
 vi.mock('@main/logging/logger', () => ({
     appLogger: {
+        debug: vi.fn(),
         info: vi.fn(),
         error: vi.fn(),
         warn: vi.fn(),

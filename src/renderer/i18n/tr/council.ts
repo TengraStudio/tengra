@@ -4,21 +4,21 @@ const sectionData = {
     "taskPlaceholder": "Konsey için bir görev tanımlayın...",
     "starting": "Başlatılıyor...",
     "start": "Başlat",
-    "liveActivity": "Canlı Aktivite",
+    "liveActivity": "Canlı etkinlik",
     "entry": "kayıt",
     "entries": "kayıtlar",
     "noActiveSession": "Aktif oturum yok",
-    "noActiveSessionDesc": "Konsey ajanlarını iş başında görmek için bir görev başlatın. Aktivite günlükleri burada görünecektir.",
+    "noActiveSessionDesc": "Konsey ajanlarını iş başında görmek için bir görev başlatın. Etkinlik günlükleri burada görünecek.",
     "status": {
         "planning": "Planlanıyor",
         "working": "Çalışılıyor",
         "reviewing": "İnceleniyor",
-        "waiting_for_approval": "Onay Bekleniyor",
+        "waiting_for_approval": "Onay bekleniyor",
         "completed": "Tamamlandı",
         "failed": "Başarısız"
     },
     "strategies": {
-        "reasoning-first": "Analitik (Derin Düşünme)",
+        "reasoning-first": "Analitik (Derin düşünme)",
         "balanced": "Dengeli Karma",
         "local-first-simple": "Hızlı (Yerel Öncelikli)"
     },
@@ -28,9 +28,9 @@ const sectionData = {
         "local-first-simple": "Düşük gecikmeli yerel veya hafif modelleri kullanarak temel görevleri hızla çözer."
     },
     "requestedSubagents": "İstenen Ajan Sayısı",
-    "runCouncil": "Konseyi Başlat",
+    "runCouncil": "Konseyi başlat",
     "chairman": "Konsey Başkanı",
-    "setupTitle": "Konsey Yapılandırması",
+    "setupTitle": "Konsey yapılandırması",
     "setupSubtitle": "Ajan konseyinizi projenin ihtiyaçlarına göre optimize edin"
 };
 

@@ -1,5 +1,6 @@
 import { execFile } from 'child_process';
 import * as fs from 'fs/promises';
+import * as path from 'path';
 import { promisify } from 'util';
 
 import { BaseService } from '@main/services/base.service';
@@ -19,10 +20,10 @@ interface ExternalDependencyAssessment {
 
 export class ExternalRuntimeDependencyService extends BaseService {
     private static readonly MESSAGE_KEY = {
-        OLLAMA_NOT_INSTALLED: 'images.runtimeHealth.ollama.notInstalled',
-        OLLAMA_NOT_RUNNING: 'images.runtimeHealth.ollama.notRunning',
-        OLLAMA_RUNNING: 'images.runtimeHealth.ollama.running',
-        NO_PROBE: 'images.runtimeHealth.noProbe',
+        OLLAMA_NOT_INSTALLED: 'runtime.health.ollama.notInstalled',
+        OLLAMA_NOT_RUNNING: 'runtime.health.ollama.notRunning',
+        OLLAMA_RUNNING: 'runtime.health.ollama.running',
+        NO_PROBE: 'runtime.health.noProbe',
     } as const;
 
     constructor() {
@@ -32,6 +33,12 @@ export class ExternalRuntimeDependencyService extends BaseService {
     async assess(componentId: string): Promise<ExternalDependencyAssessment> {
         if (componentId === 'ollama') {
             return this.assessOllama();
+        }
+        if (componentId === 'sd-cpp') {
+            return this.assessSdCpp();
+        }
+        if (componentId === 'ghostty' || componentId === 'alacritty' || componentId === 'warp' || componentId === 'kitty') {
+            return this.assessExecutableComponent(componentId);
         }
 
         return {
@@ -90,6 +97,94 @@ export class ExternalRuntimeDependencyService extends BaseService {
         }
 
         return this.commandExists(executableName);
+    }
+
+    private async assessSdCpp(): Promise<ExternalDependencyAssessment> {
+        const executableCandidates = this.getSdCppCandidatePaths();
+        for (const candidate of executableCandidates) {
+            if (await this.pathExists(candidate)) {
+                return {
+                    detected: true,
+                    running: false,
+                    action: 'none',
+                    message: 'Stable Diffusion CPP runtime is installed',
+                };
+            }
+        }
+
+        return {
+            detected: false,
+            running: false,
+            action: 'install',
+            message: 'Stable Diffusion CPP runtime is not installed',
+        };
+    }
+
+    private async assessExecutableComponent(componentId: string): Promise<ExternalDependencyAssessment> {
+        const installed = await this.isExecutableComponentInstalled(componentId);
+        if (!installed) {
+            return {
+                detected: false,
+                running: false,
+                action: 'install',
+                message: `${componentId} is not installed`,
+            };
+        }
+
+        return {
+            detected: true,
+            running: false,
+            action: 'none',
+            message: `${componentId} is installed`,
+        };
+    }
+
+    private async isExecutableComponentInstalled(componentId: string): Promise<boolean> {
+        const executableName = process.platform === 'win32' ? `${componentId}.exe` : componentId;
+        const candidates = this.getExecutableCandidatePaths(componentId, executableName);
+        for (const candidate of candidates) {
+            if (await this.pathExists(candidate)) {
+                return true;
+            }
+        }
+
+        return this.commandExists(executableName);
+    }
+
+    private getExecutableCandidatePaths(componentId: string, executableName: string): string[] {
+        const candidates = new Set<string>();
+        if (process.platform === 'win32') {
+            const localAppData = process.env['LOCALAPPDATA'] ?? '';
+            const programFiles = process.env['ProgramFiles'] ?? 'C:\\Program Files';
+            if (componentId === 'ghostty') {
+                candidates.add(path.join(programFiles, 'Ghostty', 'ghostty.exe'));
+                candidates.add(path.join(localAppData, 'Ghostty', 'ghostty.exe'));
+            } else if (componentId === 'alacritty') {
+                candidates.add(path.join(programFiles, 'Alacritty', 'alacritty.exe'));
+                candidates.add(path.join(localAppData, 'Alacritty', 'alacritty.exe'));
+            } else if (componentId === 'warp') {
+                candidates.add(path.join(localAppData, 'Warp', 'warp.exe'));
+                candidates.add(path.join(programFiles, 'Warp', 'warp.exe'));
+            } else if (componentId === 'kitty') {
+                candidates.add(path.join(programFiles, 'kitty', 'kitty.exe'));
+                candidates.add(path.join(programFiles, 'Kitty', 'kitty.exe'));
+                candidates.add(path.join(localAppData, 'Programs', 'kitty', 'kitty.exe'));
+            }
+        }
+        candidates.add(executableName);
+        return Array.from(candidates);
+    }
+
+    private getSdCppCandidatePaths(): string[] {
+        const localAppData = process.env['LOCALAPPDATA'] ?? '';
+        const userProfile = process.env['USERPROFILE'] ?? '';
+        const home = process.env['HOME'] ?? userProfile;
+        const executableName = process.platform === 'win32' ? 'sd.exe' : 'sd';
+        return [
+            path.join(localAppData, 'Programs', 'Tengra', 'runtime', 'bin', executableName),
+            path.join(home, '.tengra', 'runtime', 'bin', executableName),
+            executableName,
+        ];
     }
 
     private async isOllamaRunning(): Promise<boolean> {

@@ -3,6 +3,7 @@ export * from './electron-api.types';
 export * from './session-conversation';
 export * from './session-domain-apis';
 export * from './session-workspace';
+export * from './workspace-intelligence';
 export * from '@/types/agent';
 export * from '@/types/ai';
 export * from '@/types/chat';

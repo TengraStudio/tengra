@@ -11,12 +11,93 @@ import {
 } from '@shared/types/runtime-manifest';
 
 export class RuntimeManifestService extends BaseService {
+    private static readonly BUILTIN_COMPONENTS: RuntimeManifestComponent[] = [
+        {
+            id: 'ollama',
+            displayName: 'Ollama',
+            version: 'external',
+            kind: 'service',
+            source: 'external',
+            requirement: 'optional',
+            description: 'Local LLM runtime for offline inference.',
+            installUrl: 'https://ollama.com/download',
+            supportedPlatforms: ['win32', 'darwin', 'linux'],
+            supportedArches: ['x64', 'arm64'],
+            targets: [],
+        },
+        {
+            id: 'sd-cpp',
+            displayName: 'Stable Diffusion CPP',
+            version: 'managed',
+            kind: 'runtime',
+            source: 'external',
+            requirement: 'optional',
+            description: 'Local image generation runtime.',
+            supportedPlatforms: ['win32', 'darwin', 'linux'],
+            supportedArches: ['x64', 'arm64'],
+            targets: [],
+        },
+        {
+            id: 'ghostty',
+            displayName: 'Ghostty',
+            version: 'external',
+            kind: 'tool',
+            source: 'external',
+            requirement: 'optional',
+            description: 'GPU-accelerated terminal emulator.',
+            installUrl: 'https://ghostty.org/download',
+            supportedPlatforms: ['darwin', 'linux', 'win32'],
+            supportedArches: ['x64', 'arm64'],
+            targets: [],
+        },
+        {
+            id: 'alacritty',
+            displayName: 'Alacritty',
+            version: 'external',
+            kind: 'tool',
+            source: 'external',
+            requirement: 'optional',
+            description: 'Modern, cross-platform terminal emulator.',
+            installUrl: 'https://alacritty.org',
+            supportedPlatforms: ['win32', 'darwin', 'linux'],
+            supportedArches: ['x64', 'arm64'],
+            targets: [],
+        },
+        {
+            id: 'warp',
+            displayName: 'Warp',
+            version: 'external',
+            kind: 'tool',
+            source: 'external',
+            requirement: 'optional',
+            description: 'Productivity-focused terminal experience.',
+            installUrl: 'https://www.warp.dev/download',
+            supportedPlatforms: ['win32', 'darwin', 'linux'],
+            supportedArches: ['x64', 'arm64'],
+            targets: [],
+        },
+        {
+            id: 'kitty',
+            displayName: 'Kitty',
+            version: 'external',
+            kind: 'tool',
+            source: 'external',
+            requirement: 'optional',
+            description: 'Fast GPU-based terminal emulator.',
+            installUrl: 'https://sw.kovidgoyal.net/kitty/binary/',
+            supportedPlatforms: ['win32', 'darwin', 'linux'],
+            supportedArches: ['x64', 'arm64'],
+            targets: [],
+        },
+    ];
+
     constructor() {
         super('RuntimeManifestService');
     }
 
     parseManifest(rawManifest: JsonObject | RuntimeManifest): RuntimeManifest {
-        return RuntimeManifestSchema.parse(rawManifest);
+        const parsedManifest = RuntimeManifestSchema.parse(rawManifest);
+        return this.withBuiltinComponents(parsedManifest);
     }
 
     getCurrentEnvironment(platform: string = process.platform, arch: string = process.arch): RuntimeTargetEnvironment {
@@ -64,5 +145,26 @@ export class RuntimeManifestService extends BaseService {
         return component.targets.find(target =>
             target.platform === environment.platform && target.arch === environment.arch
         ) ?? null;
+    }
+
+    private withBuiltinComponents(manifest: RuntimeManifest): RuntimeManifest {
+        const componentMap = new Map<string, RuntimeManifestComponent>();
+        for (const component of RuntimeManifestService.BUILTIN_COMPONENTS) {
+            componentMap.set(component.id, component);
+        }
+        for (const component of manifest.components) {
+            const existing = componentMap.get(component.id);
+            componentMap.set(component.id, {
+                ...existing,
+                ...component,
+                supportedPlatforms: component.supportedPlatforms ?? existing?.supportedPlatforms,
+                supportedArches: component.supportedArches ?? existing?.supportedArches,
+            });
+        }
+
+        return {
+            ...manifest,
+            components: Array.from(componentMap.values()),
+        };
     }
 }

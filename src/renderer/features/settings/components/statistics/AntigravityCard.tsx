@@ -98,7 +98,7 @@ export const AntigravityCard: React.FC<AntigravityCardProps> = ({
                         : 'active';
                     const models = dedupeAccountModels(acc.models);
                     const statusText = acc.success === false 
-                        ? (acc.authExpired ? t('quota.authExpired') : t(`statistics.status${acc.status ?? 'Error'}`)) 
+                        ? (acc.authExpired ? t('errors.quota.authExpired') : t(`statistics.status${acc.status ?? 'Error'}`)) 
                         : t('statistics.active');
 
                     return (

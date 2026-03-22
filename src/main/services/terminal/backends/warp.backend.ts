@@ -42,7 +42,7 @@ export class WarpBackend implements ITerminalBackend {
         }
 
         if (!this.warpPath) {
-            throw new Error('Warp is not installed or not in PATH');
+            throw new Error('error.terminal.backend_not_found');
         }
 
         appLogger.info('WarpBackend', `Opening Warp session: ${options.id}`);
@@ -95,7 +95,7 @@ export class WarpBackend implements ITerminalBackend {
     private async discoverWarpPath(): Promise<string | null> {
         const discoveredPath = await findExecutableInPath('warp');
         if (discoveredPath) {
-            appLogger.info('WarpBackend', `Found Warp at: ${discoveredPath}`);
+            appLogger.debug('WarpBackend', `Found Warp at: ${discoveredPath}`);
             return discoveredPath;
         }
 
@@ -114,7 +114,7 @@ export class WarpBackend implements ITerminalBackend {
 
         const commonPath = await findFirstExistingPath(commonPaths);
         if (commonPath) {
-            appLogger.info('WarpBackend', `Found Warp at common location: ${commonPath}`);
+            appLogger.debug('WarpBackend', `Found Warp at common location: ${commonPath}`);
             return commonPath;
         }
 

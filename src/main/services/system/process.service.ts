@@ -166,11 +166,26 @@ export class ProcessService extends EventEmitter {
 
     // --- Process Manager (2.2.23) ---
 
-    getRunningTasks(): Array<{ id: string; pid: number; command: string; cwd: string; status: string; startTime: number }> {
+    getRunningTasks(): Array<{
+        id: string;
+        pid: number;
+        name: string;
+        cmd: string;
+        command: string;
+        cpu: number;
+        memory: number;
+        cwd: string;
+        status: string;
+        startTime: number;
+    }> {
         return Array.from(this.processes.values()).map(t => ({
             id: t.id,
             pid: t.pid,
-            command: t.command,
+            name: t.command,
+            cmd: [t.command, ...t.args].join(' ').trim(),
+            command: [t.command, ...t.args].join(' ').trim(),
+            cpu: 0,
+            memory: 0,
             cwd: t.cwd,
             status: t.status,
             startTime: t.startTime

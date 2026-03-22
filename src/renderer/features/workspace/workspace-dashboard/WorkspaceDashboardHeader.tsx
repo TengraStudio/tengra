@@ -20,7 +20,7 @@ interface WorkspaceDashboardHeaderProps {
     editDesc: string;
     setEditDesc: (val: string) => void;
     handleSaveDesc: () => Promise<void>;
-    onOpenLogoGenerator?: () => void;
+    onUploadLogo?: () => void;
     analyzeWorkspace: () => Promise<void>;
 }
 
@@ -39,7 +39,7 @@ export const WorkspaceDashboardHeader: React.FC<WorkspaceDashboardHeaderProps> =
     editDesc,
     setEditDesc,
     handleSaveDesc,
-    onOpenLogoGenerator,
+    onUploadLogo,
     analyzeWorkspace
 }) => {
     const { t } = useTranslation();
@@ -56,7 +56,7 @@ export const WorkspaceDashboardHeader: React.FC<WorkspaceDashboardHeaderProps> =
                     )}
 
                     <button
-                        onClick={() => { void onOpenLogoGenerator?.(); }}
+                        onClick={onUploadLogo}
                         className="absolute inset-0 bg-primary/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2 text-primary-foreground"
                     >
                         <Camera className="w-6 h-6" />

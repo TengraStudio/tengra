@@ -1,6 +1,6 @@
 const sectionData = {
     "title": "Prompt Analizi",
-    "score": "Prompt Puanı",
+    "score": "İstem puanı",
     "suggestions": "Öneriler",
     "apply": "Uygula",
     "dismiss": "Kapat",

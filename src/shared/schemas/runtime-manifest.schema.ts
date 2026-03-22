@@ -56,6 +56,8 @@ export const RuntimeManifestComponentSchema = z.object({
     description: z.string().trim().max(500).optional(),
     installUrl: z.string().url().optional(),
     targets: z.array(RuntimeManifestTargetSchema).max(32),
+    supportedPlatforms: z.array(RuntimePlatformSchema).max(8).optional(),
+    supportedArches: z.array(RuntimeArchSchema).max(8).optional(),
 }).superRefine((component, ctx) => {
     if (component.source === 'managed' && component.targets.length === 0) {
         ctx.addIssue({

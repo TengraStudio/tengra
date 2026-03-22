@@ -129,7 +129,7 @@ describe('Settings IPC Handlers', () => {
     it('saves settings and wraps response', async () => {
         const handler = ipcHandlers.get('settings:save')!;
         const payload: Partial<AppSettings> = {
-            general: { ...settingsState.general, language: 'fr' }
+            general: { ...settingsState.general, language: 'tr' }
         };
 
         const result = await handler(mockEvent, payload) as WrappedResponse;
@@ -176,12 +176,12 @@ describe('Settings IPC Handlers', () => {
             .mockRejectedValueOnce(new Error('transient'))
             .mockResolvedValueOnce({
                 ...settingsState,
-                general: { ...settingsState.general, language: 'de' }
+                general: { ...settingsState.general, language: 'tr' }
             });
 
         const handler = ipcHandlers.get('settings:save')!;
         const payload: Partial<AppSettings> = {
-            general: { ...settingsState.general, language: 'de' }
+            general: { ...settingsState.general, language: 'tr' }
         };
         const result = await handler(mockEvent, payload) as WrappedResponse;
 
@@ -209,7 +209,7 @@ describe('Settings IPC Handlers', () => {
         const saveHandler = ipcHandlers.get('settings:save')!;
         const healthHandler = ipcHandlers.get('settings:health')!;
         const payload: Partial<AppSettings> = {
-            general: { ...settingsState.general, language: 'de' }
+            general: { ...settingsState.general, language: 'tr' }
         };
 
         await getHandler(mockEvent);

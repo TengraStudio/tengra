@@ -124,7 +124,7 @@ export class CopilotTokenManager {
 
         const authHeaderToken = this.state.copilotAuthToken ?? this.state.githubToken;
         if (!authHeaderToken) {
-            throw new Error('Copilot Authentication failed: No copilot_token or github_token found. Please login via Settings.');
+            throw new Error('error.copilot.auth_failed_no_token');
         }
 
         appLogger.info(SERVICE_NAME, `Using ${this.state.copilotAuthToken ? 'copilot_token' : 'github_token'} for auth`);
@@ -173,9 +173,9 @@ export class CopilotTokenManager {
             if (v1Result) { return v1Result; }
         }
 
-        const errorText = await response.text();
+        await response.text();
         this.handleAuthStatusError(response.status, authHeaderToken);
-        throw new Error(`Failed to get Copilot token: ${response.status} ${errorText}`);
+        throw new Error('error.copilot.token_fetch_failed');
     }
 
     private async tryV1Fallback(authHeaderToken: string): Promise<string | null> {

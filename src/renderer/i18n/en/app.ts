@@ -1,6 +1,6 @@
 const sectionData = {
     "name": "Tengra",
-    "versionShort": "V {{version}}"
+    "versionShort": "v{{version}}"
 };
 
 export default sectionData;

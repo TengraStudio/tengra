@@ -4,7 +4,7 @@
 
 /* === Base Sidebar === */
 .sidebar {
-    @apply w-64 h-full border-r border-border bg-background/95 backdrop-blur-xl flex flex-col shrink-0 relative transition-all duration-300;
+    @apply w-64 h-full border-r border-border bg-background/95 backdrop-blur-sm flex flex-col shrink-0 relative transition-colors duration-300;
 }
 
 .sidebar-collapsed {
@@ -13,7 +13,7 @@
 
 /* === Navigation Items === */
 .nav-item {
-    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 w-full justify-start;
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-200 w-full justify-start;
 }
 
 .nav-item-active {
@@ -39,7 +39,7 @@
     @apply text-[11px] font-semibold uppercase tracking-wider;
     @apply text-muted-foreground/60 hover:text-muted-foreground;
     @apply hover:bg-accent/50 active:bg-accent/70;
-    @apply transition-all duration-150;
+    @apply transition-colors duration-150;
     @apply cursor-pointer select-none;
 }
 
@@ -67,7 +67,7 @@
     @apply text-sm font-medium;
     @apply text-muted-foreground/80 hover:text-foreground;
     @apply hover:bg-accent active:bg-accent/80;
-    @apply transition-all duration-150;
+    @apply transition-colors duration-150;
     @apply cursor-pointer select-none;
     @apply relative;
 }
@@ -90,7 +90,7 @@
 /* === Status Indicators === */
 .status-indicator {
     @apply rounded-full;
-    @apply transition-all duration-300;
+    @apply transition-opacity duration-300;
 }
 
 .status-indicator--online {
@@ -155,7 +155,7 @@
     @apply inline-flex items-center justify-center;
     @apply px-1.5 py-0.5 min-w-[18px] h-[18px];
     @apply rounded-full text-[10px] font-bold;
-    @apply transition-all duration-200;
+    @apply transition-colors duration-200;
 }
 
 .sidebar-badge--default {
@@ -230,7 +230,7 @@
 .sidebar-flyout {
     @apply absolute left-full top-0 ml-2 z-50;
     @apply min-w-[220px] max-w-[280px];
-    @apply bg-popover/95 backdrop-blur-xl;
+    @apply bg-popover/95 backdrop-blur-sm;
     @apply border border-border/50 rounded-xl;
 
     box-shadow: 0 25px 50px -12px hsl(var(--shadow-color) / 25%);
@@ -330,7 +330,7 @@
     @apply w-full flex items-center gap-3;
     @apply p-2 rounded-lg;
     @apply hover:bg-white/[0.03];
-    @apply transition-all duration-150;
+    @apply transition-colors duration-150;
 }
 
 .sidebar-user-profile__avatar {
@@ -452,7 +452,7 @@
 .tools-item {
     @apply flex items-center gap-2 px-2 py-1.5 rounded-md;
     @apply text-xs text-muted-foreground hover:text-foreground hover:bg-muted/10;
-    @apply transition-all duration-150 cursor-pointer;
+    @apply transition-colors duration-150 cursor-pointer;
 }
 
 .tools-item-icon {

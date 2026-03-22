@@ -39,12 +39,12 @@ import { useWorkspaceLibrary, useWorkspaceSelection } from '@/context/WorkspaceC
 import '@renderer/App.css';
 
 // Lazy load heavy layout components
-const ExtensionInstallPrompt = lazy(() => import('@renderer/components/ExtensionInstallPrompt').then(m => ({ default: m.ExtensionInstallPrompt })));
 const CommandPalette = lazy(() => import('@renderer/components/layout/CommandPalette').then(m => ({ default: m.CommandPalette })));
 const UpdateNotification = lazy(() => import('@renderer/components/layout/UpdateNotification').then(m => ({ default: m.UpdateNotification })));
 const QuickActionBar = lazy(() => import('@renderer/components/layout/QuickActionBar').then(m => ({ default: m.QuickActionBar })));
 const VoiceOverlay = lazy(() => import('@renderer/features/voice/components/VoiceOverlay').then(m => ({ default: m.VoiceOverlay })));
 const DetachedTerminalWindow = lazy(() => import('@renderer/features/terminal/components/DetachedTerminalWindow').then(m => ({ default: m.DetachedTerminalWindow })));
+const OnboardingFlow = lazy(() => import('@renderer/features/onboarding/OnboardingFlow').then(m => ({ default: m.OnboardingFlow })));
 
 const getChatTemplates = (t: (key: string) => string): ChatTemplate[] => [
     {
@@ -232,6 +232,15 @@ const KeyboardShortcutsConnector: React.FC<{
             },
             onToggleSidebar: () => {
                 onToggleSidebar();
+            },
+            onZoomIn: () => {
+                void window.electron.stepZoomFactor(1);
+            },
+            onZoomOut: () => {
+                void window.electron.stepZoomFactor(-1);
+            },
+            onResetZoom: () => {
+                void window.electron.resetZoomFactor();
             },
             onCloseModals: () => {
                 setShowCommandPalette(false);
@@ -485,13 +494,36 @@ function MainApp() {
     const breakpoint = useBreakpoint();
     const [settingsSearchQuery, setSettingsSearchQuery] = useState('');
 
-    const [showExtensionModal, setShowExtensionModal] = useState(false);
+    const [showOnboarding, setShowOnboarding] = useState(false);
     const [showLanguagePrompt, setShowLanguagePrompt] = useState(() => {
         // Show prompt only on first run if language wasn't explicitly selected
         return !localStorage.getItem('app.languageSelected');
     });
 
-    useAppInitialization(); // Keep initialization but don't use auto-warning
+    useAppInitialization();
+
+    useEffect(() => {
+        let cancelled = false;
+        void (async () => {
+            try {
+                const settings = await window.electron.getSettings();
+                const shouldShowOnboarding =
+                    localStorage.getItem('Tengra-onboarding-complete') !== 'true' &&
+                    settings.general?.onboardingCompleted !== true;
+                if (!cancelled) {
+                    setShowOnboarding(shouldShowOnboarding);
+                }
+            } catch {
+                if (!cancelled) {
+                    setShowOnboarding(localStorage.getItem('Tengra-onboarding-complete') !== 'true');
+                }
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     // Auto-collapse sidebar when entering the workspace view.
     useEffect(() => {
@@ -578,7 +610,6 @@ function MainApp() {
                                         currentView={appState.currentView}
                                         settingsSearchQuery={settingsSearchQuery}
                                         setSettingsSearchQuery={setSettingsSearchQuery}
-                                        onExtensionClick={() => setShowExtensionModal(true)}
                                     />
                                     <ErrorFallback
                                         error={error || new Error(t('errors.unexpected'))}
@@ -605,11 +636,11 @@ function MainApp() {
                     />
                 )}
 
-                {showExtensionModal && (
+                {showOnboarding && (
                     <Suspense fallback={null}>
-                        <ExtensionInstallPrompt
-                            onClose={() => setShowExtensionModal(false)}
-                            onDismiss={() => setShowExtensionModal(false)}
+                        <OnboardingFlow
+                            isOpen={showOnboarding}
+                            onClose={() => setShowOnboarding(false)}
                         />
                     </Suspense>
                 )}
@@ -682,7 +713,6 @@ function MainApp() {
                                     currentView={appState.currentView}
                                     settingsSearchQuery={settingsSearchQuery}
                                     setSettingsSearchQuery={setSettingsSearchQuery}
-                                    onExtensionClick={() => setShowExtensionModal(true)}
                                 />
                                 <DragDropContent
                                     isDragging={appState.isDragging}

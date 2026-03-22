@@ -54,13 +54,15 @@ export class TokenService extends BaseService {
     async initialize(): Promise<void> {
         this.logInfo('TokenService initializing...');
 
-        void this.options.processManager.startService({
-            name: 'token-service',
-            executable: 'tengra-token-service',
-            persistent: true
-        }).catch(error => {
+        try {
+            await this.options.processManager.startService({
+                name: 'token-service',
+                executable: 'tengra-token-service',
+                persistent: true
+            });
+        } catch (error) {
             appLogger.error('TokenService', `Failed to start token-service: ${getErrorMessage(error)}`);
-        });
+        }
 
         await this.registerExistingAccountsForMonitoring();
         this.subscribeToAccountEvents();

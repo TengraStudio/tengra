@@ -327,7 +327,7 @@ export interface EnrichedIdea extends WorkspaceIdea {
 /**
  * Research progress event
  */
-export interface ResearchProgress {
+export type ResearchProgress = {
     sessionId: string
     stage: ResearchStage
     progress: number
@@ -338,7 +338,7 @@ export interface ResearchProgress {
 /**
  * Idea generation progress event
  */
-export interface IdeaProgress {
+export type IdeaProgress = {
     sessionId: string
     ideaIndex: number
     totalIdeas: number

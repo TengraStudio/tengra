@@ -9,8 +9,6 @@ export interface TerminalPanelProps {
     onToggle: () => void;
     isMaximized?: boolean;
     onMaximizeChange?: (isMaximized: boolean) => void;
-    isFloating?: boolean;
-    onFloatingChange?: (isFloating: boolean) => void;
     workspaceId?: string;
     workspacePath?: string;
     tabs: TerminalTab[];

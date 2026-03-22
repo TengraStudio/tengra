@@ -142,7 +142,7 @@ export class SecurityScanService extends BaseService {
             execFile(
                 'npm',
                 ['audit', '--json'],
-                { cwd: appRoot, timeout: EXEC_TIMEOUT_MS, shell: false, maxBuffer: 5 * 1024 * 1024 },
+                { cwd: appRoot, timeout: EXEC_TIMEOUT_MS, shell: process.platform === 'win32', maxBuffer: 5 * 1024 * 1024 },
                 (error, stdout, _stderr) => {
                     // npm audit returns exit code 1 when vulnerabilities exist
                     if (stdout && stdout.trim().length > 0) {
@@ -186,7 +186,9 @@ export class SecurityScanService extends BaseService {
     /** Counts severity levels from the vulnerabilities record (npm audit v7+ format). */
     private countFromVulnerabilities(vulns?: NpmAuditMetadata['vulnerabilities']): VulnerabilityCounts {
         const counts: VulnerabilityCounts = { critical: 0, high: 0, moderate: 0, low: 0, info: 0, total: 0 };
-        if (!vulns) {return counts;}
+        if (!vulns) {
+            return counts;
+        }
 
         for (const key of Object.keys(vulns)) {
             const severity = vulns[key]?.severity ?? 'info';

@@ -1,34 +1,34 @@
 const sectionData = {
     "title": "Telemetry",
-    "subtitle": "Usage analytics and diagnostics",
+    "subtitle": "Usage insights and diagnostics",
     "status": {
         "enabled": "Telemetry enabled",
         "disabled": "Telemetry disabled",
         "paused": "Telemetry paused"
     },
     "settings": {
-        "enableTelemetry": "Enable Telemetry",
-        "enableDescription": "Help improve Tengra by sending anonymous usage data.",
-        "dataCollection": "Data Collection",
-        "crashReports": "Crash Reports",
-        "usageStatistics": "Usage Statistics",
-        "performanceData": "Performance Data"
+        "enableTelemetry": "Enable telemetry",
+        "enableDescription": "Help improve Tengra by sharing anonymous usage data.",
+        "dataCollection": "Data collection",
+        "crashReports": "Crash reports",
+        "usageStatistics": "Usage statistics",
+        "performanceData": "Performance data"
     },
     "events": {
-        "queued": "{{count}} events queued",
+        "queued": "{{count}} queued events",
         "sent": "{{count}} events sent",
         "dropped": "{{count}} events dropped",
         "flushing": "Sending telemetry data...",
-        "flushSuccess": "Telemetry data sent successfully.",
-        "flushFailed": "Failed to send telemetry data. Will retry later.",
-        "retrying": "Retrying telemetry flush (attempt {{attempt}}/{{max}})."
+        "flushSuccess": "Telemetry data sent.",
+        "flushFailed": "Couldn't send telemetry data. We'll retry later.",
+        "retrying": "Retrying telemetry upload (attempt {{attempt}}/{{max}})."
     },
     "consent": {
-        "title": "Telemetry Consent",
-        "description": "We collect anonymous usage data to improve the application.",
+        "title": "Telemetry consent",
+        "description": "We collect anonymous usage data to improve the app.",
         "accept": "Accept",
         "decline": "Decline",
-        "learnMore": "Learn More"
+        "learnMore": "Learn more"
     }
 };
 

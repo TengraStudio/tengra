@@ -237,7 +237,12 @@ export const WorkspaceStatsSchema = z.object({
     fileCount: z.number().int().nonnegative(),
     totalSize: z.number().int().nonnegative(),
     loc: z.number().int().nonnegative(),
-    lastModified: z.number().int().nonnegative()
+    lastModified: z.number().int().nonnegative(),
+    largestDirectories: z.array(z.object({
+        path: z.string().max(4096),
+        size: z.number().int().nonnegative(),
+        fileCount: z.number().int().nonnegative(),
+    })).max(20).optional(),
 });
 
 /**
@@ -246,10 +251,28 @@ export const WorkspaceStatsSchema = z.object({
 export const WorkspaceIdSchema = z.string().max(128).optional();
 
 export const WorkspaceIssueSchema = z.object({
-    type: z.enum(['error', 'warning']),
+    severity: z.enum(['error', 'warning', 'info', 'hint']),
     message: z.string(),
     file: z.string(),
-    line: z.number().int().nonnegative()
+    line: z.number().int().nonnegative(),
+    column: z.number().int().nonnegative().optional(),
+    source: z.string(),
+    code: z.union([z.string(), z.number().int()]).optional()
+});
+
+export const CodeAnnotationSchema = z.object({
+    file: z.string(),
+    line: z.number().int().positive(),
+    message: z.string(),
+    type: z.enum(['todo', 'fixme', 'warn', 'error'])
+});
+
+export const WorkspaceLspServerSupportSchema = z.object({
+    languageId: z.string().max(100),
+    serverId: z.string().max(200),
+    status: z.enum(['running', 'available', 'unavailable']),
+    bundled: z.boolean(),
+    fileCount: z.number().int().nonnegative(),
 });
 
 export const WorkspaceAnalysisSchema = z.object({
@@ -271,8 +294,21 @@ export const WorkspaceAnalysisSchema = z.object({
         packages: z.array(z.string().max(256)).max(1000)
     }).optional(),
     todos: z.array(z.string().max(500)).max(1000),
-    issues: z.array(WorkspaceIssueSchema).max(1000).optional()
+    issues: z.array(WorkspaceIssueSchema).max(1000).optional(),
+    annotations: z.array(CodeAnnotationSchema).max(1000).optional(),
+    lspDiagnostics: z.array(WorkspaceIssueSchema).max(5000).optional(),
+    lspServers: z.array(WorkspaceLspServerSupportSchema).max(100).optional(),
 });
+
+export const WorkspaceFileDiagnosticsSchema = z.array(WorkspaceIssueSchema).max(2000);
+
+export const WorkspaceDefinitionLocationSchema = z.object({
+    file: z.string(),
+    line: z.number().int().positive(),
+    column: z.number().int().positive(),
+});
+
+export const WorkspaceDefinitionLocationsSchema = z.array(WorkspaceDefinitionLocationSchema).max(100);
 
 /**
  * Results of a shallow directory analysis

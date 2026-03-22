@@ -1,8 +1,18 @@
 import { useSyncExternalStore } from 'react';
 
-const CURRENT_STORAGE_KEY = 'tengra.ui-layout.v2';
+const CURRENT_STORAGE_KEY = 'tengra.ui-layout.v3';
 const LEGACY_STORAGE_KEY = 'tengra.ui-layout.v1';
-const UI_LAYOUT_SCHEMA_VERSION = 2;
+const UI_LAYOUT_SCHEMA_VERSION = 3;
+
+export interface WorkspaceShellState {
+    sidebarCollapsed: boolean;
+    showAgentPanel: boolean;
+    agentPanelWidth: number;
+    showTerminal: boolean;
+    terminalHeight: number;
+    terminalFloating: boolean;
+    terminalMaximized: boolean;
+}
 
 export interface UiLayoutState {
     version: number;
@@ -13,16 +23,23 @@ export interface UiLayoutState {
     appShell: {
         sidebarCollapsed: boolean;
     };
-    workspaceShell: {
-        sidebarCollapsed: boolean;
-        agentPanelWidth: number;
-        terminalHeight: number;
-    };
+    workspaceShell: WorkspaceShellState;
+    workspaceProfiles: Record<string, WorkspaceShellState>;
 }
 
 type Listener = () => void;
 
 const listeners = new Set<Listener>();
+
+const defaultWorkspaceShellState: WorkspaceShellState = {
+    sidebarCollapsed: false,
+    showAgentPanel: false,
+    agentPanelWidth: 500,
+    showTerminal: false,
+    terminalHeight: 250,
+    terminalFloating: false,
+    terminalMaximized: false,
+};
 
 const defaultState: UiLayoutState = {
     version: UI_LAYOUT_SCHEMA_VERSION,
@@ -33,11 +50,8 @@ const defaultState: UiLayoutState = {
     appShell: {
         sidebarCollapsed: false,
     },
-    workspaceShell: {
-        sidebarCollapsed: false,
-        agentPanelWidth: 380,
-        terminalHeight: 250,
-    },
+    workspaceShell: defaultWorkspaceShellState,
+    workspaceProfiles: {},
 };
 
 let state: UiLayoutState = defaultState;
@@ -96,7 +110,7 @@ function sanitizeAppShell(value: RendererDataValue): UiLayoutState['appShell'] {
     };
 }
 
-function sanitizeworkspaceShell(value: RendererDataValue): UiLayoutState['workspaceShell'] {
+function sanitizeWorkspaceShell(value: RendererDataValue): WorkspaceShellState {
     if (!isObject(value)) {
         return defaultState.workspaceShell;
     }
@@ -105,11 +119,19 @@ function sanitizeworkspaceShell(value: RendererDataValue): UiLayoutState['worksp
             value.sidebarCollapsed,
             defaultState.workspaceShell.sidebarCollapsed
         ),
+        showAgentPanel: toBoolean(
+            value.showAgentPanel,
+            defaultState.workspaceShell.showAgentPanel
+        ),
         agentPanelWidth: toBoundedNumber(
             value.agentPanelWidth,
             defaultState.workspaceShell.agentPanelWidth,
             260,
             640
+        ),
+        showTerminal: toBoolean(
+            value.showTerminal,
+            defaultState.workspaceShell.showTerminal
         ),
         terminalHeight: toBoundedNumber(
             value.terminalHeight,
@@ -117,7 +139,34 @@ function sanitizeworkspaceShell(value: RendererDataValue): UiLayoutState['worksp
             150,
             900
         ),
+        terminalFloating: toBoolean(
+            value.terminalFloating,
+            defaultState.workspaceShell.terminalFloating
+        ),
+        terminalMaximized: toBoolean(
+            value.terminalMaximized,
+            defaultState.workspaceShell.terminalMaximized
+        ),
     };
+}
+
+function sanitizeWorkspaceProfiles(
+    value: RendererDataValue
+): Record<string, WorkspaceShellState> {
+    if (!isObject(value)) {
+        return {};
+    }
+
+    const profiles: Record<string, WorkspaceShellState> = {};
+    for (const [workspaceId, rawProfile] of Object.entries(value)) {
+        const normalizedWorkspaceId = workspaceId.trim();
+        if (!normalizedWorkspaceId) {
+            continue;
+        }
+        profiles[normalizedWorkspaceId] = sanitizeWorkspaceShell(rawProfile);
+    }
+
+    return profiles;
 }
 
 function migrateLegacyUiLayout(raw: RendererDataValue): UiLayoutState | null {
@@ -149,7 +198,8 @@ export function sanitizeUiLayoutState(raw: RendererDataValue): UiLayoutState {
         version: UI_LAYOUT_SCHEMA_VERSION,
         activityBar: sanitizeActivityBar(raw.activityBar),
         appShell: sanitizeAppShell(raw.appShell),
-        workspaceShell: sanitizeworkspaceShell(raw.workspaceShell),
+        workspaceShell: sanitizeWorkspaceShell(raw.workspaceShell),
+        workspaceProfiles: sanitizeWorkspaceProfiles(raw.workspaceProfiles),
     };
 }
 
@@ -177,6 +227,21 @@ hydrate();
 
 export function getUiLayoutSnapshot(): UiLayoutState {
     return state;
+}
+
+export function selectWorkspaceShellState(
+    snapshot: UiLayoutState,
+    workspaceId?: string | null
+): WorkspaceShellState {
+    if (!workspaceId) {
+        return snapshot.workspaceShell;
+    }
+
+    return snapshot.workspaceProfiles[workspaceId] ?? snapshot.workspaceShell;
+}
+
+export function getWorkspaceShellState(workspaceId?: string | null): WorkspaceShellState {
+    return selectWorkspaceShellState(state, workspaceId);
 }
 
 export function subscribeUiLayout(listener: Listener): () => void {
@@ -219,16 +284,65 @@ export function setAppShellState(update: Partial<UiLayoutState['appShell']>): vo
     emit();
 }
 
-export function setWorkspaceShellState(update: Partial<UiLayoutState['workspaceShell']>): void {
+function areWorkspaceShellStatesEqual(
+    left: WorkspaceShellState,
+    right: WorkspaceShellState
+): boolean {
+    return (
+        left.sidebarCollapsed === right.sidebarCollapsed &&
+        left.showAgentPanel === right.showAgentPanel &&
+        left.agentPanelWidth === right.agentPanelWidth &&
+        left.showTerminal === right.showTerminal &&
+        left.terminalHeight === right.terminalHeight &&
+        left.terminalFloating === right.terminalFloating &&
+        left.terminalMaximized === right.terminalMaximized
+    );
+}
+
+export function setWorkspaceShellState(update: Partial<WorkspaceShellState>): void;
+export function setWorkspaceShellState(
+    workspaceId: string,
+    update: Partial<WorkspaceShellState>
+): void;
+export function setWorkspaceShellState(
+    workspaceIdOrUpdate: string | Partial<WorkspaceShellState>,
+    maybeUpdate?: Partial<WorkspaceShellState>
+): void {
+    if (typeof workspaceIdOrUpdate === 'string') {
+        const workspaceId = workspaceIdOrUpdate.trim();
+        if (!workspaceId) {
+            return;
+        }
+
+        const update = maybeUpdate ?? {};
+        const currentProfile = selectWorkspaceShellState(state, workspaceId);
+        const nextProfile = {
+            ...currentProfile,
+            ...update,
+        };
+
+        if (areWorkspaceShellStatesEqual(currentProfile, nextProfile)) {
+            return;
+        }
+
+        state = {
+            ...state,
+            workspaceProfiles: {
+                ...state.workspaceProfiles,
+                [workspaceId]: nextProfile,
+            },
+        };
+        persist();
+        emit();
+        return;
+    }
+
+    const update = workspaceIdOrUpdate;
     const next = {
         ...state.workspaceShell,
         ...update,
     };
-    if (
-        next.sidebarCollapsed === state.workspaceShell.sidebarCollapsed &&
-        next.agentPanelWidth === state.workspaceShell.agentPanelWidth &&
-        next.terminalHeight === state.workspaceShell.terminalHeight
-    ) {
+    if (areWorkspaceShellStatesEqual(next, state.workspaceShell)) {
         return;
     }
     state = {

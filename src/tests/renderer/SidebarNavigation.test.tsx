@@ -60,4 +60,22 @@ describe('SidebarNavigation', () => {
         fireEvent.focus(screen.getByRole('button', { name: 'sidebar.workspaces' }));
         expect(preloadViewResources).toHaveBeenCalledWith('workspace');
     });
+
+    it('deduplicates preload calls for the same view', () => {
+        render(
+            <SidebarNavigation
+                currentView={'chat' as AppView}
+                onChangeView={vi.fn()}
+                isCollapsed={false}
+                chatsCount={0}
+                t={t}
+            />
+        );
+
+        const workspaceButton = screen.getByRole('button', { name: 'sidebar.workspaces' });
+        fireEvent.mouseEnter(workspaceButton);
+        fireEvent.focus(workspaceButton);
+        expect(preloadViewResources).toHaveBeenCalledTimes(1);
+        expect(preloadViewResources).toHaveBeenCalledWith('workspace');
+    });
 });

@@ -66,7 +66,12 @@ const extractIsClean = (batched: BatchedGitResults): boolean | null => {
 const extractLastCommit = (batched: BatchedGitResults) => {
     const lc = batched.lastCommit;
     if (!lc?.success || !lc.hash) { return null; }
-    return { hash: lc.hash, message: lc.message ?? '', author: lc.author ?? '', relativeTime: lc.relativeTime ?? '' };
+    return { 
+        hash: lc.hash, 
+        message: lc.message ?? '', 
+        author: lc.author ?? '', 
+        relativeTime: lc.relativeTime ?? '' 
+    };
 };
 
 const extractRecentCommits = (result: RecentCommitsResult) => {
@@ -128,10 +133,10 @@ const normalizeSectionError = (error: string | undefined, fallback: string): str
 
 const extractStatusSectionError = (batched: BatchedGitResults): string | null => {
     const errors = [
-        batched.branch?.success === false ? normalizeSectionError(batched.branch.error, 'branch') : null,
-        batched.status?.success === false ? normalizeSectionError(batched.status.error, 'status') : null,
-        batched.lastCommit?.success === false ? normalizeSectionError(batched.lastCommit.error, 'lastCommit') : null,
-        batched.branches?.success === false ? normalizeSectionError(batched.branches.error, 'branches') : null,
+        batched.branch?.success === false ? normalizeSectionError(batched.branch?.error, 'branch') : null,
+        batched.status?.success === false ? normalizeSectionError(batched.status?.error, 'status') : null,
+        batched.lastCommit?.success === false ? normalizeSectionError(batched.lastCommit?.error, 'lastCommit') : null,
+        batched.branches?.success === false ? normalizeSectionError(batched.branches?.error, 'branches') : null,
     ].filter((value): value is string => value !== null);
 
     return errors.length > 0 ? errors.join(', ') : null;

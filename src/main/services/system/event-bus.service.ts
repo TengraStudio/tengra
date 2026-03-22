@@ -3,6 +3,7 @@ import { EventEmitter } from 'events';
 
 import { BaseService } from '@main/services/base.service';
 import { SERVICE_DEFAULTS } from '@shared/constants/defaults';
+import { RuntimeValue } from '@shared/types/common';
 import { SystemEventKey, SystemEvents } from '@shared/types/events';
 
 /**

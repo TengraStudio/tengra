@@ -11,7 +11,7 @@ import { z } from 'zod';
  */
 export function registerKeyRotationIpc(getMainWindow: () => BrowserWindow | null, keyRotationService: KeyRotationService) {
     const validateSender = createMainWindowSenderValidator(getMainWindow, 'key-rotation operation');
-    appLogger.info('KeyRotationIPC', 'Registering key rotation IPC handlers');
+    appLogger.debug('KeyRotationIPC', 'Registering key rotation IPC handlers');
 
     /**
      * Get current key for a provider

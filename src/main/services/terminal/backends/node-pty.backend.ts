@@ -47,10 +47,10 @@ export class NodePtyBackend implements ITerminalBackend {
      */
     public async create(options: TerminalCreateOptions): Promise<ITerminalProcess> {
         if (!this.ptyModule) {
-            throw new Error('node-pty backend is not available');
+            throw new Error('error.terminal.pty_not_available');
         }
 
-        appLogger.info('NodePtyBackend', `Spawning PTY: shell=${options.shell}, cwd=${options.cwd}, dims=${options.cols}x${options.rows}`);
+        appLogger.debug('NodePtyBackend', `Spawning PTY: shell=${options.shell}, cwd=${options.cwd}, dims=${options.cols}x${options.rows}`);
 
         const ptyProcess = this.ptyModule.spawn(options.shell, options.args, {
             name: 'xterm-256color',

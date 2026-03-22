@@ -1,6 +1,7 @@
 import { Dispatch, SetStateAction } from 'react';
 
 import { Chat, ChatError, Message, ToolCall } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { categorizeError, processStreamChunk, StreamChunk, StreamChunkResult } from './utils';
 
@@ -332,7 +333,7 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
         pendingDbSave = saveMessageToDb(saveOptions)
             .catch((error: RendererDataValue) => {
                 const err = error instanceof Error ? error : new Error(String(error));
-                window.electron.log.error('[processChatStream] Failed to save streamed message', err);
+                appLogger.error('processChatStream', 'Failed to save streamed message', err);
             })
             .finally(() => {
                 pendingDbSave = null;
@@ -479,7 +480,7 @@ const updateChatById = (
     return updatedChats;
 };
 
-const updateChatsState = (options: UpdateChatsStateOptions) => {
+const updateChatsState = (options: UpdateChatsStateOptions): void => {
     const { setChats, chatId, assistantId, model, content, reasoning, variants } = options;
     setChats(prev => updateChatById(prev, chatId, (chat) => {
         const currentVariants = createVariantsArray(assistantId, model, variants);

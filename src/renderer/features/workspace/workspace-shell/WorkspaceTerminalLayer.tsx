@@ -13,19 +13,16 @@ import type { TerminalTab } from '@/types';
 const MIN_TERMINAL_HEIGHT = 150;
 
 interface WorkspaceTerminalLayerProps {
-    showTerminal: boolean;
-    isFloatingTerminal: boolean;
+    showTerminal: boolean; 
     isMaximizedTerminal: boolean;
     isResizingTerminal: boolean;
     sidebarCollapsed: boolean;
-    terminalHeight: number;
-    floatingTerminalLayout: { leftPx: number; widthPx: number };
+    terminalHeight: number; 
     dockedTerminalRightInsetPx: number;
     lastExpandedTerminalHeightRef: React.MutableRefObject<number>;
     setShowTerminal: (show: boolean) => void;
     setIsMaximizedTerminal: React.Dispatch<React.SetStateAction<boolean>>;
-    setIsResizingTerminal: React.Dispatch<React.SetStateAction<boolean>>;
-    setIsFloatingTerminal: React.Dispatch<React.SetStateAction<boolean>>;
+    setIsResizingTerminal: React.Dispatch<React.SetStateAction<boolean>>; 
     setTerminalHeight: (height: number) => void;
     workspaceId: string;
     workspacePath: string;
@@ -36,21 +33,17 @@ interface WorkspaceTerminalLayerProps {
     onOpenFile: (path: string, line?: number) => void;
 }
 
-/** Renders the terminal panel with resizable / floating support. */
+/** Renders the terminal panel with resizable support. */
 export const WorkspaceTerminalLayer: React.FC<WorkspaceTerminalLayerProps> = ({
-    showTerminal,
-    isFloatingTerminal,
+    showTerminal, 
     isMaximizedTerminal,
     isResizingTerminal,
-    sidebarCollapsed,
     terminalHeight,
-    floatingTerminalLayout,
     dockedTerminalRightInsetPx,
     lastExpandedTerminalHeightRef,
     setShowTerminal,
     setIsMaximizedTerminal,
-    setIsResizingTerminal,
-    setIsFloatingTerminal,
+    setIsResizingTerminal, 
     setTerminalHeight,
     workspaceId,
     workspacePath,
@@ -68,24 +61,13 @@ export const WorkspaceTerminalLayer: React.FC<WorkspaceTerminalLayerProps> = ({
                 transition={{ duration: 0.15 }}
                 exit={{ opacity: 0, y: 8 }}
                 className={cn(
-                    'absolute z-30',
-                    isFloatingTerminal
-                        ? 'z-50'
-                        : sidebarCollapsed
-                            ? 'left-2'
-                            : 'left-[calc(18rem+0.5rem)]'
+                    'absolute z-30 left-[calc(18rem+0rem)]'
                 )}
                 style={
-                    isFloatingTerminal
-                        ? {
-                            left: `${floatingTerminalLayout.leftPx}px`,
-                            width: `${floatingTerminalLayout.widthPx}px`,
-                            bottom: `${DOCKED_TERMINAL_BOTTOM_OFFSET_PX}px`,
-                        }
-                        : {
-                            right: `${dockedTerminalRightInsetPx}px`,
-                            bottom: `${DOCKED_TERMINAL_BOTTOM_OFFSET_PX}px`,
-                        }
+                    {
+                        right: `${dockedTerminalRightInsetPx}px`,
+                        bottom: `${DOCKED_TERMINAL_BOTTOM_OFFSET_PX}px`,
+                    }
                 }
             >
                 <Resizable
@@ -93,7 +75,7 @@ export const WorkspaceTerminalLayer: React.FC<WorkspaceTerminalLayerProps> = ({
                         width: '100%',
                         height: isMaximizedTerminal ? '70vh' : terminalHeight,
                     }}
-                    minHeight={isFloatingTerminal ? 220 : MIN_RESIZABLE_TERMINAL_HEIGHT}
+                    minHeight={MIN_RESIZABLE_TERMINAL_HEIGHT}
                     maxHeight={window.innerHeight * 0.8}
                     enable={{
                         top: !isMaximizedTerminal,
@@ -125,7 +107,7 @@ export const WorkspaceTerminalLayer: React.FC<WorkspaceTerminalLayerProps> = ({
                     onResizeStop={(_event, _direction, ref) => {
                         setIsResizingTerminal(false);
                         const nextHeight = ref.offsetHeight;
-                        if (!isFloatingTerminal && nextHeight < MIN_TERMINAL_HEIGHT) {
+                        if (nextHeight < MIN_TERMINAL_HEIGHT) {
                             setShowTerminal(false);
                             setIsMaximizedTerminal(false);
                             setTerminalHeight(lastExpandedTerminalHeightRef.current);
@@ -146,9 +128,7 @@ export const WorkspaceTerminalLayer: React.FC<WorkspaceTerminalLayerProps> = ({
                     }}
                     className={cn(
                         'border border-border/70 flex flex-col overflow-hidden',
-                        isFloatingTerminal
-                            ? 'rounded-xl shadow-lg'
-                            : 'border-x-0 border-b-0 shadow-none',
+                        'border-x-0 border-b-0 shadow-none',
                         isResizingTerminal && 'transition-none'
                     )}
                 >
@@ -158,8 +138,6 @@ export const WorkspaceTerminalLayer: React.FC<WorkspaceTerminalLayerProps> = ({
                             onToggle={() => setShowTerminal(false)}
                             isMaximized={isMaximizedTerminal}
                             onMaximizeChange={setIsMaximizedTerminal}
-                            isFloating={isFloatingTerminal}
-                            onFloatingChange={setIsFloatingTerminal}
                             workspaceId={workspaceId}
                             workspacePath={workspacePath}
                             tabs={tabs}

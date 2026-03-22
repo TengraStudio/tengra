@@ -3,7 +3,7 @@ import React from 'react';
 import { TerminalTab } from '@/types';
 
 import type { AiPanelMode, AiResult } from '../hooks/useTerminalAI';
-import type { TaskRunnerEntry,TerminalHistoryEntry } from '../hooks/useTerminalCommandTools';
+import type { TaskRunnerEntry, TerminalHistoryEntry } from '../hooks/useTerminalCommandTools';
 import type { TerminalRecording } from '../hooks/useTerminalRecording';
 import type { MultiplexerMode, MultiplexerSession } from '../utils/terminal-panel-types';
 import type { TerminalSemanticIssue } from '../utils/terminal-panel-types';
@@ -17,7 +17,6 @@ export interface TerminalPanelOverlaysConnectorProps {
     displayTabs: TerminalTab[];
     isGalleryView: boolean;
     hasActiveSession: boolean;
-    isFloating: boolean;
     workspacePath?: string;
     splitView: { primaryId: string; secondaryId: string } | null;
     isSynchronizedInputEnabled: boolean;
@@ -53,8 +52,6 @@ export interface TerminalPanelOverlaysConnectorProps {
     openTerminalSearch: () => void;
     toggleSemanticPanel: () => void;
     toggleGalleryView: () => void;
-    toggleFloatingMode: () => void;
-    onFloatingChange?: (isFloating: boolean) => void;
     openCommandHistory: () => void;
     openTaskRunner: () => void;
     openMultiplexerPanel: () => void;
@@ -157,9 +154,6 @@ export const TerminalPanelOverlaysConnector: React.FC<TerminalPanelOverlaysConne
                 onSearch: p.openTerminalSearch,
                 onSemanticToggle: p.toggleSemanticPanel,
                 onGalleryToggle: p.toggleGalleryView,
-                onFloatingToggle: p.onFloatingChange
-                    ? () => { p.toggleFloatingMode(); p.setTerminalContextMenu(null); }
-                    : undefined,
                 onHistoryToggle: p.openCommandHistory,
                 onTaskRunnerToggle: p.openTaskRunner,
                 onMultiplexerToggle: p.openMultiplexerPanel,
@@ -188,7 +182,6 @@ export const TerminalPanelOverlaysConnector: React.FC<TerminalPanelOverlaysConne
                 semanticIssueCount: p.activeSemanticIssues.length,
                 semanticErrorCount: p.activeSemanticErrorCount,
                 semanticWarningCount: p.activeSemanticWarningCount,
-                isFloating: p.isFloating,
                 workspacePath: p.workspacePath,
                 pasteHistory: p.pasteHistory,
                 onPasteHistory: entry => { void p.handlePasteFromHistory(entry); },
@@ -204,7 +197,6 @@ export const TerminalPanelOverlaysConnector: React.FC<TerminalPanelOverlaysConne
                     semanticIssues: p.t('terminal.semanticIssues'),
                     galleryView: p.t('terminal.galleryView'),
                     exitGalleryView: p.t('terminal.exitGalleryView'),
-                    floatTerminal: p.t('terminal.floatTerminal'),
                     dockTerminal: p.t('terminal.dockTerminal'),
                     commandHistory: p.t('terminal.commandHistory'),
                     runTask: p.t('terminal.runTask'),

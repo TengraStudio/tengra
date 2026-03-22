@@ -66,6 +66,12 @@ interface MessageProps {
     id?: string;
     isFocused?: boolean;
     onSourceClick?: (path: string) => void;
+    footerConfig?: {
+        showTimestamp?: boolean;
+        showTokens?: boolean;
+        showModel?: boolean;
+        showResponseTime?: boolean;
+    };
 }
 
 // --- Helper Functions ---
@@ -1490,32 +1496,46 @@ interface MessageFooterProps {
     language: Language;
     isStreaming?: boolean;
     streamingSpeed?: number | null;
+    config?: MessageProps['footerConfig'];
 }
 
 const MessageFooter = memo(
-    ({ message, displayContent, language, isStreaming, streamingSpeed }: MessageFooterProps) => {
+    ({ message, displayContent, language, isStreaming, streamingSpeed, config }: MessageFooterProps) => {
         const { t } = useTranslation(language);
+        
+        // Default to showing everything if no config provided
+        const showTimestamp = config?.showTimestamp ?? true;
+        const showTokens = config?.showTokens ?? true;
+        const showModel = config?.showModel ?? true;
+        const showResponseTime = config?.showResponseTime ?? true;
+
         return (
             <div className="flex items-center gap-3 mt-2 text-xxs text-muted-foreground/40 font-medium">
-                <span>
-                    {new Date(message.timestamp).toLocaleTimeString(t('common.locale'), {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                    })}
-                </span>
-                <span className="h-1 rounded-full bg-muted-foreground/20" />
-                <span>
-                    {t('messageBubble.tokenEstimate', {
-                        count: Math.ceil(displayContent.length / 4),
-                    })}
-                </span>
-                {message.model && (
+                {showTimestamp && (
+                    <span>
+                        {new Date(message.timestamp).toLocaleTimeString(t('common.locale'), {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                        })}
+                    </span>
+                )}
+                {showTokens && (
+                    <>
+                        <span className="h-1 rounded-full bg-muted-foreground/20" />
+                        <span>
+                            {t('messageBubble.tokenEstimate', {
+                                count: Math.ceil(displayContent.length / 4),
+                            })}
+                        </span>
+                    </>
+                )}
+                {showModel && message.model && (
                     <>
                         <span className="h-1 rounded-full bg-muted-foreground/20" />
                         <span className="truncate max-w-[120px]">{message.model}</span>
                     </>
                 )}
-                {message.responseTime && (
+                {showResponseTime && message.responseTime && (
                     <>
                         <span className="h-1 rounded-full bg-muted-foreground/20" />
                         <span className="text-success/60">
@@ -1558,6 +1578,7 @@ const MessageVariantCard = memo(
         onStop,
         isSpeaking,
         showRawMarkdown,
+        footerConfig,
     }: {
         variant: MessageVariant;
         isSelected: boolean;
@@ -1569,6 +1590,7 @@ const MessageVariantCard = memo(
         onStop?: () => void;
         isSpeaking?: boolean;
         showRawMarkdown: boolean;
+        footerConfig?: MessageProps['footerConfig'];
     }) => {
         const { displayContent } = useMessageContent(variant.content, undefined, undefined);
         const is429 = useMemo(
@@ -1634,9 +1656,20 @@ const MessageVariantCard = memo(
                     />
                 </div>
 
-                <div className="mt-2 text-xxs text-muted-foreground/40 font-medium flex justify-between items-center">
-                    <span>{new Date(variant.timestamp).toLocaleTimeString()}</span>
-                </div>
+                <MessageFooter
+                    message={{
+                        id: variant.id ?? 'v',
+                        content: variant.content,
+                        role: 'assistant',
+                        timestamp: variant.timestamp,
+                        model: variant.model,
+                        provider: variant.provider,
+                    } as Message}
+                    displayContent={displayContent}
+                    language={t('common.locale') as Language}
+                    isStreaming={isStreaming}
+                    config={footerConfig}
+                />
             </div>
         );
     }
@@ -1656,6 +1689,7 @@ const MessageVariantsGrid = memo(
         onStop,
         isSpeaking,
         showRawMarkdown,
+        footerConfig,
     }: {
         variants: MessageVariant[];
         selectedVariantId: string | null;
@@ -1668,6 +1702,7 @@ const MessageVariantsGrid = memo(
         onStop?: () => void;
         isSpeaking?: boolean;
         showRawMarkdown: boolean;
+        footerConfig?: MessageProps['footerConfig'];
     }) => (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {variants.map(variant => (
@@ -1688,6 +1723,7 @@ const MessageVariantsGrid = memo(
                     onStop={onStop}
                     isSpeaking={isSpeaking}
                     showRawMarkdown={showRawMarkdown}
+                    footerConfig={footerConfig}
                 />
             ))}
         </div>
@@ -1708,6 +1744,7 @@ const VariantsView = memo(
         isSpeaking,
         showRawMarkdown,
         t,
+        footerConfig,
     }: {
         message: Message;
         backend?: string;
@@ -1718,6 +1755,7 @@ const VariantsView = memo(
         isSpeaking?: boolean;
         showRawMarkdown: boolean;
         t: TranslationFn;
+        footerConfig?: MessageProps['footerConfig'];
     }) => {
         const variants = message.variants ?? [];
         const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
@@ -1748,6 +1786,7 @@ const VariantsView = memo(
                     onStop={onStop}
                     isSpeaking={isSpeaking}
                     showRawMarkdown={showRawMarkdown}
+                    footerConfig={footerConfig}
                 />
             </div>
         );
@@ -1775,6 +1814,7 @@ interface SingleMessageViewProps {
     id?: string;
     isFocused?: boolean;
     onSourceClick?: (path: string) => void;
+    footerConfig?: MessageProps['footerConfig'];
 }
 
 interface ContentRenderContext {
@@ -1882,6 +1922,7 @@ const SingleMessageViewContent = memo(
         language,
         streamingSpeed,
         t,
+        footerConfig,
     }: {
         message: Message;
         backend?: string;
@@ -1905,6 +1946,7 @@ const SingleMessageViewContent = memo(
         language: Language;
         streamingSpeed?: number | null;
         t: TranslationFn;
+        footerConfig?: MessageProps['footerConfig'];
     }) => {
         const wrapperClasses = buildWrapperClasses(isUser, isFocused);
         const contentWrapperClasses = buildContentWrapperClasses(isUser);
@@ -1966,6 +2008,7 @@ const SingleMessageViewContent = memo(
                                 language={language}
                                 isStreaming={isStreaming}
                                 streamingSpeed={streamingSpeed}
+                                config={footerConfig}
                             />
                         )}
                     </div>
@@ -2004,6 +2047,7 @@ const SingleMessageView = memo(
         id,
         isFocused,
         onSourceClick,
+        footerConfig,
     }: SingleMessageViewProps) => {
         const { t } = useTranslation(_language);
         const isUser = message.role === 'user';
@@ -2114,100 +2158,137 @@ const SingleMessageView = memo(
                 language={_language}
                 streamingSpeed={streamingSpeed}
                 t={t}
+                footerConfig={footerConfig}
             />
         );
     }
 );
 SingleMessageView.displayName = 'SingleMessageView';
 
-const areMessagePropsEqual = (prev: MessageProps, next: MessageProps) => {
-    // 1. Primitive props check
-    const primitiveKeys: (keyof MessageProps)[] = [
-        'isLast',
-        'isStreaming',
-        'isFocused',
-        'backend',
-        'language',
-        'streamingSpeed',
-        'streamingReasoning',
-        'id',
-    ];
+const MESSAGE_PROP_PRIMITIVE_KEYS: (keyof MessageProps)[] = [
+    'isLast',
+    'isStreaming',
+    'isFocused',
+    'backend',
+    'language',
+    'streamingSpeed',
+    'streamingReasoning',
+    'id',
+];
 
-    if (primitiveKeys.some(key => prev[key] !== next[key])) {
+const MESSAGE_FIELD_KEYS: (keyof Message)[] = [
+    'id',
+    'role',
+    'timestamp',
+    'model',
+    'provider',
+    'isBookmarked',
+    'rating',
+];
+
+const areStringArraysEqual = (
+    left: string[] | undefined,
+    right: string[] | undefined
+): boolean => {
+    if (left === right) {
+        return true;
+    }
+    if ((left?.length ?? -1) !== (right?.length ?? -1) || !left || !right) {
+        return false;
+    }
+    for (let i = 0; i < left.length; i++) {
+        if (left[i] !== right[i]) {
+            return false;
+        }
+    }
+    return true;
+};
+
+const areMessageContentsEqual = (leftContent: Message['content'], rightContent: Message['content']): boolean => {
+    if (typeof leftContent === 'string' && typeof rightContent === 'string') {
+        return leftContent === rightContent;
+    }
+    if (!Array.isArray(leftContent) || !Array.isArray(rightContent)) {
+        return false;
+    }
+    if (leftContent.length !== rightContent.length) {
+        return false;
+    }
+    for (let i = 0; i < leftContent.length; i++) {
+        const left = leftContent[i];
+        const right = rightContent[i];
+        if (left.type !== right.type) {
+            return false;
+        }
+        if (left.type === 'text') {
+            if (right.type !== 'text' || left.text !== right.text) {
+                return false;
+            }
+            continue;
+        }
+        if (
+            right.type !== 'image_url' ||
+            left.image_url.url !== right.image_url.url ||
+            left.image_url.detail !== right.image_url.detail
+        ) {
+            return false;
+        }
+    }
+    return true;
+};
+
+const areMessageVariantsEqual = (
+    leftVariants: MessageVariant[] | undefined,
+    rightVariants: MessageVariant[] | undefined
+): boolean => {
+    if (leftVariants === rightVariants) {
+        return true;
+    }
+    if ((leftVariants?.length ?? -1) !== (rightVariants?.length ?? -1) || !leftVariants || !rightVariants) {
+        return false;
+    }
+    for (let i = 0; i < leftVariants.length; i++) {
+        const left = leftVariants[i];
+        const right = rightVariants[i];
+        const timestampsMatch =
+            left.timestamp instanceof Date && right.timestamp instanceof Date
+                ? left.timestamp.getTime() === right.timestamp.getTime()
+                : String(left.timestamp) === String(right.timestamp);
+        if (
+            left.id !== right.id ||
+            left.content !== right.content ||
+            left.model !== right.model ||
+            left.provider !== right.provider ||
+            left.label !== right.label ||
+            left.status !== right.status ||
+            left.error !== right.error ||
+            left.isSelected !== right.isSelected ||
+            !timestampsMatch
+        ) {
+            return false;
+        }
+    }
+    return true;
+};
+
+const areMessagePropsEqual = (prev: MessageProps, next: MessageProps) => {
+    if (MESSAGE_PROP_PRIMITIVE_KEYS.some(key => prev[key] !== next[key])) {
         return false;
     }
 
-    // 2. Message object check
     const pm = prev.message;
     const nm = next.message;
-
     if (pm === nm) {
         return true;
-    } // Reference equality
+    }
 
-    // Field-level check for relevant properties
-    const messageFields: (keyof Message)[] = [
-        'id',
-        'role',
-        'timestamp',
-        'model',
-        'provider',
-        'isBookmarked',
-        'rating',
-    ];
-
-    if (messageFields.some(key => pm[key] !== nm[key])) {
+    if (MESSAGE_FIELD_KEYS.some(key => pm[key] !== nm[key])) {
         return false;
     }
 
-    // Deep check for content (string or array of parts)
-    if (typeof pm.content === 'string' && typeof nm.content === 'string') {
-        if (pm.content !== nm.content) {
-            return false;
-        }
-    } else if (Array.isArray(pm.content) && Array.isArray(nm.content)) {
-        if (pm.content.length !== nm.content.length) {
-            return false;
-        }
-        for (let i = 0; i < pm.content.length; i++) {
-            const left = pm.content[i];
-            const right = nm.content[i];
-            if (left.type !== right.type) {
-                return false;
-            }
-            if (left.type === 'text' && right.type === 'text' && left.text !== right.text) {
-                return false;
-            }
-            if (
-                left.type === 'image_url' &&
-                right.type === 'image_url' &&
-                (left.image_url.url !== right.image_url.url ||
-                    left.image_url.detail !== right.image_url.detail)
-            ) {
-                return false;
-            }
-        }
-    } else {
+    if (!areMessageContentsEqual(pm.content, nm.content)) {
         return false;
     }
-
-    const areStringArraysEqual = (
-        left: string[] | undefined,
-        right: string[] | undefined
-    ): boolean => {
-        if (left === right) {
-            return true;
-        }
-        if (!left || left.length !== right?.length) {
-            return false;
-        }
-        for (let i = 0; i < left.length; i++) {
-            if (left[i] !== right[i]) {
-                return false;
-            }
-        }
-        return true;
-    };
 
     if (
         !areStringArraysEqual(pm.images, nm.images) ||
@@ -2221,33 +2302,11 @@ const areMessagePropsEqual = (prev: MessageProps, next: MessageProps) => {
         return false;
     }
 
-    if (pm.variants === nm.variants) {
-        return true;
-    }
-    if ((pm.variants?.length ?? -1) !== (nm.variants?.length ?? -1)) {
+    if (JSON.stringify(prev.footerConfig ?? {}) !== JSON.stringify(next.footerConfig ?? {})) {
         return false;
     }
-    if (!pm.variants || !nm.variants) {
-        return false;
-    }
-    for (let i = 0; i < pm.variants.length; i++) {
-        const left = pm.variants[i];
-        const right = nm.variants[i];
-        if (
-            left.id !== right.id ||
-            left.content !== right.content ||
-            left.model !== right.model ||
-            left.provider !== right.provider ||
-            left.label !== right.label ||
-            left.status !== right.status ||
-            left.error !== right.error ||
-            left.isSelected !== right.isSelected ||
-            left.timestamp.getTime() !== right.timestamp.getTime()
-        ) {
-            return false;
-        }
-    }
-    return true;
+
+    return areMessageVariantsEqual(pm.variants, nm.variants);
 };
 
 export const MessageBubble = memo(
@@ -2271,10 +2330,17 @@ export const MessageBubble = memo(
         id,
         isFocused,
         onSourceClick,
+        footerConfig,
     }: MessageProps) => {
         const { t } = useTranslation(language);
         const variants = message.variants ?? [];
-        const hasVariants = variants.length > 1 && message.role !== 'user';
+        const uniqueVariantsContent = new Set(
+            variants.map(v => (typeof v.content === 'string' ? v.content.trim() : ''))
+        );
+        const hasVariants =
+            variants.length > 1 &&
+            message.role !== 'user' &&
+            uniqueVariantsContent.size > 1;
 
         if (hasVariants) {
             return (
@@ -2295,6 +2361,7 @@ export const MessageBubble = memo(
                         isSpeaking={isSpeaking}
                         showRawMarkdown={false}
                         t={t}
+                        footerConfig={footerConfig}
                     />
                 </div>
             );
@@ -2321,6 +2388,7 @@ export const MessageBubble = memo(
                 id={id}
                 isFocused={isFocused}
                 onSourceClick={onSourceClick}
+                footerConfig={footerConfig}
             />
         );
     },

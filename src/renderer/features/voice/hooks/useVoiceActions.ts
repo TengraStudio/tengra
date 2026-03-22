@@ -6,13 +6,14 @@
 import { useCallback, useEffect } from 'react';
 
 import { useTranslation } from '@/i18n';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface UseVoiceActionsParams {
-    setCurrentView: (view: 'chat' | 'workspace' | 'settings' | 'models') => void
-    addToast: (toast: { type: 'info'; message: string }) => void
-    createNewChat: () => void
-    handleSend: () => Promise<void> | void
-    setInput: (value: string) => void
+    setCurrentView: (view: 'chat' | 'workspace' | 'settings' | 'models') => void;
+    addToast: (toast: { type: 'info'; message: string }) => void;
+    createNewChat: () => void;
+    handleSend: () => Promise<void> | void;
+    setInput: (value: string) => void;
 }
 
 export function useVoiceActions({
@@ -47,7 +48,7 @@ export function useVoiceActions({
                 setCurrentView('models');
                 break;
             default:
-                window.electron.log.warn('VoiceActions', `Unknown navigation target: ${target}`);
+                appLogger.warn('VoiceActions', `Unknown navigation target: ${target}`);
         }
     }, [setCurrentView, createNewChat]);
 
@@ -72,7 +73,7 @@ export function useVoiceActions({
                 });
                 break;
             default:
-                window.electron.log.warn('VoiceActions', `Unknown execute command: ${command}`);
+                appLogger.warn('VoiceActions', `Unknown execute command: ${command}`);
         }
     }, [handleSend, addToast, t]);
 

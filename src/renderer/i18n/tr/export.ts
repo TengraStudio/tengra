@@ -1,7 +1,7 @@
 const sectionData = {
-    "title": "İhracat",
+    "title": "Dışa Aktarma",
     "formatMarkdown": "Markdown",
-    "formatPdf": "PDF'ler",
+    "formatPdf": "PDF",
     "exporting": "Dışa aktarılıyor...",
     "confirm": "Dışa aktarma başarılı"
 };

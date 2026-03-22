@@ -1,4 +1,5 @@
 import { WorkspaceMount } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface SSHForm {
     host: string;
@@ -59,7 +60,7 @@ interface ImportLocalOptions {
     t: (key: string) => string;
 }
 
-export const useSSHConnectHandler = (options: SSHConnectOptions) => {
+export const useSSHConnectHandler = (options: SSHConnectOptions): () => Promise<void> => {
     const { sshForm, setIsLoading, setError, setStep, setSshConnectionId, loadRemoteDirectory, t } = options;
     const handleSSHConnect = async () => {
         if (!sshForm.host.trim() || !sshForm.username.trim()) {
@@ -109,7 +110,7 @@ export const useSSHConnectHandler = (options: SSHConnectOptions) => {
     return handleSSHConnect;
 };
 
-export const useCreateWorkspaceHandler = (options: CreateWorkspaceOptions) => {
+export const useCreateWorkspaceHandler = (options: CreateWorkspaceOptions): () => Promise<void> => {
     const { formData, setIsLoading, setError, setStep, onWorkspaceCreated, onClose, t } = options;
     const handleCreate = async () => {
         if (!formData.name) {
@@ -143,7 +144,7 @@ export const useCreateWorkspaceHandler = (options: CreateWorkspaceOptions) => {
 
         } catch (err) {
             const errorToReport = err instanceof Error ? err : new Error(t('workspace.errors.wizard.createWorkspaceFailed'));
-            window.electron.log.error('Workspace Creation Failed:', errorToReport);
+            appLogger.error('useWizardHandlers', 'Workspace Creation Failed', errorToReport);
             setError(errorToReport.message);
             setStep('details');
         } finally {
@@ -154,7 +155,7 @@ export const useCreateWorkspaceHandler = (options: CreateWorkspaceOptions) => {
     return handleCreate;
 };
 
-export const useImportLocalHandler = (options: ImportLocalOptions) => {
+export const useImportLocalHandler = (options: ImportLocalOptions): () => Promise<void> => {
     const { formData, setIsLoading, setError, onWorkspaceCreated, onClose, t } = options;
     const handleImportLocal = async () => {
         setIsLoading(true);
@@ -185,7 +186,7 @@ export const useImportLocalHandler = (options: ImportLocalOptions) => {
     return handleImportLocal;
 };
 
-export const useSSHBrowserNextHandler = (options: SSHBrowserNextOptions) => {
+export const useSSHBrowserNextHandler = (options: SSHBrowserNextOptions): () => Promise<void> => {
     const { sshConnectionId, formData, sshForm, sshPath, setError, setIsLoading, onWorkspaceCreated, onClose, t } = options;
     const handleSSHBrowserNext = async () => {
         setIsLoading(true);

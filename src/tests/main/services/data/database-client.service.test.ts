@@ -148,6 +148,50 @@ describe('DatabaseClientService input validation', () => {
         });
     });
 
+    describe('workspace list caching', () => {
+        it('caches getWorkspaces responses for repeated reads', async () => {
+            const localService = createService();
+            const apiCall = vi.fn().mockResolvedValue({
+                success: true,
+                data: [{ id: 'ws-1', title: 'Repo', path: '/repo' }],
+            });
+            Reflect.set(localService, 'apiCall', apiCall);
+
+            const firstResult = await localService.getWorkspaces();
+            const secondResult = await localService.getWorkspaces();
+
+            expect(apiCall).toHaveBeenCalledTimes(1);
+            expect(firstResult).toEqual(secondResult);
+            expect(firstResult).not.toBe(secondResult);
+        });
+
+        it('invalidates the workspace list cache after workspace mutations', async () => {
+            const localService = createService();
+            const apiCall = vi
+                .fn()
+                .mockResolvedValueOnce({
+                    success: true,
+                    data: [{ id: 'ws-1', title: 'Repo', path: '/repo' }],
+                })
+                .mockResolvedValueOnce({
+                    success: true,
+                    data: true,
+                })
+                .mockResolvedValueOnce({
+                    success: true,
+                    data: [{ id: 'ws-1', title: 'Repo', path: '/repo-renamed' }],
+                });
+            Reflect.set(localService, 'apiCall', apiCall);
+
+            await localService.getWorkspaces();
+            await localService.updateWorkspace('ws-1', { path: '/repo-renamed' });
+            const updatedWorkspaces = await localService.getWorkspaces();
+
+            expect(apiCall).toHaveBeenCalledTimes(3);
+            expect(updatedWorkspaces[0]?.path).toBe('/repo-renamed');
+        });
+    });
+
     describe('createFolder', () => {
         it('rejects empty name', async () => {
             await expect(svc.createFolder({ name: '' })).rejects.toThrow('name must be a non-empty string');

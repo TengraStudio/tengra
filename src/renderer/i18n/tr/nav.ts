@@ -1,9 +1,9 @@
 const sectionData = {
     "chat": "Sohbet",
-    "workspaces": "Çalışma Alanları",
+    "workspaces": "Çalışma alanları",
     "settings": "Ayarlar",
-    "council": "Konsey",
-    "mcp": "MCP Yönetimi"
+    "council": "Ajan Konseyi",
+    "mcp": "MCP Sunucuları"
 };
 
 export default sectionData;

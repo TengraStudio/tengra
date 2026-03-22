@@ -66,7 +66,7 @@ interface WorkspaceDashboardProps {
     workspace: Workspace;
     onUpdate?: (updates: Partial<Workspace>) => Promise<void>;
     onAddMount?: () => void;
-    onOpenLogoGenerator?: () => void;
+    onUploadLogo?: () => void;
     language?: Language;
     activeTab?: WorkspaceDashboardTab;
     onTabChange?: (tab: WorkspaceDashboardTab) => void;
@@ -79,7 +79,7 @@ export const WorkspaceDashboard = ({
     workspace,
     onUpdate,
     onAddMount,
-    onOpenLogoGenerator,
+    onUploadLogo,
     language = 'en',
     activeTab: externalTab,
     onTabChange,
@@ -145,7 +145,7 @@ export const WorkspaceDashboard = ({
                 editDesc={editing.editDesc}
                 setEditDesc={editing.setEditDesc}
                 handleSaveDesc={editing.handleSaveDesc}
-                onOpenLogoGenerator={onOpenLogoGenerator}
+                onUploadLogo={onUploadLogo}
                 analyzeWorkspace={actions.analyzeWorkspace}
                 onDelete={onDelete}
                 t={t}
@@ -187,6 +187,7 @@ export const WorkspaceDashboard = ({
                         await onUpdate?.(updates);
                     }}
                     language={language}
+                    onDelete={onDelete}
                     onAddMount={() => {
                         onAddMount?.();
                     }}

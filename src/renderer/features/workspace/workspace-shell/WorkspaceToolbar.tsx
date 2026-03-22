@@ -10,12 +10,11 @@ import React from 'react';
 
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { Workspace, WorkspaceDashboardTab } from '@/types';
+import { WorkspaceDashboardTab } from '@/types';
 
 import { DashboardTabs } from './DashboardTabs';
 
 interface WorkspaceToolbarProps {
-    workspace: Workspace;
     workspaceName: string;
     onNameChange: (name: string) => void;
     onBack: () => void;
@@ -30,7 +29,6 @@ interface WorkspaceToolbarProps {
 }
 
 export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
-    workspace,
     workspaceName,
     onNameChange,
     onBack,
@@ -107,9 +105,6 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
                                 <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
                         )}
-                        <div className="px-1.5 py-0.5 rounded text-xxs uppercase font-medium bg-primary/10 text-primary border border-primary/20">
-                            {workspace.type}
-                        </div>
                     </div>
                 </div>
             </div>

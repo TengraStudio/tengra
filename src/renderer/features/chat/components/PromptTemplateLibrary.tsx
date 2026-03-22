@@ -50,7 +50,7 @@ export const PromptTemplateLibrary: React.FC<PromptTemplateLibraryProps> = ({ on
         <div className="absolute bottom-full left-0 right-0 mb-2 z-30 max-h-80 overflow-hidden rounded-xl border border-border bg-card shadow-2xl flex flex-col">
             <div className="flex items-center gap-2 p-3 border-b border-border">
                 <BookTemplate className="w-4 h-4 text-primary" />
-                <span className="text-sm font-bold text-foreground">{t('promptTemplateLibrary.title')}</span>
+                <span className="text-sm font-bold text-foreground">{t('prompts.library.title')}</span>
                 <div className="flex-1" />
                 <button onClick={onClose} className="p-1 rounded hover:bg-muted/30">
                     <X className="w-4 h-4 text-muted-foreground" />
@@ -62,7 +62,7 @@ export const PromptTemplateLibrary: React.FC<PromptTemplateLibraryProps> = ({ on
                     type="text"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    placeholder={t('promptTemplateLibrary.searchPlaceholder')}
+                    placeholder={t('prompts.library.searchPlaceholder')}
                     className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
                 />
             </div>
@@ -72,7 +72,7 @@ export const PromptTemplateLibrary: React.FC<PromptTemplateLibraryProps> = ({ on
                         onClick={() => setActiveCategory('')}
                         className={cn('px-2 py-0.5 rounded text-xs whitespace-nowrap', !activeCategory ? 'bg-primary/20 text-primary font-bold' : 'text-muted-foreground hover:bg-muted/20')}
                     >
-                        {t('promptTemplateLibrary.all')}
+                        {t('prompts.library.all')}
                     </button>
                     {categories.map(c => (
                         <button
@@ -104,7 +104,7 @@ export const PromptTemplateLibrary: React.FC<PromptTemplateLibraryProps> = ({ on
                     </button>
                 ))}
                 {filtered.length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-6">{t('promptTemplateLibrary.empty')}</p>
+                    <p className="text-sm text-muted-foreground text-center py-6">{t('prompts.library.empty')}</p>
                 )}
             </div>
         </div>

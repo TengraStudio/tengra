@@ -65,7 +65,7 @@ export interface SessionModelSelection {
     reasoningLevel?: string;
 }
 
-export interface SessionMetadata {
+export type SessionMetadata = {
     title?: string;
     workspaceId?: string;
     chatId?: string;
@@ -75,7 +75,7 @@ export interface SessionMetadata {
     extras?: JsonObject;
 }
 
-export interface SessionMessageEnvelope {
+export type SessionMessageEnvelope = {
     id: string;
     role: SessionMessageRole;
     content: string;
@@ -83,7 +83,7 @@ export interface SessionMessageEnvelope {
     metadata?: JsonObject;
 }
 
-export interface SessionRecoveryState {
+export type SessionRecoveryState = {
     canResume: boolean;
     requiresReview: boolean;
     action: SessionRecoveryAction;
@@ -91,7 +91,7 @@ export interface SessionRecoveryState {
     hint?: string;
 }
 
-export interface SessionState {
+export type SessionState = {
     id: string;
     mode: SessionMode;
     status: SessionStatus;
@@ -105,7 +105,7 @@ export interface SessionState {
     lastError?: string;
 }
 
-export interface SessionEventEnvelope {
+export type SessionEventEnvelope = {
     sessionId: string;
     mode: SessionMode;
     type: SessionEventType;

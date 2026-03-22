@@ -64,6 +64,7 @@ function normalizeWorkspaceAnalysis(value: WorkspaceAnalysis): WorkspaceAnalysis
         files: Array.isArray(value.files) ? value.files : [],
         todos: Array.isArray(value.todos) ? value.todos : [],
         issues: Array.isArray(value.issues) ? value.issues : [],
+        annotations: Array.isArray(value.annotations) ? value.annotations : [],
     };
 }
 

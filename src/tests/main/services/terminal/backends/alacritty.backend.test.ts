@@ -166,7 +166,9 @@ describe('AlacrittyBackend', () => {
             mockExistsSync.mockReturnValue(false);
 
             const options = createTestOptions();
-            await expect(backend.create(options)).rejects.toThrow('Alacritty is not installed or not in PATH');
+            await expect(backend.create(options)).rejects.toThrow(
+                'error.terminal.backend_not_found'
+            );
         });
 
         it('should spawn alacritty with correct arguments', async () => {

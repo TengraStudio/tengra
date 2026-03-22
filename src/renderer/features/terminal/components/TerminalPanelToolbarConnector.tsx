@@ -61,16 +61,13 @@ export interface TerminalPanelToolbarConnectorProps {
     closeSplitView: () => void;
     isGalleryView: boolean;
     toggleGalleryView: () => void;
-    onFloatingChange?: (isFloating: boolean) => void;
-    toggleFloatingMode: () => void;
-    isFloating: boolean;
-    toggleSemanticPanel: () => void;
     hasActiveSession: boolean;
     activeSemanticIssuesLength: number;
     activeSemanticErrorCount: number;
     openMultiplexerPanel: () => void;
     isMultiplexerOpen: boolean;
     toggleRecording: () => void;
+    toggleSemanticPanel: () => void;
     activeRecordingTabId: string | null;
     isMaximized: boolean;
     setIsMaximized: (maximized: boolean) => void;
@@ -146,9 +143,6 @@ export const TerminalPanelToolbarConnector: React.FC<TerminalPanelToolbarConnect
             closeSplitView={props.closeSplitView}
             isGalleryView={props.isGalleryView}
             toggleGalleryView={props.toggleGalleryView}
-            onFloatingChange={props.onFloatingChange}
-            toggleFloatingMode={props.toggleFloatingMode}
-            isFloating={props.isFloating}
             toggleSemanticPanel={props.toggleSemanticPanel}
             hasActiveSession={props.hasActiveSession}
             activeSemanticIssuesLength={props.activeSemanticIssuesLength}
@@ -162,7 +156,7 @@ export const TerminalPanelToolbarConnector: React.FC<TerminalPanelToolbarConnect
             onToggle={props.onToggle}
             appearanceProps={{
                 inputRef: props.appearanceImportInputRef,
-                onImport: event => {
+                onImport: (event: React.ChangeEvent<HTMLInputElement>) => {
                     void props.importAppearancePreferences(event);
                 },
                 isAppearanceMenuOpen: props.isAppearanceMenuOpen,
@@ -181,7 +175,7 @@ export const TerminalPanelToolbarConnector: React.FC<TerminalPanelToolbarConnect
                     props.appearanceImportInputRef.current?.click();
                 },
                 shortcutInputRef: props.shortcutImportInputRef,
-                onShortcutImport: event => {
+                onShortcutImport: (event: React.ChangeEvent<HTMLInputElement>) => {
                     void props.importShortcutPreferences(event);
                 },
                 shortcutPreset: props.shortcutPreset,

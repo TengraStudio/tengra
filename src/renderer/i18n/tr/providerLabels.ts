@@ -3,7 +3,7 @@ const sectionData = {
     "antigravity": "Antigravity",
     "claude": "Claude",
     "codex": "Codex",
-    "custom": "Custom",
+    "custom": "Özel",
     "googleAi": "Google AI",
     "githubCopilot": "GitHub Copilot",
     "nvidia": "NVIDIA",

@@ -19,6 +19,7 @@ export class IpcProvider extends Observable<string> {
     private type: CollaborationRoomType;
     private id: string;
     private unsubscribers: (() => void)[] = [];
+    private isConnected = false;
 
     constructor(type: CollaborationRoomTypeInput, id: string, doc: Y.Doc) {
         super();
@@ -33,33 +34,69 @@ export class IpcProvider extends Observable<string> {
 
     private async init() {
         try {
+            this.emit('status', [{ status: 'connecting' }]);
+
             // 1. Join room
             await window.electron.liveCollaboration.joinRoom({ type: this.type, id: this.id });
 
-            // 2. Listen for remote sync / awareness updates
+            // 2. Listen for connection lifecycle / remote sync / awareness updates
+            this.unsubscribers.push(
+                window.electron.liveCollaboration.onJoined((payload) => {
+                    if (payload.roomId !== this.roomId) {
+                        return;
+                    }
+                    this.isConnected = true;
+                    this.emit('status', [{ status: 'connected' }]);
+                })
+            );
+
+            this.unsubscribers.push(
+                window.electron.liveCollaboration.onLeft((payload) => {
+                    if (payload.roomId !== this.roomId) {
+                        return;
+                    }
+                    this.isConnected = false;
+                    this.emit('status', [{ status: 'disconnected' }]);
+                })
+            );
+
             this.unsubscribers.push(
                 window.electron.liveCollaboration.onSyncUpdate((payload) => {
                     if (payload.roomId !== this.roomId) { return; }
 
                     try {
-                        const parsed = JSON.parse(payload.data);
-                        if (parsed.type === 'aw') {
-                            applyAwarenessUpdate(this.awareness, new Uint8Array(parsed.data), this);
+                        let parsed: unknown;
+                        if (typeof payload.data === 'string') {
+                            parsed = JSON.parse(payload.data);
                         } else {
-                            const update = new Uint8Array(parsed);
-                            Y.applyUpdate(this.doc, update, this);
+                            // If it's already a Uint8Array (or Buffer), it's a raw Doc update
+                            Y.applyUpdate(this.doc, payload.data, this);
+                            return;
                         }
-                    } catch {
-                        // Fallback: If it's not a tagged object, assume it's a raw Doc update
-                        const update = new Uint8Array(JSON.parse(payload.data));
-                        Y.applyUpdate(this.doc, update, this);
+
+                        if (parsed && typeof parsed === 'object') {
+                            const p = parsed as Record<string, unknown>;
+                            if (p.type === 'aw' && Array.isArray(p.data)) {
+                                applyAwarenessUpdate(this.awareness, new Uint8Array(p.data as number[]), this);
+                            } else if (p.type === 'update' && Array.isArray(p.data)) {
+                                Y.applyUpdate(this.doc, new Uint8Array(p.data as number[]), this);
+                            } else if (Array.isArray(parsed)) {
+                                // Raw array of bytes (old format)
+                                Y.applyUpdate(this.doc, new Uint8Array(parsed as number[]), this);
+                            } else {
+                                // Fallback for object-based updates (e.g. { '0': 1, '1': 2 })
+                                Y.applyUpdate(this.doc, new Uint8Array(Object.values(p) as number[]), this);
+                            }
+                        }
+                    } catch (err) {
+                        appLogger.error('IpcProvider', `Failed to apply sync update in ${this.roomId}`, err as Error);
                     }
                 })
             );
 
             // 3. Local Doc Updates
-            this.doc.on('update', (update, origin) => {
-                if (origin !== this) {
+            this.doc.on('update', (update: Uint8Array, origin: unknown) => {
+                if (origin !== this && this.isConnected) {
                     void window.electron.liveCollaboration.sendUpdate({
                         roomId: this.roomId,
                         data: JSON.stringify(Array.from(update))
@@ -68,8 +105,8 @@ export class IpcProvider extends Observable<string> {
             });
 
             // 4. Local Awareness Updates
-            this.awareness.on('update', ({ added, updated, removed }: { added: number[], updated: number[], removed: number[] }, origin: RendererDataValue) => {
-                if (origin !== this) {
+            this.awareness.on('update', ({ added, updated, removed }: { added: number[], updated: number[], removed: number[] }, origin: unknown) => {
+                if (origin !== this && this.isConnected) {
                     const changedClients = added.concat(updated).concat(removed);
                     const update = encodeAwarenessUpdate(this.awareness, changedClients);
                     void window.electron.liveCollaboration.sendUpdate({
@@ -83,15 +120,18 @@ export class IpcProvider extends Observable<string> {
             this.unsubscribers.push(
                 window.electron.liveCollaboration.onError((payload) => {
                     if (payload.roomId === this.roomId) {
-                        appLogger.error('IpcProvider', `Collaboration error in ${this.roomId}`, payload.error);
-                        this.emit('error', [payload.error]);
+                        this.isConnected = false;
+                        const errorMsg = typeof payload.error === 'string' ? payload.error : JSON.stringify(payload.error);
+                        appLogger.error('IpcProvider', `Collaboration error in ${this.roomId}`, errorMsg);
+                        this.emit('status', [{ status: 'disconnected', error: new Error(errorMsg) }]);
+                        // Emit error as a string instead of an array (which can cause confusion in consumers)
+                        this.emit('error', [errorMsg]);
                     }
                 })
             );
 
-            this.emit('status', [{ status: 'connected' }]);
-
         } catch (error) {
+            this.isConnected = false;
             appLogger.error('IpcProvider', 'Failed to initialize IpcProvider', error as Error);
             this.emit('status', [{ status: 'disconnected', error }]);
         }
@@ -101,6 +141,7 @@ export class IpcProvider extends Observable<string> {
      * Terminate the connection and cleanup listeners.
      */
     destroy() {
+        this.isConnected = false;
         this.unsubscribers.forEach(unsub => unsub());
         void window.electron.liveCollaboration.leaveRoom(this.roomId);
         super.destroy();

@@ -109,7 +109,7 @@ export class CopilotApiClient {
                     'GitHub API rate limit is exhausted. Please wait for reset.',
                     false
                 );
-                throw new Error('GitHub API rate limit exhausted');
+                throw new Error('error.llm.rate_limit_exhausted');
             }
 
             const token = await this.tokenManager.ensureCopilotToken();

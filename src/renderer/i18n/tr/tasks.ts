@@ -1,5 +1,5 @@
 const sectionData = {
-    "createNew": "Yeni Görev Oluştur"
+    "createNew": "Yeni görev oluştur"
 };
 
 export default sectionData;

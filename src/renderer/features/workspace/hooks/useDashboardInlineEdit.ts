@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { Workspace } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface UseDashboardInlineEditProps {
     workspace: Workspace;
@@ -32,7 +33,7 @@ export const useDashboardInlineEdit = ({ workspace, onUpdate }: UseDashboardInli
             setIsEditingName(false);
         } catch (error) {
             setEditName(workspace.title);
-            window.electron.log.error('Failed to update name', error);
+            appLogger.error('useDashboardInlineEdit', 'Failed to update name', error as Error);
         }
     };
 
@@ -46,7 +47,7 @@ export const useDashboardInlineEdit = ({ workspace, onUpdate }: UseDashboardInli
             setIsEditingDesc(false);
         } catch (error) {
             setEditDesc(workspace.description);
-            window.electron.log.error('Failed to update description', error);
+            appLogger.error('useDashboardInlineEdit', 'Failed to update description', error as Error);
         }
     };
 

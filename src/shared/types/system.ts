@@ -32,9 +32,15 @@ export interface FileEntry {
 
 export interface ProcessInfo {
     pid: number
-    name: string
-    cpu: number
-    memory: number
+    name?: string
+    cmd?: string
+    command?: string
+    cpu?: number
+    memory?: number
+    id?: string
+    cwd?: string
+    status?: string
+    startTime?: number
 }
 
 export interface DiskStats {

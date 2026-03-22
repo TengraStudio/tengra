@@ -17,6 +17,20 @@ interface GroupedSearchResults {
     items: FileSearchResult[];
 }
 
+function getSearchResultBadge(result: FileSearchResult): string {
+    if (result.type === 'file') {
+        return 'FILE';
+    }
+    if (result.type === 'content') {
+        return 'TEXT';
+    }
+    return (result.type ?? 'SYMBOL').slice(0, 12).toUpperCase();
+}
+
+function isFileResult(result: FileSearchResult): boolean {
+    return result.type === 'file';
+}
+
 /**
  * Highlights matching substrings in a snippet.
  * Returns React nodes with `<mark>` around matches.
@@ -116,10 +130,16 @@ const FileGroup = React.memo(({
                             className="flex w-full items-start gap-2 py-[3px] pl-8 pr-2 text-left transition-colors hover:bg-white/[0.04]"
                         >
                             <span className="mt-px w-8 shrink-0 text-right font-mono text-[11px] tabular-nums text-muted-foreground/50">
-                                {result.line}
+                                {isFileResult(result) ? '' : result.line}
+                            </span>
+                            <span className="mt-[1px] shrink-0 rounded bg-white/8 px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.08em] text-muted-foreground/80">
+                                {getSearchResultBadge(result)}
                             </span>
                             <span className="min-w-0 flex-1 truncate font-mono text-[12px] leading-[18px] text-foreground/85">
-                                {renderHighlightedSnippet(result.text.trim(), searchQuery)}
+                                {renderHighlightedSnippet(
+                                    (isFileResult(result) ? result.name : result.text)?.trim() || result.text.trim(),
+                                    searchQuery
+                                )}
                             </span>
                         </button>
                     ))}

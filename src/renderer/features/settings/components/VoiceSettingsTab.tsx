@@ -226,7 +226,7 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
                         <div className="bg-card p-6 rounded-2xl border border-border">
                             <div className="flex items-center gap-3 mb-6">
                                 <Eye className="w-5 h-5 text-primary" />
-                                <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">{t('voice.feedback')}</h3>
+                                <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">{t('voice.settings.feedback')}</h3>
                             </div>
 
                             <div className="space-y-4">
@@ -258,7 +258,7 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-3">
                                 <Command className="w-5 h-5 text-primary" />
-                                <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">{t('voice.commands')}</h3>
+                                <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">{t('voice.commands.title')}</h3>
                             </div>
                         </div>
 

@@ -29,13 +29,7 @@ export function LanguageSelectionPrompt({ onClose }: LanguageSelectionPromptProp
 
     const languages = useMemo<PromptLanguageOption[]>(() => [
         { code: 'en', labelKey: 'onboarding.language.labels.en', isRTL: false },
-        { code: 'tr', labelKey: 'onboarding.language.labels.tr', isRTL: false },
-        { code: 'de', labelKey: 'onboarding.language.labels.de', isRTL: false },
-        { code: 'fr', labelKey: 'onboarding.language.labels.fr', isRTL: false },
-        { code: 'es', labelKey: 'onboarding.language.labels.es', isRTL: false },
-        { code: 'ja', labelKey: 'onboarding.language.labels.ja', isRTL: false },
-        { code: 'zh', labelKey: 'onboarding.language.labels.zh', isRTL: false },
-        { code: 'ar', labelKey: 'onboarding.language.labels.ar', isRTL: true }
+        { code: 'tr', labelKey: 'onboarding.language.labels.tr', isRTL: false }
     ], []);
 
     const saveLanguageWithRetry = useCallback(async (code: Language): Promise<boolean> => {

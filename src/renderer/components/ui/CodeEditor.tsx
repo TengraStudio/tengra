@@ -1,4 +1,11 @@
 import type { Monaco, OnChange } from '@monaco-editor/react';
+import { useCodeEditorDiagnostics } from '@renderer/components/ui/code-editor-diagnostics';
+import { useCodeEditorDirtyDecorations } from '@renderer/components/ui/code-editor-dirty-decorations';
+import {
+    CodeEditorNavigationTarget,
+    CodeEditorWorkspaceResultsPayload,
+    useWorkspaceEditorIntelligence,
+} from '@renderer/components/ui/code-editor-workspace-intelligence';
 import {
     recordCodeEditorFailure,
     recordCodeEditorSuccess,
@@ -12,15 +19,17 @@ import type {
 } from '@shared/schemas/inline-suggestions.schema';
 import { Loader2 } from 'lucide-react';
 import type { editor } from 'monaco-editor';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { ComponentType,useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useTheme } from '@/hooks/useTheme';
 import { Language, useTranslation } from '@/i18n';
 import { useSettingsStore } from '@/store/settings.store';
 import type { AppSettings } from '@/types/settings';
+import type { Workspace } from '@/types/workspace';
 import { normalizeLanguage } from '@/utils/language-map';
 import { ensureMonacoInitialized } from '@/utils/monaco-loader.util';
 import { performanceMonitor } from '@/utils/performance';
+import { appLogger } from '@/utils/renderer-logger';
 import { initTextMateSupport } from '@/utils/textmate-loader';
 
 type MonacoEditorInstance = editor.IStandaloneCodeEditor;
@@ -29,6 +38,7 @@ export interface MonacoEditorComponentProps {
     height: string;
     defaultLanguage: string;
     language: string;
+    path?: string;
     value: string;
     onChange?: OnChange;
     theme: string;
@@ -153,7 +163,7 @@ function buildInlineSuggestionConfigFromSettings(
     };
 }
 
-const loadMonaco = async () => {
+const loadMonaco = async (): Promise<{ Editor: React.ElementType; monaco: Monaco }> => {
     const [{ default: Editor }, monaco] = await Promise.all([
         import('@monaco-editor/react'),
         ensureMonacoInitialized(),
@@ -273,6 +283,37 @@ function applyMonacoTheme(monaco: Monaco, isLight: boolean): string {
     return themeName;
 }
 
+function buildWorkspaceEditorOverrides(
+    settings?: Workspace['editor']
+): editor.IStandaloneEditorConstructionOptions {
+    const additionalOptions = settings?.additionalOptions ?? {};
+    return {
+        ...(typeof settings?.fontSize === 'number' ? { fontSize: settings.fontSize } : {}),
+        ...(typeof settings?.fontLigatures === 'boolean'
+            ? { fontLigatures: settings.fontLigatures }
+            : {}),
+        ...(typeof settings?.lineHeight === 'number'
+            ? { lineHeight: Math.round(settings.lineHeight * 18) }
+            : {}),
+        ...(typeof settings?.smoothScrolling === 'boolean'
+            ? { smoothScrolling: settings.smoothScrolling }
+            : {}),
+        ...(typeof settings?.cursorBlinking === 'string'
+            ? { cursorBlinking: settings.cursorBlinking }
+            : {}),
+        ...(typeof settings?.formatOnPaste === 'boolean'
+            ? { formatOnPaste: settings.formatOnPaste }
+            : {}),
+        ...(typeof settings?.tabSize === 'number' ? { tabSize: settings.tabSize } : {}),
+        ...(typeof settings?.lineNumbers === 'string'
+            ? { lineNumbers: settings.lineNumbers }
+            : {}),
+        ...(typeof settings?.folding === 'boolean' ? { folding: settings.folding } : {}),
+        ...(typeof settings?.wordWrap === 'string' ? { wordWrap: settings.wordWrap } : {}),
+        ...additionalOptions,
+    };
+}
+
 export interface CodeEditorProps {
     value?: string;
     language?: string;
@@ -280,6 +321,7 @@ export interface CodeEditorProps {
     readOnly?: boolean;
     className?: string;
     showMinimap?: boolean;
+    savedValue?: string;
     fontSize?: number;
     initialLine?: number;
     appLanguage?: Language;
@@ -294,14 +336,19 @@ export interface CodeEditorProps {
     onCursorPositionChange?: (position: { lineNumber: number; column: number }) => void;
     onScrollPositionChange?: (scrollTop: number) => void;
     performanceMarkPrefix?: string;
+    workspacePath?: string;
+    filePath?: string;
+    workspaceEditorSettings?: Workspace['editor'];
+    onNavigateToLocation?: (target: CodeEditorNavigationTarget) => void;
+    onShowWorkspaceResults?: (payload: CodeEditorWorkspaceResultsPayload) => void;
 }
 
 let textMateInitialized = false;
 let textMateInitializing = false;
 
-const useMonacoLoader = (performanceMarkPrefix?: string) => {
+const useMonacoLoader = (performanceMarkPrefix?: string): { monacoComponents: { Editor: ComponentType<MonacoEditorComponentProps>; monaco: Monaco } | null; loading: boolean } => {
     const [monacoComponents, setMonacoComponents] = useState<{
-        Editor: React.ComponentType<MonacoEditorComponentProps>;
+        Editor: ComponentType<MonacoEditorComponentProps>;
         monaco: Monaco;
     } | null>(null);
     const [loading, setLoading] = useState(true);
@@ -311,7 +358,7 @@ const useMonacoLoader = (performanceMarkPrefix?: string) => {
         loadMonaco()
             .then(({ Editor, monaco }) => {
                 setMonacoComponents({
-                    Editor: Editor as React.ComponentType<MonacoEditorComponentProps>,
+                    Editor: Editor as ComponentType<MonacoEditorComponentProps>,
                     monaco,
                 });
                 if (performanceMarkPrefix) {
@@ -322,7 +369,7 @@ const useMonacoLoader = (performanceMarkPrefix?: string) => {
                 setLoading(false);
             })
             .catch(e => {
-                window.electron.log.error('Failed to load Monaco', toError(e instanceof Error ? e : undefined));
+                appLogger.error('CodeEditor', 'Failed to load Monaco', toError(e instanceof Error ? e : undefined));
                 setCodeEditorUiState('failure');
                 recordCodeEditorFailure(
                     'CODE_EDITOR_INIT_FAILED',
@@ -382,7 +429,34 @@ function buildInlineSuggestionRequest(
     };
 }
 
-const useEditorDecorations = (monaco: Monaco | null, t: (key: string) => string) => {
+function toMonacoModelPath(filePath?: string): string | undefined {
+    if (!filePath) {
+        return undefined;
+    }
+
+    const normalizedPath = filePath.trim();
+    if (!normalizedPath) {
+        return undefined;
+    }
+
+    const slashPath = normalizedPath.replace(/\\/g, '/').replace(/\/+/g, '/');
+    if (/^[a-zA-Z]+:\/\//.test(slashPath)) {
+        return slashPath;
+    }
+    if (/^[A-Za-z]:\//.test(slashPath)) {
+        return `file:///${slashPath}`;
+    }
+    if (slashPath.startsWith('//')) {
+        return `file:${slashPath}`;
+    }
+    if (slashPath.startsWith('/')) {
+        return `file://${slashPath}`;
+    }
+
+    return `inmemory://model/${encodeURIComponent(slashPath)}`;
+}
+
+const useEditorDecorations = (monaco: Monaco | null, _t: (key: string) => string) => {
     const decorationRef = useRef<string[]>([]);
     return useCallback(
         (editor: MonacoEditorInstance) => {
@@ -408,14 +482,13 @@ const useEditorDecorations = (monaco: Monaco | null, t: (key: string) => string)
                         options: {
                             isWholeLine: false,
                             glyphMarginClassName: 'ai-gutter-sparkle',
-                            glyphMarginHoverMessage: { value: t('ssh.editor.aiRefactor') },
                         },
                     });
                 }
             }
             decorationRef.current = editor.deltaDecorations(decorationRef.current, newDecorations);
         },
-        [monaco, t]
+        [monaco]
     );
 };
 
@@ -423,6 +496,7 @@ const useInlineCompletions = (
     monacoRef: React.MutableRefObject<Monaco | null>,
     normalizedLanguage: string,
     hasMonaco: boolean,
+    editorMounted: boolean,
     aiSafetyFilterEnabled: boolean,
     aiContextLimit: number,
     inlineSuggestionConfig: InlineSuggestionConfig,
@@ -433,7 +507,7 @@ const useInlineCompletions = (
     const activeSessionRef = useRef<ActiveInlineSuggestionSession | null>(null);
 
     useEffect(() => {
-        if (!monacoRef.current || !hasMonaco || !inlineSuggestionConfig.enabled || readOnly) {
+        if (!editorMounted || !monacoRef.current || !hasMonaco || !inlineSuggestionConfig.enabled || readOnly) {
             return;
         }
         const monaco = monacoRef.current;
@@ -639,6 +713,7 @@ const useInlineCompletions = (
     }, [
         aiContextLimit,
         aiSafetyFilterEnabled,
+        editorMounted,
         hasMonaco,
         inlineSuggestionConfig,
         monacoRef,
@@ -670,7 +745,7 @@ const useEditorLifecycle = (
                     await initTextMateSupport(monaco);
                     textMateInitialized = true;
                 } catch (e) {
-                    window.electron.log.warn(
+                    appLogger.warn('CodeEditor',
                         '[CodeEditor] TextMate initialization failed',
                         toError(e instanceof Error ? e : undefined)
                     );
@@ -753,8 +828,9 @@ const useEditorInitialLine = (
 };
 
 const EditorContainer: React.FC<{
-    Editor: React.ComponentType<MonacoEditorComponentProps>;
+    Editor: ComponentType<MonacoEditorComponentProps>;
     normalizedLanguage: string;
+    modelPath?: string;
     value: string;
     onChange?: OnChange;
     theme: string;
@@ -765,6 +841,7 @@ const EditorContainer: React.FC<{
 }> = ({
     Editor,
     normalizedLanguage,
+    modelPath,
     value,
     onChange,
     theme,
@@ -778,6 +855,7 @@ const EditorContainer: React.FC<{
                 height="100%"
                 defaultLanguage={normalizedLanguage}
                 language={normalizedLanguage}
+                path={modelPath}
                 value={value}
                 onChange={onChange}
                 theme={theme}
@@ -795,6 +873,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     readOnly = false,
     className,
     showMinimap = true,
+    savedValue,
     fontSize,
     initialLine,
     appLanguage,
@@ -809,15 +888,22 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     onCursorPositionChange,
     onScrollPositionChange,
     performanceMarkPrefix,
+    workspacePath,
+    filePath,
+    workspaceEditorSettings,
+    onNavigateToLocation,
+    onShowWorkspaceResults,
 }) => {
     const { isLight } = useTheme();
     const { t } = useTranslation(appLanguage);
     const editorRef = useRef<MonacoEditorInstance | null>(null);
     const monacoRef = useRef<Monaco | null>(null);
+    const [editorMounted, setEditorMounted] = useState(false);
     const settings = useSettingsStore(snapshot => snapshot.settings);
     const { monacoComponents, loading } = useMonacoLoader(performanceMarkPrefix);
     const updateDecorations = useEditorDecorations(monacoComponents?.monaco ?? null, t);
     const normalizedLanguage = normalizeLanguage(language);
+    const modelPath = useMemo(() => toMonacoModelPath(filePath), [filePath]);
     const settingsInlineSuggestionConfig = useMemo(
         () => buildInlineSuggestionConfigFromSettings(settings),
         [settings]
@@ -832,11 +918,44 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         monacoRef,
         normalizedLanguage,
         !!monacoComponents,
+        editorMounted,
         aiSafetyFilterEnabled,
         aiContextLimit,
         resolvedInlineSuggestionConfig,
         readOnly
     );
+    const workspaceIntelligenceLabels = useMemo(
+        () => ({
+            open: t('gallery.open'),
+            history: t('agent.history'),
+            related: t('memory.graphEdgeRelated'),
+        }),
+        [t]
+    );
+    useWorkspaceEditorIntelligence({
+        editorRef,
+        monacoRef,
+        editorMounted,
+        workspacePath,
+        filePath,
+        language: normalizedLanguage,
+        labels: workspaceIntelligenceLabels,
+        onNavigateToLocation,
+        onShowWorkspaceResults,
+    });
+    useCodeEditorDiagnostics({
+        editorRef,
+        monacoRef,
+        editorMounted,
+        workspacePath,
+        filePath,
+    });
+    useCodeEditorDirtyDecorations({
+        editorRef,
+        monacoRef,
+        editorMounted,
+        savedValue,
+    });
     useEditorInitialLine(editorRef, initialLine);
 
     const handleEditorDidMount = useEditorLifecycle(
@@ -858,31 +977,46 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     }, [monacoComponents, isLight]);
 
     const editorOptions = useMemo(
-        (): editor.IStandaloneEditorConstructionOptions => ({
-            minimap: { enabled: showMinimap },
-            fontSize: fontSize ?? 14,
-            fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-            fontLigatures: true,
-            scrollBeyondLastLine: false,
-            readOnly,
-            automaticLayout: true,
-            padding: { top: 16, bottom: 16 },
-            smoothScrolling: true,
-            cursorBlinking: 'smooth',
-            cursorSmoothCaretAnimation: 'on',
-            formatOnPaste: true,
-            tabSize: 4,
-            glyphMargin: enableCodeLens && !performanceMode,
-            lineNumbers: 'on',
-            folding: true,
-            lineDecorationsWidth: 10,
-            fixedOverflowWidgets: true,
-            codeLens: enableCodeLens && !performanceMode,
-            inlayHints: { enabled: enableInlayHints && !performanceMode ? 'on' : 'off' },
-            inlineSuggest: {
-                enabled: resolvedInlineSuggestionConfig.enabled && !readOnly,
-            },
-        }),
+        (): editor.IStandaloneEditorConstructionOptions => {
+            const workspaceOverrides = buildWorkspaceEditorOverrides(workspaceEditorSettings);
+            const codeLensEnabled =
+                (workspaceEditorSettings?.codeLens ?? enableCodeLens) && !performanceMode;
+            const inlayHintsEnabled =
+                (workspaceEditorSettings?.inlayHints ?? enableInlayHints) && !performanceMode;
+
+            return {
+                minimap: {
+                    enabled: showMinimap,
+                    side: 'right',
+                    showSlider: 'always',
+                    renderCharacters: false,
+                },
+                fontSize: fontSize ?? 14,
+                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                fontLigatures: true,
+                scrollBeyondLastLine: false,
+                readOnly,
+                automaticLayout: true,
+                padding: { top: 16, bottom: 16 },
+                smoothScrolling: true,
+                cursorBlinking: 'smooth',
+                cursorSmoothCaretAnimation: 'on',
+                formatOnPaste: true,
+                tabSize: 4,
+                glyphMargin: codeLensEnabled,
+                lineNumbers: 'on',
+                folding: true,
+                lineDecorationsWidth: 10,
+                overviewRulerLanes: 3,
+                fixedOverflowWidgets: true,
+                codeLens: codeLensEnabled,
+                inlayHints: { enabled: inlayHintsEnabled ? 'on' : 'off' },
+                inlineSuggest: {
+                    enabled: resolvedInlineSuggestionConfig.enabled && !readOnly,
+                },
+                ...workspaceOverrides,
+            };
+        },
         [
             showMinimap,
             fontSize,
@@ -891,6 +1025,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             performanceMode,
             enableInlayHints,
             resolvedInlineSuggestionConfig.enabled,
+            workspaceEditorSettings,
         ]
     );
 
@@ -902,10 +1037,12 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         <EditorContainer
             Editor={monacoComponents.Editor}
             normalizedLanguage={normalizedLanguage}
+            modelPath={modelPath}
             value={value ?? ''}
             onChange={onChange}
             theme={monacoTheme}
             onMount={(e: MonacoEditorInstance, m: Monaco) => {
+                setEditorMounted(true);
                 void handleEditorDidMount(e, m);
             }}
             loading={

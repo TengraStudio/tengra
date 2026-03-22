@@ -31,4 +31,14 @@ export function registerRuntimeIpc(runtimeBootstrapService: RuntimeBootstrapServ
             null
         )
     );
+
+    ipcMain.handle(
+        'runtime:run-component-action',
+        createSafeIpcHandler<{ success: boolean; message: string }, [string]>(
+            'runtime:run-component-action',
+            async (_event, componentId) =>
+                runtimeBootstrapService.runComponentAction(componentId),
+            { success: false, message: 'Runtime action failed' }
+        )
+    );
 }

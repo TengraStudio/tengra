@@ -1,6 +1,8 @@
 import { RuntimeBootstrapExecutionResult } from '@shared/types/runtime-manifest';
 import { useSyncExternalStore } from 'react';
 
+import { appLogger } from '@/utils/renderer-logger';
+
 interface RuntimeBootstrapStoreState {
     status: RuntimeBootstrapExecutionResult | null;
     isLoading: boolean;
@@ -50,7 +52,7 @@ export async function loadRuntimeBootstrapStatus(forceRefresh: boolean = false):
         });
     } catch (error) {
         const normalizedError = error instanceof Error ? error : new Error('Runtime status request failed');
-        window.electron.log.error('Failed to load managed runtime status', normalizedError);
+        appLogger.error('RuntimeBootstrapStore', 'Failed to load managed runtime status', normalizedError);
         setState({
             error: normalizedError.message,
         });
@@ -75,7 +77,7 @@ export async function repairManagedRuntime(manifestUrl?: string): Promise<void> 
         });
     } catch (error) {
         const normalizedError = error instanceof Error ? error : new Error('Managed runtime repair failed');
-        window.electron.log.error('Failed to repair managed runtime', normalizedError);
+        appLogger.error('RuntimeBootstrapStore', 'Failed to repair managed runtime', normalizedError);
         setState({
             error: normalizedError.message,
         });
@@ -143,4 +145,32 @@ export function hasBlockingRuntimeIssue(status: RuntimeBootstrapExecutionResult 
     }
 
     return false;
+}
+
+export function getOptionalRuntimePrompts(
+    status: RuntimeBootstrapExecutionResult | null,
+    settings?: {
+        dismissedRuntimeInstallPrompts?: string[];
+        completedRuntimeInstalls?: string[];
+    }
+): RuntimeBootstrapExecutionResult['health']['entries'] {
+    if (!status) {
+        return [];
+    }
+
+    const dismissed = new Set(settings?.dismissedRuntimeInstallPrompts ?? []);
+    const completed = new Set(settings?.completedRuntimeInstalls ?? []);
+
+    return status.health.entries.filter(entry => {
+        if (entry.requirement !== 'optional') {
+            return false;
+        }
+        if (dismissed.has(entry.componentId) || completed.has(entry.componentId)) {
+            return false;
+        }
+        if (entry.source === 'external') {
+            return !entry.detected && entry.action === 'install';
+        }
+        return entry.status === 'missing';
+    });
 }

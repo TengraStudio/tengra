@@ -1,3 +1,5 @@
+import path from 'path';
+
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { AuditLogService } from '@main/services/analysis/audit-log.service';
@@ -7,6 +9,10 @@ import { InlineSuggestionService } from '@main/services/llm/inline-suggestion.se
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
 import { CodeIntelligenceService } from '@main/services/workspace/code-intelligence.service';
 import { WorkspaceService } from '@main/services/workspace/workspace.service';
+import {
+    DEFAULT_WORKSPACE_SCAN_IGNORE_PATTERNS,
+    getWorkspaceIgnoreMatcher,
+} from '@main/services/workspace/workspace-ignore.util';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import {
     inlineSuggestionRequestSchema,
@@ -19,7 +25,9 @@ import {
     WorkspaceActiveRootPathSchema,
     WorkspaceActiveStateSchema,
     WorkspaceAnalysisSchema,
+    WorkspaceDefinitionLocationsSchema,
     WorkspaceEnvVarsSchema,
+    WorkspaceFileDiagnosticsSchema,
     WorkspaceIdentitySchema,
     WorkspaceIdSchema,
     WorkspaceRootPathSchema,
@@ -45,6 +53,194 @@ export interface WorkspaceIpcDeps {
     auditLogService?: AuditLogService;
 }
 
+interface WorkspaceLookup {
+    workspaceId: string;
+    rootPath: string;
+    indexingEnabled: boolean;
+    ignorePatterns: string[];
+}
+
+interface WorkspaceLookupCacheEntry {
+    lookup: WorkspaceLookup | null;
+    expiresAt: number;
+}
+
+interface AutoIndexQueueState {
+    pendingPaths: Set<string>;
+    running: boolean;
+}
+
+interface WorkspaceFileChangeEventPayload {
+    event: string;
+    path: string;
+    rootPath: string;
+}
+
+interface WorkspaceFileChangeBatchState {
+    events: WorkspaceFileChangeEventPayload[];
+    timer: ReturnType<typeof setTimeout> | null;
+}
+
+const AUTO_INDEX_LOOKUP_TTL_MS = 10_000;
+const AUTO_INDEX_DELAY_MS = 2_000;
+const AUTO_INDEX_BATCH_SIZE = 12;
+const AUTO_INDEX_MAX_PENDING_PATHS = 128;
+const WORKSPACE_FILE_CHANGE_BATCH_WINDOW_MS = 50;
+const WORKSPACE_FILE_CHANGE_MAX_BATCH_SIZE = 100;
+const AUTO_INDEX_SKIPPED_SEGMENTS = [
+    'node_modules',
+    '.git',
+    'dist',
+    'build',
+    '.next',
+    '.turbo',
+    '.cache',
+    '.tengra',
+    'coverage',
+    'logs',
+] as const;
+const AUTO_INDEX_SKIPPED_SUFFIXES = [
+    '.tmp',
+    '.temp',
+    '.swp',
+    '.swo',
+    '.log',
+    '.map',
+    '~',
+] as const;
+
+function normalizeWorkspacePath(value: string): string {
+    return value.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
+}
+
+function shouldAutoIndexPath(filePath: string): boolean {
+    const normalizedPath = normalizeWorkspacePath(filePath);
+    const pathSegments = normalizedPath.split('/');
+    if (AUTO_INDEX_SKIPPED_SEGMENTS.some(segment => pathSegments.includes(segment))) {
+        return false;
+    }
+    return !AUTO_INDEX_SKIPPED_SUFFIXES.some(suffix => normalizedPath.endsWith(suffix));
+}
+
+function createWorkspaceAutoIndexer(
+    databaseService: DatabaseService,
+    codeIntelligenceService: CodeIntelligenceService,
+    jobSchedulerService: JobSchedulerService
+): { schedule: (rootPath: string, filePath: string) => void } {
+    const workspaceLookupCache = new Map<string, WorkspaceLookupCacheEntry>();
+    const autoIndexQueues = new Map<string, AutoIndexQueueState>();
+
+    const resolveWorkspaceLookup = async (
+        rootPath: string
+    ): Promise<WorkspaceLookup | null> => {
+        const normalizedRootPath = normalizeWorkspacePath(rootPath);
+        const cachedLookup = workspaceLookupCache.get(normalizedRootPath);
+        if (cachedLookup && cachedLookup.expiresAt > Date.now()) {
+            return cachedLookup.lookup;
+        }
+
+        const workspaces = await databaseService.getWorkspaces();
+        const matchedWorkspace = workspaces.find(
+            workspace => normalizeWorkspacePath(workspace.path) === normalizedRootPath
+        );
+        const lookup = matchedWorkspace
+            ? {
+                workspaceId: matchedWorkspace.id,
+                rootPath: matchedWorkspace.path,
+                indexingEnabled: matchedWorkspace.advancedOptions?.indexingEnabled !== false,
+                ignorePatterns: matchedWorkspace.advancedOptions?.fileWatchIgnore ?? [],
+            }
+            : null;
+
+        workspaceLookupCache.set(normalizedRootPath, {
+            lookup,
+            expiresAt: Date.now() + AUTO_INDEX_LOOKUP_TTL_MS,
+        });
+
+        return lookup;
+    };
+
+    const scheduleQueueRun = (rootPath: string): void => {
+        const normalizedRootPath = normalizeWorkspacePath(rootPath);
+        jobSchedulerService.schedule(
+            `workspace:auto-index:${normalizedRootPath}`,
+            async () => {
+                const queueState = autoIndexQueues.get(normalizedRootPath);
+                if (!queueState || queueState.running) {
+                    return;
+                }
+
+                queueState.running = true;
+                try {
+                    const lookup = await resolveWorkspaceLookup(rootPath);
+                    if (!lookup) {
+                        autoIndexQueues.delete(normalizedRootPath);
+                        return;
+                    }
+                    if (!lookup.indexingEnabled) {
+                        autoIndexQueues.delete(normalizedRootPath);
+                        return;
+                    }
+
+                    const ignoreMatcher = await getWorkspaceIgnoreMatcher(lookup.rootPath, {
+                        defaultPatterns: DEFAULT_WORKSPACE_SCAN_IGNORE_PATTERNS,
+                        extraPatterns: lookup.ignorePatterns,
+                    });
+
+                    const pendingPaths = Array.from(queueState.pendingPaths).slice(
+                        0,
+                        AUTO_INDEX_BATCH_SIZE
+                    );
+                    for (const pendingPath of pendingPaths) {
+                        queueState.pendingPaths.delete(pendingPath);
+                        if (ignoreMatcher.ignoresAbsolute(pendingPath)) {
+                            continue;
+                        }
+                        await codeIntelligenceService.updateFileIndex(
+                            lookup.workspaceId,
+                            lookup.rootPath,
+                            pendingPath
+                        );
+                    }
+                } catch (error) {
+                    appLogger.error(
+                        'WorkspaceIPC',
+                        `Auto-index failed: ${error instanceof Error ? error.message : String(error)}`
+                    );
+                } finally {
+                    queueState.running = false;
+                    if (queueState.pendingPaths.size === 0) {
+                        autoIndexQueues.delete(normalizedRootPath);
+                    } else {
+                        scheduleQueueRun(rootPath);
+                    }
+                }
+            },
+            AUTO_INDEX_DELAY_MS
+        );
+    };
+
+    return {
+        schedule: (rootPath: string, filePath: string): void => {
+            if (!shouldAutoIndexPath(filePath)) {
+                return;
+            }
+
+            const normalizedRootPath = normalizeWorkspacePath(rootPath);
+            const queueState = autoIndexQueues.get(normalizedRootPath) ?? {
+                pendingPaths: new Set<string>(),
+                running: false,
+            };
+
+            if (queueState.pendingPaths.size < AUTO_INDEX_MAX_PENDING_PATHS) {
+                queueState.pendingPaths.add(path.resolve(filePath));
+            }
+
+            autoIndexQueues.set(normalizedRootPath, queueState);
+            scheduleQueueRun(rootPath);
+        },
+    };
+}
 
 /**
  * Registers all workspace-related IPC handlers including analysis, file watching,
@@ -66,6 +262,67 @@ export const registerWorkspaceIpc = (
         auditLogService,
     } = deps;
     const resolvedWorkspaceService = workspaceService;
+    const workspaceAutoIndexer = createWorkspaceAutoIndexer(
+        databaseService,
+        codeIntelligenceService,
+        jobSchedulerService
+    );
+    const fileChangeBatches = new Map<string, WorkspaceFileChangeBatchState>();
+
+    const flushFileChangeBatch = (rootPath: string): void => {
+        const batchState = fileChangeBatches.get(rootPath);
+        if (!batchState || batchState.events.length === 0) {
+            return;
+        }
+
+        if (batchState.timer) {
+            clearTimeout(batchState.timer);
+            batchState.timer = null;
+        }
+
+        const events = batchState.events;
+        batchState.events = [];
+
+        const win = getWindow();
+        if (!win || win.isDestroyed()) {
+            return;
+        }
+
+        win.webContents.send('workspace:file-change', events);
+    };
+
+    const enqueueFileChangeEvent = (payload: WorkspaceFileChangeEventPayload): void => {
+        const existingBatch = fileChangeBatches.get(payload.rootPath);
+        const batchState = existingBatch ?? { events: [], timer: null };
+        batchState.events.push(payload);
+        if (!existingBatch) {
+            fileChangeBatches.set(payload.rootPath, batchState);
+        }
+
+        if (batchState.events.length >= WORKSPACE_FILE_CHANGE_MAX_BATCH_SIZE) {
+            flushFileChangeBatch(payload.rootPath);
+            return;
+        }
+
+        if (batchState.timer) {
+            return;
+        }
+
+        batchState.timer = setTimeout(() => {
+            flushFileChangeBatch(payload.rootPath);
+        }, WORKSPACE_FILE_CHANGE_BATCH_WINDOW_MS);
+    };
+
+    const clearFileChangeBatch = (rootPath: string): void => {
+        const batchState = fileChangeBatches.get(rootPath);
+        if (!batchState) {
+            return;
+        }
+        if (batchState.timer) {
+            clearTimeout(batchState.timer);
+        }
+        fileChangeBatches.delete(rootPath);
+    };
 
     const getActiveWorkspaceState = (): z.infer<typeof WorkspaceActiveStateSchema> => {
         const activeWorkspaceRootPath = resolvedWorkspaceService.getActiveWorkspace();
@@ -121,6 +378,62 @@ export const registerWorkspaceIpc = (
         )
     );
 
+    ipcMain.handle(
+        'workspace:getFileDiagnostics',
+        createValidatedIpcHandler(
+            'workspace:getFileDiagnostics',
+            async (event, rootPath: string, filePath: string, content: string) => {
+                validateSender(event);
+                return await resolvedWorkspaceService.getFileDiagnostics(rootPath, filePath, content);
+            },
+            {
+                argsSchema: z.tuple([
+                    WorkspaceRootPathSchema,
+                    WorkspaceRootPathSchema,
+                    z.string(),
+                ]),
+                responseSchema: WorkspaceFileDiagnosticsSchema,
+                wrapResponse: true,
+            }
+        )
+    );
+
+    ipcMain.handle(
+        'workspace:getFileDefinition',
+        createValidatedIpcHandler(
+            'workspace:getFileDefinition',
+            async (
+                event,
+                rootPath: string,
+                filePath: string,
+                content: string,
+                position: { line: number; column: number }
+            ) => {
+                validateSender(event);
+                return await resolvedWorkspaceService.getFileDefinition(
+                    rootPath,
+                    filePath,
+                    content,
+                    position.line,
+                    position.column
+                );
+            },
+            {
+                argsSchema: z.tuple([
+                    WorkspaceRootPathSchema,
+                    WorkspaceRootPathSchema,
+                    z.string(),
+                    z.object({
+                        line: z.number().int().positive(),
+                        column: z.number().int().positive(),
+                    }),
+                ]),
+                responseSchema: WorkspaceDefinitionLocationsSchema,
+                wrapResponse: true,
+            }
+        )
+    );
+
     /**
      * Start workspace file watching
      */
@@ -130,45 +443,15 @@ export const registerWorkspaceIpc = (
             'workspace:watch',
             async (event, rootPath: string) => {
                 validateSender(event);
-                const win = getWindow();
                 await resolvedWorkspaceService.watchWorkspace(rootPath, (watchEvent: string, filePath: string) => {
-                    void (async () => {
-                        if (win && !win.isDestroyed()) {
-                            win.webContents.send('workspace:file-change', {
-                                event: watchEvent,
-                                path: filePath,
-                                rootPath,
-                            });
-                        }
-
-                        // Proactive Intelligence Indexing
-                        if (watchEvent === 'change' || watchEvent === 'rename') {
-                            jobSchedulerService.schedule(
-                                `index:${filePath}`,
-                                async () => {
-                                    try {
-                                        const workspaces = await databaseService.getWorkspaces();
-                                        const exactWorkspace = workspaces.find(
-                                            p => p.path === rootPath
-                                        );
-                                        if (exactWorkspace) {
-                                            await codeIntelligenceService.updateFileIndex(
-                                                exactWorkspace.id,
-                                                exactWorkspace.path,
-                                                filePath
-                                            );
-                                        }
-                                    } catch (e) {
-                                        appLogger.error(
-                                            'WorkspaceIPC',
-                                            `Auto-index failed: ${e instanceof Error ? e.message : String(e)}`
-                                        );
-                                    }
-                                },
-                                5000
-                            );
-                        }
-                    })();
+                    enqueueFileChangeEvent({
+                        event: watchEvent,
+                        path: filePath,
+                        rootPath,
+                    });
+                    if (watchEvent === 'change' || watchEvent === 'rename') {
+                        workspaceAutoIndexer.schedule(rootPath, filePath);
+                    }
                 });
                 return { success: true };
             },
@@ -251,6 +534,8 @@ export const registerWorkspaceIpc = (
             'workspace:unwatch',
             async (event, rootPath: string) => {
                 validateSender(event);
+                flushFileChangeBatch(rootPath);
+                clearFileChangeBatch(rootPath);
                 await resolvedWorkspaceService.stopWatch(rootPath);
                 return { success: true };
             },

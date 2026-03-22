@@ -317,7 +317,13 @@ const getCancelHandler = (): ((_: TestValue, payload: { chatId: string }) => voi
             await handler!(mockEvent, createStreamRequest({ provider: 'copilot' }));
 
             const chunks = getStreamChunkCalls();
-            expect(chunks.some(c => c.type === 'error' && (c.content as string).includes('Copilot stream'))).toBe(true);
+            expect(
+                chunks.some(
+                    c =>
+                        c.type === 'error' &&
+                        c.content === 'error.copilot.stream_start_failed'
+                )
+            ).toBe(true);
             expect(chunks.some(c => c.done === true)).toBe(true);
         });
     });

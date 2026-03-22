@@ -44,6 +44,9 @@ describe('Files IPC Handlers', () => {
         }
     };
     const allowedRoots = new Set<string>(['C:/workspace']);
+    const auditLogService = {
+        logFileSystemOperation: vi.fn(async () => undefined),
+    };
 
     const fileSystemService = {
         updateAllowedRoots: vi.fn(),
@@ -67,7 +70,8 @@ describe('Files IPC Handlers', () => {
         registerFilesIpc(
             () => mockMainWindow as never,
             fileSystemService as never,
-            allowedRoots
+            allowedRoots,
+            auditLogService as never
         );
     });
 
@@ -155,6 +159,28 @@ describe('Files IPC Handlers', () => {
             results: [],
             errorCode: 'FILES_OPERATION_FAILED'
         });
+    });
+
+    it('does not audit hot-path read and list operations', async () => {
+        const listHandler = ipcHandlers.get('files:listDirectory')!;
+        const readHandler = ipcHandlers.get('files:readFile')!;
+
+        await listHandler(mockEvent, 'C:/workspace');
+        await readHandler(mockEvent, 'C:/workspace/src/app.ts');
+
+        expect(auditLogService.logFileSystemOperation).not.toHaveBeenCalled();
+    });
+
+    it('continues auditing write operations', async () => {
+        const handler = ipcHandlers.get('files:writeFile')!;
+
+        await handler(mockEvent, 'C:/workspace/src/app.ts', 'updated');
+
+        expect(auditLogService.logFileSystemOperation).toHaveBeenCalledWith(
+            'files.writeFile',
+            true,
+            { targetPath: 'C:/workspace/src/app.ts' }
+        );
     });
 
     it('exposes files telemetry and health summary', async () => {

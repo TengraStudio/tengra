@@ -62,12 +62,6 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
     const languageOptions = [
         { value: 'tr', label: t('languages.tr') },
         { value: 'en', label: t('languages.en') },
-        { value: 'de', label: t('languages.de') },
-        { value: 'fr', label: t('languages.fr') },
-        { value: 'es', label: t('languages.es') },
-        { value: 'ja', label: t('languages.ja') },
-        { value: 'zh', label: t('languages.zh') },
-        { value: 'ar', label: t('languages.ar') },
     ];
 
     useEffect(() => {

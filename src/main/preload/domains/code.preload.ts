@@ -1,4 +1,9 @@
-import { FileSearchResult, TodoItem } from '@shared/types';
+import {
+    FileSearchResult,
+    TodoItem,
+    WorkspaceCodeMap,
+    WorkspaceDependencyGraph,
+} from '@shared/types';
 import { IpcRenderer } from 'electron';
 
 export interface CodeBridge {
@@ -117,6 +122,8 @@ export interface CodeBridge {
         topSymbols: Array<{ name: string; count: number }>;
         generatedAt: string;
     }>;
+    getWorkspaceDependencyGraph: (rootPath: string) => Promise<WorkspaceDependencyGraph | null>;
+    getWorkspaceCodeMap: (rootPath: string) => Promise<WorkspaceCodeMap | null>;
 }
 
 export function createCodeBridge(ipc: IpcRenderer): CodeBridge {
@@ -144,5 +151,7 @@ export function createCodeBridge(ipc: IpcRenderer): CodeBridge {
         indexWorkspace: (rootPath, workspaceId) => ipc.invoke('code:indexWorkspace', rootPath, workspaceId),
         queryIndexedSymbols: query => ipc.invoke('code:queryIndexedSymbols', query),
         getSymbolAnalytics: rootPath => ipc.invoke('code:getSymbolAnalytics', rootPath),
+        getWorkspaceDependencyGraph: rootPath => ipc.invoke('code:getWorkspaceDependencyGraph', rootPath),
+        getWorkspaceCodeMap: rootPath => ipc.invoke('code:getWorkspaceCodeMap', rootPath),
     };
 }

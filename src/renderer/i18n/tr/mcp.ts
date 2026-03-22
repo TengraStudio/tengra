@@ -1,12 +1,12 @@
 const sectionData = {
     "management": "MCP Yönetimi",
     "myServers": "Sunucularım",
-    "addServer": "Sunucu Ekle",
+    "addServer": "Sunucu ekle",
     "systemServers": "Sistem Servisleri",
-    "searchPlaceholder": "Servis veya araç keşfet...",
+    "searchPlaceholder": "Servis veya araç ara...",
     "searchTools": "Araçları ara...",
     "storeSubtitle": "{{count}} araç yüklü ve kullanıma hazır",
-    "toolsInstalled": "{{count}} araç yüklü • Model Bağlam Protokolü sunucularına göz atın",
+    "toolsInstalled": "{{count}} araç yüklü • Model Bağlam Protokolü sunucularını keşfedin",
     "noTools": "Araç bulunamadı",
     "noServers": "Bağlı sunucu yok",
     "features": "ÖZELLİKLER",
@@ -15,7 +15,7 @@ const sectionData = {
     "version": "sürüm",
     "configure": "Yapılandır",
     "uninstall": "Kaldır",
-    "install": "Aracı Yükle",
+    "install": "Aracı yükle",
     "installTool": "Yükle",
     "close": "Kapat",
     "remove": "Kaldır",
@@ -39,13 +39,22 @@ const sectionData = {
     "tool": "araç",
     "tools": "araç",
     "note": "Not",
-    "noteText": "Sadece etkinleştirilmiş sunucular yapay zeka asistanları tarafından erişilebilir.",
+    "noteText": "Yalnızca etkinleştirilen sunuculara yapay zekâ asistanları erişebilir.",
     "internalAlwaysEnabled": "Dahili araçlar her zaman etkindir",
     "noToolsFound": "Aramanızla eşleşen araç bulunamadı.",
     "searchingTools": "Araçlar aranıyor...",
-    "toolsAvailable": "Kullanılabilir Araçlar",
-    "installedTools": "Yüklü Araçlar",
-    "availableTools": "Mevcut Araçlar"
+    "toolsAvailable": "Kullanılabilir araçlar",
+    "installedTools": "Yüklü araçlar",
+    "availableTools": "Mevcut araçlar",
+    "status": {
+        "connected": "Bağlı",
+        "disconnected": "Bağlı değil",
+        "error": "Hata",
+        "enabled": "Etkin",
+        "disabled": "Devre dışı",
+        "active": "Aktif",
+        "inactive": "Pasif"
+    }
 };
 
 export default sectionData;

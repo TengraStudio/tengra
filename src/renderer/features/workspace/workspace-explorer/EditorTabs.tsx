@@ -1,8 +1,9 @@
-﻿import { Pin, X } from 'lucide-react';
+import { Pin, X } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 import { EditorTab } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { EditorTabContextMenu } from './EditorTabContextMenu';
 
@@ -94,7 +95,8 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
         if (dirtyTabs.length === 0) {
             return true;
         }
-        window.electron.log.warn(
+        appLogger.warn(
+            'EditorTabs',
             t('workspace.unsavedTabsWarning')
         );
         return false;

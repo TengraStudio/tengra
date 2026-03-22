@@ -13,7 +13,7 @@ export interface LiveCollaborationBridge {
     // Event listeners
     onJoined: (callback: (payload: { roomId: string }) => void) => () => void;
     onLeft: (callback: (payload: { roomId: string }) => void) => () => void;
-    onSyncUpdate: (callback: (payload: { roomId: string, data: string }) => void) => () => void;
+    onSyncUpdate: (callback: (payload: { roomId: string, data: string | Uint8Array }) => void) => () => void;
     onError: (callback: (payload: { roomId: string, error: string }) => void) => () => void;
 }
 
@@ -34,7 +34,7 @@ export function createLiveCollaborationBridge(ipc: IpcRenderer): LiveCollaborati
             return () => ipc.removeListener('collaboration:sync:left', listener);
         },
         onSyncUpdate: callback => {
-            const listener = (_: RuntimeValue, payload: { roomId: string, data: string }) => callback(payload);
+            const listener = (_: unknown, payload: { roomId: string, data: string | Uint8Array }) => callback(payload);
             ipc.on('collaboration:sync:update', listener);
             return () => ipc.removeListener('collaboration:sync:update', listener);
         },

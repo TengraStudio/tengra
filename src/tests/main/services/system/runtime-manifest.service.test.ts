@@ -60,7 +60,16 @@ describe('RuntimeManifestService', () => {
         const manifest = service.parseManifest(VALID_MANIFEST);
 
         expect(manifest.releaseTag).toBe('runtime-v1.2.3');
-        expect(manifest.components).toHaveLength(2);
+        expect(manifest.components).toHaveLength(7);
+        expect(manifest.components.map(component => component.id)).toEqual([
+            'ollama',
+            'sd-cpp',
+            'ghostty',
+            'alacritty',
+            'warp',
+            'kitty',
+            'tengra-db-service',
+        ]);
     });
 
     it('normalizes supported architecture aliases', () => {
@@ -71,10 +80,11 @@ describe('RuntimeManifestService', () => {
 
     it('selects the matching target for an environment', () => {
         const manifest = service.parseManifest(VALID_MANIFEST);
-        const target = service.selectTarget(manifest.components[0], {
+        const component = manifest.components.find(entry => entry.id === 'tengra-db-service');
+        const target = component ? service.selectTarget(component, {
             platform: 'darwin',
             arch: 'arm64',
-        });
+        }) : null;
 
         expect(target?.assetName).toBe('tengra-db-service-darwin-arm64.tar.gz');
     });
