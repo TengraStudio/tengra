@@ -15,7 +15,6 @@ type NavigationTarget =
     | 'workspaces'
     | 'models'
     | 'memory'
-    | 'ideas'
     | 'terminal'
     | 'mcp';
 

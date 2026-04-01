@@ -8,11 +8,11 @@ export type ViewSkeletonId =
     | 'settings'
     | 'mcp'
     | 'memory'
-    | 'ideas'
     | 'agent'
     | 'models'
     | 'docker'
-    | 'terminal';
+    | 'terminal'
+    | 'marketplace';
 
 export const ChatViewSkeleton: React.FC = () => (
     <div className="h-full w-full p-4 md:p-6 flex flex-col gap-4">
@@ -90,6 +90,8 @@ export function renderViewSkeleton(view: ViewSkeletonId): React.ReactElement {
             return <WorkspaceViewSkeleton />;
         case 'settings':
             return <SettingsViewSkeleton />;
+        case 'marketplace':
+            return <GenericViewSkeleton />;
         default:
             return <GenericViewSkeleton />;
     }

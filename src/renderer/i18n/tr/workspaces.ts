@@ -72,7 +72,7 @@ const sectionData = {
     "generatedAlt": "Oluşturulan logo önizlemesi",
     "logoAlt": "Çalışma Alanı logosu",
     "prompt": "LOGO KONSEPTİ",
-    "analyzeContext": "Fikir Öner",
+    "analyzeContext": "Öneriler üret",
     "analyzeWorkspaceIdentity": "Çalışma alanı kimliğini analiz et",
     "reAnalyzeWorkspace": "Çalışma alanını yeniden analiz et",
     "suggestedPrompts": "Önerilen İstemler",
@@ -89,7 +89,6 @@ const sectionData = {
         "modernGradient": "Modern gradyan",
         "render3d": "3D render"
     },
-    "ideas": "KONSEPTLER",
     "suggestedPalette": "MARKA RENKLERİ",
     "generating": "Oluşturuluyor...",
     "preview": "ÖNİZLEME",

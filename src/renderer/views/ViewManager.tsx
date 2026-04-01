@@ -27,7 +27,7 @@ import type { GroupedModels } from '@/types';
 import {
     ChatViewWrapperView,
     DockerDashboardView,
-    IdeasPageView,
+    MarketplaceView,
     MemoryInspectorView,
     ModelsPageView,
     SettingsRouteView,
@@ -45,14 +45,13 @@ interface ViewManagerProps {
     showFileMenu: boolean
     setShowFileMenu: (show: boolean) => void
     templates: ChatTemplate[]
-    onNavigateToWorkspace?: (workspaceId: string) => void | Promise<void>
     settingsSearchQuery?: string
 }
 
 /**
  * Chat component wrapper to isolate hook consumption
  */
-const ChatSection: React.FC<Omit<ViewManagerProps, 'currentView' | 'onNavigateToWorkspace'>> = (props) => (
+const ChatSection: React.FC<Omit<ViewManagerProps, 'currentView'>> = (props) => (
     <ChatViewWrapperView {...props} />
 );
 
@@ -119,21 +118,6 @@ const DockerSection: React.FC = () => {
     );
 };
 
-const IdeasSection: React.FC<{
-    onNavigateToWorkspace?: (workspaceId: string) => void | Promise<void>
-}> = ({ onNavigateToWorkspace }) => {
-    const { language } = useAuth();
-
-    return (
-        <Suspense fallback={<LoadingState size="md" />}>
-            <IdeasPageView
-                language={language}
-                onNavigateToWorkspace={(id: string) => void onNavigateToWorkspace?.(id)}
-            />
-        </Suspense>
-    );
-};
-
 const ModelsSection: React.FC = () => {
     const { language } = useAuth();
 
@@ -194,7 +178,7 @@ const ListeningOverlay: React.FC = () => {
 };
 
 export const ViewManager: React.FC<ViewManagerProps> = (props) => {
-    const { currentView, onNavigateToWorkspace } = props;
+    const { currentView } = props;
     const prefersReducedMotion = usePrefersReducedMotion();
 
     const pagePreset = useMemo(
@@ -218,10 +202,10 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
             case 'settings': return <SettingsSection />;
             case 'mcp': return <DockerSection />;
             case 'memory': return <Suspense fallback={<LoadingState size="md" />}><MemoryInspectorView /></Suspense>;
-            case 'ideas': return <IdeasSection onNavigateToWorkspace={onNavigateToWorkspace} />;
             case 'models': return <ModelsSection />;
             case 'docker': return <DockerSection />;
             case 'terminal': return <TerminalPlaceholderSection />;
+            case 'marketplace': return <Suspense fallback={<LoadingState size="md" />}><MarketplaceView /></Suspense>;
             default: return null;
         }
     };

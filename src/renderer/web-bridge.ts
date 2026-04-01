@@ -69,12 +69,13 @@ export const webElectronMock: ElectronAPI = {
             createdAt: Date.now(),
         },
     }),
-    antigravityLogin: async () => ({ url: 'http://localhost', state: 'mock-state' }),
+    antigravityLogin: async () => ({ url: 'http://localhost', state: 'mock-state', accountId: 'antigravity_mock' }),
 
-    claudeLogin: async () => ({ url: 'http://localhost', state: 'mock-state' }),
+    claudeLogin: async () => ({ url: 'http://localhost', state: 'mock-state', accountId: 'claude_mock' }),
     claudeBrowserLogin: async () => ({ sessionKey: 'mock-key', status: 'success' }),
-    anthropicLogin: async () => ({ url: 'http://localhost', state: 'mock-state' }),
-    codexLogin: async () => ({ url: 'http://localhost', state: 'mock-state' }),
+    anthropicLogin: async () => ({ url: 'http://localhost', state: 'mock-state', accountId: 'claude_mock' }),
+    codexLogin: async () => ({ url: 'http://localhost', state: 'mock-state', accountId: 'codex_mock' }),
+    cancelAuth: async () => true,
 
     saveClaudeSession: async () => ({ success: true }),
     triggerClaudeSessionCapture: async () => ({ success: true }),
@@ -396,6 +397,7 @@ export const webElectronMock: ElectronAPI = {
 
     getModels: async () => [],
 
+
     isOllamaRunning: async () => true,
     startOllama: async () => ({ success: true, message: 'Ollama is starting' }),
     pullModel: async (_modelName: string) => ({ success: true }),
@@ -411,6 +413,7 @@ export const webElectronMock: ElectronAPI = {
         }) => void
     ) => () => { },
     removePullProgressListener: () => { },
+
     sdCpp: {
         getStatus: async () => 'ready',
         reinstall: async () => { },
@@ -494,6 +497,7 @@ export const webElectronMock: ElectronAPI = {
             maskImage?: string;
         }) => '',
     },
+
     clipboard: {
         writeText: async (text: string) => {
             await navigator.clipboard.writeText(text);
@@ -570,11 +574,6 @@ export const webElectronMock: ElectronAPI = {
             tokenTimeline: [],
             activity: [],
         }),
-        getTimeStats: async () => ({
-            totalOnlineTime: 0,
-            totalCodingTime: 0,
-            workspaceCodingTime: {},
-        }),
         getTokenStats: async (_period: 'daily' | 'weekly' | 'monthly') => ({
             totalSent: 0,
             totalReceived: 0,
@@ -630,7 +629,6 @@ export const webElectronMock: ElectronAPI = {
             }) as Folder,
         deleteFolder: async (_id: string) => { },
         updateFolder: async (_id: string, _updates: Partial<Folder>) => { },
-
         createPrompt: async (_title: string, _content: string, _tags?: string[]) => ({ id: '1' }),
         deletePrompt: async (_id: string) => { },
         updatePrompt: async (_id: string, _updates: Record<string, IpcValue>) => { },
@@ -669,12 +667,6 @@ export const webElectronMock: ElectronAPI = {
             color?: string;
         }) => ({ valid: true, errors: [] }),
         recover: async (_archiveId: string) => ({ success: true, id: 'mock-recovered-agent-id' }),
-    },
-
-    modelRegistry: {
-        getAllModels: async () => [],
-        getRemoteModels: async () => [],
-        getInstalledModels: async () => [],
     },
 
     terminal: {
@@ -1491,63 +1483,6 @@ export const webElectronMock: ElectronAPI = {
                 metrics: {}
             }
         }),
-    },
-    ideas: {
-        createSession: async (config: RendererDataValue) => ({
-            ...(config as Record<string, RendererDataValue>),
-            id: '1',
-            ideasGenerated: 0,
-            status: 'active',
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-        }),
-        getSession: async (_id: string) => null,
-        getSessions: async () => [],
-        cancelSession: async (_id: string) => ({ success: true }),
-        generateMarketPreview: async (_categories: string[]) => ({ success: true, data: [] }),
-        startResearch: async (_sessionId: string) => ({ success: true }),
-        startGeneration: async (_sessionId: string) => ({ success: true }),
-        enrichIdea: async (_ideaId: string) => ({ success: true }),
-        getIdea: async (_id: string) => null,
-        getIdeas: async (_sessionId?: string) => [],
-        regenerateIdea: async (_ideaId: string) => ({ success: true, idea: undefined }),
-        approveIdea: async (_ideaId: string, _workspacePath: string, _selectedName?: string) => ({
-            success: true,
-        }),
-        rejectIdea: async (_ideaId: string) => ({ success: true }),
-        canGenerateLogo: async () => false,
-        generateLogo: async (
-            _ideaId: string,
-            _options: { prompt: string; style: string; model: string; count: number }
-        ) => ({ success: true, logoPaths: [] }),
-        queryResearch: async (_ideaId: string, _question: string) => ({
-            success: true,
-            answer: 'Mock research answer',
-        }),
-        // Deep research handlers
-        deepResearch: async (_topic: string, _category: string) => ({ success: true }),
-        validateIdea: async (_title: string, _description: string, _category: string) => ({
-            success: true,
-        }),
-        clearResearchCache: async () => ({ success: true }),
-        // Scoring handlers
-        scoreIdea: async (_ideaId: string) => ({ success: true, score: 75 }),
-        rankIdeas: async (_ideaIds: string[]) => ({ success: true, ranked: [] }),
-        compareIdeas: async (_ideaId1: string, _ideaId2: string) => ({ success: true }),
-        quickScore: async (_title: string, _description: string, _category: string) => ({
-            success: true,
-            score: 50,
-        }),
-        // Data management handlers
-        deleteIdea: async (_ideaId: string) => ({ success: true }),
-        deleteSession: async (_sessionId: string) => ({ success: true }),
-        archiveIdea: async (_ideaId: string) => ({ success: true }),
-        restoreIdea: async (_ideaId: string) => ({ success: true }),
-        getArchivedIdeas: async (_sessionId?: string) => [],
-        // Progress events
-        onResearchProgress: () => () => { },
-        onIdeaProgress: () => () => { },
-        onDeepResearchProgress: () => () => { },
     },
 
     batch: {

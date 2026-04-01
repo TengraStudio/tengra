@@ -1,6 +1,5 @@
 import { JsonValue, RuntimeValue } from '@shared/types/common';
 import { CouncilStepStatus,PlanCostBreakdown, WorkspaceStep } from '@shared/types/council';
-import { IdeaProgress, ResearchProgress } from '@shared/types/ideas';
 
 export type ModelUpdateEvent = {
     provider: string
@@ -36,10 +35,6 @@ export type SystemEvents = {
     'account:updated': { accountId: string; provider: string }
     'settings:changed': { settings: JsonValue }
     'system:error': { error: string; fatal?: boolean; stack?: string }
-    // Ideas feature events
-    'ideas:research-progress': ResearchProgress
-    'ideas:idea-progress': IdeaProgress
-    'idea:regenerated': { ideaId: string }
     'file-changed': { path: string; type: 'create' | 'update' | 'delete' }
     // Automation session runtime events
     'session:automation:step-update': {

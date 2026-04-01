@@ -44,7 +44,6 @@ import featureFlagSection from '@renderer/i18n/en/featureFlag';
 import gallerySection from '@renderer/i18n/en/gallery';
 import generalSection from '@renderer/i18n/en/general';
 import gitSection from '@renderer/i18n/en/git';
-import ideasSection from '@renderer/i18n/en/ideas';
 import imageAttachmentSection from '@renderer/i18n/en/imageAttachment';
 import imagesSection from '@renderer/i18n/en/images';
 import inputSection from '@renderer/i18n/en/input';
@@ -54,6 +53,7 @@ import loadingSection from '@renderer/i18n/en/loading';
 import loggingSection from '@renderer/i18n/en/logging';
 import mainProcessSection from '@renderer/i18n/en/mainProcess';
 import markdownSection from '@renderer/i18n/en/markdown';
+import marketplaceSection from '@renderer/i18n/en/marketplace';
 import mcpSection from '@renderer/i18n/en/mcp';
 import memorySection from '@renderer/i18n/en/memory';
 import messageBubbleSection from '@renderer/i18n/en/messageBubble';
@@ -155,7 +155,6 @@ export const en = {
     "gallery": gallerySection,
     "general": generalSection,
     "git": gitSection,
-    "ideas": ideasSection,
     "imageAttachment": imageAttachmentSection,
     "images": imagesSection,
     "input": inputSection,
@@ -165,6 +164,7 @@ export const en = {
     "logging": loggingSection,
     "mainProcess": mainProcessSection,
     "markdown": markdownSection,
+    "marketplace": marketplaceSection,
     "mcp": mcpSection,
     "memory": memorySection,
     "messageBubble": messageBubbleSection,

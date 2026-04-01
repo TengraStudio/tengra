@@ -19,12 +19,12 @@ import { createFilesBridge } from './preload/domains/files.preload';
 import { createGalleryBridge } from './preload/domains/gallery.preload';
 import { createGitBridge } from './preload/domains/git.preload';
 import { createHuggingFaceBridge } from './preload/domains/huggingface.preload';
-import { createIdeasBridge } from './preload/domains/ideas.preload';
 import { createIpcContractBridge } from './preload/domains/ipc-contract.preload';
 import { createLazyServicesBridge } from './preload/domains/lazy-services.preload';
 import { createLinkedAccountsBridge } from './preload/domains/linked-accounts.preload';
 import { createLlamaBridge } from './preload/domains/llama.preload';
 import { createLogBridge } from './preload/domains/log.preload';
+import { createMarketplaceBridge } from './preload/domains/marketplace.preload';
 import { createMcpBridge } from './preload/domains/mcp.preload';
 import { createMemoryBridge } from './preload/domains/memory.preload';
 import { createMetricsBridge } from './preload/domains/metrics.preload';
@@ -63,8 +63,9 @@ const api = {
     ...createAuthSessionBridge(ipcRenderer),
     ...createLinkedAccountsBridge(ipcRenderer),
     ...createAppBridge(ipcRenderer),
-    ...createClipboardBridge(ipcRenderer),
+    clipboard: createClipboardBridge(ipcRenderer),
     ...createSdCppBridge(ipcRenderer),
+    sdCpp: createSdCppBridge(ipcRenderer),
     ...createModelDownloaderBridge(ipcRenderer),
     ...createToolsBridge(ipcRenderer),
 
@@ -129,6 +130,7 @@ const api = {
     terminal: createTerminalBridge(ipcRenderer),
     ssh: createSSHBridge(ipcRenderer),
     mcp: createMcpBridge(ipcRenderer),
+    marketplace: createMarketplaceBridge(ipcRenderer),
     proxyEmbed: createProxyEmbedBridge(ipcRenderer),
     runtime: createRuntimeBridge(ipcRenderer),
     extension: createExtensionBridge(ipcRenderer),
@@ -136,7 +138,6 @@ const api = {
     usage: createUsageBridge(ipcRenderer),
     gallery: createGalleryBridge(ipcRenderer),
     update: createUpdateBridge(ipcRenderer),
-    ideas: createIdeasBridge(ipcRenderer),
     session: createSessionBridge(ipcRenderer),
     workspace: createWorkspaceBridge(ipcRenderer),
     modelRegistry: createModelRegistryBridge(ipcRenderer),

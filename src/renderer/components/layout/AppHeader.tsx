@@ -4,10 +4,9 @@ import {
     LayoutGrid,
     MessageSquare,
     Minus,
-    Search,
     Settings as SettingsIcon,
+    ShoppingBag,
     Square,
-    X as ClearIcon,
     X,
 } from 'lucide-react';
 import React from 'react';
@@ -19,14 +18,10 @@ import { useTranslation } from '@/i18n';
 
 interface AppHeaderProps {
     currentView: AppView;
-    settingsSearchQuery?: string;
-    setSettingsSearchQuery?: (query: string) => void;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
     currentView,
-    settingsSearchQuery,
-    setSettingsSearchQuery,
 }) => {
     const { currentChatId, currentChatTitle, clearMessages } = useChatHeader();
     const { language } = useAuthLanguage();
@@ -38,10 +33,10 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         settings: SettingsIcon,
         mcp: Container,
         memory: MessageSquare,
-        ideas: MessageSquare,
         docker: Container,
         terminal: MessageSquare,
         models: MessageSquare,
+        marketplace: ShoppingBag,
     };
 
     const Icon = viewIcons[currentView] ?? MessageSquare;
@@ -71,28 +66,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                                 : t(`nav.${currentView}`)}
                         </h1>
                     </div>
-                    {currentView === 'settings' && setSettingsSearchQuery && (
-                        <div className="relative w-[320px] max-w-[42vw]">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                            <input
-                                type="text"
-                                placeholder={t('settings.searchPlaceholder')}
-                                value={settingsSearchQuery ?? ''}
-                                onChange={e => setSettingsSearchQuery(e.target.value)}
-                                className="w-full pl-9 pr-9 py-2 bg-muted/20 border border-border/50 rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
-                                aria-label={t('settings.searchPlaceholder')}
-                            />
-                            {settingsSearchQuery && (
-                                <button
-                                    onClick={() => setSettingsSearchQuery('')}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-muted/30 rounded-md transition-colors"
-                                    aria-label={t('common.clear')}
-                                >
-                                    <ClearIcon className="w-4 h-4 text-muted-foreground" />
-                                </button>
-                            )}
-                        </div>
-                    )}
                 </div>
 
                 <div className="flex items-center gap-2 no-drag">

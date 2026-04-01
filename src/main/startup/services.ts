@@ -3,13 +3,8 @@ import { Container } from '@main/core/container';
 import { createLazyServiceDependency, createLazyServiceProxy, type LazyServiceDependency, lazyServiceRegistry } from '@main/core/lazy-services';
 import { McpDeps } from '@main/mcp/server-utils';
 import { AuditLogService } from '@main/services/analysis/audit-log.service';
-import { MonitoringService } from '@main/services/analysis/monitoring.service';
-import type { PageSpeedService } from '@main/services/analysis/pagespeed.service';
 import type { PerformanceService } from '@main/services/analysis/performance.service';
-import type { ScannerService } from '@main/services/analysis/scanner.service';
 import type { TelemetryService } from '@main/services/analysis/telemetry.service';
-import { TimeTrackingService } from '@main/services/analysis/time-tracking.service';
-import { UsageTrackingService } from '@main/services/analysis/usage-tracking.service';
 import type { BackupService } from '@main/services/data/backup.service';
 import { ChatEventService } from '@main/services/data/chat-event.service';
 import { DataService } from '@main/services/data/data.service';
@@ -20,13 +15,10 @@ import { FileChangeTracker } from '@main/services/data/file-change-tracker.servi
 import { FileSystemService } from '@main/services/data/filesystem.service';
 import { ImagePersistenceService } from '@main/services/data/image-persistence.service';
 import { ExportService } from '@main/services/export/export.service';
-import { ContentService } from '@main/services/external/content.service';
 import { FeatureFlagService } from '@main/services/external/feature-flag.service';
 import { HttpService } from '@main/services/external/http.service';
 import type { LogoService } from '@main/services/external/logo.service';
-import type { MarketResearchService } from '@main/services/external/market-research.service';
 import { RuleService } from '@main/services/external/rule.service';
-import { UtilityService } from '@main/services/external/utility.service';
 import { WebService } from '@main/services/external/web.service';
 import type { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { AgentService } from '@main/services/llm/agent.service';
@@ -35,7 +27,6 @@ import { ContextRetrievalService } from '@main/services/llm/context-retrieval.se
 import { CopilotService } from '@main/services/llm/copilot.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { HuggingFaceService } from '@main/services/llm/huggingface.service';
-import type { IdeaGeneratorService } from '@main/services/llm/idea-generator.service';
 import { InlineSuggestionService } from '@main/services/llm/inline-suggestion.service';
 import { LlamaService } from '@main/services/llm/llama.service';
 import { LLMService } from '@main/services/llm/llm.service';
@@ -96,9 +87,6 @@ import { DockerBackend } from '@main/services/terminal/backends/docker.backend';
 import { SSHBackend } from '@main/services/terminal/backends/ssh.backend';
 import { TerminalProfileService } from '@main/services/terminal/terminal-profile.service';
 import { ThemeService } from '@main/services/theme/theme.service';
-import { ClipboardService } from '@main/services/ui/clipboard.service';
-import { NotificationService } from '@main/services/ui/notification.service';
-import { ScreenshotService } from '@main/services/ui/screenshot.service';
 import { CodeIntelligenceService } from '@main/services/workspace/code-intelligence.service';
 import type { DockerService } from '@main/services/workspace/docker.service';
 import { GitService } from '@main/services/workspace/git.service';
@@ -107,7 +95,7 @@ import type { SSHService } from '@main/services/workspace/ssh.service';
 import { TerminalService } from '@main/services/workspace/terminal.service';
 import { TerminalSmartService } from '@main/services/workspace/terminal-smart.service';
 import type { WorkspaceService } from '@main/services/workspace/workspace.service';
-import type { WorkspaceScaffoldService } from '@main/services/workspace/workspace-scaffold.service';
+import { MarketplaceService } from '@main/services/external/marketplace.service';
 import {
     bootstrapCoreData,
     initDeferredServices,
@@ -119,6 +107,33 @@ import { JsonObject } from '@shared/types/common';
 
 // Export the container instance so it can be accessed if needed
 export const container = new Container();
+
+function createDeferredContainerProxy<T extends object>(serviceName: string): T {
+    let resolvedService: T | null = null;
+    const getService = (): T => {
+        if (!resolvedService) {
+            resolvedService = container.resolve<T>(serviceName);
+        }
+        return resolvedService;
+    };
+
+    return new Proxy({} as T, {
+        get(_target: T, prop: string | symbol): RuntimeValue {
+            const value = (getService() as Record<string | symbol, RuntimeValue>)[prop];
+            if (typeof value === 'function') {
+                return (...args: RuntimeValue[]) => {
+                    const method = (getService() as Record<string | symbol, RuntimeValue>)[prop];
+                    if (typeof method === 'function') {
+                        return (method as (...methodArgs: RuntimeValue[]) => RuntimeValue)
+                            .apply(getService(), args);
+                    }
+                    return method;
+                };
+            }
+            return value;
+        },
+    });
+}
 
 // Define Services interface
 export interface Services {
@@ -135,19 +150,15 @@ export interface Services {
     sshService: LazyServiceDependency<SSHService>;
     proxyService: ProxyService;
     copilotService: CopilotService;
+
     systemService: SystemService;
     networkService: NetworkService;
-    notificationService: NotificationService;
-    clipboardService: ClipboardService;
     gitService: GitService;
     securityService: SecurityService;
-    contentService: ContentService;
-    monitoringService: MonitoringService;
     utilityProcessService: UtilityProcessService;
 
     embeddingService: EmbeddingService;
     dockerService: LazyServiceDependency<DockerService>;
-    screenshotService: ScreenshotService;
 
     ollamaHealthService: ReturnType<typeof getOllamaHealthService>;
     llamaService: LlamaService;
@@ -166,7 +177,6 @@ export interface Services {
     memoryService: MemoryService;
     advancedMemoryService: AdvancedMemoryService;
     brainService: BrainService;
-    pageSpeedService: LazyServiceDependency<PageSpeedService>;
     localImageService: LocalImageService;
     ruleService: RuleService;
     agentService: AgentService;
@@ -174,7 +184,6 @@ export interface Services {
     updateService: UpdateService;
 
     healthCheckService: HealthCheckService;
-    scannerService: LazyServiceDependency<ScannerService>;
     fileManagementService: FileManagementService;
     featureFlagService: FeatureFlagService;
     chatEventService: ChatEventService;
@@ -186,10 +195,8 @@ export interface Services {
     configService: ConfigService;
     keyRotationService: KeyRotationService;
     rateLimitService: RateLimitService;
-    utilityService: UtilityService;
     tokenService: TokenService;
     securityScanService: SecurityScanService;
-    usageTrackingService: UsageTrackingService;
     auditLogService: AuditLogService;
     promptTemplatesService: PromptTemplatesService;
     performanceService: PerformanceService;
@@ -202,19 +209,16 @@ export interface Services {
     modelRegistryService: ModelRegistryService;
     eventBusService: EventBusService;
     powerManagerService: PowerManagerService;
-    marketResearchService: MarketResearchService;
-    workspaceScaffoldService: WorkspaceScaffoldService;
-    ideaGeneratorService: IdeaGeneratorService;
 
     exportService: ExportService;
     mcpPluginService: McpPluginService;
     apiServerService: ApiServerService;
-    timeTrackingService: TimeTrackingService;
     themeService: ThemeService;
     terminalProfileService: TerminalProfileService;
     terminalSmartService: TerminalSmartService;
     modelDownloaderService: ModelDownloaderService;
     councilCapabilityService: CouncilCapabilityService;
+    marketplaceService: MarketplaceService;
 }
 
 /**
@@ -300,20 +304,8 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
         },
         ['chatSessionRegistryService']
     );
-    container.register('notificationService', () => new NotificationService());
-    container.register(
-        'clipboardService',
-        (scheduler, powerManager) =>
-            new ClipboardService(
-                scheduler as JobSchedulerService,
-                powerManager as PowerManagerService
-            ),
-        ['jobSchedulerService', 'powerManagerService']
-    );
     container.register('gitService', () => new GitService());
     container.register('lspService', () => new LspService());
-    container.register('contentService', () => new ContentService());
-    container.register('screenshotService', () => new ScreenshotService());
     container.register('processService', () => new ProcessService());
     container.register('processManagerService', () => new ProcessManagerService());
     container.register('webService', () => {
@@ -339,11 +331,7 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
     );
     container.register('httpService', () => new HttpService());
     container.register('rateLimitService', () => new RateLimitService());
-    container.register(
-        'utilityService',
-        (dbs, sec) => new UtilityService(dbs as DatabaseService, sec as SecurityService),
-        ['databaseService', 'securityService']
-    );
+
 
 
     // Theme service
@@ -365,17 +353,14 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
         ['settingsService']
     );
 
-    // Time Tracking Service
-    container.register(
-        'timeTrackingService',
-        dbcs => new TimeTrackingService(dbcs as DatabaseClientService),
-        ['databaseClientService']
-    );
     container.register(
         'powerManagerService',
         (ss, eb) => new PowerManagerService(ss as SettingsService, eb as EventBusService),
         ['settingsService', 'eventBusService']
     );
+
+    // Marketplace Service
+    container.register('marketplaceService', () => new MarketplaceService());
 }
 
 function registerDataServices() {
@@ -386,14 +371,13 @@ function registerDataServices() {
     );
     container.register(
         'databaseService',
-        (ds, ebs, dbcs, tts) =>
+        (ds, ebs, dbcs) =>
             new DatabaseService(
                 ds as DataService,
                 ebs as EventBusService,
-                dbcs as DatabaseClientService,
-                tts as TimeTrackingService
+                dbcs as DatabaseClientService
             ),
-        ['dataService', 'eventBusService', 'databaseClientService', 'timeTrackingService']
+        ['dataService', 'eventBusService', 'databaseClientService']
     );
     container.register(
         'fileChangeTracker',
@@ -425,36 +409,32 @@ function registerSecurityServices() {
     ]);
     container.register(
         'copilotService',
-        (as, ns) => new CopilotService(as as AuthService, ns as NotificationService),
-        ['authService', 'notificationService']
+        () => new CopilotService()
     );
 
     // Token Service Bundle
     container.register(
         'tokenDepsBase',
-        (ss, cs, as, ebs) => ({
-            ss: ss as SettingsService,
-            cs: cs as CopilotService,
+        (dbs, as, ebs) => ({
+            dbs: dbs as DatabaseService,
             as: as as AuthService,
             ebs: ebs as EventBusService,
         }),
-        ['settingsService', 'copilotService', 'authService', 'eventBusService']
+        ['databaseService', 'authService', 'eventBusService']
     );
     container.register(
         'tokenService',
-        (base, pm, js) => {
+        (base, js) => {
             const d = base as {
-                ss: SettingsService;
-                cs: CopilotService;
+                dbs: DatabaseService;
                 as: AuthService;
                 ebs: EventBusService;
             };
-            return new TokenService(d.ss, d.cs, d.as, d.ebs, {
-                processManager: pm as ProcessManagerService,
+            return new TokenService(d.dbs, d.as, d.ebs, {
                 jobScheduler: js as JobSchedulerService,
             });
         },
-        ['tokenDepsBase', 'processManagerService', 'jobSchedulerService']
+        ['tokenDepsBase', 'jobSchedulerService']
     );
     container.register(
         'securityScanService',
@@ -587,6 +567,7 @@ function registerLLMServices() {
             settingsService: container.resolve<SettingsService>('settingsService'),
             proxyService: container.resolve<ProxyService>('proxyService'),
             eventBus: container.resolve<EventBusService>('eventBusService'),
+            ollamaService: container.resolve<OllamaService>('ollamaService'),
             localImageService: container.resolve<LocalImageService>('localImageService'),
             huggingFaceService: hfs as HuggingFaceService
         }),
@@ -682,79 +663,12 @@ function registerLazyServices() {
         });
     });
 
-    lazyServiceRegistry.register('scannerService', async () => {
-        const { ScannerService } = await import('@main/services/analysis/scanner.service');
-        return new ScannerService();
-    });
-
-    lazyServiceRegistry.register('pageSpeedService', async () => {
-        const { PageSpeedService } = await import('@main/services/analysis/pagespeed.service');
-        return new PageSpeedService();
-    });
-
-    lazyServiceRegistry.register('performanceService', async () => {
-        const pm = container.resolve<PowerManagerService>('powerManagerService');
-        const eb = container.resolve<EventBusService>('eventBusService');
-        const scheduler = container.resolve<JobSchedulerService>('jobSchedulerService');
-        const { PerformanceService } = await import('@main/services/analysis/performance.service');
-        return new PerformanceService(pm, eb, scheduler);
-    });
-
-    lazyServiceRegistry.register('telemetryService', async () => {
-        const ss = container.resolve<SettingsService>('settingsService');
-        const pm = container.resolve<PowerManagerService>('powerManagerService');
-        const eb = container.resolve<EventBusService>('eventBusService');
-        const scheduler = container.resolve<JobSchedulerService>('jobSchedulerService');
-        const utilityProcessService = container.resolve<UtilityProcessService>('utilityProcessService');
-        const { TelemetryService } = await import('@main/services/analysis/telemetry.service');
-        return new TelemetryService(ss, pm, eb, scheduler, utilityProcessService);
-    });
-
     lazyServiceRegistry.register('backupService', async () => {
         const dataService = container.resolve<DataService>('dataService');
         const databaseService = container.resolve<DatabaseService>('databaseService');
         const scheduler = container.resolve<JobSchedulerService>('jobSchedulerService');
         const { BackupService } = await import('@main/services/data/backup.service');
         return new BackupService(dataService, databaseService, scheduler);
-    });
-
-    lazyServiceRegistry.register('workspaceScaffoldService', async () => {
-        const { WorkspaceScaffoldService } = await import(
-            '@main/services/workspace/workspace-scaffold.service'
-        );
-        return new WorkspaceScaffoldService();
-    });
-
-    lazyServiceRegistry.register('marketResearchService', async () => {
-        const webService = container.resolve<WebService>('webService');
-        const { MarketResearchService } = await import(
-            '@main/services/external/market-research.service'
-        );
-        return new MarketResearchService(webService);
-    });
-
-    lazyServiceRegistry.register('ideaGeneratorService', async () => {
-        const databaseService = container.resolve<DatabaseService>('databaseService');
-        const llmService = container.resolve<LLMService>('llmService');
-        const marketResearchService =
-            await lazyServiceRegistry.get<MarketResearchService>('marketResearchService');
-        const workspaceScaffoldService =
-            await lazyServiceRegistry.get<WorkspaceScaffoldService>('workspaceScaffoldService');
-        const authService = container.resolve<AuthService>('authService');
-        const eventBus = container.resolve<EventBusService>('eventBusService');
-        const localImageService = container.resolve<LocalImageService>('localImageService');
-        const brainService = container.resolve<BrainService>('brainService');
-        const { IdeaGeneratorService } = await import('@main/services/llm/idea-generator.service');
-        return new IdeaGeneratorService({
-            databaseService,
-            llmService,
-            marketResearchService,
-            workspaceScaffoldService,
-            authService,
-            eventBus,
-            localImageService,
-            brainService,
-        });
     });
 
     lazyServiceRegistry.register('updateService', async () => {
@@ -769,6 +683,24 @@ function registerLazyServices() {
         const { McpPluginService } = await import('@main/services/mcp/mcp-plugin.service');
         return new McpPluginService(settingsService, mcpDeps);
     });
+
+    lazyServiceRegistry.register('performanceService', async () => {
+        const pm = container.resolve<PowerManagerService>('powerManagerService');
+        const ebs = container.resolve<EventBusService>('eventBusService');
+        const scheduler = container.resolve<JobSchedulerService>('jobSchedulerService');
+        const { PerformanceService } = await import('@main/services/analysis/performance.service');
+        return new PerformanceService(pm, ebs, scheduler);
+    });
+
+    lazyServiceRegistry.register('telemetryService', async () => {
+        const ss = container.resolve<SettingsService>('settingsService');
+        const pm = container.resolve<PowerManagerService>('powerManagerService');
+        const ebs = container.resolve<EventBusService>('eventBusService');
+        const scheduler = container.resolve<JobSchedulerService>('jobSchedulerService');
+        const ups = container.resolve<UtilityProcessService>('utilityProcessService');
+        const { TelemetryService } = await import('@main/services/analysis/telemetry.service');
+        return new TelemetryService(ss, pm, ebs, scheduler, ups);
+    });
 }
 
 function registerLazyProxies() {
@@ -782,27 +714,9 @@ function registerLazyProxies() {
     );
     container.register('sshService', () => createLazyServiceProxy<SSHService>('sshService'));
     container.register('logoService', () => createLazyServiceProxy<LogoService>('logoService'));
-    container.register('scannerService', () =>
-        createLazyServiceProxy<ScannerService>('scannerService')
-    );
-    container.register('pageSpeedService', () =>
-        createLazyServiceProxy<PageSpeedService>('pageSpeedService')
-    );
     container.register('performanceService', () => createLazyServiceProxy<PerformanceService>('performanceService'));
     container.register('telemetryService', () => createLazyServiceProxy<TelemetryService>('telemetryService'));
     container.register('backupService', () => createLazyServiceProxy<BackupService>('backupService'));
-    container.register(
-        'workspaceScaffoldService',
-        () => createLazyServiceProxy<WorkspaceScaffoldService>('workspaceScaffoldService')
-    );
-    container.register(
-        'marketResearchService',
-        () => createLazyServiceProxy<MarketResearchService>('marketResearchService')
-    );
-    container.register(
-        'ideaGeneratorService',
-        () => createLazyServiceProxy<IdeaGeneratorService>('ideaGeneratorService')
-    );
     container.register('updateService', () => createLazyServiceProxy<UpdateService>('updateService'));
     container.register('mcpPluginService', () => createLazyServiceProxy<McpPluginService>('mcpPluginService'));
 }
@@ -841,7 +755,7 @@ function registerWorkspaceServices() {
         (dbs, es) => new CodeIntelligenceService(dbs as DatabaseService, es as EmbeddingService),
         ['databaseService', 'embeddingService']
     );
-    // Logo, scaffold, market research, and idea generation services are lazy-loaded.
+    // Logo, scaffold, and market research services are lazy-loaded.
 
     container.register(
         'sessionModuleRegistryService',
@@ -857,19 +771,17 @@ function registerWorkspaceServices() {
     // Proxy Services
     container.register(
         'proxyProcessManager',
-        (ss, as, aapi) => new ProxyProcessManager(ss as SettingsService, as as AuthService, aapi as AuthAPIService),
-        ['settingsService', 'authService', 'authAPIService']
+        (ss, as, dbs) => new ProxyProcessManager(ss as SettingsService, as as AuthService, dbs as DatabaseService),
+        ['settingsService', 'authService', 'databaseService']
     );
     container.register(
         'quotaService',
-        (ss, as, pm, ts) =>
+        (ss, as) =>
             new QuotaService(
                 ss as SettingsService,
-                as as AuthService,
-                pm as ProcessManagerService,
-                ts as TokenService
+                as as AuthService
             ),
-        ['settingsService', 'authService', 'processManagerService', 'tokenService']
+        ['settingsService', 'authService']
     );
 
     container.register(
@@ -885,7 +797,7 @@ function registerWorkspaceServices() {
     );
     container.register(
         'proxyService',
-        (core, ppm, qs) => {
+        (core, ppm, qs, dbs) => {
             const c = core as {
                 ss: SettingsService;
                 ds: DataService;
@@ -901,37 +813,17 @@ function registerWorkspaceServices() {
                 eventBus: c.ebs,
                 processManager: ppm as ProxyProcessManager,
                 quotaService: qs as QuotaService,
+                databaseService: dbs as DatabaseService,
             });
         },
-        ['proxyCore', 'proxyProcessManager', 'quotaService']
+        ['proxyCore', 'proxyProcessManager', 'quotaService', 'databaseService']
     );
 }
 
 function registerAnalysisServices() {
-    container.register('monitoringService', () => new MonitoringService());
-    // PageSpeed and Scanner services are now lazy-loaded
-
-
-
-    // telemetryService is now lazy-loaded
-    container.register(
-        'usageTrackingService',
-        dbs => new UsageTrackingService(dbs as DatabaseService),
-        ['databaseService']
-    );
-    container.register(
-        'auditLogService',
-        (dbs, utilityProcessService) => new AuditLogService(
-            dbs as DatabaseService,
-            utilityProcessService as UtilityProcessService
-        ),
-        ['databaseService', 'utilityProcessService']
-    );
-    // performanceService is now lazy-loaded
+    container.register('auditLogService', (dbs, utilityProcessService) => new AuditLogService(dbs as DatabaseService, utilityProcessService as UtilityProcessService), ['databaseService', 'utilityProcessService']);
     container.register('ruleService', () => new RuleService());
-    container.register('featureFlagService', ds => new FeatureFlagService(ds as DataService), [
-        'dataService',
-    ]);
+    container.register('featureFlagService', ds => new FeatureFlagService(ds as DataService), ['dataService']);
     container.register('exportService', () => new ExportService());
 }
 
@@ -942,44 +834,31 @@ function registerMcpServices() {
             const services = args as RuntimeValue[];
             return {
                 web: services[0] as WebService,
-                utility: services[1] as UtilityService,
-                system: services[2] as SystemService,
-                ssh: services[3] as SSHService,
-                screenshot: services[4] as ScreenshotService,
-                scanner: services[5] as ScannerService,
-                notification: services[6] as NotificationService,
-                network: services[7] as NetworkService,
-                monitoring: services[8] as MonitoringService,
-                git: services[9] as GitService,
-                security: services[10] as SecurityService,
-                settings: services[11] as SettingsService,
-                filesystem: services[12] as FileSystemService,
-                file: services[13] as FileManagementService,
-                embedding: services[14] as EmbeddingService,
-                docker: services[15] as DockerService,
-                database: services[16] as DatabaseService,
-                content: services[17] as ContentService,
-                command: services[18] as CommandService,
-                clipboard: services[19] as ClipboardService,
-                ollama: services[20] as OllamaService,
-                advancedMemory: services[21] as AdvancedMemoryService,
-                ideaGenerator: services[22] as IdeaGeneratorService,
-                modelCollaboration: services[23] as ModelCollaborationService,
-                rateLimit: services[24] as RateLimitService,
-                auditLog: services[25] as AuditLogService,
-                workspace: services[26] as WorkspaceService,
+                system: services[1] as SystemService,
+                ssh: services[2] as SSHService,
+                network: services[3] as NetworkService,
+                git: services[4] as GitService,
+                security: services[5] as SecurityService,
+                settings: services[6] as SettingsService,
+                filesystem: services[7] as FileSystemService,
+                file: services[8] as FileManagementService,
+                embedding: services[9] as EmbeddingService,
+                docker: services[10] as DockerService,
+                database: services[11] as DatabaseService,
+                command: services[12] as CommandService,
+                ollama: services[13] as OllamaService,
+                advancedMemory: services[14] as AdvancedMemoryService,
+                modelCollaboration: services[15] as ModelCollaborationService,
+                rateLimit: services[16] as RateLimitService,
+                auditLog: services[17] as AuditLogService,
+                workspace: services[18] as WorkspaceService,
             };
         },
         [
             'webService',
-            'utilityService',
             'systemService',
             'sshService',
-            'screenshotService',
-            'scannerService',
-            'notificationService',
             'networkService',
-            'monitoringService',
             'gitService',
             'securityService',
             'settingsService',
@@ -988,12 +867,9 @@ function registerMcpServices() {
             'embeddingService',
             'dockerService',
             'databaseService',
-            'contentService',
             'commandService',
-            'clipboardService',
             'ollamaService',
             'advancedMemoryService',
-            'ideaGeneratorService',
             'modelCollaborationService',
             'rateLimitService',
             'auditLogService',
@@ -1023,48 +899,37 @@ function buildServicesMap(
         sshService: createLazyServiceDependency<SSHService>('sshService'),
         proxyService: container.resolve<ProxyService>('proxyService'),
         copilotService: container.resolve<CopilotService>('copilotService'),
+
         systemService: container.resolve<SystemService>('systemService'),
         networkService: container.resolve<NetworkService>('networkService'),
-        notificationService: container.resolve<NotificationService>('notificationService'),
-        clipboardService: container.resolve<ClipboardService>('clipboardService'),
         gitService: container.resolve<GitService>('gitService'),
         securityService: container.resolve<SecurityService>('securityService'),
-        contentService: container.resolve<ContentService>('contentService'),
-        monitoringService: container.resolve<MonitoringService>('monitoringService'),
         utilityProcessService: container.resolve<UtilityProcessService>('utilityProcessService'),
 
         embeddingService: container.resolve<EmbeddingService>('embeddingService'),
-        utilityService: container.resolve<UtilityService>('utilityService'),
         dockerService: createLazyServiceDependency<DockerService>('dockerService'),
-        screenshotService: container.resolve<ScreenshotService>('screenshotService'),
 
         llamaService: container.resolve<LlamaService>('llamaService'),
         huggingFaceService: container.resolve<HuggingFaceService>('huggingFaceService'),
         workspaceService: container.resolve<WorkspaceService>('workspaceService'),
         lspService: container.resolve<LspService>('lspService'),
         terminalService: container.resolve<TerminalService>('terminalService'),
-        inlineSuggestionService: container.resolve<InlineSuggestionService>(
-            'inlineSuggestionService'
-        ),
+        inlineSuggestionService: createDeferredContainerProxy<InlineSuggestionService>('inlineSuggestionService'),
         logoService: createLazyServiceDependency<LogoService>('logoService'),
         processService: container.resolve<ProcessService>('processService'),
         processManagerService: container.resolve<ProcessManagerService>('processManagerService'),
-        codeIntelligenceService:
-            container.resolve<CodeIntelligenceService>('codeIntelligenceService'),
-        contextRetrievalService:
-            container.resolve<ContextRetrievalService>('contextRetrievalService'),
+        codeIntelligenceService: createDeferredContainerProxy<CodeIntelligenceService>('codeIntelligenceService'),
+        contextRetrievalService: createDeferredContainerProxy<ContextRetrievalService>('contextRetrievalService'),
         jobSchedulerService: container.resolve<JobSchedulerService>('jobSchedulerService'),
         webService: container.resolve<WebService>('webService'),
         memoryService: container.resolve<MemoryService>('memoryService'),
         advancedMemoryService: container.resolve<AdvancedMemoryService>('advancedMemoryService'),
         brainService: container.resolve<BrainService>('brainService'),
-        pageSpeedService: createLazyServiceDependency<PageSpeedService>('pageSpeedService'),
         ruleService: container.resolve<RuleService>('ruleService'),
-        agentService: container.resolve<AgentService>('agentService'),
+        agentService: createDeferredContainerProxy<AgentService>('agentService'),
         updateService: container.resolve<UpdateService>('updateService'),
 
         healthCheckService: getHealthCheckService(),
-        scannerService: createLazyServiceDependency<ScannerService>('scannerService'),
         fileManagementService: container.resolve<FileManagementService>('fileManagementService'),
         featureFlagService: container.resolve<FeatureFlagService>('featureFlagService'),
         chatEventService: container.resolve<ChatEventService>('chatEventService'),
@@ -1076,23 +941,18 @@ function buildServicesMap(
         sessionModuleRegistryService: container.resolve<SessionModuleRegistryService>(
             'sessionModuleRegistryService'
         ),
-        telemetryService: container.resolve<TelemetryService>('telemetryService'),
+        telemetryService: createDeferredContainerProxy<TelemetryService>('telemetryService'),
         httpService: container.resolve<HttpService>('httpService'),
         configService: container.resolve<ConfigService>('configService'),
         keyRotationService: container.resolve<KeyRotationService>('keyRotationService'),
         rateLimitService: container.resolve<RateLimitService>('rateLimitService'),
         tokenService: container.resolve<TokenService>('tokenService'),
         securityScanService: container.resolve<SecurityScanService>('securityScanService'),
-        usageTrackingService: container.resolve<UsageTrackingService>('usageTrackingService'),
-        auditLogService: container.resolve<AuditLogService>('auditLogService'),
-        promptTemplatesService: container.resolve<PromptTemplatesService>('promptTemplatesService'),
-        modelCollaborationService: container.resolve<ModelCollaborationService>(
-            'modelCollaborationService'
-        ),
-        performanceService: container.resolve<PerformanceService>('performanceService'),
-        multiModelComparisonService: container.resolve<MultiModelComparisonService>(
-            'multiModelComparisonService'
-        ),
+        auditLogService: createDeferredContainerProxy<AuditLogService>('auditLogService'),
+        promptTemplatesService: createDeferredContainerProxy<PromptTemplatesService>('promptTemplatesService'),
+        modelCollaborationService: createDeferredContainerProxy<ModelCollaborationService>('modelCollaborationService'),
+        performanceService: createDeferredContainerProxy<PerformanceService>('performanceService'),
+        multiModelComparisonService: createDeferredContainerProxy<MultiModelComparisonService>('multiModelComparisonService'),
         runtimeManifestService: container.resolve<RuntimeManifestService>(
             'runtimeManifestService'
         ),
@@ -1100,18 +960,13 @@ function buildServicesMap(
         runtimeBootstrapService: container.resolve<RuntimeBootstrapService>(
             'runtimeBootstrapService'
         ),
-        backupService: container.resolve<BackupService>('backupService'),
-        modelRegistryService: container.resolve<ModelRegistryService>('modelRegistryService'),
+        backupService: createDeferredContainerProxy<BackupService>('backupService'),
+        modelRegistryService: createDeferredContainerProxy<ModelRegistryService>('modelRegistryService'),
         eventBusService: container.resolve<EventBusService>('eventBusService'),
         powerManagerService: container.resolve<PowerManagerService>('powerManagerService'),
-        marketResearchService: container.resolve<MarketResearchService>('marketResearchService'),
-        workspaceScaffoldService: container.resolve<WorkspaceScaffoldService>('workspaceScaffoldService'),
-        ideaGeneratorService: container.resolve<IdeaGeneratorService>('ideaGeneratorService'),
-
-        exportService: container.resolve<ExportService>('exportService'),
+        exportService: createDeferredContainerProxy<ExportService>('exportService'),
         mcpPluginService: container.resolve<McpPluginService>('mcpPluginService'),
-        localImageService: container.resolve<LocalImageService>('localImageService'),
-        timeTrackingService: container.resolve<TimeTrackingService>('timeTrackingService'),
+        localImageService: createDeferredContainerProxy<LocalImageService>('localImageService'),
         themeService: container.resolve<ThemeService>('themeService'),
         terminalProfileService: container.resolve<TerminalProfileService>('terminalProfileService'),
         terminalSmartService: container.resolve<TerminalSmartService>('terminalSmartService'),
@@ -1119,6 +974,7 @@ function buildServicesMap(
         councilCapabilityService: container.resolve<CouncilCapabilityService>(
             'councilCapabilityService'
         ),
+        marketplaceService: container.resolve<MarketplaceService>('marketplaceService'),
         apiServerService: null as RuntimeValue as ApiServerService, // Will be created in main.ts after ToolExecutor
     };
 }

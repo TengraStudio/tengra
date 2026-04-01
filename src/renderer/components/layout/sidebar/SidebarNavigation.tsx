@@ -1,4 +1,4 @@
-import { Brain, Lightbulb, MessageSquare, Rocket } from 'lucide-react';
+import { Brain, MessageSquare, Rocket, ShoppingBag } from 'lucide-react';
 import React, { useMemo, useRef, useState } from 'react';
 
 import { AppView } from '@/hooks/useAppState';
@@ -25,7 +25,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
         { view: 'chat' as const, icon: MessageSquare, label: t('sidebar.chats'), badge: chatsCount > 0 ? chatsCount : undefined },
         { view: 'workspace' as const, icon: Rocket, label: t('sidebar.workspaces') },
         { view: 'memory' as const, icon: Brain, label: t('sidebar.memory') },
-        { view: 'ideas' as const, icon: Lightbulb, label: t('sidebar.ideas') }
+        { view: 'marketplace' as const, icon: ShoppingBag, label: t('sidebar.marketplace') }
     ]), [chatsCount, t]);
     const [focusedIndex, setFocusedIndex] = useState(0);
     const preloadedViewsRef = useRef<Set<AppView>>(new Set());

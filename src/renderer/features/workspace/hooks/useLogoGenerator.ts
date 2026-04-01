@@ -3,6 +3,18 @@ import { useState } from 'react';
 import { Workspace } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
+interface LogoGenerationOptions {
+    prompt: string;
+    style: string;
+    model: string;
+    count: number;
+}
+
+interface IdentityAnalysisResult {
+    suggestedPrompts: string[];
+    colors: string[];
+}
+
 export function useLogoGenerator(
     workspace: Workspace,
     onApply: (logoPath: string) => void,
@@ -12,14 +24,16 @@ export function useLogoGenerator(
     const [style, setStyle] = useState('Minimalist');
     const [isGenerating, setIsGenerating] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
-
     const [suggestions, setSuggestions] = useState<string[]>([]);
     const [palette, setPalette] = useState<string[]>([]);
+    const [model, setModel] = useState('openai/dall-e-3');
+    const [count, setCount] = useState(1);
+    const [generatedLogos, setGeneratedLogos] = useState<string[]>([]);
 
-    const handleAnalyze = async () => {
+    const handleAnalyze = async (): Promise<void> => {
         setIsAnalyzing(true);
         try {
-            const result = await window.electron.workspace.analyzeIdentity(workspace.path);
+            const result = await window.electron.workspace.analyzeIdentity(workspace.path) as IdentityAnalysisResult;
             setSuggestions(result.suggestedPrompts);
             setPalette(result.colors);
             if (result.suggestedPrompts.length > 0 && !prompt) {
@@ -32,11 +46,7 @@ export function useLogoGenerator(
         }
     };
 
-    const [model, setModel] = useState('openai/dall-e-3');
-    const [count, setCount] = useState(1);
-    const [generatedLogos, setGeneratedLogos] = useState<string[]>([]);
-
-    const handleGenerate = async () => {
+    const handleGenerate = async (): Promise<void> => {
         if (!prompt) {
             return;
         }
@@ -45,12 +55,13 @@ export function useLogoGenerator(
             const colorContext =
                 palette.length > 0 ? ` Primary colors: ${palette.slice(0, 3).join(', ')}.` : '';
             const finalPrompt = `${prompt}${colorContext}`;
-            const logoPaths = await window.electron.workspace.generateLogo(workspace.path, {
+            const options: LogoGenerationOptions = {
                 prompt: finalPrompt,
                 style,
                 model,
                 count,
-            });
+            };
+            const logoPaths = await window.electron.workspace.generateLogo(workspace.path, options);
             setGeneratedLogos(prev => [...prev, ...logoPaths]);
         } catch (error) {
             appLogger.error('LogoGenerator', 'Generation failed', error as Error);
@@ -59,22 +70,7 @@ export function useLogoGenerator(
         }
     };
 
-    const handleImprovePrompt = async () => {
-        if (!prompt || isAnalyzing) {
-            return;
-        }
-        setIsAnalyzing(true);
-        try {
-            const improved = await window.electron.workspace.improveLogoPrompt(prompt);
-            setPrompt(improved);
-        } catch (error) {
-            appLogger.error('LogoGenerator', 'Improvement failed', error as Error);
-        } finally {
-            setIsAnalyzing(false);
-        }
-    };
-
-    const handleApply = async (logoPath: string) => {
+    const handleApply = async (logoPath: string): Promise<void> => {
         setIsGenerating(true);
         try {
             const finalPath = await window.electron.workspace.applyLogo(workspace.path, logoPath);
@@ -87,7 +83,7 @@ export function useLogoGenerator(
         }
     };
 
-    const handleManualUpload = async () => {
+    const handleManualUpload = async (): Promise<void> => {
         try {
             const uploadedPath = await window.electron.workspace.uploadLogo(workspace.path);
             if (uploadedPath) {
@@ -97,10 +93,6 @@ export function useLogoGenerator(
         } catch (error) {
             appLogger.error('LogoGenerator', 'Manual upload failed', error as Error);
         }
-    };
-
-    const selectIdea = (idea: string) => {
-        setPrompt(idea);
     };
 
     return {
@@ -119,9 +111,7 @@ export function useLogoGenerator(
         palette,
         handleAnalyze,
         handleGenerate,
-        handleImprovePrompt,
         handleManualUpload,
         handleApply,
-        selectIdea,
     };
 }

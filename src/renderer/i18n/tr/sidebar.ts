@@ -46,8 +46,8 @@ const sectionData = {
     "memory": "Hafıza",
     "automationWorkflow": "Otomasyon iş akışı",
     "moveTo": "Taşı...",
-    "ideas": "Fikirler",
-    "models": "Modeller"
+    "models": "Modeller",
+    "marketplace": "Marketplace"
 };
 
 export default sectionData;

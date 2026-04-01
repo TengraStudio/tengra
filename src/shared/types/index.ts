@@ -10,7 +10,6 @@ export * from '@/types/chat';
 export * from '@/types/common';
 export * from '@/types/db-api';
 export * from '@/types/file-diff';
-export * from '@/types/ideas';
 export * from '@/types/ids';
 export * from '@/types/llm-provider-types';
 export * from '@/types/memory';
