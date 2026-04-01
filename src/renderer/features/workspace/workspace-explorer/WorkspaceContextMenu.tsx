@@ -34,7 +34,7 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
 
     return createPortal(
         <div
-            className="fixed bg-card/95 border border-border/50 rounded-xl shadow-2xl py-1.5 min-w-[180px] animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl"
+            className="fixed bg-card/95 border border-border/50 rounded-xl shadow-2xl py-1.5 tw-min-w-180 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl"
             style={{
                 left: contextMenu.x,
                 top: contextMenu.y,

@@ -62,7 +62,7 @@ const MermaidDiagram = ({ code, t }: { code: string; t: TranslationFn }) => {
 
     if (loading) {
         return (
-            <div className="my-4 flex justify-center bg-white/5 p-8 rounded-xl border border-white/10">
+            <div className="my-4 flex justify-center bg-muted/30 p-8 rounded-xl border border-border/50">
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <div className="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin" />
                     <span className="text-sm">{t('markdown.loadingDiagram')}</span>
@@ -72,7 +72,7 @@ const MermaidDiagram = ({ code, t }: { code: string; t: TranslationFn }) => {
     }
 
     if (error) { return <pre className="text-xs text-destructive bg-destructive/10 p-2 rounded">{error}</pre>; }
-    return <div dangerouslySetInnerHTML={{ __html: svg }} className="my-4 flex justify-center bg-white/5 p-4 rounded-xl border border-white/10" />;
+    return <div dangerouslySetInnerHTML={{ __html: svg }} className="my-4 flex justify-center bg-muted/30 p-4 rounded-xl border border-border/50" />;
 };
 
 interface MarkdownRendererProps {
@@ -123,7 +123,7 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                     },
                     img: ({ src, alt }) => (
                         <span className="block my-2 relative group/image">
-                            <img src={src} alt={alt ?? t('messageBubble.imageAlt')} className="max-w-full max-h-96 rounded-lg border border-white/10 cursor-pointer hover:opacity-90 transition-opacity whitespace-pre-wrap" onClick={() => { if (src) { window.electron.openExternal(src); } }} />
+                            <img src={src} alt={alt ?? t('messageBubble.imageAlt')} className="max-w-full max-h-96 rounded-lg border border-border/50 cursor-pointer hover:opacity-90 transition-opacity whitespace-pre-wrap" onClick={() => { if (src) { window.electron.openExternal(src); } }} />
                             {alt && <span className="text-xs text-muted-foreground mt-1 block font-medium">{alt}</span>}
                             {src && !isUser && onCodeConvert && (
                                 <button
@@ -131,7 +131,7 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                                         e.stopPropagation();
                                         onCodeConvert(src);
                                     }}
-                                    className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/10 text-foreground px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide opacity-0 group/image:opacity-100 transition-all flex items-center gap-2 transform translate-y-2 group-hover/image:translate-y-0"
+                                    className="absolute top-2 right-2 bg-background/85 hover:bg-background/90 backdrop-blur-md border border-border/50 text-foreground px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide opacity-0 group/image:opacity-100 transition-all flex items-center gap-2 transform translate-y-2 group-hover/image:translate-y-0"
                                 >
                                     <Code2 className="w-3.5 h-3.5" />
                                     {t('workspace.convertToCode')}

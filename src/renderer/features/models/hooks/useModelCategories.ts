@@ -49,15 +49,15 @@ export function useModelCategories({
 
 function createBaseCategories(t: (k: string) => string): ModelCategory[] {
     return [
-        { id: 'favorites', name: t('common.favorites'), icon: Zap, color: 'text-warning', bg: 'bg-yellow/10', providerId: 'favorites', models: [] },
-        { id: 'copilot', name: t('providerLabels.githubCopilot'), icon: Zap, color: 'text-indigo', bg: 'bg-indigo/10', providerId: 'copilot', models: [] },
+        { id: 'favorites', name: t('common.favorites'), icon: Zap, color: 'text-warning', bg: 'bg-warning/10', providerId: 'favorites', models: [] },
+        { id: 'copilot', name: t('providerLabels.githubCopilot'), icon: Zap, color: 'text-info', bg: 'bg-info/10', providerId: 'copilot', models: [] },
         { id: 'openai', name: t('providerLabels.openai'), icon: Sparkles, color: 'text-success', bg: 'bg-success/10', providerId: 'openai', models: [] },
-        { id: 'claude', name: t('providerLabels.anthropic'), icon: BrainCircuit, color: 'text-purple', bg: 'bg-pink/10', providerId: 'anthropic', models: [] },
-        { id: 'antigravity', name: t('providerLabels.antigravity'), icon: LayoutGrid, color: 'text-pink', bg: 'bg-pink/10', providerId: 'antigravity', models: [] },
-        { id: 'codex', name: 'Codex', icon: Code2, color: 'text-blue', bg: 'bg-blue/10', providerId: 'codex', models: [] },
-        { id: 'opencode', name: t('modelSelector.openCode'), icon: Code2, color: 'text-cyan', bg: 'bg-cyan/10', providerId: 'opencode', models: [] },
-        { id: 'ollama', name: t('providerLabels.ollama'), icon: Server, color: 'text-orange', bg: 'bg-warning/10', providerId: 'ollama', models: [] },
-        { id: 'nvidia', name: 'NVIDIA', icon: Zap, color: 'text-green', bg: 'bg-green/10', providerId: 'nvidia', models: [] },
+        { id: 'claude', name: t('providerLabels.anthropic'), icon: BrainCircuit, color: 'text-accent', bg: 'bg-accent/10', providerId: 'anthropic', models: [] },
+        { id: 'antigravity', name: t('providerLabels.antigravity'), icon: LayoutGrid, color: 'text-accent', bg: 'bg-accent/10', providerId: 'antigravity', models: [] },
+        { id: 'codex', name: 'Codex', icon: Code2, color: 'text-info', bg: 'bg-info/10', providerId: 'codex', models: [] },
+        { id: 'opencode', name: t('modelSelector.openCode'), icon: Code2, color: 'text-info', bg: 'bg-info/10', providerId: 'opencode', models: [] },
+        { id: 'ollama', name: t('providerLabels.ollama'), icon: Server, color: 'text-warning', bg: 'bg-warning/10', providerId: 'ollama', models: [] },
+        { id: 'nvidia', name: 'NVIDIA', icon: Zap, color: 'text-success', bg: 'bg-success/10', providerId: 'nvidia', models: [] },
         { id: 'custom', name: t('modelSelector.proxyCustom'), icon: Box, color: 'text-muted-foreground', bg: 'bg-muted/10', providerId: 'openai', models: [] }
     ];
 }

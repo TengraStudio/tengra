@@ -43,7 +43,7 @@ export const EmptyState: React.FC<EmptyStateProps> = memo(({
     <div className="space-y-1">
       <h3 className="font-bold text-muted-foreground">{title}</h3>
       {description && (
-        <p className="text-xs text-muted-foreground/50 max-w-[280px]">{description}</p>
+        <p className="text-xs text-muted-foreground/50 max-w-72">{description}</p>
       )}
     </div>
     {action && (

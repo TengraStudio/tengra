@@ -3,20 +3,21 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { AppSettings } from '@/types';
 
 import { ManualSessionModalState } from '../components/ManualSessionModal';
+import { AuthBusyState } from '../types';
 
 import { useBrowserAuth } from './useBrowserAuth';
 import { useDeviceAuth } from './useDeviceAuth';
+import { UseLinkedAccountsResult } from './useLinkedAccounts';
 import { useOllamaManager } from './useOllamaManager';
 
 export function useSettingsAuth(
     settings: AppSettings | null,
     updateSettings: (s: AppSettings, save: boolean) => Promise<void>,
-    onRefreshModels?: (bypassCache?: boolean) => void,
-    onRefreshAccounts?: () => Promise<void>,
-    onShowManualSession?: (accountId: string, email?: string) => void
+    linkedAccounts: UseLinkedAccountsResult,
+    onRefreshModels?: (bypassCache?: boolean) => void
 ) {
     const [authMessage, setAuthMessage] = useState('');
-    const [authBusy, setAuthBusy] = useState<string | null>(null);
+    const [authBusy, setAuthBusy] = useState<AuthBusyState | null>(null);
     const [manualSessionModal, setManualSessionModal] = useState<ManualSessionModalState>({ isOpen: false, accountId: '' });
     const authMessageTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -55,17 +56,20 @@ export function useSettingsAuth(
         refreshAuthStatus,
         connectBrowserProvider,
         cancelBrowserAuth,
+        cancelBrowserAuthForAccount,
         handleSaveClaudeSession,
         disconnectProvider
     } = useBrowserAuth({
         settings,
         updateSettings,
+        linkedAccounts,
         authBusy,
         setAuthBusy,
         setAuthNotice,
         onRefreshModels,
-        onRefreshAccounts,
-        onShowManualSession
+        onShowManualSession: (accountId, email) => {
+            setManualSessionModal({ isOpen: true, accountId, email });
+        }
     });
 
     const cancelAuthFlow = useCallback(() => {
@@ -73,7 +77,7 @@ export function useSettingsAuth(
             cancelDeviceAuth();
             return;
         }
-        cancelBrowserAuth();
+        void cancelBrowserAuth();
     }, [cancelBrowserAuth, cancelDeviceAuth, deviceCodeModal.isOpen]);
 
     return useMemo(() => ({
@@ -91,6 +95,7 @@ export function useSettingsAuth(
         connectBrowserProvider,
         cancelAuthFlow,
         disconnectProvider,
+        cancelBrowserAuthForAccount,
         handleSaveClaudeSession,
         deviceCodeModal,
         closeDeviceCodeModal,
@@ -99,7 +104,7 @@ export function useSettingsAuth(
     }), [
         statusMessage, setStatusMessage, authMessage, authBusy, isOllamaRunning, authStatus,
         startOllama, checkOllama, refreshAuthStatus, connectGitHubProfile, connectCopilot,
-        connectBrowserProvider, cancelAuthFlow, disconnectProvider, handleSaveClaudeSession,
+        connectBrowserProvider, cancelAuthFlow, disconnectProvider, cancelBrowserAuthForAccount, handleSaveClaudeSession,
         deviceCodeModal, closeDeviceCodeModal, manualSessionModal, setManualSessionModal
     ]);
 }

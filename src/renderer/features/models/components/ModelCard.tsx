@@ -65,11 +65,11 @@ interface ModelHeaderProps {
 const ModelHeader: React.FC<ModelHeaderProps> = ({ isOllama, isInstalled, badgeContent, t }) => (
     <div className="flex justify-between items-start mb-6">
         <div className="flex items-center gap-2">
-            <div className={cn('text-xxxs font-black px-3 py-1.5 rounded-xl uppercase tracking-[0.2em] shadow-sm', isOllama ? 'bg-warning/20 text-orange border border-orange/20' : 'bg-yellow/20 text-warning border border-yellow/20')}>
+            <div className={cn('text-xxxs font-black px-3 py-1.5 rounded-xl uppercase tracking-widest shadow-sm', isOllama ? 'bg-warning/20 text-warning border border-warning/40' : 'bg-warning/20 text-warning-foreground border border-warning/40')}>
                 {isOllama ? 'OLLAMA' : 'HUGGINGFACE'}
             </div>
             {isInstalled && (
-                <div className="text-xxxs font-black px-3 py-1.5 rounded-xl uppercase tracking-[0.2em] bg-success/20 text-success border border-success/20 shadow-sm">
+                <div className="text-xxxs font-black px-3 py-1.5 rounded-xl uppercase tracking-widest bg-success/20 text-success border border-success/20 shadow-sm">
                     {t('modelExplorer.pulled')}
                 </div>
             )}

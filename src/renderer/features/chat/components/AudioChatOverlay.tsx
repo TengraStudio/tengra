@@ -74,13 +74,13 @@ const PulseRings: React.FC<{ blurClass: string }> = ({ blurClass }) => (
         <motion.div
             animate={{ scale: [1, 1.8, 1], opacity: [0.3, 0, 0.3], rotate: [0, 90, 0] }}
             transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            className={cn('absolute w-80 h-80 rounded-full blur-[80px]', blurClass)}
+            className={cn('absolute w-80 h-80 rounded-full blur-3xl', blurClass)}
         />
         <motion.div
             animate={{ scale: [1, 1.4, 1], opacity: [0.5, 0.1, 0.5] }}
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
             className={cn(
-                'absolute w-64 h-64 rounded-full blur-[60px]',
+                'absolute w-64 h-64 rounded-full blur-3xl',
                 blurClass.replace('/30', '/20')
             )}
         />
@@ -99,7 +99,7 @@ const CentralIcon: React.FC<CentralIconProps> = ({ isListening, config }) => {
             animate={{ scale: isListening ? [1, 1.05, 1] : 1, boxShadow: config.shadowStyle }}
             transition={{ duration: 1.5, repeat: Infinity }}
             className={cn(
-                'w-40 h-40 rounded-full flex items-center justify-center shadow-2xl transition-all duration-700 relative z-10 border border-white/10',
+                'w-40 h-40 rounded-full flex items-center justify-center shadow-2xl transition-all duration-700 relative z-10 border border-border/50',
                 config.bgClass
             )}
         >
@@ -165,7 +165,7 @@ const Controls: React.FC<ControlsProps> = ({
         {isListening && (
             <ControlButton
                 onClick={stopListening}
-                className="bg-white/5 text-muted-foreground border border-white/10 hover:bg-white/10"
+                className="bg-muted/30 text-muted-foreground border border-border/50 hover:bg-muted/40"
                 icon={StopCircle}
                 label={t('audioChat.pauseListening')}
             />
@@ -205,11 +205,11 @@ export function AudioChatOverlay({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[100] flex items-center justify-center bg-background/95 backdrop-blur-2xl"
+                className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-2xl"
             >
                 <button
                     onClick={onClose}
-                    className="absolute top-8 right-8 p-4 rounded-full bg-white/5 hover:bg-white/10 transition-all z-50 hover:scale-110 active:scale-95 shadow-xl"
+                    className="absolute top-8 right-8 p-4 rounded-full bg-muted/30 hover:bg-muted/40 transition-all z-50 hover:scale-110 active:scale-95 shadow-xl"
                 >
                     <X className="w-8 h-8 text-foreground/50 hover:text-foreground" />
                 </button>
@@ -227,7 +227,7 @@ export function AudioChatOverlay({
                         >
                             {config.title}
                         </motion.h2>
-                        <p className="text-muted-foreground/80 text-xl max-w-[320px] mx-auto font-medium leading-relaxed">
+                        <p className="text-muted-foreground/80 text-xl max-w-xs mx-auto font-medium leading-relaxed">
                             {config.desc}
                         </p>
                     </div>

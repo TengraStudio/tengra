@@ -71,7 +71,7 @@ export const SidebarNewChatButton: React.FC<SidebarNewChatButtonProps> = ({
                 </span>
             )}
             {!isCollapsed && (
-                <div className="absolute inset-0 bg-primary-foreground/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skewed-highlight" />
+                <div className="absolute inset-0 bg-primary-foreground/10 -translate-x-full group-hover:translate-x-full transition-transform duration-700 skewed-highlight" />
             )}
         </Button>
     </div>

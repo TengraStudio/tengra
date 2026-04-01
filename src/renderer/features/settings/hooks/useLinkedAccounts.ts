@@ -3,6 +3,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { appLogger } from '@/utils/renderer-logger';
 
+const PROVIDER_ALIASES: Record<string, string[]> = {
+    codex: ['codex', 'openai'],
+    claude: ['claude', 'anthropic'],
+    antigravity: ['antigravity', 'google', 'gemini'],
+    copilot: ['copilot', 'copilot_token'],
+    github: ['github']
+};
+
+function matchesProviderAlias(accountProvider: string, requestedProvider: string): boolean {
+    const normalizedAccountProvider = accountProvider.toLowerCase();
+    const normalizedRequestedProvider = requestedProvider.toLowerCase();
+    const aliases = PROVIDER_ALIASES[normalizedRequestedProvider] ?? [normalizedRequestedProvider];
+    return aliases.includes(normalizedAccountProvider);
+}
+
 export interface UseLinkedAccountsResult {
     accounts: LinkedAccountInfo[]
     loading: boolean
@@ -55,15 +70,15 @@ export function useLinkedAccounts(): UseLinkedAccountsResult {
 
     // Memoize these functions to prevent re-renders
     const getAccountsByProvider = useCallback((provider: string): LinkedAccountInfo[] => {
-        return accounts.filter(a => a.provider === provider);
+        return accounts.filter(a => matchesProviderAlias(a.provider, provider));
     }, [accounts]);
 
     const getActiveAccount = useCallback((provider: string): LinkedAccountInfo | undefined => {
-        return accounts.find(a => a.provider === provider && a.isActive);
+        return accounts.find(a => matchesProviderAlias(a.provider, provider) && a.isActive);
     }, [accounts]);
 
     const hasAccount = useCallback((provider: string): boolean => {
-        return accounts.some(a => a.provider === provider);
+        return accounts.some(a => matchesProviderAlias(a.provider, provider));
     }, [accounts]);
 
     const unlinkAccount = useCallback(async (accountId: string) => {

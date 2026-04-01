@@ -169,7 +169,7 @@ const ResponseCardHeader = ({
 );
 
 const ResponseCardContent = ({ slot, t }: { slot: ComparisonSlot; t: (key: string) => string }) => (
-    <div className="flex-1 p-4 min-h-[200px] max-h-[400px] overflow-y-auto">
+    <div className="flex-1 p-4 min-h-52 max-h-96 overflow-y-auto">
         {slot.isLoading ? (
             <div
                 className="flex items-center justify-center h-full"

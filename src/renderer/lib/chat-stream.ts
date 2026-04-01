@@ -55,6 +55,8 @@ export async function* chatStream(
     };
 
     const listener = (chunk: SessionConversationStreamChunk) => {
+        const toolCallsFromChunk = chunk.toolCalls
+            ?? (chunk as SessionConversationStreamChunk & { tool_calls?: ToolCall[] }).tool_calls;
         const typedChunk: ChatStreamChunk = {
             chatId: chunk.chatId,
             content: chunk.content,
@@ -62,7 +64,7 @@ export async function* chatStream(
             done: chunk.done,
             type: chunk.type,
             sources: chunk.sources,
-            tool_calls: chunk.toolCalls,
+            tool_calls: toolCallsFromChunk,
             error: chunk.error,
         };
         if (state.isDone) {

@@ -69,7 +69,7 @@ export function Tooltip({
     delay = 300,
     closeDelay = 70,
     disabled = false,
-    maxWidthClassName = 'max-w-[280px]',
+    maxWidthClassName = 'max-w-72',
     className,
 }: TooltipProps) {
     const [isVisible, setIsVisible] = useState(false);
@@ -197,7 +197,7 @@ export function Tooltip({
                     <div
                         ref={tooltipRef}
                         className={cn(
-                            'absolute z-[9999] px-3 py-2 text-xs text-foreground bg-popover/95 backdrop-blur-xl border border-border/60 rounded-lg shadow-2xl pointer-events-none',
+                            'absolute z-50 px-3 py-2 text-xs text-foreground bg-popover/95 backdrop-blur-xl border border-border/60 rounded-lg shadow-2xl pointer-events-none',
                             maxWidthClassName,
                             className
                         )}
@@ -217,11 +217,11 @@ export function Tooltip({
                                 content
                             )}
                             {description && (
-                                <div className="text-[11px] text-muted-foreground/90">{description}</div>
+                                <div className="text-xxxs text-muted-foreground/90">{description}</div>
                             )}
                             {shortcut && (
                                 <div className="pt-1">
-                                    <kbd className="px-1.5 py-0.5 rounded border border-border/60 bg-background/70 text-[10px] font-mono tracking-wide">
+                                    <kbd className="px-1.5 py-0.5 rounded border border-border/60 bg-background/70 text-xxxs font-mono tracking-wide">
                                         {shortcut}
                                     </kbd>
                                 </div>
@@ -231,13 +231,13 @@ export function Tooltip({
                             className={cn(
                                 'absolute w-2 h-2 bg-popover/95 border-border/60 rotate-45',
                                 resolvedSide === 'top' &&
-                                    'bottom-[-4px] left-1/2 -translate-x-1/2 border-r border-b',
+                                    '-bottom-1 left-1/2 -translate-x-1/2 border-r border-b',
                                 resolvedSide === 'bottom' &&
-                                    'top-[-4px] left-1/2 -translate-x-1/2 border-l border-t',
+                                    '-top-1 left-1/2 -translate-x-1/2 border-l border-t',
                                 resolvedSide === 'left' &&
-                                    'right-[-4px] top-1/2 -translate-y-1/2 border-r border-t',
+                                    '-right-1 top-1/2 -translate-y-1/2 border-r border-t',
                                 resolvedSide === 'right' &&
-                                    'left-[-4px] top-1/2 -translate-y-1/2 border-l border-b'
+                                    '-left-1 top-1/2 -translate-y-1/2 border-l border-b'
                             )}
                         />
                     </div>,

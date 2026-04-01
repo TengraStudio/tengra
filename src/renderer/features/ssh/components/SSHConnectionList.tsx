@@ -172,7 +172,7 @@ export const SSHConnectionList: React.FC<SSHConnectionListProps> = ({
     );
 
     return (
-        <div className="border-r border-border/50 p-4 flex flex-col bg-muted/20 w-[250px]">
+        <div className="border-r border-border/50 p-4 flex flex-col bg-muted/20 w-64">
             <button
                 className="primary-btn"
                 style={{ marginBottom: '16px' }}

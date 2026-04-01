@@ -54,7 +54,7 @@ export const FilesTab: React.FC<FilesTabProps> = ({
                                         : 'text-muted-foreground/60'
                                 )}
                             />
-                            <span className="truncate max-w-[120px]">{file.name}</span>
+                            <span className="truncate tw-max-w-120">{file.name}</span>
                             {file.isDirty && (
                                 <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                             )}

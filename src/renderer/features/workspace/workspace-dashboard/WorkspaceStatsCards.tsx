@@ -44,7 +44,7 @@ export const WorkspaceStatsCards: React.FC<WorkspaceStatsCardsProps> = ({ stats,
                         {t('workspaceDashboard.loc')}
                     </div>
                     <div className="text-2xl font-black text-foreground">~{formattedLoc}</div>
-                    <div className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                    <div className="mt-1 tw-text-10 uppercase tracking-wider text-muted-foreground/70">
                         {t('workspaceDashboard.locHint')}
                     </div>
                 </div>
@@ -70,7 +70,7 @@ export const WorkspaceStatsCards: React.FC<WorkspaceStatsCardsProps> = ({ stats,
                         </div>
                         <div className="mt-1 text-3xl font-black text-foreground">{formattedSize}</div>
                     </div>
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                    <div className="tw-text-10 uppercase tracking-wider text-muted-foreground/70">
                         {t('workspaceDashboard.scannedStorageOnly')}
                     </div>
                 </div>
@@ -90,7 +90,7 @@ export const WorkspaceStatsCards: React.FC<WorkspaceStatsCardsProps> = ({ stats,
                                     <div className="truncate font-mono text-xs text-foreground">
                                         {entry.path}
                                     </div>
-                                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                                    <div className="tw-text-10 uppercase tracking-wider text-muted-foreground/70">
                                         {t('workspaceDashboard.storageFiles', { count: entry.fileCount })}
                                     </div>
                                 </div>

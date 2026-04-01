@@ -34,7 +34,7 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
             >
                 <img
                     src={logo}
-                    className="w-8 h-8 min-w-[32px] object-contain"
+                    className="w-8 h-8 min-w-8 object-contain"
                     alt={t('app.name')}
                 />
                 {!isCollapsed && (
@@ -52,7 +52,7 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
                     isCollapsed && 'px-0'
                 )}
             >
-                <Plus className="w-4 h-4 stroke-[3]" />
+                <Plus className="w-4 h-4 stroke-2" />
                 {!isCollapsed && (
                     <span className="uppercase tracking-widest text-xxs">{newChatLabel}</span>
                 )}

@@ -41,7 +41,7 @@ export const EditorTabContextMenu: React.FC<EditorTabContextMenuProps> = ({
 }) =>
     createPortal(
         <div
-            className="fixed min-w-[220px] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-xl shadow-2xl py-1 z-[99999]"
+            className="fixed tw-min-w-220 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-xl shadow-2xl py-1 tw-z-99999"
             style={{ left: position.x, top: position.y }}
             onMouseDown={event => event.stopPropagation()}
             onContextMenu={event => event.preventDefault()}

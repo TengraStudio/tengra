@@ -1,5 +1,4 @@
 import type {
-    MultiplexerSession,
     RemoteDockerContainer,
     RemoteSshProfile,
 } from './terminal-panel-types';
@@ -141,63 +140,4 @@ export function normalizeDockerContainers(raw: RendererDataValue): RemoteDockerC
         }
     });
     return containers;
-}
-
-/**
- * Parse tmux sessions from command output
- * 
- * @param output - Command output
- * @returns Parsed sessions
- */
-export function parseTmuxSessions(output: string): MultiplexerSession[] {
-    const lines = output.trim().split('\n').filter(Boolean);
-    return lines
-        .map(line => {
-            const parts = line.split('|');
-            const id = parts[0]?.trim();
-            const windows = parts[1]?.trim();
-            const attached = parts[2]?.trim();
-            if (!id) {
-                return null;
-            }
-            const details = [
-                windows ? `${windows} windows` : null,
-                attached === '1' ? 'attached' : null,
-            ]
-                .filter(Boolean)
-                .join(', ');
-            return {
-                id,
-                label: id,
-                details: details || undefined,
-            } as MultiplexerSession;
-        })
-        .filter((session): session is MultiplexerSession => session !== null);
-}
-
-/**
- * Parse screen sessions from command output
- * 
- * @param output - Command output
- * @returns Parsed sessions
- */
-export function parseScreenSessions(output: string): MultiplexerSession[] {
-    const lines = output.trim().split('\n').filter(Boolean);
-    const sessions: MultiplexerSession[] = [];
-
-    for (const line of lines) {
-        const match = /^\s*(\S+)\s+\((.+?)\)/.exec(line);
-        if (match) {
-            const [, id, status] = match;
-            if (id) {
-                sessions.push({
-                    id,
-                    label: id,
-                    details: status || undefined,
-                });
-            }
-        }
-    }
-
-    return sessions;
 }

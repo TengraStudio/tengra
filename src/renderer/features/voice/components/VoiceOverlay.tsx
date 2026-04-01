@@ -33,7 +33,7 @@ export const VoiceOverlay: React.FC = () => {
                 <div className={`
                     flex items-center gap-3 px-4 py-2 rounded-full border shadow-2xl backdrop-blur-md
                     transition-all duration-300 transform
-                    ${session.isListening ? 'bg-primary/20 border-primary/30 scale-110' : 'bg-background/80 border-white/10 scale-100'}
+                    ${session.isListening ? 'bg-primary/20 border-primary/30 scale-110' : 'bg-background/80 border-border/50 scale-100'}
                 `}>
                     <div className="relative">
                         {session.isListening && (
@@ -62,7 +62,7 @@ export const VoiceOverlay: React.FC = () => {
                 {/* Transcript / Command History */}
                 {(session.lastTranscript || session.lastCommand) && (
                     <div className="
-                        max-w-md bg-background/90 border border-white/10 rounded-2xl p-4 shadow-xl
+                        max-w-md bg-background/90 border border-border/50 rounded-2xl p-4 shadow-xl
                         animate-in slide-in-from-bottom-4 fade-in duration-300
                     ">
                         {session.lastTranscript && (

@@ -102,7 +102,7 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
     const config = CATEGORY_CONFIG[memory.suggestedCategory];
 
     return (
-        <Card className="group p-4 bg-muted/20 border-white/5 hover:bg-muted/30 transition-all hover:border-yellow/30 relative overflow-hidden">
+        <Card className="group p-4 bg-muted/20 border-border/40 hover:bg-muted/30 transition-all hover:border-warning/40 relative overflow-hidden">
             {/* Confidence indicator */}
             <div
                 className="absolute left-0 top-0 bottom-0 w-1"
@@ -127,7 +127,7 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
                         {memory.requiresUserValidation && (
                             <Badge
                                 variant="outline"
-                                className="border-yellow/30 text-warning text-xxs"
+                                className="border-warning/40 text-warning text-xxs"
                             >
                                 {t('memory.needsReview')}
                             </Badge>
@@ -188,7 +188,7 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
                             className={cn('w-3 h-3 transition-transform', expanded && 'rotate-180')}
                         />
                         {memory.potentialContradictions.length > 0 && (
-                            <span className="text-orange">
+                            <span className="text-warning">
                                 {memory.potentialContradictions.length === 1
                                     ? t('memory.potentialContradiction', {
                                           count: memory.potentialContradictions.length,
@@ -213,10 +213,10 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
                 )}
 
                 {expanded && (
-                    <div className="space-y-2 pt-2 border-t border-white/5">
+                    <div className="space-y-2 pt-2 border-t border-border/40">
                         {memory.potentialContradictions.map((c, i) => (
                             <div key={i} className="p-2 rounded bg-warning/10 text-xxs">
-                                <span className="text-orange font-bold">
+                                <span className="text-warning font-bold">
                                     {t('memory.contradictionLabel')}
                                 </span>
                                 <span className="text-muted-foreground">{c.existingContent}</span>
@@ -244,7 +244,7 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
                         {memory.suggestedTags.map(tag => (
                             <span
                                 key={tag}
-                                className="flex items-center gap-1 text-xxs bg-white/5 px-2 py-0.5 rounded-full text-muted-foreground"
+                                className="flex items-center gap-1 text-xxs bg-muted/30 px-2 py-0.5 rounded-full text-muted-foreground"
                             >
                                 <Tag className="w-3 h-3" />
                                 {tag}

@@ -12,7 +12,7 @@ export const ShortcutHelpOverlay: React.FC<ShortcutHelpOverlayProps> = ({ visibl
     }
 
     return (
-        <div className="absolute inset-0 z-40 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="absolute inset-0 z-40 bg-background/70 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="w-full max-w-lg rounded-xl border border-border/50 bg-background p-5 space-y-3">
                 <h3 className="text-sm font-semibold">
                     {t('workspace.shortcutHelpTitle')}

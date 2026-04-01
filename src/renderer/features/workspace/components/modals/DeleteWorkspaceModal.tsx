@@ -30,7 +30,7 @@ export const DeleteWorkspaceModal: React.FC<DeleteWorkspaceModalProps> = ({ work
                         </div>
                         <DeleteFilesCheckbox checked={deleteFiles} onChange={setDeleteFiles} t={t} />
                         <div className="flex justify-end gap-2 pt-2">
-                            <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors">
+                            <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm hover:bg-muted/40 transition-colors">
                                 {t('common.cancel')}
                             </button>
                             <button

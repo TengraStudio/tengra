@@ -32,9 +32,9 @@ export const WizardSelectionStep: React.FC<WizardSelectionStepProps> = ({
             title: t('workspaceWizard.remoteSSH'),
             description: t('workspaceWizard.remoteSSHDesc'),
             icon: Server,
-            accentColor: 'text-purple-500',
-            accentBg: 'bg-purple-500/10',
-            accentRing: 'ring-purple-500/30',
+            accentColor: 'text-accent-foreground',
+            accentBg: 'bg-accent/40',
+            accentRing: 'ring-accent/40',
         },
         {
             id: 'create',
@@ -75,3 +75,4 @@ export const WizardSelectionStep: React.FC<WizardSelectionStepProps> = ({
         </div>
     );
 };
+

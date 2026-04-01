@@ -40,7 +40,7 @@ export const PlanSection = memo(
                     <div className="p-1.5 rounded-lg bg-primary/20">
                         <ListTodo className="w-4 h-4 text-primary" />
                     </div>
-                    <span className="text-xs font-black text-primary uppercase tracking-[0.2em]">
+                    <span className="text-xs font-black text-primary uppercase tracking-widest">
                         {t('chat.plan')}
                     </span>
                 </div>

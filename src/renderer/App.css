@@ -1,5 +1,5 @@
 .app-container {
-    @apply relative h-screen w-full bg-background text-foreground overflow-hidden selection:bg-primary/30 selection:text-white transition-all duration-300;
+    @apply relative h-screen w-full bg-background text-foreground overflow-hidden selection:bg-primary/30 selection:text-primary-foreground transition-all duration-300;
 }
 
 /* Layout handled by LayoutManager.tsx */

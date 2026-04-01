@@ -48,7 +48,7 @@ export const ComparisonCard: React.FC<ComparisonCardProps> = React.memo(({ resul
                     </span>
                 </div>
                 <Button variant="ghost" size="sm" onClick={handleCopyClick} title={t('modelComparison.copyResponse')}>
-                    {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
                 </Button>
             </div>
 
@@ -72,7 +72,7 @@ export const ComparisonCard: React.FC<ComparisonCardProps> = React.memo(({ resul
                     <Button
                         variant="ghost" size="sm"
                         onClick={() => { onRate(modelKey, 1); }}
-                        className={rating === 1 ? 'text-green-500' : 'text-muted-foreground'}
+                        className={rating === 1 ? 'text-success' : 'text-muted-foreground'}
                     >
                         <ThumbsUp className="w-3.5 h-3.5" />
                     </Button>

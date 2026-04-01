@@ -74,7 +74,7 @@ const MessageVariantCard = memo(
                     )}
                 </div>
 
-                <div className="flex-1 min-h-[100px]">
+                <div className="flex-1 min-h-24">
                     <MessageBubbleContent
                         showRawMarkdown={showRawMarkdown}
                         quotaDetails={quota}
@@ -230,7 +230,7 @@ export const MessageVariants = memo(
                         className={cn(
                             'px-2.5 py-1 rounded-md text-xxs font-bold transition-all flex items-center gap-2 border',
                             idx === variantIndex
-                                ? 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[1.02]'
+                                ? 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-102'
                                 : 'hover:bg-accent/50 text-muted-foreground border-transparent'
                         )}
                     >

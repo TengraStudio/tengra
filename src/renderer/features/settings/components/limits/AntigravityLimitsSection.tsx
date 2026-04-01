@@ -19,7 +19,7 @@ export const AntigravityLimitsSection: React.FC<AntigravityLimitsSectionProps> =
     return (
         <div className="bg-card p-6 rounded-xl border border-border">
             <div className="flex items-center gap-2 mb-4">
-                <Percent className="w-4 h-4 text-purple" />
+                <Percent className="w-4 h-4 text-primary" />
                 <h3 className="text-sm font-bold uppercase text-muted-foreground">{t('settings.usageLimits.antigravity.title')}</h3>
             </div>
             <div className="text-xs text-muted-foreground mb-4">

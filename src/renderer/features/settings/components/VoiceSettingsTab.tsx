@@ -93,7 +93,7 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
                             }`}
                     >
                         <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.enabled ? 'translate-x-6' : 'translate-x-1'
+                            className={`inline-block h-4 w-4 transform rounded-full bg-primary-foreground transition-transform ${settings.enabled ? 'translate-x-6' : 'translate-x-1'
                                 }`}
                         />
                     </button>
@@ -202,7 +202,7 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
                                         onClick={() => { void updateSettings({ continuousListening: !settings.continuousListening }); }}
                                         className={`w-10 h-5 rounded-full transition-colors relative ${settings.continuousListening ? 'bg-primary' : 'bg-muted'}`}
                                     >
-                                        <span className={`absolute top-1 h-3 w-3 rounded-full bg-white transition-transform ${settings.continuousListening ? 'left-6' : 'left-1'}`} />
+                                        <span className={`absolute top-1 h-3 w-3 rounded-full bg-primary-foreground transition-transform ${settings.continuousListening ? 'left-6' : 'left-1'}`} />
                                     </button>
                                 </div>
 
@@ -215,7 +215,7 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
                                             type="text"
                                             value={settings.wakeWord}
                                             onChange={(e) => { void updateSettings({ wakeWord: e.target.value }); }}
-                                            className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-2 text-xs focus:border-primary/50 outline-none transition-all"
+                                            className="w-full bg-background/50 border border-border/30 rounded-xl px-4 py-2 text-xs focus:border-primary/50 outline-none transition-all"
                                             placeholder={t('placeholder.wakeWordExample')}
                                         />
                                     </div>
@@ -236,7 +236,7 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
                                         onClick={() => { void updateSettings({ audioFeedback: !settings.audioFeedback }); }}
                                         className={`w-10 h-5 rounded-full transition-colors relative ${settings.audioFeedback ? 'bg-primary' : 'bg-muted'}`}
                                     >
-                                        <span className={`absolute top-1 h-3 w-3 rounded-full bg-white transition-transform ${settings.audioFeedback ? 'left-6' : 'left-1'}`} />
+                                        <span className={`absolute top-1 h-3 w-3 rounded-full bg-primary-foreground transition-transform ${settings.audioFeedback ? 'left-6' : 'left-1'}`} />
                                     </button>
                                 </div>
 
@@ -246,7 +246,7 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
                                         onClick={() => { void updateSettings({ visualFeedback: !settings.visualFeedback }); }}
                                         className={`w-10 h-5 rounded-full transition-colors relative ${settings.visualFeedback ? 'bg-primary' : 'bg-muted'}`}
                                     >
-                                        <span className={`absolute top-1 h-3 w-3 rounded-full bg-white transition-transform ${settings.visualFeedback ? 'left-6' : 'left-1'}`} />
+                                        <span className={`absolute top-1 h-3 w-3 rounded-full bg-primary-foreground transition-transform ${settings.visualFeedback ? 'left-6' : 'left-1'}`} />
                                     </button>
                                 </div>
                             </div>
@@ -269,11 +269,11 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
                                     value={newCommandText}
                                     onChange={(e) => setNewCommandText(e.target.value)}
                                     placeholder={t('voice.addNewCommand')}
-                                    className="flex-1 bg-black/20 border border-white/5 rounded-xl px-4 py-2 text-xs focus:border-primary/50 outline-none transition-all"
+                                    className="flex-1 bg-background/50 border border-border/30 rounded-xl px-4 py-2 text-xs focus:border-primary/50 outline-none transition-all"
                                 />
                                 <button
                                     onClick={() => handleAddCustomCommand()}
-                                    className="p-2 rounded-xl bg-primary text-white hover:bg-primary-hover transition-all"
+                                    className="p-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary-hover transition-all"
                                 >
                                     <Plus className="w-4 h-4" />
                                 </button>
@@ -281,14 +281,14 @@ export const VoiceSettingsTab: React.FC<SettingsSharedProps> = ({ t }) => {
 
                             <div className="max-h-60 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
                                 {commands.map((cmd) => (
-                                    <div key={cmd.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 group hover:border-primary/20 transition-all">
+                                    <div key={cmd.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/30 group hover:border-primary/20 transition-all">
                                         <div className="flex flex-col gap-1">
                                             <div className="flex gap-1 items-center">
-                                                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-primary/10 text-primary font-mono">
+                                                <span className="tw-text-10 px-1.5 py-0.5 rounded-md bg-primary/10 text-primary font-mono">
                                                     {cmd.phrase}
                                                 </span>
                                                 {cmd.aliases.map((alias, i) => (
-                                                    <span key={i} className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 text-muted-foreground font-mono">
+                                                    <span key={i} className="tw-text-10 px-1.5 py-0.5 rounded-md bg-muted/40 text-muted-foreground font-mono">
                                                         {alias}
                                                     </span>
                                                 ))}

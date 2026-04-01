@@ -76,7 +76,7 @@ export const KeyboardShortcutReference: React.FC<KeyboardShortcutReferenceProps>
 
         return (
             <div
-                className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in duration-200"
+                className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in duration-200"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="shortcut-ref-title"
@@ -84,7 +84,7 @@ export const KeyboardShortcutReference: React.FC<KeyboardShortcutReferenceProps>
             >
                 <div
                     ref={overlayRef}
-                    className="w-[520px] max-w-[90vw] bg-card border border-border/50 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+                    className="w-full max-w-screen-lg bg-card border border-border/50 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
                 >
                     {/* Header */}
                     <div className="h-14 border-b border-border/50 flex items-center justify-between px-6 bg-muted/20">
@@ -109,7 +109,7 @@ export const KeyboardShortcutReference: React.FC<KeyboardShortcutReferenceProps>
                     </div>
 
                     {/* Content */}
-                    <div className="p-6 space-y-5 overflow-y-auto max-h-[70vh]">
+                    <div className="p-6 space-y-5 overflow-y-auto max-h-screen">
                         {CATEGORIES.map((category) => (
                             <div key={category.titleKey}>
                                 <h3 className="text-xs font-bold text-muted-foreground/40 uppercase tracking-widest mb-2 px-1">
@@ -128,7 +128,7 @@ export const KeyboardShortcutReference: React.FC<KeyboardShortcutReferenceProps>
                                                     {keys.map((key, i) => (
                                                         <kbd
                                                             key={`${key}-${i}`}
-                                                            className="px-2 py-1 bg-muted/50 border border-border/50 rounded text-xxs font-mono text-muted-foreground/80 min-w-[24px] text-center shadow-sm"
+                                                            className="px-2 py-1 bg-muted/50 border border-border/50 rounded text-xxs font-mono text-muted-foreground/80 min-w-6 text-center shadow-sm"
                                                         >
                                                             {key}
                                                         </kbd>

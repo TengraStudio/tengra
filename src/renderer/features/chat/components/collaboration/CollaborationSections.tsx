@@ -41,10 +41,10 @@ export const PresenceSection = memo(({
                 <div key={participant.id} className="text-xs flex items-center gap-2">
                     <span className={cn(
                         "w-2 h-2 rounded-full",
-                        participant.isOnline ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-muted-foreground'
+                        participant.isOnline ? 'bg-success shadow-sm' : 'bg-muted-foreground'
                     )} />
                     <span className="font-medium">{participant.name}</span>
-                    <span className="text-[10px] text-muted-foreground px-1 bg-muted rounded">{participant.role}</span>
+                    <span className="text-xxxs text-muted-foreground px-1 bg-muted rounded">{participant.role}</span>
                 </div>
             ))}
         </div>
@@ -78,7 +78,7 @@ export const MemorySection = memo(({
         </div>
         <div className="max-h-24 overflow-y-auto space-y-1 px-1">
             {sharedMemory.map((entry, i) => (
-                <p key={i} className="text-[11px] text-muted-foreground bg-muted/30 px-2 py-1 rounded border border-border/50">{entry}</p>
+                <p key={i} className="text-xxxs text-muted-foreground bg-muted/30 px-2 py-1 rounded border border-border/50">{entry}</p>
             ))}
         </div>
     </Card>
@@ -113,7 +113,7 @@ export const ActivitySection = memo(({
             </div>
             <div className="max-h-24 overflow-y-auto space-y-1">
                 {cursorMarkers.map((marker) => (
-                    <p key={marker.id} className="text-[11px] text-muted-foreground italic">
+                    <p key={marker.id} className="text-xxxs text-muted-foreground italic">
                         {marker.user} → {marker.target}
                     </p>
                 ))}
@@ -133,7 +133,7 @@ export const ActivitySection = memo(({
             </div>
             <div className="max-h-24 overflow-y-auto space-y-1">
                 {annotations.map((annotation) => (
-                    <p key={annotation.id} className="text-[11px] text-muted-foreground border-l-2 border-primary/30 pl-2">
+                    <p key={annotation.id} className="text-xxxs text-muted-foreground border-l-2 border-primary/30 pl-2">
                         <span className="font-medium text-foreground/70">{annotation.author}:</span> {annotation.note}
                     </p>
                 ))}
@@ -166,7 +166,7 @@ export const SharingSection = memo(({
                 onClick={onToggleRecording}
                 className="h-8 text-xs"
             >
-                <span className={cn("w-2 h-2 rounded-full mr-2", isRecording ? "bg-white animate-pulse" : "bg-destructive")} />
+                <span className={cn("w-2 h-2 rounded-full mr-2", isRecording ? "bg-foreground animate-pulse" : "bg-destructive")} />
                 {isRecording ? t('chat.collaboration.stopRecording') : t('chat.collaboration.startRecording')}
             </Button>
             <Button
@@ -180,7 +180,7 @@ export const SharingSection = memo(({
             </Button>
         </div>
         {shareLink && <Input value={shareLink} readOnly className="h-8 text-xs bg-muted/50" />}
-        <div className="max-h-32 overflow-y-auto space-y-1 px-1 font-mono text-[10px] bg-black/5 p-2 rounded border border-border/50">
+        <div className="max-h-32 overflow-y-auto space-y-1 rounded border border-border/50 bg-muted/30 p-2 px-1 font-mono text-xxxs">
             {recordedEvents.length === 0 && <p className="text-muted-foreground/50 italic">{t('chat.collaboration.noEvents')}</p>}
             {recordedEvents.map((event, index) => (
                 <p key={index} className="text-muted-foreground leading-tight hover:text-foreground transition-colors">{event}</p>

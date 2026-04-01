@@ -88,7 +88,7 @@ export const EditWorkspaceModal: React.FC<EditWorkspaceModalProps> = ({
                                 onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
                                 aria-invalid={!hasValidDescription}
                                 className={cn(
-                                    'w-full bg-muted/30 border rounded-lg px-3 py-2 text-sm focus:outline-none min-h-[80px] resize-none',
+                                    'w-full bg-muted/30 border rounded-lg px-3 py-2 text-sm focus:outline-none tw-min-h-80 resize-none',
                                     hasValidDescription
                                         ? 'border-border/50 focus:border-primary/50'
                                         : 'border-destructive/50 focus:border-destructive'

@@ -4,7 +4,7 @@ import { Skeleton, SkeletonCard } from '@/components/ui/skeleton';
 
 /** Skeleton placeholder for the Workspaces page layout */
 export const WorkspacesSkeleton: React.FC = React.memo(() => (
-    <div className="h-full w-full p-4 md:p-6 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4">
+    <div className="h-full w-full p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="space-y-3">
             <Skeleton variant="rounded" height={44} />
             {Array.from({ length: 6 }).map((_, i) => (

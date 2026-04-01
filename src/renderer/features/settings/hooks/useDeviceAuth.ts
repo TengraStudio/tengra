@@ -4,6 +4,7 @@ import { AppSettings } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 import { DeviceCodeModalState } from '../components/DeviceCodeModal';
+import { AuthBusyState } from '../types';
 
 const INITIAL_MODAL_STATE: DeviceCodeModalState = {
     isOpen: false,
@@ -17,7 +18,7 @@ const INITIAL_MODAL_STATE: DeviceCodeModalState = {
 export function useDeviceAuth(
     settings: AppSettings | null,
     updateSettings: (s: AppSettings, save: boolean) => Promise<void>,
-    setAuthBusy: (busy: string | null) => void,
+    setAuthBusy: (busy: AuthBusyState | null) => void,
     setAuthNotice: (msg: string, duration?: number) => void,
     onRefreshModels?: (bypassCache?: boolean) => void
 ) {
@@ -40,13 +41,21 @@ export function useDeviceAuth(
         }
         const requestId = activeRequestRef.current + 1;
         activeRequestRef.current = requestId;
-        setAuthBusy('github');
+        setAuthBusy({ provider: 'github', startedAt: Date.now() });
         setAuthNotice('');
         try {
             const data = await window.electron.githubLogin('profile');
 
             // Open the modal with device code
             if (data.user_code && data.verification_uri) {
+                // Automatically copy the code to clipboard
+                try {
+                    void window.electron.clipboard.writeText(data.user_code);
+                    appLogger.info('DeviceAuth', 'Automatically copied user code to clipboard');
+                } catch (err) {
+                    appLogger.warn('DeviceAuth', 'Failed to auto-copy code to clipboard', err as Error);
+                }
+
                 setDeviceCodeModal({
                     isOpen: true,
                     userCode: data.user_code,
@@ -58,11 +67,13 @@ export function useDeviceAuth(
                 window.electron.openExternal(data.verification_uri);
             }
 
+            appLogger.debug('DeviceAuth', `Step 3: Initializing poll loop for ${data.user_code} (interval=${data.interval})`);
             const pollResult = await window.electron.pollToken(
                 data.device_code,
                 data.interval,
                 'profile'
             );
+            appLogger.debug('DeviceAuth', `Step 4: Poll result for profile: success=${pollResult.success}`);
             if (requestId !== activeRequestRef.current) {
                 return;
             }
@@ -84,7 +95,7 @@ export function useDeviceAuth(
                 setDeviceCodeModal(prev => ({
                     ...prev,
                     status: 'error',
-                    errorMessage: 'GitHub bağlanamadı.',
+                    errorMessage: pollResult.error || 'GitHub bağlanamadı.',
                 }));
             }
         } catch (error) {
@@ -110,13 +121,21 @@ export function useDeviceAuth(
         }
         const requestId = activeRequestRef.current + 1;
         activeRequestRef.current = requestId;
-        setAuthBusy('copilot');
+        setAuthBusy({ provider: 'copilot', startedAt: Date.now() });
         setAuthNotice('');
         try {
             const data = await window.electron.githubLogin('copilot');
 
             // Open the modal with device code
             if (data.user_code && data.verification_uri) {
+                // Automatically copy the code to clipboard
+                try {
+                    void window.electron.clipboard.writeText(data.user_code);
+                    appLogger.info('DeviceAuth', 'Automatically copied user code to clipboard');
+                } catch (err) {
+                    appLogger.warn('DeviceAuth', 'Failed to auto-copy code to clipboard', err as Error);
+                }
+                
                 setDeviceCodeModal({
                     isOpen: true,
                     userCode: data.user_code,
@@ -128,11 +147,13 @@ export function useDeviceAuth(
                 window.electron.openExternal(data.verification_uri);
             }
 
+            appLogger.debug('DeviceAuth', `Step 3: Initializing Copilot poll loop for ${data.user_code} (interval=${data.interval})`);
             const pollResult = await window.electron.pollToken(
                 data.device_code,
                 data.interval,
                 'copilot'
             );
+            appLogger.debug('DeviceAuth', `Step 4: Copilot poll result: success=${pollResult.success}`);
             if (requestId !== activeRequestRef.current) {
                 return;
             }
@@ -152,7 +173,7 @@ export function useDeviceAuth(
                 setDeviceCodeModal(prev => ({
                     ...prev,
                     status: 'error',
-                    errorMessage: 'Copilot bağlanamadı.',
+                    errorMessage: pollResult.error || 'Copilot bağlanamadı.',
                 }));
             }
         } catch (error) {

@@ -114,14 +114,14 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                 <button
                     onClick={addToAllowlist}
                     disabled={!selectedModel}
-                    className="px-3 py-2 rounded-lg text-xs font-bold bg-green-500/20 text-green-400 border border-green-500/30 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-green-500/30 transition-colors"
+                    className="px-3 py-2 rounded-lg text-xs font-bold bg-success/20 text-success border border-success/30 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-success/30 transition-colors"
                 >
                     {t('workspaces.addToAllowlist')}
                 </button>
                 <button
                     onClick={addToBlocklist}
                     disabled={!selectedModel}
-                    className="px-3 py-2 rounded-lg text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-red-500/30 transition-colors"
+                    className="px-3 py-2 rounded-lg text-xs font-bold bg-destructive/20 text-destructive border border-destructive/30 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-destructive/30 transition-colors"
                 >
                     {t('workspaces.addToBlocklist')}
                 </button>
@@ -131,7 +131,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Allowed models */}
                 <div className="space-y-2">
-                    <div className="text-xs font-bold text-green-400 uppercase tracking-wider">
+                    <div className="text-xs font-bold text-success uppercase tracking-wider">
                         {t('workspaces.allowedModels')}
                     </div>
                     {governance.allowedModels.length === 0 ? (
@@ -139,14 +139,14 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                     ) : (
                         <div className="space-y-1.5">
                             {governance.allowedModels.map(modelId => (
-                                <div key={modelId} className="flex items-center justify-between gap-2 bg-green-500/5 border border-green-500/20 rounded-lg px-3 py-2">
+                                <div key={modelId} className="flex items-center justify-between gap-2 bg-success/5 border border-success/20 rounded-lg px-3 py-2">
                                     <div className="flex items-center gap-2 min-w-0">
-                                        <Badge variant="outline" className="border-green-500/40 text-green-400 text-[10px] shrink-0">✓</Badge>
+                                        <Badge variant="outline" className="border-success/40 text-success text-xxxs shrink-0">✓</Badge>
                                         <span className="text-xs text-foreground truncate">{modelId}</span>
                                     </div>
                                     <button
                                         onClick={() => removeFromAllowlist(modelId)}
-                                        className="text-xs text-red-400 hover:text-red-300 font-bold shrink-0"
+                                        className="text-xs text-destructive hover:text-destructive/80 font-bold shrink-0"
                                     >
                                         {t('workspaces.removeFromList')}
                                     </button>
@@ -158,7 +158,7 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
 
                 {/* Blocked models */}
                 <div className="space-y-2">
-                    <div className="text-xs font-bold text-red-400 uppercase tracking-wider">
+                    <div className="text-xs font-bold text-destructive uppercase tracking-wider">
                         {t('workspaces.blockedModels')}
                     </div>
                     {governance.blockedModels.length === 0 ? (
@@ -166,14 +166,14 @@ export const ModelGovernancePanel: React.FC<ModelGovernancePanelProps> = ({
                     ) : (
                         <div className="space-y-1.5">
                             {governance.blockedModels.map(modelId => (
-                                <div key={modelId} className="flex items-center justify-between gap-2 bg-red-500/5 border border-red-500/20 rounded-lg px-3 py-2">
+                                <div key={modelId} className="flex items-center justify-between gap-2 bg-destructive/5 border border-destructive/20 rounded-lg px-3 py-2">
                                     <div className="flex items-center gap-2 min-w-0">
-                                        <Badge variant="outline" className="border-red-500/40 text-red-400 text-[10px] shrink-0">✕</Badge>
+                                        <Badge variant="outline" className="border-destructive/40 text-destructive text-xxxs shrink-0">✕</Badge>
                                         <span className="text-xs text-foreground truncate">{modelId}</span>
                                     </div>
                                     <button
                                         onClick={() => removeFromBlocklist(modelId)}
-                                        className="text-xs text-red-400 hover:text-red-300 font-bold shrink-0"
+                                        className="text-xs text-destructive hover:text-destructive/80 font-bold shrink-0"
                                     >
                                         {t('workspaces.removeFromList')}
                                     </button>

@@ -167,7 +167,7 @@ const ListeningOverlay: React.FC = () => {
     return (
         <div
             onClick={() => stopListening()}
-            className="absolute top-4 right-4 z-[9999] cursor-pointer bg-destructive/70 text-destructive-foreground px-3 py-1.5 rounded-full backdrop-blur-md animate-pulse flex items-center gap-2"
+            className="absolute top-4 right-4 z-50 cursor-pointer bg-destructive/70 text-destructive-foreground px-3 py-1.5 rounded-full backdrop-blur-md animate-pulse flex items-center gap-2"
         >
             <div className="w-2 h-2 rounded-full bg-current animate-ping" />
             <span className="text-xs font-bold uppercase tracking-wider text-xxs">
@@ -216,7 +216,7 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
             <AnimatePresence initial={false}>
                 <motion.div
                     key={currentView}
-                    className={cn("h-full overflow-hidden", currentView === 'memory' && "h-[calc(100vh-64px)]")}
+                    className={cn("h-full overflow-hidden", currentView === 'memory' && "h-full")}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}

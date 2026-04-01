@@ -71,7 +71,7 @@ export const WorkspaceAgentSessionModal: React.FC<WorkspaceAgentSessionModalProp
             title={t('workspace.aiAssistant')}
             size="2xl"
         >
-            <ScrollArea className="max-h-[65vh] pr-2">
+            <ScrollArea className="max-h-screen pr-2">
                 <div className="grid gap-3">
                     {sessions.map(session => (
                         <div
@@ -79,8 +79,8 @@ export const WorkspaceAgentSessionModal: React.FC<WorkspaceAgentSessionModalProp
                             className={cn(
                                 'rounded-2xl border p-4 transition-colors',
                                 session.id === currentSessionId
-                                    ? 'border-cyan-400/30 bg-cyan-500/10'
-                                    : 'border-white/8 bg-white/[0.03]'
+                                    ? 'border-info/30 bg-info/10'
+                                    : 'border-border/50 bg-card/70'
                             )}
                         >
                             <div className="flex items-start justify-between gap-3">
@@ -100,7 +100,7 @@ export const WorkspaceAgentSessionModal: React.FC<WorkspaceAgentSessionModalProp
                                                         stopEditing();
                                                     }
                                                 }}
-                                                className="h-9 rounded-xl border-white/10 bg-black/20"
+                                                className="h-9 rounded-xl border-border/60 bg-muted/30"
                                                 autoFocus
                                             />
                                             <div className="flex items-center gap-1.5">
@@ -167,7 +167,7 @@ export const WorkspaceAgentSessionModal: React.FC<WorkspaceAgentSessionModalProp
                                 </div>
                             </div>
 
-                            <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                            <div className="mt-3 flex flex-wrap items-center gap-2 text-xxs text-muted-foreground">
                                 <span className="inline-flex items-center gap-1">
                                     <Sparkles className="h-3.5 w-3.5" />
                                     {session.strategy}
@@ -186,3 +186,4 @@ export const WorkspaceAgentSessionModal: React.FC<WorkspaceAgentSessionModalProp
         </Modal>
     );
 };
+

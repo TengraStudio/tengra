@@ -128,17 +128,17 @@ const TodoNode = ({ data, selected }: NodeProps<Node<TodoCanvasNodeData>>) => {
             <div className="p-3 space-y-2">
                 <div className="text-xs font-medium line-clamp-2">{title || '—'}</div>
                 <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] ${STATUS_CLASSES[status]}`}>
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 tw-text-10 ${STATUS_CLASSES[status]}`}>
                         {statusIcon(status)}
                         {status}
                     </span>
                     {category ? (
-                        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] bg-primary/15 text-primary">
+                        <span className="inline-flex items-center rounded-full px-2 py-0.5 tw-text-10 bg-primary/15 text-primary">
                             {category}
                         </span>
                     ) : null}
                     {assignee ? (
-                        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] bg-accent/20 text-accent-foreground">
+                        <span className="inline-flex items-center rounded-full px-2 py-0.5 tw-text-10 bg-accent/20 text-accent-foreground">
                             {assignee}
                         </span>
                     ) : null}
@@ -659,7 +659,7 @@ const WorkspaceTodoTabCanvas: React.FC<WorkspaceTodoTabProps> = ({ workspace, on
                     </ReactFlow>
                 </div>
                 <div className="w-80 border-l border-border p-3 space-y-3 bg-card/40 overflow-y-auto">
-                    <div className="text-[11px] text-muted-foreground">{t('workspaceDashboard.todoCanvas.history')}: {historyTick}</div>
+                    <div className="tw-text-11 text-muted-foreground">{t('workspaceDashboard.todoCanvas.history')}: {historyTick}</div>
                     <div className="space-y-2"><div className="text-xs font-medium">{t('workspaceDashboard.todoCanvas.templates')}</div><div className="flex flex-wrap gap-2">{TEMPLATE_PRESETS.map(template => (<button key={template.id} onClick={() => applyTemplate(template.id)} className="h-7 px-2 rounded-md border border-border text-xs">{t(template.titleKey)}</button>))}</div></div>
                     {!selectedNode ? (
                         <div className="text-xs text-muted-foreground">{t('workspaceDashboard.todoCanvas.selectNode')}</div>

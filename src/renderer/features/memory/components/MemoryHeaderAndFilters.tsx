@@ -84,7 +84,7 @@ export const MemoryFilters = ({
                         placeholder={t('memory.searchPlaceholder')}
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
-                        className="pl-10 bg-muted/30 border-white/5"
+                        className="pl-10 bg-muted/30 border-border/40"
                     />
                 </div>
                 <Button type="submit" variant="secondary">
@@ -95,7 +95,7 @@ export const MemoryFilters = ({
                 value={categoryFilter}
                 onValueChange={v => setCategoryFilter(v as MemoryCategory | 'all')}
             >
-                <SelectTrigger className="w-[180px] bg-muted/30 border-white/5">
+                <SelectTrigger className="w-44 bg-muted/30 border-border/40">
                     <SelectValue placeholder={t('memory.allCategories')} />
                 </SelectTrigger>
                 <SelectContent>

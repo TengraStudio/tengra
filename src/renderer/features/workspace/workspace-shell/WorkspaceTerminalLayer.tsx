@@ -61,7 +61,7 @@ export const WorkspaceTerminalLayer: React.FC<WorkspaceTerminalLayerProps> = ({
                 transition={{ duration: 0.15 }}
                 exit={{ opacity: 0, y: 8 }}
                 className={cn(
-                    'absolute z-30 left-[calc(18rem+0rem)]'
+                    'absolute z-30 tw-left-sidebar'
                 )}
                 style={
                     {

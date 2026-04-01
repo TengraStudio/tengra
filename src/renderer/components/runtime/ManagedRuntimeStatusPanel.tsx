@@ -219,7 +219,7 @@ export function ManagedRuntimeStatusPanel({
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span
-                                        className={`rounded-full border px-2 py-1 text-[11px] font-semibold uppercase tracking-wide ${
+                                        className={`rounded-full border px-2 py-1 text-xxxs font-semibold uppercase tracking-wide ${
                                             entry.statusTone === 'success'
                                                 ? 'border-success/30 text-success'
                                                 : entry.statusTone === 'warning'

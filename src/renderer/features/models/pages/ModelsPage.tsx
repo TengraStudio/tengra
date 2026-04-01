@@ -146,7 +146,7 @@ export function ModelsPage({ language = 'en' }: ModelsPageProps): React.ReactEle
             ? hiddenModels.filter(id => id !== modelId)
             : [...hiddenModels, modelId];
 
-        const updated = {
+        const updated: AppSettings = {
             ...settings,
             general: { ...settings.general, hiddenModels: newHidden }
         };
@@ -156,7 +156,7 @@ export function ModelsPage({ language = 'en' }: ModelsPageProps): React.ReactEle
 
     const handleSetDefault = useCallback((modelId: string) => {
         if (!settings) { return; }
-        const updated = {
+        const updated: AppSettings = {
             ...settings,
             general: { ...settings.general, defaultModel: modelId }
         };
@@ -172,7 +172,7 @@ export function ModelsPage({ language = 'en' }: ModelsPageProps): React.ReactEle
             ? favorites.filter(id => id !== modelId)
             : [...favorites, modelId];
 
-        const updated = {
+        const updated: AppSettings = {
             ...settings,
             general: { ...settings.general, favoriteModels: newFavorites }
         };

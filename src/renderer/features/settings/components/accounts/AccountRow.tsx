@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 interface AccountRowProps {
     account: LinkedAccountInfo
     isLast: boolean
+    isBusy: boolean
     providerId: string
     onUnlink: (accountId: string) => Promise<void>
     onSetActive: (providerId: string, accountId: string) => Promise<void>
@@ -15,7 +16,7 @@ interface AccountRowProps {
 }
 
 export const AccountRow: React.FC<AccountRowProps> = ({
-    account, isLast, providerId, onUnlink, onSetActive, onShowManualSession, t
+    account, isLast, isBusy, providerId, onUnlink, onSetActive, onShowManualSession, t
 }) => {
     return (
         <div
@@ -63,7 +64,13 @@ export const AccountRow: React.FC<AccountRowProps> = ({
                             e.stopPropagation();
                             void onSetActive(providerId, account.id);
                         }}
-                        className="px-2.5 py-1 rounded-md text-xs font-medium bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted border border-border transition-colors"
+                        disabled={isBusy}
+                        className={cn(
+                            "px-2.5 py-1 rounded-md text-xs font-medium border transition-colors",
+                            isBusy
+                                ? "cursor-not-allowed bg-muted/30 text-muted-foreground/70 border-border"
+                                : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted border-border"
+                        )}
                     >
                         {t('accounts.setActive')}
                     </button>
@@ -76,7 +83,13 @@ export const AccountRow: React.FC<AccountRowProps> = ({
                             e.stopPropagation();
                             onShowManualSession(account.id, account.email);
                         }}
-                        className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                        disabled={isBusy}
+                        className={cn(
+                            "p-1.5 rounded-md transition-colors",
+                            isBusy
+                                ? "cursor-not-allowed text-muted-foreground/50"
+                                : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                        )}
                         title={t('auth.sessionKeyLabel')}
                     >
                         <Key className="h-3.5 w-3.5" />
@@ -89,7 +102,13 @@ export const AccountRow: React.FC<AccountRowProps> = ({
                         e.stopPropagation();
                         void onUnlink(account.id);
                     }}
-                    className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                    disabled={isBusy}
+                    className={cn(
+                        "p-1.5 rounded-md transition-colors",
+                        isBusy
+                            ? "cursor-not-allowed text-muted-foreground/50"
+                            : "text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    )}
                     title={t('accounts.removeAccount')}
                 >
                     <Trash2 className="h-3.5 w-3.5" />

@@ -49,7 +49,7 @@ const INDENT_CLASSES: Record<IndentLevel, string> = {
 const ACTIVE_CLASSES = [
     'bg-primary/10 text-primary',
     'before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2',
-    'before:w-[3px] before:h-4 before:bg-primary before:rounded-full'
+    'before:w-1 before:h-4 before:bg-primary before:rounded-full'
 ];
 
 const INACTIVE_CLASSES = [

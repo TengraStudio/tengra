@@ -33,14 +33,14 @@ export const GlobalProgress: React.FC = () => {
 
   return (
     <div
-      className="fixed top-0 left-0 right-0 z-[9999]"
+      className="fixed top-0 left-0 right-0 z-50"
       role="progressbar"
       aria-valuenow={percent}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={label}
     >
-      <div className="h-[3px] w-full bg-transparent">
+      <div className="h-1 w-full bg-transparent">
         <div
           className="h-full bg-primary transition-all duration-300 ease-out"
           style={{ width: `${percent}%` }}

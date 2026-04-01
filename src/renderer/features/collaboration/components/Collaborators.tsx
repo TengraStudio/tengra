@@ -56,7 +56,7 @@ export const Collaborators: React.FC<CollaboratorsProps> = ({ awareness }) => {
                 <div
                     key={clientId}
                     title={user.name}
-                    className="inline-block h-8 w-8 rounded-full ring-2 ring-background flex items-center justify-center text-xs font-bold text-white shadow-sm"
+                    className="inline-block h-8 w-8 rounded-full ring-2 ring-background flex items-center justify-center text-xs font-bold text-foreground shadow-sm"
                     style={{ backgroundColor: user.color }}
                 >
                     {user.name.charAt(0).toUpperCase()}

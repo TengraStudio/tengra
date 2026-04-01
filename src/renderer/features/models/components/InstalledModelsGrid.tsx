@@ -51,65 +51,65 @@ interface ProviderConfig {
 const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
     copilot: {
         icon: Sparkles,
-        color: 'text-blue-500',
-        bgColor: 'bg-blue-500/10',
-        borderColor: 'border-blue-500/20',
+        color: 'text-primary',
+        bgColor: 'bg-primary/10',
+        borderColor: 'border-primary/20',
         labelKey: 'providerLabels.githubCopilot'
     },
     openai: {
         icon: Brain,
-        color: 'text-emerald-500',
-        bgColor: 'bg-emerald-500/10',
-        borderColor: 'border-emerald-500/20',
+        color: 'text-success',
+        bgColor: 'bg-success/10',
+        borderColor: 'border-success/20',
         labelKey: 'providerLabels.openai'
     },
     anthropic: {
         icon: Zap,
-        color: 'text-orange-500',
-        bgColor: 'bg-orange-500/10',
-        borderColor: 'border-orange-500/20',
+        color: 'text-warning',
+        bgColor: 'bg-warning/10',
+        borderColor: 'border-warning/20',
         labelKey: 'providerLabels.anthropic'
     },
     claude: {
         icon: Zap,
-        color: 'text-orange-500',
-        bgColor: 'bg-orange-500/10',
-        borderColor: 'border-orange-500/20',
+        color: 'text-warning',
+        bgColor: 'bg-warning/10',
+        borderColor: 'border-warning/20',
         labelKey: 'providerLabels.claude'
     },
     ollama: {
         icon: Cpu,
-        color: 'text-purple-500',
-        bgColor: 'bg-purple-500/10',
-        borderColor: 'border-purple-500/20',
+        color: 'text-accent',
+        bgColor: 'bg-accent/10',
+        borderColor: 'border-accent/20',
         labelKey: 'providerLabels.ollama'
     },
     codex: {
         icon: Globe,
-        color: 'text-cyan-500',
-        bgColor: 'bg-cyan-500/10',
-        borderColor: 'border-cyan-500/20',
+        color: 'text-info',
+        bgColor: 'bg-info/10',
+        borderColor: 'border-info/20',
         labelKey: 'providerLabels.codex'
     },
     antigravity: {
         icon: Cloud,
-        color: 'text-pink-500',
-        bgColor: 'bg-pink-500/10',
-        borderColor: 'border-pink-500/20',
+        color: 'text-secondary',
+        bgColor: 'bg-secondary/10',
+        borderColor: 'border-secondary/20',
         labelKey: 'providerLabels.googleAi'
     },
     nvidia: {
         icon: Cpu,
-        color: 'text-green-500',
-        bgColor: 'bg-green-500/10',
-        borderColor: 'border-green-500/20',
+        color: 'text-success',
+        bgColor: 'bg-success/10',
+        borderColor: 'border-success/20',
         labelKey: 'providerLabels.nvidia'
     },
     opencode: {
         icon: Globe,
-        color: 'text-indigo-500',
-        bgColor: 'bg-indigo-500/10',
-        borderColor: 'border-indigo-500/20',
+        color: 'text-secondary',
+        bgColor: 'bg-secondary/10',
+        borderColor: 'border-secondary/20',
         labelKey: 'providerLabels.openCode'
     },
     custom: {
@@ -304,12 +304,12 @@ const InstalledModelCard = memo(({
             "hover:shadow-lg hover:-translate-y-0.5",
             isHidden && "opacity-50",
             isDefault ? "border-primary ring-1 ring-primary/20" : providerConfig.borderColor,
-            isFavorite && "ring-1 ring-yellow-500/30"
+            isFavorite && "ring-1 ring-warning/30"
         )}>
             {/* Favorite indicator */}
             {isFavorite && (
                 <div className="absolute -top-1.5 -right-1.5">
-                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                    <Star className="w-4 h-4 text-warning fill-warning" />
                 </div>
             )}
 
@@ -405,8 +405,8 @@ const InstalledModelCard = memo(({
                     className={cn(
                         "p-1.5 rounded-lg transition-all",
                         isFavorite
-                            ? "bg-yellow-500/20 text-yellow-500"
-                            : "bg-muted/30 text-muted-foreground hover:bg-yellow-500/10 hover:text-yellow-500"
+                            ? "bg-warning/20 text-warning"
+                            : "bg-muted/30 text-muted-foreground hover:bg-warning/10 hover:text-warning"
                     )}
                     title={isFavorite ? t('modelsPage.unfavorite') : t('modelsPage.favorite')}
                 >

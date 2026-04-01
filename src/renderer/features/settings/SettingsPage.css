@@ -39,7 +39,9 @@
 }
 
 .settings-group-title {
-    @apply text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 mb-4 px-1;
+    @apply font-black uppercase tracking-widest text-muted-foreground/50 mb-4 px-1;
+
+    font-size: 10px;
 }
 
 .settings-card {

@@ -10,6 +10,11 @@ import type {
     JoinCollaborationRoom,
 } from '@shared/schemas/collaboration.schema';
 import type {
+    InstallRequest,
+    InstallResult,
+    MarketplaceRegistry,
+} from '@shared/types/marketplace';
+import type {
     IpcRendererEvent,
 } from 'electron';
 
@@ -44,6 +49,7 @@ import type {
     VoiceSynthesisOptions,
 } from '@/shared/types/voice';
 
+
 export interface ElectronApiIntegrationsDomain {
     db: {
         createChat: (chat: Chat) => Promise<{ success: boolean }>;
@@ -71,11 +77,7 @@ export interface ElectronApiIntegrationsDomain {
             tokenTimeline: { timestamp: number; promptTokens: number; completionTokens: number }[];
             activity: number[];
         }>;
-        getTimeStats: () => Promise<{
-            totalOnlineTime: number;
-            totalCodingTime: number;
-            workspaceCodingTime: Record<string, number>;
-        }>;
+
         getTokenStats: (period: 'daily' | 'weekly' | 'monthly') => Promise<{
             totalSent: number;
             totalReceived: number;
@@ -635,6 +637,11 @@ export interface ElectronApiIntegrationsDomain {
         status: () => Promise<IpcValue>;
     };
 
+    marketplace: {
+        fetch: () => Promise<MarketplaceRegistry>;
+        install: (request: InstallRequest) => Promise<InstallResult>;
+    };
+
     // Screenshot
     log: {
         write: (
@@ -653,6 +660,7 @@ export interface ElectronApiIntegrationsDomain {
         downloadUpdate: () => Promise<void>;
         installUpdate: () => Promise<void>;
     };
+
 
     collaboration: {
         run: (request: {

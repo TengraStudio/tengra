@@ -179,7 +179,7 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
   return (
     <Card
       className={cn(
-        'group p-4 bg-muted/20 border-white/5 hover:bg-muted/30 transition-all relative overflow-hidden',
+        'group p-4 bg-muted/20 border-border/40 hover:bg-muted/30 transition-all relative overflow-hidden',
         memory.status === 'archived' && 'opacity-60',
         isSelected && 'border-primary/50 bg-primary/5'
       )}
@@ -196,7 +196,7 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
             {/* Selection checkbox */}
             <button
               onClick={onToggleSelect}
-              className="p-1 hover:bg-white/10 rounded transition-colors"
+              className="p-1 hover:bg-muted/40 rounded transition-colors"
             >
               {isSelected ? (
                 <CheckSquare className="w-4 h-4 text-primary" />
@@ -302,12 +302,12 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
           </span>
         </div>
 
-        <div className="flex items-center justify-between pt-2 border-t border-white/5">
+        <div className="flex items-center justify-between pt-2 border-t border-border/40">
           <div className="flex flex-wrap gap-1">
             {memory.tags.map((tag) => (
               <span
                 key={tag}
-                className="flex items-center gap-1 text-xxs bg-white/5 px-2 py-0.5 rounded-full text-muted-foreground"
+                className="flex items-center gap-1 text-xxs bg-muted/30 px-2 py-0.5 rounded-full text-muted-foreground"
               >
                 <Tag className="w-3 h-3" />
                 {tag}

@@ -86,7 +86,7 @@ const SECRET_PATTERNS = [
     /\b(?:api[_-]?key|secret|token|password)\s*[:=]\s*['"]?[A-Za-z0-9/_+=.-]{8,}/i,
     /\bgh[pousr]_[A-Za-z0-9]{20,}\b/,
     /\bAKIA[0-9A-Z]{16}\b/,
-    /\bxox[baprs]-[A-Za-z0-9-]{10,}\b/,
+    /\bxox(?:b|a|p|r|s)-[A-Za-z0-9-]{10,}\b/,
 ] as const;
 const DANGEROUS_COMMAND_PATTERNS = [
     {

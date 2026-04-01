@@ -34,7 +34,7 @@ export const WizardOptionCard: React.FC<WizardOptionCardProps> = ({
     return (
         <button
             onClick={onClick}
-            className={`relative h-[19rem] bg-card border border-border/30 rounded-3xl p-7 flex flex-col items-start justify-between text-left shadow-sm overflow-hidden ${className}`}
+            className={`relative h-80 bg-card border border-border/30 rounded-3xl p-7 flex flex-col items-start justify-between text-left shadow-sm overflow-hidden ${className}`}
         >
             <div
                 className={`w-14 h-14 rounded-2xl ${option.accentBg} flex items-center justify-center ${option.accentColor} ring-1 ${option.accentRing}`}
@@ -45,7 +45,7 @@ export const WizardOptionCard: React.FC<WizardOptionCardProps> = ({
                 <h3 className="font-bold text-2xl text-foreground tracking-tight">
                     {option.title}
                 </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed max-w-[260px]">
+                <p className="text-sm text-muted-foreground leading-relaxed max-w-64">
                     {option.description}
                 </p>
             </div>

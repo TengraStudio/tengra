@@ -43,7 +43,7 @@ export const CollaborationMemory = memo(({
             <div className="max-h-24 overflow-y-auto space-y-1.5 scrollbar-thin pr-1 transition-all">
                 {sharedMemory.length === 0 ? (
                     <div className="p-2 border border-dashed border-muted-foreground/10 rounded-md text-center">
-                        <span className="text-[10px] text-muted-foreground italic font-medium opacity-50 uppercase tracking-widest">
+                        <span className="text-xxxs text-muted-foreground italic font-medium opacity-50 uppercase tracking-widest">
                             {t('chat.collaboration.noSharedContextEntries')}
                         </span>
                     </div>

@@ -40,7 +40,7 @@ export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({
     const { t } = useTranslation();
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <Card className="w-full max-w-lg p-6 bg-popover/90 backdrop-blur-2xl border-white/10 shadow-2xl space-y-4">
+            <Card className="w-full max-w-lg p-6 bg-popover/90 backdrop-blur-2xl border-border/50 shadow-2xl space-y-4">
                 <h2 className="text-xl font-bold flex items-center gap-2">
                     <Plus className="w-5 h-5 text-primary" />
                     {t('memory.addTitle')}
@@ -53,7 +53,7 @@ export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({
                             value={content}
                             onChange={(e) => onContentChange(e.target.value)}
                             placeholder={t('memory.contentPlaceholder')}
-                            className="w-full h-24 mt-1 bg-muted/50 border border-white/5 rounded-lg p-3 text-sm focus:border-primary/50 outline-none resize-none transition-colors"
+                            className="w-full h-24 mt-1 bg-muted/50 border border-border/40 rounded-lg p-3 text-sm focus:border-primary/50 outline-none resize-none transition-colors"
                         />
                     </div>
 
@@ -61,7 +61,7 @@ export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({
                         <div>
                             <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">{t('memory.categoryLabel')}</label>
                             <Select value={category} onValueChange={(v) => onCategoryChange(v as MemoryCategory)}>
-                                <SelectTrigger className="mt-1 bg-muted/50 border-white/5">
+                                <SelectTrigger className="mt-1 bg-muted/50 border-border/40">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -83,7 +83,7 @@ export const AddMemoryModal: React.FC<AddMemoryModalProps> = ({
                                 value={tags}
                                 onChange={(e) => onTagsChange(e.target.value)}
                                 placeholder={t('memory.tagsPlaceholder')}
-                                className="mt-1 bg-muted/50 border-white/5"
+                                className="mt-1 bg-muted/50 border-border/40"
                             />
                         </div>
                     </div>

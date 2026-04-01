@@ -184,7 +184,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                 {ctrl.isImageOnlyModel && (
                     <div className="mb-3 flex items-center gap-3 rounded-xl border border-border/50 bg-muted/20 px-3 py-2.5">
                         <div className="flex min-w-0 flex-col">
-                            <span className="text-xxs font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
+                            <span className="text-xxs font-semibold uppercase tracking-widest text-muted-foreground/70">
                                 {ctrl.t('input.imageCountLabel')}
                             </span>
                             <span className="text-xs text-muted-foreground/80">
@@ -272,7 +272,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                         onChange={handleInputChange}
                         onKeyDown={handleKeyDown}
                         placeholder={ctrl.t('input.placeholder.default')}
-                        className="flex-1 bg-transparent border-none focus:border-none focus:ring-offset-0 ring-offset-0 ring-0 focus:ring-0 text-sm text-foreground placeholder:text-muted-foreground/50 resize-none py-2.5 max-h-[30vh] overflow-y-auto"
+                        className="flex-1 bg-transparent border-none focus:border-none focus:ring-offset-0 ring-offset-0 ring-0 focus:ring-0 text-sm text-foreground placeholder:text-muted-foreground/50 resize-none py-2.5 max-h-72 overflow-y-auto"
                         rows={1}
                         aria-label={ctrl.t('input.placeholder.default')}
                         aria-describedby="chat-input-hint"
@@ -358,8 +358,8 @@ const AttachmentList: React.FC<{
                                     {getFileIcon(att.type)}
                                 </span>
                             )}
-                            <span className="truncate max-w-[150px]">{att.name}</span>
-                            <span className="text-neutral text-xxs">
+                            <span className="truncate max-w-36">{att.name}</span>
+                            <span className="text-muted-foreground text-xxs">
                                 ({(att.size / 1024).toFixed(1)} {t('common.kb')})
                             </span>
                             <button
@@ -472,7 +472,7 @@ const EnhanceButton: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
     const btnClass = cn(
         'p-2 rounded-lg transition-all duration-200 flex items-center justify-center mb-0.5',
         isEnhancing
-            ? 'bg-warning/20 text-warning animate-pulse'
+            ? 'bg-warning/20 text-warning-foreground animate-pulse'
             : isEnhancable
                 ? 'bg-warning/10 text-warning hover:bg-warning/20 hover:text-warning-light'
                 : 'bg-muted/30 text-muted-foreground/50 cursor-not-allowed'

@@ -27,17 +27,17 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
                 </h3>
                 <p className="text-xs text-muted-foreground">{t('workspaces.councilAIDesc')}</p>
             </div>
-            <div className="flex items-center gap-3 bg-white/5 p-1 rounded-full border border-white/10 px-3 py-1">
+            <div className="flex items-center gap-3 bg-muted/40 p-1 rounded-full border border-border/40 px-3 py-1">
                 <span className="text-xs font-medium text-muted-foreground">{t('workspaces.councilEnabledLabel')}</span>
                 <button
                     onClick={() => setFormData(prev => ({ ...prev, councilEnabled: !prev.councilEnabled }))}
                     className={cn(
                         "w-10 h-5 rounded-full transition-all relative",
-                        formData.councilEnabled ? "bg-primary" : "bg-white/20"
+                        formData.councilEnabled ? "bg-primary" : "bg-muted/70"
                     )}
                 >
                     <div className={cn(
-                        "absolute top-1 w-3 h-3 bg-white rounded-full transition-all",
+                        "absolute top-1 w-3 h-3 bg-primary-foreground rounded-full transition-all",
                         formData.councilEnabled ? "right-1" : "left-1"
                     )} />
                 </button>

@@ -35,7 +35,7 @@ export const StyleSection: React.FC<StyleSectionProps> = ({
                         className={cn(
                             "px-2 py-2.5 rounded-xl text-xxxs font-black uppercase tracking-tight border transition-all text-center truncate",
                             style === option.value
-                                ? "bg-primary text-primary-foreground border-primary shadow-md scale-[1.02]"
+                                ? "bg-primary text-primary-foreground border-primary shadow-md tw-scale-102"
                                 : "bg-muted/30 border-border/50 text-muted-foreground hover:border-border/80 hover:bg-muted/40"
                         )}
                     >

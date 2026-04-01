@@ -38,7 +38,7 @@ export const CollaborationPresence = memo(({
                         setAllowGuests((current) => !current);
                         appendRecordingEvent(t('chat.collaboration.guestPolicyChanged'));
                     }}
-                    className={`h-7 px-2.5 text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ${allowGuests ? 'bg-secondary/80 hover:bg-secondary' : 'hover:border-primary/40'
+                    className={`h-7 px-2.5 text-xxxs font-bold uppercase tracking-wider transition-all duration-300 ${allowGuests ? 'bg-secondary/80 hover:bg-secondary' : 'hover:border-primary/40'
                         }`}
                 >
                     {allowGuests ? t('chat.collaboration.guestsAllowed') : t('chat.collaboration.guestsBlocked')}
@@ -48,22 +48,22 @@ export const CollaborationPresence = memo(({
                 {presence.map((participant) => (
                     <div key={participant.id} className="text-xs flex items-center gap-3 font-medium transition-opacity hover:opacity-100">
                         <div className="relative">
-                            <span className={`flex w-2.5 h-2.5 rounded-full shadow-sm ring-2 ring-background transition-colors ${participant.isOnline ? 'bg-green-500 animate-pulse' : 'bg-muted-foreground/40'
+                            <span className={`flex w-2.5 h-2.5 rounded-full shadow-sm ring-2 ring-background transition-colors ${participant.isOnline ? 'bg-success animate-pulse' : 'bg-muted-foreground/40'
                                 }`} />
                             {participant.isOnline && (
-                                <span className="absolute inset-0 rounded-full bg-green-500 animate-ping opacity-25" />
+                                <span className="absolute inset-0 rounded-full bg-success animate-ping opacity-25" />
                             )}
                         </div>
                         <span className={`transition-colors ${participant.isOnline ? 'text-foreground' : 'text-muted-foreground italic'}`}>
                             {participant.name}
                         </span>
                         {participant.role === 'owner' && (
-                            <span className="text-[9px] uppercase font-black bg-primary/10 text-primary px-1.5 py-0.5 rounded tracking-tighter">
+                            <span className="text-xxxs uppercase font-black bg-primary/10 text-primary px-1.5 py-0.5 rounded tracking-tighter">
                                 {t('chat.collaboration.host')}
                             </span>
                         )}
                         {participant.role === 'ai' && (
-                            <span className="text-[9px] uppercase font-black bg-secondary/10 text-secondary px-1.5 py-0.5 rounded tracking-tighter">
+                            <span className="text-xxxs uppercase font-black bg-secondary/10 text-secondary px-1.5 py-0.5 rounded tracking-tighter">
                                 {t('chat.collaboration.ai')}
                             </span>
                         )}

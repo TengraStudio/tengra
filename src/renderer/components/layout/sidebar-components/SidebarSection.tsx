@@ -211,7 +211,7 @@ const SidebarCollapsedSection: React.FC<{
                         transition={{ duration: 0.15 }}
                         className={cn(
                             'absolute left-full top-0 ml-2 z-50',
-                            'min-w-[200px] max-w-[280px]',
+                            'min-w-48 max-w-72',
                             'bg-popover border border-border rounded-xl shadow-xl',
                             'py-2'
                         )}

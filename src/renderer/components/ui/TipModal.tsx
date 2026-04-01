@@ -60,7 +60,7 @@ export function TipModal({ language = 'tr' }: { language?: Language }) {
                     <Button variant="outline" className="flex-1 rounded-2xl h-12 border-border/40 hover:bg-accent/30" onClick={() => setIsOpen(false)}>
                         {t('tips.gotIt')}
                     </Button>
-                    <Button className="flex-[1.5] rounded-2xl h-12 shadow-xl shadow-primary/20" onClick={() => setIsOpen(false)}>
+                    <Button className="flex-1 rounded-2xl h-12 shadow-xl shadow-primary/20" onClick={() => setIsOpen(false)}>
                         <Brain className="w-4 h-4 mr-2" />
                         {t('tips.discoverMore')}
                     </Button>

@@ -176,7 +176,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
+                        <label className="tw-text-10 font-black uppercase tw-tracking-20 text-muted-foreground/50 px-1">
                             {t('settings.language')}
                         </label>
                         <SelectDropdown
@@ -189,7 +189,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
+                        <label className="tw-text-10 font-black uppercase tw-tracking-20 text-muted-foreground/50 px-1">
                             {t('general.contextMessageLimit')}
                         </label>
                         <input
@@ -205,7 +205,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                         />
                     </div>
                     <div className="space-y-2 md:col-span-2">
-                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
+                        <label className="tw-text-10 font-black uppercase tw-tracking-20 text-muted-foreground/50 px-1">
                             {t('workspaceWizard.selectFolder')}
                         </label>
                         <input
@@ -219,7 +219,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                         />
                     </div>
                     <div className="space-y-2 md:col-span-2">
-                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
+                        <label className="tw-text-10 font-black uppercase tw-tracking-20 text-muted-foreground/50 px-1">
                             {t('general.terminalBackend')}
                         </label>
                         <SelectDropdown
@@ -230,7 +230,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                             }}
                             className="w-full"
                         />
-                        <div className="text-[11px] text-muted-foreground/70 px-1">
+                        <div className="tw-text-11 text-muted-foreground/70 px-1">
                             {isLoadingTerminalBackends
                                 ? t('common.loading')
                                 : t('general.defaultTerminalBackendDesc')}
@@ -311,7 +311,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                         />
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
+                            <label className="tw-text-10 font-black uppercase tw-tracking-20 text-muted-foreground/50 px-1">
                                 {t('general.inlineSuggestionsSource')}
                             </label>
                             <SelectDropdown
@@ -331,7 +331,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
+                            <label className="tw-text-10 font-black uppercase tw-tracking-20 text-muted-foreground/50 px-1">
                                 {t('general.inlineSuggestionsModel')}
                             </label>
                             <input
@@ -349,7 +349,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
 
                         {inlineSuggestionSource === 'copilot' ? (
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
+                                <label className="tw-text-10 font-black uppercase tw-tracking-20 text-muted-foreground/50 px-1">
                                     {t('general.inlineSuggestionsCopilotAccount')}
                                 </label>
                                 <SelectDropdown
@@ -366,7 +366,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                             </div>
                         ) : (
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
+                                <label className="tw-text-10 font-black uppercase tw-tracking-20 text-muted-foreground/50 px-1">
                                     {t('general.inlineSuggestionsProvider')}
                                 </label>
                                 <input
@@ -470,7 +470,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                         onClick={() => {
                             void window.electron.update.checkForUpdates();
                         }}
-                        className="flex items-center gap-2.5 px-6 py-3 bg-primary text-primary-foreground text-xs font-black uppercase rounded-xl transition-all shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95"
+                        className="flex items-center gap-2.5 px-6 py-3 bg-primary text-primary-foreground text-xs font-black uppercase rounded-xl transition-all shadow-xl shadow-primary/20 tw-hover-scale-102 active:scale-95"
                     >
                         <RefreshCw className="w-4 h-4" />
                         {t('general.checkForUpdates')}

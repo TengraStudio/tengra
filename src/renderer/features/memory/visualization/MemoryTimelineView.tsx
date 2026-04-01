@@ -109,15 +109,15 @@ export const MemoryTimelineView: React.FC = () => {
     }, [filteredItems]);
 
     return (
-        <div className="w-full h-full flex flex-col bg-background/30 rounded-2xl border border-white/5 overflow-hidden">
-            <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/5 backdrop-blur-md">
+        <div className="w-full h-full flex flex-col bg-background/30 rounded-2xl border border-border/30 overflow-hidden">
+            <div className="p-4 border-b border-border/30 flex items-center justify-between bg-muted/20 backdrop-blur-md">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-info/20 rounded-xl text-info">
                         <History className="w-5 h-5" />
                     </div>
                     <div>
                         <h2 className="text-sm font-bold">{t('memory.timelineView')}</h2>
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                             {t('memory.timelineTotalEvents', { count: items.length })}
                         </p>
                     </div>
@@ -128,14 +128,14 @@ export const MemoryTimelineView: React.FC = () => {
                         value={searchQuery}
                         onChange={event => setSearchQuery(event.target.value)}
                         placeholder={t('memory.searchPlaceholder')}
-                        className="h-8 w-48 bg-background/50 border-white/10"
+                        className="h-8 w-48 bg-background/50 border-border/50"
                     />
-                    <div className="flex bg-background/50 p-1 rounded-lg border border-white/10">
+                    <div className="flex bg-background/50 p-1 rounded-lg border border-border/50">
                         {(['all', 'episode', 'fragment'] as const).map(f => (
                             <button
                                 key={f}
                                 onClick={() => setFilter(f)}
-                                className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${filter === f ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'
+                                className={`px-3 py-1 rounded-md text-xxxs font-bold uppercase transition-all ${filter === f ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'
                                     }`}
                             >
                                 {f === 'all'
@@ -170,18 +170,18 @@ export const MemoryTimelineView: React.FC = () => {
                 ) : (
                     Object.keys(groupedItems).length === 0 ? (
                         <div className="flex h-full items-center justify-center">
-                            <p className="rounded-lg border border-white/10 bg-background/70 px-4 py-2 text-sm text-muted-foreground">
+                            <p className="rounded-lg border border-border/40 bg-background/70 px-4 py-2 text-sm text-muted-foreground">
                                 {t('memory.emptyState')}
                             </p>
                         </div>
                     ) : (
-                        <div className="relative border-l border-white/10 ml-4 space-y-12">
+                        <div className="relative border-l border-border/40 ml-4 space-y-12">
                             {Object.entries(groupedItems).map(([date, dayItems]) => (
                                 <div key={date} className="relative">
                                 {/* Date Marker */}
-                                <div className="absolute -left-[53px] top-0 flex items-center gap-4">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-primary ring-4 ring-primary/20 shadow-[0_0_10px_rgba(99,102,241,0.5)]" />
-                                    <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold whitespace-nowrap">
+                                <div className="absolute -left-14 top-0 flex items-center gap-4">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-primary ring-4 ring-primary/20 shadow-md" />
+                                    <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold whitespace-nowrap">
                                         {format(new Date(date), 'MMMM d, yyyy')}
                                     </div>
                                 </div>
@@ -189,9 +189,9 @@ export const MemoryTimelineView: React.FC = () => {
                                 <div className="pt-8 space-y-6">
                                     {dayItems.map(item => (
                                         <div key={item.id} className="group relative transition-all hover:translate-x-1">
-                                            <div className="absolute -left-[37px] top-2 w-3 h-px bg-white/10 group-hover:bg-primary/40 group-hover:w-5 transition-all" />
+                                            <div className="absolute -left-10 top-2 w-3 h-px bg-border/60 group-hover:bg-primary/40 group-hover:w-5 transition-all" />
 
-                                            <div className="bg-white/5 border border-white/5 hover:border-white/10 rounded-2xl p-4 transition-all hover:bg-white/[0.08] shadow-sm hover:shadow-xl">
+                                            <div className="bg-muted/20 border border-border/30 hover:border-border/60 rounded-2xl p-4 transition-all hover:bg-muted/30 shadow-sm hover:shadow-xl">
                                                 <div className="flex items-center justify-between mb-3">
                                                     <div className="flex items-center gap-2">
                                                         {item.type === 'episode' ? (
@@ -203,11 +203,11 @@ export const MemoryTimelineView: React.FC = () => {
                                                                 <Brain className="w-3.5 h-3.5" />
                                                             </div>
                                                         )}
-                                                        <span className="text-[10px] font-bold uppercase tracking-wider text-foreground/60">
+                                                        <span className="text-xs font-bold uppercase tracking-wider text-foreground/60">
                                                             {item.title}
                                                         </span>
                                                     </div>
-                                                    <span className="text-[10px] text-muted-foreground font-mono">
+                                                    <span className="text-xs text-muted-foreground font-mono">
                                                         {format(item.timestamp, 'HH:mm')}
                                                     </span>
                                                 </div>
@@ -218,7 +218,7 @@ export const MemoryTimelineView: React.FC = () => {
 
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {item.tags.map(tag => (
-                                                        <span key={tag} className="px-2 py-0.5 rounded-md bg-white/5 text-[9px] text-muted-foreground border border-white/5">
+                                                        <span key={tag} className="px-2 py-0.5 rounded-md bg-muted/30 text-xs text-muted-foreground border border-border/30">
                                                             #{tag}
                                                         </span>
                                                     ))}

@@ -181,7 +181,7 @@ export const WorkspaceEnvironmentTab: React.FC<WorkspaceEnvironmentTabProps> = (
                                         type={envVar.visible ? 'text' : 'password'}
                                         value={envVar.value}
                                         onChange={(e) => updateVar(idx, 'value', e.target.value)}
-                                        className="flex-1 bg-transparent border-b border-white/10 focus:border-primary/50 outline-none text-sm font-mono text-foreground py-1"
+                                        className="flex-1 bg-transparent border-b border-border/40 focus:border-primary/50 outline-none text-sm font-mono text-foreground py-1"
                                         placeholder={t('placeholder.envValue')}
                                     />
                                     <button

@@ -7,7 +7,7 @@ import { DeviceCodeModalState } from '../components/DeviceCodeModal';
 import { ManualSessionModalState } from '../components/ManualSessionModal';
 import { UseLinkedAccountsResult } from '../hooks/useLinkedAccounts';
 import { AccountWrapper } from '../types';
-import { AuthStatusState, DetailedStats, PersonaDraft } from '../types';
+import { AuthBusyState, AuthStatusState, DetailedStats, PersonaDraft } from '../types';
 
 export interface SettingsSharedProps {
     settings: AppSettings | null
@@ -17,7 +17,7 @@ export interface SettingsSharedProps {
     lastErrorCode: string | null
     statusMessage: string
     setStatusMessage: (m: string) => void
-    authBusy: string | null
+    authBusy: AuthBusyState | null
     authMessage: string
     isOllamaRunning: boolean
     authStatus: AuthStatusState

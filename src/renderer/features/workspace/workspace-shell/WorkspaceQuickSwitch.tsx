@@ -37,7 +37,7 @@ export const WorkspaceQuickSwitch: React.FC<WorkspaceQuickSwitchProps> = ({
 
     return (
         <div
-            className="absolute inset-0 z-40 bg-black/30 backdrop-blur-sm flex items-start justify-center p-8"
+            className="absolute inset-0 z-40 bg-background/60 backdrop-blur-sm flex items-start justify-center p-8"
             onClick={onClose}
         >
             <div

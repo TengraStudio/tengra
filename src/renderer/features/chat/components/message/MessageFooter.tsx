@@ -45,7 +45,7 @@ export const MessageFooter = memo(
                 {message.model && (
                     <>
                         <span className="h-1 rounded-full bg-muted-foreground/20" />
-                        <span className="truncate max-w-[120px]">{message.model}</span>
+                        <span className="truncate max-w-32">{message.model}</span>
                     </>
                 )}
                 {message.responseTime && (

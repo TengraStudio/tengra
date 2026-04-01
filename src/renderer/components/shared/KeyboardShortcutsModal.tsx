@@ -50,7 +50,7 @@ const ShortcutItem: React.FC<ShortcutItemProps> = ({
             <span className="text-sm text-muted-foreground/70">{label}</span>
             <div className="flex items-center gap-1.5">
                 {keys.map((key, i) => (
-                    <kbd key={`${key}-${i}`} className="px-2 py-1 bg-muted/50 border border-border/50 rounded text-xxs font-mono text-muted-foreground/80 min-w-[24px] text-center shadow-sm">
+                    <kbd key={`${key}-${i}`} className="px-2 py-1 bg-muted/50 border border-border/50 rounded text-xxs font-mono text-muted-foreground/80 min-w-6 text-center shadow-sm">
                         {key}
                     </kbd>
                 ))}
@@ -280,7 +280,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
 
     return (
         <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in duration-200"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in duration-200"
             role="dialog"
             aria-modal="true"
             aria-labelledby="shortcuts-modal-title"
@@ -288,7 +288,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
             <div
                 ref={modalRef}
                 tabIndex={-1}
-                className="w-[640px] max-w-[95vw] bg-card border border-border/50 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+                className="w-full max-w-screen-lg bg-card border border-border/50 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
             >
                 <input
                     ref={importInputRef}
@@ -315,7 +315,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
                 </div>
 
                 <div className="px-6 py-3 border-b border-border/50 flex items-center gap-2 flex-wrap">
-                    <div className="relative flex-1 min-w-[220px]">
+                    <div className="relative flex-1 min-w-56">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <input
                             value={searchTerm}
@@ -345,7 +345,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
                 </div>
 
                 {/* Content */}
-                <div className="p-6 space-y-6 overflow-y-auto max-h-[70vh]">
+                <div className="p-6 space-y-6 overflow-y-auto max-h-screen">
                     <div>
                         <h3 className="text-xs font-bold text-muted-foreground/40 uppercase tracking-widest mb-3 px-1">{t('shortcuts.general')}</h3>
                         <div className="bg-muted/20 rounded-xl px-4 border border-border/50">

@@ -11,14 +11,92 @@ import { fetchModels, getSelectableProviderId, groupModels } from '../utils/mode
 import { useModelSelection } from './useModelSelection';
 
 const LOCALE_MODEL_HINTS: Record<string, string[]> = {
+    en: ['gpt-4o', 'claude', 'llama'],
     tr: ['gpt-4o', 'claude', 'qwen'],
-    ar: ['gpt-4o', 'claude', 'qwen'],
-    de: ['gpt-4o', 'claude', 'llama'],
-    es: ['gpt-4o', 'claude', 'llama'],
-    fr: ['gpt-4o', 'claude', 'llama'],
-    ja: ['gpt-4o', 'claude', 'qwen'],
-    zh: ['qwen', 'deepseek', 'glm', 'gpt-4o'],
 };
+
+const MODEL_REFRESH_RETRY_DELAY_MS = 3500;
+const MIN_HEALTHY_NVIDIA_MODEL_COUNT = 2;
+
+function hasRemoteModels(models: ModelInfo[]): boolean {
+    return models.some(model => {
+        const provider = getSelectableProviderId(model);
+        return provider !== '' && provider !== 'ollama' && provider !== 'local-ai';
+    });
+}
+
+function getExpectedRemoteProviders(settings: AppSettings | null): string[] {
+    if (!settings) {
+        return [];
+    }
+
+    const providers = new Set<string>();
+    if (settings.nvidia?.apiKey) {
+        providers.add('nvidia');
+    }
+    if (settings.openai?.apiKey || settings.codex?.connected === true) {
+        providers.add('codex');
+    }
+    if (settings.anthropic?.apiKey || settings.claude?.apiKey) {
+        providers.add('claude');
+    }
+    if (settings.antigravity?.connected === true) {
+        providers.add('antigravity');
+    }
+    if (settings.copilot?.connected === true) {
+        providers.add('copilot');
+    }
+    if (settings.groq?.apiKey) {
+        providers.add('custom');
+    }
+
+    return Array.from(providers);
+}
+
+function hasExpectedRemoteCoverage(models: ModelInfo[], expectedProviders: string[]): boolean {
+    if (expectedProviders.length === 0) {
+        return hasRemoteModels(models);
+    }
+
+    const availableProviders = new Set(
+        models
+            .map(model => getSelectableProviderId(model))
+            .filter(provider => provider !== '' && provider !== 'ollama' && provider !== 'local-ai')
+    );
+
+    return expectedProviders.every(provider => availableProviders.has(provider));
+}
+
+function hasHealthyNvidiaCoverage(models: ModelInfo[], settings: AppSettings | null): boolean {
+    if (!settings?.nvidia?.apiKey) {
+        return true;
+    }
+
+    const nvidiaModelCount = models.filter(model => getSelectableProviderId(model) === 'nvidia').length;
+    return nvidiaModelCount >= MIN_HEALTHY_NVIDIA_MODEL_COUNT;
+}
+
+function mergePreservedProviderModels(
+    previousModels: ModelInfo[],
+    fetchedModels: ModelInfo[],
+    settings: AppSettings | null
+): ModelInfo[] {
+    if (settings?.copilot?.connected !== true) {
+        return fetchedModels;
+    }
+
+    const fetchedHasCopilot = fetchedModels.some(model => getSelectableProviderId(model) === 'copilot');
+    if (fetchedHasCopilot) {
+        return fetchedModels;
+    }
+
+    const preservedCopilotModels = previousModels.filter(model => getSelectableProviderId(model) === 'copilot');
+    if (preservedCopilotModels.length === 0) {
+        return fetchedModels;
+    }
+
+    return [...fetchedModels, ...preservedCopilotModels];
+}
 
 function normalizeSelectionProvider(provider: string | undefined): string {
     const raw = (provider ?? '').trim().toLowerCase();
@@ -72,6 +150,7 @@ export function useModelManager(
     const [groupedModels, setGroupedModels] = useState<GroupedModels | null>(null);
     const [proxyModels, setProxyModels] = useState<ModelInfo[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [hasScheduledRemoteRetry, setHasScheduledRemoteRetry] = useState(false);
     // const lifecycleNoticeRef = useRef<Set<string>>(new Set());
 
     const selection = useModelSelection(appSettings, setAppSettings);
@@ -88,19 +167,51 @@ export function useModelManager(
         setIsLoading(true);
         try {
             const fetched = await fetchModels(bypassCache);
-            setModels(fetched);
-            setProxyModels(fetched.filter(m => m.provider !== 'ollama' && m.provider !== 'local-ai'));
-            setGroupedModels(groupModels(fetched));
+            setModels(previousModels => {
+                const nextModels = mergePreservedProviderModels(previousModels, fetched, appSettings);
+                setProxyModels(nextModels.filter(m => m.provider !== 'ollama' && m.provider !== 'local-ai'));
+                setGroupedModels(groupModels(nextModels));
+                return nextModels;
+            });
         } catch (error) {
             appLogger.error('ModelManager', 'Failed to refresh models', error as Error);
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [appSettings]);
 
     useEffect(() => {
         void refreshModels();
     }, [refreshModels]);
+
+    useEffect(() => {
+        if (hasScheduledRemoteRetry || models.length === 0 || isLoading) {
+            return;
+        }
+
+        const expectedRemoteProviders = getExpectedRemoteProviders(appSettings);
+        if (
+            hasExpectedRemoteCoverage(models, expectedRemoteProviders) &&
+            hasHealthyNvidiaCoverage(models, appSettings)
+        ) {
+            return;
+        }
+
+        setHasScheduledRemoteRetry(true);
+        appLogger.debug('ModelManager', 'Remote provider coverage incomplete; scheduling proxy refresh retry', {
+            expectedRemoteProviders,
+            currentModelCount: models.length,
+        });
+        const retryTimer = window.setTimeout(() => {
+            void refreshModels(true);
+            setHasScheduledRemoteRetry(false);
+        }, MODEL_REFRESH_RETRY_DELAY_MS);
+
+        return () => {
+            window.clearTimeout(retryTimer);
+            setHasScheduledRemoteRetry(false);
+        };
+    }, [appSettings, hasScheduledRemoteRetry, isLoading, models, refreshModels]);
 
     useEffect(() => {
         const hasNvidia = !!appSettings?.nvidia?.apiKey;

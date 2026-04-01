@@ -36,7 +36,7 @@
 /* === Section Headers === */
 .sidebar-section-header {
     @apply flex items-center justify-between;
-    @apply text-[11px] font-semibold uppercase tracking-wider;
+    @apply text-xxxs font-semibold uppercase tracking-wider;
     @apply text-muted-foreground/60 hover:text-muted-foreground;
     @apply hover:bg-accent/50 active:bg-accent/70;
     @apply transition-colors duration-150;
@@ -84,7 +84,7 @@
     content: '';
 
     @apply absolute left-0 top-1/2 -translate-y-1/2;
-    @apply w-[3px] h-5 bg-primary rounded-r-full;
+    @apply w-1 h-5 bg-primary rounded-r-full;
 }
 
 /* === Status Indicators === */
@@ -114,7 +114,7 @@
 }
 
 .status-indicator--offline {
-    @apply bg-neutral-light;
+    @apply bg-muted-foreground/40;
 }
 
 .status-indicator--loading {
@@ -153,8 +153,8 @@
 /* === Badges === */
 .sidebar-badge {
     @apply inline-flex items-center justify-center;
-    @apply px-1.5 py-0.5 min-w-[18px] h-[18px];
-    @apply rounded-full text-[10px] font-bold;
+    @apply px-1.5 py-0.5 min-w-4 h-4;
+    @apply rounded-full text-xxxs font-bold;
     @apply transition-colors duration-200;
 }
 
@@ -222,14 +222,14 @@
 }
 
 .sidebar-divider__label {
-    @apply text-[9px] font-bold uppercase tracking-widest;
+    @apply text-xxxs font-bold uppercase tracking-widest;
     @apply text-muted-foreground/40;
 }
 
 /* === Flyout Menus (Collapsed State) === */
 .sidebar-flyout {
     @apply absolute left-full top-0 ml-2 z-50;
-    @apply min-w-[220px] max-w-[280px];
+    @apply min-w-56 max-w-72;
     @apply bg-popover/95 backdrop-blur-sm;
     @apply border border-border/50 rounded-xl;
 
@@ -329,7 +329,7 @@
 .sidebar-user-profile__trigger {
     @apply w-full flex items-center gap-3;
     @apply p-2 rounded-lg;
-    @apply hover:bg-white/[0.03];
+    @apply hover:bg-accent/30;
     @apply transition-colors duration-150;
 }
 
@@ -394,7 +394,7 @@
     }
 
     .sidebar-overlay {
-        @apply fixed inset-0 bg-black/50 z-40;
+        @apply fixed inset-0 bg-background/60 z-40;
         @apply opacity-0 pointer-events-none;
         @apply transition-opacity duration-300;
     }
@@ -444,7 +444,7 @@
 }
 
 .workspace-section-title {
-    @apply text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest;
+    @apply text-xxxs font-bold text-muted-foreground/40 uppercase tracking-widest;
     @apply px-2 mb-1;
 }
 

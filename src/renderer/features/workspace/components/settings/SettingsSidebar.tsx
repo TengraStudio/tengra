@@ -19,12 +19,12 @@ const NavButton: React.FC<NavButtonProps> = ({ active, onClick, icon: Icon, labe
             'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300',
             active
                 ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-105 ring-2 ring-primary/40'
-                : 'text-muted-foreground hover:bg-white/5 hover:text-foreground hover:scale-102'
+                : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground hover:scale-102'
         )}
     >
         <Icon
             className={cn(
-                'w-4 h-4 translate-y-[1px] transition-transform duration-300',
+                'w-4 h-4 tw-translate-y-1px transition-transform duration-300',
                 active ? 'text-primary-foreground scale-110' : 'text-muted-foreground'
             )}
         />
@@ -56,7 +56,7 @@ export const SettingsSidebar: React.FC<{
             icon={FolderTree}
             label={t('workspaces.workspace')}
         />
-        <div className="h-px bg-white/10 my-2" />
+        <div className="h-px bg-muted/60 my-2" />
         <NavButton
             active={activeSection === 'build'}
             onClick={() => setActiveSection('build')}

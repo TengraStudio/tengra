@@ -58,7 +58,7 @@ export const ThoughtSection = memo(
                                 )}
                             />
                         </div>
-                        <span className="text-xxs font-black uppercase tracking-[0.15em]">
+                        <span className="text-xxs font-black uppercase tracking-widest">
                             {isThoughtExpanded
                                 ? t('messageBubble.TengraThinking')
                                 : t('messageBubble.showThought')}
@@ -82,7 +82,7 @@ export const ThoughtSection = memo(
                 {isThoughtExpanded && (
                     <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                         <div className="relative ps-4 border-s-2 border-primary/20 py-1">
-                            <div className="absolute -start-[2px] top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary/40 via-primary/10 to-transparent" />
+                            <div className="absolute -start-0.5 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary/40 via-primary/10 to-transparent" />
                             <div className="bg-gradient-to-br from-primary/[0.03] to-transparent rounded-2xl p-4 border border-border/20">
                                 <div className="whitespace-pre-wrap font-mono text-xxs leading-relaxed text-muted-foreground/80 selection:bg-primary/20 drop-shadow-sm">
                                     {thought}

@@ -12,8 +12,7 @@ interface UseTerminalPanelTogglesParams {
     setIsAppearanceMenuOpen: (open: boolean) => void;
     setIsSemanticPanelOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
     setIsCommandHistoryOpen: (open: boolean) => void;
-    setIsTaskRunnerOpen: (open: boolean) => void;
-    setIsMultiplexerOpen: (open: boolean) => void;
+    setIsTaskRunnerOpen: (open: boolean) => void; 
     setIsRecordingPanelOpen: (open: boolean) => void;
     clearSemanticIssues: (tabId: string) => void;
     activeTabIdRef: React.MutableRefObject<string | null>;
@@ -31,8 +30,7 @@ export function useTerminalPanelToggles({
     setIsAppearanceMenuOpen,
     setIsSemanticPanelOpen,
     setIsCommandHistoryOpen,
-    setIsTaskRunnerOpen,
-    setIsMultiplexerOpen,
+    setIsTaskRunnerOpen, 
     setIsRecordingPanelOpen,
     clearSemanticIssues,
     activeTabIdRef,
@@ -46,12 +44,11 @@ export function useTerminalPanelToggles({
         setIsSemanticPanelOpen(false);
         setIsCommandHistoryOpen(false);
         setIsTaskRunnerOpen(false);
-        setIsMultiplexerOpen(false);
         setIsRecordingPanelOpen(false);
         completeRecording();
         stopReplay();
         onToggle();
-    }, [completeRecording, onToggle, stopReplay, setIsCommandHistoryOpen, setIsTaskRunnerOpen, setTerminalContextMenu, setIsNewTerminalMenuOpen, setIsSearchOpen, setIsGalleryView, setIsAppearanceMenuOpen, setIsSemanticPanelOpen, setIsMultiplexerOpen, setIsRecordingPanelOpen]);
+    }, [completeRecording, onToggle, stopReplay, setIsCommandHistoryOpen, setIsTaskRunnerOpen, setTerminalContextMenu, setIsNewTerminalMenuOpen, setIsSearchOpen, setIsGalleryView, setIsAppearanceMenuOpen, setIsSemanticPanelOpen, setIsRecordingPanelOpen]);
 
     const toggleGalleryView = useCallback(() => {
         setTerminalContextMenu(null);
@@ -59,10 +56,9 @@ export function useTerminalPanelToggles({
         setIsCommandHistoryOpen(false);
         setIsTaskRunnerOpen(false);
         setIsSemanticPanelOpen(false);
-        setIsMultiplexerOpen(false);
         setIsRecordingPanelOpen(false);
         setIsGalleryView(prev => !prev);
-    }, [setIsCommandHistoryOpen, setIsTaskRunnerOpen, setTerminalContextMenu, setIsSearchOpen, setIsSemanticPanelOpen, setIsMultiplexerOpen, setIsRecordingPanelOpen, setIsGalleryView]);
+    }, [setIsCommandHistoryOpen, setIsTaskRunnerOpen, setTerminalContextMenu, setIsSearchOpen, setIsSemanticPanelOpen, setIsRecordingPanelOpen, setIsGalleryView]);
 
     const toggleSemanticPanel = useCallback(() => {
         if (!hasActiveSession) {
@@ -72,10 +68,9 @@ export function useTerminalPanelToggles({
         setIsSearchOpen(false);
         setIsCommandHistoryOpen(false);
         setIsTaskRunnerOpen(false);
-        setIsMultiplexerOpen(false);
         setIsRecordingPanelOpen(false);
         setIsSemanticPanelOpen(prev => !prev);
-    }, [hasActiveSession, setIsCommandHistoryOpen, setIsTaskRunnerOpen, setTerminalContextMenu, setIsSearchOpen, setIsMultiplexerOpen, setIsRecordingPanelOpen, setIsSemanticPanelOpen]);
+    }, [hasActiveSession, setIsCommandHistoryOpen, setIsTaskRunnerOpen, setTerminalContextMenu, setIsSearchOpen, setIsRecordingPanelOpen, setIsSemanticPanelOpen]);
 
     const clearActiveSemanticIssues = useCallback(() => {
         if (!activeTabIdRef.current) {

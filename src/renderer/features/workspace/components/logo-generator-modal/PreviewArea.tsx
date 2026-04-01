@@ -73,7 +73,7 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
                 <button
                     onClick={handleGenerateClick}
                     disabled={isGenerating || !prompt}
-                    className="flex-1 py-4 bg-primary text-primary-foreground rounded-xl font-black text-sm hover:bg-primary/90 transition-all disabled:opacity-50 active:scale-[0.98] flex items-center justify-center gap-2 shadow-xl shadow-primary/20 uppercase tracking-widest"
+                    className="flex-1 py-4 bg-primary text-primary-foreground rounded-xl font-black text-sm hover:bg-primary/90 transition-all disabled:opacity-50 tw-active-scale-98 flex items-center justify-center gap-2 shadow-xl shadow-primary/20 uppercase tracking-widest"
                 >
                     <Sparkles className="w-4 h-4" />
                     {translateKey('workspaces.generate')}

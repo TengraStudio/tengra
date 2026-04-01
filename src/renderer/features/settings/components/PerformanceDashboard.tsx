@@ -36,16 +36,29 @@ interface StatCardProps {
     label: string;
     value: string;
     subValue?: string;
-    color?: string;
+    tone?: 'primary' | 'success' | 'warning' | 'destructive';
 }
 
-const StatCard: React.FC<StatCardProps> = ({ icon, label, value, subValue, color = 'primary' }) => (
+function resolveStatIconClass(tone: StatCardProps['tone']): string {
+    if (tone === 'success') {
+        return 'group-hover:border-success/20 text-success';
+    }
+    if (tone === 'warning') {
+        return 'group-hover:border-warning/20 text-warning';
+    }
+    if (tone === 'destructive') {
+        return 'group-hover:border-destructive/20 text-destructive';
+    }
+    return 'group-hover:border-primary/20 text-primary';
+}
+
+const StatCard: React.FC<StatCardProps> = ({ icon, label, value, subValue, tone = 'primary' }) => (
     <div className="premium-glass p-4 group hover:bg-muted/5 transition-all duration-300">
         <div className="flex items-center gap-2.5 mb-2">
-            <div className={cn("p-1.5 rounded-lg bg-muted/10 border border-border/40 transition-colors", `group-hover:border-${color}/20 text-${color}`)}>
+            <div className={cn("p-1.5 rounded-lg bg-muted/10 border border-border/40 transition-colors", resolveStatIconClass(tone))}>
                 {icon}
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            <span className="text-xxxs font-black uppercase tracking-widest text-muted-foreground">
                 {label}
             </span>
         </div>
@@ -53,7 +66,7 @@ const StatCard: React.FC<StatCardProps> = ({ icon, label, value, subValue, color
             {value}
         </div>
         {subValue && (
-            <div className="text-[10px] text-muted-foreground/60 mt-1 font-medium italic">
+            <div className="text-xxxs text-muted-foreground/60 mt-1 font-medium italic">
                 {subValue}
             </div>
         )}
@@ -133,7 +146,7 @@ export const PerformanceDashboard: React.FC = () => {
                         <Activity className="w-3.5 h-3.5 text-primary" />
                         {t('settings.performanceDashboard.title')}
                     </h3>
-                    <p className="text-[10px] text-muted-foreground/60 mt-1">
+                    <p className="text-xxxs text-muted-foreground/60 mt-1">
                         {t('settings.performanceDashboard.subtitle')}
                     </p>
                 </div>
@@ -141,7 +154,7 @@ export const PerformanceDashboard: React.FC = () => {
                     onClick={() => {
                         void handleTriggerGC();
                     }}
-                    className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-muted/10 hover:bg-muted/20 border border-border/40 transition-all flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded-lg text-xxxs font-black uppercase tracking-widest bg-muted/10 hover:bg-muted/20 border border-border/40 transition-all flex items-center gap-1.5"
                 >
                     <RefreshCw className="w-3 h-3" />
                     {t('settings.performanceDashboard.clearMemory')}
@@ -155,21 +168,21 @@ export const PerformanceDashboard: React.FC = () => {
                     label={t('settings.performanceDashboard.cards.totalCpu')}
                     value={`${totalCpu.toFixed(1)}%`}
                     subValue={t('settings.performanceDashboard.cards.activeProcesses').replace('{{count}}', String(data.processes.length))}
-                    color="blue-400"
+                    tone="primary"
                 />
                 <StatCard 
                     icon={<MemoryStick className="w-3.5 h-3.5" />}
                     label={t('settings.performanceDashboard.cards.totalMemory')}
                     value={formatBytes(totalMem)}
                     subValue={t('settings.performanceDashboard.cards.mainMemory').replace('{{memory}}', formatBytes(mainProcess?.memory ?? 0))}
-                    color="primary"
+                    tone="primary"
                 />
                 <StatCard 
                     icon={<Timer className="w-3.5 h-3.5" />}
                     label={t('settings.performanceDashboard.cards.startupTime')}
                     value={formatDuration(data.startup.totalTime)}
                     subValue={t('settings.performanceDashboard.cards.readyTime').replace('{{duration}}', formatDuration(data.startup.readyTime ? data.startup.readyTime - data.startup.startTime : 0))}
-                    color="orange-400"
+                    tone="warning"
                 />
                 <StatCard 
                     icon={<Activity className="w-3.5 h-3.5" />}
@@ -178,19 +191,19 @@ export const PerformanceDashboard: React.FC = () => {
                     subValue={data.alerts.length > 0
                         ? t('settings.performanceDashboard.cards.issuesDetected')
                         : t('settings.performanceDashboard.cards.healthOptimal')}
-                    color={data.alerts.length > 0 ? "destructive" : "green-400"}
+                    tone={data.alerts.length > 0 ? "destructive" : "success"}
                 />
             </div>
 
             {/* Processes Table */}
             <div className="premium-glass overflow-hidden border border-border/40">
                 <div className="bg-muted/5 px-4 py-2 border-b border-border/40">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    <span className="text-xxxs font-black uppercase tracking-widest text-muted-foreground">
                         {t('settings.performanceDashboard.processTree')}
                     </span>
                 </div>
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left text-[10px]">
+                    <table className="w-full text-left text-xxxs">
                         <thead className="text-muted-foreground border-b border-border/20">
                             <tr>
                                 <th className="px-4 py-2 font-black uppercase">{t('settings.performanceDashboard.table.type')}</th>
@@ -205,9 +218,9 @@ export const PerformanceDashboard: React.FC = () => {
                                 <tr key={p.pid} className="hover:bg-muted/5 transition-colors">
                                     <td className="px-4 py-2">
                                         <span className={cn(
-                                            "capitalize px-1.5 py-0.5 rounded-md text-[8px] font-black border",
+                                            "capitalize px-1.5 py-0.5 rounded-md text-xxxs font-black border",
                                             p.type === 'main' ? "bg-primary/10 text-primary border-primary/20" :
-                                            p.type === 'renderer' ? "bg-blue-400/10 text-blue-400 border-blue-400/20" :
+                                            p.type === 'renderer' ? "bg-primary/10 text-primary border-primary/20" :
                                             "bg-muted/30 text-muted-foreground border-border/40"
                                         )}>
                                             {p.type}
@@ -227,15 +240,15 @@ export const PerformanceDashboard: React.FC = () => {
             {/* Health Alerts */}
             {data.alerts.length > 0 && (
                 <div className="space-y-2">
-                    <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <h3 className="text-xxxs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                         {t('settings.performanceDashboard.diagnosticAlerts')}
                     </h3>
                     <div className="space-y-1.5">
                         {data.alerts.slice(-3).reverse().map((alert, i) => (
                             <div key={i} className={cn(
-                                "p-2 rounded-lg border text-[10px] font-medium flex items-center gap-2",
+                                "p-2 rounded-lg border text-xxxs font-medium flex items-center gap-2",
                                 alert.level === 'error' ? "bg-destructive/10 border-destructive/20 text-destructive" :
-                                alert.level === 'warn' ? "bg-orange-400/10 border-orange-400/20 text-orange-400" :
+                                alert.level === 'warn' ? "bg-warning/10 border-warning/20 text-warning" :
                                 "bg-primary/10 border-primary/20 text-primary"
                             )}>
                                 <AlertTriangle className="w-3 h-3 flex-shrink-0" />

@@ -9,6 +9,7 @@ import { ModelProvider } from '@/context/ModelContext';
 import { SettingsProvider } from '@/context/SettingsContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { WorkspaceProvider } from '@/context/WorkspaceContext';
+import { RuntimeThemeManager } from '@/themes/RuntimeThemeManager';
 import { appLogger } from '@/utils/renderer-logger';
 
 interface ProviderBoundaryProps {
@@ -103,7 +104,10 @@ function LocalizedRuntimeProviders({ children }: { children: ReactNode }) {
                                                 errorTitle={errorTitle}
                                                 providerFailedPrefix={providerFailedPrefix}
                                             >
-                                                <ChatProvider>{children}</ChatProvider>
+                                                <ChatProvider>
+                                                    <RuntimeThemeManager />
+                                                    {children}
+                                                </ChatProvider>
                                             </ProviderBoundary>
                                         </WorkspaceProvider>
                                     </ProviderBoundary>

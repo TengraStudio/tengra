@@ -74,11 +74,11 @@ const ExplorerActions: React.FC<ExplorerActionsProps> = ({ activeSource, setActi
     <div className="flex items-center justify-between">
         <div className="flex gap-3">
             <button onClick={() => setActiveSource('all')} className={cn("px-6 py-2.5 rounded-xl text-xs font-bold transition-all border", activeSource === 'all' ? "bg-primary text-primary-foreground border-primary" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>{t('modelExplorer.allSources')}</button>
-            <button onClick={() => setActiveSource('ollama')} className={cn("px-6 py-2.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-2", activeSource === 'ollama' ? "bg-warning/10 text-orange border-orange/20" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>
+            <button onClick={() => setActiveSource('ollama')} className={cn("px-6 py-2.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-2", activeSource === 'ollama' ? "bg-warning/10 text-warning border-warning/40" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>
                 <Database className="w-3.5 h-3.5" />
                 <span>{t('modelExplorer.sourceOllama')}</span>
             </button>
-            <button onClick={() => setActiveSource('huggingface')} className={cn("px-6 py-2.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-2", activeSource === 'huggingface' ? "bg-yellow/10 text-warning-600 border-yellow/20 dark:text-warning" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>
+            <button onClick={() => setActiveSource('huggingface')} className={cn("px-6 py-2.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-2", activeSource === 'huggingface' ? "bg-warning/10 text-warning-600 border-warning/30 dark:text-warning" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>
                 <Box className="w-3.5 h-3.5" />
                 <span>{t('modelExplorer.sourceHuggingFace')}</span>
             </button>
@@ -95,7 +95,7 @@ const ExplorerActions: React.FC<ExplorerActionsProps> = ({ activeSource, setActi
                         { value: 'updated', label: t('modelExplorer.newest') }
                     ]}
                     onChange={(val) => setSortBy(val as 'name' | 'popularity' | 'updated')}
-                    className="min-w-[120px]"
+                    className="min-w-32"
                 />
             </div>
 

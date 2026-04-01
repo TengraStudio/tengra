@@ -43,16 +43,16 @@ export const WorkspaceNotifications: React.FC<WorkspaceNotificationsProps> = ({ 
     }, [visibleNotifications]);
 
     return (
-        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2 pointer-events-none">
+        <div className="fixed bottom-6 right-6 tw-z-9999 flex flex-col gap-2 pointer-events-none">
             {summary && (
-                <div className="px-4 py-3 rounded-xl border shadow-2xl pointer-events-auto min-w-[300px] flex items-center gap-3 bg-primary/10 border-primary/20 text-primary">
+                <div className="px-4 py-3 rounded-xl border shadow-2xl pointer-events-auto tw-min-w-300 flex items-center gap-3 bg-primary/10 border-primary/20 text-primary">
                     <Activity className="w-4 h-4" />
                     <span className="text-xs font-bold tracking-tight">{summary}</span>
                 </div>
             )}
             {(summary ? groupedNotifications.slice(-1) : groupedNotifications).map(n => (
                 <div key={n.id} className={cn(
-                    "px-4 py-3 rounded-xl border shadow-2xl animate-in slide-in-from-right-10 fade-in pointer-events-auto min-w-[300px] flex items-center gap-3",
+                    "px-4 py-3 rounded-xl border shadow-2xl animate-in slide-in-from-right-10 fade-in pointer-events-auto tw-min-w-300 flex items-center gap-3",
                     n.type === 'success' ? "bg-success/10 border-success/20 text-success" :
                         n.type === 'error' ? "bg-destructive/10 border-destructive/20 text-destructive" :
                             "bg-primary/10 border-primary/20 text-primary"

@@ -88,7 +88,7 @@ export function LanguageSelectionPrompt({ onClose }: LanguageSelectionPromptProp
     }, [onClose]);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-fade-in">
             <div className="bg-background w-full max-w-md p-8 flex flex-col items-center text-center animate-spring-in">
                 <h2 className="text-2xl font-bold mb-2">
                     {t('onboarding.language.title', { code: 'en' })}

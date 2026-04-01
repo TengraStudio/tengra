@@ -7,10 +7,28 @@ import ReactDOM from 'react-dom/client';
 
 import '@renderer/index.css';
 
-import '@renderer/web-bridge';
-
 installRendererLogger();
 performanceMonitor.mark('renderer:boot');
+
+const bootstrapWindow = window as Window & {
+    requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number
+};
+
+const loadWebBridge = () => {
+    void import('@renderer/web-bridge');
+};
+
+if (!window.electron) {
+    loadWebBridge();
+} else if (bootstrapWindow.requestIdleCallback) {
+    bootstrapWindow.requestIdleCallback(() => {
+        loadWebBridge();
+    }, { timeout: 300 });
+} else {
+    window.setTimeout(() => {
+        loadWebBridge();
+    }, 150);
+}
 
 const rootElement = document.getElementById('root');
 if (rootElement) {

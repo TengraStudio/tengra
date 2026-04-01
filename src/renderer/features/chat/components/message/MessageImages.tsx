@@ -4,7 +4,7 @@ import { memo, useState } from 'react';
 type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
 
 export const ImageSkeleton = ({ t }: { t: TranslationFn }) => (
-    <div className="w-[300px] h-[300px] rounded-xl bg-accent/30 border border-border/50 flex flex-col items-center justify-center gap-4 relative overflow-hidden group/skel">
+    <div className="w-72 h-72 rounded-xl bg-accent/30 border border-border/50 flex flex-col items-center justify-center gap-4 relative overflow-hidden group/skel">
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-accent/30 to-transparent -translate-x-full animate-slide-shimmer" />
         <div className="w-12 h-12 rounded-full bg-accent/30 flex items-center justify-center animate-pulse">
             <Sparkles className="w-6 h-6 text-primary/40" />
@@ -41,10 +41,10 @@ export const MessageImages = memo(({ images, t }: MessageImagesProps) => {
     }
     return (
         <>
-            <div className="mb-4 overflow-hidden rounded-[22px] border border-border/60 bg-card/50">
+            <div className="mb-4 overflow-hidden rounded-3xl border border-border/60 bg-card/50">
                 <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
                     <div className="flex flex-col">
-                        <span className="text-xxs font-semibold uppercase tracking-[0.2em] text-muted-foreground/70">
+                        <span className="text-xxs font-semibold uppercase tracking-widest text-muted-foreground/70">
                             {t('input.generate')}
                         </span>
                         <span className="text-sm font-medium text-foreground/90">
@@ -64,7 +64,7 @@ export const MessageImages = memo(({ images, t }: MessageImagesProps) => {
                             <button
                                 key={i}
                                 type="button"
-                                className="group relative overflow-hidden rounded-[20px] border border-border/50 bg-muted/10 text-left"
+                                className="group relative overflow-hidden rounded-2xl border border-border/50 bg-muted/10 text-left"
                                 onClick={() => {
                                     setPreviewImage(img);
                                 }}
@@ -72,14 +72,14 @@ export const MessageImages = memo(({ images, t }: MessageImagesProps) => {
                                 <img
                                     src={img}
                                     alt={t('messageBubble.attachedImage', { index: i + 1 })}
-                                    className="max-h-[720px] min-h-[360px] w-full object-cover transition-transform duration-300 group-hover:scale-[1.01]"
+                                    className="max-h-screen min-h-96 w-full object-cover transition-transform duration-300 group-hover:scale-102"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-background/75 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                                <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between rounded-xl border border-white/10 bg-black/45 px-3 py-2 opacity-0 backdrop-blur-md transition-opacity duration-300 group-hover:opacity-100">
-                                    <span className="text-xs font-medium text-white/90">
+                                <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between rounded-xl border border-border/50 bg-background/80 px-3 py-2 opacity-0 backdrop-blur-md transition-opacity duration-300 group-hover:opacity-100">
+                                    <span className="text-xs font-medium text-foreground">
                                         {t('messageBubble.attachedImage', { index: i + 1 })}
                                     </span>
-                                    <span className="flex items-center gap-1 text-xs font-medium text-white/80">
+                                    <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
                                         <Expand className="h-3.5 w-3.5" />
                                         {t('common.zoomIn')}
                                     </span>
@@ -92,7 +92,7 @@ export const MessageImages = memo(({ images, t }: MessageImagesProps) => {
 
             {previewImage && (
                 <div
-                    className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/88 p-6 backdrop-blur-md"
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 p-6 backdrop-blur-md"
                     onClick={() => {
                         setPreviewImage(null);
                     }}
@@ -102,7 +102,7 @@ export const MessageImages = memo(({ images, t }: MessageImagesProps) => {
                 >
                     <button
                         type="button"
-                        className="absolute right-6 top-6 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/45 text-white/80 transition-colors hover:bg-black/70 hover:text-white"
+                        className="absolute right-6 top-6 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/50 bg-background/80 text-muted-foreground transition-colors hover:bg-background/90 hover:text-foreground"
                         onClick={event => {
                             event.stopPropagation();
                             setPreviewImage(null);
@@ -112,7 +112,7 @@ export const MessageImages = memo(({ images, t }: MessageImagesProps) => {
                         <X className="h-4 w-4" />
                     </button>
                     <div
-                        className="flex max-h-[94vh] max-w-[96vw] items-center justify-center"
+                        className="flex max-h-screen max-w-full items-center justify-center"
                         onClick={event => {
                             event.stopPropagation();
                         }}
@@ -120,7 +120,7 @@ export const MessageImages = memo(({ images, t }: MessageImagesProps) => {
                         <img
                             src={previewImage}
                             alt={t('messageBubble.attachedImage', { index: 1 })}
-                            className="max-h-[94vh] max-w-[96vw] rounded-2xl object-contain shadow-2xl"
+                            className="max-h-screen max-w-full rounded-2xl object-contain shadow-2xl"
                         />
                     </div>
                 </div>

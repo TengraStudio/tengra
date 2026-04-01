@@ -22,6 +22,61 @@ export interface StreamChunkResult {
     speed?: number | null
 }
 
+const buildFallbackToolCallId = (toolCall: ToolCall): string => {
+    const functionName = typeof toolCall.function?.name === 'string' && toolCall.function.name.trim().length > 0
+        ? toolCall.function.name.trim()
+        : 'tool';
+    const indexPart = typeof toolCall.index === 'number' ? toolCall.index : 0;
+    return `${functionName}-${indexPart}`;
+};
+
+const normalizeToolCallIdentity = (toolCall: ToolCall): ToolCall => {
+    const normalizedId = typeof toolCall.id === 'string' && toolCall.id.trim().length > 0
+        ? toolCall.id
+        : buildFallbackToolCallId(toolCall);
+    return {
+        ...toolCall,
+        id: normalizedId,
+    };
+};
+
+const mergeToolCalls = (currentToolCalls: ToolCall[], incomingToolCalls: ToolCall[]): ToolCall[] => {
+    const mergedToolCalls = [...currentToolCalls];
+
+    for (const rawIncomingToolCall of incomingToolCalls) {
+        const incomingHadExplicitId = typeof rawIncomingToolCall.id === 'string' && rawIncomingToolCall.id.trim().length > 0;
+        const incomingToolCall = normalizeToolCallIdentity(rawIncomingToolCall);
+        const existingIndex = mergedToolCalls.findIndex(toolCall =>
+            toolCall.id === incomingToolCall.id
+            || (
+                incomingToolCall.index !== undefined
+                && toolCall.index !== undefined
+                && toolCall.index === incomingToolCall.index
+            )
+        );
+
+        if (existingIndex === -1) {
+            mergedToolCalls.push(incomingToolCall);
+            continue;
+        }
+
+        const existingToolCall = normalizeToolCallIdentity(mergedToolCalls[existingIndex]);
+        mergedToolCalls[existingIndex] = {
+            ...existingToolCall,
+            ...incomingToolCall,
+            id: incomingHadExplicitId ? incomingToolCall.id : existingToolCall.id,
+            function: {
+                ...existingToolCall.function,
+                ...incomingToolCall.function,
+                name: incomingToolCall.function.name || existingToolCall.function.name,
+                arguments: incomingToolCall.function.arguments || existingToolCall.function.arguments,
+            },
+        };
+    }
+
+    return mergedToolCalls;
+};
+
 export const formatMessageContent = (msg: Message): Message['content'] => {
     let content = msg.content;
     const text = typeof msg.content === 'string' ? msg.content : '';
@@ -65,8 +120,15 @@ const handleImagesChunk = (chunk: StreamChunk, current: { content: string, reaso
     return { updated: true, newImages };
 };
 
-const handleToolCallsChunk = (chunk: StreamChunk): StreamChunkResult => {
-    return { updated: true, newToolCalls: chunk.tool_calls };
+const handleToolCallsChunk = (
+    chunk: StreamChunk,
+    current: { content: string, reasoning: string, sources: string[], images?: string[], toolCalls?: ToolCall[] }
+): StreamChunkResult => {
+    const incomingToolCalls = chunk.tool_calls ?? [];
+    return {
+        updated: true,
+        newToolCalls: mergeToolCalls(current.toolCalls ?? [], incomingToolCalls),
+    };
 };
 
 const handleContentChunk = (chunk: StreamChunk, current: { content: string, reasoning: string, sources: string[], images?: string[] }, streamStartTime: number): StreamChunkResult => {
@@ -76,7 +138,11 @@ const handleContentChunk = (chunk: StreamChunk, current: { content: string, reas
     return { updated: true, newContent, speed };
 };
 
-type ChunkHandler = (chunk: StreamChunk, current: { content: string, reasoning: string, sources: string[], images?: string[] }, streamStartTime: number) => StreamChunkResult;
+type ChunkHandler = (
+    chunk: StreamChunk,
+    current: { content: string, reasoning: string, sources: string[], images?: string[], toolCalls?: ToolCall[] },
+    streamStartTime: number
+) => StreamChunkResult;
 
 const chunkHandlers: Record<string, ChunkHandler> = {
     metadata: handleMetadataChunk,
@@ -89,7 +155,7 @@ const chunkHandlers: Record<string, ChunkHandler> = {
 
 export const processStreamChunk = (
     chunk: StreamChunk,
-    current: { content: string, reasoning: string, sources: string[], images?: string[] },
+    current: { content: string, reasoning: string, sources: string[], images?: string[], toolCalls?: ToolCall[] },
     streamStartTime: number
 ): StreamChunkResult => {
     const chunkType = chunk.type ?? 'content';

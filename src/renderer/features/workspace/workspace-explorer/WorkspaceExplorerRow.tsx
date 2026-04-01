@@ -66,7 +66,7 @@ function WorkspaceExplorerDiagnosticsBadges({
     }
 
     return (
-        <div className="flex items-center gap-1 text-[10px] font-semibold leading-none">
+        <div className="flex items-center gap-1 tw-text-10 font-semibold leading-none">
             {diagnostics.typescript > 0 && (
                 <span className="flex items-center gap-0.5 rounded-sm bg-primary/10 px-1 py-0.5 text-primary">
                     <Braces className="h-2.5 w-2.5" />
@@ -113,7 +113,7 @@ const MountRowView: React.FC<{
             {row.expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
         </span>
         {row.mount.type === 'ssh' ? (
-            <Server className="w-3.5 h-3.5 text-indigo" />
+            <Server className="w-3.5 h-3.5 text-primary" />
         ) : (
             <Folder className="w-3.5 h-3.5 text-success" />
         )}
@@ -242,7 +242,7 @@ const EntryRowView: React.FC<{
             <WorkspaceExplorerDiagnosticsBadges diagnostics={row.diagnostics} />
             {row.gitStatus && (
                 <span
-                    className={cn('ml-1 text-[10px] font-bold leading-none', getGitBadgeClass(row.gitStatus))}
+                    className={cn('ml-1 tw-text-10 font-bold leading-none', getGitBadgeClass(row.gitStatus))}
                     title={`Git: ${row.gitRawStatus ?? row.gitStatus}`}
                 >
                     {row.gitStatus}

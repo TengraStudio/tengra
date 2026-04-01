@@ -21,9 +21,9 @@ export const TypingDots = () => {
 };
 
 export const ResponseProgress = () => (
-    <div className="absolute top-0 left-0 right-0 h-[2px] overflow-hidden bg-primary/5">
+    <div className="absolute top-0 left-0 right-0 h-0.5 overflow-hidden bg-primary/5">
         <div
-            className="h-full w-full bg-primary/40 animate-[shimmer_2s_infinite_linear]"
+            className="h-full w-full bg-primary/40 animate-pulse"
             style={{
                 background:
                     'linear-gradient(90deg, transparent 0%, var(--primary) 50%, transparent 100%)',
@@ -36,9 +36,9 @@ export const ResponseProgress = () => (
 export const ImageSkeleton = () => {
     const { t } = useTranslation();
     return (
-        <div className="w-[300px] h-[300px] rounded-xl bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-4 relative overflow-hidden group/skel">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-slide-shimmer" />
-            <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center animate-pulse">
+        <div className="w-72 h-72 rounded-xl bg-muted/30 border border-border/50 flex flex-col items-center justify-center gap-4 relative overflow-hidden group/skel">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-muted/30 to-transparent -translate-x-full animate-slide-shimmer" />
+            <div className="w-12 h-12 rounded-full bg-muted/30 flex items-center justify-center animate-pulse">
                 <Sparkles className="w-6 h-6 text-primary/40" />
             </div>
             <div className="space-y-2 text-center">

@@ -29,19 +29,19 @@ export const ImageSettingsProvider: React.FC<ImageSettingsProviderProps> = ({
                         className={cn(
                             "flex items-center justify-between p-4 rounded-2xl border transition-all duration-200 group relative overflow-hidden text-left",
                             currentProvider === p
-                                ? "bg-primary/20 border-primary/40 shadow-[0_0_20px_rgba(var(--primary-rgb),0.1)]"
-                                : "bg-white/5 border-white/5 hover:bg-white/[0.08] hover:border-white/10"
+                                ? "bg-primary/20 border-primary/40 tw-shadow-primary-soft"
+                                : "bg-muted/40 border-border/30 hover:bg-muted/60 hover:border-border/60"
                         )}
                     >
                         <div className="flex items-center gap-3 relative z-10 w-full pr-8">
                             <div className={cn(
                                 "w-10 h-10 rounded-xl flex items-center justify-center transition-colors duration-200 flex-shrink-0",
-                                currentProvider === p ? "bg-primary text-white" : "bg-white/5 text-muted-foreground group-hover:text-foreground"
+                                currentProvider === p ? "bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground group-hover:text-foreground"
                             )}>
                                 {p === 'sd-cpp' ? <span className="font-bold text-xs italic">SD</span> : <Image className="w-5 h-5" />}
                             </div>
                             <div className="min-w-0">
-                                <p className="text-[10px] text-muted-foreground/60 leading-none mt-1.5 uppercase tracking-wider font-bold">
+                                <p className="tw-text-10 text-muted-foreground/60 leading-none mt-1.5 uppercase tracking-wider font-bold">
                                     {p === 'sd-cpp' ? t('settings.images.localRuntime') : t('settings.images.remoteCloud')}
                                 </p>
                             </div>

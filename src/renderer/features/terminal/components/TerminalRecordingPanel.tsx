@@ -58,7 +58,7 @@ export function TerminalRecordingPanel({
     setReplayText,
 }: TerminalRecordingPanelProps) {
     return (
-        <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 w-[460px] max-w-[95vw]">
+        <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 tw-w-460 tw-max-w-95vw">
             <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="text-xs font-semibold text-foreground">{t('terminal.recordingsTitle')}</div>
                 <button
@@ -119,7 +119,7 @@ export function TerminalRecordingPanel({
                 </button>
             </div>
             {activeRecordingTabId && (
-                <div className="mb-2 px-2 py-1 rounded border border-destructive/30 bg-destructive/5 text-[10px] text-destructive">
+                <div className="mb-2 px-2 py-1 rounded border border-destructive/30 bg-destructive/5 tw-text-10 text-destructive">
                     {t('terminal.recordingActive')}: {activeRecordingLabel ?? activeRecordingTabId}
                 </div>
             )}
@@ -143,7 +143,7 @@ export function TerminalRecordingPanel({
                         )}
                     >
                         <div className="text-xs text-foreground truncate">{recording.tabName}</div>
-                        <div className="text-[10px] text-muted-foreground truncate">
+                        <div className="tw-text-10 text-muted-foreground truncate">
                             {new Date(recording.startedAt).toLocaleString()} -{' '}
                             {(recording.durationMs / 1000).toFixed(1)}s - {recording.events.length}{' '}
                             {t('terminal.eventsLabel')}
@@ -153,10 +153,10 @@ export function TerminalRecordingPanel({
             </div>
             {selectedRecording && (
                 <div className="rounded border border-border/60 bg-background/70">
-                    <div className="px-2 py-1 border-b border-border/60 text-[10px] text-muted-foreground">
+                    <div className="px-2 py-1 border-b border-border/60 tw-text-10 text-muted-foreground">
                         {t('terminal.replayPreview')}
                     </div>
-                    <pre className="p-2 text-[11px] leading-4 text-foreground max-h-44 overflow-auto whitespace-pre-wrap break-words">
+                    <pre className="p-2 tw-text-11 leading-4 text-foreground max-h-44 overflow-auto whitespace-pre-wrap break-words">
                         {isReplayRunning || replayText ? replayText : selectedRecordingText}
                     </pre>
                 </div>

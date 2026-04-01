@@ -87,8 +87,8 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
             </div>
             
             <div className="grid gap-4 md:grid-cols-3">
-                <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 transition-all hover:bg-white/[0.04]">
-                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground/30 mb-3">
+                <div className="rounded-2xl border border-border/30 bg-muted/40 p-4 transition-all hover:bg-muted/50">
+                    <div className="flex items-center gap-2 tw-text-10 font-black uppercase tw-tracking-25 text-muted-foreground/30 mb-3">
                         <Bot className="h-3.5 w-3.5" />
                         <span>{t('council.chairman')}</span>
                     </div>
@@ -103,8 +103,8 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                             : t('agents.strategy')}
                     </div>
                 </div>
-                <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 transition-all hover:bg-white/[0.04]">
-                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground/30 mb-3">
+                <div className="rounded-2xl border border-border/30 bg-muted/40 p-4 transition-all hover:bg-muted/50">
+                    <div className="flex items-center gap-2 tw-text-10 font-black uppercase tw-tracking-25 text-muted-foreground/30 mb-3">
                         <Sparkles className="h-3.5 w-3.5" />
                         <span>{t('agents.strategy')}</span>
                     </div>
@@ -115,8 +115,8 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                         {selectedChairmanProvider} · {selectedChairmanModel}
                     </div>
                 </div>
-                <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 transition-all hover:bg-white/[0.04]">
-                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground/30 mb-3">
+                <div className="rounded-2xl border border-border/30 bg-muted/40 p-4 transition-all hover:bg-muted/50">
+                    <div className="flex items-center gap-2 tw-text-10 font-black uppercase tw-tracking-25 text-muted-foreground/30 mb-3">
                         <Waypoints className="h-3.5 w-3.5" />
                         <span>{t('council.requestedSubagents')}</span>
                     </div>
@@ -129,10 +129,10 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                 </div>
             </div>
 
-            <div className="space-y-6 rounded-3xl border border-white/5 bg-white/[0.01] p-6">
+            <div className="space-y-6 rounded-3xl border border-border/30 bg-muted/30 p-6">
                 <div className="grid gap-6 md:grid-cols-3">
                     <div className="space-y-2.5">
-                        <label className="text-[10px] font-black text-muted-foreground/40 px-1 uppercase tracking-widest">
+                        <label className="tw-text-10 font-black text-muted-foreground/40 px-1 uppercase tracking-widest">
                             {t('council.chairman')}
                         </label>
                         <Select
@@ -151,10 +151,10 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                                 }))
                             }
                         >
-                            <SelectTrigger className="h-11 rounded-2xl border-white/10 bg-black/40 text-sm hover:bg-black/60 transition-all">
+                            <SelectTrigger className="h-11 rounded-2xl border-border/40 bg-background/70 text-sm hover:bg-background/80 transition-all">
                                 <SelectValue placeholder={t('common.select')} />
                             </SelectTrigger>
-                            <SelectContent className="rounded-2xl border-white/10 bg-black/95">
+                            <SelectContent className="rounded-2xl border-border/40 bg-background/95">
                                 <SelectItem value="auto" className="rounded-xl">{t('common.auto')}</SelectItem>
                                 <SelectItem value="manual" className="rounded-xl">{t('common.manual')}</SelectItem>
                             </SelectContent>
@@ -162,7 +162,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                     </div>
 
                     <div className="space-y-2.5">
-                        <label className="text-[10px] font-black text-muted-foreground/40 px-1 uppercase tracking-widest">
+                        <label className="tw-text-10 font-black text-muted-foreground/40 px-1 uppercase tracking-widest">
                             {t('agents.strategy')}
                         </label>
                         <Select
@@ -174,10 +174,10 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                                 }))
                             }
                         >
-                            <SelectTrigger className="h-11 rounded-2xl border-white/10 bg-black/40 text-sm hover:bg-black/60 transition-all">
+                            <SelectTrigger className="h-11 rounded-2xl border-border/40 bg-background/70 text-sm hover:bg-background/80 transition-all">
                                 <SelectValue placeholder={t('agents.strategy')} />
                             </SelectTrigger>
-                            <SelectContent className="rounded-2xl border-white/10 bg-black/95">
+                            <SelectContent className="rounded-2xl border-border/40 bg-background/95">
                                 <SelectItem value="reasoning-first" className="rounded-xl">{t('council.strategies.reasoning-first')}</SelectItem>
                                 <SelectItem value="balanced" className="rounded-xl">{t('council.strategies.balanced')}</SelectItem>
                                 <SelectItem value="local-first-simple" className="rounded-xl">{t('council.strategies.local-first-simple')}</SelectItem>
@@ -186,7 +186,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                     </div>
 
                     <div className="space-y-2.5">
-                        <label className="text-[10px] font-black text-muted-foreground/40 px-1 uppercase tracking-widest">
+                        <label className="tw-text-10 font-black text-muted-foreground/40 px-1 uppercase tracking-widest">
                             {t('council.requestedSubagents')}
                         </label>
                         <Select
@@ -198,10 +198,10 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                                 }))
                             }
                         >
-                            <SelectTrigger className="h-11 rounded-2xl border-white/10 bg-black/40 text-sm hover:bg-black/60 transition-all">
+                            <SelectTrigger className="h-11 rounded-2xl border-border/40 bg-background/70 text-sm hover:bg-background/80 transition-all">
                                 <SelectValue placeholder={t('common.select')} />
                             </SelectTrigger>
-                            <SelectContent className="rounded-2xl border-white/10 bg-black/95">
+                            <SelectContent className="rounded-2xl border-border/40 bg-background/95">
                                 {SUBAGENT_COUNT_OPTIONS.map(option => (
                                     <SelectItem key={option} value={option} className="rounded-xl">
                                         {option === 'auto' ? t('common.auto') : option}
@@ -219,9 +219,9 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                 </div>
 
                 {councilSetup.chairman.mode === 'manual' && (
-                    <div className="pt-6 border-t border-white/5 grid gap-6 md:grid-cols-2">
+                    <div className="pt-6 border-t border-border/30 grid gap-6 md:grid-cols-2">
                         <div className="space-y-2.5">
-                            <label className="text-[10px] font-black text-muted-foreground/40 px-1 uppercase tracking-widest">
+                            <label className="tw-text-10 font-black text-muted-foreground/40 px-1 uppercase tracking-widest">
                                 {t('agent.aiProvider')}
                             </label>
                             <Select
@@ -241,10 +241,10 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                                     }))
                                 }
                             >
-                                <SelectTrigger className="h-11 rounded-2xl border-white/10 bg-black/40 text-sm hover:bg-black/60 transition-all">
+                                <SelectTrigger className="h-11 rounded-2xl border-border/40 bg-background/70 text-sm hover:bg-background/80 transition-all">
                                     <SelectValue placeholder={t('common.select')} />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-2xl border-white/10 bg-black/95">
+                                <SelectContent className="rounded-2xl border-border/40 bg-background/95">
                                     {providerOptions.map(provider => (
                                         <SelectItem key={provider} value={provider} className="rounded-xl">
                                             {provider}
@@ -255,7 +255,7 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                         </div>
 
                         <div className="space-y-2.5">
-                            <label className="text-[10px] font-black text-muted-foreground/40 px-1 uppercase tracking-widest">
+                            <label className="tw-text-10 font-black text-muted-foreground/40 px-1 uppercase tracking-widest">
                                 {t('agent.modelAssignment')}
                             </label>
                             <Select
@@ -272,10 +272,10 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                                     }))
                                 }
                             >
-                                <SelectTrigger className="h-11 rounded-2xl border-white/10 bg-black/40 text-sm hover:bg-black/60 transition-all">
+                                <SelectTrigger className="h-11 rounded-2xl border-border/40 bg-background/70 text-sm hover:bg-background/80 transition-all">
                                     <SelectValue placeholder={t('common.select')} />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-2xl border-white/10 bg-black/95">
+                                <SelectContent className="rounded-2xl border-border/40 bg-background/95">
                                     {modelOptions.map(model => (
                                         <SelectItem key={model} value={model} className="rounded-xl">
                                             {model}
@@ -292,13 +292,13 @@ export const WorkspaceAgentCouncilSetup: React.FC<WorkspaceAgentCouncilSetupProp
                 <Button 
                     variant="ghost" 
                     onClick={onClose} 
-                    className="rounded-2xl px-6 text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 hover:text-foreground hover:bg-white/5 transition-all"
+                    className="rounded-2xl px-6 tw-text-10 font-black uppercase tracking-widest text-muted-foreground/40 hover:text-foreground hover:bg-muted/40 transition-all"
                 >
                     {t('common.cancel')}
                 </Button>
                 <Button 
                     onClick={onApplyCouncilSetup} 
-                    className="rounded-2xl px-8 h-12 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-black uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)] hover:shadow-[0_0_30px_rgba(var(--primary-rgb),0.4)] transition-all"
+                    className="rounded-2xl px-8 h-12 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-black uppercase tw-tracking-20 tw-shadow-primary-medium tw-hover-shadow-primary-glow transition-all"
                 >
                     <Waypoints className="mr-2 h-4 w-4" />
                     {t('council.runCouncil')}

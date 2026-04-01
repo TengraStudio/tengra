@@ -109,14 +109,28 @@ interface ChunkIterationParams {
     finalReasoning: string;
     finalSources: string[];
     finalImages: string[];
+    finalToolCalls: ToolCall[];
     streamStartTime: number;
 }
 
-const processChunkIteration = (params: ChunkIterationParams): { index: number; result: StreamChunkResult; current: Record<string, string | string[]> } => {
-    const { chunk, finalVariants, finalContent, finalReasoning, finalSources, finalImages, streamStartTime } = params;
+const processChunkIteration = (params: ChunkIterationParams): {
+    index: number;
+    result: StreamChunkResult;
+    current: { content: string; reasoning: string; sources: string[]; images: string[]; toolCalls: ToolCall[] };
+} => {
+    const { chunk, finalVariants, finalContent, finalReasoning, finalSources, finalImages, finalToolCalls, streamStartTime } = params;
     const index = chunk.index ?? 0;
     finalVariants[index] = finalVariants[index] ?? { content: '', reasoning: '' };
-    const current = processStreamChunkUpdates({ chunk, index, finalVariants, finalContent, finalReasoning, finalSources, finalImages });
+    const current = processStreamChunkUpdates({
+        chunk,
+        index,
+        finalVariants,
+        finalContent,
+        finalReasoning,
+        finalSources,
+        finalImages,
+        finalToolCalls,
+    });
     const result = processStreamChunk(chunk, current, streamStartTime);
     return { index, result, current };
 };
@@ -162,6 +176,7 @@ interface ProcessStreamChunkUpdatesParams {
     finalReasoning: string;
     finalSources: string[];
     finalImages: string[];
+    finalToolCalls: ToolCall[];
 }
 
 const processStreamChunkUpdates = (params: ProcessStreamChunkUpdatesParams): {
@@ -169,13 +184,15 @@ const processStreamChunkUpdates = (params: ProcessStreamChunkUpdatesParams): {
     reasoning: string;
     sources: string[];
     images: string[];
+    toolCalls: ToolCall[];
 } => {
-    const { index, finalVariants, finalContent, finalReasoning, finalSources, finalImages } = params;
+    const { index, finalVariants, finalContent, finalReasoning, finalSources, finalImages, finalToolCalls } = params;
     return {
         content: index === 0 ? finalContent : finalVariants[index].content,
         reasoning: index === 0 ? finalReasoning : finalVariants[index].reasoning,
         sources: index === 0 ? finalSources : [],
-        images: index === 0 ? finalImages : []
+        images: index === 0 ? finalImages : [],
+        toolCalls: index === 0 ? finalToolCalls : []
     };
 };
 
@@ -348,7 +365,7 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
     // Process stream chunks
     for await (const chunk of stream) {
         const { index, result } = processChunkIteration({
-            chunk, finalVariants, finalContent, finalReasoning, finalSources, finalImages, streamStartTime
+            chunk, finalVariants, finalContent, finalReasoning, finalSources, finalImages, finalToolCalls, streamStartTime
         });
 
         // Update state if chunk produced changes

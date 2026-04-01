@@ -252,8 +252,8 @@ export const Sidebar = React.memo(({
                 data-testid="sidebar"
                 aria-label={t('aria.applicationSidebar')}
                 className={cn(
-                    "flex flex-col h-full transition-[width] duration-300 ease-in-out bg-background",
-                    isCollapsed ? "w-[70px]" : "w-full"
+                    "flex flex-col h-full transition-all duration-300 ease-in-out bg-background",
+                    isCollapsed ? "w-20" : "w-full"
                 )}>
                 <SidebarHeaderConnector
                     isCollapsed={isCollapsed}

@@ -40,7 +40,7 @@ async function withRetry<T>(operation: () => Promise<T>, attempts = SETTINGS_RET
 }
 
 export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => void) {
-    const { settings, updateSettings } = useSettings();
+    const { settings, updateSettings, isLoading: isSettingsLoading } = useSettings();
 
     // Wrapper for backward compatibility
     const setSettings = useCallback(async (newSettings: AppSettings | null) => {
@@ -49,20 +49,27 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
         }
     }, [updateSettings]);
 
-    const [isLoading, setIsLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [statusMessage, setStatusMessage] = useState('');
     const [settingsUiState, setSettingsUiState] = useState<SettingsLogicUiState>('ready');
     const [lastErrorCode, setLastErrorCode] = useState<string | null>(null);
 
     // Sub-hooks - linkedAccounts created first so auth can trigger refresh
-    const linkedAccounts = useLinkedAccounts();
+    const linkedAccountsBase = useLinkedAccounts();
     const auth = useSettingsAuth(
         settings,
         updateSettings,
-        onRefreshModels,
-        linkedAccounts.refreshAccounts,
-        (accountId, email) => auth.setManualSessionModal({ isOpen: true, accountId, email })
+        linkedAccountsBase,
+        onRefreshModels
     );
+    const cancelBrowserAuthForAccount = auth.cancelBrowserAuthForAccount;
+    const linkedAccounts = useMemo(() => ({
+        ...linkedAccountsBase,
+        unlinkAccount: async (accountId: string) => {
+            await cancelBrowserAuthForAccount(accountId);
+            await linkedAccountsBase.unlinkAccount(accountId);
+        }
+    }), [cancelBrowserAuthForAccount, linkedAccountsBase]);
     const stats = useSettingsStats();
     const personas = useSettingsPersonas(settings, updateSettings);
 
@@ -83,7 +90,7 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
             return;
         }
 
-        setIsLoading(true);
+        setIsSaving(true);
         try {
             await withRetry(() => updateSettings(toSave, true), SETTINGS_RETRY_ATTEMPTS);
             onRefreshModels?.(true);
@@ -107,7 +114,7 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
                 errorCode: settingsPageErrorCodes.saveFailed,
             });
         } finally {
-            setIsLoading(false);
+            setIsSaving(false);
         }
     }, [settings, updateSettings, onRefreshModels]);
 
@@ -209,7 +216,7 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
     return useMemo(() => ({
         settings,
         setSettings,
-        isLoading,
+        isLoading: isSettingsLoading || isSaving,
         statusMessage: exposedStatusMessage,
         setStatusMessage,
         settingsUiState,
@@ -255,7 +262,7 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
 
         isDirty: false
     }), [
-        settings, setSettings, isLoading, exposedStatusMessage, auth,
+        settings, setSettings, isSettingsLoading, isSaving, exposedStatusMessage, auth,
         linkedAccounts, updateGeneral, updateSpeech, handleSave, settingsUiState, lastErrorCode,
         stats, benchmarkResult, isBenchmarking, handleRunBenchmark, personas
     ]);

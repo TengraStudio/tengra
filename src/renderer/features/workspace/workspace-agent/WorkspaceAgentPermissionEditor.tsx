@@ -44,8 +44,8 @@ function AllowlistSection({
     t: (key: string) => string;
 }): JSX.Element {
     return (
-        <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/30">
+        <div className="rounded-2xl border border-border/40 bg-background/40 p-4">
+            <div className="flex items-center gap-2 tw-text-10 font-black uppercase tw-tracking-20 text-muted-foreground/30">
                 {icon}
                 <span>{label}</span>
             </div>
@@ -54,9 +54,9 @@ function AllowlistSection({
                     value={inputValue}
                     onChange={event => onInputChange(event.target.value)}
                     placeholder={t('common.selectEllipsis')}
-                    className="h-9 rounded-xl border border-white/10 bg-black/20 text-xs focus:ring-0 focus:border-white/20 transition-all"
+                    className="h-9 rounded-xl border border-border/40 bg-background/50 text-xs focus:ring-0 focus:border-border/60 transition-all"
                 />
-                <Button variant="secondary" onClick={onAddEntry} className="h-9 rounded-xl px-4 bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold uppercase tracking-widest border border-primary/20 transition-all shrink-0">
+                <Button variant="secondary" onClick={onAddEntry} className="h-9 rounded-xl px-4 bg-primary/10 hover:bg-primary/20 text-primary tw-text-10 font-bold uppercase tracking-widest border border-primary/20 transition-all shrink-0">
                     <Plus className="mr-1.5 h-3.5 w-3.5" />
                     {addLabel}
                 </Button>
@@ -67,9 +67,9 @@ function AllowlistSection({
                         <Badge
                             key={entry}
                             variant="outline"
-                            className="gap-1.5 rounded-lg border-white/5 bg-white/5 px-2.5 py-1 text-[10px] font-bold text-foreground/70"
+                            className="gap-1.5 rounded-lg border-border/30 bg-muted/40 px-2.5 py-1 tw-text-10 font-bold text-foreground/70"
                         >
-                            <span className="truncate max-w-[150px]">{entry}</span>
+                            <span className="truncate tw-max-w-150">{entry}</span>
                             <button
                                 type="button"
                                 className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-muted-foreground/30 transition-colors hover:text-destructive/60"
@@ -81,7 +81,7 @@ function AllowlistSection({
                         </Badge>
                     ))
                 ) : (
-                    <div className="text-[10px] text-muted-foreground/30 flex items-center gap-2 px-1 py-1 italic font-medium">
+                    <div className="tw-text-10 text-muted-foreground/30 flex items-center gap-2 px-1 py-1 italic font-medium">
                         {noEntriesLabel}
                     </div>
                 )}

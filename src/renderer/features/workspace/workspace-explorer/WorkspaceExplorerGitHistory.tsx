@@ -27,7 +27,7 @@ export function WorkspaceExplorerGitHistory({
         <div className="border-b border-border/40 px-4 py-3">
             <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.24em] text-muted-foreground/50">
+                    <div className="flex items-center gap-1.5 tw-text-10 font-black uppercase tw-tracking-24 text-muted-foreground/50">
                         <History className="h-3 w-3" />
                         <span>{t('agent.history')}</span>
                     </div>
@@ -58,15 +58,15 @@ export function WorkspaceExplorerGitHistory({
                             className="rounded-lg border border-border/40 bg-background/60 px-3 py-2"
                         >
                             <div className="flex items-center justify-between gap-3">
-                                <span className="font-mono text-[11px] text-primary">{commit.hash}</span>
-                                <span className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground/60">
+                                <span className="font-mono tw-text-11 text-primary">{commit.hash}</span>
+                                <span className="tw-text-10 uppercase tw-tracking-16 text-muted-foreground/60">
                                     {commit.relativeTime}
                                 </span>
                             </div>
                             <div className={cn('mt-1 truncate text-xs font-medium text-foreground')}>
                                 {commit.message}
                             </div>
-                            <div className="mt-1 truncate text-[11px] text-muted-foreground">
+                            <div className="mt-1 truncate tw-text-11 text-muted-foreground">
                                 {commit.author}
                             </div>
                         </div>

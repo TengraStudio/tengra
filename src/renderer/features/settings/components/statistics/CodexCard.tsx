@@ -37,29 +37,29 @@ export const CodexCard: React.FC<CodexCardProps> = ({ codexUsage, locale = 'en-U
                                     {acc.email ?? t('statistics.codexAccount')}
                                 </div>
                                 {(acc.error || acc.isActive) && <StatusBadge status={status} text={statusText} />}
-                                {acc.error && <span className="text-[9px] text-destructive truncate ml-2">{acc.error}</span>}
+                                {acc.error && <span className="tw-text-9 text-destructive truncate ml-2">{acc.error}</span>}
                             </div>
 
                             {/* Limits */}
                             {!acc.error && usage && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6 pt-2">
                                     <div className="space-y-2">
-                                        <div className="flex items-center justify-between text-[10px] uppercase tracking-widest font-bold">
+                                        <div className="flex items-center justify-between tw-text-10 uppercase tracking-widest font-bold">
                                             <span className="text-muted-foreground truncate pr-2">{t('statistics.dailyStatus')}</span>
                                             <span className="text-foreground/80 tabular-nums shrink-0">{dailyRemaining}%</span>
                                         </div>
                                         <HorizontalProgressBar percentage={dailyRemaining} color={getQuotaColor(dailyRemaining)} />
-                                        <div className="text-[9px] font-medium text-muted-foreground/40 mt-1 uppercase tracking-widest">
+                                        <div className="tw-text-9 font-medium text-muted-foreground/40 mt-1 uppercase tracking-widest">
                                             {formatReset(usage.dailyResetAt, locale)}
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <div className="flex items-center justify-between text-[10px] uppercase tracking-widest font-bold">
+                                        <div className="flex items-center justify-between tw-text-10 uppercase tracking-widest font-bold">
                                             <span className="text-muted-foreground truncate pr-2">{t('statistics.weeklyStatus')}</span>
                                             <span className="text-foreground/80 tabular-nums shrink-0">{weeklyRemaining}%</span>
                                         </div>
                                         <HorizontalProgressBar percentage={weeklyRemaining} color={getQuotaColor(weeklyRemaining)} />
-                                        <div className="text-[9px] font-medium text-muted-foreground/40 mt-1 uppercase tracking-widest">
+                                        <div className="tw-text-9 font-medium text-muted-foreground/40 mt-1 uppercase tracking-widest">
                                             {formatReset(usage.weeklyResetAt, locale)}
                                         </div>
                                     </div>

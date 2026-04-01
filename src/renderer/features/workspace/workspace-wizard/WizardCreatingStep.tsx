@@ -14,7 +14,7 @@ export const WizardCreatingStep: React.FC = () => {
             </div>
             <div>
                 <h3 className="text-2xl font-light text-foreground">{t('workspaceWizard.creating')}</h3>
-                <p className="text-muted-foreground mt-2 max-w-[280px] mx-auto text-sm">
+                <p className="text-muted-foreground mt-2 max-tw-w-280 mx-auto text-sm">
                     {t('workspaceWizard.configuring')}
                 </p>
             </div>

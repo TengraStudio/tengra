@@ -46,6 +46,48 @@ const VoiceOverlay = lazy(() => import('@renderer/features/voice/components/Voic
 const DetachedTerminalWindow = lazy(() => import('@renderer/features/terminal/components/DetachedTerminalWindow').then(m => ({ default: m.DetachedTerminalWindow })));
 const OnboardingFlow = lazy(() => import('@renderer/features/onboarding/OnboardingFlow').then(m => ({ default: m.OnboardingFlow })));
 
+function useDeferredNonCriticalUi(): boolean {
+    const [isReady, setIsReady] = useState(false);
+
+    useEffect(() => {
+        let cancelled = false;
+        let timeoutId: number | null = null;
+        let frameId = 0;
+
+        const setReady = () => {
+            if (cancelled) {
+                return;
+            }
+            setIsReady(true);
+        };
+
+        frameId = window.requestAnimationFrame(() => {
+            const requestIdle = (window as Window & {
+                requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number
+            }).requestIdleCallback;
+            if (requestIdle) {
+                requestIdle(() => {
+                    setReady();
+                }, { timeout: 500 });
+            } else {
+                timeoutId = window.setTimeout(() => {
+                    setReady();
+                }, 120);
+            }
+        });
+
+        return () => {
+            cancelled = true;
+            window.cancelAnimationFrame(frameId);
+            if (timeoutId !== null) {
+                window.clearTimeout(timeoutId);
+            }
+        };
+    }, []);
+
+    return isReady;
+}
+
 const getChatTemplates = (t: (key: string) => string): ChatTemplate[] => [
     {
         id: 'code',
@@ -492,9 +534,10 @@ function MainApp() {
         setCurrentView,
     } = appState;
     const breakpoint = useBreakpoint();
-    const [settingsSearchQuery, setSettingsSearchQuery] = useState('');
+    const settingsSearchQuery = '';
 
     const [showOnboarding, setShowOnboarding] = useState(false);
+    const nonCriticalUiReady = useDeferredNonCriticalUi();
     const [showLanguagePrompt, setShowLanguagePrompt] = useState(() => {
         // Show prompt only on first run if language wasn't explicitly selected
         return !localStorage.getItem('app.languageSelected');
@@ -608,8 +651,6 @@ function MainApp() {
                                 <>
                                     <AppHeader
                                         currentView={appState.currentView}
-                                        settingsSearchQuery={settingsSearchQuery}
-                                        setSettingsSearchQuery={setSettingsSearchQuery}
                                     />
                                     <ErrorFallback
                                         error={error || new Error(t('errors.unexpected'))}
@@ -656,45 +697,51 @@ function MainApp() {
                     showSSHManager={appState.showSSHManager}
                     setShowSSHManager={appState.setShowSSHManager}
                 />
-                <VoiceActionsConnector
-                    setCurrentView={setCurrentView}
-                    addToast={toast => addToast(toast)}
-                />
                 <WindowAppCommandConnector
                     setShowSSHManager={appState.setShowSSHManager}
                 />
-                <SelectionPersistenceConnector />
-                <KeyboardShortcutsConnector
-                    showCommandPalette={appState.showCommandPalette}
-                    setShowCommandPalette={appState.setShowCommandPalette}
-                    showShortcuts={appState.showShortcuts}
-                    setShowShortcuts={appState.setShowShortcuts}
-                    showSSHManager={appState.showSSHManager}
-                    setShowSSHManager={appState.setShowSSHManager}
-                    setCurrentView={setCurrentView}
-                    onToggleSidebar={handleToggleSidebar}
-                />
-                <Suspense fallback={null}>
-                    <QuickActionBarConnector
-                        explainPrefix={t('quickAction.explainPrefix')}
-                        translatePrefix={t('quickAction.translatePrefix')}
-                        language={language}
-                    />
-                </Suspense>
-                <Suspense fallback={null}>
-                    <UpdateNotification />
-                </Suspense>
+                {nonCriticalUiReady && (
+                    <>
+                        <SelectionPersistenceConnector />
+                        <VoiceActionsConnector
+                            setCurrentView={setCurrentView}
+                            addToast={toast => addToast(toast)}
+                        />
+                        <KeyboardShortcutsConnector
+                            showCommandPalette={appState.showCommandPalette}
+                            setShowCommandPalette={appState.setShowCommandPalette}
+                            showShortcuts={appState.showShortcuts}
+                            setShowShortcuts={appState.setShowShortcuts}
+                            showSSHManager={appState.showSSHManager}
+                            setShowSSHManager={appState.setShowSSHManager}
+                            setCurrentView={setCurrentView}
+                            onToggleSidebar={handleToggleSidebar}
+                        />
+                        <Suspense fallback={null}>
+                            <QuickActionBarConnector
+                                explainPrefix={t('quickAction.explainPrefix')}
+                                translatePrefix={t('quickAction.translatePrefix')}
+                                language={language}
+                            />
+                        </Suspense>
+                        <Suspense fallback={null}>
+                            <UpdateNotification />
+                        </Suspense>
+                    </>
+                )}
                 <ToastsContainer toasts={appState.toasts} removeToast={appState.removeToast} />
-                <Suspense fallback={null}>
-                    <CommandPaletteConnector
-                        isOpen={appState.showCommandPalette}
-                        onClose={() => {
-                            appState.setShowCommandPalette(false);
-                        }}
-                        setCurrentView={setCurrentView}
-                        t={t}
-                    />
-                </Suspense>
+                {nonCriticalUiReady && (
+                    <Suspense fallback={null}>
+                        <CommandPaletteConnector
+                            isOpen={appState.showCommandPalette}
+                            onClose={() => {
+                                appState.setShowCommandPalette(false);
+                            }}
+                            setCurrentView={setCurrentView}
+                            t={t}
+                        />
+                    </Suspense>
+                )}
                 <div className="absolute inset-0 flex flex-col overflow-hidden">
                     <LayoutManager
                         isSidebarCollapsed={appState.isSidebarCollapsed}
@@ -711,8 +758,6 @@ function MainApp() {
                             <>
                                 <AppHeader
                                     currentView={appState.currentView}
-                                    settingsSearchQuery={settingsSearchQuery}
-                                    setSettingsSearchQuery={setSettingsSearchQuery}
                                 />
                                 <DragDropContent
                                     isDragging={appState.isDragging}
@@ -740,9 +785,11 @@ function MainApp() {
                     canUseBiometric={sessionTimeout.canUseBiometric}
                     onUnlock={sessionTimeout.unlock}
                 />
-                <Suspense fallback={null}>
-                    <VoiceOverlay />
-                </Suspense>
+                {nonCriticalUiReady && (
+                    <Suspense fallback={null}>
+                        <VoiceOverlay />
+                    </Suspense>
+                )}
             </div>
         </ErrorBoundary>
     );

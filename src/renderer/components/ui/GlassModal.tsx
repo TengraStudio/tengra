@@ -24,7 +24,7 @@ const SIZE_CLASSES: Record<ModalSize, string> = {
     md: 'max-w-md',
     lg: 'max-w-lg',
     xl: 'max-w-xl',
-    full: 'max-w-[90vw] max-h-[90vh]'
+    full: 'max-w-screen-lg max-h-screen'
 };
 
 function useEscapeKey(isOpen: boolean, closeOnEscape: boolean, onClose: () => void): void {
@@ -134,7 +134,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
                 className={cn(
                     'relative w-full glass rounded-2xl shadow-2xl',
                     'animate-in fade-in-0 zoom-in-95 duration-300',
-                    'border border-white/10',
+                    'border border-border/40',
                     SIZE_CLASSES[size],
                     className
                 )}
@@ -143,7 +143,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
                 <ModalHeader title={title} showClose={showClose} onClose={onClose} />
 
                 {/* Body */}
-                <div className="p-4 overflow-y-auto max-h-[70vh]">
+                <div className="p-4 overflow-y-auto max-h-screen">
                     {children}
                 </div>
             </div>
@@ -166,10 +166,10 @@ const ModalHeader: React.FC<ModalHeaderProps> = ({ title, showClose, onClose }) 
     if (!showHeader) { return null; }
 
     return (
-        <div className="flex items-center justify-between p-4 border-b border-white/10">
+        <div className="flex items-center justify-between p-4 border-b border-border/40">
             {title && <h2 id="modal-title" className="text-lg font-semibold gradient-text">{title}</h2>}
             {showClose && (
-                <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 transition-colors ripple" aria-label={t('modal.close')}>
+                <button onClick={onClose} className="p-2 rounded-lg hover:bg-muted/60 transition-colors ripple" aria-label={t('modal.close')}>
                     <X className="w-5 h-5" />
                 </button>
             )}

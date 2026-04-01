@@ -35,7 +35,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
     t,
 }) => {
     return (
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+        <div className="rounded-xl border border-border/40 bg-muted/30 p-4">
             <h5 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 <CalendarClock className="h-3.5 w-3.5" />
                 {t('settings.images.schedulesTitle')}
@@ -45,18 +45,18 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                     value={schedulePrompt}
                     onChange={event => setSchedulePrompt(event.target.value)}
                     placeholder={t('settings.images.schedulePrompt')}
-                    className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
+                    className="rounded-md border border-border/40 bg-background/40 px-2 py-1.5 text-xs"
                 />
                 <input
                     type="datetime-local"
                     value={scheduleAt}
                     onChange={event => setScheduleAt(event.target.value)}
-                    className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
+                    className="rounded-md border border-border/40 bg-background/40 px-2 py-1.5 text-xs"
                 />
                 <select
                     value={schedulePriority}
                     onChange={event => setSchedulePriority(event.target.value as 'low' | 'normal' | 'high')}
-                    className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
+                    className="rounded-md border border-border/40 bg-background/40 px-2 py-1.5 text-xs"
                 >
                     <option value="low">{t('settings.images.priorityLow')}</option>
                     <option value="normal">{t('settings.images.priorityNormal')}</option>
@@ -65,7 +65,7 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                 <select
                     value={scheduleResourceProfile}
                     onChange={event => setScheduleResourceProfile(event.target.value as 'balanced' | 'quality' | 'speed')}
-                    className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
+                    className="rounded-md border border-border/40 bg-background/40 px-2 py-1.5 text-xs"
                 >
                     <option value="balanced">{t('settings.images.resourceBalanced')}</option>
                     <option value="quality">{t('settings.images.resourceQuality')}</option>
@@ -74,17 +74,17 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
             </div>
             <button
                 onClick={() => { void handleCreateSchedule(); }}
-                className="mt-2 rounded-lg border border-primary/35 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary"
+                className="mt-2 rounded-lg border border-primary/35 px-2.5 py-1 tw-text-10 font-bold uppercase tracking-wider text-primary"
             >
                 {t('settings.images.scheduleCreate')}
             </button>
 
-            <div className="mt-3 rounded-lg border border-white/10 bg-black/10 p-2 text-[11px] text-muted-foreground">
+            <div className="mt-3 rounded-lg border border-border/40 bg-background/40 p-2 tw-text-11 text-muted-foreground">
                 <div className="font-semibold text-foreground/90">{t('settings.images.queueTitle')}</div>
                 <div>{t('settings.images.queueStatus')}: {queueStats.running ? t('settings.images.queueRunning') : t('settings.images.queueIdle')}</div>
                 <div>{queueStats.queued} {t('common.pending')}</div>
                 {queueStats.byPriority && (
-                    <div className="text-[10px]">
+                    <div className="tw-text-10">
                         {t('settings.images.queuePrioritySummary', {
                             high: queueStats.byPriority.high ?? 0,
                             normal: queueStats.byPriority.normal ?? 0,
@@ -99,17 +99,17 @@ export const ImageSettingsSchedules: React.FC<ImageSettingsSchedulesProps> = ({
                     <p className="text-xs text-muted-foreground">{t('settings.images.noSchedules')}</p>
                 ) : (
                     scheduleEntries.slice(0, 8).map(entry => (
-                        <div key={entry.id} className="flex items-center justify-between gap-2 rounded border border-white/10 bg-black/10 px-2 py-1 text-xs">
+                        <div key={entry.id} className="flex items-center justify-between gap-2 rounded border border-border/40 bg-background/40 px-2 py-1 text-xs">
                             <div className="min-w-0">
                                 <div className="truncate">{entry.options.prompt}</div>
-                                <div className="text-[10px] text-muted-foreground/80">
+                                <div className="tw-text-10 text-muted-foreground/80">
                                     {new Date(entry.runAt).toLocaleString(t('common.locale'))} • {entry.status} • {entry.priority} • {entry.resourceProfile}
                                 </div>
                             </div>
                             {entry.status === 'scheduled' && (
                                 <button
                                     onClick={() => { void handleCancelSchedule(entry.id); }}
-                                    className="rounded border border-white/15 px-2 py-0.5 text-[10px] text-muted-foreground"
+                                    className="rounded border border-border/50 px-2 py-0.5 tw-text-10 text-muted-foreground"
                                 >
                                     {t('settings.images.scheduleCancel')}
                                 </button>

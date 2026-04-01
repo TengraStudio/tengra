@@ -1,15 +1,8 @@
 import type {
     EntityKnowledge,
     EpisodicMemory,
-    IdeaProgress,
-    IdeaSession,
-    IdeaSessionConfig,
     IpcValue,
-    ResearchData,
-    ResearchProgress,
     SemanticFragment,
-    Workspace,
-    WorkspaceIdea,
 } from '@/shared/types';
 import type {
     AdvancedSemanticFragment,
@@ -24,10 +17,10 @@ import type {
 
 export interface ElectronApiModelsMemoryDomain {
     modelDownloader: {
-        start: (request: Record<string, RendererDataValue>) => Promise<RendererDataValue>;
-        pause: (downloadId: string) => Promise<RendererDataValue>;
-        resume: (downloadId: string) => Promise<RendererDataValue>;
-        cancel: (downloadId: string) => Promise<RendererDataValue>;
+        start: (request: Record<string, IpcValue>) => Promise<IpcValue>;
+        pause: (downloadId: string) => Promise<IpcValue>;
+        resume: (downloadId: string) => Promise<IpcValue>;
+        cancel: (downloadId: string) => Promise<IpcValue>;
     };
 
     // llama.cpp
@@ -116,15 +109,15 @@ export interface ElectronApiModelsMemoryDomain {
             steps: number;
             cfgScale: number;
             provider?: 'antigravity' | 'ollama' | 'sd-webui' | 'comfyui' | 'sd-cpp';
-        }) => Promise<RendererDataValue>;
+        }) => Promise<IpcValue>;
         deletePreset: (id: string) => Promise<boolean>;
         exportPresetShare: (id: string) => Promise<string>;
-        importPresetShare: (code: string) => Promise<RendererDataValue>;
+        importPresetShare: (code: string) => Promise<IpcValue>;
         listWorkflowTemplates: () => Promise<Array<{
             id: string;
             name: string;
             description?: string;
-            workflow: Record<string, RendererDataValue>;
+            workflow: Record<string, IpcValue>;
             createdAt: number;
             updatedAt: number;
         }>>;
@@ -132,11 +125,11 @@ export interface ElectronApiModelsMemoryDomain {
             id?: string;
             name: string;
             description?: string;
-            workflow: Record<string, RendererDataValue>;
-        }) => Promise<RendererDataValue>;
+            workflow: Record<string, IpcValue>;
+        }) => Promise<IpcValue>;
         deleteWorkflowTemplate: (id: string) => Promise<boolean>;
         exportWorkflowTemplateShare: (id: string) => Promise<string>;
-        importWorkflowTemplateShare: (code: string) => Promise<RendererDataValue>;
+        importWorkflowTemplateShare: (code: string) => Promise<IpcValue>;
         schedule: (payload: {
             runAt: number;
             priority?: 'low' | 'normal' | 'high';
@@ -151,23 +144,18 @@ export interface ElectronApiModelsMemoryDomain {
                 seed?: number;
                 count?: number;
             };
-        }) => Promise<RendererDataValue>;
-        listSchedules: () => Promise<RendererDataValue[]>;
+        }) => Promise<IpcValue>;
+        listSchedules: () => Promise<IpcValue[]>;
         cancelSchedule: (id: string) => Promise<boolean>;
-        compare: (ids: string[]) => Promise<RendererDataValue>;
+        compare: (ids: string[]) => Promise<IpcValue>;
         exportComparison: (payload: { ids: string[]; format?: 'json' | 'csv' }) => Promise<string>;
         shareComparison: (ids: string[]) => Promise<string>;
         batchGenerate: (requests: Array<{
             prompt: string;
             negativePrompt?: string;
             width?: number;
-            height?: number;
-            steps?: number;
-            cfgScale?: number;
-            seed?: number;
-            count?: number;
-        }>) => Promise<string[]>;
-        getQueueStats: () => Promise<{ queued: number; running: boolean; byPriority?: Record<string, number> }>;
+            steps: number;
+        }>) => Promise<IpcValue[]>;
         searchHistory: (query: string, limit?: number) => Promise<Array<{
             id: string;
             provider: string;
@@ -183,6 +171,11 @@ export interface ElectronApiModelsMemoryDomain {
             source?: string;
         }>>;
         exportHistory: (format?: 'json' | 'csv') => Promise<string>;
+        getQueueStats: () => Promise<{
+            queued: number;
+            running: boolean;
+            byPriority: Record<string, number>;
+        }>;
         edit: (options: {
             sourceImage: string;
             mode: 'img2img' | 'inpaint' | 'outpaint' | 'style-transfer';
@@ -193,7 +186,10 @@ export interface ElectronApiModelsMemoryDomain {
             height?: number;
             maskImage?: string;
         }) => Promise<string>;
+        onSdCppStatus: (callback: (data: IpcValue) => void) => () => void;
+        onSdCppProgress: (callback: (data: IpcValue) => void) => () => void;
     };
+
     huggingface: {
         searchModels: (
             query: string,
@@ -201,7 +197,7 @@ export interface ElectronApiModelsMemoryDomain {
             page: number,
             sort: string
         ) => Promise<{
-            models: {
+            models: Array<{
                 id: string;
                 name: string;
                 author: string;
@@ -210,7 +206,7 @@ export interface ElectronApiModelsMemoryDomain {
                 likes: number;
                 tags: string[];
                 lastModified: string;
-            }[];
+            }>;
             total: number;
         }>;
         getRecommendations: (
@@ -231,8 +227,8 @@ export interface ElectronApiModelsMemoryDomain {
         getFiles: (
             modelId: string
         ) => Promise<{ path: string; size: number; oid: string; quantization: string }[]>;
-        getModelPreview: (modelId: string) => Promise<RendererDataValue>;
-        compareModels: (modelIds: string[]) => Promise<RendererDataValue>;
+        getModelPreview: (modelId: string) => Promise<IpcValue>;
+        compareModels: (modelIds: string[]) => Promise<IpcValue>;
         validateCompatibility: (
             file: { path: string; size: number; oid?: string; quantization: string },
             availableRamGB?: number,
@@ -297,8 +293,8 @@ export interface ElectronApiModelsMemoryDomain {
             pinned?: boolean;
             metadata?: { architecture?: string; contextLength?: number };
         }>>;
-        registerModelVersion: (modelId: string, filePath: string, notes?: string) => Promise<RendererDataValue>;
-        compareModelVersions: (modelId: string, leftVersionId: string, rightVersionId: string) => Promise<RendererDataValue>;
+        registerModelVersion: (modelId: string, filePath: string, notes?: string) => Promise<IpcValue>;
+        compareModelVersions: (modelId: string, leftVersionId: string, rightVersionId: string) => Promise<IpcValue>;
         rollbackModelVersion: (modelId: string, versionId: string, targetPath: string) => Promise<{ success: boolean; error?: string }>;
         pinModelVersion: (modelId: string, versionId: string, pinned: boolean) => Promise<{ success: boolean }>;
         getVersionNotifications: (modelId: string) => Promise<string[]>;
@@ -313,13 +309,13 @@ export interface ElectronApiModelsMemoryDomain {
             datasetPath: string,
             outputPath: string,
             options?: { epochs?: number; learningRate?: number }
-        ) => Promise<RendererDataValue>;
-        listFineTuneJobs: (modelId?: string) => Promise<RendererDataValue[]>;
-        getFineTuneJob: (jobId: string) => Promise<RendererDataValue>;
+        ) => Promise<IpcValue>;
+        listFineTuneJobs: (modelId?: string) => Promise<IpcValue[]>;
+        getFineTuneJob: (jobId: string) => Promise<IpcValue>;
         cancelFineTuneJob: (jobId: string) => Promise<{ success: boolean }>;
-        evaluateFineTuneJob: (jobId: string) => Promise<RendererDataValue>;
+        evaluateFineTuneJob: (jobId: string) => Promise<IpcValue>;
         exportFineTunedModel: (jobId: string, exportPath: string) => Promise<{ success: boolean; error?: string }>;
-        onFineTuneProgress: (callback: (job: RendererDataValue) => void) => () => void;
+        onFineTuneProgress: (callback: (job: IpcValue) => void) => () => void;
         downloadFile: (
             url: string,
             outputPath: string,
@@ -347,80 +343,6 @@ export interface ElectronApiModelsMemoryDomain {
             skipped: number;
             errors: string[];
         }>;
-    };
-
-    // Ideas feature
-    ideas: {
-        createSession: (config: IdeaSessionConfig) => Promise<IdeaSession>;
-        getSession: (id: string) => Promise<IdeaSession | null>;
-        getSessions: () => Promise<IdeaSession[]>;
-        cancelSession: (id: string) => Promise<{ success: boolean }>;
-        generateMarketPreview: (categories: IdeaCategory[]) => Promise<{
-            success: boolean;
-            data?: Array<{
-                category: IdeaCategory;
-                summary: string;
-                keyTrends: string[];
-                marketSize: string;
-                competition: string;
-            }>;
-        }>;
-        startResearch: (sessionId: string) => Promise<{ success: boolean; data?: ResearchData }>;
-        startGeneration: (sessionId: string) => Promise<{ success: boolean }>;
-        enrichIdea: (ideaId: string) => Promise<{ success: boolean; data?: WorkspaceIdea }>;
-        getIdea: (id: string) => Promise<WorkspaceIdea | null>;
-        getIdeas: (sessionId?: string) => Promise<WorkspaceIdea[]>;
-        regenerateIdea: (ideaId: string) => Promise<{ success: boolean; idea?: WorkspaceIdea }>;
-        approveIdea: (
-            ideaId: string,
-            workspacePath: string,
-            selectedName?: string
-        ) => Promise<{ success: boolean; workspace?: Workspace }>;
-        rejectIdea: (ideaId: string) => Promise<{ success: boolean }>;
-        canGenerateLogo: () => Promise<boolean>;
-        generateLogo: (
-            ideaId: string,
-            options: { prompt: string; style: string; model: string; count: number }
-        ) => Promise<{ success: boolean; logoPaths?: string[] }>;
-        queryResearch: (
-            ideaId: string,
-            question: string
-        ) => Promise<{ success: boolean; answer: string }>;
-        // Deep research handlers
-        deepResearch: (
-            topic: string,
-            category: string
-        ) => Promise<{ success: boolean; report?: IpcValue }>;
-        validateIdea: (
-            title: string,
-            description: string,
-            category: string
-        ) => Promise<{ success: boolean; validation?: IpcValue }>;
-        clearResearchCache: () => Promise<{ success: boolean }>;
-        // Scoring handlers
-        scoreIdea: (ideaId: string) => Promise<{ success: boolean; score?: IpcValue }>;
-        rankIdeas: (ideaIds: string[]) => Promise<{ success: boolean; ranked?: IpcValue[] }>;
-        compareIdeas: (
-            ideaId1: string,
-            ideaId2: string
-        ) => Promise<{ success: boolean; comparison?: IpcValue }>;
-        quickScore: (
-            title: string,
-            description: string,
-            category: string
-        ) => Promise<{ success: boolean; score?: number }>;
-        // Data management handlers
-        deleteIdea: (ideaId: string) => Promise<{ success: boolean }>;
-        deleteSession: (sessionId: string) => Promise<{ success: boolean }>;
-        archiveIdea: (ideaId: string) => Promise<{ success: boolean }>;
-        restoreIdea: (ideaId: string) => Promise<{ success: boolean }>;
-        getArchivedIdeas: (sessionId?: string) => Promise<WorkspaceIdea[]>;
-        // Progress events
-        onResearchProgress: (callback: (progress: ResearchProgress) => void) => () => void;
-        onIdeaProgress: (callback: (progress: IdeaProgress) => void) => () => void;
-        onDeepResearchProgress: (
-            callback: (progress: { stage: string; progress: number }) => void
-        ) => () => void;
     };
 
     memory: {

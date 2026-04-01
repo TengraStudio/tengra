@@ -117,12 +117,12 @@ export const AntigravityCard: React.FC<AntigravityCardProps> = ({
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6 pt-2">
                                     {models.map((m: ModelQuotaItem) => (
                                         <div key={m.id} className="space-y-2">
-                                            <div className="flex items-center justify-between text-[10px] uppercase tracking-widest font-bold">
+                                            <div className="flex items-center justify-between tw-text-10 uppercase tracking-widest font-bold">
                                                 <span className="text-muted-foreground truncate pr-2">{m.name || m.id}</span>
                                                 <span className="text-foreground/80 tabular-nums shrink-0">{Math.round(m.percentage || 0)}%</span>
                                             </div>
                                             <HorizontalProgressBar percentage={m.percentage || 0} color={getQuotaColor(m.percentage || 0)} />
-                                            <div className="text-[9px] font-medium text-muted-foreground/40 mt-1 uppercase tracking-widest">
+                                            <div className="tw-text-9 font-medium text-muted-foreground/40 mt-1 uppercase tracking-widest">
                                                 {formatReset(m.reset, locale)}
                                             </div>
                                         </div>

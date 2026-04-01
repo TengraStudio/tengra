@@ -38,15 +38,15 @@ const MemoryNode = ({ data }: { data: { label: string; category: MemoryCategory;
             case 'workspace': return 'border-success text-success bg-success/10';
             case 'technical': return 'border-primary text-primary bg-primary/10';
             case 'workflow': return 'border-warning text-warning bg-warning/10';
-            default: return 'border-muted text-muted-foreground bg-white/5';
+            default: return 'border-muted text-muted-foreground bg-muted/20';
         }
     };
 
     return (
-        <div className={`px-4 py-2 rounded-xl border-2 shadow-xl backdrop-blur-md min-w-[150px] transition-all hover:scale-105 ${getCategoryColor(data.category)}`}>
-            <div className="text-[10px] uppercase font-bold opacity-70 mb-1">{data.category}</div>
+        <div className={`px-4 py-2 rounded-xl border-2 shadow-xl backdrop-blur-md min-w-36 transition-all hover:scale-105 ${getCategoryColor(data.category)}`}>
+            <div className="text-xs uppercase font-bold opacity-70 mb-1">{data.category}</div>
             <div className="text-sm font-medium line-clamp-2 leading-tight">{data.label}</div>
-            <div className="mt-2 h-1 w-full bg-white/10 rounded-full overflow-hidden">
+            <div className="mt-2 h-1 w-full bg-muted/40 rounded-full overflow-hidden">
                 <div
                     className="h-full bg-current opacity-50 transition-all duration-1000"
                     style={{ width: `${data.importance * 100}%` }}
@@ -152,8 +152,8 @@ export const MemoryGraphView: React.FC = () => {
                     target: relatedId,
                     label: t('memory.graphEdgeRelated'),
                     animated: true,
-                    style: { stroke: 'rgba(255,255,255,0.2)' },
-                    labelStyle: { fill: 'rgba(255,255,255,0.4)', fontSize: 8 },
+                     style: { stroke: 'hsl(var(--border))' },
+                     labelStyle: { fill: 'hsl(var(--muted-foreground))', fontSize: 8 },
                 });
             });
 
@@ -166,9 +166,9 @@ export const MemoryGraphView: React.FC = () => {
                     source: memory.id,
                     target: contradictId,
                     label: t('memory.graphEdgeContradicts'),
-                    style: { stroke: '#ef4444', strokeWidth: 2 },
-                    labelStyle: { fill: '#ef4444', fontSize: 8 },
-                    markerEnd: { type: MarkerType.ArrowClosed, color: '#ef4444' },
+                     style: { stroke: 'hsl(var(--destructive))', strokeWidth: 2 },
+                     labelStyle: { fill: 'hsl(var(--destructive))', fontSize: 8 },
+                     markerEnd: { type: MarkerType.ArrowClosed, color: 'hsl(var(--destructive))' },
                 });
             });
         });
@@ -178,7 +178,7 @@ export const MemoryGraphView: React.FC = () => {
     }, [filteredMemories, setEdges, setNodes, t]);
 
     return (
-        <div className="w-full h-full flex flex-col bg-background relative overflow-hidden rounded-2xl border border-white/5 shadow-2xl">
+        <div className="w-full h-full flex flex-col bg-background relative overflow-hidden rounded-2xl border border-border/30 shadow-2xl">
             {loading && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm">
                     <div className="flex flex-col items-center gap-4">
@@ -200,10 +200,10 @@ export const MemoryGraphView: React.FC = () => {
                     fitView
                     colorMode="dark"
                 >
-                    <Background color="rgba(255,255,255,0.05)" gap={20} size={1} />
-                    <Controls className="bg-background/80 border-white/10 backdrop-blur-xl rounded-xl overflow-hidden" />
+                    <Background color="hsl(var(--border))" gap={20} size={1} />
+                    <Controls className="bg-background/80 border-border/40 backdrop-blur-xl rounded-xl overflow-hidden" />
                     <MiniMap
-                        style={{ backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: '12px' }}
+                        style={{ backgroundColor: 'hsl(var(--muted) / 0.5)', borderRadius: '12px' }}
                         nodeColor={(n) => {
                             if (n.type === 'memory') {
                                 return '#6366f1';
@@ -213,13 +213,13 @@ export const MemoryGraphView: React.FC = () => {
                     />
 
                     <Panel position="top-left" className="m-4">
-                        <div className="flex items-center gap-3 bg-background/80 backdrop-blur-xl p-2 rounded-2xl border border-white/10 shadow-xl">
+                        <div className="flex items-center gap-3 bg-background/80 backdrop-blur-xl p-2 rounded-2xl border border-border/40 shadow-xl">
                             <div className="p-2 bg-primary/20 rounded-xl text-primary">
                                 <Network className="w-5 h-5" />
                             </div>
                             <div>
                                 <h2 className="text-sm font-bold">{t('memory.graphView')}</h2>
-                                <p className="text-[10px] text-muted-foreground">
+                                <p className="text-xs text-muted-foreground">
                                     {t('memory.graphStats', { nodes: nodes.length, edges: edges.length })}
                                 </p>
                             </div>
@@ -230,7 +230,7 @@ export const MemoryGraphView: React.FC = () => {
                         <div className="flex flex-col gap-2">
                             <button
                                 onClick={() => void loadData()}
-                                className="p-2.5 bg-background/80 backdrop-blur-xl hover:bg-white/10 rounded-xl border border-white/10 transition-all text-muted-foreground hover:text-foreground shadow-lg"
+                                className="p-2.5 bg-background/80 backdrop-blur-xl hover:bg-muted/40 rounded-xl border border-border/40 transition-all text-muted-foreground hover:text-foreground shadow-lg"
                                 title={t('memory.refreshTitle')}
                             >
                                 <RotateCcw className="w-4 h-4" />
@@ -238,8 +238,8 @@ export const MemoryGraphView: React.FC = () => {
                         </div>
                     </Panel>
 
-                    <Panel position="top-center" className="m-4 w-[420px] max-w-[90vw]">
-                        <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-background/80 p-2 backdrop-blur-xl">
+                    <Panel position="top-center" className="m-4 w-full max-w-md">
+                        <div className="flex items-center gap-2 rounded-xl border border-border/40 bg-background/80 p-2 backdrop-blur-xl">
                             <Input
                                 value={searchQuery}
                                 onChange={event => setSearchQuery(event.target.value)}
@@ -252,7 +252,7 @@ export const MemoryGraphView: React.FC = () => {
                                     value === 'all' ? 'all' : coerceMemoryCategory(value)
                                 )}
                             >
-                                <SelectTrigger className="h-8 w-[140px] bg-transparent">
+                                <SelectTrigger className="h-8 w-36 bg-transparent">
                                     <SelectValue placeholder={t('memory.allCategories')} />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -271,7 +271,7 @@ export const MemoryGraphView: React.FC = () => {
 
             {!loading && nodes.length === 0 && (
                 <div className="absolute inset-0 flex items-center justify-center bg-background/40 backdrop-blur-sm">
-                    <p className="rounded-lg border border-white/10 bg-background/80 px-4 py-2 text-sm text-muted-foreground">
+                    <p className="rounded-lg border border-border/40 bg-background/80 px-4 py-2 text-sm text-muted-foreground">
                         {t('memory.emptyState')}
                     </p>
                 </div>

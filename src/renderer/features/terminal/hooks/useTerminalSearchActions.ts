@@ -31,8 +31,7 @@ interface UseTerminalSearchActionsParams {
     setIsGalleryView: (open: boolean) => void;
     setIsSemanticPanelOpen: (open: boolean) => void;
     setIsCommandHistoryOpen: (open: boolean) => void;
-    setIsTaskRunnerOpen: (open: boolean) => void;
-    setIsMultiplexerOpen: (open: boolean) => void;
+    setIsTaskRunnerOpen: (open: boolean) => void; 
     setIsRecordingPanelOpen: (open: boolean) => void;
     setTerminalContextMenu: (menu: { x: number; y: number } | null) => void;
 }
@@ -58,8 +57,7 @@ export function useTerminalSearchActions({
     setIsGalleryView,
     setIsSemanticPanelOpen,
     setIsCommandHistoryOpen,
-    setIsTaskRunnerOpen,
-    setIsMultiplexerOpen,
+    setIsTaskRunnerOpen, 
     setIsRecordingPanelOpen,
     setTerminalContextMenu,
 }: UseTerminalSearchActionsParams) {
@@ -240,8 +238,7 @@ export function useTerminalSearchActions({
         setIsGalleryView(false);
         setIsSemanticPanelOpen(false);
         setIsCommandHistoryOpen(false);
-        setIsTaskRunnerOpen(false);
-        setIsMultiplexerOpen(false);
+        setIsTaskRunnerOpen(false); 
         setIsRecordingPanelOpen(false);
         setIsSearchOpen(true);
         setSearchStatus('idle');
@@ -249,7 +246,7 @@ export function useTerminalSearchActions({
         setSearchActiveMatchIndex(-1);
         setSearchHistoryIndex(-1);
         resetActiveSearchCursor();
-    }, [hasActiveSession, resetActiveSearchCursor, setIsCommandHistoryOpen, setIsTaskRunnerOpen, setTerminalContextMenu, setIsGalleryView, setIsSemanticPanelOpen, setIsMultiplexerOpen, setIsRecordingPanelOpen, setIsSearchOpen, setSearchStatus, setSearchMatches, setSearchActiveMatchIndex, setSearchHistoryIndex]);
+    }, [hasActiveSession, resetActiveSearchCursor, setIsCommandHistoryOpen, setIsTaskRunnerOpen, setTerminalContextMenu, setIsGalleryView, setIsSemanticPanelOpen, setIsRecordingPanelOpen, setIsSearchOpen, setSearchStatus, setSearchMatches, setSearchActiveMatchIndex, setSearchHistoryIndex]);
 
     const closeTerminalSearch = useCallback(() => {
         setIsSearchOpen(false);

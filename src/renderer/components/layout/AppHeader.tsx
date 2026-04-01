@@ -79,7 +79,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                         </button>
                     )}
 
-                    <div className="h-4 w-[1px] bg-border/50 mx-2" />
+                    <div className="h-4 w-px bg-border/50 mx-2" />
 
                     <div className="flex items-center gap-1">
                         <button

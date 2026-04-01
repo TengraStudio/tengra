@@ -33,7 +33,7 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
     t,
 }) => {
     return (
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+        <div className="rounded-xl border border-border/40 bg-muted/30 p-4">
             <h5 className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 {t('settings.images.presetsTitle')}
             </h5>
@@ -42,18 +42,18 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                     value={presetName}
                     onChange={event => setPresetName(event.target.value)}
                     placeholder={t('settings.images.presetName')}
-                    className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
+                    className="rounded-md border border-border/40 bg-background/40 px-2 py-1.5 text-xs"
                 />
                 <input
                     value={presetPromptPrefix}
                     onChange={event => setPresetPromptPrefix(event.target.value)}
                     placeholder={t('settings.images.promptPrefix')}
-                    className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
+                    className="rounded-md border border-border/40 bg-background/40 px-2 py-1.5 text-xs"
                 />
             </div>
             <button
                 onClick={() => { void handleSavePreset(); }}
-                className="mt-2 rounded-lg border border-primary/35 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary"
+                className="mt-2 rounded-lg border border-primary/35 px-2.5 py-1 tw-text-10 font-bold uppercase tracking-wider text-primary"
             >
                 {t('settings.images.savePreset')}
             </button>
@@ -62,12 +62,12 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                     <p className="text-xs text-muted-foreground">{t('settings.images.noPresets')}</p>
                 ) : (
                     presetEntries.map(preset => (
-                        <div key={preset.id} className="flex items-center justify-between rounded border border-white/10 bg-black/10 px-2 py-1 text-xs">
+                        <div key={preset.id} className="flex items-center justify-between rounded border border-border/40 bg-background/40 px-2 py-1 text-xs">
                             <span className="truncate">{preset.name}</span>
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={() => { void handleExportPresetShare(preset.id); }}
-                                    className="rounded border border-white/15 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                                    className="rounded border border-border/50 px-1.5 py-0.5 tw-text-10 text-muted-foreground"
                                 >
                                     {t('settings.images.exportPreset')}
                                 </button>
@@ -79,16 +79,16 @@ export const ImageSettingsPresets: React.FC<ImageSettingsPresetsProps> = ({
                     ))
                 )}
             </div>
-            <div className="mt-3 rounded-lg border border-white/10 bg-black/10 p-2">
+            <div className="mt-3 rounded-lg border border-border/40 bg-background/40 p-2">
                 <textarea
                     value={presetShareCode}
                     onChange={event => setPresetShareCode(event.target.value)}
                     placeholder={t('settings.images.presetShareCodePlaceholder')}
-                    className="min-h-[58px] w-full rounded-md border border-white/10 bg-black/10 px-2 py-1.5 font-mono text-[10px]"
+                    className="tw-min-h-58 w-full rounded-md border border-border/40 bg-background/40 px-2 py-1.5 font-mono tw-text-10"
                 />
                 <button
                     onClick={() => { void handleImportPresetShare(); }}
-                    className="mt-2 rounded-lg border border-primary/35 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary"
+                    className="mt-2 rounded-lg border border-primary/35 px-2.5 py-1 tw-text-10 font-bold uppercase tracking-wider text-primary"
                 >
                     {t('settings.images.importPresetShare')}
                 </button>

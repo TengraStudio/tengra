@@ -236,7 +236,7 @@ export const EditorSection: React.FC<SettingsSectionProps> = ({ formData, setFor
                 }
                 rows={12}
                 spellCheck={false}
-                className={`${inputClassName} min-h-[240px] resize-y font-mono text-sm`}
+                className={`${inputClassName} min-tw-h-240 resize-y font-mono text-sm`}
                 placeholder="{}"
             />
         </div>

@@ -65,8 +65,8 @@ export const AttachmentList = memo(({ attachments, onRemove, t }: AttachmentList
                                 {getFileIcon(att.type)}
                             </span>
                         )}
-                        <span className="truncate max-w-[150px]">{att.name}</span>
-                        <span className="text-neutral text-xxs">
+                        <span className="truncate max-w-36">{att.name}</span>
+                        <span className="text-muted-foreground text-xxs">
                             ({(att.size / 1024).toFixed(1)} {t('common.kb')})
                         </span>
                         <button

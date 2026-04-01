@@ -112,14 +112,14 @@ export function TerminalSplitView({
                 })}
             {isGalleryView && tabs.length > 0 && (
                 <div className="absolute inset-0 p-2 overflow-auto">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 auto-rows-[260px]">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 tw-auto-rows-260">
                         {tabs.map(tab => (
                             <div
                                 key={tab.id}
                                 className={cn(
                                     'relative rounded-lg border overflow-hidden bg-background/70',
                                     activeTabId === tab.id
-                                        ? 'border-primary/60 shadow-[0_0_0_1px_hsl(var(--primary)/0.35)]'
+                                        ? 'border-primary/60 tw-shadow-primary-outline'
                                         : 'border-border/70'
                                 )}
                                 onMouseDown={() => {
@@ -131,7 +131,7 @@ export function TerminalSplitView({
                                 }}
                             >
                                 <div className="absolute top-0 inset-x-0 z-10 h-7 flex items-center justify-between px-2 bg-background/80 border-b border-border/70 backdrop-blur">
-                                    <div className="text-[11px] truncate text-foreground/90">
+                                    <div className="tw-text-11 truncate text-foreground/90">
                                         {tab.name}
                                     </div>
                                     {resolveTerminalTabMetadata(tab).closable !== false && (

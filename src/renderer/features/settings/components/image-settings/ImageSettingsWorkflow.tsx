@@ -33,7 +33,7 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
     t,
 }) => {
     return (
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+        <div className="rounded-xl border border-border/40 bg-muted/30 p-4">
             <h5 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 <Workflow className="h-3.5 w-3.5" />
                 {t('settings.images.workflowTitle')}
@@ -42,17 +42,17 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
                 value={workflowTemplateName}
                 onChange={event => setWorkflowTemplateName(event.target.value)}
                 placeholder={t('settings.images.workflowTemplateName')}
-                className="mb-2 w-full rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
+                className="mb-2 w-full rounded-md border border-border/40 bg-background/40 px-2 py-1.5 text-xs"
             />
             <textarea
                 value={workflowTemplateJson}
                 onChange={event => setWorkflowTemplateJson(event.target.value)}
                 placeholder={t('settings.images.workflowTemplateJson')}
-                className="min-h-[100px] w-full rounded-md border border-white/10 bg-black/10 px-2 py-1.5 font-mono text-[11px]"
+                className="tw-min-h-100 w-full rounded-md border border-border/40 bg-background/40 px-2 py-1.5 font-mono tw-text-11"
             />
             <button
                 onClick={() => { void handleSaveWorkflowTemplate(); }}
-                className="mt-2 rounded-lg border border-primary/35 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary"
+                className="mt-2 rounded-lg border border-primary/35 px-2.5 py-1 tw-text-10 font-bold uppercase tracking-wider text-primary"
             >
                 {t('settings.images.saveWorkflowTemplate')}
             </button>
@@ -62,7 +62,7 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
                     <p className="text-xs text-muted-foreground">{t('settings.images.noWorkflowTemplates')}</p>
                 ) : (
                     workflowTemplates.slice(0, 6).map(template => (
-                        <div key={template.id} className="flex items-center justify-between gap-2 rounded border border-white/10 bg-black/10 px-2 py-1 text-xs">
+                        <div key={template.id} className="flex items-center justify-between gap-2 rounded border border-border/40 bg-background/40 px-2 py-1 text-xs">
                             <button
                                 onClick={() => {
                                     setWorkflowTemplateName(template.name);
@@ -75,14 +75,14 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
                             <div className="flex items-center gap-1">
                                 <button
                                     onClick={() => { void handleExportWorkflowTemplateShare(template.id); }}
-                                    className="rounded border border-white/15 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                                    className="rounded border border-border/50 px-1.5 py-0.5 tw-text-10 text-muted-foreground"
                                     title={t('settings.images.exportWorkflowTemplate')}
                                 >
                                     <Share2 className="h-3 w-3" />
                                 </button>
                                 <button
                                     onClick={() => { void handleDeleteWorkflowTemplate(template.id); }}
-                                    className="rounded border border-white/15 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                                    className="rounded border border-border/50 px-1.5 py-0.5 tw-text-10 text-muted-foreground"
                                 >
                                     {t('common.delete')}
                                 </button>
@@ -92,19 +92,19 @@ export const ImageSettingsWorkflow: React.FC<ImageSettingsWorkflowProps> = ({
                 )}
             </div>
 
-            <div className="mt-3 rounded-lg border border-white/10 bg-black/10 p-2">
-                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <div className="mt-3 rounded-lg border border-border/40 bg-background/40 p-2">
+                <div className="mb-1 tw-text-10 font-semibold uppercase tracking-wider text-muted-foreground">
                     {t('settings.images.workflowShareCode')}
                 </div>
                 <textarea
                     value={workflowShareCode}
                     onChange={event => setWorkflowShareCode(event.target.value)}
                     placeholder={t('settings.images.workflowShareCodePlaceholder')}
-                    className="min-h-[60px] w-full rounded-md border border-white/10 bg-black/10 px-2 py-1.5 font-mono text-[10px]"
+                    className="tw-min-h-60 w-full rounded-md border border-border/40 bg-background/40 px-2 py-1.5 font-mono tw-text-10"
                 />
                 <button
                     onClick={() => { void handleImportWorkflowTemplateShare(); }}
-                    className="mt-2 rounded-lg border border-primary/35 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary"
+                    className="mt-2 rounded-lg border border-primary/35 px-2.5 py-1 tw-text-10 font-bold uppercase tracking-wider text-primary"
                 >
                     {t('settings.images.importWorkflowTemplateShare')}
                 </button>

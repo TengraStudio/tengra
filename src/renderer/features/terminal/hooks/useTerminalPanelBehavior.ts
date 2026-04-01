@@ -20,8 +20,7 @@ export function useTerminalPanelBehavior(core: TerminalPanelCoreResult) {
         setDragOverTabId,
         setIsGalleryView,
         setIsSearchOpen,
-        setIsSemanticPanelOpen,
-        setIsMultiplexerOpen,
+        setIsSemanticPanelOpen, 
         setIsRecordingPanelOpen,
         semanticIssuesByTab,
         splitLayout, backends, recording, tabActions,
@@ -81,8 +80,7 @@ export function useTerminalPanelBehavior(core: TerminalPanelCoreResult) {
                 setIsSearchOpen(false);
                 setIsSemanticPanelOpen(false);
                 core.commandTools.setIsCommandHistoryOpen(false);
-                core.commandTools.setIsTaskRunnerOpen(false);
-                setIsMultiplexerOpen(false);
+                core.commandTools.setIsTaskRunnerOpen(false); 
                 setIsRecordingPanelOpen(false);
                 return;
             }
@@ -116,8 +114,7 @@ export function useTerminalPanelBehavior(core: TerminalPanelCoreResult) {
             splitView,
             setIsGalleryView,
             setIsSearchOpen,
-            setIsSemanticPanelOpen,
-            setIsMultiplexerOpen,
+            setIsSemanticPanelOpen, 
             setIsRecordingPanelOpen,
         ]
     );

@@ -103,7 +103,7 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
     };
 
     return (
-        <div className="flex bg-background overflow-x-auto border-b border-white/5 scrollbar-none">
+        <div className="flex bg-background overflow-x-auto border-b border-border/30 scrollbar-none">
             {orderedTabs.map(tab => {
                 const isActive = tab.id === activeTabId;
                 const isDirty = tab.content !== tab.savedContent;
@@ -116,7 +116,7 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                             setContextMenu({ tabId: tab.id, x: event.clientX, y: event.clientY });
                         }}
                         className={cn(
-                            'group flex items-center gap-2 px-3 py-2 text-xs border-r border-white/5 transition-all min-w-[120px] max-w-[200px]',
+                            'group flex items-center gap-2 px-3 py-2 text-xs border-r border-border/30 transition-all tw-min-w-120 tw-max-w-200',
                             isActive
                                 ? 'bg-muted text-success border-t-2 border-t-emerald-500'
                                 : 'text-muted-foreground hover:bg-muted/50 hover:text-muted-foreground border-t-2 border-t-transparent'
@@ -137,7 +137,7 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
                                 }
                                 closeTab(tab.id);
                             }}
-                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded-sm hover:bg-white/10 text-muted-foreground hover:text-foreground"
+                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded-sm hover:bg-muted/60 text-muted-foreground hover:text-foreground"
                         >
                             <X className="w-3 h-3" />
                         </span>

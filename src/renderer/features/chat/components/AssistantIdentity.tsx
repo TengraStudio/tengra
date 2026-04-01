@@ -26,19 +26,19 @@ type ModelKey = 'llama' | 'mistral' | 'deepseek' | 'qwen' | 'phi';
 
 const PROVIDER_CONFIGS: Record<ProviderKey, BrandConfig> = {
     openai: { bgClass: 'bg-success/10', borderClass: 'border-success/10', titleKey: 'assistantIdentity.openai', content: (label) => <img src={LogoOpenAI} className="w-full h-full opacity-70" alt={label} /> },
-    anthropic: { bgClass: 'bg-warning/10', borderClass: 'border-orange/10', titleKey: 'assistantIdentity.anthropic', content: (label) => <img src={LogoClaude} className="w-full h-full opacity-70" alt={label} /> },
-    antigravity: { bgClass: 'bg-yellow/10', borderClass: 'border-yellow/10', titleKey: 'assistantIdentity.antigravity', content: (label) => <img src={LogoAntigravity} className="w-full h-full opacity-70" alt={label} /> },
+    anthropic: { bgClass: 'bg-warning/10', borderClass: 'border-warning/30', titleKey: 'assistantIdentity.anthropic', content: (label) => <img src={LogoClaude} className="w-full h-full opacity-70" alt={label} /> },
+    antigravity: { bgClass: 'bg-warning/10', borderClass: 'border-warning/30', titleKey: 'assistantIdentity.antigravity', content: (label) => <img src={LogoAntigravity} className="w-full h-full opacity-70" alt={label} /> },
     copilot: { bgClass: 'bg-background', borderClass: 'border-border/50', titleKey: 'assistantIdentity.copilot', content: (label) => <img src={LogoCopilot} className="w-full h-full object-cover opacity-70" alt={label} /> },
-    groq: { bgClass: 'bg-warning/10', borderClass: 'border-orange/10', titleKey: 'assistantIdentity.groq', content: () => <span className="font-bold text-orange text-xxs">G</span> },
+    groq: { bgClass: 'bg-warning/10', borderClass: 'border-warning/30', titleKey: 'assistantIdentity.groq', content: () => <span className="font-bold text-warning text-xxs">G</span> },
     ollama: { bgClass: 'bg-muted/30', borderClass: 'border-border/50', titleKey: 'assistantIdentity.ollama', content: (label) => <img src={LogoOllama} className="w-full h-full opacity-50" alt={label} /> },
 };
 
 const MODEL_CONFIGS: Record<ModelKey, BrandConfig> = {
     llama: { bgClass: 'bg-primary/10', borderClass: 'border-primary/10', titleKey: 'assistantIdentity.llama', content: () => <span className="font-black text-primary text-xxs">LL</span> },
-    mistral: { bgClass: 'bg-warning/20', borderClass: 'border-orange/20', titleKey: 'assistantIdentity.mistral', content: () => <span className="font-black text-orange text-xxs">M</span> },
-    deepseek: { bgClass: 'bg-indigo/20', borderClass: 'border-indigo/20', titleKey: 'assistantIdentity.deepseek', content: () => <span className="font-black text-indigo text-xxs">DS</span> },
-    qwen: { bgClass: 'bg-purple/20', borderClass: 'border-purple/20', titleKey: 'assistantIdentity.qwen', content: () => <span className="font-black text-purple text-xxs">Q</span> },
-    phi: { bgClass: 'bg-cyan/20', borderClass: 'border-cyan/20', titleKey: 'assistantIdentity.phi', content: () => <span className="font-black text-cyan text-xxs">Φ</span> },
+    mistral: { bgClass: 'bg-warning/20', borderClass: 'border-warning/40', titleKey: 'assistantIdentity.mistral', content: () => <span className="font-black text-warning text-xxs">M</span> },
+    deepseek: { bgClass: 'bg-info/20', borderClass: 'border-info/40', titleKey: 'assistantIdentity.deepseek', content: () => <span className="font-black text-info text-xxs">DS</span> },
+    qwen: { bgClass: 'bg-accent/20', borderClass: 'border-accent/40', titleKey: 'assistantIdentity.qwen', content: () => <span className="font-black text-accent text-xxs">Q</span> },
+    phi: { bgClass: 'bg-info/20', borderClass: 'border-info/40', titleKey: 'assistantIdentity.phi', content: () => <span className="font-black text-info text-xxs">Φ</span> },
 };
 
 const PROVIDER_MATCHERS: { keywords: string[]; key: ProviderKey }[] = [

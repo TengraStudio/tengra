@@ -52,7 +52,7 @@ export const PromptManagerModal: React.FC<PromptManagerModalProps> = ({
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={t('ssh.promptManager.title')}>
-            <div className="h-[400px] flex flex-col">
+            <div className="h-96 flex flex-col">
                 {isEditing ? (
                     <div className="flex-1 flex flex-col gap-4 animate-in fade-in slide-in-from-right-2 duration-200">
                         <div className="space-y-2">

@@ -423,7 +423,7 @@ export const TerminalComponent = ({ cwd, workspaceId }: TerminalComponentProps) 
 
     return (
         <div className="w-full h-full relative group flex flex-col gap-2" style={{ minHeight: '300px' }}>
-            <div className="flex flex-wrap items-center gap-2 text-[11px]">
+            <div className="flex flex-wrap items-center gap-2 tw-text-11">
                 <span className={`inline-flex items-center rounded-full px-2 py-1 border ${terminalRuntimeHealth?.terminalAvailable ? 'border-success/50 text-success' : 'border-destructive/50 text-destructive'}`}>
                     {t('workspace.terminalStatusTerm')} {terminalRuntimeHealth?.availableBackends ?? 0}/{terminalRuntimeHealth?.totalBackends ?? 0}
                 </span>

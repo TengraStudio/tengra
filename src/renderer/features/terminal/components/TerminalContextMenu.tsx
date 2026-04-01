@@ -14,7 +14,6 @@ type TerminalContextMenuProps = {
     onGalleryToggle: () => void;
     onHistoryToggle: () => void;
     onTaskRunnerToggle: () => void;
-    onMultiplexerToggle: () => void;
     onRecordingToggle: () => void;
     onOpenRecordings: () => void;
     onNewTerminal: () => void;
@@ -48,8 +47,7 @@ type TerminalContextMenuProps = {
         exitGalleryView: string; 
         dockTerminal: string;
         commandHistory: string;
-        runTask: string;
-        multiplexer: string;
+        runTask: string; 
         startRecording: string;
         stopRecording: string;
         sessionRecordings: string;
@@ -80,8 +78,7 @@ export function TerminalContextMenu({
     onSemanticToggle,
     onGalleryToggle, 
     onHistoryToggle,
-    onTaskRunnerToggle,
-    onMultiplexerToggle,
+    onTaskRunnerToggle, 
     onRecordingToggle,
     onOpenRecordings,
     onNewTerminal,
@@ -109,7 +106,7 @@ export function TerminalContextMenu({
 
     return (
         <div
-            className="fixed min-w-[200px] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-xl shadow-2xl py-1 z-[99999]"
+            className="fixed min-w-48 rounded-xl border border-border/60 bg-popover/95 backdrop-blur-xl shadow-2xl py-1 z-50"
             style={{ left: position.x, top: position.y }}
             onMouseDown={event => event.stopPropagation()}
             onContextMenu={event => event.preventDefault()}
@@ -153,7 +150,7 @@ export function TerminalContextMenu({
             )}
             {pasteHistory.length > 0 && (
                 <div className="border-t border-border/50 mt-1 pt-1">
-                    <div className="px-3 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                    <div className="px-3 py-1 text-xxxs uppercase tracking-wide text-muted-foreground">
                         {labels.pasteHistory}
                     </div>
                     {pasteHistory.slice(0, 3).map((entry, index) => (
@@ -190,7 +187,7 @@ export function TerminalContextMenu({
             >
                 <span>{labels.semanticIssues}</span>
                 {semanticIssueCount > 0 && (
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-xxxs text-muted-foreground">
                         {semanticErrorCount}/{semanticWarningCount}
                     </span>
                 )}
@@ -208,14 +205,7 @@ export function TerminalContextMenu({
                 className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
             >
                 {labels.commandHistory}
-            </button>
-            <button
-                onClick={onMultiplexerToggle}
-                disabled={!hasActiveSession}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-accent/50 transition-colors text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-                {labels.multiplexer}
-            </button>
+            </button> 
             <button
                 onClick={onRecordingToggle}
                 disabled={!hasActiveSession}

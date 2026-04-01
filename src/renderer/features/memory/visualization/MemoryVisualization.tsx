@@ -22,7 +22,7 @@ export const MemoryVisualization: React.FC = () => {
     return (
         <div className="flex flex-col h-full bg-background/20 backdrop-blur-sm">
             {/* Header / Tabs */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/5">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 bg-muted/30">
                 <div className="flex items-center gap-2">
                     <div className="p-2 bg-primary/20 rounded-xl text-primary">
                         <Maximize2 className="w-5 h-5" />
@@ -33,14 +33,14 @@ export const MemoryVisualization: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="flex bg-background/50 p-1 rounded-2xl border border-white/10 shadow-inner">
+                <div className="flex bg-background/50 p-1 rounded-2xl border border-border/50 shadow-inner">
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === tab.id
-                                ? 'bg-white/10 text-foreground shadow-xl scale-105'
-                                : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+                                ? 'bg-muted/40 text-foreground shadow-xl scale-105'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
                                 }`}
                         >
                             <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? tab.color : ''}`} />
@@ -60,7 +60,7 @@ export const MemoryVisualization: React.FC = () => {
             </div>
 
             {/* Footer / Legend */}
-            <div className="px-6 py-3 border-t border-white/5 bg-black/20 flex items-center justify-between text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
+            <div className="px-6 py-3 border-t border-border/30 bg-muted/20 flex items-center justify-between text-xs text-muted-foreground uppercase font-bold tracking-widest">
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-primary" />

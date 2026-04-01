@@ -1,14 +1,21 @@
-import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech';
 import { Language, useLanguage } from '@renderer/i18n';
 import { themeRegistry } from '@renderer/themes/theme-registry.service';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { appLogger } from '@/utils/renderer-logger';
 
 export function useAppInitialization() {
     const { language, setLanguage } = useLanguage();
-    const { speak: handleSpeak } = useTextToSpeech();
     const setLanguageRef = useRef(setLanguage);
+    const handleSpeak = useCallback((text: string) => {
+        if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+            return;
+        }
+
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        window.speechSynthesis.speak(utterance);
+    }, []);
 
     useEffect(() => {
         setLanguageRef.current = setLanguage;

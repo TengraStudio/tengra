@@ -166,7 +166,7 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
     const selectedPathPolicy = pathOptions.find(o => o.value === permissionPolicy.pathPolicy);
 
     return (
-        <div className="border-t border-border/5 bg-black/5 p-3">
+        <div className="border-t border-border/5 bg-background/30 p-3">
             <Modal
                 isOpen={showCouncilSetup}
                 onClose={onToggleCouncil}
@@ -191,7 +191,7 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                     onChange={event => setComposerValue(event.target.value)}
                     onKeyDown={handleEnter}
                     placeholder={t('workspace.writeSomething')}
-                    className="min-h-[44px] h-11 flex-1 rounded-2xl border-white/5 bg-black/10 px-4 py-2.5 placeholder:text-muted-foreground/40 text-sm focus:border-border/20 transition-colors resize-none overflow-hidden"
+                    className="tw-min-h-44 h-11 flex-1 rounded-2xl border-border/30 bg-background/40 px-4 py-2.5 placeholder:text-muted-foreground/40 text-sm focus:border-border/20 transition-colors resize-none overflow-hidden"
                     disabled={isLoading}
                 />
                 <Button
@@ -213,27 +213,27 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                             type="button"
                             variant="outline"
                             title={`${t('workspaceAgent.permissions.title')}: ${selectedPreset.title} · ${selectedCommandPolicy?.title} · ${selectedPathPolicy?.title}`}
-                            className="h-10 w-10 shrink-0 flex items-center justify-center rounded-xl border-border/10 bg-black/5 hover:bg-black/10 transition-colors p-0"
+                            className="h-10 w-10 shrink-0 flex items-center justify-center rounded-xl border-border/10 bg-background/30 hover:bg-background/40 transition-colors p-0"
                         >
                             <SlidersHorizontal className="h-4 w-4 text-muted-foreground/60" />
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent
                         align="start"
-                        className="relative w-[300px] rounded-2xl border border-white/10 bg-black/95 p-1.5 shadow-none"
+                        className="relative tw-w-300 rounded-2xl border border-border/40 bg-background/95 p-1.5 shadow-none"
                     >
-                        <div className="px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/30 border-b border-white/5 mb-1.5">
+                        <div className="px-3 py-2 tw-text-10 font-black uppercase tw-tracking-20 text-muted-foreground/30 border-b border-border/30 mb-1.5">
                             {t('workspaceAgent.permissions.title')}
                         </div> 
                         <div className="space-y-0.5">
                             <button
                                 type="button"
-                                className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all hover:bg-white/5 group"
+                                className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all hover:bg-muted/40 group"
                                 onMouseEnter={() => setSubmenu('profile')}
                                 onFocus={() => setSubmenu('profile')}
                             >
                                 <span className="min-w-0">
-                                    <span className="block text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest mb-0.5">
+                                    <span className="block tw-text-10 font-bold text-muted-foreground/40 uppercase tracking-widest mb-0.5">
                                         {t('workspaceAgent.permissions.profile')}
                                     </span>
                                     <span className="block truncate text-sm font-semibold text-foreground/90">
@@ -244,12 +244,12 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                             </button>
                             <button
                                 type="button"
-                                className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all hover:bg-white/5 group"
+                                className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all hover:bg-muted/40 group"
                                 onMouseEnter={() => setSubmenu('commands')}
                                 onFocus={() => setSubmenu('commands')}
                             >
                                 <span className="min-w-0">
-                                    <span className="block text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest mb-0.5">
+                                    <span className="block tw-text-10 font-bold text-muted-foreground/40 uppercase tracking-widest mb-0.5">
                                         {t('workspaceAgent.permissions.commands')}
                                     </span>
                                     <span className="block truncate text-sm font-semibold text-foreground/90">
@@ -260,12 +260,12 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                             </button>
                             <button
                                 type="button"
-                                className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all hover:bg-white/5 group"
+                                className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all hover:bg-muted/40 group"
                                 onMouseEnter={() => setSubmenu('paths')}
                                 onFocus={() => setSubmenu('paths')}
                             >
                                 <span className="min-w-0">
-                                    <span className="block text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest mb-0.5">
+                                    <span className="block tw-text-10 font-bold text-muted-foreground/40 uppercase tracking-widest mb-0.5">
                                         {t('workspaceAgent.permissions.files')}
                                     </span>
                                     <span className="block truncate text-sm font-semibold text-foreground/90">
@@ -278,12 +278,12 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
 
                         {submenu ? (
                             <div
-                                className="absolute right-[calc(100%+4px)] top-0 w-[280px] rounded-2xl border border-white/10 bg-black/95 p-1.5 shadow-none animate-in fade-in slide-in-from-right-1 duration-200"
+                                className="absolute tw-right-out-4 top-0 tw-w-280 rounded-2xl border border-border/40 bg-background/95 p-1.5 shadow-none animate-in fade-in slide-in-from-right-1 duration-200"
                                 onMouseLeave={() => setSubmenu(null)}
                             >
                                 {submenu === 'profile' ? (
                                     <>
-                                        <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/30 border-b border-white/5 mb-1.5">
+                                        <div className="px-3 py-1.5 tw-text-10 font-bold uppercase tracking-widest text-muted-foreground/30 border-b border-border/30 mb-1.5">
                                             {t('workspaceAgent.permissions.profile')}
                                         </div>
                                         <div className="space-y-0.5">
@@ -291,14 +291,14 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                                                 <button
                                                     key={option.value}
                                                     type="button"
-                                                    className="flex w-full items-start justify-between rounded-xl px-3 py-2.5 text-left transition-all hover:bg-white/5 group"
+                                                    className="flex w-full items-start justify-between rounded-xl px-3 py-2.5 text-left transition-all hover:bg-muted/40 group"
                                                     onClick={() => void onSelectPreset(option.value)}
                                                 >
                                                     <span className="min-w-0">
                                                         <span className="block text-sm font-bold text-foreground/90 group-hover:text-foreground transition-colors">
                                                             {option.title}
                                                         </span>
-                                                        <span className="block text-[10px] text-muted-foreground/50 leading-snug mt-0.5">
+                                                        <span className="block tw-text-10 text-muted-foreground/50 leading-snug mt-0.5">
                                                             {option.description}
                                                         </span>
                                                     </span>
@@ -312,7 +312,7 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                                 ) : null}
                                 {submenu === 'commands' ? (
                                     <>
-                                        <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/30 border-b border-white/5 mb-1.5">
+                                        <div className="px-3 py-1.5 tw-text-10 font-bold uppercase tracking-widest text-muted-foreground/30 border-b border-border/30 mb-1.5">
                                             {t('workspaceAgent.permissions.commands')}
                                         </div>
                                         <div className="space-y-0.5">
@@ -320,7 +320,7 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                                                 <button
                                                     key={option.value}
                                                     type="button"
-                                                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition hover:bg-white/5 group"
+                                                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition hover:bg-muted/40 group"
                                                     onClick={() =>
                                                         handlePermissionUpdate({
                                                             ...permissionPolicy,
@@ -341,7 +341,7 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                                 ) : null}
                                 {submenu === 'paths' ? (
                                     <>
-                                        <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/30 border-b border-white/5 mb-1.5">
+                                        <div className="px-3 py-1.5 tw-text-10 font-bold uppercase tracking-widest text-muted-foreground/30 border-b border-border/30 mb-1.5">
                                             {t('workspaceAgent.permissions.files')}
                                         </div>
                                         <div className="space-y-0.5">
@@ -349,7 +349,7 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                                                 <button
                                                     key={option.value}
                                                     type="button"
-                                                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition hover:bg-white/5 group"
+                                                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition hover:bg-muted/40 group"
                                                     onClick={() =>
                                                         handlePermissionUpdate({
                                                             ...permissionPolicy,
@@ -380,14 +380,14 @@ export const WorkspaceAgentComposer: React.FC<WorkspaceAgentComposerProps> = ({
                     className={`h-10 w-10 shrink-0 flex items-center justify-center rounded-xl border-border/10 transition-colors p-0 ${
                         currentModes.council 
                         ? 'bg-primary/10 border-primary/20 hover:bg-primary/20 text-primary' 
-                        : 'bg-black/5 hover:bg-black/10'
+                        : 'bg-background/30 hover:bg-background/40'
                     }`}
                     onClick={onToggleCouncil}
                 >
                     <Map className="h-4 w-4 text-muted-foreground/60" />
                 </Button>
 
-                <div className="shrink-0 rounded-xl border border-border/10 bg-black/5 p-0.5 hover:bg-black/10 transition-colors">
+                <div className="shrink-0 rounded-xl border border-border/10 bg-background/30 p-0.5 hover:bg-background/40 transition-colors">
                     <ModelSelector
                         selectedProvider={selectedProvider}
                         selectedModel={selectedModel}

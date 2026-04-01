@@ -32,16 +32,16 @@ const TYPE_ICONS: Record<PromptSuggestionType, React.ReactNode> = {
 };
 
 const SEVERITY_STYLES: Record<string, string> = {
-    warning: 'text-yellow-400',
-    improvement: 'text-blue-400',
+    warning: 'text-warning',
+    improvement: 'text-info',
     info: 'text-muted-foreground',
 };
 
 /** Returns a CSS class for the score badge based on the value. */
 function getScoreColor(score: number): string {
-    if (score >= 75) {return 'text-green-400 bg-green-500/10';}
-    if (score >= 50) {return 'text-yellow-400 bg-yellow-500/10';}
-    return 'text-red-400 bg-red-500/10';
+    if (score >= 75) {return 'text-success bg-success/10';}
+    if (score >= 50) {return 'text-warning bg-warning/10';}
+    return 'text-destructive bg-destructive/10';
 }
 
 /** Single suggestion row with apply/dismiss actions. */
@@ -52,7 +52,7 @@ const SuggestionItem: React.FC<{
     onDismiss: (index: number) => void;
     t: (key: string) => string;
 }> = ({ suggestion, index, onApply, onDismiss, t }) => (
-    <div className="flex items-start gap-2 py-1.5 px-2 rounded-lg hover:bg-white/5 group transition-colors">
+    <div className="group flex items-start gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-accent/50">
         <span className={`mt-0.5 shrink-0 ${SEVERITY_STYLES[suggestion.severity]}`}>
             {TYPE_ICONS[suggestion.type]}
         </span>
@@ -63,14 +63,14 @@ const SuggestionItem: React.FC<{
             {suggestion.suggestedText && (
                 <button
                     onClick={() => onApply(suggestion.suggestedText as string)}
-                    className="text-[10px] px-1.5 py-0.5 rounded bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
+                    className="text-xxxs px-1.5 py-0.5 rounded bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
                 >
                     {t('promptOptimizer.apply')}
                 </button>
             )}
             <button
                 onClick={() => onDismiss(index)}
-                className="p-0.5 rounded hover:bg-white/10 text-muted-foreground transition-colors"
+                className="rounded p-0.5 text-muted-foreground transition-colors hover:bg-accent"
                 aria-label={t('promptOptimizer.dismiss')}
             >
                 <X className="w-3 h-3" />
@@ -107,12 +107,12 @@ export const PromptSuggestions: React.FC<PromptSuggestionsProps> = React.memo(({
     const hasSuggestions = analysis.suggestions.length > 0;
 
     return (
-        <div className="border-t border-white/5 bg-background/50">
+        <div className="border-t border-border/50 bg-background/50">
             <button
                 onClick={() => setIsExpanded(prev => !prev)}
-                className="flex items-center gap-2 w-full px-3 py-1.5 text-xs hover:bg-white/5 transition-colors"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:bg-accent/50"
             >
-                <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${getScoreColor(analysis.score)}`}>
+                <span className={`px-1.5 py-0.5 rounded text-xxxs font-semibold ${getScoreColor(analysis.score)}`}>
                     {analysis.score}
                 </span>
                 <span className="text-muted-foreground font-medium">

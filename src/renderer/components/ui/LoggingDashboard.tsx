@@ -26,7 +26,7 @@ const levelColors = {
 const levelBadgeColors = {
     debug: 'bg-muted/20 text-muted-foreground',
     info: 'bg-primary/20 text-primary',
-    warn: 'bg-yellow/20 text-warning',
+    warn: 'bg-warning/20 text-warning',
     error: 'bg-destructive/20 text-destructive',
 };
 
@@ -159,8 +159,8 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(
                 aria-modal="true"
                 aria-labelledby="logging-dashboard-title"
             >
-                <div className="w-[90vw] max-w-6xl h-[80vh] bg-muted rounded-xl border border-neutral-dark flex flex-col overflow-hidden shadow-2xl">
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-dark bg-muted/50">
+                <div className="w-full max-w-6xl h-full bg-muted rounded-xl border border-border flex flex-col overflow-hidden shadow-2xl">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/50">
                         <div className="flex items-center gap-4">
                             <h2
                                 id="logging-dashboard-title"
@@ -181,13 +181,13 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(
                                 </svg>
                                 {t('logging.title')}
                             </h2>
-                            <span className="text-xs text-muted-foreground bg-neutral-dark px-2 py-1 rounded">
+                            <span className="text-xs text-muted-foreground bg-accent px-2 py-1 rounded">
                                 {filteredLogs.length} {t('logging.entries')}
                             </span>
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2 hover:bg-neutral-dark rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+                            className="p-2 hover:bg-accent rounded-lg transition-colors text-muted-foreground hover:text-foreground"
                             aria-label={t('shortcuts.close')}
                         >
                             <svg
@@ -205,18 +205,18 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(
                             </svg>
                         </button>
                     </div>
-                    <div className="flex items-center gap-3 px-4 py-2 border-b border-neutral-dark bg-muted/30">
+                    <div className="flex items-center gap-3 px-4 py-2 border-b border-border bg-muted/30">
                         <input
                             type="text"
                             placeholder={t('logging.filterPlaceholder')}
                             value={filter}
                             onChange={e => setFilter(e.target.value)}
-                            className="flex-1 max-w-xs px-3 py-1.5 bg-muted border border-neutral-dark rounded-lg text-sm text-foreground focus:outline-none"
+                            className="flex-1 max-w-xs px-3 py-1.5 bg-muted border border-border rounded-lg text-sm text-foreground focus:outline-none"
                         />
                         <select
                             value={levelFilter}
                             onChange={e => setLevelFilter(e.target.value)}
-                            className="px-3 py-1.5 bg-muted border border-neutral-dark rounded-lg text-sm text-foreground focus:outline-none"
+                            className="px-3 py-1.5 bg-muted border border-border rounded-lg text-sm text-foreground focus:outline-none"
                         >
                             <option value="all">{t('logging.allLevels')}</option>
                             {['debug', 'info', 'warn', 'error'].map(lvl => (
@@ -228,20 +228,20 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(
                         <div className="flex items-center gap-2 ml-auto">
                             <button
                                 onClick={() => setIsPaused(!isPaused)}
-                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isPaused ? 'bg-success text-foreground' : 'bg-neutral-dark text-muted-foreground hover:bg-neutral'}`}
+                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isPaused ? 'bg-success text-success-foreground' : 'bg-accent text-muted-foreground hover:bg-muted'}`}
                             >
                                 {isPaused ? `▶ ${t('logging.resume')}` : `⏸ ${t('logging.pause')}`}
                             </button>
                             <button
                                 onClick={() => setAutoScroll(!autoScroll)}
-                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${autoScroll ? 'bg-info text-foreground' : 'bg-neutral-dark text-muted-foreground hover:bg-neutral'}`}
+                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${autoScroll ? 'bg-info text-info-foreground' : 'bg-accent text-muted-foreground hover:bg-muted'}`}
                             >
                                 {t('logging.autoScroll')}{' '}
                                 {autoScroll ? t('logging.on') : t('logging.off')}
                             </button>
                             <button
                                 onClick={exportLogs}
-                                className="px-3 py-1.5 bg-neutral-dark text-muted-foreground rounded-lg text-sm font-medium hover:bg-neutral transition-colors"
+                                className="px-3 py-1.5 bg-accent text-muted-foreground rounded-lg text-sm font-medium hover:bg-muted transition-colors"
                             >
                                 {t('logging.export')}
                             </button>
@@ -294,7 +294,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(
                             </>
                         )}
                     </div>
-                    <div className="px-4 py-2 border-t border-neutral-dark bg-muted/30 text-xs text-muted-foreground flex justify-between">
+                    <div className="px-4 py-2 border-t border-border bg-muted/30 text-xs text-muted-foreground flex justify-between">
                         <span>
                             {t('logging.lastUpdated')}: {new Date().toLocaleTimeString()}
                         </span>

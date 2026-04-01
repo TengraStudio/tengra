@@ -48,7 +48,7 @@ export const EditMemoryModal: React.FC<EditMemoryModalProps> = ({
     const { t } = useTranslation();
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <Card className="w-full max-w-lg p-6 bg-popover/90 backdrop-blur-2xl border-white/10 shadow-2xl space-y-4">
+            <Card className="w-full max-w-lg p-6 bg-popover/90 backdrop-blur-2xl border-border/50 shadow-2xl space-y-4">
                 <h2 className="text-xl font-bold flex items-center gap-2">
                     <Edit3 className="w-5 h-5 text-primary" />
                     {t('memory.editTitle')}
@@ -60,7 +60,7 @@ export const EditMemoryModal: React.FC<EditMemoryModalProps> = ({
                         <textarea
                             value={content}
                             onChange={(e) => onContentChange(e.target.value)}
-                            className="w-full h-24 mt-1 bg-muted/50 border border-white/5 rounded-lg p-3 text-sm focus:border-primary/50 outline-none resize-none transition-colors"
+                            className="w-full h-24 mt-1 bg-muted/50 border border-border/40 rounded-lg p-3 text-sm focus:border-primary/50 outline-none resize-none transition-colors"
                         />
                     </div>
 
@@ -68,7 +68,7 @@ export const EditMemoryModal: React.FC<EditMemoryModalProps> = ({
                         <div>
                             <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">{t('memory.categoryLabel')}</label>
                             <Select value={category} onValueChange={(v) => onCategoryChange(v as MemoryCategory)}>
-                                <SelectTrigger className="mt-1 bg-muted/50 border-white/5">
+                                <SelectTrigger className="mt-1 bg-muted/50 border-border/40">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -107,7 +107,7 @@ export const EditMemoryModal: React.FC<EditMemoryModalProps> = ({
                                 value={tags}
                                 onChange={(e) => onTagsChange(e.target.value)}
                                 placeholder={t('memory.tagsPlaceholderFull')}
-                                className="mt-1 bg-muted/50 border-white/5"
+                                className="mt-1 bg-muted/50 border-border/40"
                             />
                         </div>
 
@@ -117,7 +117,7 @@ export const EditMemoryModal: React.FC<EditMemoryModalProps> = ({
                                 type="date"
                                 value={expiresAt}
                                 onChange={(e) => onExpiresAtChange(e.target.value)}
-                                className="mt-1 bg-muted/50 border-white/5"
+                                className="mt-1 bg-muted/50 border-border/40"
                             />
                         </div>
                     </div>

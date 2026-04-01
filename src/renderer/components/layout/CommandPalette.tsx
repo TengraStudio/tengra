@@ -313,7 +313,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh]"
+                    className="fixed inset-0 z-50 flex items-start justify-center pt-20 md:pt-24"
                     onClick={onClose}
                 >
                     <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" />
@@ -323,7 +323,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                         exit={{ opacity: 0, scale: 0.95, y: -20 }}
                         ref={panelRef}
                         onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                        className="relative w-full max-w-3xl bg-card border border-border rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl flex flex-col h-[550px]"
+                        className="relative w-full max-w-3xl bg-card border border-border rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl flex flex-col h-96"
                         role="dialog"
                         aria-modal="true"
                         aria-label={t('commandPalette.title')}

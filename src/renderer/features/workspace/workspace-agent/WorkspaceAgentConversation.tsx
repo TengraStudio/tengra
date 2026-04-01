@@ -42,12 +42,12 @@ function TelemetryCard({
     }
 
     return (
-        <div className="rounded-2xl border border-white/8 bg-black/20 p-3">
+        <div className="rounded-2xl border border-border/50 bg-muted/30 p-3">
             <div className="flex items-center justify-between gap-3">
-                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">
+                <div className="text-xs font-semibold uppercase tracking-wide text-info">
                     {telemetry.provider} · {telemetry.model}
                 </div>
-                <div className="text-[11px] text-muted-foreground">
+                <div className="text-xxs text-muted-foreground">
                     {Math.round(telemetry.usagePercent)}%
                 </div>
             </div>
@@ -71,13 +71,13 @@ function PlanCard({
     index: number;
 }): JSX.Element {
     return (
-        <Card className="border-white/8 bg-white/[0.03]">
+        <Card className="border-border/50 bg-card/70">
             <CardContent className="p-4">
                 <div className="flex items-center justify-between gap-3">
                     <div className="text-sm font-semibold text-foreground">
                         {index + 1}. {step.text}
                     </div>
-                    <div className="rounded-full border border-white/10 bg-black/20 px-2 py-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                    <div className="rounded-full border border-border/60 bg-muted/30 px-2 py-1 text-xxs uppercase tracking-wide text-muted-foreground">
                         {step.status}
                     </div>
                 </div>
@@ -88,12 +88,12 @@ function PlanCard({
 
 function TimelineCard({ event }: { event: AgentEventRecord }): JSX.Element {
     return (
-        <div className="rounded-2xl border border-white/8 bg-black/20 p-3">
+        <div className="rounded-2xl border border-border/50 bg-muted/30 p-3">
             <div className="flex items-center justify-between gap-3">
-                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">
+                <div className="text-xs font-semibold uppercase tracking-wide text-info">
                     {event.type}
                 </div>
-                <div className="text-[11px] text-muted-foreground">
+                <div className="text-xxs text-muted-foreground">
                     {event.timestamp.toLocaleTimeString()}
                 </div>
             </div>
@@ -172,7 +172,7 @@ export const WorkspaceAgentConversation: React.FC<WorkspaceAgentConversationProp
 
                 {messages.length === 0 ? (
                     <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
-                        <div className="rounded-full border border-cyan-500/20 bg-cyan-500/10 p-4 text-cyan-200">
+                        <div className="rounded-full border border-info/20 bg-info/10 p-4 text-info">
                             <Sparkles className="h-5 w-5" />
                         </div>
                         <div className="max-w-xs text-sm text-muted-foreground">
@@ -195,10 +195,10 @@ export const WorkspaceAgentConversation: React.FC<WorkspaceAgentConversationProp
                         </div>
 
                         {modes.plan && proposal.length > 0 && (
-                            <div className="space-y-3 rounded-3xl border border-white/8 bg-white/[0.03] p-4">
+                            <div className="space-y-3 rounded-3xl border border-border/50 bg-card/70 p-4">
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                                        <Workflow className="h-4 w-4 text-cyan-200" />
+                                        <Workflow className="h-4 w-4 text-info" />
                                         {t('agents.plan')}
                                     </div>
                                     <Button variant="secondary" size="sm" onClick={onApprovePlan}>
@@ -225,3 +225,4 @@ export const WorkspaceAgentConversation: React.FC<WorkspaceAgentConversationProp
         </div>
     );
 };
+

@@ -15,11 +15,11 @@ export const getPresetIcon = (icon: ParameterPreset['icon']) => {
 
 export const getPresetColor = (icon: ParameterPreset['icon'], isActive: boolean) => {
     if (!isActive) {
-        return 'bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10';
+        return 'bg-muted/40 border-border/40 text-muted-foreground hover:bg-muted/60';
     }
     switch (icon) {
         case 'creative':
-            return 'bg-warning/15 border-orange/30 text-warning-light';
+            return 'bg-warning/15 border-warning/30 text-warning-light';
         case 'precise':
             return 'bg-primary/15 border-primary/30 text-info-light';
         case 'coding':

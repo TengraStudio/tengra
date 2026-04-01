@@ -53,14 +53,14 @@ export const EditorBreadcrumb: React.FC<EditorBreadcrumbProps> = ({
                             <ChevronRight className="w-3 h-3 text-muted-foreground/40 flex-shrink-0" />
                         )}
                         {isLast ? (
-                            <span className="flex items-center gap-1 font-medium text-foreground truncate max-w-[180px]">
+                            <span className="flex items-center gap-1 font-medium text-foreground truncate tw-max-w-180">
                                 <FileCode className="w-3 h-3 flex-shrink-0" />
                                 {segment}
                             </span>
                         ) : (
                             <button
                                 onClick={() => onNavigateToPath?.(pathUpToHere)}
-                                className="flex items-center gap-1 hover:text-foreground transition-colors truncate max-w-[140px]"
+                                className="flex items-center gap-1 hover:text-foreground transition-colors truncate tw-max-w-140"
                                 title={pathUpToHere}
                             >
                                 <FolderOpen className="w-3 h-3 flex-shrink-0" />

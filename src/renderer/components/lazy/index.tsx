@@ -14,7 +14,7 @@ const LoadingSpinner: React.FC<{ message?: string }> = React.memo(({ message }) 
 
     return (
         <div
-            className="flex flex-col items-center justify-center h-full min-h-[200px] gap-3 text-muted-foreground"
+            className="flex flex-col items-center justify-center h-full min-h-52 gap-3 text-muted-foreground"
             role="status"
             aria-live="polite"
         >

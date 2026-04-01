@@ -32,13 +32,13 @@ export const StatusBadge = ({ status, text }: { status: 'active' | 'error' | 'ex
     };
     
     const dots = {
-        active: "bg-success shadow-[0_0_8px_rgba(var(--success-rgb),0.5)]",
-        error: "bg-destructive shadow-[0_0_8px_rgba(var(--destructive-rgb),0.5)]",
-        expired: "bg-warning shadow-[0_0_8px_rgba(var(--warning-rgb),0.5)]",
+        active: "bg-success tw-shadow-success-soft",
+        error: "bg-destructive tw-shadow-destructive-soft",
+        expired: "bg-warning tw-shadow-warning-soft",
     };
 
     return (
-        <div className={cn("text-[9px] font-black py-0.5 px-2.5 rounded-full border uppercase tracking-widest flex items-center gap-2", colors[status])}>
+        <div className={cn("tw-text-9 font-black py-0.5 px-2.5 rounded-full border uppercase tracking-widest flex items-center gap-2", colors[status])}>
             <div className={cn("w-1.5 h-1.5 rounded-full", dots[status])} />
             {text}
         </div>

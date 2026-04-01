@@ -94,7 +94,7 @@ const DownloadProgress: React.FC<{ status: UpdateStatus }> = ({ status }) => (
             <span>{formatBytes(status.bytesPerSecond ?? 0)}/s</span>
             <span>{Math.round(status.progress ?? 0)}%</span>
         </div>
-        <div className="h-1.5 w-full bg-neutral-dark rounded-full overflow-hidden">
+        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
             <div
                 className="h-full bg-primary transition-all duration-300"
                 style={{ width: `${status.progress}%` }}
@@ -172,7 +172,7 @@ export const UpdateNotification: React.FC = () => {
                 initial={{ opacity: 0, y: -50, x: 50 }}
                 animate={{ opacity: 1, y: 0, x: 0 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className="fixed top-20 right-4 z-50 w-80 bg-muted border border-neutral-dark rounded-lg shadow-xl p-4 overflow-hidden"
+                className="fixed top-20 right-4 z-50 w-80 bg-muted border border-border rounded-lg shadow-xl p-4 overflow-hidden"
             >
                 <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-2">

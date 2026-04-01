@@ -57,7 +57,7 @@ export const WorkspaceDashboardHeader: React.FC<WorkspaceDashboardHeaderProps> =
 
                     <button
                         onClick={onUploadLogo}
-                        className="absolute inset-0 bg-primary/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2 text-primary-foreground"
+                        className="absolute inset-0 bg-primary/60 tw-backdrop-blur-2 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2 text-primary-foreground"
                     >
                         <Camera className="w-6 h-6" />
                         <span className="text-xxs font-bold uppercase tracking-tighter">{t('workspaces.changeLogo')}</span>
@@ -104,7 +104,7 @@ export const WorkspaceDashboardHeader: React.FC<WorkspaceDashboardHeaderProps> =
                                 value={editDesc}
                                 onChange={e => setEditDesc(e.target.value)}
                                 onBlur={() => { void handleSaveDesc(); }}
-                                className="w-full bg-muted/40 border border-primary/30 rounded-xl p-3 text-sm text-foreground outline-none min-h-[80px] resize-none"
+                                className="w-full bg-muted/40 border border-primary/30 rounded-xl p-3 text-sm text-foreground outline-none tw-min-h-80 resize-none"
                                 placeholder={t('workspaces.workspaceDescPlaceholder')}
                             />
                         </div>

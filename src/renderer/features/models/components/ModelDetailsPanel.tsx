@@ -349,16 +349,16 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: '100%', opacity: 0 }}
             transition={{ type: 'spring', stiffness: 360, damping: 36 }}
-            className="w-[50vw] max-w-[900px] min-w-[520px] border-l border-border/50 bg-card/60 backdrop-blur-2xl flex flex-col relative z-40"
+            className="w-1/2 max-w-5xl min-w-96 border-l border-border/50 bg-card/60 backdrop-blur-2xl flex flex-col relative z-40"
         >
-            <div className="p-6 border-b border-border/50 flex items-center justify-between bg-white/5">
+            <div className="p-6 border-b border-border/50 flex items-center justify-between bg-muted/30">
                 <h2 className="font-black truncate pr-4 text-lg">{isHF ? hfModel?.name : ollamaModel?.name}</h2>
-                <button onClick={() => setSelectedModel(null)} className="p-2 hover:bg-white/10 rounded-xl transition-all active:scale-90">
+                <button onClick={() => setSelectedModel(null)} className="p-2 hover:bg-muted/40 rounded-xl transition-all active:scale-90">
                     <X className="w-5 h-5" />
                 </button>
             </div>
 
-            <div className="p-6 border-b border-border/50 space-y-3 bg-white/5">
+            <div className="p-6 border-b border-border/50 space-y-3 bg-muted/30">
                 <div className="text-xxs uppercase tracking-widest text-muted-foreground">{isHF ? t('modelExplorer.sourceHuggingFace') : t('modelExplorer.ollamaLibrary')}</div>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                     {selectedModel.description || t('modelExplorer.defaultDescription')}
@@ -390,13 +390,13 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                     <>
                         {'longDescriptionMarkdown' in selectedModel && selectedModel.longDescriptionMarkdown && (
                             <div className="rounded-xl border border-border/40 bg-muted/10 p-4">
-                                <h3 className="text-xxs font-black uppercase tracking-[0.25em] text-muted-foreground mb-2">{t('common.details')}</h3>
+                                <h3 className="text-xxs font-black uppercase tracking-widest text-muted-foreground mb-2">{t('common.details')}</h3>
                                 <div className="text-sm whitespace-pre-wrap leading-relaxed">{selectedModel.longDescriptionMarkdown}</div>
                             </div>
                         )}
 
                         <div className="space-y-3">
-                            <h3 className="text-xxs font-black uppercase tracking-[0.3em] text-muted-foreground flex items-center gap-2">
+                            <h3 className="text-xxs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                                 <Server className="w-4 h-4" /> {t('modelExplorer.pullVersion')}
                             </h3>
 
@@ -408,7 +408,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                                 <>
                                     {hfShardGroups.length > 0 && (
                                         <div className="space-y-2 rounded-xl border border-border/40 bg-muted/10 p-3">
-                                            <div className="text-xxs font-black uppercase tracking-[0.2em] text-muted-foreground">{t('modelExplorer.shardedModelSets')}</div>
+                                            <div className="text-xxs font-black uppercase tracking-widest text-muted-foreground">{t('modelExplorer.shardedModelSets')}</div>
                                             {hfShardGroups.map((group) => {
                                                 const downloadedCount = group.files.filter((f) => downloadedFilePaths[f.path]).length;
                                                 const progressPct = Math.round((downloadedCount / group.totalParts) * 100);
@@ -468,13 +468,13 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                     <>
                         {sanitizedOllamaDescriptionHtml && (
                             <div className="rounded-xl border border-border/40 bg-muted/10 p-4">
-                                <h3 className="text-xxs font-black uppercase tracking-[0.25em] text-muted-foreground mb-2">{t('common.details')}</h3>
+                                <h3 className="text-xxs font-black uppercase tracking-widest text-muted-foreground mb-2">{t('common.details')}</h3>
                                 <div className="prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: sanitizedOllamaDescriptionHtml }} />
                             </div>
                         )}
 
                         <div className="space-y-3">
-                            <h3 className="text-xxs font-black uppercase tracking-[0.3em] text-muted-foreground flex items-center gap-2">
+                            <h3 className="text-xxs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                                 <Server className="w-4 h-4" /> {t('modelExplorer.availableVersions')}
                             </h3>
 

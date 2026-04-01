@@ -97,7 +97,7 @@ export const RippleButton: React.FC<RippleButtonProps> = ({
             {ripples.map(ripple => (
                 <span
                     key={ripple.id}
-                    className="absolute rounded-full bg-white/30 pointer-events-none"
+                    className="absolute rounded-full bg-primary-foreground/30 pointer-events-none"
                     style={{
                         left: ripple.x - ripple.size / 2,
                         top: ripple.y - ripple.size / 2,

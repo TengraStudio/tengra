@@ -139,7 +139,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                     <span
                         key={`label-${action.label}`}
                         className={cn(
-                            'absolute px-2 py-1 text-xs font-medium rounded bg-black/80 text-foreground',
+                            'absolute px-2 py-1 text-xs font-medium rounded bg-popover/95 text-popover-foreground border border-border/40 shadow-sm',
                             'whitespace-nowrap pointer-events-none',
                             'transition-all duration-300'
                         )}

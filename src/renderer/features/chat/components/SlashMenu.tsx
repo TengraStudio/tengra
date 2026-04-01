@@ -73,23 +73,23 @@ export const SlashMenu = React.memo(({ isOpen, onClose, query, onSelect, command
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             className="absolute bottom-full left-4 mb-2 w-64 bg-popover border border-border shadow-2xl rounded-xl overflow-hidden z-50 flex flex-col"
         >
-            <div className="px-3 py-2 text-xxs font-black uppercase tracking-[0.1em] text-muted-foreground bg-muted/20 border-b border-border/50">
+            <div className="px-3 py-2 text-xxs font-black uppercase tracking-widest text-muted-foreground bg-muted/20 border-b border-border/50">
                 {t('common.commands')}
             </div>
-            <div className="max-h-[200px] overflow-y-auto p-1 custom-scrollbar">
+            <div className="max-h-52 overflow-y-auto p-1 custom-scrollbar">
                 {filteredCommands.map((cmd, idx) => (
                     <button
                         key={cmd.id}
                         onClick={() => onSelect(cmd)}
                         className={cn(
                             "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all",
-                            idx === selectedIndex ? "bg-primary text-primary-foreground shadow-lg scale-[1.02]" : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
+                            idx === selectedIndex ? "bg-primary text-primary-foreground shadow-lg scale-102" : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
                         )}
                         onMouseEnter={() => setSelectedIndex(idx)}
                     >
                         <div className={cn(
                             "p-1.5 rounded-md shrink-0",
-                            idx === selectedIndex ? "bg-white/20" : "bg-muted/30"
+                            idx === selectedIndex ? "bg-muted/50" : "bg-muted/30"
                         )}>
                             {cmd.icon}
                         </div>

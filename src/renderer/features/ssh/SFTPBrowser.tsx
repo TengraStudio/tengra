@@ -536,7 +536,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
                 </div>
             )}
             </div>
-            <div className="w-[360px] border-l border-border/40 p-3 space-y-2 bg-muted/10">
+            <div className="w-96 border-l border-border/40 p-3 space-y-2 bg-muted/10">
                 <div className="text-xs font-semibold">{t('ssh.remoteEditor')}</div>
                 <div className="text-xs text-muted-foreground">
                     {t('ssh.editorLatency', { latency: latencyMs, debounce: dynamicDebounceMs })}
@@ -547,7 +547,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps): JSX.Element {
                         <textarea
                             value={editorContent}
                             onChange={event => setEditorContent(event.target.value)}
-                            className="w-full h-[340px] text-xs p-2 rounded border border-border/40 bg-background"
+                            className="w-full h-80 text-xs p-2 rounded border border-border/40 bg-background"
                         />
                         <div className="text-xs text-muted-foreground">
                             {isSaving ? t('ssh.editorSaving') : editorStatus}

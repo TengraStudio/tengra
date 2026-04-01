@@ -99,7 +99,7 @@ interface StatCardProps {
 const StatCard: React.FC<StatCardProps> = ({ label, value, icon: Icon, color, highlight }) => (
     <Card
         className={cn(
-            'p-4 bg-muted/30 border-white/5 flex flex-col gap-1 transition-all',
+            'p-4 bg-muted/30 border-border/40 flex flex-col gap-1 transition-all',
             highlight && 'border-primary/30 bg-primary/5'
         )}
     >
@@ -168,7 +168,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ stats }) => (
             label="memory.stats.contradictions"
             value={stats.contradictions}
             icon={AlertTriangle}
-            color="text-orange"
+            color="text-warning"
             highlight={stats.contradictions > 0}
         />
     </div>

@@ -100,7 +100,7 @@ export const PromptTemplateLibrary: React.FC = () => {
                     <input type="text" placeholder={t('prompts.library.descriptionPlaceholder')} value={draft.description} onChange={e => setDraft({ ...draft, description: e.target.value })}
                         className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground" />
                     <textarea placeholder={t('prompts.library.templatePlaceholder')} value={draft.template} onChange={e => setDraft({ ...draft, template: e.target.value })}
-                        className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground min-h-[120px] font-mono" />
+                        className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground tw-min-h-120 font-mono" />
                     <div className="flex gap-2">
                         <button onClick={() => void handleSave()} className="px-3 py-2 rounded-lg text-xs font-bold bg-primary/20 text-primary border border-border/50">{t('common.save')}</button>
                         <button onClick={() => { setEditingId(null); setDraft(EMPTY_DRAFT); }} className="px-3 py-2 rounded-lg text-xs font-bold bg-accent/20 text-muted-foreground border border-border/50">{t('common.cancel')}</button>

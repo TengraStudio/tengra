@@ -21,10 +21,10 @@ const ERROR_MESSAGE_KEYS: Record<ChatErrorKind, string> = {
 
 /** Accent color per error kind */
 const ERROR_COLORS: Record<ChatErrorKind, string> = {
-    provider_unavailable: 'border-orange-500/50 bg-orange-500/10',
-    quota_exhausted: 'border-red-500/50 bg-red-500/10',
-    timeout: 'border-yellow-500/50 bg-yellow-500/10',
-    generic: 'border-red-500/50 bg-red-500/10',
+    provider_unavailable: 'border-warning/50 bg-warning/10',
+    quota_exhausted: 'border-destructive/50 bg-destructive/10',
+    timeout: 'border-warning/50 bg-warning/10',
+    generic: 'border-destructive/50 bg-destructive/10',
 };
 
 /**
@@ -75,7 +75,7 @@ export const ChatErrorBanner: React.FC<ChatErrorBannerProps> = ({
                 {showSwitchModel && onSwitchModel && (
                     <button
                         onClick={onSwitchModel}
-                        className="flex items-center gap-1 rounded-lg border border-white/10 hover:bg-white/5 text-muted-foreground hover:text-foreground px-3 py-1.5 text-xs font-medium transition-colors"
+                        className="flex items-center gap-1 rounded-lg border border-border/60 hover:bg-accent/50 text-muted-foreground hover:text-foreground px-3 py-1.5 text-xs font-medium transition-colors"
                     >
                         <ArrowRightLeft className="w-3 h-3" />
                         {t('chat.errorSwitchModel')}
@@ -85,3 +85,4 @@ export const ChatErrorBanner: React.FC<ChatErrorBannerProps> = ({
         </div>
     );
 };
+

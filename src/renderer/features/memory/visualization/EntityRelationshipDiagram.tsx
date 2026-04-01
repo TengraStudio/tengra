@@ -21,17 +21,17 @@ import '@xyflow/react/dist/style.css';
 // Node type for Entities
 const EntityNode = ({ data }: { data: { name: string; type: string; properties: Record<string, string> } }) => {
     return (
-        <div className="px-4 py-3 rounded-2xl border-2 border-primary/30 bg-background/90 backdrop-blur-xl shadow-2xl min-w-[200px]">
+        <div className="px-4 py-3 rounded-2xl border-2 border-primary/30 bg-background/90 backdrop-blur-xl shadow-2xl min-w-52">
             <div className="flex items-center gap-2 mb-2">
-                <div className="px-1.5 py-0.5 rounded-md bg-primary/20 text-primary text-[10px] uppercase font-bold">
+                <div className="px-1.5 py-0.5 rounded-md bg-primary/20 text-primary text-xxxs uppercase font-bold">
                     {data.type}
                 </div>
                 <div className="text-sm font-bold text-foreground truncate">{data.name}</div>
             </div>
             <div className="space-y-1.5">
                 {Object.entries(data.properties).map(([key, value]) => (
-                    <div key={key} className="flex flex-col gap-0.5 border-t border-white/5 pt-1.5 first:border-0 first:pt-0">
-                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{key}</span>
+                    <div key={key} className="flex flex-col gap-0.5 border-t border-border/40 pt-1.5 first:border-0 first:pt-0">
+                        <span className="text-xxxs text-muted-foreground uppercase tracking-wider">{key}</span>
                         <span className="text-xs text-foreground/80 line-clamp-2">{value}</span>
                     </div>
                 ))}
@@ -124,7 +124,7 @@ export const EntityRelationshipDiagram: React.FC = () => {
     }, [loadData]);
 
     return (
-        <div className="w-full h-full flex flex-col bg-background/50 relative overflow-hidden rounded-2xl border border-white/5">
+        <div className="w-full h-full flex flex-col bg-background/50 relative overflow-hidden rounded-2xl border border-border/40">
             {loading && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm">
                     <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
@@ -145,13 +145,13 @@ export const EntityRelationshipDiagram: React.FC = () => {
                 <MiniMap />
 
                 <Panel position="top-left" className="m-4">
-                    <div className="flex items-center gap-3 bg-background/80 backdrop-blur-xl p-2 rounded-2xl border border-white/10 shadow-xl">
+                    <div className="flex items-center gap-3 bg-background/80 backdrop-blur-xl p-2 rounded-2xl border border-border/50 shadow-xl">
                         <div className="p-2 bg-success/20 rounded-xl text-success">
                             <Database className="w-5 h-5" />
                         </div>
                         <div>
                             <h2 className="text-sm font-bold">{t('memory.erDiagram')}</h2>
-                            <p className="text-[10px] text-muted-foreground">
+                            <p className="text-xxxs text-muted-foreground">
                                 {t('memory.entitiesTracked', { count: nodes.length })}
                             </p>
                         </div>
@@ -161,7 +161,7 @@ export const EntityRelationshipDiagram: React.FC = () => {
                 <Panel position="top-right" className="m-4">
                     <button
                         onClick={() => void loadData()}
-                        className="p-2.5 bg-background/80 backdrop-blur-xl hover:bg-white/10 rounded-xl border border-white/10 transition-all text-muted-foreground hover:text-foreground shadow-lg"
+                        className="p-2.5 bg-background/80 backdrop-blur-xl hover:bg-muted/40 rounded-xl border border-border/50 transition-all text-muted-foreground hover:text-foreground shadow-lg"
                     >
                         <RotateCcw className="w-4 h-4" />
                     </button>

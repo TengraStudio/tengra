@@ -46,7 +46,7 @@ export const WorkspaceFilesTab = ({
                                 <div
                                     key={file.path}
                                     onClick={() => { setActiveFile(file.path); }}
-                                    className={`group flex items-center gap-2 px-3 py-2 text-xs border-r border-border/20 cursor-pointer min-w-[120px] max-w-[200px] ${activeFile === file.path ? 'bg-card text-primary font-medium border-t-2 border-t-primary' : 'text-muted-foreground hover:bg-muted/30'}`}
+                                    className={`group flex items-center gap-2 px-3 py-2 text-xs border-r border-border/20 cursor-pointer tw-min-w-120 tw-max-w-200 ${activeFile === file.path ? 'bg-card text-primary font-medium border-t-2 border-t-primary' : 'text-muted-foreground hover:bg-muted/30'}`}
                                 >
                                     <FileCode size={12} className={activeFile === file.path ? 'text-primary' : 'opacity-50'} />
                                     <span className="truncate flex-1">{file.name}</span>

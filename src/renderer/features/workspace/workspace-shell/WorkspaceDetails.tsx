@@ -332,22 +332,22 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                 language={language}
             />
             {taskRunner.tasks.length > 0 && (
-                <div className="border-t border-white/5 bg-background/70 px-3 py-2">
+                <div className="border-t border-border/30 bg-background/70 px-3 py-2">
                     <div className="flex items-center gap-2 overflow-x-auto">
                         {taskRunner.tasks.map(task => {
                             const latestLine = task.output.trim().split(/\r?\n/).filter(Boolean).slice(-1)[0] ?? '';
                             return (
                                 <div
                                     key={task.id}
-                                    className="min-w-[220px] max-w-[320px] rounded-lg border border-border/40 bg-background/80 px-3 py-2"
+                                    className="tw-min-w-220 tw-max-w-320 rounded-lg border border-border/40 bg-background/80 px-3 py-2"
                                 >
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0">
-                                            <div className="truncate text-[11px] font-semibold text-foreground">
+                                            <div className="truncate tw-text-11 font-semibold text-foreground">
                                                 {task.command}
                                             </div>
                                             {latestLine && (
-                                                <div className="truncate text-[10px] text-muted-foreground">
+                                                <div className="truncate tw-text-10 text-muted-foreground">
                                                     {latestLine}
                                                 </div>
                                             )}
@@ -358,7 +358,7 @@ export const WorkspaceDetails: React.FC<WorkspaceDetailsProps> = ({
                                                 onClick={() => {
                                                     void taskRunner.stopTask(task.id);
                                                 }}
-                                                className="rounded p-1 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
+                                                className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
                                                 title={t('common.stop')}
                                             >
                                                 <Square className="h-3.5 w-3.5" />

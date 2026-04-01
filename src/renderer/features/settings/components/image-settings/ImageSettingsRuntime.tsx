@@ -48,11 +48,11 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
     const getStatusIcon = (): JSX.Element => {
         switch (sdCppStatus) {
             case 'ready':
-                return <CheckCircle2 className="text-emerald-500 w-5 h-5 flex-shrink-0" />;
+                return <CheckCircle2 className="text-success w-5 h-5 flex-shrink-0" />;
             case 'installing':
-                return <Download className="text-blue-500 w-5 h-5 animate-pulse flex-shrink-0" />;
+                return <Download className="text-primary w-5 h-5 animate-pulse flex-shrink-0" />;
             case 'failed':
-                return <AlertTriangle className="text-rose-500 w-5 h-5 flex-shrink-0" />;
+                return <AlertTriangle className="text-destructive w-5 h-5 flex-shrink-0" />;
             default:
                 return <CircleDot className="text-muted-foreground w-5 h-5 flex-shrink-0" />;
         }
@@ -65,18 +65,18 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
     const progressPercentage = downloadProgress ? Math.round((downloadProgress.downloaded / downloadProgress.total) * 100) : 0;
 
     return (
-        <div className="space-y-4 pt-4 border-t border-white/5">
+        <div className="space-y-4 pt-4 border-t border-border/30">
             <h4 className="text-xxs font-bold text-muted-foreground uppercase tracking-widest px-1 flex items-center gap-2">
                 <Settings2 className="w-3.5 h-3.5" />
                 {t('settings.images.runtimeManagement')}
             </h4>
 
-            <div className="p-5 rounded-2xl bg-white/5 border border-white/5 space-y-5">
+            <div className="p-5 rounded-2xl bg-muted/40 border border-border/30 space-y-5">
                 <div className="flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
                     <div className="flex items-center gap-3">
                         <div className={cn(
                             "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-inner",
-                            sdCppStatus === 'ready' ? "bg-emerald-500/10 text-emerald-500" : "bg-white/5 text-muted-foreground"
+                            sdCppStatus === 'ready' ? "bg-success/10 text-success" : "bg-muted/30 text-muted-foreground"
                         )}>
                             {sdCppStatus === 'ready' ? <CheckCircle2 className="w-6 h-6" /> : <Image className="w-6 h-6" />}
                         </div>
@@ -84,15 +84,15 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                             <h4 className="text-sm font-bold flex items-center gap-2">
                                 {t('settings.images.runtimeName')}
                                 {sdCppStatus === 'ready' && (
-                                    <span className="bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter">
+                                    <span className="bg-success/10 text-success px-1.5 py-0.5 rounded text-xxxs font-black uppercase tracking-tighter">
                                         {t('settings.images.runtimeVersion')}
                                     </span>
                                 )}
                             </h4>
                             <div className="flex items-center gap-2 mt-1">
                                 <div className={cn("w-2 h-2 rounded-full",
-                                    sdCppStatus === 'ready' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" :
-                                        sdCppStatus === 'installing' ? "bg-blue-500 animate-pulse" : "bg-muted-foreground/30")
+                                    sdCppStatus === 'ready' ? "bg-success shadow-sm" :
+                                        sdCppStatus === 'installing' ? "bg-primary animate-pulse" : "bg-muted-foreground/30")
                                 } />
                                 <span className="text-xxs font-bold text-muted-foreground/80 uppercase tracking-widest">
                                     {getStatusText()}
@@ -106,10 +106,10 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                             onClick={handleReinstallClick}
                             disabled={isReinstalling || sdCppStatus === 'installing'}
                             className={cn(
-                                "px-4 py-2.5 rounded-xl transition-all duration-300 group flex items-center gap-2 text-[10px] font-black uppercase tracking-tight shadow-sm w-full sm:w-auto justify-center",
+                                "px-4 py-2.5 rounded-xl transition-all duration-300 group flex items-center gap-2 text-xxxs font-black uppercase tracking-tight shadow-sm w-full sm:w-auto justify-center",
                                 (isReinstalling || sdCppStatus === 'installing')
-                                    ? "bg-white/5 text-muted-foreground/50 border border-white/5 cursor-not-allowed"
-                                    : "bg-white/5 text-foreground hover:bg-primary hover:text-white border border-white/10 hover:border-primary shadow-[0_2px_10px_rgba(0,0,0,0.2)]"
+                                    ? "bg-muted/40 text-muted-foreground/50 border border-border/30 cursor-not-allowed"
+                                    : "bg-muted/40 text-foreground hover:bg-primary hover:text-primary-foreground border border-border/40 hover:border-primary shadow-lg"
                             )}
                         >
                             <RotateCcw className={cn("w-3.5 h-3.5", (isReinstalling || sdCppStatus === 'installing') && "animate-spin")} />
@@ -120,10 +120,10 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
 
                 {/* Progress Monitor */}
                 {(sdCppStatus === 'installing' || isReinstalling) && downloadProgress && (
-                    <div className="space-y-3 animate-in slide-in-from-top-2 duration-500 bg-black/20 p-4 rounded-xl border border-white/5">
+                    <div className="space-y-3 animate-in slide-in-from-top-2 duration-500 bg-background/50 p-4 rounded-xl border border-border/30">
                         <div className="flex justify-between items-end gap-4">
                             <div className="space-y-1 min-w-0 flex-1">
-                                <p className="text-[10px] font-black text-primary uppercase tracking-widest leading-none">
+                                <p className="text-xxxs font-black text-primary uppercase tracking-widest leading-none">
                                     {t('settings.images.downloading')}
                                 </p>
                                 <p className="text-xxs text-muted-foreground/80 truncate font-medium underline underline-offset-4 decoration-white/10">
@@ -134,22 +134,22 @@ export const ImageSettingsRuntime: React.FC<ImageSettingsRuntimeProps> = ({
                                 {progressPercentage}%
                             </span>
                         </div>
-                        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden p-[1px]">
+                        <div className="h-1.5 w-full bg-muted/40 rounded-full overflow-hidden p-px">
                             <div
                                 className="h-full bg-primary transition-all duration-700 ease-out relative rounded-full"
                                 style={{ width: `${progressPercentage}%` }}
                             >
-                                <div className="absolute inset-0 bg-white/20 animate-pulse" />
-                                <div className="absolute top-0 right-0 h-full w-4 bg-gradient-to-r from-transparent to-white/30 blur-sm" />
+                                <div className="absolute inset-0 bg-muted/70 animate-pulse" />
+                                <div className="absolute top-0 right-0 h-full w-4 bg-gradient-to-r from-transparent to-foreground/30 blur-sm" />
                             </div>
                         </div>
                     </div>
                 )}
 
                 {/* Help/Support Text */}
-                <div className="rounded-xl bg-orange-500/5 border border-orange-500/10 p-3.5 flex gap-3">
-                    <AlertTriangle className="w-4 h-4 text-orange-500/60 flex-shrink-0 mt-0.5" />
-                    <p className="text-[10px] leading-relaxed text-muted-foreground/80 font-medium italic">
+                <div className="rounded-xl bg-warning/5 border border-warning/20 p-3.5 flex gap-3">
+                    <AlertTriangle className="w-4 h-4 text-warning/70 flex-shrink-0 mt-0.5" />
+                    <p className="text-xxxs leading-relaxed text-muted-foreground/80 font-medium italic">
                         {t('settings.images.reinstallHelp')}
                     </p>
                 </div>

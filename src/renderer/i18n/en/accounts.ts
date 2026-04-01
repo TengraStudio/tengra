@@ -19,8 +19,12 @@ const sectionData = {
         "aiProviders": "AI Providers",
         "aiProvidersNvidia": "AI Providers (NVIDIA)",
         "developerTools": "Developer Tools",
-        "localModels": "Local Models"
+        "localModels": "Local Models",
+        "apiKeyProviders": "API Key Providers"
     },
+    "apiKeyProvidersDescription": "Add API keys for direct access to AI providers. You can add multiple keys per provider for load balancing.",
+    "addApiKey": "Add Key",
+    "getApiKey": "Get API key",
     "providers": {
         "github": {
             "name": "GitHub",
@@ -49,6 +53,52 @@ const sectionData = {
         "nvidia": {
             "name": "NVIDIA",
             "description": "Local GPU acceleration and model runtime"
+        }
+    },
+    "apiProviders": {
+        "openai": {
+            "name": "OpenAI",
+            "description": "GPT-4o, o1, o3 and advanced language models"
+        },
+        "anthropic": {
+            "name": "Anthropic",
+            "description": "Claude Sonnet, Opus and Haiku models"
+        },
+        "gemini": {
+            "name": "Google Gemini",
+            "description": "Gemini 2.0 Flash and Pro models"
+        },
+        "mistral": {
+            "name": "Mistral AI",
+            "description": "Mistral Large, Medium and Small models"
+        },
+        "groq": {
+            "name": "Groq",
+            "description": "Ultra-fast inference with LPU technology"
+        },
+        "together": {
+            "name": "Together AI",
+            "description": "Open source models with fast inference"
+        },
+        "perplexity": {
+            "name": "Perplexity",
+            "description": "AI search with real-time web access"
+        },
+        "cohere": {
+            "name": "Cohere",
+            "description": "Command R+ enterprise AI models"
+        },
+        "xai": {
+            "name": "xAI (Grok)",
+            "description": "Grok-2 conversational AI"
+        },
+        "deepseek": {
+            "name": "DeepSeek",
+            "description": "DeepSeek V3 and reasoning models"
+        },
+        "openrouter": {
+            "name": "OpenRouter",
+            "description": "Unified API for 200+ AI models"
         }
     },
     "connected": "CONNECTED",

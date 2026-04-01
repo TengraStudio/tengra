@@ -5,12 +5,11 @@ import {
     recordTerminalToolbarSuccess,
     setTerminalToolbarUiState,
 } from '@renderer/store/terminal-toolbar-health.store';
-import { Check, ChevronDown, Maximize2, Minimize2, Plus, Rows2, TerminalSquare } from 'lucide-react';
+import { Check, ChevronDown, Maximize2, Minimize2, Plus, TerminalSquare } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { useEffect } from 'react';
 
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'; 
 import { TerminalTab } from '@/types';
 
 import type { SplitAnalytics, SplitPreset } from '../utils/split-config';
@@ -96,9 +95,7 @@ interface TerminalToolbarProps {
     toggleSemanticPanel: () => void;
     hasActiveSession: boolean;
     activeSemanticIssuesLength: number;
-    activeSemanticErrorCount: number;
-    openMultiplexerPanel: () => void;
-    isMultiplexerOpen: boolean;
+    activeSemanticErrorCount: number; 
     toggleRecording: () => void;
     activeRecordingTabId: string | null;
     isMaximized: boolean;
@@ -149,10 +146,7 @@ export function TerminalToolbar({
     resetSplitAnalytics,
     toggleSynchronizedInput,
     toggleSplitOrientation,
-    closeSplitView, 
-    hasActiveSession,
-    openMultiplexerPanel,
-    isMultiplexerOpen,
+    closeSplitView,  
     toggleRecording,
     activeRecordingTabId,
     isMaximized,
@@ -193,7 +187,7 @@ export function TerminalToolbar({
                         side="top"
                         align="start"
                         sideOffset={8}
-                        className="w-[280px] max-h-[min(70vh,520px)] overflow-y-auto p-1 bg-popover border border-border rounded-lg"
+                        className="w-72 max-h-screen overflow-y-auto p-1 bg-popover border border-border rounded-lg"
                     >
                         {isLoadingLaunchOptions ? (
                             <div className="px-3 py-2 text-xs text-muted-foreground">
@@ -203,7 +197,7 @@ export function TerminalToolbar({
                             <>
                                 {selectableBackends.length > 0 && (
                                     <div className="px-2 pt-1 pb-1">
-                                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                                        <div className="text-xxxs uppercase tracking-wide text-muted-foreground">
                                             {t('terminal.defaultBackend')}: {defaultBackendName}
                                         </div>
                                         <div className="mt-1 space-y-0.5">
@@ -213,7 +207,7 @@ export function TerminalToolbar({
                                                     onClick={() => {
                                                         void persistPreferredBackendId(backend.id);
                                                     }}
-                                                    className="w-full px-2 py-1 text-left text-[11px] rounded-sm hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 text-foreground"
+                                                    className="w-full px-2 py-1 text-left text-xxxs rounded-sm hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 text-foreground"
                                                 >
                                                     <span className="truncate">{backend.name}</span>
                                                     {resolvedDefaultBackendId === backend.id && (
@@ -227,7 +221,7 @@ export function TerminalToolbar({
                                 {integratedBackend && (
                                     <>
                                         <div className="h-px bg-border/70 my-1" />
-                                        <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                                        <div className="px-2 py-1 text-xxxs uppercase tracking-wide text-muted-foreground">
                                             {t('terminal.integratedSessions')}
                                         </div>
                                         {availableShells.map(s => (
@@ -255,7 +249,7 @@ export function TerminalToolbar({
                                 {launchableExternalBackends.length > 0 && (
                                     <>
                                         <div className="h-px bg-border/70 my-1" />
-                                        <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                                        <div className="px-2 py-1 text-xxxs uppercase tracking-wide text-muted-foreground">
                                             {t('terminal.externalTerminals')}
                                         </div>
                                         {launchableExternalBackends.map(backend => (
@@ -285,7 +279,7 @@ export function TerminalToolbar({
                                     </>
                                 )}
                                 <div className="h-px bg-border/70 my-1" />
-                                <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                                <div className="px-2 py-1 text-xxxs uppercase tracking-wide text-muted-foreground">
                                     {t('terminal.select_connection')}
                                 </div>
                                 {isLoadingRemoteConnections && (
@@ -304,7 +298,7 @@ export function TerminalToolbar({
                                             title={`${profile.username}@${profile.host}:${profile.port}`}
                                         >
                                             <span className="truncate">{t('terminal.sshPrefix')}: {profile.name}</span>
-                                            <span className="text-[10px] text-muted-foreground">
+                                            <span className="text-xxxs text-muted-foreground">
                                                 {profile.host}
                                             </span>
                                         </button>
@@ -320,7 +314,7 @@ export function TerminalToolbar({
                                             title={container.id}
                                         >
                                             <span className="truncate">{t('terminal.dockerPrefix')}: {container.name}</span>
-                                            <span className="text-[10px] text-muted-foreground truncate max-w-[100px]">
+                                            <span className="text-xxxs text-muted-foreground truncate max-w-24">
                                                 {container.status}
                                             </span>
                                         </button>
@@ -361,19 +355,7 @@ export function TerminalToolbar({
                         toggleSplitOrientation={toggleSplitOrientation}
                         closeSplitView={closeSplitView}
                     /> 
-                     
-                    <button
-                        onClick={openMultiplexerPanel}
-                        disabled={!hasActiveSession}
-                        className={cn(
-                            'p-1.5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed',
-                            isMultiplexerOpen && 'text-primary'
-                        )}
-                        title={t('terminal.multiplexerTitle')}
-                    >
-                        <Rows2 className="w-3.5 h-3.5" />
-                    </button>
-                    
+                      
                     <button
                         onClick={() => {
                             setIsMaximized(!isMaximized);

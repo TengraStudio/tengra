@@ -32,13 +32,13 @@ export function TerminalSemanticPanel({
     handleAiFixError,
 }: TerminalSemanticPanelProps) {
     return (
-        <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 min-w-[340px] max-w-[460px]">
+        <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 min-w-80 max-w-lg">
             <div className="flex items-center justify-between gap-3 mb-2">
                 <div className="flex items-center gap-2 text-xs font-semibold">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                    <AlertTriangle className="w-3.5 h-3.5 text-warning" />
                     {t('terminal.semanticIssues')}
                 </div>
-                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                <div className="flex items-center gap-2 text-xxxs text-muted-foreground">
                     <span>
                         {t('terminal.semanticErrors')}: {activeSemanticErrorCount}
                     </span>
@@ -67,10 +67,10 @@ export function TerminalSemanticPanel({
                             <div className="flex items-center justify-between gap-2">
                                 <span
                                     className={cn(
-                                        'text-[10px] uppercase tracking-wide font-semibold',
+                                        'text-xxxs uppercase tracking-wide font-semibold',
                                         issue.severity === 'error'
                                             ? 'text-destructive'
-                                            : 'text-amber-500'
+                                            : 'text-warning'
                                     )}
                                 >
                                     {issue.severity}
@@ -100,7 +100,7 @@ export function TerminalSemanticPanel({
                                             </button>
                                         </>
                                     )}
-                                    <span className="text-[10px] text-muted-foreground">
+                                    <span className="text-xxxs text-muted-foreground">
                                         {new Date(issue.timestamp).toLocaleTimeString()}
                                     </span>
                                 </div>

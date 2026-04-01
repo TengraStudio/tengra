@@ -59,7 +59,7 @@ export const PromptSection: React.FC<PromptSectionProps> = ({
             <textarea
                 value={prompt}
                 onChange={e => setPrompt(e.target.value)}
-                className="w-full bg-muted/30 border border-border/50 rounded-xl p-3 text-sm min-h-[100px] resize-none focus:border-primary/50 transition-colors outline-none text-foreground"
+                className="w-full bg-muted/30 border border-border/50 rounded-xl p-3 text-sm tw-min-h-100 resize-none focus:border-primary/50 transition-colors outline-none text-foreground"
                 placeholder={translateKey('workspaces.logoPromptPlaceholder')}
             />
         </div>

@@ -190,7 +190,7 @@ const OrchestrationSection: React.FC<OrchestrationSectionProps> = ({ orchestrati
     <div className="bg-card p-6 rounded-xl border border-border space-y-4">
         <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-                <Zap className="w-5 h-5 text-purple" />
+                <Zap className="w-5 h-5 text-primary" />
                 <div>
                     <h3 className="text-sm font-bold text-foreground">{t('advanced.orchestration')}</h3>
                     <p className="text-xs text-muted-foreground">{t('advanced.orchestrationDesc')}</p>
@@ -246,7 +246,7 @@ const ServiceIntervalsSection: React.FC<ServiceIntervalsSectionProps> = ({ setti
                 t={t}
             />
             <IntervalSelect
-                icon={<RefreshCw className="w-3.5 h-3.5 text-purple" />}
+                icon={<RefreshCw className="w-3.5 h-3.5 text-primary" />}
                 label={t('advanced.copilotRefreshInterval')}
                 description={t('advanced.copilotRefreshIntervalDesc')}
                 value={settings?.ai?.copilotRefreshInterval ?? SERVICE_INTERVALS.COPILOT_REFRESH}

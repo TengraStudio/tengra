@@ -4,6 +4,7 @@ import React, { useCallback, useState } from 'react';
 import { Modal } from '@/components/ui/modal';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { appLogger } from '@/utils/renderer-logger';
 
 export interface DeviceCodeModalState {
     isOpen: boolean
@@ -36,11 +37,11 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
 
     const handleCopy = useCallback(async () => {
         try {
-            await navigator.clipboard.writeText(userCode);
+            await window.electron.clipboard.writeText(userCode);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
-        } catch {
-            // Failed to copy - user can still manually copy
+        } catch (err) {
+            appLogger.error('DeviceCodeModal', 'Failed to copy to clipboard', err as Error);
         }
     }, [userCode]);
 
@@ -70,7 +71,7 @@ export const DeviceCodeModal: React.FC<DeviceCodeModalProps> = ({
                 {/* Device Code Display */}
                 <div className="relative">
                     <div className="bg-muted/30 border border-border/50 rounded-xl p-6 text-center">
-                        <code className="text-3xl font-mono font-bold tracking-[0.3em] text-primary select-all">
+                        <code className="text-3xl font-mono font-bold tracking-widest text-primary select-all">
                             {userCode}
                         </code>
                     </div>

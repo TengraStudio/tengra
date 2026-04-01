@@ -92,7 +92,7 @@ const PanelTab: React.FC<{
         )}
     >
         {panel.icon && <span className="w-4 h-4">{panel.icon}</span>}
-        <span className="truncate max-w-[120px]">{panel.title}</span>
+        <span className="truncate max-w-32">{panel.title}</span>
         {panel.closable !== false && onClose && (
             <button
                 onClick={(e) => { e.stopPropagation(); onClose(); }}

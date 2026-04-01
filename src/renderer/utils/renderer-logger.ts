@@ -89,10 +89,14 @@ class RendererLogger {
         if (!electronLog) { return false; }
 
         const method = this.electronLevelMethod[level] ?? 'info';
+        const logMethod = electronLog[method];
+        if (typeof logMethod !== 'function') {
+            return false;
+        }
         if (data !== undefined) {
-            electronLog[method](formattedMessage, data);
+            logMethod(formattedMessage, data);
         } else {
-            electronLog[method](formattedMessage);
+            logMethod(formattedMessage);
         }
         return true;
     }

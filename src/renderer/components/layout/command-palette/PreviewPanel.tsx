@@ -12,7 +12,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ selectedItem }) => {
     const { t } = useTranslation();
 
     return (
-        <div className="w-[300px] bg-muted/5 p-6 flex flex-col gap-4 overflow-y-auto hidden md:flex">
+        <div className="w-72 bg-muted/5 p-6 flex flex-col gap-4 overflow-y-auto hidden md:flex">
             {selectedItem?.preview ? (
                 <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                     <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-4 shadow-inner">

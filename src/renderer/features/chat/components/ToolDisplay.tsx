@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -37,7 +37,7 @@ interface ExpandedToolContentProps {
 }
 
 const ExpandedToolContent: React.FC<ExpandedToolContentProps> = ({ toolName, args, result, t }) => (
-    <div className="mt-2 ml-2 border-l-2 border-white/10 pl-3 py-1 space-y-3 animate-in slide-in-from-top-1 duration-200">
+    <div className="mt-2 ml-2 border-l-2 border-border/50 pl-3 py-1 space-y-3 animate-in slide-in-from-top-1 duration-200">
         <div className="space-y-1">
             <div className="text-sm uppercase tracking-wider text-muted-foreground font-bold opacity-50">{t('tools.input')}</div>
             <ToolArguments name={toolName} args={args} t={t} />

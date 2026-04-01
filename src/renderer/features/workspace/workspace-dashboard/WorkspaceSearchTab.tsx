@@ -92,12 +92,12 @@ export const WorkspaceSearchTab = ({
             <div className="flex flex-col gap-1 border-b border-border/50 px-3 pb-2 pt-2.5">
                 {/* Primary search row */}
                 <div className="flex items-center gap-1">
-                    <div className="flex flex-1 items-center gap-2 rounded-sm border border-border/60 bg-[var(--input-background,rgba(255,255,255,0.04))] px-2 py-[5px] transition-colors focus-within:border-cyan-400/50">
+                    <div className="flex flex-1 items-center gap-2 rounded-sm border border-border/60 bg-input/30 px-2 py-1 transition-colors focus-within:border-info/50">
                         <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                         <input
                             type="text"
                             placeholder={t('workspaceDashboard.searchInWorkspace')}
-                            className="min-w-0 flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground/60"
+                            className="min-w-0 flex-1 bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground/60"
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
                             onKeyDown={handleKeyDown}
@@ -107,7 +107,7 @@ export const WorkspaceSearchTab = ({
                             <button
                                 type="button"
                                 onClick={handleClear}
-                                className="rounded-sm p-0.5 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
+                                className="rounded-sm p-0.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                                 title={t('common.clear')}
                             >
                                 <X className="h-3.5 w-3.5" />
@@ -126,7 +126,7 @@ export const WorkspaceSearchTab = ({
                 <button
                     type="button"
                     onClick={() => setFiltersExpanded(prev => !prev)}
-                    className="flex items-center gap-1 self-start rounded-sm px-1 py-0.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+                    className="flex items-center gap-1 self-start rounded-sm px-1 py-0.5 text-xxs text-muted-foreground transition-colors hover:text-foreground"
                 >
                     {filtersExpanded
                         ? <ChevronDown className="h-3 w-3" />
@@ -155,11 +155,11 @@ export const WorkspaceSearchTab = ({
             {trimmedQuery.length >= 2 && (
                 <div className="flex items-center gap-2 border-b border-border/30 px-3 py-1.5">
                     {isSearching ? (
-                        <span className="text-[11px] text-muted-foreground">
+                        <span className="text-xxs text-muted-foreground">
                             {t('common.searching')}
                         </span>
                     ) : (
-                        <span className="text-[11px] text-muted-foreground">
+                        <span className="text-xxs text-muted-foreground">
                             {filteredResults.length} {t('semanticSearch.results').toLowerCase()} — {groupedFileCount} {t('workspaceDashboard.files').toLowerCase()}
                         </span>
                     )}
@@ -171,7 +171,7 @@ export const WorkspaceSearchTab = ({
                 {trimmedQuery.length < 2 && !isSearching ? (
                     <div className="flex h-full flex-col items-center justify-center px-6 text-center">
                         <Search className="mb-3 h-8 w-8 text-muted-foreground/30" />
-                        <p className="text-[13px] text-muted-foreground/60">
+                        <p className="text-xs text-muted-foreground/60">
                             {t('workspaceDashboard.searchInWorkspace')}
                         </p>
                     </div>
@@ -209,8 +209,8 @@ const SearchToggleButton = ({ icon, title }: SearchToggleButtonProps) => {
             className={[
                 'rounded-sm p-1 transition-colors',
                 active
-                    ? 'bg-cyan-400/15 text-cyan-200'
-                    : 'text-muted-foreground/60 hover:bg-white/8 hover:text-muted-foreground',
+                    ? 'bg-info/15 text-info'
+                    : 'text-muted-foreground/60 hover:bg-accent/60 hover:text-muted-foreground',
             ].join(' ')}
         >
             {icon}
@@ -231,7 +231,7 @@ const FilterInput = ({ placeholder, value, onChange }: FilterInputProps) => (
         placeholder={placeholder}
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="rounded-sm border border-border/40 bg-[var(--input-background,rgba(255,255,255,0.04))] px-2 py-[3px] text-[12px] text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-cyan-400/40"
+        className="rounded-sm border border-border/40 bg-input/30 px-2 py-0.5 text-xs text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-info/40"
     />
 );
 
@@ -260,3 +260,4 @@ function simpleGlobMatch(path: string, pattern: string): boolean {
     }
     return false;
 }
+

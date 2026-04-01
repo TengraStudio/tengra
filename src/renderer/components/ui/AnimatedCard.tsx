@@ -100,8 +100,8 @@ export const GradientBorderCard: React.FC<{
     className?: string
 }> = ({ children, className }) => {
     return (
-        <div className={cn('gradient-border p-[2px]', className)}>
-            <div className="bg-card rounded-[calc(0.75rem-2px)] p-4 h-full">
+        <div className={cn('gradient-border p-0.5', className)}>
+            <div className="bg-card rounded-lg p-4 h-full">
                 {children}
             </div>
         </div>

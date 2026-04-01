@@ -42,7 +42,7 @@ export function SessionLockOverlay({
 
     return (
         <div
-            className="fixed inset-0 z-[200] bg-background/95 backdrop-blur-sm flex items-center justify-center p-6"
+            className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center p-6"
             role="dialog"
             aria-modal="true"
             aria-label={t('session.lockedTitle')}

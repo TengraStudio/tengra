@@ -4,8 +4,7 @@ import { TerminalTab } from '@/types';
 
 import type { AiPanelMode, AiResult } from '../hooks/useTerminalAI';
 import type { TaskRunnerEntry, TerminalHistoryEntry } from '../hooks/useTerminalCommandTools';
-import type { TerminalRecording } from '../hooks/useTerminalRecording';
-import type { MultiplexerMode, MultiplexerSession } from '../utils/terminal-panel-types';
+import type { TerminalRecording } from '../hooks/useTerminalRecording'; 
 import type { TerminalSemanticIssue } from '../utils/terminal-panel-types';
 import type { TerminalSearchMatch } from '../utils/terminal-search';
 
@@ -53,8 +52,7 @@ export interface TerminalPanelOverlaysConnectorProps {
     toggleSemanticPanel: () => void;
     toggleGalleryView: () => void;
     openCommandHistory: () => void;
-    openTaskRunner: () => void;
-    openMultiplexerPanel: () => void;
+    openTaskRunner: () => void; 
     toggleRecording: () => void;
     createDefaultTerminal: () => Promise<void>;
     hideTerminalPanel: () => void;
@@ -68,23 +66,8 @@ export interface TerminalPanelOverlaysConnectorProps {
     setIsGalleryView: (open: boolean) => void;
     setIsSemanticPanelOpen: (open: boolean) => void;
     setIsCommandHistoryOpen: (open: boolean) => void;
-    setIsTaskRunnerOpen: (open: boolean) => void;
-    setIsMultiplexerOpen: (open: boolean) => void;
+    setIsTaskRunnerOpen: (open: boolean) => void; 
     setIsRecordingPanelOpen: (open: boolean) => void;
-    // Multiplexer
-    isMultiplexerOpen: boolean;
-    multiplexerMode: MultiplexerMode;
-    multiplexerSessionName: string;
-    multiplexerSessions: MultiplexerSession[];
-    isMultiplexerLoading: boolean;
-    multiplexerError: string | null;
-    closeMultiplexerPanel: () => void;
-    setMultiplexerMode: React.Dispatch<React.SetStateAction<MultiplexerMode>>;
-    refreshMultiplexerSessions: (mode?: MultiplexerMode) => Promise<void>;
-    setMultiplexerSessionName: (name: string) => void;
-    createMultiplexerSession: () => Promise<void>;
-    attachMultiplexerSession: (session: MultiplexerSession) => Promise<void>;
-    // Recording
     isRecordingPanelOpen: boolean;
     recordings: TerminalRecording[];
     selectedRecordingId: string | null;
@@ -155,8 +138,7 @@ export const TerminalPanelOverlaysConnector: React.FC<TerminalPanelOverlaysConne
                 onSemanticToggle: p.toggleSemanticPanel,
                 onGalleryToggle: p.toggleGalleryView,
                 onHistoryToggle: p.openCommandHistory,
-                onTaskRunnerToggle: p.openTaskRunner,
-                onMultiplexerToggle: p.openMultiplexerPanel,
+                onTaskRunnerToggle: p.openTaskRunner, 
                 onRecordingToggle: () => { p.toggleRecording(); p.setTerminalContextMenu(null); },
                 onOpenRecordings: () => {
                     p.setTerminalContextMenu(null);
@@ -164,8 +146,7 @@ export const TerminalPanelOverlaysConnector: React.FC<TerminalPanelOverlaysConne
                     p.setIsGalleryView(false);
                     p.setIsSemanticPanelOpen(false);
                     p.setIsCommandHistoryOpen(false);
-                    p.setIsTaskRunnerOpen(false);
-                    p.setIsMultiplexerOpen(false);
+                    p.setIsTaskRunnerOpen(false); 
                     p.setIsRecordingPanelOpen(true);
                 },
                 onNewTerminal: () => { void p.createDefaultTerminal(); p.setTerminalContextMenu(null); },
@@ -200,7 +181,6 @@ export const TerminalPanelOverlaysConnector: React.FC<TerminalPanelOverlaysConne
                     dockTerminal: p.t('terminal.dockTerminal'),
                     commandHistory: p.t('terminal.commandHistory'),
                     runTask: p.t('terminal.runTask'),
-                    multiplexer: p.t('terminal.multiplexerTitle'),
                     startRecording: p.t('terminal.startRecording'),
                     stopRecording: p.t('terminal.stopRecording'),
                     sessionRecordings: p.t('terminal.recordingsTitle'),
@@ -237,25 +217,6 @@ export const TerminalPanelOverlaysConnector: React.FC<TerminalPanelOverlaysConne
             aiResult={p.aiResult}
             closeAiPanel={p.closeAiPanel}
             handleAiApplyFix={p.handleAiApplyFix}
-            multiplexerPanelProps={
-                p.isMultiplexerOpen
-                    ? {
-                        t: p.t,
-                        hasActiveSession: p.hasActiveSession,
-                        multiplexerMode: p.multiplexerMode,
-                        multiplexerSessionName: p.multiplexerSessionName,
-                        multiplexerSessions: p.multiplexerSessions,
-                        isMultiplexerLoading: p.isMultiplexerLoading,
-                        multiplexerError: p.multiplexerError,
-                        closeMultiplexerPanel: p.closeMultiplexerPanel,
-                        setMultiplexerMode: p.setMultiplexerMode,
-                        refreshMultiplexerSessions: p.refreshMultiplexerSessions,
-                        setMultiplexerSessionName: p.setMultiplexerSessionName,
-                        createMultiplexerSession: p.createMultiplexerSession,
-                        attachMultiplexerSession: p.attachMultiplexerSession,
-                    }
-                    : null
-            }
             recordingPanelProps={
                 p.isRecordingPanelOpen
                     ? {

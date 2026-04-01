@@ -40,7 +40,7 @@ const OptionButton: React.FC<OptionButtonProps> = ({ option, isSelected, onSelec
             "w-full px-4 py-2 text-left text-sm font-medium transition-all flex items-center justify-between group/item",
             isSelected
                 ? "bg-primary/15 text-primary"
-                : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
         )}
     >
         <span className="truncate">{option.label}</span>
@@ -59,7 +59,7 @@ const TriggerButton: React.FC<TriggerButtonProps> = ({ label, isOpen, onToggle }
         type="button"
         onClick={onToggle}
         className={cn(
-            "w-full flex items-center justify-between bg-muted/20 border border-border/50 rounded-xl px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:ring-1 focus:ring-primary/50 group/select shadow-sm hover:border-white/20",
+            "w-full flex items-center justify-between bg-muted/20 border border-border/50 rounded-xl px-4 py-2.5 text-sm font-medium transition-all focus:outline-none focus:ring-1 focus:ring-primary/50 group/select shadow-sm hover:border-border",
             isOpen ? "border-primary/40 bg-primary/5" : "text-primary/90 hover:bg-muted/30"
         )}
     >
@@ -91,10 +91,10 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
             exit={{ opacity: 0, y: isUp ? 4 : -4, scale: 0.95 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
             style={{ position: strategy, top: y ?? 0, left: x ?? 0, zIndex: 10000, width: width || 'auto' }}
-            className="bg-background/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden"
+            className="bg-background/95 backdrop-blur-xl border border-border/40 rounded-xl shadow-2xl overflow-hidden"
             onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
         >
-            <div className="max-h-[300px] overflow-y-auto custom-scrollbar py-1">
+            <div className="max-h-72 overflow-y-auto custom-scrollbar py-1">
                 {options.map(opt => (
                     <OptionButton key={opt.value} option={opt} isSelected={opt.value === value} onSelect={() => onSelect(opt.value)} />
                 ))}

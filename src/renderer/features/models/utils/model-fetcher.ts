@@ -14,7 +14,7 @@ function normalizeProviderId(provider: string | undefined): string {
     if (raw === '') {
         return 'custom';
     }
-    if (raw === 'github') {
+    if (raw === 'github' || raw === 'github_token' || raw === 'copilot_token') {
         return 'copilot';
     }
     if (raw === 'nvidia_key' || raw === 'nim' || raw === 'nim_openai') {
@@ -30,11 +30,11 @@ function normalizeProviderCategoryId(
 ): string {
     const raw = (providerCategory ?? '').trim().toLowerCase();
     if (raw !== '') {
-        return raw;
+        return normalizeProviderId(raw);
     }
     const source = (sourceProvider ?? '').trim().toLowerCase();
     if (source !== '') {
-        if (source === 'github' || source === 'copilot') {
+        if (source === 'github' || source === 'copilot' || source === 'github_token' || source === 'copilot_token') {
             return 'copilot';
         }
         if (source === 'anthropic' || source === 'claude') {

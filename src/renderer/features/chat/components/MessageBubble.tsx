@@ -165,9 +165,9 @@ const MessageIcon = ({ short, color, title }: { short: string; color: string; ti
 );
 
 const ResponseProgress = () => (
-    <div className="absolute top-0 left-0 right-0 h-[2px] overflow-hidden bg-primary/5">
+    <div className="absolute top-0 left-0 right-0 h-0.5 overflow-hidden bg-primary/5">
         <div
-            className="h-full w-full bg-primary/40 animate-[shimmer_2s_infinite_linear]"
+            className="h-full w-full bg-primary/40 animate-pulse"
             style={{
                 background:
                     'linear-gradient(90deg, transparent 0%, var(--primary) 50%, transparent 100%)',
@@ -207,7 +207,7 @@ const handleToolbarArrowNavigation = (event: React.KeyboardEvent<HTMLDivElement>
 };
 
 const ImageSkeleton = ({ t }: { t: TranslationFn }) => (
-    <div className="w-[300px] h-[300px] rounded-xl bg-accent/30 border border-border/50 flex flex-col items-center justify-center gap-4 relative overflow-hidden group/skel">
+    <div className="w-72 h-72 rounded-xl bg-accent/30 border border-border/50 flex flex-col items-center justify-center gap-4 relative overflow-hidden group/skel">
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-accent/30 to-transparent -translate-x-full animate-slide-shimmer" />
         <div className="w-12 h-12 rounded-full bg-accent/30 flex items-center justify-center animate-pulse">
             <Sparkles className="w-6 h-6 text-primary/40" />
@@ -481,7 +481,7 @@ const MermaidDiagram = memo(({ code, t }: { code: string; t: TranslationFn }) =>
     }
     if (!svg) {
         return (
-            <div className="my-4 h-32 flex items-center justify-center bg-accent/10 rounded-xl border border-white/5 animate-pulse">
+            <div className="my-4 h-32 flex items-center justify-center bg-accent/10 rounded-xl border border-border/40 animate-pulse">
                 <div className="text-xs text-muted-foreground">
                     {t('messageBubble.renderingDiagram')}
                 </div>
@@ -766,7 +766,7 @@ const ThoughtSection = memo(
                                 )}
                             />
                         </div>
-                        <span className="text-xxs font-black uppercase tracking-[0.15em]">
+                        <span className="text-xxs font-black uppercase tracking-widest">
                             {isThoughtExpanded
                                 ? t('messageBubble.TengraThinking')
                                 : t('messageBubble.showThought')}
@@ -790,7 +790,7 @@ const ThoughtSection = memo(
                 {isThoughtExpanded && (
                     <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                         <div className="relative ps-4 border-s-2 border-primary/20 py-1">
-                            <div className="absolute -start-[2px] top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary/40 via-primary/10 to-transparent" />
+                            <div className="absolute -start-0.5 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary/40 via-primary/10 to-transparent" />
                             <div className="bg-gradient-to-br from-primary/[0.03] to-transparent rounded-2xl p-4 border border-border/20">
                                 <div className="whitespace-pre-wrap font-mono text-xxs leading-relaxed text-muted-foreground/80 selection:bg-primary/20 drop-shadow-sm">
                                     {thought}
@@ -831,7 +831,7 @@ const PlanSection = memo(
                     <div className="p-1.5 rounded-lg bg-primary/20">
                         <ListTodo className="w-4 h-4 text-primary" />
                     </div>
-                    <span className="text-xs font-black text-primary uppercase tracking-[0.2em]">
+                    <span className="text-xs font-black text-primary uppercase tracking-widest">
                         {t('chat.plan')}
                     </span>
                 </div>
@@ -1087,7 +1087,7 @@ const MessageImages = memo(({ images, t }: { images: string[]; t: TranslationFn 
                         <img
                             src={img}
                             alt={t('messageBubble.attachedImage', { index: i + 1 })}
-                            className="max-w-full md:max-w-md max-h-[500px] object-contain rounded-xl border border-border/50 cursor-pointer hover:opacity-90 transition-all duration-300 shadow-2xl"
+                            className="max-w-full md:max-w-md max-h-screen object-contain rounded-xl border border-border/50 cursor-pointer hover:opacity-90 transition-all duration-300 shadow-2xl"
                             onClick={() => {
                                 window.electron.openExternal(img);
                             }}
@@ -1162,7 +1162,7 @@ const MessageVariants = memo(
                         className={cn(
                             'px-2.5 py-1 rounded-md text-xxs font-bold transition-all flex items-center gap-2 border',
                             idx === variantIndex
-                                ? 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[1.02]'
+                                ? 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-102'
                                 : 'hover:bg-accent/50 text-muted-foreground border-transparent'
                         )}
                     >
@@ -1336,7 +1336,7 @@ const MessageBubbleInner = memo(
         return (
             <div
                 className={cn(
-                    'rounded-2xl px-0 py-1 text-base leading-[1.65] whitespace-pre-wrap break-words border-none relative group/bubble w-full overflow-hidden',
+                    'rounded-2xl px-0 py-1 text-base leading-relaxed whitespace-pre-wrap break-words border-none relative group/bubble w-full overflow-hidden',
                     bubbleClass
                 )}
             >
@@ -1364,7 +1364,7 @@ const MessageBubbleInner = memo(
                 )}
                 {isUser && (
                     <svg
-                        className="absolute -bottom-[1px] -right-2 w-2 h-2.5 text-muted/10 fill-current pointer-events-none"
+                        className="absolute -bottom-px -right-2 w-2 h-2.5 text-muted/10 fill-current pointer-events-none"
                         viewBox="0 0 8 10"
                     >
                         <path d="M0 0 L8 10 L0 10 Z" />
@@ -1532,7 +1532,7 @@ const MessageFooter = memo(
                 {showModel && message.model && (
                     <>
                         <span className="h-1 rounded-full bg-muted-foreground/20" />
-                        <span className="truncate max-w-[120px]">{message.model}</span>
+                        <span className="truncate max-w-32">{message.model}</span>
                     </>
                 )}
                 {showResponseTime && message.responseTime && (
@@ -1640,7 +1640,7 @@ const MessageVariantCard = memo(
                     </div>
                 </div>
 
-                <div className="flex-1 min-h-[100px]">
+                <div className="flex-1 min-h-24">
                     <MessageBubbleContent
                         showRawMarkdown={showRawMarkdown}
                         quotaDetails={quota}
@@ -1893,7 +1893,7 @@ const buildWrapperClasses = (isUser: boolean, isFocused?: boolean): string =>
     );
 
 const buildContentWrapperClasses = (isUser: boolean): string =>
-    cn('flex max-w-[85%] md:max-w-[75%] gap-3', isUser ? 'flex-row-reverse' : 'flex-row');
+    cn('flex max-w-4xl md:max-w-3xl gap-3', isUser ? 'flex-row-reverse' : 'flex-row');
 
 const buildColumnWrapperClasses = (isUser: boolean): string =>
     cn('flex flex-col gap-1 min-w-0', isUser ? 'items-end' : 'items-start');

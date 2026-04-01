@@ -63,7 +63,7 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
                     <>
                         <div className="flex-1 min-h-0 overflow-hidden">{mainContent}</div>
                         <div className="h-px bg-border/50" />
-                        <div className="h-1/4 min-h-[100px] bg-card border-t border-border overflow-hidden">
+                        <div className="h-1/4 min-h-24 bg-card border-t border-border overflow-hidden">
                             {panelContent}
                         </div>
                     </>

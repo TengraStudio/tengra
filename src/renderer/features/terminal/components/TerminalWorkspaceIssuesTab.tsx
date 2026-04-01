@@ -94,14 +94,14 @@ export function TerminalWorkspaceIssuesTab({
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                            <span className={`text-[10px] font-black uppercase tracking-wider ${isError ? 'text-destructive/80' : 'text-warning/80'}`}>
+                            <span className={`text-xxxs font-black uppercase tracking-wider ${isError ? 'text-destructive/80' : 'text-warning/80'}`}>
                                 {isError ? t('terminal.workspaceIssuesError') : t('terminal.workspaceIssuesWarning')}
                             </span>
-                            <span className="text-[10px] text-muted-foreground font-mono truncate opacity-60 group-hover:opacity-100 transition-opacity">
+                            <span className="text-xxxs text-muted-foreground font-mono truncate opacity-60 group-hover:opacity-100 transition-opacity">
                                 {filePath}:{line}
                             </span>
                             {'source' in issue && (
-                                <span className="px-1.5 py-0.5 bg-white/5 rounded text-[9px] uppercase font-bold text-muted-foreground/60 border border-white/10 ml-auto flex items-center gap-1">
+                                <span className="px-1.5 py-0.5 bg-muted/30 rounded text-xxxs uppercase font-bold text-muted-foreground/60 border border-border/30 ml-auto flex items-center gap-1">
                                     {(issue as WorkspaceIssue).source}
                                 </span>
                             )}
@@ -128,14 +128,14 @@ export function TerminalWorkspaceIssuesTab({
                     </div>
                 ) : totalCount === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center gap-3 p-8">
-                        <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+                        <CheckCircle2 className="w-8 h-8 text-success" />
                         <div className="text-sm font-bold">{t('terminal.workspaceIssuesNoIssues')}</div>
                     </div>
                 ) : (
                     <div className="space-y-4">
                         {analysis.lspDiagnostics.length > 0 && (
                             <section className="space-y-2">
-                                <div className="text-[11px] font-black uppercase tracking-widest text-primary/80 flex items-center gap-2">
+                                <div className="text-xxxs font-black uppercase tracking-widest text-primary/80 flex items-center gap-2">
                                     <FileCode className="w-3 h-3" />
                                     {t('terminal.workspaceIssuesLanguageServer')} ({analysis.lspDiagnostics.length})
                                 </div>
@@ -144,7 +144,7 @@ export function TerminalWorkspaceIssuesTab({
                         )}
                         {analysis.issues.length > 0 && (
                             <section className="space-y-2">
-                                <div className="text-[11px] font-black uppercase tracking-widest text-destructive/80 flex items-center gap-2">
+                                <div className="text-xxxs font-black uppercase tracking-widest text-destructive/80 flex items-center gap-2">
                                     <Terminal className="w-3 h-3" />
                                     {t('terminal.workspaceIssuesTerminal')} ({analysis.issues.length})
                                 </div>
@@ -153,7 +153,7 @@ export function TerminalWorkspaceIssuesTab({
                         )}
                         {analysis.annotations.length > 0 && (
                             <section className="space-y-2">
-                                <div className="text-[11px] font-black uppercase tracking-widest text-warning/80 flex items-center gap-2">
+                                <div className="text-xxxs font-black uppercase tracking-widest text-warning/80 flex items-center gap-2">
                                     <FileCode className="w-3 h-3" />
                                     {t('terminal.workspaceIssuesAnnotations')} ({analysis.annotations.length})
                                 </div>

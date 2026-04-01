@@ -42,7 +42,7 @@ const StatCard: React.FC<StatCardProps> = ({ icon, label, value, ratio, color })
             <div className={`p-1.5 rounded-lg bg-muted/10 border border-border/40 group-hover:border-${color}/20 transition-colors`}>
                 {icon}
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            <span className="tw-text-10 font-black uppercase tracking-widest text-muted-foreground">
                 {label}
             </span>
         </div>
@@ -108,7 +108,7 @@ export const DatabaseSizeDashboard: React.FC = () => {
                 <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">
                     {t('settings.databaseSizeDashboard.title')}
                 </h3>
-                <p className="text-[10px] text-muted-foreground/60 mt-1">
+                <p className="tw-text-10 text-muted-foreground/60 mt-1">
                     {t('settings.databaseSizeDashboard.subtitle')}
                 </p>
             </div>
@@ -141,13 +141,13 @@ export const DatabaseSizeDashboard: React.FC = () => {
                     color="warning"
                 />
                 <StatCard
-                    icon={<Layers className="w-3.5 h-3.5 text-purple" />}
+                    icon={<Layers className="w-3.5 h-3.5 text-primary" />}
                     label={t('settings.databaseSizeDashboard.folders')}
                     value={String(stats.folderCount)}
                     color="purple"
                 />
                 <StatCard
-                    icon={<FileText className="w-3.5 h-3.5 text-orange" />}
+                    icon={<FileText className="w-3.5 h-3.5 text-warning" />}
                     label={t('settings.databaseSizeDashboard.prompts')}
                     value={String(stats.promptCount)}
                     color="orange"

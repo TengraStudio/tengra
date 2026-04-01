@@ -148,7 +148,7 @@ const BlockHeader: React.FC<{
     copied: boolean;
     t: (key: string) => string;
 }> = ({ language, isSpeaking, onSpeak, onStop, handleCopy, copied, t }) => (
-    <div className="flex items-center justify-between px-4 py-2.5 bg-white/5 border-b border-white/5 backdrop-blur-md">
+    <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b border-border/40 backdrop-blur-md">
         <div className="flex items-center gap-2">
             <div className="flex gap-1.5 mr-2">
                 <div className="w-2.5 h-2.5 rounded-full bg-destructive/50" />
@@ -163,7 +163,7 @@ const BlockHeader: React.FC<{
             {isSpeaking ? (
                 <button
                     onClick={onStop}
-                    className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-primary"
+                    className="p-1.5 hover:bg-muted/40 rounded-md transition-colors text-primary"
                     title={t('workspace.stopSpeaking')}
                 >
                     <VolumeX className="w-3.5 h-3.5" />
@@ -171,7 +171,7 @@ const BlockHeader: React.FC<{
             ) : (
                 <button
                     onClick={onSpeak}
-                    className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-muted-foreground hover:text-foreground"
+                    className="p-1.5 hover:bg-muted/40 rounded-md transition-colors text-muted-foreground hover:text-foreground"
                     title={t('workspace.speakCode')}
                 >
                     <Volume2 className="w-3.5 h-3.5" />
@@ -179,7 +179,7 @@ const BlockHeader: React.FC<{
             )}
             <button
                 onClick={handleCopy}
-                className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-muted-foreground hover:text-foreground relative"
+                className="p-1.5 hover:bg-muted/40 rounded-md transition-colors text-muted-foreground hover:text-foreground relative"
             >
                 {copied ? (
                     <Check className="w-3.5 h-3.5 text-success" />
@@ -250,7 +250,7 @@ const ActionButton: React.FC<{
             'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xxs font-bold uppercase tracking-wider backdrop-blur-xl border active:scale-95 transition-all shadow-lg',
             primary
                 ? 'bg-primary/20 border-primary/30 text-primary-foreground hover:bg-primary/30'
-                : 'bg-white/5 border-white/10 text-foreground/70 hover:bg-white/10'
+                : 'bg-muted/30 border-border/50 text-foreground/70 hover:bg-muted/40'
         )}
     >
         {icon}

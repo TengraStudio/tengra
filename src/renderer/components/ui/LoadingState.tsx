@@ -203,7 +203,7 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
     if (fullScreen) {
         return (
             <div className={cn('fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm', className)} role="status" aria-live="polite" aria-label={statusLabel}>
-                <div className="flex flex-col items-center gap-3 text-muted-foreground min-w-[260px]">
+                <div className="flex flex-col items-center gap-3 text-muted-foreground min-w-64">
                     <Loader2 className={cn('animate-spin text-primary', sizeClasses[size])} aria-hidden="true" />
                     {message && (
                         <span className={cn('font-medium', textSizeClasses[size])}>{message}</span>
@@ -214,7 +214,7 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
                     {clampedProgress !== undefined && (
                         <div className="w-56 h-1.5 bg-muted/50 rounded-full overflow-hidden">
                             <div
-                                className="h-full bg-primary transition-[width] duration-300 ease-out"
+                                className="h-full bg-primary transition-all duration-300 ease-out"
                                 style={{ width: `${clampedProgress}%` }}
                             />
                         </div>
@@ -242,7 +242,7 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
         <div
             className={cn(
                 'flex flex-col items-center justify-center gap-3 text-muted-foreground',
-                compact ? 'min-h-0 py-2 px-3 rounded-lg border border-border/50 bg-card/70' : 'min-h-[200px]',
+                compact ? 'min-h-0 py-2 px-3 rounded-lg border border-border/50 bg-card/70' : 'min-h-52',
                 className
             )}
             role="status"
@@ -255,7 +255,7 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
             {clampedProgress !== undefined && (
                 <div className={cn('h-1.5 bg-muted/50 rounded-full overflow-hidden', compact ? 'w-44' : 'w-56')}>
                     <div
-                        className="h-full bg-primary transition-[width] duration-300 ease-out"
+                        className="h-full bg-primary transition-all duration-300 ease-out"
                         style={{ width: `${clampedProgress}%` }}
                     />
                 </div>

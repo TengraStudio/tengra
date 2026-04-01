@@ -20,8 +20,12 @@ const sectionData = {
         "aiProviders": "Yapay Zekâ Sağlayıcıları",
         "aiProvidersNvidia": "Yapay Zekâ Sağlayıcıları (NVIDIA)",
         "developerTools": "Geliştirici Araçları",
-        "localModels": "Yerel Modeller"
+        "localModels": "Yerel Modeller",
+        "apiKeyProviders": "API Anahtar Sağlayıcıları"
     },
+    "apiKeyProvidersDescription": "Yapay zekâ sağlayıcılarına doğrudan erişim için API anahtarları ekleyin. Yük dengeleme için sağlayıcı başına birden fazla anahtar ekleyebilirsiniz.",
+    "addApiKey": "Anahtar Ekle",
+    "getApiKey": "API anahtarı al",
     "providers": {
         "github": {
             "name": "GitHub",
@@ -50,6 +54,52 @@ const sectionData = {
         "nvidia": {
             "name": "NVIDIA",
             "description": "Yerel GPU hızlandırma ve model çalışma zamanı"
+        }
+    },
+    "apiProviders": {
+        "openai": {
+            "name": "OpenAI",
+            "description": "GPT-4o, o1, o3 ve gelişmiş dil modelleri"
+        },
+        "anthropic": {
+            "name": "Anthropic",
+            "description": "Claude Sonnet, Opus ve Haiku modelleri"
+        },
+        "gemini": {
+            "name": "Google Gemini",
+            "description": "Gemini 2.0 Flash ve Pro modelleri"
+        },
+        "mistral": {
+            "name": "Mistral AI",
+            "description": "Mistral Large, Medium ve Small modelleri"
+        },
+        "groq": {
+            "name": "Groq",
+            "description": "LPU teknolojisi ile ultra hızlı çıkarım"
+        },
+        "together": {
+            "name": "Together AI",
+            "description": "Hızlı çıkarım ile açık kaynak modeller"
+        },
+        "perplexity": {
+            "name": "Perplexity",
+            "description": "Gerçek zamanlı web erişimi ile yapay zekâ araması"
+        },
+        "cohere": {
+            "name": "Cohere",
+            "description": "Command R+ kurumsal yapay zekâ modelleri"
+        },
+        "xai": {
+            "name": "xAI (Grok)",
+            "description": "Grok-2 sohbet yapay zekâsı"
+        },
+        "deepseek": {
+            "name": "DeepSeek",
+            "description": "DeepSeek V3 ve muhakeme modelleri"
+        },
+        "openrouter": {
+            "name": "OpenRouter",
+            "description": "200+ yapay zekâ modeli için birleşik API"
         }
     },
     "connected": "BAĞLI",

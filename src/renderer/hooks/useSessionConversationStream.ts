@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from 'react';
 import { chatStream } from '@/lib/chat-stream';
 import { getSystemPrompt } from '@/lib/identity';
 import { generateId } from '@/lib/utils';
-import { ChatError, Message } from '@/types';
+import { ChatError, Message, ToolDefinition } from '@/types';
 
 import { useSessionState } from './useSessionState';
 
@@ -45,6 +45,10 @@ interface ConsumeConversationStreamOptions {
     streamMessages: Message[];
     workspaceId?: string;
     abortedRef: MutableRefObject<boolean>;
+}
+
+function buildToolListForAllProviders(tools: ToolDefinition[]): ToolDefinition[] {
+    return tools.filter(tool => tool?.function?.name && tool.function.name !== 'generate_image');
 }
 
 function categorizeConversationError(message: string, model: string | null): ChatError {
@@ -159,11 +163,15 @@ async function consumeConversationStream(
         workspaceId,
         abortedRef,
     } = options;
+    const getToolDefinitions = window.electron.getToolDefinitions;
+    const allTools = typeof getToolDefinitions === 'function'
+        ? await getToolDefinitions().catch(() => [])
+        : [];
     const stream = chatStream({
         messages: streamMessages,
         model,
         provider,
-        tools: [],
+        tools: buildToolListForAllProviders(allTools ?? []),
         chatId: sessionId,
         workspaceId,
         options: {},

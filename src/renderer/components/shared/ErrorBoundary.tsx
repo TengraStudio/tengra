@@ -80,7 +80,7 @@ class ErrorBoundaryBase extends Component<ErrorBoundaryBaseProps, State> {
 export const ErrorBoundary = (props: Props): JSX.Element => {
     const { t } = useTranslation();
     const defaultFallbackRender = ({ resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) => (
-        <div className="min-h-[220px] flex flex-col items-center justify-center gap-3 p-6 text-center">
+        <div className="min-h-56 flex flex-col items-center justify-center gap-3 p-6 text-center">
             <h1 className="text-lg font-semibold">{t('errors.unexpected')}</h1>
             <p className="text-sm text-muted-foreground">{t('errors.tryAgain')}</p>
             <div className="flex items-center gap-2">

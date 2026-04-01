@@ -41,7 +41,7 @@ export const StatsSection = ({ stats }: { stats: MemoryStatistics | null }) => {
                 label={t('memory.stats.contradictions')}
                 value={stats.contradictions}
                 icon={X}
-                color="text-orange"
+                color="text-warning"
                 highlight={stats.contradictions > 0}
             />
         </div>

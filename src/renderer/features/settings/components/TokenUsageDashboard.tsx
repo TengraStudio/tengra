@@ -48,12 +48,12 @@ function formatCost(costUsd: number): string {
 }
 
 const PROVIDER_COLORS: Record<string, string> = {
-    openai: 'bg-green-500',
-    anthropic: 'bg-orange-500',
-    google: 'bg-blue-500',
-    meta: 'bg-indigo-500',
-    mistral: 'bg-purple-500',
-    deepseek: 'bg-cyan-500',
+    openai: 'bg-success',
+    anthropic: 'bg-warning',
+    google: 'bg-primary',
+    meta: 'bg-secondary',
+    mistral: 'bg-accent',
+    deepseek: 'bg-info',
     unknown: 'bg-muted-foreground',
 };
 
@@ -144,7 +144,7 @@ const TokenUsageDashboard: React.FC<TokenUsageDashboardProps> = ({ providerUsage
                                         style={{ height: `${heightPct}%` }}
                                         title={`${day.label}: ${formatTokenCount(day.tokens)}`}
                                     />
-                                    <span className="text-[9px] text-muted-foreground truncate w-full text-center">
+                                    <span className="text-xxxs text-muted-foreground truncate w-full text-center">
                                         {day.label}
                                     </span>
                                 </div>
@@ -160,7 +160,7 @@ const TokenUsageDashboard: React.FC<TokenUsageDashboardProps> = ({ providerUsage
 /** Small summary card for top-level metrics */
 const SummaryCard: React.FC<{ label: string; value: string }> = ({ label, value }) => (
     <div className="rounded-xl border border-border/40 bg-card/50 p-3 text-center">
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">{label}</p>
+        <p className="text-xxxs uppercase tracking-wider text-muted-foreground font-bold">{label}</p>
         <p className="text-lg font-black text-foreground mt-1">{value}</p>
     </div>
 );

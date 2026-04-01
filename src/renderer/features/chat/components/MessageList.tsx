@@ -51,24 +51,12 @@ export const MessageList = memo(({
     const { t } = useTranslation(language);
     const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
 
-    const persistedFocusedIndex = useMemo(() => {
-        if (messages.length === 0) {
-            return -1;
-        }
-        const persistedMessageId = sessionStorage.getItem('chat.messageList.focusedMessageId');
-        return persistedMessageId
-            ? messages.findIndex(message => message.id === persistedMessageId)
-            : -1;
-    }, [messages]);
-
     const effectiveFocusedIndex =
         messages.length === 0
             ? -1
             : focusedIndex >= 0 && focusedIndex < messages.length
                 ? focusedIndex
-                : persistedFocusedIndex >= 0
-                    ? persistedFocusedIndex
-                    : messages.length - 1;
+                : -1;
 
     useEffect(() => {
         if (effectiveFocusedIndex < 0 || effectiveFocusedIndex >= messages.length) {

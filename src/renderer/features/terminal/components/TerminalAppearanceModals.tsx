@@ -99,9 +99,9 @@ export function TerminalAppearanceModals({
                     side="top"
                     align="end"
                     sideOffset={8}
-                    className="w-[300px] p-2 bg-popover border border-border rounded-lg space-y-2"
+                    className="tw-w-300 p-2 bg-popover border border-border rounded-lg space-y-2"
                 >
-                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                    <div className="tw-text-10 uppercase tracking-wide text-muted-foreground">
                         {t('terminal.theme')}
                     </div>
                     <div className="max-h-28 overflow-y-auto space-y-1">
@@ -114,14 +114,14 @@ export function TerminalAppearanceModals({
                                 className="w-full px-2 py-1 rounded-sm text-left text-xs hover:bg-accent/50 transition-colors flex items-center justify-between gap-2"
                             >
                                 <span className="truncate">{preset.name}</span>
-                                <span className="text-[10px] text-muted-foreground">
+                                <span className="tw-text-10 text-muted-foreground">
                                     {themeCategoryLabel(preset)}
                                 </span>
                             </button>
                         ))}
                     </div>
                     <div
-                        className="rounded border border-border/50 p-1.5 text-[10px] font-mono overflow-hidden"
+                        className="rounded border border-border/50 p-1.5 tw-text-10 font-mono overflow-hidden"
                         style={{
                             backgroundColor: resolvedTerminalAppearance.theme.background,
                             color: resolvedTerminalAppearance.theme.foreground,
@@ -135,7 +135,7 @@ export function TerminalAppearanceModals({
                         <div style={{ color: resolvedTerminalAppearance.theme.red }}>{t('terminal.previewError')}</div>
                         <div style={{ color: resolvedTerminalAppearance.theme.yellow }}>{t('terminal.previewWarning')}</div>
                     </div>
-                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                    <div className="tw-text-10 uppercase tracking-wide text-muted-foreground">
                         {t('terminal.font')}
                     </div>
                     <div className="space-y-1">
@@ -166,7 +166,7 @@ export function TerminalAppearanceModals({
                         />
                     </label>
                     <div className="pt-1 border-t border-border/50 space-y-1">
-                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                        <div className="tw-text-10 uppercase tracking-wide text-muted-foreground">
                             {t('terminal.cursorStyle')}
                         </div>
                         <div className="grid grid-cols-3 gap-1">
@@ -177,7 +177,7 @@ export function TerminalAppearanceModals({
                                         applyAppearancePatch({ cursorStyle: cursorStyle.id });
                                     }}
                                     className={cn(
-                                        'px-2 py-1 rounded-sm text-[11px] border transition-colors',
+                                        'px-2 py-1 rounded-sm tw-text-11 border transition-colors',
                                         terminalAppearance.cursorStyle === cursorStyle.id
                                             ? 'bg-accent border-border text-foreground'
                                             : 'bg-transparent border-border/50 text-muted-foreground hover:text-foreground hover:bg-accent/30'
@@ -279,11 +279,11 @@ export function TerminalAppearanceModals({
                         />
                     </label>
                     <div className="pt-1 border-t border-border/50 space-y-1">
-                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                        <div className="tw-text-10 uppercase tracking-wide text-muted-foreground">
                             {t('terminal.customTheme')}
                         </div>
                         <div className="grid grid-cols-2 gap-1.5">
-                            <label className="flex items-center gap-1.5 text-[11px]">
+                            <label className="flex items-center gap-1.5 tw-text-11">
                                 <input
                                     type="color"
                                     value={terminalAppearance.customTheme?.background ?? '#1e1e1e'}
@@ -299,7 +299,7 @@ export function TerminalAppearanceModals({
                                 />
                                 <span className="text-muted-foreground">{t('terminal.colorBackground')}</span>
                             </label>
-                            <label className="flex items-center gap-1.5 text-[11px]">
+                            <label className="flex items-center gap-1.5 tw-text-11">
                                 <input
                                     type="color"
                                     value={terminalAppearance.customTheme?.foreground ?? '#d4d4d4'}
@@ -315,7 +315,7 @@ export function TerminalAppearanceModals({
                                 />
                                 <span className="text-muted-foreground">{t('terminal.colorForeground')}</span>
                             </label>
-                            <label className="flex items-center gap-1.5 text-[11px]">
+                            <label className="flex items-center gap-1.5 tw-text-11">
                                 <input
                                     type="color"
                                     value={terminalAppearance.customTheme?.cursor ?? '#d4d4d4'}
@@ -331,7 +331,7 @@ export function TerminalAppearanceModals({
                                 />
                                 <span className="text-muted-foreground">{t('terminal.colorCursor')}</span>
                             </label>
-                            <label className="flex items-center gap-1.5 text-[11px]">
+                            <label className="flex items-center gap-1.5 tw-text-11">
                                 <input
                                     type="color"
                                     value={
@@ -356,7 +356,7 @@ export function TerminalAppearanceModals({
                                 onClick={() => {
                                     applyAppearancePatch({ customTheme: null });
                                 }}
-                                className="w-full px-2 py-1 rounded border border-border text-[11px] text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+                                className="w-full px-2 py-1 rounded border border-border tw-text-11 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
                             >
                                 {t('terminal.resetToDefault')}
                             </button>

@@ -33,7 +33,7 @@ export const ArchiveWorkspaceModal: React.FC<ArchiveWorkspaceModalProps> = ({
                     <div className="flex justify-end gap-2 pt-2">
                         <button
                             onClick={onClose}
-                            className="px-4 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors font-light"
+                            className="px-4 py-2 rounded-lg text-sm hover:bg-muted/40 transition-colors font-light"
                         >
                             {t('common.cancel')}
                         </button>

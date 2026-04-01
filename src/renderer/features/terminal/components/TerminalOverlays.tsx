@@ -5,8 +5,7 @@ import { createPortal } from 'react-dom';
 import { type AiPanelMode, type AiResult } from '../hooks/useTerminalAI';
 
 import { TerminalCommandPanels } from './TerminalCommandPanels';
-import { TerminalContextMenu } from './TerminalContextMenu';
-import { TerminalMultiplexerPanel } from './TerminalMultiplexerPanel';
+import { TerminalContextMenu } from './TerminalContextMenu'; 
 import { TerminalRecordingPanel } from './TerminalRecordingPanel';
 import { TerminalSearchOverlay } from './TerminalSearchOverlay';
 import { TerminalSemanticPanel } from './TerminalSemanticPanel';
@@ -25,7 +24,6 @@ interface TerminalOverlaysProps {
     closeAiPanel: () => void;
     t: (key: string, options?: Record<string, string | number>) => string;
     handleAiApplyFix: (command: string) => Promise<void>;
-    multiplexerPanelProps: ComponentProps<typeof TerminalMultiplexerPanel> | null;
     recordingPanelProps: ComponentProps<typeof TerminalRecordingPanel> | null;
     searchOverlayProps: ComponentProps<typeof TerminalSearchOverlay> | null;
     commandPanelsProps: ComponentProps<typeof TerminalCommandPanels>;
@@ -45,7 +43,6 @@ export function TerminalOverlays({
     closeAiPanel,
     t,
     handleAiApplyFix,
-    multiplexerPanelProps,
     recordingPanelProps,
     searchOverlayProps,
     commandPanelsProps,
@@ -64,7 +61,7 @@ export function TerminalOverlays({
                 )}
             {semanticPanelProps && <TerminalSemanticPanel {...semanticPanelProps} />}
             {isAiPanelOpen && (
-                <div className="absolute top-2 right-2 z-30 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-3 py-3 min-w-[380px] max-w-[500px]">
+                <div className="absolute top-2 right-2 z-30 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-3 py-3 min-w-96 max-w-lg">
                     <div className="flex items-center justify-between gap-3 mb-3">
                         <div className="flex items-center gap-2 text-xs font-semibold">
                             <Bot className="w-4 h-4 text-primary" />
@@ -82,7 +79,7 @@ export function TerminalOverlays({
                     </div>
                     {aiSelectedIssue && (
                         <div className="mb-3 p-2 rounded bg-destructive/10 border border-destructive/30">
-                            <div className="text-[10px] uppercase tracking-wide text-destructive font-semibold mb-1">
+                            <div className="text-xxxs uppercase tracking-wide text-destructive font-semibold mb-1">
                                 {aiSelectedIssue.severity}
                             </div>
                             <div className="text-xs text-foreground/90 line-clamp-3">
@@ -102,7 +99,7 @@ export function TerminalOverlays({
                             {aiResult.type === 'explain-error' && (
                                 <>
                                     <div>
-                                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+                                        <div className="text-xxxs uppercase tracking-wide text-muted-foreground mb-1">
                                             {t('terminal.aiSummary')}
                                         </div>
                                         <div className="text-xs text-foreground">
@@ -110,7 +107,7 @@ export function TerminalOverlays({
                                         </div>
                                     </div>
                                     <div>
-                                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+                                        <div className="text-xxxs uppercase tracking-wide text-muted-foreground mb-1">
                                             {t('terminal.aiCause')}
                                         </div>
                                         <div className="text-xs text-foreground">
@@ -118,7 +115,7 @@ export function TerminalOverlays({
                                         </div>
                                     </div>
                                     <div>
-                                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+                                        <div className="text-xxxs uppercase tracking-wide text-muted-foreground mb-1">
                                             {t('terminal.aiSolution')}
                                         </div>
                                         <div className="text-xs text-foreground">
@@ -127,7 +124,7 @@ export function TerminalOverlays({
                                     </div>
                                     {Array.isArray(aiResult.data.steps) && aiResult.data.steps.length > 0 && (
                                         <div>
-                                            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+                                            <div className="text-xxxs uppercase tracking-wide text-muted-foreground mb-1">
                                                 {t('terminal.aiSteps')}
                                             </div>
                                             <ol className="list-decimal list-inside text-xs text-foreground space-y-1">
@@ -143,7 +140,7 @@ export function TerminalOverlays({
                                 <>
                                     {aiResult.data.suggestedCommand && (
                                         <div>
-                                            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+                                            <div className="text-xxxs uppercase tracking-wide text-muted-foreground mb-1">
                                                 {t('terminal.aiSuggestedCommand')}
                                             </div>
                                             <div className="flex items-center gap-2">
@@ -167,8 +164,7 @@ export function TerminalOverlays({
                         </div>
                     ) : null}
                 </div>
-            )}
-            {multiplexerPanelProps && <TerminalMultiplexerPanel {...multiplexerPanelProps} />}
+            )} 
             {recordingPanelProps && <TerminalRecordingPanel {...recordingPanelProps} />}
             {searchOverlayProps && <TerminalSearchOverlay {...searchOverlayProps} />}
             <TerminalCommandPanels {...commandPanelsProps} />

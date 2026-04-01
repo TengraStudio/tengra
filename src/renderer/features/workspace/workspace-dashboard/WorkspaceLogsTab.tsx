@@ -306,7 +306,7 @@ export const WorkspaceLogsTab: React.FC<WorkspaceLogsTabProps> = ({ workspacePat
                                         getLevelBg(log.level)
                                     )}
                                 >
-                                    <span className="text-neutral mr-2">
+                                    <span className="text-muted-foreground mr-2">
                                         {new Date(log.timestamp).toLocaleTimeString()}
                                     </span>
                                     <span className="text-muted-foreground/70 mr-2">[{log.source}]</span>

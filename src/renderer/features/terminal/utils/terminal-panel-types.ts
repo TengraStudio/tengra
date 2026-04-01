@@ -52,24 +52,7 @@ export type RemoteConnectionTarget =
         /** Docker container */
         container: RemoteDockerContainer;
     };
-
-/**
- * Terminal multiplexer mode
- */
-export type MultiplexerMode = 'tmux' | 'screen';
-
-/**
- * Terminal multiplexer session
- */
-export type MultiplexerSession = {
-    /** Session ID */
-    id: string;
-    /** Display label */
-    label: string;
-    /** Optional session details */
-    details?: string;
-};
-
+ 
 /**
  * Terminal recording event
  */

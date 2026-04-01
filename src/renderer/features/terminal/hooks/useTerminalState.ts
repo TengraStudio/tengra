@@ -11,8 +11,7 @@ export function useTerminalState() {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isGalleryView, setIsGalleryView] = useState(false);
     const [isAppearanceMenuOpen, setIsAppearanceMenuOpen] = useState(false);
-    const [isSemanticPanelOpen, setIsSemanticPanelOpen] = useState(false);
-    const [isMultiplexerOpen, setIsMultiplexerOpen] = useState(false);
+    const [isSemanticPanelOpen, setIsSemanticPanelOpen] = useState(false); 
     const [isRecordingPanelOpen, setIsRecordingPanelOpen] = useState(false);
     const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
 
@@ -34,9 +33,7 @@ export function useTerminalState() {
         isAppearanceMenuOpen,
         setIsAppearanceMenuOpen,
         isSemanticPanelOpen,
-        setIsSemanticPanelOpen,
-        isMultiplexerOpen,
-        setIsMultiplexerOpen,
+        setIsSemanticPanelOpen, 
         isRecordingPanelOpen,
         setIsRecordingPanelOpen,
         isAiPanelOpen,

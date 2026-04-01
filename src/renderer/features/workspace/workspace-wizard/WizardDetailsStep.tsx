@@ -80,7 +80,7 @@ export const WizardDetailsStep: React.FC<WizardDetailsStepProps> = ({
                                 className={cn(
                                     'flex flex-col items-center justify-center p-4 rounded-2xl border transition-all gap-3 group relative overflow-hidden h-32',
                                     formData.category === cat.id
-                                        ? 'bg-primary/10 border-primary/70 shadow-[0_8px_24px_rgba(var(--primary),0.18)]'
+                                        ? 'bg-primary/10 border-primary/70 tw-shadow-primary-elevated'
                                         : 'bg-background border-border/50 hover:bg-muted/30 hover:border-border'
                                 )}
                             >
@@ -92,7 +92,7 @@ export const WizardDetailsStep: React.FC<WizardDetailsStepProps> = ({
                                             className="absolute top-4 right-4 z-10"
                                         >
                                             <div className="bg-primary p-1.5 rounded-full shadow-lg shadow-primary/20">
-                                                <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+                                                <Check className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={3} />
                                             </div>
                                         </motion.div>
                                     )}
@@ -109,7 +109,7 @@ export const WizardDetailsStep: React.FC<WizardDetailsStepProps> = ({
 
                                 <div className="flex flex-col items-center gap-1">
                                     <span className={cn(
-                                        'text-[11px] font-semibold tracking-wide text-center',
+                                        'tw-text-11 font-semibold tracking-wide text-center',
                                         formData.category === cat.id ? 'text-primary' : 'text-muted-foreground'
                                     )}>
                                         {t(cat.nameKey)}

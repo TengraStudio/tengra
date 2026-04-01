@@ -24,21 +24,21 @@ export const CATEGORY_CONFIG: Record<
     color: 'bg-primary/10 text-primary',
     icon: Settings,
   },
-  personal: { labelKey: 'memory.categories.personal', color: 'bg-pink/10 text-pink', icon: Brain },
+  personal: { labelKey: 'memory.categories.personal', color: 'bg-accent/10 text-accent', icon: Brain },
   workspace: {
     labelKey: 'memory.categories.workspace',
     color: 'bg-success/10 text-success',
     icon: Lightbulb,
   },
-  technical: { labelKey: 'memory.categories.technical', color: 'bg-warning/10 text-orange', icon: Zap },
+  technical: { labelKey: 'memory.categories.technical', color: 'bg-warning/10 text-warning', icon: Zap },
   workflow: {
     labelKey: 'memory.categories.workflow',
-    color: 'bg-purple/10 text-purple',
+    color: 'bg-accent/10 text-accent',
     icon: ArrowRight,
   },
   relationship: {
     labelKey: 'memory.categories.relationship',
-    color: 'bg-cyan/10 text-cyan',
+    color: 'bg-info/10 text-info',
     icon: GitMerge,
   },
   fact: {
@@ -48,7 +48,7 @@ export const CATEGORY_CONFIG: Record<
   },
   instruction: {
     labelKey: 'memory.categories.instruction',
-    color: 'bg-yellow/10 text-warning',
+    color: 'bg-warning/10 text-warning',
     icon: Sparkles,
   },
 };

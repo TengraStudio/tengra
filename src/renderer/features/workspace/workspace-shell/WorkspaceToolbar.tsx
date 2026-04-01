@@ -71,13 +71,13 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
     };
 
     return (
-        <div className="h-14 border-b border-white/10 bg-background flex items-center justify-between px-4 shrink-0 relative z-20">
+        <div className="h-14 border-b border-border/40 bg-background flex items-center justify-between px-4 shrink-0 relative z-20">
             {/* Left Section: Back & Title */}
             <div className="flex items-center gap-3 min-w-0 flex-1 mr-4">
                 <button
                     onClick={onBack}
                     data-testid="workspace-back-button"
-                    className="p-1.5 hover:bg-white/10 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                    className="p-1.5 hover:bg-muted/60 rounded-md text-muted-foreground hover:text-foreground transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
                 </button>
@@ -92,14 +92,14 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
                                 onChange={e => setEditedName(e.target.value)}
                                 onBlur={handleNameSubmit}
                                 onKeyDown={handleKeyDown}
-                                className="bg-white/10 text-sm font-medium px-1.5 py-0.5 rounded border border-white/20 focus:outline-none focus:border-primary/50 text-foreground min-w-[200px]"
+                                className="bg-muted/60 text-sm font-medium px-1.5 py-0.5 rounded border border-border/60 focus:outline-none focus:border-primary/50 text-foreground tw-min-w-200"
                             />
                         ) : (
                             <div
                                 onClick={() => setIsEditingName(true)}
-                                className="flex items-center gap-2 cursor-pointer hover:bg-white/5 px-1.5 py-0.5 -ml-1.5 rounded transition-colors"
+                                className="flex items-center gap-2 cursor-pointer hover:bg-muted/40 px-1.5 py-0.5 -ml-1.5 rounded transition-colors"
                             >
-                                <span className="font-medium text-sm text-foreground truncate max-w-[300px]">
+                                <span className="font-medium text-sm text-foreground truncate max-tw-w-300">
                                     {workspaceName}
                                 </span>
                                 <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -118,7 +118,7 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
                         'p-1.5 rounded-md transition-colors',
                         sidebarCollapsed
                             ? 'text-muted-foreground hover:text-foreground'
-                            : 'text-foreground bg-white/10'
+                            : 'text-foreground bg-muted/60'
                     )}
                     title={t('workspace.toggleSidebar')}
                 >
@@ -128,7 +128,7 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
                         <PanelLeftClose className="w-3.5 h-3.5" />
                     )}
                 </button>
-                <div className="w-px h-4 bg-white/10 mx-2" />
+                <div className="w-px h-4 bg-muted/60 mx-2" />
 
                 <DashboardTabs
                     dashboardTab={dashboardTab}
@@ -144,7 +144,7 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
                     className={cn(
                         'p-1.5 rounded-md transition-colors',
                         showAgentPanel
-                            ? 'text-foreground bg-white/10'
+                            ? 'text-foreground bg-muted/60'
                             : 'text-muted-foreground hover:text-foreground'
                     )}
                     title={t('workspace.toggleAgentPanel')}

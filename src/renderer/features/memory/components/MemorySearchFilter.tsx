@@ -98,7 +98,7 @@ export const MemorySearchFilter: React.FC<MemorySearchFilterProps> = ({
                             value={searchQuery}
                             onChange={(e) => onSearchChange(e.target.value)}
                             onBlur={rememberSearch}
-                            className="pl-10 bg-muted/30 border-white/5"
+                            className="pl-10 bg-muted/30 border-border/40"
                         />
                         <datalist id="memory-search-suggestions">
                             {searchHistory.map(query => (
@@ -112,7 +112,7 @@ export const MemorySearchFilter: React.FC<MemorySearchFilterProps> = ({
                 <div className="flex items-center gap-2">
                     <Filter className="w-4 h-4 text-muted-foreground" />
                     <Select value={categoryFilter} onValueChange={(v) => onCategoryChange(v as MemoryCategory | 'all')}>
-                        <SelectTrigger className="w-[180px] bg-muted/30 border-white/5">
+                        <SelectTrigger className="w-44 bg-muted/30 border-border/40">
                             <SelectValue placeholder={t('memory.allCategories')} />
                         </SelectTrigger>
                         <SelectContent>
@@ -138,7 +138,7 @@ export const MemorySearchFilter: React.FC<MemorySearchFilterProps> = ({
                             <button
                                 key={query}
                                 type="button"
-                                className="rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-muted-foreground transition hover:bg-white/10 hover:text-foreground"
+                                className="rounded-md border border-border/50 bg-muted/30 px-2 py-0.5 text-xs text-muted-foreground transition hover:bg-muted/40 hover:text-foreground"
                                 onClick={() => onSearchChange(query)}
                             >
                                 {query}

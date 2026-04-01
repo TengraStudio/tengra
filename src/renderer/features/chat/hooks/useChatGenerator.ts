@@ -45,6 +45,7 @@ interface PrepareMessagesOptions {
     | { id: string; name: string; description: string; prompt: string }
     | null
     | undefined;
+    activeWorkspacePath?: string | undefined;
     systemMode: 'thinking' | 'agent' | 'fast';
 }
 
@@ -123,14 +124,27 @@ const isImageOnlyModel = (modelId: string): boolean => {
     return IMAGE_ONLY_MODEL_PATTERNS.some(pattern => normalizedModelId.includes(pattern));
 };
 
-const createModelToolList = (provider: string, allTools: ToolDefinition[]): ToolDefinition[] => {
+const createModelToolList = (allTools: ToolDefinition[]): ToolDefinition[] => {
+    const excludedToolNames = new Set([
+        'generate_image',
+        'propose_plan',
+        'update_plan_step',
+        'revise_plan',
+    ]);
     return allTools.filter(toolDefinition => {
         const toolName = toolDefinition?.function?.name;
-        if (!toolName || toolName === 'generate_image') {
+        if (!toolName || excludedToolNames.has(toolName)) {
             return false;
         }
-        return provider === 'opencode' || provider === 'antigravity';
+        return true;
     });
+};
+
+const normalizeToolArgs = (rawArguments: unknown): Record<string, unknown> => {
+    if (rawArguments && typeof rawArguments === 'object' && !Array.isArray(rawArguments)) {
+        return rawArguments as Record<string, unknown>;
+    }
+    return {};
 };
 
 const readToolResultImages = (toolResult: ToolResult): string[] => {
@@ -183,8 +197,15 @@ const buildStoredToolResults = (
     });
 };
 
+const isExecutableToolCall = (toolCall: NonNullable<Message['toolCalls']>[number]): boolean => {
+    const toolCallId = typeof toolCall.id === 'string' ? toolCall.id.trim() : '';
+    const toolName = typeof toolCall.function?.name === 'string' ? toolCall.function.name.trim() : '';
+    return toolCallId.length > 0 && toolName.length > 0;
+};
+
 const executeToolCall = async (
     toolCall: NonNullable<Message['toolCalls']>[number],
+    activeWorkspacePath: string | undefined,
     t: (key: string) => string
 ): Promise<{
     toolMessage: Message;
@@ -196,7 +217,21 @@ const executeToolCall = async (
             : safeJsonParse(toolCall.function.arguments, {})
         : toolCall.function.arguments;
 
-    const toolExecResult = await window.electron.executeTools(toolCall.function.name, toolArgs, toolCall.id);
+    const normalizedArgs = normalizeToolArgs(toolArgs);
+    if (
+        toolCall.function.name === 'execute_command' &&
+        typeof normalizedArgs.cwd !== 'string' &&
+        typeof activeWorkspacePath === 'string' &&
+        activeWorkspacePath.trim().length > 0
+    ) {
+        normalizedArgs.cwd = activeWorkspacePath;
+    }
+
+    const toolExecResult = await window.electron.executeTools(
+        toolCall.function.name,
+        normalizedArgs,
+        toolCall.id
+    );
     const generatedImages = toolCall.function.name === 'generate_image'
         ? readToolResultImages(toolExecResult)
         : [];
@@ -204,7 +239,12 @@ const executeToolCall = async (
         toolMessage: {
             id: generateId(),
             role: 'tool',
-            content: JSON.stringify(toolExecResult),
+            content: JSON.stringify(toolExecResult.success ? (toolExecResult.result ?? {}) : {
+                success: false,
+                error: toolExecResult.error ?? t('chat.error'),
+                errorType: toolExecResult.errorType ?? 'unknown',
+                tool: toolCall.function.name,
+            }),
             toolCallId: toolCall.id,
             timestamp: new Date()
         },
@@ -226,6 +266,8 @@ const prepareMessages = (options: PrepareMessagesOptions): { allMessages: Messag
         selectedProvider,
         language,
         selectedPersona,
+        activeWorkspacePath,
+        systemMode,
     } = options;
     const dbRefChat = chats.find(c => c.id === chatId);
     const contextMessages = (dbRefChat?.messages ?? []).slice(-15);
@@ -252,9 +294,21 @@ const prepareMessages = (options: PrepareMessagesOptions): { allMessages: Messag
         timestamp: new Date(),
     };
 
+    const workspaceHintMessage: Message | null =
+        systemMode === 'agent' &&
+            typeof activeWorkspacePath === 'string' &&
+            activeWorkspacePath.trim().length > 0
+            ? {
+                role: 'system',
+                content: `Current workspace root: ${activeWorkspacePath}. Use this as default cwd for execute_command and resolve relative file paths under this root unless the user explicitly requests another location.`,
+                id: generateId(),
+                timestamp: new Date(),
+            }
+            : null;
+
     const presetOptions = getPresetOptions(appSettings, modelConfig);
 
-    return { allMessages: [systemMessage, ...chatMessages], presetOptions };
+    return { allMessages: [systemMessage, ...(workspaceHintMessage ? [workspaceHintMessage] : []), ...chatMessages], presetOptions };
 };
 
 const buildModelConversation = (
@@ -263,6 +317,43 @@ const buildModelConversation = (
     toolResults: Message[]
 ): Message[] => {
     return [...messages, assistantMessage, ...toolResults];
+};
+
+const persistToolExecutionMetadata = async (options: {
+    chatId: string;
+    assistantId: string;
+    setChats: React.Dispatch<React.SetStateAction<Chat[]>>;
+    toolCalls: NonNullable<Message['toolCalls']>;
+    toolMessages: Message[];
+    selectedProvider: string;
+    activeModel: string;
+}): Promise<void> => {
+    const { chatId, assistantId, setChats, toolCalls, toolMessages, selectedProvider, activeModel } = options;
+    if (toolCalls.length === 0) {
+        return;
+    }
+    const updates: Partial<Message> = {
+        toolCalls,
+        toolResults: buildStoredToolResults(toolCalls, toolMessages),
+    };
+    setChats(prev => prev.map(chat => (
+        chat.id === chatId
+            ? {
+                ...chat,
+                messages: upsertMessageInChat(chat.messages, assistantId, existing => ({
+                    id: assistantId,
+                    role: 'assistant',
+                    content: '',
+                    timestamp: existing?.timestamp ?? new Date(),
+                    ...existing,
+                    ...updates,
+                    provider: selectedProvider,
+                    model: activeModel,
+                })),
+            }
+            : chat
+    )));
+    await persistAssistantMessage(assistantId, chatId, updates);
 };
 
 const upsertMessageInChat = (
@@ -462,11 +553,11 @@ export const useChatGenerator = (
                     autoReadEnabled, handleSpeak, t, formatChatError, systemMode
                 });
             } else {
-                const tools = systemMode === 'agent' ? createModelToolList(selectedProvider, allTools ?? []) : [];
+                const tools = systemMode === 'agent' ? createModelToolList(allTools ?? []) : [];
 
                 const { allMessages, presetOptions } = prepareMessages({
                     chatId, chats, userMessage, appSettings, selectedModel: activeModel,
-                    selectedProvider, language, selectedPersona, systemMode
+                    selectedProvider, language, selectedPersona, activeWorkspacePath, systemMode
                 });
 
                 const reasoningEffort = getReasoningEffort(activeModel, appSettings);
@@ -484,13 +575,7 @@ export const useChatGenerator = (
             logRendererError('[generateResponse] Error', e as Error);
             const errText = formatChatError(e as CatchError);
             setLastChatError(categorizeError(errText, activeModel));
-            const partialContent = await new Promise<string>(resolve => {
-                setChats(prev => {
-                    const existingMessage = prev.find(c => c.id === chatId)?.messages.find(m => m.id === assistantId);
-                    resolve(typeof existingMessage?.content === 'string' ? existingMessage.content : '');
-                    return prev;
-                });
-            });
+            const partialContent = streamingStates[chatId]?.content ?? '';
             const finalErrorText = partialContent.trim().length > 0
                 ? `${partialContent}\n\n[Generation interrupted: ${errText}]`
                 : `${t('chat.error')}: ${errText}`;
@@ -543,10 +628,14 @@ const executeToolTurnLoop = async (params: {
         autoReadEnabled, handleSpeak, t, setStreamingStates, setChats, activeWorkspacePath, systemMode
     } = params;
 
-    let currentAssistantId = assistantId;
+    const currentAssistantId = assistantId;
     let toolIterations = 0;
     const MAX_TOOL_ITERATIONS = 5;
     let currentMessages: Message[] = initialMessages;
+    const accumulatedToolCallMap = new Map<string, NonNullable<Message['toolCalls']>[number]>();
+    const accumulatedToolMessages: Message[] = [];
+    let repeatedToolSignatureCount = 0;
+    let lastToolSignature = '';
 
     while (toolIterations < MAX_TOOL_ITERATIONS) {
         if (currentMessages.length === 0) { break; }
@@ -564,22 +653,89 @@ const executeToolTurnLoop = async (params: {
         });
 
         if (result.finalToolCalls.length > 0) {
+            const executableToolCalls = result.finalToolCalls.filter(isExecutableToolCall);
+            if (executableToolCalls.length === 0) {
+                const assistantContent = getMessageStringContent(result.finalContent);
+                if (assistantContent.length > 0) {
+                    const updates: Partial<Message> = {
+                        content: assistantContent,
+                        reasoning: result.finalReasoning || undefined,
+                    };
+                    setChats(prev => prev.map(chat => (
+                        chat.id === chatId
+                            ? {
+                                ...chat,
+                                isGenerating: false,
+                                messages: upsertMessageInChat(chat.messages, currentAssistantId, existing => ({
+                                    id: currentAssistantId,
+                                    role: 'assistant',
+                                    content: '',
+                                    timestamp: existing?.timestamp ?? new Date(),
+                                    ...existing,
+                                    ...updates,
+                                    provider: selectedProvider,
+                                    model: activeModel,
+                                })),
+                            }
+                            : chat
+                    )));
+                    await persistAssistantMessage(currentAssistantId, chatId, updates);
+                    await persistToolExecutionMetadata({
+                        chatId,
+                        assistantId: currentAssistantId,
+                        setChats,
+                        toolCalls: Array.from(accumulatedToolCallMap.values()),
+                        toolMessages: accumulatedToolMessages,
+                        selectedProvider,
+                        activeModel,
+                    });
+                    break;
+                }
+                appLogger.warn('useChatGenerator', 'Provider returned only malformed tool calls; failing turn');
+                throw new Error(t('chat.error'));
+            }
+            const toolSignature = executableToolCalls
+                .map(toolCall => `${toolCall.function.name}:${toolCall.function.arguments}`)
+                .sort()
+                .join('|');
+            if (toolSignature === lastToolSignature) {
+                repeatedToolSignatureCount += 1;
+            } else {
+                repeatedToolSignatureCount = 1;
+                lastToolSignature = toolSignature;
+            }
             const assistantMsg: Message = {
                 id: currentAssistantId, role: 'assistant', content: result.finalContent, timestamp: new Date(),
-                provider: selectedProvider, model: activeModel, toolCalls: result.finalToolCalls
+                provider: selectedProvider, model: activeModel, toolCalls: executableToolCalls
             };
+            for (const toolCall of executableToolCalls) {
+                accumulatedToolCallMap.set(toolCall.id, toolCall);
+            }
 
             const toolResults: Message[] = [];
             const generatedImages: string[] = [];
-            for (const tc of result.finalToolCalls) {
+            for (const tc of executableToolCalls) {
                 try {
-                    const executedTool = await executeToolCall(tc, t);
+                    const executedTool = await executeToolCall(tc, activeWorkspacePath, t);
                     generatedImages.push(...executedTool.generatedImages);
                     toolResults.push(executedTool.toolMessage);
-                    void window.electron.db.addMessage({ ...executedTool.toolMessage, chatId, timestamp: Date.now() });
+                    accumulatedToolMessages.push(executedTool.toolMessage);
                 } catch (error) {
                     const errorMsg = error instanceof Error ? error.message : t('chat.error');
                     appLogger.error('useChatGenerator', `Tool execution error: ${errorMsg}`, error as Error);
+                    const syntheticToolMessage: Message = {
+                        id: generateId(),
+                        role: 'tool',
+                        content: JSON.stringify({
+                            success: false,
+                            error: errorMsg,
+                            tool: tc.function.name,
+                        }),
+                        toolCallId: tc.id,
+                        timestamp: new Date(),
+                    };
+                    toolResults.push(syntheticToolMessage);
+                    accumulatedToolMessages.push(syntheticToolMessage);
                 }
             }
 
@@ -591,8 +747,8 @@ const executeToolTurnLoop = async (params: {
                 const updates: Partial<Message> = {
                     content: finalContent,
                     images: generatedImages,
-                    toolCalls: result.finalToolCalls,
-                    toolResults: buildStoredToolResults(result.finalToolCalls, toolResults),
+                    toolCalls: executableToolCalls,
+                    toolResults: buildStoredToolResults(executableToolCalls, toolResults),
                 };
 
                 setChats(prev => prev.map(chat => (
@@ -618,26 +774,87 @@ const executeToolTurnLoop = async (params: {
                 break;
             }
 
-            const nextAssistantId = generateId();
-            const nextAssistantPlaceholder: Message = {
-                id: nextAssistantId, role: 'assistant', content: '', timestamp: new Date(),
-                provider: selectedProvider, model: activeModel
-            };
-
             const messagesWithToolResults = buildModelConversation(
                 currentMessages,
                 assistantMsg,
                 toolResults
             );
-            const nextMessages = [...messagesWithToolResults, nextAssistantPlaceholder];
             currentMessages = messagesWithToolResults;
-            setChats(prev => prev.map(chat => (chat.id === chatId ? { ...chat, messages: nextMessages } : chat)));
-            currentAssistantId = nextAssistantId;
-            void window.electron.db.addMessage({ ...nextAssistantPlaceholder, chatId, timestamp: Date.now() });
             toolIterations++;
+
+            if (repeatedToolSignatureCount >= 3) {
+                appLogger.warn('useChatGenerator', 'Detected repeated tool-call signature; forcing final completion without tools');
+                const forcedFinalStream = chatStream({
+                    messages: currentMessages, model: activeModel, tools: [], provider: selectedProvider,
+                    options: { ...fullOptions, workspaceRoot: activeWorkspacePath, systemMode },
+                    chatId, workspaceId, systemMode
+                });
+                await processChatStream({
+                    stream: forcedFinalStream,
+                    chatId,
+                    assistantId: currentAssistantId,
+                    setStreamingStates,
+                    setChats,
+                    streamStartTime: performance.now(),
+                    activeModel,
+                    selectedProvider,
+                    t,
+                    autoReadEnabled,
+                    handleSpeak
+                });
+                await persistToolExecutionMetadata({
+                    chatId,
+                    assistantId: currentAssistantId,
+                    setChats,
+                    toolCalls: Array.from(accumulatedToolCallMap.values()),
+                    toolMessages: accumulatedToolMessages,
+                    selectedProvider,
+                    activeModel,
+                });
+                break;
+            }
         } else {
+            await persistToolExecutionMetadata({
+                chatId,
+                assistantId: currentAssistantId,
+                setChats,
+                toolCalls: Array.from(accumulatedToolCallMap.values()),
+                toolMessages: accumulatedToolMessages,
+                selectedProvider,
+                activeModel,
+            });
             break;
         }
+    }
+    if (toolIterations >= MAX_TOOL_ITERATIONS) {
+        appLogger.warn('useChatGenerator', `Tool loop reached max iterations (${MAX_TOOL_ITERATIONS}); forcing final answer without tools`);
+        const finalStream = chatStream({
+            messages: currentMessages, model: activeModel, tools: [], provider: selectedProvider,
+            options: { ...fullOptions, workspaceRoot: activeWorkspacePath, systemMode },
+            chatId, workspaceId, systemMode
+        });
+        await processChatStream({
+            stream: finalStream,
+            chatId,
+            assistantId: currentAssistantId,
+            setStreamingStates,
+            setChats,
+            streamStartTime: performance.now(),
+            activeModel,
+            selectedProvider,
+            t,
+            autoReadEnabled,
+            handleSpeak
+        });
+        await persistToolExecutionMetadata({
+            chatId,
+            assistantId: currentAssistantId,
+            setChats,
+            toolCalls: Array.from(accumulatedToolCallMap.values()),
+            toolMessages: accumulatedToolMessages,
+            selectedProvider,
+            activeModel,
+        });
     }
     return currentAssistantId;
 };
@@ -686,10 +903,10 @@ async function orchestrationMultiModelStreams(params: OrchestrationParams) {
         try {
             const { allMessages, presetOptions } = prepareMessages({
                 chatId, chats, userMessage, appSettings, selectedModel: modelInfo.model,
-                selectedProvider: modelInfo.provider, language, selectedPersona, systemMode
+                selectedProvider: modelInfo.provider, language, selectedPersona, activeWorkspacePath, systemMode
             });
             const reasoningEffort = getReasoningEffort(modelInfo.model, appSettings);
-            const tools = systemMode === 'agent' ? createModelToolList(modelInfo.provider, allTools ?? []) : [];
+            const tools = systemMode === 'agent' ? createModelToolList(allTools ?? []) : [];
 
             const stream = chatStream({
                 messages: allMessages, model: modelInfo.model, tools, provider: modelInfo.provider,

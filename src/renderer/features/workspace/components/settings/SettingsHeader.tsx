@@ -33,7 +33,7 @@ export const SettingsHeader: React.FC<SettingsHeaderProps> = ({
             <button
                 onClick={onReset}
                 disabled={!isDirty}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-white/5 transition-colors disabled:opacity-30"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-muted/40 transition-colors disabled:opacity-30"
             >
                 <RotateCcw className="w-4 h-4" />
                 {t('common.reset')}

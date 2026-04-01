@@ -154,7 +154,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
             height="auto"
             className="flex flex-col"
         >
-            <div className="h-full grid grid-cols-1 xl:grid-cols-[360px_minmax(0,1fr)] gap-6 overflow-hidden">
+            <div className="h-full grid grid-cols-1 tw-xl-grid-cols-360-main gap-6 overflow-hidden">
                 {/* Left Panel: Controls */}
                 <div className="min-h-0 rounded-2xl border border-border/60 bg-muted/20 p-4 overflow-y-auto">
                     <div className="w-full space-y-5">
@@ -448,7 +448,7 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                             alt={`Generated Logo ${index + 1}`}
                                             className="w-full h-full object-contain p-4 bg-checkered"
                                         />
-                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                                        <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
                                             <Button
                                                 size="sm"
                                                 onClick={() => void handleApply(logoPath)}

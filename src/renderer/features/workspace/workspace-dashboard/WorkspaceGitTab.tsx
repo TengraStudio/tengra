@@ -98,7 +98,7 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
                             const state = sectionStates[section.key];
                             return (
                                 <div key={section.key} className="bg-card/60 border border-border/50 rounded-xl px-3 py-2 space-y-1">
-                                    <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{section.label}</div>
+                                    <div className="tw-text-11 uppercase tracking-wide text-muted-foreground">{section.label}</div>
                                     <div className="flex items-center gap-1.5 text-xs font-medium">
                                         {state.loading ? (
                                             <>
@@ -118,7 +118,7 @@ export const WorkspaceGitTab: React.FC<WorkspaceGitTabProps> = ({ workspace, t, 
                                         )}
                                     </div>
                                     {state.error && (
-                                        <div className="text-[10px] text-muted-foreground truncate" title={state.error}>
+                                        <div className="tw-text-10 text-muted-foreground truncate" title={state.error}>
                                             {state.error}
                                         </div>
                                     )}

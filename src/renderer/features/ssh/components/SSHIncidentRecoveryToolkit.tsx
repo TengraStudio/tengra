@@ -68,7 +68,7 @@ export const SSHIncidentRecoveryToolkit: React.FC<SSHIncidentRecoveryToolkitProp
                         'sudo chmod 700 ~/.ssh && sudo chmod 600 ~/.ssh/authorized_keys',
                     ].map(snippet => (
                         <div key={snippet} className="flex items-center justify-between gap-2 border border-border/40 rounded px-2 py-1">
-                            <code className="text-[11px] truncate">{snippet}</code>
+                            <code className="text-xs truncate">{snippet}</code>
                             <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void copySnippet(snippet); }}>
                                 {t('ssh.recoveryCopySnippet')}
                             </button>
@@ -78,7 +78,7 @@ export const SSHIncidentRecoveryToolkit: React.FC<SSHIncidentRecoveryToolkitProp
             </div>
             {status && <div className="text-xs text-muted-foreground">{status}</div>}
             {output && (
-                <pre className="text-[11px] whitespace-pre-wrap bg-background border border-border/40 rounded p-2 max-h-64 overflow-auto">
+                <pre className="text-xs whitespace-pre-wrap bg-background border border-border/40 rounded p-2 max-h-64 overflow-auto">
                     {output}
                 </pre>
             )}

@@ -163,7 +163,7 @@ const PresenceCard = React.memo<PresenceCardProps>(({ presence, allowGuests, onT
         </div>
         {presence.map((participant) => (
             <div key={participant.id} className="text-xs flex items-center gap-2">
-                <span className={`w-2 h-2 rounded-full ${participant.isOnline ? 'bg-green-500' : 'bg-muted-foreground'}`} />
+                <span className={`w-2 h-2 rounded-full ${participant.isOnline ? 'bg-success' : 'bg-muted-foreground'}`} />
                 <span>{participant.name}</span>
             </div>
         ))}
@@ -625,4 +625,5 @@ export function MultiModelCollaboration({
 }
 
 // #endregion Main Component
+
 

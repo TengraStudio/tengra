@@ -39,8 +39,7 @@ const sectionData = {
     "galleryView": "Gallery view",
     "exitGalleryView": "Exit gallery view",
     "floatTerminal": "Float terminal",
-    "dockTerminal": "Dock terminal",
-    "multiplexerTitle": "Multiplexer (tmux/screen)",
+    "dockTerminal": "Dock terminal", 
     "healthSummary": "Health: {{state}} | Avg {{avg}}ms / Budget {{budget}}ms",
     "runTask": "Run task",
     "taskRunner": "Task runner",
@@ -143,12 +142,9 @@ const sectionData = {
     "recordingActive": "Active",
     "noRecordingsYet": "No recordings yet",
     "eventsLabel": "Events",
-    "replayPreview": "Replay preview",
-    "multiplexerCreateAttach": "Create & attach",
-    "multiplexerNoSessions": "No multiplexer sessions found",
+    "replayPreview": "Replay preview", 
     "failedToListTmuxSessions": "Failed to list tmux sessions",
-    "failedToListScreenSessions": "Failed to list screen sessions",
-    "multiplexerQueryFailed": "Multiplexer query failed",
+    "failedToListScreenSessions": "Failed to list screen sessions", 
     "defaultSessionName": "main"
 };
 

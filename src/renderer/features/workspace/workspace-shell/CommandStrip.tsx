@@ -122,7 +122,7 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
     return (
         <div
             className={cn(
-                'h-8 flex items-center justify-between px-3 bg-background/80 backdrop-blur-md border-t border-white/5 select-none text-xxs font-medium text-muted-foreground cursor-ns-resize',
+                'h-8 flex items-center justify-between px-3 bg-background/80 backdrop-blur-md border-t border-border/30 select-none text-xxs font-medium text-muted-foreground cursor-ns-resize',
                 className
             )}
             onMouseDown={onMouseDown}
@@ -156,7 +156,7 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
                             side="top"
                             align="start"
                             sideOffset={8}
-                            className="w-auto min-w-[220px] p-1 bg-popover border border-border rounded-lg"
+                            className="w-auto tw-min-w-220 p-1 bg-popover border border-border rounded-lg"
                             onMouseDown={e => {
                                 e.stopPropagation();
                             }}
@@ -172,7 +172,7 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
                             ) : (
                                 <>
                                     {isBranchSwitching && (
-                                        <div className="px-3 py-2 text-[11px] text-primary flex items-center gap-2">
+                                        <div className="px-3 py-2 tw-text-11 text-primary flex items-center gap-2">
                                             <Loader2 className="w-3 h-3 animate-spin" />
                                             {t('workspace.switchingBranch')}
                                         </div>
@@ -225,7 +225,7 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
                                 {t('workspace.language')}: {resolveWorkspaceLabel(detectedLanguageName)}
                             </span>
                         </div>
-                        <div className="w-px h-3 bg-white/10" />
+                        <div className="w-px h-3 bg-muted/60" />
                     </>
                 )}
                 <button

@@ -48,7 +48,7 @@ export const SavedProfileSelector: React.FC<SavedProfileSelectorProps> = ({ onSe
 
     if (loading) {
         return (
-            <div className="text-[10px] text-muted-foreground animate-pulse p-2 mb-4 bg-white/5 rounded-lg border border-dashed border-white/10">
+            <div className="tw-text-10 text-muted-foreground animate-pulse p-2 mb-4 bg-muted/40 rounded-lg border border-dashed border-border/40">
                 {t('common.loading')}
             </div>
         );
@@ -56,7 +56,7 @@ export const SavedProfileSelector: React.FC<SavedProfileSelectorProps> = ({ onSe
 
     if (profiles.length === 0) {
         return (
-            <div className="text-[10px] text-muted-foreground p-2 mb-4 bg-white/5 rounded-lg border border-dashed border-white/10">
+            <div className="tw-text-10 text-muted-foreground p-2 mb-4 bg-muted/40 rounded-lg border border-dashed border-border/40">
                 {loadFailed ? t('errors.unexpected') : t('terminal.no_ssh_profiles')}
             </div>
         );
@@ -73,12 +73,12 @@ export const SavedProfileSelector: React.FC<SavedProfileSelectorProps> = ({ onSe
                     <button
                         key={profile.id}
                         onClick={() => onSelect(profile)}
-                        className="flex flex-col items-start px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-left transition-all border border-transparent hover:border-white/10 group"
+                        className="flex flex-col items-start px-3 py-2 rounded-lg bg-muted/40 hover:bg-muted/60 text-left transition-all border border-transparent hover:border-border/60 group"
                     >
                         <span className="text-xs font-medium text-foreground group-hover:text-success transition-colors">
                             {profile.name}
                         </span>
-                        <span className="text-[10px] text-muted-foreground truncate w-full">
+                        <span className="tw-text-10 text-muted-foreground truncate w-full">
                             {profile.username}@{profile.host}:{profile.port}
                         </span>
                     </button>

@@ -206,7 +206,7 @@ function AgentCanvas({
             ref={canvasRef}
             width={560}
             height={280}
-            className="w-full rounded-3xl border border-white/8 bg-black/40"
+            className="w-full rounded-3xl border border-border/50 bg-background/90"
         />
     );
 }
@@ -223,7 +223,7 @@ function AgentCard({
     t: (key: string, options?: Record<string, string | number>) => string;
 }): JSX.Element {
     return (
-        <Card className="border-white/8 bg-white/[0.03]">
+        <Card className="border-border/50 bg-card/70">
             <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -234,7 +234,7 @@ function AgentCard({
                             {agent.provider} · {agent.model}
                         </div>
                     </div>
-                    <Badge variant="outline" className="border-white/10 bg-black/20 text-[11px]">
+                    <Badge variant="outline" className="border-border/60 bg-muted/30 text-xxs">
                         {agent.status}
                     </Badge>
                 </div>
@@ -244,9 +244,9 @@ function AgentCard({
                         {agent.workspaceId}
                     </div>
                     <div>{agent.stageGoal}</div>
-                    <div className="h-1.5 overflow-hidden rounded-full bg-white/5">
+                    <div className="h-1.5 overflow-hidden rounded-full bg-accent/40">
                         <div
-                            className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-teal-300 to-emerald-300"
+                            className="h-full rounded-full bg-gradient-to-r from-info/70 via-accent/70 to-success/70"
                             style={{ width: `${agent.progressPercent}%` }}
                         />
                     </div>
@@ -282,16 +282,16 @@ function ReviewQueueCard({
     t: (key: string, options?: Record<string, string | number>) => string;
 }): JSX.Element {
     return (
-        <Card className="border-white/8 bg-white/[0.03]">
+        <Card className="border-border/50 bg-card/70">
             <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                    <Sparkles className="h-4 w-4 text-fuchsia-200" />
+                    <Sparkles className="h-4 w-4 text-accent-foreground" />
                     {t('workspaceAgent.reviewQueue')}
                 </div>
                 <div className="mt-3 space-y-2">
                     {drafts.length > 0 ? (
                         drafts.map(draft => (
-                            <div key={draft.id} className="rounded-2xl border border-white/8 bg-black/20 p-3">
+                            <div key={draft.id} className="rounded-2xl border border-border/50 bg-muted/30 p-3">
                                 <div className="text-sm text-foreground">{draft.workspaceId}</div>
                                 <div className="mt-1 text-xs text-muted-foreground">
                                     {t('workspaceAgent.filesCount', { count: draft.changedFiles.length })} ·{' '}
@@ -352,16 +352,16 @@ function AssistQueueCard({
     t: (key: string, options?: Record<string, string | number>) => string;
 }): JSX.Element {
     return (
-        <Card className="border-white/8 bg-white/[0.03]">
+        <Card className="border-border/50 bg-card/70">
             <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                    <ArrowRight className="h-4 w-4 text-cyan-200" />
+                    <ArrowRight className="h-4 w-4 text-info" />
                     {t('workspaceAgent.assistQueue')}
                 </div>
                 <div className="mt-3 space-y-3">
                     {helpers.length > 0 && targets.length > 0 ? (
                         helpers.map(helper => (
-                            <div key={helper.id} className="rounded-2xl border border-white/8 bg-black/20 p-3">
+                            <div key={helper.id} className="rounded-2xl border border-border/50 bg-muted/30 p-3">
                                 <div className="text-sm text-foreground">{helper.name}</div>
                                 <div className="mt-2 flex flex-wrap gap-2">
                                     {targets
@@ -432,36 +432,36 @@ function ActivityFeedCard({
     }, [messageAuthorId, messageTargetId, messageValue, onSendMessage]);
 
     return (
-        <Card className="border-white/8 bg-white/[0.03]">
+        <Card className="border-border/50 bg-card/70">
             <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                    <MessagesSquare className="h-4 w-4 text-amber-200" />
+                    <MessagesSquare className="h-4 w-4 text-warning" />
                     {t('workspaceAgent.activity')}
                 </div>
                 <div className="mt-3 space-y-2">
                     {runtime.messages.slice(-4).map(message => (
-                        <div key={message.id} className="rounded-2xl border border-white/8 bg-black/20 p-3">
-                            <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                        <div key={message.id} className="rounded-2xl border border-border/50 bg-muted/30 p-3">
+                            <div className="text-xxs uppercase tracking-wide text-muted-foreground">
                                 {message.fromAgentId}
                             </div>
                             <div className="mt-1 text-sm text-foreground">{message.content}</div>
                         </div>
                     ))}
                     {runtime.assistEvents.slice(-3).map(event => (
-                        <div key={event.id} className="rounded-2xl border border-white/8 bg-black/20 p-3 text-sm text-foreground">
+                        <div key={event.id} className="rounded-2xl border border-border/50 bg-muted/30 p-3 text-sm text-foreground">
                             <div className="inline-flex items-center gap-2">
-                                <ArrowRight className="h-4 w-4 text-cyan-200" />
+                                <ArrowRight className="h-4 w-4 text-info" />
                                 {event.summary}
                             </div>
                         </div>
                     ))}
                     {runtime.decisions.slice(-4).map(decision => (
-                        <div key={`${decision.draftId}-${decision.decidedAt}`} className="rounded-2xl border border-white/8 bg-black/20 p-3">
+                        <div key={`${decision.draftId}-${decision.decidedAt}`} className="rounded-2xl border border-border/50 bg-muted/30 p-3">
                             <div className="flex items-center justify-between gap-3">
-                                <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                                <div className="text-xxs uppercase tracking-wide text-muted-foreground">
                                     {decision.draftId}
                                 </div>
-                                <Badge variant="outline" className="border-white/10 bg-black/30 text-[11px]">
+                                <Badge variant="outline" className="border-border/60 bg-muted/40 text-xxs">
                                     {decision.decision}
                                 </Badge>
                             </div>
@@ -471,8 +471,8 @@ function ActivityFeedCard({
                         </div>
                     ))}
                     {timeline.slice(-3).map(event => (
-                        <div key={event.id} className="rounded-2xl border border-white/8 bg-black/20 p-3">
-                            <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                        <div key={event.id} className="rounded-2xl border border-border/50 bg-muted/30 p-3">
+                            <div className="text-xxs uppercase tracking-wide text-muted-foreground">
                                 {event.type}
                             </div>
                             <div className="mt-1 text-sm text-foreground">
@@ -485,10 +485,10 @@ function ActivityFeedCard({
                 </div>
 
                 {participants.length > 0 && (
-                    <div className="mt-4 rounded-2xl border border-white/8 bg-black/20 p-3">
+                    <div className="mt-4 rounded-2xl border border-border/50 bg-muted/30 p-3">
                         <div className="grid gap-2 md:grid-cols-2">
                             <Select value={messageAuthorId} onValueChange={setMessageAuthorId}>
-                                <SelectTrigger className="h-10 rounded-2xl border-white/10 bg-black/30">
+                                <SelectTrigger className="h-10 rounded-2xl border-border/60 bg-muted/40">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -501,7 +501,7 @@ function ActivityFeedCard({
                             </Select>
 
                             <Select value={messageTargetId} onValueChange={setMessageTargetId}>
-                                <SelectTrigger className="h-10 rounded-2xl border-white/10 bg-black/30">
+                                <SelectTrigger className="h-10 rounded-2xl border-border/60 bg-muted/40">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -520,7 +520,7 @@ function ActivityFeedCard({
                         <Textarea
                             value={messageValue}
                             onChange={event => setMessageValue(event.target.value)}
-                            className="mt-2 min-h-[88px] rounded-2xl border-white/10 bg-black/30"
+                            className="mt-2 min-h-24 rounded-2xl border-border/60 bg-muted/40"
                         />
                         <div className="mt-2 flex justify-end">
                             <Button size="sm" variant="secondary" onClick={handleSend}>
@@ -553,11 +553,11 @@ export const WorkspaceAgentCouncilBoard: React.FC<WorkspaceAgentCouncilBoardProp
 
     return (
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4">
-            <div className="rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(34,211,238,0.08),rgba(255,255,255,0.02))] p-4">
+            <div className="rounded-3xl border border-border/50 bg-info/10 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                            <UserRoundCog className="h-4 w-4 text-cyan-200" />
+                            <UserRoundCog className="h-4 w-4 text-info" />
                             {runtime.chairman?.name ?? t('workspaceAgent.chairmanFallback')}
                         </div>
                         <div className="mt-1 text-xs text-muted-foreground">
@@ -585,7 +585,7 @@ export const WorkspaceAgentCouncilBoard: React.FC<WorkspaceAgentCouncilBoardProp
                     </div>
                 </div>
 
-                <div className="mt-4 grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+                <div className="mt-4 grid gap-4 xl:grid-cols-2">
                     <div className="space-y-4">
                         {activeView === 'map' ? (
                             <AgentCanvas
@@ -611,11 +611,11 @@ export const WorkspaceAgentCouncilBoard: React.FC<WorkspaceAgentCouncilBoardProp
                             </div>
                         )}
 
-                        <Card className="border-white/8 bg-white/[0.03]">
+                        <Card className="border-border/50 bg-card/70">
                             <CardContent className="p-4">
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                                        <Workflow className="h-4 w-4 text-cyan-200" />
+                                        <Workflow className="h-4 w-4 text-info" />
                                         {t('agents.taskRouting')}
                                     </div>
                                     {proposal.length > 0 && (
@@ -628,12 +628,12 @@ export const WorkspaceAgentCouncilBoard: React.FC<WorkspaceAgentCouncilBoardProp
                                 <div className="mt-3 space-y-2">
                                     {proposal.length > 0 ? (
                                         proposal.map((step, index) => (
-                                            <div key={step.id} className="rounded-2xl border border-white/8 bg-black/20 p-3">
+                                            <div key={step.id} className="rounded-2xl border border-border/50 bg-muted/30 p-3">
                                                 <div className="flex items-center justify-between gap-3">
                                                     <div className="text-sm text-foreground">
                                                         {index + 1}. {step.text}
                                                     </div>
-                                                    <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                                                    <div className="text-xxs uppercase tracking-wide text-muted-foreground">
                                                         {step.status}
                                                     </div>
                                                 </div>
@@ -675,3 +675,4 @@ export const WorkspaceAgentCouncilBoard: React.FC<WorkspaceAgentCouncilBoardProp
         </div>
     );
 };
+

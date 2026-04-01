@@ -4,6 +4,8 @@ import { Language } from '@/i18n';
 import { TerminalTab, Workspace } from '@/types';
 import { performanceMonitor } from '@/utils/performance';
 
+import '@renderer/features/settings/tailwind-semantic-utilities.css';
+
 const WorkspaceDetails = lazy(() =>
     import('@renderer/features/workspace/workspace-shell/WorkspaceDetails').then(m => ({
         default: m.WorkspaceDetails,
@@ -100,3 +102,4 @@ export const WorkspacesPage: React.FC<WorkspacesPageProps> = ({
 };
 
 export const MemoizedWorkspacesPage = memo(WorkspacesPage);
+

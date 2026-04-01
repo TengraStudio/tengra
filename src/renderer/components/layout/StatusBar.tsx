@@ -93,7 +93,7 @@ const StatusBarItemView: React.FC<{
             title={item.tooltip}
             className={cn(
                 'flex items-center gap-1 px-2 py-0.5 text-xxs transition-colors',
-                item.onClick && 'cursor-pointer hover:bg-white/10',
+                item.onClick && 'cursor-pointer hover:bg-foreground/10',
                 item.backgroundColor
             )}
             style={item.backgroundColor ? { backgroundColor: item.backgroundColor } : undefined}
@@ -152,7 +152,7 @@ export const GitBranchStatus: React.FC<{
         onClick={onClick}
         className={cn(
             'flex items-center gap-1 px-2 py-0.5 text-xxs',
-            onClick && 'cursor-pointer hover:bg-white/10'
+            onClick && 'cursor-pointer hover:bg-foreground/10'
         )}
     >
         <GitBranch className="w-3.5 h-3.5" />
@@ -170,7 +170,7 @@ export const ConnectionStatus: React.FC<{
         onClick={onClick}
         className={cn(
             'flex items-center gap-1 px-2 py-0.5 text-xxs',
-            onClick && 'cursor-pointer hover:bg-white/10'
+            onClick && 'cursor-pointer hover:bg-foreground/10'
         )}
     >
         {connected ? (
@@ -190,12 +190,12 @@ export const NotificationBell: React.FC<{
         onClick={onClick}
         className={cn(
             'relative flex items-center px-2 py-0.5',
-            onClick && 'cursor-pointer hover:bg-white/10'
+            onClick && 'cursor-pointer hover:bg-foreground/10'
         )}
     >
         <Bell className="w-3.5 h-3.5" />
         {count > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-3.5 flex items-center justify-center text-xxxs font-bold bg-destructive rounded-full px-1">
+            <span className="absolute -top-0.5 -right-0.5 min-w-3.5 h-3.5 flex items-center justify-center text-xxxs font-bold bg-destructive rounded-full px-1">
                 {count > 99 ? '99+' : count}
             </span>
         )}
@@ -278,7 +278,7 @@ export const ModelStatus: React.FC<{
         onClick={onClick}
         className={cn(
             'flex items-center gap-1 px-2 py-0.5 text-xxs',
-            onClick && 'cursor-pointer hover:bg-white/10'
+            onClick && 'cursor-pointer hover:bg-foreground/10'
         )}
     >
         <Zap className="w-3.5 h-3.5" />

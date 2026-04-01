@@ -17,9 +17,18 @@ export type SettingsCategory =
 
 export type DetailedStats = Awaited<ReturnType<Window['electron']['db']['getDetailedStats']>>
 export type AuthStatusState = { codex: boolean; claude: boolean; antigravity: boolean; copilot?: boolean }
+export type BrowserOAuthProvider = 'codex' | 'claude' | 'antigravity'
+export type DeviceAuthProvider = 'github' | 'copilot'
+export type SettingsAuthProvider = BrowserOAuthProvider | DeviceAuthProvider
+export interface AuthBusyState {
+    provider: SettingsAuthProvider
+    state?: string
+    accountId?: string
+    initialAccountIds?: string[]
+    startedAt: number
+}
 export type AuthFile = { provider?: string; type?: string; name?: string }
 export type PersonaDraft = { name: string; description: string; prompt: string }
-export type TimeStats = Awaited<ReturnType<Window['electron']['db']['getTimeStats']>>
 export interface AccountWrapper<T> {
     accounts: (T & { accountId?: string; email?: string; error?: string; isActive?: boolean })[]
 }

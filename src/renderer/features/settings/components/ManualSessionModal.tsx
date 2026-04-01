@@ -160,7 +160,7 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
                         onClick={() => void handleSave()}
                         disabled={isSaving || success || !sessionKey.startsWith('sk-ant-sid')}
                         className={cn(
-                            "flex-[2] px-4 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/10",
+                            "tw-flex-2 px-4 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/10",
                             success ? "bg-success text-foreground shadow-emerald-500/20" : "bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 disabled:grayscale"
                         )}
                     >
@@ -171,4 +171,5 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
         </Modal>
     );
 };
+
 

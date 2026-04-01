@@ -193,7 +193,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ isOpen, onClose,
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} size="5xl">
-            <div className="relative overflow-hidden min-h-[420px] flex flex-col">
+            <div className="relative overflow-hidden min-h-96 flex flex-col">
                 <div className="flex gap-1 mb-8 pr-8">
                     {steps.map((_, index) => (
                         <div
@@ -265,7 +265,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ isOpen, onClose,
                                                     <span className="text-sm font-semibold text-foreground">
                                                         {entry.displayName}
                                                     </span>
-                                                    <span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                                                    <span className="rounded-full border border-border px-2 py-0.5 text-xs uppercase tracking-wide text-muted-foreground">
                                                         {entry.componentId}
                                                     </span>
                                                 </div>
@@ -330,7 +330,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ isOpen, onClose,
                         onClick={() => {
                             void handleNext();
                         }}
-                        className="px-8 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+                        className="px-8 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all"
                     >
                         {currentStep === steps.length - 1
                             ? t('common.getStarted')

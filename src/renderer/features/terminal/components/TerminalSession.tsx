@@ -28,16 +28,7 @@ const TERMINAL_SCROLLBACK_LINES = 10000;
 
 const initializedTerminals = new Set<string>();
 const initializingTerminals = new Set<string>();
-
-interface TerminalDataEventDetail {
-    id: string;
-    data: string;
-}
-interface TerminalExitEventDetail {
-    id: string;
-    code?: number;
-}
-
+ 
 interface TerminalSessionProps {
     tab: TerminalTab;
     isActive: boolean;
@@ -54,45 +45,8 @@ const TerminalErrorOverlay: React.FC<{ t: (k: string) => string }> = ({ t }) => 
     </div>
 );
 
-function useTerminalMultiplexer(
-    tabId: string,
-    isReady: boolean,
-    xtermRef: React.RefObject<XTerm | null>,
-    onClose: () => void
-) {
-    useEffect(() => {
-        const xterm = xtermRef.current;
-        if (!isReady || !xterm) {
-            return;
-        }
-        const handleData = (e: Event) => {
-            const detail = (e as CustomEvent<TerminalDataEventDetail>).detail;
-            if (detail.id === tabId) {
-                xterm.write(detail.data);
-            }
-        };
-        const handleExit = (e: Event) => {
-            const detail = (e as CustomEvent<TerminalExitEventDetail>).detail;
-            if (detail.id === tabId) {
-                if (xtermRef.current) {
-                    xtermRef.current.write(
-                        `\r\n\x1b[33m[Terminal exited with code ${detail.code ?? 0}]\x1b[0m\r\n`
-                    );
-                }
-                onClose();
-            }
-        };
-        window.addEventListener('terminal-data-multiplex', handleData);
-        window.addEventListener('terminal-exit-multiplex', handleExit);
-        return () => {
-            window.removeEventListener('terminal-data-multiplex', handleData);
-            window.removeEventListener('terminal-exit-multiplex', handleExit);
-        };
-    }, [tabId, isReady, xtermRef, onClose]);
-}
-
 export const TerminalSession = memo(
-    ({ tab, isActive, onClose, workspacePath }: TerminalSessionProps) => {
+    ({ tab, isActive, workspacePath }: TerminalSessionProps) => {
         const { t } = useTranslation();
         const containerRef = useRef<HTMLDivElement>(null);
         const xtermRef = useRef<XTerm | null>(null);
@@ -109,7 +63,6 @@ export const TerminalSession = memo(
                 xtermRef.current.options.theme = getTerminalTheme();
             }
         }, [theme]);
-        useTerminalMultiplexer(tab.id, isReady, xtermRef, onClose);
         useTerminalSmartSuggestions({
             xtermRef,
             tabId: tab.id,

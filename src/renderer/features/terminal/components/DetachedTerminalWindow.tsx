@@ -169,7 +169,7 @@ export function DetachedTerminalWindow() {
             <div className="h-10 border-b border-border flex items-center justify-between px-3 bg-card/70">
                 <div className="min-w-0">
                     <div className="text-xs font-medium truncate">{title}</div>
-                    <div className="text-[10px] text-muted-foreground truncate">
+                    <div className="tw-text-10 text-muted-foreground truncate">
                         {[shell, cwd].filter(Boolean).join(' - ')}
                     </div>
                 </div>

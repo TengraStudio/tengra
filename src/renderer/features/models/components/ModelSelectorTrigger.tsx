@@ -74,7 +74,7 @@ const ModelLabelInfo: React.FC<ModelLabelInfoProps> = ({
 }) => (
     <div className="flex flex-col items-start leading-none overflow-hidden flex-1 text-left">
         <div className="flex items-center justify-between w-full pr-1">
-            <span className="text-xxs text-muted-foreground font-black uppercase tracking-[0.05em] truncate">
+            <span className="text-xxs text-muted-foreground font-black uppercase tracking-wider truncate">
                 {currentCatName}
                 {shouldRenderExtraModelCount(selectedModelsCount) && (
                     <span className="ml-1.5 text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xxxs">+{selectedModelsCount - 1}</span>
@@ -86,7 +86,7 @@ const ModelLabelInfo: React.FC<ModelLabelInfoProps> = ({
             {shouldRenderImageTypeIcon(modelType) && <ImageIcon className="w-2.5 h-2.5 text-success" />}
         </div>
         {shouldRenderContextBar(contextTokens) && (
-            <div className="w-full h-[2px] bg-border/30 rounded-full mt-1.5 overflow-hidden">
+            <div className="w-full h-0.5 bg-border/30 rounded-full mt-1.5 overflow-hidden">
                 <div
                     className={cn("h-full transition-all duration-500", getContextColor(contextUsagePercent))}
                     style={{ width: `${contextUsagePercent}%` }}
@@ -99,7 +99,7 @@ const ModelLabelInfo: React.FC<ModelLabelInfoProps> = ({
 const getButtonClasses = (isIconOnly: boolean): string => {
     return cn(
         "flex items-center gap-2.5 bg-muted/30 hover:bg-muted/40 border border-border/50 hover:border-border rounded-xl transition-all outline-none justify-between group/sel shadow-sm",
-        isIconOnly ? "p-1.5 w-auto min-w-0" : "px-3 py-1.5 min-w-[150px]"
+        isIconOnly ? "p-1.5 w-auto min-w-0" : "px-3 py-1.5 min-w-36"
     );
 };
 

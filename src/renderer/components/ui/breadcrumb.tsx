@@ -61,12 +61,12 @@ export function Breadcrumb({
                                     className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
                                 >
                                     {item.icon && <span className="flex-shrink-0">{item.icon}</span>}
-                                    <span className="truncate max-w-[200px]">{item.label}</span>
+                                    <span className="truncate max-w-48">{item.label}</span>
                                 </button>
                             ) : (
                                 <span 
                                     className={cn(
-                                        "flex items-center gap-1.5 truncate max-w-[200px]",
+                                        "flex items-center gap-1.5 truncate max-w-48",
                                         isLast ? "text-foreground font-medium" : "text-muted-foreground"
                                     )}
                                     aria-current={isLast ? 'page' : undefined}

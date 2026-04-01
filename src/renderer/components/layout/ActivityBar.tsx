@@ -77,7 +77,7 @@ const ActivityButton: React.FC<{
         {item.icon}
         {item.badge !== undefined && (
             <span className={cn(
-                "absolute top-1.5 right-1.5 min-w-[16px] h-4 px-1 flex items-center justify-center text-xxs font-bold rounded-full",
+                "absolute top-1.5 right-1.5 min-w-4 h-4 px-1 flex items-center justify-center text-xxs font-bold rounded-full",
                 typeof item.badge === 'number' && item.badge > 0
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground"

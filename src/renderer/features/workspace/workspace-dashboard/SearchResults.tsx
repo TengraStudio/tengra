@@ -61,7 +61,7 @@ const renderHighlightedSnippet = (text: string, query: string): React.ReactNode 
         fragments.push(
             <mark
                 key={`m-${matchCount}`}
-                className="rounded-sm bg-amber-400/25 text-foreground"
+                className="rounded-sm bg-warning/25 text-foreground"
             >
                 {text.slice(matchIndex, matchIndex + normalizedQuery.length)}
             </mark>
@@ -99,22 +99,22 @@ const FileGroup = React.memo(({
             <button
                 type="button"
                 onClick={() => setCollapsed(prev => !prev)}
-                className="flex w-full items-center gap-1.5 px-2 py-[5px] text-left transition-colors hover:bg-white/[0.04]"
+                className="flex w-full items-center gap-1.5 px-2 py-1 text-left transition-colors hover:bg-accent/40"
             >
                 {collapsed
                     ? <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
                     : <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
                 }
-                <FileCode2 className="h-3.5 w-3.5 shrink-0 text-cyan-300/70" />
-                <span className="truncate text-[13px] font-medium text-foreground">
+                <FileCode2 className="h-3.5 w-3.5 shrink-0 text-info/70" />
+                <span className="truncate text-xs font-medium text-foreground">
                     {fileName}
                 </span>
                 {dirPath && (
-                    <span className="truncate text-[11px] text-muted-foreground/60">
+                    <span className="truncate text-xxs text-muted-foreground/60">
                         {dirPath}
                     </span>
                 )}
-                <span className="ml-auto shrink-0 rounded-full bg-white/8 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground">
+                <span className="ml-auto shrink-0 rounded-full bg-muted/50 px-1.5 py-0.5 text-xxxs font-medium tabular-nums text-muted-foreground">
                     {group.items.length}
                 </span>
             </button>
@@ -127,15 +127,15 @@ const FileGroup = React.memo(({
                             key={`${result.file}:${result.line}:${idx}`}
                             type="button"
                             onClick={() => onSelect(result.file, result.line)}
-                            className="flex w-full items-start gap-2 py-[3px] pl-8 pr-2 text-left transition-colors hover:bg-white/[0.04]"
+                            className="flex w-full items-start gap-2 py-0.5 pl-8 pr-2 text-left transition-colors hover:bg-accent/40"
                         >
-                            <span className="mt-px w-8 shrink-0 text-right font-mono text-[11px] tabular-nums text-muted-foreground/50">
+                            <span className="mt-px w-8 shrink-0 text-right font-mono text-xxs tabular-nums text-muted-foreground/50">
                                 {isFileResult(result) ? '' : result.line}
                             </span>
-                            <span className="mt-[1px] shrink-0 rounded bg-white/8 px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.08em] text-muted-foreground/80">
+                            <span className="mt-px shrink-0 rounded bg-muted/50 px-1.5 py-0.5 text-xxxs font-semibold tracking-wide text-muted-foreground/80">
                                 {getSearchResultBadge(result)}
                             </span>
-                            <span className="min-w-0 flex-1 truncate font-mono text-[12px] leading-[18px] text-foreground/85">
+                            <span className="min-w-0 flex-1 truncate font-mono text-xs leading-5 text-foreground/85">
                                 {renderHighlightedSnippet(
                                     (isFileResult(result) ? result.name : result.text)?.trim() || result.text.trim(),
                                     searchQuery
@@ -181,7 +181,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
 
     if (normalizedResults.length === 0) {
         return (
-            <div className="flex items-center justify-center p-6 text-[13px] text-muted-foreground/60">
+            <div className="flex items-center justify-center p-6 text-xs text-muted-foreground/60">
                 {t('workspaceDashboard.noResults')}
             </div>
         );
@@ -219,3 +219,4 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
         </div>
     );
 };
+

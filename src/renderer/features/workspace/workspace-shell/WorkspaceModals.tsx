@@ -120,7 +120,7 @@ const EditWorkspaceModal: React.FC<{
                                 }
                                 aria-invalid={!hasValidDescription}
                                 className={cn(
-                                    'w-full bg-muted/30 border rounded-lg px-3 py-2 text-sm focus:outline-none min-h-[80px] resize-none',
+                                    'w-full bg-muted/30 border rounded-lg px-3 py-2 text-sm focus:outline-none tw-min-h-80 resize-none',
                                     hasValidDescription
                                         ? 'border-border/50 focus:border-primary/50'
                                         : 'border-destructive/50 focus:border-destructive'
@@ -190,7 +190,7 @@ const DeleteWorkspaceModal: React.FC<{
                         <div className="flex justify-end gap-2 pt-2">
                             <button
                                 onClick={onClose}
-                                className="px-4 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors"
+                                className="px-4 py-2 rounded-lg text-sm hover:bg-muted/40 transition-colors"
                             >
                                 {t('common.cancel')}
                             </button>
@@ -236,7 +236,7 @@ const ArchiveWorkspaceModal: React.FC<{
                     <div className="flex justify-end gap-2 pt-2">
                         <button
                             onClick={onClose}
-                            className="px-4 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors font-light"
+                            className="px-4 py-2 rounded-lg text-sm hover:bg-muted/40 transition-colors font-light"
                         >
                             {t('common.cancel')}
                         </button>
@@ -288,7 +288,7 @@ const BulkArchiveModal: React.FC<{
                     <div className="flex justify-end gap-2 pt-2">
                         <button
                             onClick={onClose}
-                            className="px-4 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors font-light"
+                            className="px-4 py-2 rounded-lg text-sm hover:bg-muted/40 transition-colors font-light"
                         >
                             {t('common.cancel')}
                         </button>
@@ -348,7 +348,7 @@ const BulkDeleteModal: React.FC<{
                         <div className="flex justify-end gap-2 pt-2">
                             <button
                                 onClick={onClose}
-                                className="px-4 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors font-light"
+                                className="px-4 py-2 rounded-lg text-sm hover:bg-muted/40 transition-colors font-light"
                             >
                                 {t('common.cancel')}
                             </button>

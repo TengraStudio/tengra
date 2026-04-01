@@ -164,9 +164,9 @@ interface ModelSectionProps {
 }
 
 function getQuotaTone(percent: number): string {
-    if (percent <= 10) { return 'stroke-red-500 text-red-400 bg-red-500/10 border-red-500/20'; }
-    if (percent <= 30) { return 'stroke-amber-500 text-amber-300 bg-amber-500/10 border-amber-500/20'; }
-    return 'stroke-blue-500 text-blue-300 bg-blue-500/10 border-blue-500/20';
+    if (percent <= 10) { return 'stroke-destructive text-destructive bg-destructive/10 border-destructive/20'; }
+    if (percent <= 30) { return 'stroke-warning text-warning bg-warning/10 border-warning/20'; }
+    return 'stroke-primary text-primary bg-primary/10 border-primary/20';
 }
 
 const CircularQuota: React.FC<{ value: number; label: string }> = ({ value, label }) => {
@@ -194,9 +194,9 @@ const CircularQuota: React.FC<{ value: number; label: string }> = ({ value, labe
                         strokeDashoffset={offset}
                     />
                 </svg>
-                <span className="text-[8px] font-black text-foreground/90">{normalized}</span>
+                <span className="text-xxxs font-black text-foreground/90">{normalized}</span>
             </div>
-            <span className="text-[8px] font-black uppercase tracking-wider text-muted-foreground/70">{label}</span>
+            <span className="text-xxxs font-black uppercase tracking-wider text-muted-foreground/70">{label}</span>
         </div>
     );
 };
@@ -235,11 +235,11 @@ function renderProviderQuota(categoryId: string, options: {
         return {
             badges: (
                 <>
-                    <span className="text-[9px] text-blue-300 font-black uppercase tracking-widest bg-blue-400/10 px-1.5 py-0.5 rounded border border-blue-400/20 leading-none">
+                    <span className="text-xxxs text-primary font-black uppercase tracking-widest bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20 leading-none">
                         {remaining}/{limit || 0} {t('modelSelector.creditsLeft')}
                     </span>
                     {rateLimit && (
-                        <span className="text-[9px] text-amber-300 font-black uppercase tracking-widest bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/20 leading-none">
+                        <span className="text-xxxs text-warning font-black uppercase tracking-widest bg-warning/10 px-1.5 py-0.5 rounded border border-warning/20 leading-none">
                             {t('statistics.rateLimit')} {rateLimit.remaining}/{rateLimit.limit}
                         </span>
                     )}
@@ -247,15 +247,15 @@ function renderProviderQuota(categoryId: string, options: {
             ),
             progress: (
                 <div className="px-4 pb-3 bg-popover/95">
-                    <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-muted-foreground/70 mb-1.5">
+                    <div className="flex items-center justify-between text-xxxs font-black uppercase tracking-widest text-muted-foreground/70 mb-1.5">
                         <span>{t('statistics.usageStatus')}</span>
                         <span className="text-foreground/80">{creditsPercent}%</span>
                     </div>
-                    <div className="h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
+                    <div className="h-1.5 w-full rounded-full bg-muted/30 overflow-hidden">
                         <div
                             className={cn(
                                 "h-full transition-all duration-700 ease-out",
-                                creditsPercent < 20 ? "bg-red-500/60" : creditsPercent < 50 ? "bg-amber-500/60" : "bg-blue-500/70"
+                                creditsPercent < 20 ? "bg-destructive/60" : creditsPercent < 50 ? "bg-warning/60" : "bg-primary/70"
                             )}
                             style={{ width: `${creditsPercent}%` }}
                         />
@@ -392,7 +392,7 @@ const CategoryRow: React.FC<{
         <button
             type="button"
             onClick={() => onToggleCollapse(category.id)}
-            className="sticky top-0 z-10 w-full px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70 flex items-center gap-2 bg-popover/95 backdrop-blur-md hover:text-foreground transition-all group/cat relative overflow-hidden"
+            className="sticky top-0 z-10 w-full px-4 py-3 text-xxxs font-bold uppercase tracking-widest text-muted-foreground/70 flex items-center gap-2 bg-popover/95 backdrop-blur-md hover:text-foreground transition-all group/cat relative overflow-hidden"
             aria-expanded={!collapsed}
             aria-label={`${category.name} ${t('modelSelector.categoryLabelSuffix')}`}
         >
@@ -555,7 +555,7 @@ export const ModelSelectorCategoryList: React.FC<ModelSelectorCategoryListProps>
                     <p>{t('modelSelector.noModelsFound')}</p>
                 </div>
             ) : shouldVirtualize ? (
-                <div className="h-[360px] sm:h-[420px]">
+                <div className="h-96 sm:h-96">
                     <Virtuoso
                         style={{ height: '100%' }}
                         data={modeFilteredCategories}

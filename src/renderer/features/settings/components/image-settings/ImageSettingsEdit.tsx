@@ -37,7 +37,7 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
     t,
 }) => {
     return (
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+        <div className="rounded-xl border border-border/40 bg-muted/30 p-4">
             <h5 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 <Wand2 className="h-3.5 w-3.5" />
                 {t('settings.images.editTitle')}
@@ -47,11 +47,11 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                 value={batchPrompts}
                 onChange={event => setBatchPrompts(event.target.value)}
                 placeholder={t('settings.images.batchPrompts')}
-                className="min-h-[78px] w-full rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
+                className="tw-min-h-78 w-full rounded-md border border-border/40 bg-background/40 px-2 py-1.5 text-xs"
             />
             <button
                 onClick={() => { void handleRunBatch(); }}
-                className="mt-2 inline-flex items-center gap-1 rounded-lg border border-primary/35 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary"
+                className="mt-2 inline-flex items-center gap-1 rounded-lg border border-primary/35 px-2.5 py-1 tw-text-10 font-bold uppercase tracking-wider text-primary"
             >
                 <Play className="h-3.5 w-3.5" />
                 {t('settings.images.batchRun')}
@@ -62,18 +62,18 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                     value={editSource}
                     onChange={event => setEditSource(event.target.value)}
                     placeholder={t('settings.images.editSource')}
-                    className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
+                    className="rounded-md border border-border/40 bg-background/40 px-2 py-1.5 text-xs"
                 />
                 <input
                     value={editPrompt}
                     onChange={event => setEditPrompt(event.target.value)}
                     placeholder={t('settings.images.editPrompt')}
-                    className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
+                    className="rounded-md border border-border/40 bg-background/40 px-2 py-1.5 text-xs"
                 />
                 <select
                     value={editPresetId}
                     onChange={event => handleApplyEditPreset(event.target.value as 'balanced' | 'detail' | 'stylize')}
-                    className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
+                    className="rounded-md border border-border/40 bg-background/40 px-2 py-1.5 text-xs"
                 >
                     <option value="balanced">{t('settings.images.editPresetBalanced')}</option>
                     <option value="detail">{t('settings.images.editPresetDetail')}</option>
@@ -82,7 +82,7 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                 <select
                     value={editMode}
                     onChange={event => setEditMode(event.target.value as 'img2img' | 'inpaint' | 'outpaint' | 'style-transfer')}
-                    className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
+                    className="rounded-md border border-border/40 bg-background/40 px-2 py-1.5 text-xs"
                 >
                     <option value="img2img">{t('settings.images.editModeImg2Img')}</option>
                     <option value="inpaint">{t('settings.images.editModeInpaint')}</option>
@@ -96,12 +96,12 @@ export const ImageSettingsEdit: React.FC<ImageSettingsEditProps> = ({
                     step={0.01}
                     value={editStrength}
                     onChange={event => setEditStrength(Number(event.target.value))}
-                    className="rounded-md border border-white/10 bg-black/10 px-2 py-1.5 text-xs"
+                    className="rounded-md border border-border/40 bg-background/40 px-2 py-1.5 text-xs"
                 />
             </div>
             <button
                 onClick={() => { void handleRunEdit(); }}
-                className="mt-2 rounded-lg border border-primary/35 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary"
+                className="mt-2 rounded-lg border border-primary/35 px-2.5 py-1 tw-text-10 font-bold uppercase tracking-wider text-primary"
             >
                 {t('settings.images.editRun')}
             </button>

@@ -22,7 +22,7 @@ export const WizardSSHBrowserStep: React.FC<WizardSSHBrowserStepProps> = ({
     return (
         <div className="space-y-4 flex-1 pt-4 flex flex-col min-h-0">
             <div className="flex items-center gap-2 p-3 bg-muted/10 rounded-lg border border-border/50">
-                <Terminal className="w-4 h-4 text-purple shrink-0" />
+                <Terminal className="w-4 h-4 text-primary shrink-0" />
                 <input
                     value={sshPath}
                     onChange={e => setSshPath(e.target.value)}

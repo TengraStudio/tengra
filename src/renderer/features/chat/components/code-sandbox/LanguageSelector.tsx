@@ -25,13 +25,13 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     };
 
     return (
-        <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>{t('codeSandbox.languageLabel')}</span>
             <select
                 value={value}
                 onChange={handleChange}
                 disabled={disabled}
-                className="rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-1 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-primary)]"
+                className="rounded border border-border/50 bg-muted/30 px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
             >
                 {LANGUAGE_OPTIONS.map((opt) => (
                     <option key={opt} value={opt}>

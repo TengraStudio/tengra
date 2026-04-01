@@ -402,7 +402,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
 
     return createPortal(
         <div
-            className="fixed inset-0 z-[320] flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
             role="dialog"
             aria-modal="true"
             aria-labelledby="model-selector-title"
@@ -410,7 +410,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
         >
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in-0 duration-200"
+                className="absolute inset-0 bg-background/85 backdrop-blur-sm animate-in fade-in-0 duration-200"
                 aria-hidden="true"
             />
 
@@ -419,7 +419,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                 ref={modalRef}
                 style={modalStyle}
                 className={cn(
-                    'relative w-full max-w-3xl max-h-[85vh] flex flex-col',
+                    'relative w-full max-w-3xl max-h-screen flex flex-col',
                     'bg-popover/95 backdrop-blur-xl rounded-2xl shadow-2xl',
                     'border border-border/50',
                     'animate-in fade-in-0 zoom-in-95 duration-200'

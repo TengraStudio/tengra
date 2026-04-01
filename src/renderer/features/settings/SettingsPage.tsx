@@ -19,6 +19,7 @@ import type { GroupedModels, ModelInfo } from '@/types';
 import { ManualSessionModal, ManualSessionModalState } from './components/ManualSessionModal';
 
 import '@renderer/features/settings/SettingsPage.css';
+import '@renderer/features/settings/tailwind-semantic-utilities.css';
 
 export interface SettingsPageProps {
     installedModels: ModelInfo[]
@@ -295,3 +296,4 @@ export function SettingsPage({
 export const MemoizedSettingsPage = memo(SettingsPage);
 
 export default MemoizedSettingsPage;
+

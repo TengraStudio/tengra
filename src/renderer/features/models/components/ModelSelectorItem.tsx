@@ -88,9 +88,9 @@ function getAntigravityPercent(model: ModelListItem, activeAntigravityQuota?: Qu
 }
 
 function getQuotaTone(percent: number): string {
-    if (percent <= 10) { return 'stroke-red-500 text-red-400 bg-red-500/10 border-red-500/20'; }
-    if (percent <= 30) { return 'stroke-amber-500 text-amber-300 bg-amber-500/10 border-amber-500/20'; }
-    return 'stroke-blue-500 text-blue-300 bg-blue-500/10 border-blue-500/20';
+    if (percent <= 10) { return 'stroke-destructive text-destructive bg-destructive/10 border-destructive/20'; }
+    if (percent <= 30) { return 'stroke-warning text-warning bg-warning/10 border-warning/20'; }
+    return 'stroke-primary text-primary bg-primary/10 border-primary/20';
 }
 
 const ModelInfoBadges: React.FC<{ model: ModelListItem, t: (k: string) => string }> = ({ model, t }) => (
@@ -149,7 +149,7 @@ const ModelQuotaDisplay: React.FC<{
 
         return (
             <div className="mt-2 space-y-1">
-                <div className="flex items-center justify-between gap-2 text-[9px] font-black uppercase tracking-widest">
+                <div className="flex items-center justify-between gap-2 text-xxxs font-black uppercase tracking-widest">
                     <span className="text-muted-foreground/55">{t('statistics.quotaStatus')}</span>
                     <span className={cn("rounded border px-1.5 py-0.5 leading-none", getQuotaTone(percent).split(' ').slice(1).join(' '))}>
                         {percent}%
@@ -159,7 +159,7 @@ const ModelQuotaDisplay: React.FC<{
                     <div
                         className={cn(
                             "h-full transition-all duration-700 ease-out",
-                            percent <= 10 ? 'bg-red-500/70' : percent <= 30 ? 'bg-amber-500/70' : 'bg-blue-500/70'
+                            percent <= 10 ? 'bg-destructive/70' : percent <= 30 ? 'bg-warning/70' : 'bg-primary/70'
                         )}
                         style={{ width: `${percent}%` }}
                     />

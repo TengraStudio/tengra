@@ -36,7 +36,7 @@ export const EditMemoryModal = ({ memory, onClose, onSave }: EditMemoryModalProp
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
-            <Card className="w-full max-w-lg p-6 bg-popover/90 backdrop-blur-2xl border-white/10 shadow-2xl space-y-4">
+            <Card className="w-full max-w-lg p-6 bg-popover/90 backdrop-blur-2xl border-border/50 shadow-2xl space-y-4">
                 <h2 className="text-xl font-bold flex items-center gap-2">
                     <Edit3 className="w-5 h-5 text-primary" />
                     {t('memory.editTitle')}
@@ -45,7 +45,7 @@ export const EditMemoryModal = ({ memory, onClose, onSave }: EditMemoryModalProp
                     <textarea value={content} onChange={(e) => setContent(e.target.value)} className="w-full h-24 bg-muted/50 border rounded-lg p-3 text-sm focus:border-primary/50 outline-none resize-none" />
                     <div className="grid grid-cols-2 gap-4">
                         <Select value={category} onValueChange={(v) => setCategory(v as MemoryCategory)}>
-                            <SelectTrigger className="mt-1 bg-muted/50 border-white/5">
+                            <SelectTrigger className="mt-1 bg-muted/50 border-border/40">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -56,7 +56,7 @@ export const EditMemoryModal = ({ memory, onClose, onSave }: EditMemoryModalProp
                         </Select>
                         <input type="range" min="0" max="1" step="0.05" value={importance} onChange={(e) => setImportance(parseFloat(e.target.value))} className="w-full mt-3" />
                     </div>
-                    <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder={t('memory.tagsPlaceholder')} className="mt-1 bg-muted/50 border-white/5" />
+                    <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder={t('memory.tagsPlaceholder')} className="mt-1 bg-muted/50 border-border/40" />
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
                     <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
@@ -85,7 +85,7 @@ export const AddMemoryModal = ({ onClose, onAdd }: AddMemoryModalProps) => {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
-            <Card className="w-full max-w-lg p-6 bg-popover/90 backdrop-blur-2xl border-white/10 shadow-2xl space-y-4">
+            <Card className="w-full max-w-lg p-6 bg-popover/90 backdrop-blur-2xl border-border/50 shadow-2xl space-y-4">
                 <h2 className="text-xl font-bold flex items-center gap-2">
                     <Plus className="w-5 h-5 text-primary" />
                     {t('memory.addTitle')}
@@ -94,7 +94,7 @@ export const AddMemoryModal = ({ onClose, onAdd }: AddMemoryModalProps) => {
                     <textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder={t('memory.contentPlaceholder')} className="w-full h-24 bg-muted/50 border rounded-lg p-3 text-sm focus:border-primary/50 outline-none resize-none" />
                     <div className="grid grid-cols-2 gap-4">
                         <Select value={category} onValueChange={(v) => setCategory(v as MemoryCategory)}>
-                            <SelectTrigger className="mt-1 bg-muted/50 border-white/5">
+                            <SelectTrigger className="mt-1 bg-muted/50 border-border/40">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -103,7 +103,7 @@ export const AddMemoryModal = ({ onClose, onAdd }: AddMemoryModalProps) => {
                                 ))}
                             </SelectContent>
                         </Select>
-                        <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder={t('memory.tagsPlaceholder')} className="mt-1 bg-muted/50 border-white/5" />
+                        <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder={t('memory.tagsPlaceholder')} className="mt-1 bg-muted/50 border-border/40" />
                     </div>
                 </div>
                 <div className="flex justify-end gap-2 pt-4">

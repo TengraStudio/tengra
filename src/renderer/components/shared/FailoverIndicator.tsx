@@ -28,7 +28,7 @@ const FailoverIndicator: React.FC<FailoverIndicatorProps> = ({
   }
 
   return (
-    <div className="flex items-center gap-2 rounded-md bg-amber-50 px-3 py-1.5 text-sm text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+    <div className="flex items-center gap-2 rounded-md bg-warning/15 px-3 py-1.5 text-sm text-warning">
       <AlertTriangle className="h-4 w-4 flex-shrink-0" />
       <span>
         {t('common.failoverModelUsed', { fallback: fallbackModel, original: originalModel })}

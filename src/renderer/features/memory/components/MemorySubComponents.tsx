@@ -28,7 +28,7 @@ export const StatCard = memo(({
     highlight?: boolean;
 }) => (
     <Card className={cn(
-        "p-4 bg-muted/30 border-white/5 flex flex-col gap-1 transition-all",
+        "p-4 bg-muted/30 border-border/40 flex flex-col gap-1 transition-all",
         highlight && "border-primary/30 bg-primary/5"
     )}>
         <p className="text-xxs font-bold uppercase tracking-widest text-muted-foreground/60">{label}</p>
@@ -49,13 +49,13 @@ export const EmptyState = memo(({
     title: string;
     description: string;
 }) => (
-    <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-muted/10 rounded-2xl border border-dashed border-white/5">
+    <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-muted/10 rounded-2xl border border-dashed border-border/40">
         <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center">
             <Icon className="w-8 h-8 text-muted-foreground/40" />
         </div>
         <div className="space-y-1">
             <h3 className="text-lg font-bold">{title}</h3>
-            <p className="text-sm text-muted-foreground max-w-[250px]">{description}</p>
+            <p className="text-sm text-muted-foreground max-w-64">{description}</p>
         </div>
     </div>
 ));
@@ -74,7 +74,7 @@ export const PendingMemoryCard = memo(({
     const config = CATEGORY_CONFIG[memory.suggestedCategory];
 
     return (
-        <Card className="group p-4 bg-muted/20 border-white/5 hover:bg-muted/30 transition-all hover:border-yellow/30 relative overflow-hidden">
+        <Card className="group p-4 bg-muted/20 border-border/40 hover:bg-muted/30 transition-all hover:border-warning/40 relative overflow-hidden">
             <div
                 className="absolute left-0 top-0 bottom-0 w-1"
                 style={{
@@ -92,7 +92,7 @@ export const PendingMemoryCard = memo(({
                             {t(config.labelKey)}
                         </Badge>
                         {memory.requiresUserValidation && (
-                            <Badge variant="outline" className="border-yellow/30 text-warning text-xxs">
+                            <Badge variant="outline" className="border-warning/40 text-warning text-xxs">
                                 {t('memory.needsReview')}
                             </Badge>
                         )}
@@ -147,7 +147,7 @@ export const ConfirmedMemoryCard = memo(({
     return (
         <Card className={cn(
             "group p-4 transition-all relative overflow-hidden",
-            isSelected ? "bg-primary/5 border-primary/30" : "bg-muted/20 border-white/5 hover:bg-muted/30",
+            isSelected ? "bg-primary/5 border-primary/30" : "bg-muted/20 border-border/40 hover:bg-muted/30",
             isArchived && "opacity-60"
         )}>
             <div className="flex flex-col gap-3">

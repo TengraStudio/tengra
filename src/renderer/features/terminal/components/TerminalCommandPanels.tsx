@@ -42,7 +42,7 @@ export function TerminalCommandPanels({
     return (
         <>
             {isCommandHistoryOpen && (
-                <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 w-[420px] max-w-[95vw]">
+                <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 tw-w-420 tw-max-w-95vw">
                     <div className="flex items-center justify-between gap-2 mb-2">
                         <div className="flex items-center gap-1 text-xs font-medium text-foreground">
                             <History className="w-3.5 h-3.5 text-muted-foreground" />
@@ -53,7 +53,7 @@ export function TerminalCommandPanels({
                                 onClick={() => {
                                     void clearCommandHistory();
                                 }}
-                                className="h-6 px-2 text-[10px] rounded border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40"
+                                className="h-6 px-2 tw-text-10 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40"
                             >
                                 {t('terminal.clearHistory')}
                             </button>
@@ -98,7 +98,7 @@ export function TerminalCommandPanels({
                                     <div className="text-xs text-foreground truncate">
                                         {entry.command}
                                     </div>
-                                    <div className="text-[10px] text-muted-foreground truncate">
+                                    <div className="tw-text-10 text-muted-foreground truncate">
                                         {new Date(entry.timestamp).toLocaleString()}
                                         {entry.cwd ? ` - ${entry.cwd}` : ''}
                                     </div>
@@ -108,7 +108,7 @@ export function TerminalCommandPanels({
                 </div>
             )}
             {isTaskRunnerOpen && (
-                <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 w-[420px] max-w-[95vw]">
+                <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 tw-w-420 tw-max-w-95vw">
                     <div className="flex items-center justify-between gap-2 mb-2">
                         <div className="flex items-center gap-1 text-xs font-medium text-foreground">
                             <TerminalSquare className="w-3.5 h-3.5 text-muted-foreground" />
@@ -154,7 +154,7 @@ export function TerminalCommandPanels({
                                     <div className="text-xs text-foreground truncate">
                                         {item.command}
                                     </div>
-                                    <div className="text-[10px] text-muted-foreground truncate">
+                                    <div className="tw-text-10 text-muted-foreground truncate">
                                         {item.source} - {item.label}
                                     </div>
                                 </button>

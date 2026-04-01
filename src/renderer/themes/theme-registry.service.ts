@@ -16,6 +16,16 @@ export class ThemeRegistryService {
     private themes: ThemeRegistry = {};
     private isLoaded = false;
 
+    constructor() {
+        // Listen for theme updates from Main process (e.g. after marketplace install)
+        if (window.electron?.ipcRenderer) {
+            window.electron.ipcRenderer.on('theme:runtime:updated', () => {
+                appLogger.info('ThemeRegistry', 'Received theme update notification, reloading themes...');
+                void this.reloadThemes();
+            });
+        }
+    }
+
     /**
      * Load themes from runtime directory
      * Should be called on app initialization

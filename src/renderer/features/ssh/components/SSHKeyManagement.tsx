@@ -148,7 +148,7 @@ export const SSHKeyManagement: React.FC<SSHKeyManagementProps> = ({ t }) => {
                 <section className="border border-border rounded-lg p-3 space-y-2">
                     <h4 className="font-medium">{t('ssh.importKey')}</h4>
                     <input value={importName} onChange={e => setImportName(e.target.value)} placeholder={t('ssh.keyName')} className="w-full px-2 py-1 rounded bg-background border border-border" />
-                    <textarea value={importKey} onChange={e => setImportKey(e.target.value)} placeholder={t('ssh.privateKey')} className="w-full px-2 py-1 rounded bg-background border border-border min-h-[90px]" />
+                    <textarea value={importKey} onChange={e => setImportKey(e.target.value)} placeholder={t('ssh.privateKey')} className="w-full px-2 py-1 rounded bg-background border border-border min-h-24" />
                     <button
                         className="secondary-btn w-full"
                         onClick={() => { void runAction(async () => { await window.electron.ssh.importManagedKey({ name: importName, privateKey: importKey, passphrase: undefined }); setImportName(''); setImportKey(''); }, t('ssh.keyImported')); }}
@@ -226,7 +226,7 @@ export const SSHKeyManagement: React.FC<SSHKeyManagementProps> = ({ t }) => {
                     <input value={knownHost.keyType} onChange={e => setKnownHost(prev => ({ ...prev, keyType: e.target.value }))} placeholder={t('ssh.keyType')} className="px-2 py-1 rounded bg-background border border-border" />
                     <button className="secondary-btn" onClick={() => { void runAction(async () => { await window.electron.ssh.addKnownHost(knownHost); setKnownHost({ host: '', keyType: 'ssh-ed25519', publicKey: '' }); }, t('ssh.knownHostAdded')); }}>{t('ssh.addKnownHost')}</button>
                 </div>
-                <textarea value={knownHost.publicKey} onChange={e => setKnownHost(prev => ({ ...prev, publicKey: e.target.value }))} placeholder={t('ssh.publicKey')} className="w-full px-2 py-1 rounded bg-background border border-border min-h-[70px]" />
+                <textarea value={knownHost.publicKey} onChange={e => setKnownHost(prev => ({ ...prev, publicKey: e.target.value }))} placeholder={t('ssh.publicKey')} className="w-full px-2 py-1 rounded bg-background border border-border min-h-16" />
                 <div className="space-y-2 max-h-40 overflow-auto pr-1">
                     {knownHosts.map((entry, index) => (
                         <div key={`${entry.host}-${index}`} className="flex items-center justify-between border border-border rounded px-2 py-1">

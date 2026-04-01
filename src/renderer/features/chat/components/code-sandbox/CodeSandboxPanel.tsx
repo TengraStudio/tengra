@@ -70,9 +70,9 @@ export const CodeSandboxPanel: React.FC = () => {
     );
 
     return (
-        <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] p-4">
+        <div className="rounded-xl border border-border/50 bg-card p-4">
             <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+                <h3 className="text-sm font-semibold text-foreground">
                     {t('codeSandbox.title')}
                 </h3>
                 <LanguageSelector
@@ -89,7 +89,7 @@ export const CodeSandboxPanel: React.FC = () => {
                 placeholder={t('codeSandbox.codePlaceholder')}
                 disabled={isRunning}
                 rows={8}
-                className="w-full resize-y rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] p-3 font-mono text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-primary)]"
+                className="w-full resize-y rounded-lg border border-border/50 bg-muted/30 p-3 font-mono text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-1 focus:ring-primary/40"
                 spellCheck={false}
             />
 
@@ -97,7 +97,7 @@ export const CodeSandboxPanel: React.FC = () => {
                 <button
                     onClick={() => void handleRun()}
                     disabled={isRunning || !code.trim()}
-                    className="rounded-lg bg-[var(--accent-primary)] px-4 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-lg bg-primary px-4 py-1.5 text-sm font-medium text-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     {isRunning ? t('codeSandbox.running') : t('codeSandbox.run')}
                 </button>

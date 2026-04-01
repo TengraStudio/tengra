@@ -76,7 +76,7 @@ const TerminalHeader: React.FC<TerminalHeaderProps> = ({
             </div>
             <div className="text-sm text-muted-foreground font-medium select-none flex-1 text-center font-mono flex items-center justify-center gap-2">
                 <span className="opacity-50">{t('tools.terminalHost')}</span>
-                <span className="text-neutral">~</span>
+                <span className="text-muted-foreground">~</span>
                 <span>{t('tools.terminalShell')}</span>
             </div>
             {hasOutput && (
@@ -155,7 +155,7 @@ const OutputContent: React.FC<OutputContentProps> = ({
                 </div>
             )}
             {!hasOutput && !isExecuting && (
-                <div className="text-neutral italic text-xs mt-1 opacity-50">
+                <div className="text-muted-foreground italic text-xs mt-1 opacity-50">
                     {t('tools.noOutput')}
                 </div>
             )}
@@ -248,7 +248,7 @@ const TerminalBody: React.FC<TerminalBodyProps> = ({
     hasOutput,
     t,
 }) => (
-    <div className="terminal-content p-4 bg-background min-h-[120px] max-h-[400px] overflow-y-auto font-mono text-sm leading-relaxed selection:bg-primary/20">
+    <div className="terminal-content p-4 bg-background min-h-32 max-h-96 overflow-y-auto font-mono text-sm leading-relaxed selection:bg-primary/20">
         <div className="flex items-center gap-2 text-success font-bold mb-1">
             <span className="text-primary">&gt;</span>
             <span className="text-info-light">~</span>

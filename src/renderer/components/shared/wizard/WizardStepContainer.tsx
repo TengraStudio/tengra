@@ -86,16 +86,16 @@ export const WizardStepContainer: React.FC<WizardStepContainerProps> = ({
                             onClick={nextButton.onClick}
                             disabled={nextButton.disabled}
                             className={cn(
-                                'px-8 py-3 rounded-xl font-bold text-sm tracking-tight transition-all disabled:opacity-40 disabled:grayscale flex items-center gap-3 shadow-lg relative overflow-hidden group/btn hover:brightness-105 active:scale-[0.98]',
+                                'px-8 py-3 rounded-xl font-bold text-sm tracking-tight transition-all disabled:opacity-40 disabled:grayscale flex items-center gap-3 shadow-lg relative overflow-hidden group/btn hover:brightness-105 active:scale-95',
                                 nextButton.variant === 'secondary'
                                     ? 'bg-muted text-foreground'
                                     : 'bg-primary text-primary-foreground shadow-primary/30 hover:shadow-primary/50'
                             )}
                         >
-                            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+                            <div className="absolute inset-0 bg-primary-foreground/10 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
                             <span className="relative z-10">{nextButton.label}</span>
                             {nextButton.icon && (
-                                <div className="relative z-10 p-1.5 bg-black/10 rounded-xl group-hover/btn:translate-x-1 transition-all duration-300">
+                                <div className="relative z-10 p-1.5 bg-background/20 rounded-xl group-hover/btn:translate-x-1 transition-all duration-300">
                                     {nextButton.icon}
                                 </div>
                             )}

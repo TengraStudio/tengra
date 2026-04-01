@@ -22,7 +22,7 @@ export const ChatViewSkeleton: React.FC = () => (
         </div>
         <div className="flex-1 space-y-4 overflow-hidden">
             {Array.from({ length: 4 }).map((_, idx) => (
-                <div key={idx} className="max-w-[90%]">
+                <div key={idx} className="max-w-full">
                     <Skeleton variant="rounded" height={idx % 2 === 0 ? 64 : 88} />
                 </div>
             ))}
@@ -38,7 +38,7 @@ export const ChatViewSkeleton: React.FC = () => (
 );
 
 export const WorkspaceViewSkeleton: React.FC = () => (
-    <div className="h-full w-full p-4 md:p-6 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4">
+    <div className="h-full w-full p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="space-y-3">
             <Skeleton variant="rounded" height={44} />
             {Array.from({ length: 6 }).map((_, idx) => (
@@ -57,7 +57,7 @@ export const WorkspaceViewSkeleton: React.FC = () => (
 );
 
 export const SettingsViewSkeleton: React.FC = () => (
-    <div className="h-full w-full p-4 md:p-6 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4">
+    <div className="h-full w-full p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="space-y-2">
             <Skeleton variant="rounded" height={42} />
             {Array.from({ length: 8 }).map((_, idx) => (

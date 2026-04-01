@@ -578,7 +578,7 @@ export function GalleryView({ language }: GalleryViewProps) {
 
             {previewImage && (
                 <div
-                    className="fixed inset-0 z-[60] bg-background/90 backdrop-blur-sm flex items-center justify-center p-6"
+                    className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm flex items-center justify-center p-6"
                     onClick={handleClosePreview}
                 >
                     <div className="absolute top-4 right-4 flex items-center gap-2">
@@ -639,13 +639,13 @@ export function GalleryView({ language }: GalleryViewProps) {
                         }}
                         onMouseUp={() => setIsPanning(false)}
                         onMouseLeave={() => setIsPanning(false)}
-                        className={cn("max-w-[90vw] max-h-[85vh] overflow-hidden", previewZoom > 1 && "cursor-grab", isPanning && "cursor-grabbing")}
+                        className={cn("max-w-screen-lg max-h-screen overflow-hidden", previewZoom > 1 && "cursor-grab", isPanning && "cursor-grabbing")}
                     >
                         <img
                             src={previewImage.url}
                             alt={previewImage.name}
                             draggable={false}
-                            className="max-w-[90vw] max-h-[85vh] object-contain select-none"
+                            className="max-w-screen-lg max-h-screen object-contain select-none"
                             style={{
                                 transform: `translate(${previewPan.x}px, ${previewPan.y}px) scale(${previewZoom})`,
                                 transition: isPanning ? 'none' : 'transform 120ms ease-out',

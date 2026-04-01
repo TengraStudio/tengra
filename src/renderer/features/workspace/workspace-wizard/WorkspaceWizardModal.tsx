@@ -34,7 +34,7 @@ const CATEGORIES: CategoryConfig[] = [
     { id: 'web', nameKey: 'workspaceWizard.categories.web', icon: Globe, color: 'text-primary', bg: 'bg-primary/10' },
     { id: 'backend', nameKey: 'workspaceWizard.categories.backend', icon: Database, color: 'text-success', bg: 'bg-success/10' },
     { id: 'cli', nameKey: 'workspaceWizard.categories.cli', icon: Terminal, color: 'text-warning', bg: 'bg-warning/10' },
-    { id: 'mobile', nameKey: 'workspaceWizard.categories.mobile', icon: Smartphone, color: 'text-purple', bg: 'bg-purple/10' },
+    { id: 'mobile', nameKey: 'workspaceWizard.categories.mobile', icon: Smartphone, color: 'text-primary', bg: 'bg-primary/10' },
     { id: 'other', nameKey: 'workspaceWizard.categories.other', icon: Code, color: 'text-muted-foreground', bg: 'bg-muted/10' },
 ];
 
@@ -237,7 +237,7 @@ export const WorkspaceWizardModal: React.FC<WorkspaceWizardModalProps> = ({ isOp
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} size="3xl" className="!p-0 overflow-hidden">
-            <div className="relative min-h-[620px] flex flex-col p-8 pt-5 bg-gradient-to-b from-background to-muted/10">
+            <div className="relative tw-min-h-620 flex flex-col p-8 pt-5 bg-gradient-to-b from-background to-muted/10">
                 <div className="mb-7 space-y-3">
                     <WizardProgress
                         steps={progressSteps}

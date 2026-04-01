@@ -15,7 +15,7 @@ export function useTerminalPanelEffects(core: TerminalPanelCoreResult): void {
     const {
         isOpen, tabs, activeTabId, setActiveTabId,
         setIsSearchOpen, setIsGalleryView, setIsAppearanceMenuOpen,
-        setIsSemanticPanelOpen, setIsMultiplexerOpen, setIsRecordingPanelOpen,
+        setIsSemanticPanelOpen, setIsRecordingPanelOpen,
         isSearchOpen, terminalContextMenu, setTerminalContextMenu,
         tabsRef, activeTabIdRef, isCreatingRef, hasAutoCreatedRef,
         displayTabs, workspaceIssuesTab,
@@ -59,14 +59,13 @@ export function useTerminalPanelEffects(core: TerminalPanelCoreResult): void {
             setIsSemanticPanelOpen(false);
             core.commandTools.setIsCommandHistoryOpen(false);
             core.commandTools.setIsTaskRunnerOpen(false);
-            setIsMultiplexerOpen(false);
             setIsRecordingPanelOpen(false);
             setSearchStatus('idle');
             setSplitView(null);
             recording.completeRecording();
             recording.stopReplay();
         }
-    }, [recording, isOpen, core.commandTools, setIsAppearanceMenuOpen, setIsGalleryView, setIsMultiplexerOpen, setIsRecordingPanelOpen, setIsSearchOpen, setIsSemanticPanelOpen, setSearchStatus, setSplitView, hasAutoCreatedRef, isCreatingRef]);
+    }, [recording, isOpen, core.commandTools, setIsAppearanceMenuOpen, setIsGalleryView, setIsRecordingPanelOpen, setIsSearchOpen, setIsSemanticPanelOpen, setSearchStatus, setSplitView, hasAutoCreatedRef, isCreatingRef]);
 
     // --- Bootstrap ---
     useTerminalBootstrapEffects({

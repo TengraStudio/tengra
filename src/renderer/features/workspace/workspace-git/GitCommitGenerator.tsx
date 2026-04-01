@@ -18,7 +18,7 @@ interface HeaderProps {
 }
 
 const GeneratorHeader = ({ t, isLoading, workspacePath, onFetch }: HeaderProps) => (
-    <div className="flex items-center gap-3 p-4 border-b border-white/5 bg-gradient-to-r from-success/10 to-success-light/10">
+    <div className="flex items-center gap-3 p-4 border-b border-border/30 bg-gradient-to-r from-success/10 to-success-light/10">
         <div className="p-2 rounded-xl bg-success/20 border border-success/30">
             <GitCommit size={20} className="text-success" />
         </div>
@@ -58,12 +58,12 @@ const SuggestionArea = ({
             <textarea
                 value={suggestion}
                 onChange={e => setSuggestion(e.target.value)}
-                className="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-sm text-foreground font-mono focus:outline-none focus:border-success/50 resize-none"
+                className="w-full bg-background/60 border border-border/40 rounded-lg px-4 py-3 text-sm text-foreground font-mono focus:outline-none focus:border-success/50 resize-none"
                 rows={3}
             />
             <button
                 onClick={onCopy}
-                className="absolute top-2 right-2 p-1.5 rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                className="absolute top-2 right-2 p-1.5 rounded hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors"
                 title={t('git.copy')}
             >
                 {isCopied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
@@ -172,7 +172,7 @@ export function GitCommitGenerator({ workspacePath, onClose }: GitCommitGenerato
     };
 
     return (
-        <div className="bg-muted rounded-2xl border border-white/10 overflow-hidden max-w-2xl w-full">
+        <div className="bg-muted rounded-2xl border border-border/40 overflow-hidden max-w-2xl w-full">
             <GeneratorHeader
                 t={t}
                 isLoading={isLoading}
@@ -208,7 +208,7 @@ export function GitCommitGenerator({ workspacePath, onClose }: GitCommitGenerato
                         <label className="text-xs text-muted-foreground">
                             {t('git.stagedChanges')}
                         </label>
-                        <pre className="bg-black/30 border border-white/5 rounded-lg p-3 text-xs font-mono text-muted-foreground max-h-48 overflow-y-auto">
+                        <pre className="bg-background/60 border border-border/30 rounded-lg p-3 text-xs font-mono text-muted-foreground max-h-48 overflow-y-auto">
                             {diff.slice(0, 2000)}
                             {diff.length > 2000 && '\n... (truncated)'}
                         </pre>
@@ -216,10 +216,10 @@ export function GitCommitGenerator({ workspacePath, onClose }: GitCommitGenerato
                 )}
             </div>
             {suggestion && (
-                <div className="flex gap-3 p-4 border-t border-white/5">
+                <div className="flex gap-3 p-4 border-t border-border/30">
                     <button
                         onClick={onClose}
-                        className="flex-1 py-2.5 rounded-lg bg-white/5 text-muted-foreground text-sm font-medium hover:bg-white/10"
+                        className="flex-1 py-2.5 rounded-lg bg-muted/40 text-muted-foreground text-sm font-medium hover:bg-muted/60"
                     >
                         {t('git.cancel')}
                     </button>

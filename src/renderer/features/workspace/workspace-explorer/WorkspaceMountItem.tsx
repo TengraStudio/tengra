@@ -38,7 +38,7 @@ interface MountIconProps {
 
 const MountIcon: React.FC<MountIconProps> = ({ mountType }) => {
     return mountType === 'ssh' ? (
-        <Server className="w-3.5 h-3.5 text-indigo" />
+        <Server className="w-3.5 h-3.5 text-primary" />
     ) : (
         <Folder className="w-3.5 h-3.5 text-success" />
     );
@@ -85,7 +85,7 @@ const MountHeader: React.FC<MountHeaderProps> = ({
                     {mount.name}
                 </div>
                 {mount.type === 'ssh' && (
-                    <span className="px-1 py-0.5 rounded-[3px] bg-indigo/20 text-primary text-xxxs font-bold border border-indigo/30">
+                    <span className="px-1 py-0.5 tw-rounded-3px bg-primary/20 text-primary text-xxxs font-bold border border-primary/30">
                         {t('terminal.sshPrefix')}
                     </span>
                 )}

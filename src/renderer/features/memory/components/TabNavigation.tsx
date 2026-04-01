@@ -43,7 +43,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     ];
 
   return (
-    <div className="flex gap-1 p-1 bg-muted/30 rounded-lg w-fit border border-white/5">
+    <div className="flex gap-1 p-1 bg-muted/30 rounded-lg w-fit border border-border/40">
       {tabs.map((tab) => (
         <button
           key={tab.id}
@@ -52,7 +52,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
             'px-4 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2',
             activeTab === tab.id
               ? 'bg-primary text-primary-foreground shadow-lg'
-              : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
           )}
         >
           <tab.icon className="w-4 h-4" />
@@ -61,7 +61,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
             <span
               className={cn(
                 'ml-1 px-1.5 py-0.5 rounded-full text-xxs font-bold',
-                activeTab === tab.id ? 'bg-white/20' : 'bg-primary/20 text-primary'
+                activeTab === tab.id ? 'bg-muted/50' : 'bg-primary/20 text-primary'
               )}
             >
               {tab.count}

@@ -28,7 +28,7 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
     ] as const;
 
     return (
-        <div className="flex items-center bg-white/5 rounded-lg p-0.5 border border-white/5 shadow-sm gap-0.5">
+        <div className="flex items-center bg-muted/40 rounded-lg p-0.5 border border-border/30 shadow-sm gap-0.5">
             {tabs.map((tab, idx) => {
                 const Icon = tab.icon;
                 const isActive = dashboardTab === tab.id;
@@ -39,7 +39,7 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
                             <button
                                 onClick={handleRunWorkspace}
                                 data-testid="workspace-run-button"
-                                className="p-1.5 rounded-md hover:bg-white/10 text-success transition-colors"
+                                className="p-1.5 rounded-md hover:bg-muted/60 text-success transition-colors"
                                 title={t('workspace.run')}
                             >
                                 <Play className="w-3.5 h-3.5 fill-current" />
@@ -49,7 +49,7 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
                             onClick={() => onDashboardTabChange?.(tab.id)}
                             className={cn(
                                 "p-1.5 rounded-md transition-all",
-                                isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-white/10 hover:text-foreground"
+                                isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                             )}
                             title={tab.title}
                         >

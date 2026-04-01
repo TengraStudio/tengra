@@ -573,7 +573,7 @@
 
     /* Glass Card - Ultra Subtle */
     .glass-card {
-        @apply bg-card/20 backdrop-blur-sm border border-white/5 rounded-2xl transition-all duration-200;
+        @apply bg-card/20 backdrop-blur-sm border border-border/30 rounded-2xl transition-all duration-200;
     }
 
     /* Page Container */
@@ -592,7 +592,7 @@
     }
 
     .btn-ghost {
-        @apply bg-transparent hover:bg-white/5 text-muted-foreground hover:text-foreground px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200;
+        @apply bg-transparent hover:bg-muted/40 text-muted-foreground hover:text-foreground px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200;
     }
 
     /* Input */
@@ -661,13 +661,14 @@
 
     /* Inline Code */
     .markdown-body code:not(pre code) {
-        @apply bg-muted/80 text-primary px-1.5 py-0.5 rounded font-mono text-[0.85em] font-medium border border-border/20 whitespace-nowrap;
+        @apply bg-muted/80 text-primary px-1.5 py-0.5 rounded font-mono text-sm font-medium border border-border/20 whitespace-nowrap;
+        font-size: 0.85em;
         box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.1);
     }
 
     /* Code Blocks */
     .markdown-body pre {
-        @apply my-4 overflow-hidden rounded-xl border border-border/50 bg-black/40;
+        @apply my-4 overflow-hidden rounded-xl border border-border/50 bg-card/70;
     }
 
     .markdown-body table {
@@ -675,7 +676,7 @@
     }
 
     .markdown-body th {
-        @apply bg-muted/40 p-3 text-left font-bold text-muted-foreground uppercase tracking-wider text-[10px] border-b border-border/30;
+        @apply bg-muted/40 p-3 text-left font-bold text-muted-foreground uppercase tracking-wider text-xxxs border-b border-border/30;
     }
 
     .markdown-body td {

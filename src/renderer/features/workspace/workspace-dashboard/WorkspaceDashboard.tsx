@@ -152,7 +152,7 @@ export const WorkspaceDashboard = ({
             />
         ),
         terminal: () => renderLazyPanel(
-            <div className="h-full bg-black/40 rounded-xl border border-border/50 overflow-hidden p-1">
+            <div className="h-full bg-background/70 rounded-xl border border-border/50 overflow-hidden p-1">
                 <TerminalComponent cwd={state.workspaceRoot} />
             </div>
         ),

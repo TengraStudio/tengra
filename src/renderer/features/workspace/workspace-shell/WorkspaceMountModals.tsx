@@ -32,13 +32,13 @@ interface MountTypeToggleProps {
 }
 
 const MountTypeToggle: React.FC<MountTypeToggleProps> = ({ type, setMountForm, t }) => (
-    <div className="grid grid-cols-2 gap-2 bg-black/20 p-1 rounded-lg">
+    <div className="grid grid-cols-2 gap-2 bg-background/50 p-1 rounded-lg">
         <button
             onClick={() => setMountForm(prev => ({ ...prev, type: 'local' }))}
             className={cn(
                 'py-2 text-xs font-medium rounded-md transition-all',
                 type === 'local'
-                    ? 'bg-white/10 text-foreground'
+                    ? 'bg-muted/60 text-foreground'
                     : 'text-muted-foreground hover:text-muted-foreground'
             )}
         >
@@ -49,7 +49,7 @@ const MountTypeToggle: React.FC<MountTypeToggleProps> = ({ type, setMountForm, t
             className={cn(
                 'py-2 text-xs font-medium rounded-md transition-all',
                 type === 'ssh'
-                    ? 'bg-white/10 text-foreground'
+                    ? 'bg-muted/60 text-foreground'
                     : 'text-muted-foreground hover:text-muted-foreground'
             )}
         >
@@ -80,12 +80,12 @@ const LocalMountForm: React.FC<LocalMountFormProps> = ({
                 type="text"
                 value={mountForm.rootPath || ''}
                 onChange={e => setMountForm(prev => ({ ...prev, rootPath: e.target.value }))}
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
+                className="w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
                 placeholder={t('workspace.placeholders.rootPath')}
             />
             <button
                 onClick={pickLocalFolder}
-                className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-foreground text-xs font-medium"
+                className="px-3 py-2 rounded-lg bg-muted/40 hover:bg-muted/60 text-foreground text-xs font-medium"
             >
                 {t('workspaceModals.pick')}
             </button>
@@ -154,7 +154,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                     type="text"
                     value={mountForm.name || ''}
                     onChange={e => setMountForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
+                    className="w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
                     placeholder={t('workspaceModals.mountNamePlaceholder')}
                 />
             </div>
@@ -166,7 +166,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                         type="text"
                         value={mountForm.host || ''}
                         onChange={e => setMountForm(prev => ({ ...prev, host: e.target.value }))}
-                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
+                        className="w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
                     />
                 </div>
                 <div className="space-y-1">
@@ -175,7 +175,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                         type="text"
                         value={mountForm.port || ''}
                         onChange={e => setMountForm(prev => ({ ...prev, port: e.target.value }))}
-                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
+                        className="w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
                     />
                 </div>
             </div>
@@ -186,7 +186,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                     type="text"
                     value={mountForm.username || ''}
                     onChange={e => setMountForm(prev => ({ ...prev, username: e.target.value }))}
-                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
+                    className="w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
                 />
             </div>
 
@@ -196,10 +196,10 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                     <button
                         onClick={() => setMountForm(prev => ({ ...prev, authType: 'password' }))}
                         className={cn(
-                            "flex-1 py-1.5 text-[10px] uppercase tracking-wider font-bold rounded border transition-all",
+                            "flex-1 py-1.5 tw-text-10 uppercase tracking-wider font-bold rounded border transition-all",
                             mountForm.authType === 'password'
                                 ? "bg-success/10 border-success/50 text-success"
-                                : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"
+                                : "bg-muted/40 border-border/40 text-muted-foreground hover:bg-muted/60"
                         )}
                     >
                         {t('workspaceModals.password')}
@@ -207,10 +207,10 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                     <button
                         onClick={() => setMountForm(prev => ({ ...prev, authType: 'key' }))}
                         className={cn(
-                            "flex-1 py-1.5 text-[10px] uppercase tracking-wider font-bold rounded border transition-all",
+                            "flex-1 py-1.5 tw-text-10 uppercase tracking-wider font-bold rounded border transition-all",
                             mountForm.authType === 'key'
-                                ? "bg-indigo/10 border-indigo/50 text-indigo"
-                                : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"
+                                ? "bg-primary/10 border-primary/50 text-primary"
+                                : "bg-muted/40 border-border/40 text-muted-foreground hover:bg-muted/60"
                         )}
                     >
                         {t('workspaceModals.sshKey')}
@@ -225,7 +225,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                         type="password"
                         value={mountForm.password || ''}
                         onChange={e => setMountForm(prev => ({ ...prev, password: e.target.value }))}
-                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
+                        className="w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
                     />
                 </div>
             ) : (
@@ -237,12 +237,12 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                                 type="text"
                                 value={mountForm.privateKey || ''}
                                 onChange={e => setMountForm(prev => ({ ...prev, privateKey: e.target.value }))}
-                                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
+                                className="w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
                                 placeholder={t('workspaceModals.privateKey')}
                             />
                             <button
                                 onClick={() => { void pickKeyFile(); }}
-                                className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-foreground text-xs font-medium"
+                                className="px-3 py-2 rounded-lg bg-muted/40 hover:bg-muted/60 text-foreground text-xs font-medium"
                             >
                                 {t('workspaceModals.pick')}
                             </button>
@@ -254,7 +254,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                             type="password"
                             value={mountForm.passphrase || ''}
                             onChange={e => setMountForm(prev => ({ ...prev, passphrase: e.target.value }))}
-                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
+                            className="w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
                             placeholder={t('workspaceModals.optional')}
                         />
                     </div>
@@ -267,7 +267,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                     id="saveProfile"
                     checked={mountForm.saveProfile || false}
                     onChange={e => setMountForm(prev => ({ ...prev, saveProfile: e.target.checked }))}
-                    className="w-3.5 h-3.5 rounded border-white/10 bg-black/40 text-success focus:ring-success/50"
+                    className="w-3.5 h-3.5 rounded border-border/40 bg-background/70 text-success focus:ring-success/50"
                 />
                 <label htmlFor="saveProfile" className="text-xs text-muted-foreground cursor-pointer select-none">
                     {t('workspaceModals.saveAsProfile')}
@@ -281,19 +281,19 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                     className={cn(
                         "w-full py-2 rounded-lg text-xs font-semibold transition-all border",
                         testing
-                            ? "bg-white/5 border-white/10 text-muted-foreground animate-pulse"
+                            ? "bg-muted/40 border-border/40 text-muted-foreground animate-pulse"
                             : testResult?.success
                                 ? "bg-success/10 border-success/30 text-success hover:bg-success/20"
                                 : testResult?.success === false
                                     ? "bg-error/10 border-error/30 text-error hover:bg-error/20"
-                                    : "bg-white/5 border-white/10 text-foreground hover:bg-white/10 hover:border-white/20"
+                                    : "bg-muted/40 border-border/40 text-foreground hover:bg-muted/60 hover:border-border/70"
                     )}
                 >
                     {testing ? t('workspaceModals.testing') : t('workspaceModals.testConnection')}
                 </button>
                 {testResult && (
                     <div className={cn(
-                        "mt-2 p-2 rounded text-[10px] leading-relaxed border",
+                        "mt-2 p-2 rounded tw-text-10 leading-relaxed border",
                         testResult.success
                             ? "bg-success/5 border-success/20 text-success/80"
                             : "bg-error/5 border-error/20 text-error/80"
@@ -349,9 +349,9 @@ const MountModal: React.FC<MountModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="bg-card border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
-                <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-sm p-4">
+            <div className="bg-card border border-border/40 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+                <div className="p-4 border-b border-border/30 flex justify-between items-center bg-muted/40">
                     <h3 className="text-sm font-bold text-foreground">
                         {t('workspaceModals.mountTitle')}
                     </h3>
@@ -383,7 +383,7 @@ const MountModal: React.FC<MountModalProps> = ({
                     <div className="flex justify-end gap-2 mt-4">
                         <button
                             onClick={() => { setShowMountModal(false); }}
-                            className="px-4 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-white/5"
+                            className="px-4 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40"
                         >
                             {t('workspaceModals.cancel')}
                         </button>
@@ -426,13 +426,13 @@ const EntryModal: React.FC<EntryModalProps> = ({
     }
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-sm p-4"
             role="dialog"
             aria-modal="true"
             aria-labelledby="workspace-modal-title"
         >
-            <div className="bg-card border border-white/10 rounded-xl w-full max-w-sm overflow-hidden shadow-2xl">
-                <div className="p-4 border-b border-white/5 flex justify-between items-center">
+            <div className="bg-card border border-border/40 rounded-xl w-full max-w-sm overflow-hidden shadow-2xl">
+                <div className="p-4 border-b border-border/30 flex justify-between items-center">
                     <h3 id="workspace-modal-title" className="text-sm font-bold text-foreground">
                         {t(`workspaceModals.titles.${entryModal.type}`)}
                     </h3>
@@ -458,7 +458,7 @@ const EntryModal: React.FC<EntryModalProps> = ({
                                     closeEntryModal();
                                 }
                             }}
-                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
+                            className="w-full bg-background/70 border border-border/40 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-success/50"
                             placeholder={t('workspace.placeholders.name')}
                             aria-label={`${entryModal.type} name`}
                         />
@@ -479,7 +479,7 @@ const EntryModal: React.FC<EntryModalProps> = ({
                     <div className="flex justify-end gap-2">
                         <button
                             onClick={closeEntryModal}
-                            className="px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-white/5"
+                            className="px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40"
                             aria-label={t('workspaceModals.cancel')}
                         >
                             {t('workspaceModals.cancel')}

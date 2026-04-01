@@ -27,10 +27,10 @@ const ContextWindowIndicator: React.FC<ContextWindowIndicatorProps> = ({
 
     const barColor =
         percentage > 80
-            ? 'bg-red-500'
+            ? 'bg-destructive'
             : percentage > 50
-              ? 'bg-yellow-500'
-              : 'bg-green-500';
+              ? 'bg-warning'
+              : 'bg-success';
 
     const formatNumber = (n: number): string => n.toLocaleString();
 

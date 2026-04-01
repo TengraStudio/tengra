@@ -63,9 +63,7 @@ export interface TerminalPanelToolbarConnectorProps {
     toggleGalleryView: () => void;
     hasActiveSession: boolean;
     activeSemanticIssuesLength: number;
-    activeSemanticErrorCount: number;
-    openMultiplexerPanel: () => void;
-    isMultiplexerOpen: boolean;
+    activeSemanticErrorCount: number; 
     toggleRecording: () => void;
     toggleSemanticPanel: () => void;
     activeRecordingTabId: string | null;
@@ -146,9 +144,7 @@ export const TerminalPanelToolbarConnector: React.FC<TerminalPanelToolbarConnect
             toggleSemanticPanel={props.toggleSemanticPanel}
             hasActiveSession={props.hasActiveSession}
             activeSemanticIssuesLength={props.activeSemanticIssuesLength}
-            activeSemanticErrorCount={props.activeSemanticErrorCount}
-            openMultiplexerPanel={props.openMultiplexerPanel}
-            isMultiplexerOpen={props.isMultiplexerOpen}
+            activeSemanticErrorCount={props.activeSemanticErrorCount} 
             toggleRecording={props.toggleRecording}
             activeRecordingTabId={props.activeRecordingTabId}
             isMaximized={props.isMaximized}

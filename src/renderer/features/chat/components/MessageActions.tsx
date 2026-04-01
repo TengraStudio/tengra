@@ -91,7 +91,7 @@ export const RatingButtons = React.memo(({
     const { t } = useTranslation();
     return (
         <div
-            className="flex items-center gap-1 border-l border-white/5 pl-2 ml-1"
+            className="flex items-center gap-1 border-l border-border/40 pl-2 ml-1"
             role="group"
             aria-label={t('messageBubble.rating')}
         >

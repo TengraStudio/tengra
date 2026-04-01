@@ -60,7 +60,7 @@ const StorySidebar: React.FC<{
       <nav className="p-2">
         {Object.entries(grouped).map(([category, items]) => (
           <div key={category} className="mb-3">
-            <p className="px-2 py-1 text-[10px] font-bold uppercase text-muted-foreground tracking-wider">
+            <p className="px-2 py-1 text-xs font-bold uppercase text-muted-foreground tracking-wider">
               {t(category)}
             </p>
             {items.map((s) => (
@@ -101,7 +101,7 @@ const StoryPreview: React.FC<{ story: ComponentStory }> = ({ story }) => {
             <div className="flex items-baseline justify-between mb-3">
               <h3 className="text-sm font-semibold">{t(variant.name)}</h3>
               {variant.description && (
-                <span className="text-[10px] text-muted-foreground">{t(variant.description)}</span>
+                <span className="text-xs text-muted-foreground">{t(variant.description)}</span>
               )}
             </div>
             <div className="flex flex-wrap items-center gap-3">

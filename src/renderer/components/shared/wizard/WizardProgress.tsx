@@ -50,8 +50,8 @@ export const WizardProgress: React.FC<WizardProgressProps> = ({
                         >
                             <span
                                 className={cn(
-                                    'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold transition-all duration-300',
-                                    isCurrent && 'bg-primary text-primary-foreground shadow-[0_0_10px_rgba(var(--primary),0.35)]',
+                                    'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xxxs font-bold transition-all duration-300',
+                                    isCurrent && 'bg-primary text-primary-foreground shadow-lg',
                                     isCompleted && 'bg-success/20 text-success',
                                     !isCurrent && !isCompleted && 'bg-muted/30 text-muted-foreground'
                                 )}
@@ -63,7 +63,7 @@ export const WizardProgress: React.FC<WizardProgressProps> = ({
                         {index < steps.length - 1 && (
                             <div
                                 className={cn(
-                                    'h-px flex-1 min-w-[12px] transition-all duration-500',
+                                    'h-px flex-1 min-w-3 transition-all duration-500',
                                     index < currentStepIndex ? 'bg-success/50' : 'bg-border/40'
                                 )}
                             />

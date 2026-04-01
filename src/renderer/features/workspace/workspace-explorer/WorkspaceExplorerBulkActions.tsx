@@ -30,7 +30,7 @@ function ToolbarActionButton(props: {
             disabled={props.disabled}
             aria-label={props.ariaLabel}
             title={props.title}
-            className="inline-flex h-7 items-center gap-1 rounded-md border border-border/50 bg-background/70 px-2 text-[11px] font-medium text-foreground transition-colors hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-7 items-center gap-1 rounded-md border border-border/50 bg-background/70 px-2 tw-text-11 font-medium text-foreground transition-colors hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-50"
         >
             {props.children}
         </button>
@@ -55,7 +55,7 @@ export function WorkspaceExplorerBulkActions({
     return (
         <div className="mx-4 mb-2 rounded-lg border border-border/50 bg-muted/20 p-2">
             <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-semibold text-muted-foreground">
+                <span className="tw-text-11 font-semibold text-muted-foreground">
                     {t('common.itemsSelected', { count: selectedEntries.length })}
                 </span>
                 <ToolbarActionButton
@@ -118,14 +118,14 @@ export function WorkspaceExplorerBulkActions({
                     <button
                         type="button"
                         onClick={onSubmit}
-                        className="inline-flex h-8 items-center rounded-md bg-primary/15 px-2 text-[11px] font-semibold text-foreground transition-colors hover:bg-primary/20"
+                        className="inline-flex h-8 items-center rounded-md bg-primary/15 px-2 tw-text-11 font-semibold text-foreground transition-colors hover:bg-primary/20"
                     >
                         {t('common.confirm')}
                     </button>
                     <button
                         type="button"
                         onClick={onCancel}
-                        className="inline-flex h-8 items-center rounded-md border border-border/50 px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground"
+                        className="inline-flex h-8 items-center rounded-md border border-border/50 px-2 tw-text-11 font-medium text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground"
                         aria-label={t('common.cancel')}
                         title={t('common.cancel')}
                     >

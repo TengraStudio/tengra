@@ -54,7 +54,7 @@ export function WorkspaceLanguageDistribution({ languages, t }: WorkspaceLanguag
                 <div className="w-1.5 h-1.5 rounded-full bg-success" />
                 {t('workspaceDashboard.langDist')}
             </h3>
-            <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20">
+            <div className="space-y-3 tw-max-h-250 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20">
                 {Object.entries(languages)
                     .sort(([, a], [, b]) => (b as number) - (a as number))
                     .slice(0, 15)
@@ -94,7 +94,7 @@ export function WorkspaceAnalysisTodos({ todos, t }: WorkspaceAnalysisTodosProps
     return (
         <div className="bg-card/40 rounded-2xl border border-border/50 p-5 space-y-4">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-yellow" />
+                <div className="w-1.5 h-1.5 rounded-full bg-warning" />
                 {t('workspaceDashboard.todoList')}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

@@ -76,7 +76,7 @@ const ScriptsSection = ({ scripts }: { scripts: ScriptsRecord }) => {
                     >
                         <span className="font-mono text-xs text-info-light font-bold">{name}</span>
                         <span
-                            className="font-mono text-xxs text-muted-foreground truncate max-w-[120px]"
+                            className="font-mono text-xxs text-muted-foreground truncate tw-max-w-120"
                             title={String(scripts[name])}
                         >
                             {String(scripts[name])}

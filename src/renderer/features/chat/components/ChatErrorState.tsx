@@ -13,10 +13,10 @@ interface ChatErrorStateProps {
 
 /** Accent color per error kind */
 const ERROR_STYLES: Record<ChatErrorKind, { border: string; bg: string; icon: string }> = {
-    provider_unavailable: { border: 'border-orange-500/40', bg: 'bg-orange-500/10', icon: 'text-orange-400' },
-    quota_exhausted: { border: 'border-red-500/40', bg: 'bg-red-500/10', icon: 'text-red-400' },
-    timeout: { border: 'border-yellow-500/40', bg: 'bg-yellow-500/10', icon: 'text-yellow-400' },
-    generic: { border: 'border-red-500/40', bg: 'bg-red-500/10', icon: 'text-red-400' },
+    provider_unavailable: { border: 'border-warning/40', bg: 'bg-warning/10', icon: 'text-warning' },
+    quota_exhausted: { border: 'border-destructive/40', bg: 'bg-destructive/10', icon: 'text-destructive' },
+    timeout: { border: 'border-warning/40', bg: 'bg-warning/10', icon: 'text-warning' },
+    generic: { border: 'border-destructive/40', bg: 'bg-destructive/10', icon: 'text-destructive' },
 };
 
 const ERROR_TITLE_KEYS: Record<ChatErrorKind, string> = {
@@ -107,7 +107,7 @@ export const ChatErrorState: React.FC<ChatErrorStateProps> = React.memo(({
                         {showSwitchModel && onSwitchModel && (
                             <button
                                 onClick={onSwitchModel}
-                                className="flex items-center gap-1.5 rounded-lg border border-white/10 hover:bg-white/5 text-muted-foreground hover:text-foreground px-3 py-1.5 text-xs font-medium transition-colors"
+                                className="flex items-center gap-1.5 rounded-lg border border-border/70 hover:bg-accent/50 text-muted-foreground hover:text-foreground px-3 py-1.5 text-xs font-medium transition-colors"
                             >
                                 <ArrowRightLeft className="w-3.5 h-3.5" />
                                 {t('chat.errorSwitchModel')}
@@ -118,7 +118,7 @@ export const ChatErrorState: React.FC<ChatErrorStateProps> = React.memo(({
 
                 <button
                     onClick={onDismiss}
-                    className="shrink-0 text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-white/5"
+                    className="shrink-0 text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-accent/50"
                     aria-label={t('chat.errorDismiss')}
                 >
                     <X className="w-4 h-4" />

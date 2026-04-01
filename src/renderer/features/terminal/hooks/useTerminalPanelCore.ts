@@ -22,7 +22,6 @@ import {
     TERMINAL_WORKSPACE_ISSUES_TAB_ID,
 } from '../constants/terminal-panel-constants';
 import { TERMINAL_SPLIT_PRESET_LIMIT } from '../utils/split-config';
-import type { MultiplexerSession } from '../utils/terminal-panel-types';
 
 import { useTerminalAI } from './useTerminalAI';
 import { useTerminalAiActions } from './useTerminalAiActions';
@@ -31,7 +30,6 @@ import { useTerminalBackendsAndRemote } from './useTerminalBackendsAndRemote';
 import { useTerminalClipboardActions } from './useTerminalClipboardActions';
 import { useTerminalCommandTools } from './useTerminalCommandTools';
 import { useTerminalInputBroadcast } from './useTerminalInputBroadcast';
-import { useTerminalMultiplexer } from './useTerminalMultiplexer';
 import { useTerminalPanelToggles } from './useTerminalPanelToggles';
 import { useTerminalPasteHistory } from './useTerminalPasteHistory';
 import { useTerminalPreferenceActions } from './useTerminalPreferenceActions';
@@ -49,12 +47,12 @@ import { useTerminalTabActions } from './useTerminalTabActions';
  * Core orchestrator hook that composes all terminal panel sub-hooks.
  * Returns all state and actions needed by the terminal panel.
  */
- 
+
 export function useTerminalPanelCore(props: TerminalPanelProps) {
     const {
         isOpen, onToggle,
         isMaximized: isMaximizedProp = false,
-        onMaximizeChange: onMaximizeChangeProp, 
+        onMaximizeChange: onMaximizeChangeProp,
         workspaceId, workspacePath,
         tabs, activeTabId,
         setTabs, setActiveTabId,
@@ -74,7 +72,6 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
         isGalleryView, setIsGalleryView,
         isAppearanceMenuOpen, setIsAppearanceMenuOpen,
         isSemanticPanelOpen, setIsSemanticPanelOpen,
-        isMultiplexerOpen, setIsMultiplexerOpen,
         isRecordingPanelOpen, setIsRecordingPanelOpen,
         isAiPanelOpen, setIsAiPanelOpen,
     } = useTerminalState();
@@ -222,12 +219,6 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
         recordingCaptureRef: recording.recordingCaptureRef,
         onToggle, workspaceIssuesTab, setTabs, setActiveTabId,
     });
-
-    const multiplexer = useTerminalMultiplexer({
-        workspacePath, activeTabIdRef,
-        writeCommandToActiveTerminal: inputBroadcast.writeCommandToActiveTerminal,
-    });
-
     const commandTools = useTerminalCommandTools({
         hasActiveSession, activeTabIdRef, workspacePath,
         writeCommandToActiveTerminal: inputBroadcast.writeCommandToActiveTerminal,
@@ -236,7 +227,6 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
             setIsSearchOpen(false);
             setIsGalleryView(false);
             setIsSemanticPanelOpen(false);
-            setIsMultiplexerOpen(false);
             setIsRecordingPanelOpen(false);
         },
     });
@@ -265,13 +255,12 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
         setIsSemanticPanelOpen,
         setIsCommandHistoryOpen: commandTools.setIsCommandHistoryOpen,
         setIsTaskRunnerOpen: commandTools.setIsTaskRunnerOpen,
-        setIsMultiplexerOpen,
         setIsRecordingPanelOpen,
         setTerminalContextMenu,
     });
 
     const panelToggles = useTerminalPanelToggles({
-        hasActiveSession, onToggle, 
+        hasActiveSession, onToggle,
         completeRecording: recording.completeRecording,
         stopReplay: recording.stopReplay,
         setTerminalContextMenu, setIsNewTerminalMenuOpen,
@@ -279,42 +268,10 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
         setIsAppearanceMenuOpen, setIsSemanticPanelOpen,
         setIsCommandHistoryOpen: commandTools.setIsCommandHistoryOpen,
         setIsTaskRunnerOpen: commandTools.setIsTaskRunnerOpen,
-        setIsMultiplexerOpen, setIsRecordingPanelOpen,
+        setIsRecordingPanelOpen,
         clearSemanticIssues, activeTabIdRef,
     });
-
-    const openMultiplexerPanel = useCallback(() => {
-        if (!activeTabIdRef.current) {
-            return;
-        }
-        setTerminalContextMenu(null);
-        setIsSearchOpen(false);
-        setIsGalleryView(false);
-        setIsSemanticPanelOpen(false);
-        commandTools.setIsCommandHistoryOpen(false);
-        commandTools.setIsTaskRunnerOpen(false);
-        setIsRecordingPanelOpen(false);
-        setIsMultiplexerOpen(true);
-        void multiplexer.refreshMultiplexerSessions();
-    }, [multiplexer, commandTools, setTerminalContextMenu, setIsSearchOpen, setIsGalleryView, setIsSemanticPanelOpen, setIsRecordingPanelOpen, setIsMultiplexerOpen]);
-
-    const closeMultiplexerPanel = useCallback(() => {
-        setIsMultiplexerOpen(false);
-    }, [setIsMultiplexerOpen]);
-
-    const attachMultiplexerSession = useCallback(
-        async (session: MultiplexerSession) => {
-            await multiplexer.attachMultiplexerSession(session);
-            setIsMultiplexerOpen(false);
-        },
-        [multiplexer, setIsMultiplexerOpen]
-    );
-
-    const createMultiplexerSession = useCallback(async () => {
-        await multiplexer.createMultiplexerSession();
-        setIsMultiplexerOpen(false);
-    }, [multiplexer, setIsMultiplexerOpen]);
-
+ 
     const setTerminalInstance = useCallback((id: string, terminal: XTerm | null) => {
         if (terminal) {
             terminalInstancesRef.current[id] = terminal;
@@ -339,7 +296,6 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
         isGalleryView, setIsGalleryView,
         isAppearanceMenuOpen, setIsAppearanceMenuOpen,
         isSemanticPanelOpen, setIsSemanticPanelOpen,
-        isMultiplexerOpen, setIsMultiplexerOpen,
         isRecordingPanelOpen, setIsRecordingPanelOpen,
         isAiPanelOpen, setIsAiPanelOpen,
         isMaximized, setIsMaximized,
@@ -367,11 +323,8 @@ export function useTerminalPanelCore(props: TerminalPanelProps) {
         workspaceIssuesTab, displayTabs, hasActiveSession, tabById,
         // Sub-hook results
         recording, tabActions, inputBroadcast, clipboard,
-        aiActions, preferences, splitActions, multiplexer,
-        commandTools, searchActions, panelToggles,
-        // Multiplexer panel
-        openMultiplexerPanel, closeMultiplexerPanel,
-        attachMultiplexerSession, createMultiplexerSession,
+        aiActions, preferences, splitActions,
+        commandTools, searchActions, panelToggles, 
         setTerminalInstance,
     };
 }

@@ -141,7 +141,7 @@ const ModalBase: React.FC<ModalProps> = ({
         '3xl': 'sm:max-w-3xl',
         '4xl': 'sm:max-w-4xl',
         '5xl': 'sm:max-w-5xl',
-        full: 'sm:max-w-[95vw]'
+        full: 'sm:max-w-screen-lg'
     };
 
     const normalizeDimension = (
@@ -170,7 +170,7 @@ const ModalBase: React.FC<ModalProps> = ({
 
     const modalContent = (
         <div
-            className="fixed inset-0 z-[1000] flex items-center justify-center bg-background/60 backdrop-blur-md animate-in fade-in duration-300"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-md animate-in fade-in duration-300"
             onClick={handleBackdropClick}
             role="dialog"
             aria-modal="true"
@@ -185,7 +185,7 @@ const ModalBase: React.FC<ModalProps> = ({
                     width: computedWidth,
                     height: computedHeight,
                 }}
-                className={`bg-popover border border-border w-full rounded-2xl shadow-2xl p-8 animate-spring-in mx-4 flex flex-col max-h-[90vh] ${sizeClassName} ${className}`}
+                className={`bg-popover border border-border w-full rounded-2xl shadow-2xl p-8 animate-spring-in mx-4 flex flex-col max-h-screen ${sizeClassName} ${className}`}
             >
                 <div className="flex flex-col space-y-1.5 text-center sm:text-left mb-6 shrink-0">
                     {!preventClose && (
