@@ -43,9 +43,9 @@ describe('MCP registry', () => {
     });
 
     it('contains new specialized servers', () => {
-        expect(serviceNames.has('database-admin')).toBe(true);
-        expect(serviceNames.has('cloud-storage')).toBe(true);
-        expect(serviceNames.has('cicd')).toBe(true);
+        expect(serviceNames.has('docker')).toBe(true);
+        expect(serviceNames.has('ssh')).toBe(true);
+        expect(serviceNames.has('weather')).toBe(true);
     });
 
     describe('server builder registration', () => {

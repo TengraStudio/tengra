@@ -47,7 +47,7 @@ describe('SD-CPP IPC Integration', () => {
         const mockEventBus = { emit: vi.fn(), on: vi.fn(), off: vi.fn() };
         const mockGetMainWindow = () => ({} as never);
 
-        registerSdCppIpc(mockGetMainWindow as never, mockEventBus as never, mockLocalImageService as never as Parameters<typeof registerSdCppIpc>[2]);
+        registerSdCppIpc(mockLocalImageService as never, mockGetMainWindow as never, mockEventBus as never);
     });
 
     it('should register expected handlers', () => {

@@ -338,7 +338,7 @@ describe('IPC Contract Validation (IDEA-025)', () => {
     describe('handler return type alignment', () => {
         it('electron.d.ts declares getSettings returning Promise<AppSettings>', () => {
             const dtsContent = fs.readFileSync(ELECTRON_DTS, 'utf-8');
-            expect(dtsContent).toContain('getSettings: () => Promise<AppSettings>');
+            expect(dtsContent).toContain('getSettings: () => Promise<AppSettings | ServiceResponse<AppSettings>>');
         });
 
         it('electron.d.ts declares githubLogin returning device code shape', () => {

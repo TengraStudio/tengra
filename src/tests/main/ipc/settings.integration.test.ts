@@ -141,7 +141,7 @@ describe('Settings IPC Handlers', () => {
     it('returns validation error code for invalid language', async () => {
         const handler = ipcHandlers.get('settings:save')!;
         const invalidPayload: IpcPayload = {
-            general: { ...settingsState.general, language: 'xx' }
+            general: { ...settingsState.general, language: 'invalid_format' }
         };
 
         const result = await handler(mockEvent, invalidPayload) as WrappedResponse;
