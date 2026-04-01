@@ -1,8 +1,13 @@
 import { RuntimeBootstrapService } from '@main/services/system/runtime-bootstrap.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+interface MockTerminalLogEntry {
+    name: string;
+    isFile: () => boolean;
+}
+
 const runtimeMocks = vi.hoisted(() => ({
-    existsSync: vi.fn((targetPath: string) => targetPath.endsWith('cliproxy-embed.exe')),
+    existsSync: vi.fn((targetPath: string) => targetPath.endsWith('tengra-proxy.exe')),
     mkdirSync: vi.fn(),
     getPath: vi.fn().mockReturnValue('/mock/appData'),
     access: vi.fn(async (targetPath: string) => {
@@ -15,6 +20,9 @@ const runtimeMocks = vi.hoisted(() => ({
     writeFile: vi.fn(async () => undefined),
     copyFile: vi.fn(async () => undefined),
     chmod: vi.fn(async () => undefined),
+    rm: vi.fn(async () => undefined),
+    readdir: vi.fn<() => Promise<MockTerminalLogEntry[]>>(async () => []),
+    stat: vi.fn<(targetPath: string) => Promise<{ mtimeMs: number }>>(async () => ({ mtimeMs: Date.now() })),
     unlink: vi.fn(async () => undefined),
     fetch: vi.fn(),
 }));
@@ -31,6 +39,9 @@ vi.mock('fs/promises', () => ({
     writeFile: runtimeMocks.writeFile,
     copyFile: runtimeMocks.copyFile,
     chmod: runtimeMocks.chmod,
+    rm: runtimeMocks.rm,
+    readdir: runtimeMocks.readdir,
+    stat: runtimeMocks.stat,
     unlink: runtimeMocks.unlink,
 }));
 
@@ -46,7 +57,7 @@ const RUNTIME_MANIFEST = {
     generatedAt: '2026-03-11T00:00:00.000Z',
     components: [
         {
-            id: 'cliproxy-embed',
+            id: 'tengra-proxy',
             displayName: 'Embedded Proxy',
             version: '2.0.0',
             kind: 'service',
@@ -56,11 +67,11 @@ const RUNTIME_MANIFEST = {
                 {
                     platform: 'win32',
                     arch: 'x64',
-                    assetName: 'cliproxy-embed-win32-x64.zip',
-                    downloadUrl: 'https://example.com/cliproxy-embed-win32-x64.zip',
+                    assetName: 'tengra-proxy-win32-x64.zip',
+                    downloadUrl: 'https://example.com/tengra-proxy-win32-x64.zip',
                     archiveFormat: 'zip',
                     sha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-                    executableRelativePath: 'cliproxy-embed.exe',
+                    executableRelativePath: 'tengra-proxy.exe',
                     installSubdirectory: 'bin',
                 },
             ],
@@ -122,7 +133,7 @@ describe('RuntimeBootstrapService', () => {
     beforeEach(() => {
         vi.resetModules();
         vi.clearAllMocks();
-        runtimeMocks.existsSync.mockImplementation((targetPath: string) => targetPath.endsWith('cliproxy-embed.exe'));
+        runtimeMocks.existsSync.mockImplementation((targetPath: string) => targetPath.endsWith('tengra-proxy.exe'));
         runtimeMocks.getPath.mockReturnValue('/mock/appData');
         runtimeMocks.access.mockImplementation(async (targetPath: string) => {
             if (targetPath.includes('llama-server')) {
@@ -130,7 +141,57 @@ describe('RuntimeBootstrapService', () => {
             }
         });
         runtimeMocks.readFile.mockResolvedValue('');
+        runtimeMocks.readdir.mockResolvedValue([]);
+        runtimeMocks.stat.mockResolvedValue({ mtimeMs: Date.now() });
         vi.stubGlobal('fetch', runtimeMocks.fetch);
+    });
+
+    it('cleans stale electron caches, legacy service artifacts, and old terminal logs on initialize', async () => {
+        runtimeMocks.fetch.mockResolvedValueOnce({
+            ok: true,
+            text: async () => JSON.stringify(RUNTIME_MANIFEST),
+        });
+        runtimeMocks.readdir.mockResolvedValue([
+            {
+                name: 'old-session.log',
+                isFile: () => true,
+            },
+            {
+                name: 'recent-session.log',
+                isFile: () => true,
+            },
+        ]);
+        runtimeMocks.stat.mockImplementation(async (targetPath: string) => ({
+            mtimeMs: targetPath.includes('old-session.log')
+                ? Date.now() - 8 * 24 * 60 * 60 * 1000
+                : Date.now(),
+        }));
+
+        const service = new RuntimeBootstrapService();
+        await service.initialize();
+
+        expect(runtimeMocks.rm).toHaveBeenCalledWith('/mock/appData/blob_storage', {
+            force: true,
+            recursive: true,
+        });
+        expect(runtimeMocks.rm).not.toHaveBeenCalledWith('/mock/appData/Shared Dictionary', {
+            force: true,
+            recursive: true,
+        });
+        expect(runtimeMocks.rm).not.toHaveBeenCalledWith('/mock/appData/DIPS', {
+            force: true,
+            recursive: true,
+        });
+        expect(runtimeMocks.rm).not.toHaveBeenCalledWith('/mock/appData/DIPS-wal', {
+            force: true,
+            recursive: true,
+        });
+        expect(runtimeMocks.rm).toHaveBeenCalledWith('/mock/appData/services/token-service.log', {
+            force: true,
+            recursive: true,
+        });
+        expect(runtimeMocks.unlink).toHaveBeenCalledWith('/mock/appData/terminal-logs/old-session.log');
+        expect(runtimeMocks.unlink).not.toHaveBeenCalledWith('/mock/appData/terminal-logs/recent-session.log');
     });
 
     it('builds a platform-aware runtime install plan', () => {
@@ -148,16 +209,16 @@ describe('RuntimeBootstrapService', () => {
             unsupported: 1,
         });
 
-        const cliproxyEntry = plan.entries.find(entry => entry.componentId === 'cliproxy-embed');
+        const proxyEntry = plan.entries.find(entry => entry.componentId === 'tengra-proxy');
         const llamaEntry = plan.entries.find(entry => entry.componentId === 'llama-server');
         const ollamaEntry = plan.entries.find(entry => entry.componentId === 'ollama');
         const memoryEntry = plan.entries.find(entry => entry.componentId === 'tengra-memory-service');
 
-        expect(cliproxyEntry).toMatchObject({
-            componentId: 'cliproxy-embed',
+        expect(proxyEntry).toMatchObject({
+            componentId: 'tengra-proxy',
             status: 'ready',
             reason: 'file-present',
-            installPath: '/mock/appData/Tengra/runtime/bin/cliproxy-embed.exe',
+            installPath: '/mock/appData/Tengra/runtime/bin/tengra-proxy.exe',
         });
         expect(llamaEntry).toMatchObject({
             componentId: 'llama-server',
@@ -263,7 +324,7 @@ describe('RuntimeBootstrapService', () => {
 
     it('falls back to the cached runtime manifest when network fetch fails', async () => {
         runtimeMocks.existsSync.mockImplementation((targetPath: string) =>
-            targetPath.endsWith('cliproxy-embed.exe')
+            targetPath.endsWith('tengra-proxy.exe')
         );
         runtimeMocks.fetch.mockRejectedValueOnce(new Error('network down'));
         runtimeMocks.readFile.mockResolvedValue(
@@ -273,7 +334,7 @@ describe('RuntimeBootstrapService', () => {
                 generatedAt: '2026-03-11T00:00:00.000Z',
                 components: [
                     {
-                        id: 'cliproxy-embed',
+                        id: 'tengra-proxy',
                         displayName: 'Embedded Proxy',
                         version: '4.1.0',
                         kind: 'service',
@@ -283,12 +344,12 @@ describe('RuntimeBootstrapService', () => {
                             {
                                 platform: 'win32',
                                 arch: 'x64',
-                                assetName: 'cliproxy-embed-win32-x64.zip',
+                                assetName: 'tengra-proxy-win32-x64.zip',
                                 downloadUrl:
-                                    'https://github.com/TengraStudio/tengra/releases/download/v4/cliproxy-embed-win32-x64.zip',
+                                    'https://github.com/TengraStudio/tengra/releases/download/v4/tengra-proxy-win32-x64.zip',
                                 archiveFormat: 'zip',
                                 sha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-                                executableRelativePath: 'cliproxy-embed.exe',
+                                executableRelativePath: 'tengra-proxy.exe',
                                 installSubdirectory: 'bin',
                             },
                         ],

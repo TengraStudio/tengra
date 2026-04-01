@@ -10,9 +10,7 @@ use crate::database::Database;
 use crate::types::*;
 
 /// GET /api/v1/chats - List all chats
-pub async fn list_chats(
-    State(db): State<Arc<Database>>,
-) -> Json<ApiResponse<Vec<Chat>>> {
+pub async fn list_chats(State(db): State<Arc<Database>>) -> Json<ApiResponse<Vec<Chat>>> {
     match db.get_all_chats().await {
         Ok(chats) => Json(ApiResponse::success(chats)),
         Err(e) => Json(ApiResponse::error(e.to_string())),

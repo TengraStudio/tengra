@@ -18,7 +18,6 @@ vi.mock('electron', () => ({
 }));
 
 const mockSettingsService = { getSettings: vi.fn().mockReturnValue({}) };
-const mockCopilotService = { chat: vi.fn(), streamChat: vi.fn() };
 const mockLLMService = {
     chat: vi.fn(),
     chatStream: vi.fn(),
@@ -52,7 +51,6 @@ describe('Chat stream persistence', () => {
         registerSessionConversationIpc({
             getMainWindow: () => ({ webContents: { id: 1 } } as never),
             settingsService: mockSettingsService as never,
-            copilotService: mockCopilotService as never,
             llmService: mockLLMService as never,
             proxyService: mockProxyService as never,
             codeIntelligenceService: mockCodeIntelligenceService as never,

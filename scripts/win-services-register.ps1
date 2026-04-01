@@ -11,10 +11,18 @@ $ErrorActionPreference = "Stop"
 
 # Configuration
 $Services = @{
-    "TengraTokenService" = "tengra-token-service.exe"
-    "TengraModelService" = "tengra-model-service.exe"
-    "TengraQuotaService" = "tengra-quota-service.exe"
-    "TengraMemoryService" = "tengra-memory-service.exe"
+    "TengraDbService" = @{
+        Executable = "tengra-db-service.exe"
+        Arguments = ""
+    }
+    "TengraMemoryService" = @{
+        Executable = "tengra-memory-service.exe"
+        Arguments = ""
+    }
+    "TengraProxyService" = @{
+        Executable = "tengra-proxy.exe"
+        Arguments = "--proxy"
+    }
 }
 
 $RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
@@ -46,7 +54,8 @@ function Get-ServiceStatus {
     Write-Log "`n=== Tengra Services Status ===" "Cyan"
 
     foreach ($name in $Services.Keys) {
-        $exe = $Services[$name]
+        $service = $Services[$name]
+        $exe = $service.Executable
         $processName = $exe -replace '\.exe$',''
         $process = Get-Process -Name $processName -ErrorAction SilentlyContinue
 
@@ -94,7 +103,9 @@ function Install-Services {
     }
 
     foreach ($name in $Services.Keys) {
-        $exe = $Services[$name]
+        $service = $Services[$name]
+        $exe = $service.Executable
+        $args = $service.Arguments
         $exePath = Join-Path $BinDir $exe
 
         if (-not (Test-Path $exePath)) {
@@ -105,7 +116,12 @@ function Install-Services {
         Write-Log "`nRegistering $name..." "Yellow"
 
         # Add to registry (runs at login)
-        Set-ItemProperty -Path $RegistryPath -Name $name -Value "`"$exePath`""
+        $startupCommand = if ([string]::IsNullOrWhiteSpace($args)) {
+            "`"$exePath`""
+        } else {
+            "`"$exePath`" $args"
+        }
+        Set-ItemProperty -Path $RegistryPath -Name $name -Value $startupCommand
         Write-Log "  Added to Windows Startup" "Green"
 
         # Start the service now (skip in silent mode during installer)
@@ -114,7 +130,11 @@ function Install-Services {
             $existing = Get-Process -Name $processName -ErrorAction SilentlyContinue
             if (-not $existing) {
                 Write-Log "  Starting service..." "Gray"
-                Start-Process -FilePath $exePath -WindowStyle Hidden
+                if ([string]::IsNullOrWhiteSpace($args)) {
+                    Start-Process -FilePath $exePath -WindowStyle Hidden
+                } else {
+                    Start-Process -FilePath $exePath -ArgumentList $args -WindowStyle Hidden
+                }
                 Start-Sleep -Milliseconds 500
 
                 $process = Get-Process -Name $processName -ErrorAction SilentlyContinue
@@ -135,7 +155,8 @@ function Uninstall-Services {
     Write-Log "`n=== Uninstalling Tengra Services ===" "Cyan"
 
     foreach ($name in $Services.Keys) {
-        $exe = $Services[$name]
+        $service = $Services[$name]
+        $exe = $service.Executable
         $processName = $exe -replace '\.exe$',''
 
         # Stop the process if running

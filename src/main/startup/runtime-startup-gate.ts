@@ -9,7 +9,7 @@ export interface RuntimeStartupDecision {
 
 const SERVICE_COMPONENT_IDS = {
     database: 'tengra-db-service',
-    embeddedProxy: 'cliproxy-embed',
+    embeddedProxy: 'tengra-proxy',
 } as const;
 
 function resolveComponentDecision(

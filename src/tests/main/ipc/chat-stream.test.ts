@@ -26,7 +26,6 @@ vi.mock('electron', () => ({
 
 // Mock services
 const mockSettingsService = { getSettings: vi.fn().mockReturnValue({}) };
-const mockCopilotService = { chat: vi.fn(), streamChat: vi.fn() };
 const mockLLMService = {
     chat: vi.fn(),
     chatStream: vi.fn(),
@@ -76,7 +75,6 @@ const initIPC = (overrides?: Record<string, TestValue>) => {
     registerSessionConversationIpc({
         getMainWindow: () => mockMainWindow as never,
         settingsService: mockSettingsService as never,
-        copilotService: mockCopilotService as never,
         llmService: mockLLMService as never,
         proxyService: mockProxyService as never,
         codeIntelligenceService: mockCodeIntelligenceService as never,
@@ -309,21 +307,24 @@ const getCancelHandler = (): ((_: TestValue, payload: { chatId: string }) => voi
             expect(typedEvent.sender.send).not.toHaveBeenCalled();
         });
 
-        it('should emit error for copilot provider when streamChat returns null', async () => {
+        it('should route copilot stream through llmService.chatStream', async () => {
             initIPC();
             const handler = ipcMainHandlers.get('session:conversation:stream');
-            mockCopilotService.streamChat.mockResolvedValue(null);
+            mockLLMService.chatStream.mockReturnValue((async function* () {
+                yield { content: 'copilot-data' };
+            })());
 
             await handler!(mockEvent, createStreamRequest({ provider: 'copilot' }));
 
             const chunks = getStreamChunkCalls();
-            expect(
-                chunks.some(
-                    c =>
-                        c.type === 'error' &&
-                        c.content === 'error.copilot.stream_start_failed'
-                )
-            ).toBe(true);
+            expect(mockLLMService.chatStream).toHaveBeenCalledWith(
+                expect.any(Array),
+                'gpt-4o',
+                [],
+                'copilot',
+                expect.any(Object)
+            );
+            expect(chunks.some(c => c.content === 'copilot-data')).toBe(true);
             expect(chunks.some(c => c.done === true)).toBe(true);
         });
     });
@@ -397,17 +398,16 @@ const getCancelHandler = (): ((_: TestValue, payload: { chatId: string }) => voi
             expect(mockLLMService.chatOpenCodeStream).toHaveBeenCalled();
         });
 
-        it('should route copilot provider to copilotService.streamChat', async () => {
+        it('should route copilot provider to llmService.chatStream', async () => {
             initIPC();
             const handler = ipcMainHandlers.get('session:conversation:stream');
-            const mockStream = (async function* () {
-                yield new TextEncoder().encode('data: {"choices":[{"delta":{"content":"hi"}}]}\n\n');
-            })();
-            mockCopilotService.streamChat.mockResolvedValue(mockStream);
+            mockLLMService.chatStream.mockReturnValue((async function* () {
+                yield { content: 'hi' };
+            })());
 
             await handler!(mockEvent, createStreamRequest({ provider: 'copilot' }));
 
-            expect(mockCopilotService.streamChat).toHaveBeenCalled();
+            expect(mockLLMService.chatStream).toHaveBeenCalled();
         });
 
         it('should route default providers to llmService.chatStream', async () => {
@@ -710,49 +710,6 @@ const getCancelHandler = (): ((_: TestValue, payload: { chatId: string }) => voi
                     expect.objectContaining({ content: 'tagged', provider: 'opencode', model: 'gpt-4o' })
                 ])
             );
-        });
-    });
-
-    // ─── Copilot provider specifics ──────────────────────────────────
-
-    describe('copilot provider stream', () => {
-        it('should save copilot assistant message to DB after stream', async () => {
-            initIPC();
-            const handler = ipcMainHandlers.get('session:conversation:stream');
-            const encoder = new TextEncoder();
-            const mockStream = (async function* () {
-                yield encoder.encode('data: {"choices":[{"delta":{"content":"hello"}}]}\n\n');
-                yield encoder.encode('data: {"choices":[{"delta":{"content":" world"}}]}\n\n');
-                yield encoder.encode('data: [DONE]\n\n');
-            })();
-            mockCopilotService.streamChat.mockResolvedValue(mockStream);
-
-            await handler!(mockEvent, createStreamRequest({ provider: 'copilot' }));
-
-            expect(mockDatabaseService.addMessage).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    chatId: 'stream-test-1',
-                    role: 'assistant',
-                    provider: 'copilot'
-                })
-            );
-        });
-
-        it('should emit content chunks for copilot SSE stream', async () => {
-            initIPC();
-            const handler = ipcMainHandlers.get('session:conversation:stream');
-            const encoder = new TextEncoder();
-            const mockStream = (async function* () {
-                yield encoder.encode('data: {"choices":[{"delta":{"content":"cp-data"}}]}\n\n');
-                yield encoder.encode('data: [DONE]\n\n');
-            })();
-            mockCopilotService.streamChat.mockResolvedValue(mockStream);
-
-            await handler!(mockEvent, createStreamRequest({ provider: 'copilot' }));
-
-            const chunks = getStreamChunkCalls();
-            expect(chunks.some(c => c.content === 'cp-data')).toBe(true);
-            expect(chunks.some(c => c.done === true)).toBe(true);
         });
     });
 

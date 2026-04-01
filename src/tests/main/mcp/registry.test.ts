@@ -27,7 +27,6 @@ function createMockDeps(): McpDeps {
         clipboard: {},
         ollama: {},
         advancedMemory: {},
-        ideaGenerator: {},
         modelCollaboration: {},
         rateLimit: { waitForToken: async () => undefined },
         auditLog: undefined
@@ -121,4 +120,3 @@ describe('MCP registry', () => {
         });
     });
 });
-

@@ -4,8 +4,6 @@ import * as zlib from 'zlib';
 
 import { appLogger } from '@main/logging/logger';
 import { AuditLogEntry } from '@main/services/analysis/audit-log.service';
-import { TimeTrackingService } from '@main/services/analysis/time-tracking.service';
-import { TimeTrackingStats } from '@main/services/analysis/time-tracking.service';
 import { BaseService } from '@main/services/base.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobState } from '@main/services/system/job-scheduler.service';
@@ -271,8 +269,7 @@ export class DatabaseService extends BaseService {
     constructor(
         private dataService: DataService,
         private eventBus: EventBusService,
-        private dbClient: DatabaseClientService,
-        private timeTracking: TimeTrackingService
+        private dbClient: DatabaseClientService
     ) {
         super('DatabaseService');
     }
@@ -1412,8 +1409,6 @@ export class DatabaseService extends BaseService {
     async getStats(): Promise<DbStats> { return this._system.getStats(); }
     /** Returns detailed database statistics for the given period. */
     async getDetailedStats(period: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily'): Promise<DbDetailedStats> { return this._system.getDetailedStats(period); }
-    /** Returns time tracking statistics. */
-    async getTimeStats(): Promise<TimeTrackingStats> { return this.timeTracking.getTimeStats(); }
     /** Returns current migration version and last migration timestamp. */
     async getMigrationStatus(): Promise<{ version: number; lastMigration: number }> { return this._system.getMigrationStatus(); }
     /** Records token usage, resolving workspace UUID to path if needed. */

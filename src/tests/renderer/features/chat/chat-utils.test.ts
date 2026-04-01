@@ -52,7 +52,7 @@ describe('getPresetOptions', () => {
             theme: 'dark',
             resolution: '1920x1080',
             fontSize: 14,
-            onboardingCompleted: true,
+
         },
         presets: [
             {
@@ -88,7 +88,7 @@ describe('getPresetOptions', () => {
 });
 
 describe('processStreamChunk', () => {
-    const baseCurrent = { content: '', reasoning: '', sources: [], images: [] };
+    const baseCurrent = { content: '', reasoning: '', sources: [], images: [], toolCalls: [] };
     const startTime = performance.now();
 
     it('handles content chunk', () => {
@@ -136,6 +136,72 @@ describe('processStreamChunk', () => {
         const chunk: StreamChunk = { type: 'tool_calls', tool_calls: toolCalls };
         const result = processStreamChunk(chunk, baseCurrent, startTime);
         expect(result.newToolCalls).toEqual(toolCalls);
+    });
+
+    it('merges partial tool call chunks by preserving function name', () => {
+        const firstChunk: StreamChunk = {
+            type: 'tool_calls',
+            tool_calls: [{
+                id: 't1',
+                index: 0,
+                type: 'function' as const,
+                function: { name: 'list_directory', arguments: '' },
+            }],
+        };
+        const firstResult = processStreamChunk(firstChunk, baseCurrent, startTime);
+
+        const secondChunk: StreamChunk = {
+            type: 'tool_calls',
+            tool_calls: [{
+                id: 't1',
+                index: 0,
+                type: 'function' as const,
+                function: { name: '', arguments: '{"path":"C:/Users/agnes/Desktop"}' },
+            }],
+        };
+        const secondResult = processStreamChunk(secondChunk, {
+            ...baseCurrent,
+            toolCalls: firstResult.newToolCalls ?? [],
+        }, startTime);
+
+        expect(secondResult.newToolCalls).toEqual([{
+            id: 't1',
+            index: 0,
+            type: 'function',
+            function: {
+                name: 'list_directory',
+                arguments: '{"path":"C:/Users/agnes/Desktop"}',
+            },
+        }]);
+    });
+
+    it('preserves an existing synthesized tool call id across later partial chunks', () => {
+        const firstChunk: StreamChunk = {
+            type: 'tool_calls',
+            tool_calls: [{
+                id: '',
+                index: 0,
+                type: 'function' as const,
+                function: { name: 'get_system_info', arguments: '' },
+            }],
+        };
+        const firstResult = processStreamChunk(firstChunk, baseCurrent, startTime);
+
+        const secondChunk: StreamChunk = {
+            type: 'tool_calls',
+            tool_calls: [{
+                id: '',
+                index: 0,
+                type: 'function' as const,
+                function: { name: '', arguments: '{}' },
+            }],
+        };
+        const secondResult = processStreamChunk(secondChunk, {
+            ...baseCurrent,
+            toolCalls: firstResult.newToolCalls ?? [],
+        }, startTime);
+
+        expect(secondResult.newToolCalls?.[0]?.id).toBe('get_system_info-0');
     });
 
     it('returns updated false for unknown chunk type with no content', () => {

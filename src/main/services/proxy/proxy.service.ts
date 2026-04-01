@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
+import { DatabaseService } from '@main/services/data/database.service';
 import { ProxyEmbedStatus, ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { validateInterval, validatePort, validateProvider, validateToken } from '@main/services/proxy/proxy-validation.util';
 import { QuotaService } from '@main/services/proxy/quota.service';
@@ -10,16 +11,11 @@ import { AuthService } from '@main/services/security/auth.service';
 import { SecurityService } from '@main/services/security/security.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
-import { LocalAuthServer } from '@main/utils/local-auth-server.util';
-import { WORKSPACE_COMPAT_SCHEMA_VALUES } from '@shared/constants';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { ClaudeQuota, CodexUsage, CopilotQuota, ModelQuotaItem, QuotaInfo, QuotaResponse } from '@shared/types/quota';
-import { AuthenticationError } from '@shared/utils/error.util';
 import { AppErrorCode, getErrorMessage, ProxyServiceError, ValidationError } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { net } from 'electron';
-
-const WORKSPACE_COMPAT_ID_COLUMN = WORKSPACE_COMPAT_SCHEMA_VALUES.ID_COLUMN;
 
 /**
  * Check if file/directory exists using async fs.access
@@ -45,7 +41,7 @@ interface ProxyModelResponse {
   [key: string]: JsonValue | undefined;
 }
 
-export type ProxyRequestResponse = JsonObject | {
+export type ProxyRequestResponse<T = JsonObject> = T | {
   success: boolean;
   error?: string;
   raw?: JsonValue;
@@ -103,6 +99,7 @@ export const PROXY_PERFORMANCE_BUDGETS = {
   CONFIG_GENERATION_MS: 2000,
   GET_MODELS_MS: 15000
 } as const;
+const PROXY_REQUEST_TIMEOUT_MS = 15_000;
 
 export interface DeviceCodeResponse {
   device_code: string;
@@ -118,18 +115,33 @@ export interface TokenResponse {
   scope: string;
   refresh_token?: string;
   expires_in?: number;
+  expires_at?: number;
+  session_token?: string;
+  copilot_plan?: string;
   refresh_token_expires_in?: number;
   error?: string;
   error_description?: string;
 }
 
-const GITHUB_CLIENTS = {
-  profile: { id: '01ab8ac9400c4e429b23', scope: 'read:user user:email repo' }, // Use Copilot ID for universal access
-  copilot: { id: '01ab8ac9400c4e429b23', scope: 'read:user user:email' }
-};
+type BrowserAuthProvider = 'antigravity' | 'claude' | 'codex';
 
-const GITHUB_DEVICE_CODE_URL = 'https://github.com/login/device/code';
-const GITHUB_ACCESS_TOKEN_URL = 'https://github.com/login/oauth/access_token';
+interface BrowserAuthUrlResponse {
+  url: string;
+  state: string;
+  accountId: string;
+  account_id?: string;
+}
+
+interface BrowserAuthStatusResponse {
+  status: string;
+  error?: string;
+  state?: string;
+  provider?: string;
+  accountId?: string;
+  account_id?: string;
+  account?: JsonValue;
+}
+
 
 export interface ProxyServiceOptions {
   settingsService: SettingsService;
@@ -139,6 +151,7 @@ export interface ProxyServiceOptions {
   quotaService: QuotaService;
   authService: AuthService;
   eventBus: EventBusService;
+  databaseService: DatabaseService;
 }
 
 interface ProviderRateLimitConfig {
@@ -181,6 +194,7 @@ export class ProxyService extends BaseService {
   private providerQueues = new Map<string, QueuedRateLimitRequest[]>();
   private providerQueueTimers = new Map<string, NodeJS.Timeout>();
   private providerStats = new Map<string, { blocked: number; allowed: number; bypassed: number; warnings: number }>();
+  private operationLock: Promise<void> = Promise.resolve();
 
   constructor(private options: ProxyServiceOptions) {
     super('ProxyService');
@@ -193,6 +207,7 @@ export class ProxyService extends BaseService {
   get quotaService(): QuotaService { return this.options.quotaService; }
   get authService(): AuthService { return this.options.authService; }
   get eventBus(): EventBusService { return this.options.eventBus; }
+  get databaseService(): DatabaseService { return this.options.databaseService; }
 
   override async initialize(): Promise<void> {
     const start = performance.now();
@@ -217,7 +232,7 @@ export class ProxyService extends BaseService {
     try {
       this.clearProviderQueueTimers();
       // Force stop proxy on app exit - kill all proxy processes including orphaned ones
-      await this.processManager.stop(true);
+      await this.processManager.stop();
       this.logInfo('Proxy service stopped (force killed all proxy processes)');
     } catch (e) {
       this.logError('Failed to stop proxy during cleanup:', e as Error);
@@ -496,35 +511,41 @@ export class ProxyService extends BaseService {
    */
   async initiateGitHubAuth(appId: 'profile' | 'copilot' = 'profile'): Promise<DeviceCodeResponse> {
     this.eventBus.emitCustom(ProxyTelemetryEvent.AUTH_INITIATED, { provider: 'github', appId });
-    await this.waitForRateLimit('github', { priority: 2 });
-    return new Promise((resolve, reject) => {
-      const client = GITHUB_CLIENTS[appId];
-      const request = net.request({ method: 'POST', url: GITHUB_DEVICE_CODE_URL });
-      request.setHeader('Accept', 'application/json');
-      request.setHeader('Content-Type', 'application/json');
-      const body = JSON.stringify({ client_id: client.id, scope: client.scope });
-      request.write(body);
-      request.on('response', (response) => {
-        let data = '';
-        response.on('data', (chunk) => data += chunk);
-        response.on('end', () => {
-          const result = safeJsonParse<DeviceCodeResponse>(data, {
-            device_code: '',
-            user_code: '',
-            verification_uri: '',
-            expires_in: 0,
-            interval: 0
-          });
-          this.eventBus.emitCustom(ProxyTelemetryEvent.AUTH_COMPLETED, { provider: 'github', appId });
-          resolve(result);
-        });
-      });
-      request.on('error', (err) => {
-        this.eventBus.emitCustom(ProxyTelemetryEvent.AUTH_FAILED, { provider: 'github', appId, error: err.message });
-        reject(err);
-      });
-      request.end();
-    });
+    
+    const response = await this.makeRequest<{
+      device_code: string;
+      user_code: string;
+      verification_uri: string;
+      expires_in: number;
+      interval: number;
+    }>(
+      '/v0/auth/github/login',
+      await this.getRuntimeProxyApiKey(),
+      'GET',
+      undefined,
+      { provider: 'github', priority: 2 }
+    );
+
+    if (typeof response === 'object' && response !== null && 'error' in response && response.error) {
+      this.eventBus.emitCustom(ProxyTelemetryEvent.AUTH_FAILED, { provider: 'github', appId, error: response.error as string });
+      throw new Error(`GitHub auth initiation failed: ${response.error}`);
+    }
+
+    const githubResponse = response as {
+        device_code: string;
+        user_code: string;
+        verification_uri: string;
+        expires_in: number;
+        interval: number;
+    };
+    
+    return {
+      device_code: githubResponse.device_code,
+      user_code: githubResponse.user_code,
+      verification_uri: githubResponse.verification_uri,
+      expires_in: githubResponse.expires_in,
+      interval: githubResponse.interval
+    };
   }
 
   /**
@@ -545,126 +566,255 @@ export class ProxyService extends BaseService {
       throw new ValidationError(`waitForGitHubToken: ${intervalError}`);
     }
 
-    await this.waitForRateLimit('github', { priority: 3 });
-    return new Promise((resolve, reject) => {
-      const client = GITHUB_CLIENTS[appId];
-      const checkToken = () => {
-        const request = net.request({ method: 'POST', url: GITHUB_ACCESS_TOKEN_URL });
-        request.setHeader('Accept', 'application/json');
-        request.setHeader('Content-Type', 'application/json');
-        request.write(JSON.stringify({ client_id: client.id, device_code: deviceCode, grant_type: 'urn:ietf:params:oauth:grant-type:device_code' }));
-        request.on('response', (response) => {
-          let data = '';
-          response.on('data', (chunk) => data += chunk);
-          response.on('end', () => {
-            const json: TokenResponse = safeJsonParse<TokenResponse>(data, { error: 'Invalid response' } as TokenResponse);
-            if (json.access_token) {
-              resolve(json);
-            } else if (json.error === 'authorization_pending') {
-              setTimeout(checkToken, (interval + 1) * 1000);
-            } else {
-              reject(new Error(json.error_description ?? json.error));
-            }
-          });
-        });
-        request.on('error', (err) => reject(err));
-        request.end();
-      };
-      setTimeout(checkToken, interval * 1000);
-    });
+    const checkToken = async (): Promise<TokenResponse> => {
+      const response = await this.makeRequest<{
+        success: boolean;
+        access_token?: string;
+        refresh_token?: string;
+        refresh_token_expires_in?: number;
+        token_type?: string;
+        scope?: string;
+        session_token?: string;
+        expires_at?: number;
+        copilot_plan?: string;
+        error?: string;
+      }>(
+        `/v0/auth/github/poll?device_code=${encodeURIComponent(deviceCode)}&provider=${encodeURIComponent(appId)}`,
+        await this.getRuntimeProxyApiKey(),
+        'GET',
+        undefined,
+        { provider: 'github', priority: 3 }
+      );
+
+      if (typeof response === 'object' && response !== null && 'success' in response && response.success && 'access_token' in response) {
+        return {
+          access_token: response.access_token as string,
+          token_type: typeof response.token_type === 'string' ? response.token_type : 'bearer',
+          scope: typeof response.scope === 'string'
+            ? response.scope
+            : appId === 'copilot'
+              ? 'read:user user:email'
+              : 'read:user user:email repo',
+          refresh_token: typeof response.refresh_token === 'string' ? response.refresh_token : undefined,
+          refresh_token_expires_in: typeof response.refresh_token_expires_in === 'number' ? response.refresh_token_expires_in : undefined,
+          session_token: typeof response.session_token === 'string' ? response.session_token : undefined,
+          expires_at: typeof response.expires_at === 'number' ? response.expires_at : undefined,
+          copilot_plan: typeof response.copilot_plan === 'string' ? response.copilot_plan : undefined
+        };
+      }
+
+      // Rust returns error string if pending or real error
+      const errorMsg = (typeof response === 'object' && response !== null && 'error' in response) ? response.error as string : undefined;
+      const lowerError = errorMsg?.toLowerCase() || '';
+
+      appLogger.debug('ProxyService', `waitForGitHubToken [${appId}]: checkToken received errorMsg="${errorMsg}"`);
+
+      if (lowerError.includes('authorization_pending') || lowerError.includes('slow_down')) {
+        appLogger.info('ProxyService', `waitForGitHubToken [${appId}]: ${lowerError}, retrying in ${interval + 1}s...`);
+        // Wait and try again
+        await new Promise(r => setTimeout(r, (interval + 1) * 1000));
+        return checkToken();
+      }
+
+      appLogger.error('ProxyService', `waitForGitHubToken [${appId}]: Failed with error: ${errorMsg || 'Unknown error'}`);
+      throw new Error(errorMsg || 'Authentication failed');
+    };
+
+    return checkToken();
   }
 
   /** Starts Antigravity Google OAuth flow. @returns Auth URL and state parameter */
-  async getAntigravityAuthUrl(): Promise<{ url: string, state: string }> {
-    return this.startGoogleAuth('antigravity');
-  }
-
-  private async startGoogleAuth(prefix: string): Promise<{ url: string, state: string }> {
-    return LocalAuthServer.startAntigravityAuth(
-      (data) => {
-        void (async () => {
-          try {
-            const now = Date.now();
-
-            let workspaceId: string | undefined;
-            try {
-              workspaceId = await this.fetchAntigravityWorkspaceID(data.access_token);
-              if (workspaceId) {
-                this.logDebug(`Discovered Antigravity workspace ID: ${workspaceId}`);
-              }
-            } catch (e) {
-              this.logWarn('Failed to discover Antigravity workspace ID:', e as Error);
-            }
-
-            // Link account using individual fields
-            await this.authService.linkAccount(prefix, {
-              accessToken: data.access_token,
-              refreshToken: data.refresh_token,
-              expiresAt: now + (data.expires_in * 1000),
-              scope: data.scope,
-              email: data.email,
-              metadata: { ...data, [WORKSPACE_COMPAT_ID_COLUMN]: workspaceId }
-            });
-
-            // Sync to file system so proxy picks it up immediately
-
-          } catch (err) {
-            this.logError('Antigravity login failed', err as Error);
-          }
-        })();
-      },
-      (err) => {
-        this.logError(`${prefix} Auth failed:`, err as Error);
-        if (err instanceof AuthenticationError) {
-          this.logError('Auth Error Detail:', err.context ?? {});
-        }
-      }
-    );
+  async getAntigravityAuthUrl(accountId?: string): Promise<{ url: string, state: string, accountId: string }> {
+    return this.getBrowserAuthUrl('antigravity', accountId);
   }
 
   /** Starts Claude/Anthropic OAuth flow. @returns Auth URL and state parameter */
-  async getAnthropicAuthUrl(): Promise<{ url: string; state: string }> {
-    // Use TypeScript LocalAuthServer to avoid terminal spam from Go proxy's browser automation
-    return this.startClaudeAuth();
+  async getAnthropicAuthUrl(accountId?: string): Promise<{ url: string; state: string; accountId: string }> {
+    return this.getBrowserAuthUrl('claude', accountId);
   }
 
-  private async startClaudeAuth(): Promise<{ url: string; state: string }> {
-    return LocalAuthServer.startClaudeAuth(
-      async (data) => {
-        const now = Date.now();
+  /** Starts Codex OAuth flow locally and returns the browser URL. */
+  async getCodexAuthUrl(accountId?: string): Promise<{ url: string; state: string; accountId: string }> {
+    return this.getBrowserAuthUrl('codex', accountId);
+  }
 
-        // Link account using individual fields
-        await this.authService.linkAccount('claude', {
-          accessToken: data.access_token,
-          refreshToken: data.refresh_token,
-          expiresAt: data.expires_in ? now + (data.expires_in * 1000) : undefined,
-          scope: data.scope,
-          email: data.email,
-          metadata: { ...data }
-        });
+  async getBrowserAuthStatus(
+    provider: BrowserAuthProvider,
+    state: string,
+    accountId: string
+  ): Promise<BrowserAuthStatusResponse> {
+    const params = new URLSearchParams({
+      provider,
+      state,
+      account_id: accountId
+    });
 
-        // Sync to file system so proxy picks it up immediately
-
-
-        this.logDebug('Claude OAuth login successful');
-      },
-      (err) => {
-        this.logError('Claude Auth failed:', err as Error);
+    const fallbackStatus = async (): Promise<BrowserAuthStatusResponse> => {
+      const account = await this.getLocalBrowserAuthAccount(provider, accountId);
+      if (account) {
+        return {
+          status: 'ok',
+          provider,
+          state,
+          accountId,
+          account
+        };
       }
-    );
+      return {
+        status: 'wait',
+        provider,
+        state,
+        accountId
+      };
+    };
+
+    try {
+      const response = await this.makeRequest<BrowserAuthStatusResponse>(
+        `/v0/management/get-auth-status?${params.toString()}`,
+        await this.getRuntimeProxyApiKey(),
+        'GET',
+        undefined,
+        { provider, priority: 2, isPremiumBypass: true }
+      );
+
+      if ('status' in response && typeof response.status === 'string') {
+        const normalized = this.normalizeBrowserAuthStatusResponse(response);
+        if (response.status === 'wait') {
+          return await fallbackStatus();
+        }
+        return normalized;
+      }
+    } catch (error) {
+      appLogger.warn('ProxyService', `Browser auth status fallback for ${provider}: ${getErrorMessage(error)}`);
+      return await fallbackStatus();
+    }
+
+    return await fallbackStatus();
   }
 
-  /** Gets Codex authentication URL from proxy. @returns Proxy request response with auth URL */
-  async getCodexAuthUrl(): Promise<ProxyRequestResponse> {
-    const response = await this.makeRequest(
-      '/v0/management/codex-auth-url?is_webui=true',
-      await this.getManagementKey(),
+  private async getLocalBrowserAuthAccount(
+    provider: BrowserAuthProvider,
+    accountId: string
+  ): Promise<JsonObject | null> {
+    const providerAliases: Record<BrowserAuthProvider, string[]> = {
+      codex: ['codex', 'openai'],
+      claude: ['claude', 'anthropic'],
+      antigravity: ['antigravity', 'google', 'gemini']
+    };
+    const aliases = new Set(providerAliases[provider]);
+    const account = (await this.databaseService.getLinkedAccounts())
+      .find(candidate => candidate.id === accountId && aliases.has(candidate.provider.toLowerCase()));
+    if (!account) {
+      return null;
+    }
+    return {
+      id: account.id,
+      provider: account.provider,
+      email: account.email ?? null,
+      displayName: account.displayName ?? null,
+      isActive: account.isActive
+    };
+  }
+
+  private async getBrowserAuthUrl(
+    provider: BrowserAuthProvider,
+    accountId?: string
+  ): Promise<BrowserAuthUrlResponse> {
+    const route = provider === 'claude'
+      ? 'anthropic-auth-url'
+      : `${provider}-auth-url`;
+    const params = new URLSearchParams();
+    if (accountId) {
+      params.set('account_id', accountId);
+    }
+    const requestPath = `/v0/management/${route}${params.size > 0 ? `?${params.toString()}` : ''}`;
+    appLogger.debug('ProxyService', `getBrowserAuthUrl: requesting ${requestPath} on port ${this.currentPort}`);
+    const response = await this.makeRequest<BrowserAuthUrlResponse>(
+      requestPath,
+      await this.getRuntimeProxyApiKey(),
       'GET',
       undefined,
-      { provider: 'codex', priority: 5 }
+      { provider, priority: 2, isPremiumBypass: true }
     );
-    this.logDebug('getCodexAuthUrl response:', response);
-    return response;
+    appLogger.debug('ProxyService', `getBrowserAuthUrl: response keys=${Object.keys(response).join(',')}, url=${'url' in response ? 'present' : 'missing'}, state=${'state' in response ? 'present' : 'missing'}`);
+
+    const normalized = this.normalizeBrowserAuthUrlResponse(response);
+    if (normalized) {
+      this.eventBus.emitCustom(ProxyTelemetryEvent.AUTH_INITIATED, {
+        provider,
+        state: normalized.state,
+        accountId: normalized.accountId
+      });
+      return normalized;
+    }
+
+    const errorMessage = 'error' in response && typeof response.error === 'string'
+      ? response.error
+      : `Failed to get ${provider} auth URL`;
+    appLogger.error('ProxyService', `getBrowserAuthUrl: failed for ${provider}: ${errorMessage}`);
+    this.eventBus.emitCustom(ProxyTelemetryEvent.AUTH_FAILED, { provider, error: errorMessage });
+    throw new ProxyServiceError(errorMessage, AppErrorCode.PROXY_AUTH_FAILED, false, { provider });
+  }
+
+  async cancelBrowserAuth(
+    provider: BrowserAuthProvider,
+    state: string,
+    accountId: string
+  ): Promise<boolean> {
+    const response = await this.makeRequest<{ success?: boolean; cancelled?: boolean; error?: string }>(
+      '/v0/management/cancel-auth',
+      await this.getRuntimeProxyApiKey(),
+      'POST',
+      {
+        provider,
+        state,
+        account_id: accountId
+      },
+      { provider, priority: 2, isPremiumBypass: true }
+    );
+
+    if ('success' in response && response.success === true) {
+      return 'cancelled' in response && response.cancelled === true;
+    }
+    return false;
+  }
+
+  private normalizeBrowserAuthUrlResponse(
+    response: ProxyRequestResponse<BrowserAuthUrlResponse>
+  ): BrowserAuthUrlResponse | null {
+    if (!('url' in response) || typeof response.url !== 'string' || typeof response.state !== 'string') {
+      return null;
+    }
+    const snakeCaseAccountId =
+      'account_id' in response && typeof response.account_id === 'string'
+        ? response.account_id
+        : undefined;
+    const camelCaseAccountId =
+      'accountId' in response && typeof response.accountId === 'string'
+        ? response.accountId
+        : undefined;
+    const accountId = camelCaseAccountId ?? snakeCaseAccountId;
+    if (!accountId) {
+      return null;
+    }
+    return {
+      url: response.url,
+      state: response.state,
+      accountId
+    };
+  }
+
+  private normalizeBrowserAuthStatusResponse(
+    response: BrowserAuthStatusResponse
+  ): BrowserAuthStatusResponse {
+    const snakeCaseAccountId =
+      'account_id' in response && typeof response.account_id === 'string'
+        ? response.account_id
+        : undefined;
+    return {
+      ...response,
+      accountId: response.accountId ?? snakeCaseAccountId
+    };
   }
 
 
@@ -676,6 +826,20 @@ export class ProxyService extends BaseService {
    * @throws on invalid port
    */
   async startEmbeddedProxy(options?: { port?: number }): Promise<ProxyEmbedStatus> {
+    const previous = this.operationLock;
+    const current = (async () => {
+      try {
+        await previous;
+      } catch {
+        // Suppress previous errors to allow this one to try
+      }
+      return this.startEmbeddedProxyInternal(options);
+    })();
+    this.operationLock = current.then(() => {}, () => {});
+    return current;
+  }
+
+  private async startEmbeddedProxyInternal(options?: { port?: number }): Promise<ProxyEmbedStatus> {
     const start = performance.now();
     if (options?.port !== undefined) {
       const portError = validatePort(options.port);
@@ -698,8 +862,35 @@ export class ProxyService extends BaseService {
     return status;
   }
 
+  private async ensureEmbeddedProxyReady(): Promise<boolean> {
+    const status = this.processManager.getStatus();
+    if (status.running) {
+      if (status.port) {
+        this.currentPort = status.port;
+      }
+      return true;
+    }
+
+    const started = await this.startEmbeddedProxy({ port: this.currentPort });
+    return started.running === true;
+  }
+
   /** Stops the embedded proxy process. @throws ProxyServiceError on failure */
   async stopEmbeddedProxy(): Promise<void> {
+    const previous = this.operationLock;
+    const current = (async () => {
+      try {
+        await previous;
+      } catch {
+        // Ignore previous errors
+      }
+      return this.stopEmbeddedProxyInternal();
+    })();
+    this.operationLock = current.then(() => {}, () => {});
+    return await current;
+  }
+
+  private async stopEmbeddedProxyInternal(): Promise<void> {
     const start = performance.now();
     try {
       await this.processManager.stop();
@@ -752,7 +943,7 @@ export class ProxyService extends BaseService {
 
   /** Fetches quota information for all linked accounts. @returns Quota data or null */
   async getQuota(): Promise<{ accounts: Array<QuotaResponse & { accountId?: string; email?: string }> } | null> {
-    const quota = await this.quotaService.getQuota(this.currentPort, await this.getProxyKey());
+    const quota = await this.quotaService.getQuota(this.currentPort, await this.getRuntimeProxyApiKey());
     if (!quota) { return null; }
     return quota;
   }
@@ -785,7 +976,8 @@ export class ProxyService extends BaseService {
   /** Fetches and merges model data from all providers. @returns Aggregated model response */
   async getModels(): Promise<ProxyModelResponse> {
     const start = performance.now();
-    const apiKey = await this.getProxyKey();
+    await this.ensureEmbeddedProxyReady();
+    const apiKey = await this.getRuntimeProxyApiKey();
     const proxyData = await this.getProxyModels(apiKey);
 
     const [codexData, copilotDataRaw, claudeDataRaw] = await Promise.all([
@@ -820,6 +1012,14 @@ export class ProxyService extends BaseService {
     }
 
     return { data: finalData, antigravityError };
+  }
+
+  /** Fetches the raw tengra-proxy catalog without main-process quota enrichment. */
+  async getRawModelCatalog(): Promise<ProxyModelResponse> {
+    await this.ensureEmbeddedProxyReady();
+    const apiKey = await this.getRuntimeProxyApiKey();
+    const data = await this.getProxyModels(apiKey);
+    return { data };
   }
 
   private async getProxyModels(apiKey: string): Promise<ModelItem[]> {
@@ -918,15 +1118,38 @@ export class ProxyService extends BaseService {
       return { ...m, provider };
     });
 
-    const ids = new Set(merged.map(m => m.id));
+    const existingKeys = new Map<string, number>();
+    merged.forEach((model, index) => {
+      existingKeys.set(`${model.provider.toLowerCase()}:${model.id.toLowerCase()}`, index);
+    });
+
     for (const m of extra) {
-      if (ids.has(m.id)) {
-        merged.push({ ...m, id: `${m.id}-antigravity`, name: `${m.name} (Antigravity)`, provider: 'antigravity' });
-      } else {
-        merged.push(m);
+      const key = `antigravity:${m.id.toLowerCase()}`;
+      const existingIndex = existingKeys.get(key);
+      if (existingIndex !== undefined) {
+        const existing = merged[existingIndex];
+        merged[existingIndex] = {
+          ...existing,
+          ...m,
+          provider: 'antigravity',
+          id: existing.id,
+          name: existing.name ?? m.name,
+        };
+        continue;
       }
+
+      merged.push({ ...m, provider: 'antigravity' });
+      existingKeys.set(key, merged.length - 1);
     }
-    return merged;
+    return merged.sort((left, right) => {
+      const leftProvider = left.provider.toLowerCase();
+      const rightProvider = right.provider.toLowerCase();
+      const providerCmp = leftProvider.localeCompare(rightProvider);
+      if (providerCmp !== 0) {
+        return providerCmp;
+      }
+      return left.id.toLowerCase().localeCompare(right.id.toLowerCase());
+    });
   }
 
   private enrichModelWithQuota(m: ModelItem, quotas: { codexQuotaFn?: QuotaInfo, copilotQuotaFn?: QuotaInfo, claudeQuotaFn?: QuotaInfo }): ModelItem {
@@ -986,13 +1209,13 @@ export class ProxyService extends BaseService {
 
 
 
-  private makeRequest(
+  private makeRequest<T = JsonObject>(
     path: string,
     apiKey?: string,
     method: 'GET' | 'POST' = 'GET',
     body?: RuntimeValue,
     rateLimit?: { provider: string; priority?: number; isPremiumBypass?: boolean }
-  ): Promise<ProxyRequestResponse> {
+  ): Promise<ProxyRequestResponse<T>> {
     const requestStart = performance.now();
     return new Promise((resolve, reject) => {
       const run = async () => {
@@ -1012,7 +1235,23 @@ export class ProxyService extends BaseService {
         };
 
         const request = net.request(options);
-        const token = apiKey ?? this.settingsService.getSettings().proxy?.key;
+        let settled = false;
+        let timeoutHandle: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+          if (settled) {
+            return;
+          }
+          settled = true;
+          if ('abort' in request && typeof request.abort === 'function') {
+            request.abort();
+          }
+          reject(new ProxyServiceError(
+            `Proxy request timed out after ${PROXY_REQUEST_TIMEOUT_MS}ms`,
+            AppErrorCode.PROXY_TIMEOUT,
+            true,
+            { path, method }
+          ));
+        }, PROXY_REQUEST_TIMEOUT_MS);
+        const token = apiKey ?? this.settingsService.getSettings().proxy?.apiKey ?? this.settingsService.getSettings().proxy?.key;
         if (token) {
           request.setHeader('Authorization', `Bearer ${token}`);
         }
@@ -1031,6 +1270,14 @@ export class ProxyService extends BaseService {
           let d = '';
           res.on('data', chunk => d += chunk);
           res.on('end', () => {
+            if (settled) {
+              return;
+            }
+            settled = true;
+            if (timeoutHandle !== null) {
+              clearTimeout(timeoutHandle);
+              timeoutHandle = null;
+            }
             const requestElapsed = performance.now() - requestStart;
             if (requestElapsed > PROXY_PERFORMANCE_BUDGETS.REQUEST_MS) {
               appLogger.warn('ProxyService', `makeRequest exceeded budget: ${requestElapsed.toFixed(1)}ms > ${PROXY_PERFORMANCE_BUDGETS.REQUEST_MS}ms (${method} ${path})`);
@@ -1044,24 +1291,41 @@ export class ProxyService extends BaseService {
               queued: snapshot.queued
             } : undefined;
 
-            if (res.statusCode && res.statusCode >= 400) {
-              resolve({ success: false, error: `HTTP ${res.statusCode}`, raw: d, rateLimit: rateLimitInfo });
+            const parsed = safeJsonParse<JsonObject | null>(d, null);
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+              if (rateLimitInfo) {
+                parsed['rateLimit'] = rateLimitInfo;
+              }
+              if (res.statusCode && res.statusCode >= 400) {
+                parsed['success'] = false;
+                // If there's no error field but it's a 400+, set a default
+                if (!parsed['error'] && !parsed['message']) {
+                  parsed['error'] = `HTTP ${res.statusCode}`;
+                }
+              }
+              resolve(parsed as unknown as ProxyRequestResponse<T>);
               return;
             }
-            const parsed = safeJsonParse<JsonValue>(d, null);
-            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-              const obj = parsed as JsonObject;
-              if (rateLimitInfo) {
-                obj.rateLimit = rateLimitInfo;
-              }
-              resolve(obj);
-            } else {
-              resolve({ success: false, error: 'Invalid JSON', raw: d, rateLimit: rateLimitInfo });
+
+            if (res.statusCode && res.statusCode >= 400) {
+              // Not JSON, but still an error. Use the raw body as the error message if it exists.
+              const errorText = d.trim() || `HTTP ${res.statusCode}`;
+              resolve({ success: false, error: errorText, raw: d, rateLimit: rateLimitInfo });
+              return;
             }
+            resolve({ success: false, error: 'Invalid JSON', raw: d, rateLimit: rateLimitInfo });
           });
         });
 
         request.on('error', err => {
+          if (settled) {
+            return;
+          }
+          settled = true;
+          if (timeoutHandle !== null) {
+            clearTimeout(timeoutHandle);
+            timeoutHandle = null;
+          }
           this.eventBus.emitCustom(ProxyTelemetryEvent.REQUEST_FAILED, { method, path, error: err.message });
           const isConnectionError = 'code' in err && (
             (err as NodeJS.ErrnoException).code === 'ECONNREFUSED' ||
@@ -1101,12 +1365,10 @@ export class ProxyService extends BaseService {
   /** Returns the proxy API key, generating one if needed. @returns Proxy API key string */
   async getProxyKey(): Promise<string> { return await this.ensureProxyKey(); }
 
-  /** Returns the local management key used by runtime management endpoints. */
-  private async getManagementKey(): Promise<string> {
-    const settings = this.settingsService.getSettings();
-    const managementKey = settings.proxy?.authStoreKey?.trim();
-    if (managementKey) {
-      return managementKey;
+  private async getRuntimeProxyApiKey(): Promise<string> {
+    const runtimeKey = this.settingsService.getSettings().proxy?.apiKey?.trim() ?? '';
+    if (runtimeKey) {
+      return runtimeKey;
     }
     return await this.getProxyKey();
   }
@@ -1123,49 +1385,6 @@ export class ProxyService extends BaseService {
   }
 
 
-
-  private async fetchAntigravityWorkspaceID(accessToken: string): Promise<string | undefined> {
-    await this.waitForRateLimit('antigravity', { priority: 2, isPremiumBypass: true });
-    return new Promise((resolve) => {
-      const body = JSON.stringify({
-        metadata: {
-          ideType: 'IDE_UNSPECIFIED',
-          platform: 'PLATFORM_UNSPECIFIED',
-          pluginType: 'GEMINI'
-        }
-      });
-
-      const request = net.request({
-        method: 'POST',
-        url: 'https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist'
-      });
-
-      request.setHeader('Authorization', `Bearer ${accessToken}`);
-      request.setHeader('Content-Type', 'application/json');
-      request.setHeader('User-Agent', 'google-api-nodejs-client/9.15.1');
-      request.setHeader('X-Goog-Api-Client', 'google-cloud-sdk vscode_cloudshelleditor/0.1');
-      request.setHeader('Client-Metadata', '{"ideType":"IDE_UNSPECIFIED","platform":"PLATFORM_UNSPECIFIED","pluginType":"GEMINI"}');
-
-      request.on('response', (response) => {
-        let data = '';
-        response.on('data', chunk => data += chunk);
-        response.on('end', () => {
-          if (response.statusCode >= 400) {
-            resolve(undefined);
-            return;
-          }
-          const json = safeJsonParse<{ cloudaicompanionWorkspace?: { id?: string } | string }>(data, {});
-          const apiWorkspace = json.cloudaicompanionWorkspace;
-          const workspaceID = typeof apiWorkspace === 'object' ? apiWorkspace.id : apiWorkspace;
-          resolve(typeof workspaceID === 'string' ? workspaceID.trim() : undefined);
-        });
-      });
-
-      request.on('error', () => resolve(undefined));
-      request.write(body);
-      request.end();
-    });
-  }
 
   /**
    * Fetches GitHub user profile using access token.
@@ -1270,5 +1489,3 @@ export class ProxyService extends BaseService {
     });
   }
 }
-
-

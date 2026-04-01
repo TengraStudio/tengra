@@ -108,6 +108,58 @@ describe('SettingsService - Initialization', () => {
         expect(service.getSettings().window?.y).toBe(80);
         expect(service.getSettings().window?.startOnStartup).toBe(false);
     });
+
+    it('should preserve proxy runtime credentials when loading settings', async () => {
+        vi.mocked(fs.promises.access).mockResolvedValue(undefined);
+        vi.mocked(fs.promises.readFile).mockResolvedValue(
+            JSON.stringify({
+                proxy: {
+                    enabled: true,
+                    url: 'http://127.0.0.1:8317/v1',
+                    key: 'legacy-proxy-key',
+                    apiKey: 'runtime-proxy-api-key',
+                    managementPassword: 'runtime-management-password',
+                    authStoreKey: 'runtime-auth-store-key',
+                    port: 8317,
+                },
+            })
+        );
+        const { SettingsService } = await import('@main/services/system/settings.service');
+        const service = new SettingsService(mockDataService as never, mockAuthService as never);
+        await service.initialize();
+
+        expect(service.getSettings().proxy).toMatchObject({
+            enabled: true,
+            url: 'http://127.0.0.1:8317/v1',
+            key: 'legacy-proxy-key',
+            apiKey: 'runtime-proxy-api-key',
+            managementPassword: 'runtime-management-password',
+            authStoreKey: 'runtime-auth-store-key',
+            port: 8317,
+        });
+    });
+
+    it('should unwrap legacy success/data settings envelopes', async () => {
+        vi.mocked(fs.promises.access).mockResolvedValue(undefined);
+        vi.mocked(fs.promises.readFile).mockResolvedValue(
+            JSON.stringify({
+                success: true,
+                data: {
+                    general: { language: 'tr' },
+                    nvidia: {
+                        apiKey: 'nvapi-live-key',
+                        model: 'nvidia/llama-3.1-70b-instruct'
+                    }
+                }
+            })
+        );
+        const { SettingsService } = await import('@main/services/system/settings.service');
+        const service = new SettingsService(mockDataService as never, mockAuthService as never);
+        await service.initialize();
+
+        expect(service.getSettings().general.language).toBe('tr');
+        expect(service.getSettings().nvidia?.apiKey).toBe('nvapi-live-key');
+    });
 });
 
 describe('SettingsService - Persistence', () => {

@@ -3,8 +3,6 @@ import * as fs from 'fs';
 import { LinkedAccount } from '@main/services/data/database.service';
 import { QuotaError, QuotaErrorCode, QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
-import { TokenService } from '@main/services/security/token.service';
-import { ProcessManagerService } from '@main/services/system/process-manager.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -16,8 +14,6 @@ describe('QuotaService', () => {
     let quotaService: QuotaService;
     let mockSettingsService: SettingsService;
     let mockAuthService: AuthService;
-    let mockProcessManager: ProcessManagerService;
-    let mockTokenService: TokenService;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -36,19 +32,9 @@ describe('QuotaService', () => {
             updateToken: vi.fn().mockResolvedValue(undefined)
         } as never as AuthService;
 
-        mockProcessManager = {
-            startService: vi.fn().mockResolvedValue(undefined)
-        } as never as ProcessManagerService;
-
-        mockTokenService = {
-            ensureFreshToken: vi.fn()
-        } as never as TokenService;
-
         quotaService = new QuotaService(
             mockSettingsService as never as SettingsService,
-            mockAuthService as never as AuthService,
-            mockProcessManager as never as ProcessManagerService,
-            mockTokenService as never as TokenService
+            mockAuthService as never as AuthService
         );
     });
 

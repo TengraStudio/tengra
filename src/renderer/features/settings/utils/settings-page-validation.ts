@@ -10,7 +10,7 @@ const settingsPayloadSchema = z.object({
         theme: z.string().trim().min(1).max(32),
         resolution: z.string().trim().min(3).max(64),
         fontSize: z.number().int().min(10).max(48),
-        onboardingCompleted: z.boolean().optional(),
+
     }),
     embeddings: z.object({
         provider: z.enum(['ollama', 'openai', 'llama', 'none']),

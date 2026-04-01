@@ -6,9 +6,42 @@ const { getExecutableName, getManagedRuntimeBinDir } = require('./build-runtime-
 
 const SERVICES_DIR = path.join(__dirname, '../src/native');
 const TARGET_DIR = path.join(SERVICES_DIR, 'target/release');
+const STAMP_FILE = path.join(SERVICES_DIR, 'target', 'native-build-stamp.json');
 const BIN_DIR = getManagedRuntimeBinDir();
-const GO_PROXY_DIR = path.join(__dirname, '../src/services/cliproxy-runtime');
-const SERVICE_BASENAMES = ['db-service', 'token-service', 'model-service', 'quota-service', 'memory-service'];
+const SERVICE_BASENAMES = ['db-service', 'memory-service', 'proxy'];
+const ALLOW_LOCKED_NATIVE_SKIP = process.env.CI !== 'true' && process.env.TENGRA_ALLOW_LOCKED_NATIVE_SKIP !== 'false';
+
+function writeStdout(message) {
+    process.stdout.write(`${message}\n`);
+}
+
+function writeStderr(message) {
+    process.stderr.write(`${message}\n`);
+}
+
+function nowMs() {
+    return Date.now();
+}
+
+function sleepMs(durationMs) {
+    const end = nowMs() + durationMs;
+    while (nowMs() < end);
+}
+
+function stopProcessByName(processName) {
+    if (process.platform !== 'win32') {
+        return;
+    }
+
+    try {
+        execSync(
+            `powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Process -Name '${processName}' -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.Id -Force }"`,
+            { stdio: 'ignore' }
+        );
+    } catch {
+        // Process may not exist; ignore.
+    }
+}
 
 function resolveCargoCommand() {
     const localCargo = process.platform === 'win32' 
@@ -20,7 +53,8 @@ function resolveCargoCommand() {
     return 'cargo';
 }
 
-function copyWithRetry(src, dest) {
+function copyWithRetry(src, dest, outputName) {
+    const processName = outputName.replace(/\.exe$/i, '');
     let retries = 10;
     while (retries > 0) {
         try {
@@ -38,13 +72,13 @@ function copyWithRetry(src, dest) {
             fs.copyFileSync(src, dest);
             return;
         } catch (e) {
-            console.log(`Copy error: ${e.code || e.message}`);
+            writeStdout(`Copy error: ${e.code || e.message}`);
             if (e.code === 'EBUSY' || e.code === 'EPERM') {
                 if (retries <= 1) throw e;
-                console.log(`File locked, retrying copy in 2s: ${path.basename(dest)}`);
-                // Sync sleep 2s
-                const end = Date.now() + 2000;
-                while (Date.now() < end);
+                stopProcessByName(processName);
+                const waitMs = 250 * Math.pow(2, 10 - retries);
+                writeStdout(`File locked, retrying copy in ${waitMs}ms: ${path.basename(dest)}`);
+                sleepMs(waitMs);
                 retries--;
                 continue;
             }
@@ -66,6 +100,68 @@ function getNativeBinaryMappings() {
     });
 }
 
+function collectNativeSourceMetadata(rootDir) {
+    const entries = [];
+    const queue = [rootDir];
+
+    while (queue.length > 0) {
+        const currentDir = queue.pop();
+        const children = fs.readdirSync(currentDir, { withFileTypes: true });
+
+        for (const child of children) {
+            if (child.name === 'target' || child.name === '.git') {
+                continue;
+            }
+
+            const absolutePath = path.join(currentDir, child.name);
+            if (child.isDirectory()) {
+                queue.push(absolutePath);
+                continue;
+            }
+
+            const relativePath = path.relative(SERVICES_DIR, absolutePath);
+            if (!/\.(rs|toml|lock)$/.test(relativePath)) {
+                continue;
+            }
+
+            const stat = fs.statSync(absolutePath);
+            entries.push(`${relativePath}:${stat.size}:${Math.trunc(stat.mtimeMs)}`);
+        }
+    }
+
+    return entries.sort();
+}
+
+function computeNativeBuildStamp() {
+    return JSON.stringify(collectNativeSourceMetadata(SERVICES_DIR));
+}
+
+function hasCurrentNativeBuildOutputs(mappings) {
+    return mappings.every(mapping => fs.existsSync(path.join(TARGET_DIR, mapping.output)));
+}
+
+function shouldSkipNativeBuild(mappings) {
+    if (!fs.existsSync(STAMP_FILE) || !hasCurrentNativeBuildOutputs(mappings)) {
+        return false;
+    }
+
+    try {
+        const stored = JSON.parse(fs.readFileSync(STAMP_FILE, 'utf8'));
+        return stored.stamp === computeNativeBuildStamp();
+    } catch {
+        return false;
+    }
+}
+
+function persistNativeBuildStamp() {
+    fs.mkdirSync(path.dirname(STAMP_FILE), { recursive: true });
+    fs.writeFileSync(
+        STAMP_FILE,
+        JSON.stringify({ stamp: computeNativeBuildStamp() }, null, 2),
+        'utf8'
+    );
+}
+
 function copyNativeBinariesFromTarget() {
     ensureBinDir();
     const mappings = getNativeBinaryMappings();
@@ -80,8 +176,24 @@ function copyNativeBinariesFromTarget() {
             continue;
         }
 
-        copyWithRetry(src, dest);
-        console.log(`Copied ${mapping.output} to managed runtime bin`);
+        try {
+            copyWithRetry(src, dest, mapping.output);
+            writeStdout(`Copied ${mapping.output} to managed runtime bin`);
+        } catch (error) {
+            const maybeError = error;
+            const code = maybeError && typeof maybeError === 'object' ? maybeError.code : undefined;
+            if (
+                ALLOW_LOCKED_NATIVE_SKIP
+                && fs.existsSync(dest)
+                && (code === 'EBUSY' || code === 'EPERM')
+            ) {
+                writeStderr(
+                    `Warning: ${mapping.output} is locked in managed runtime. Keeping existing binary for this build.`
+                );
+                continue;
+            }
+            throw error;
+        }
     }
 
     if (missingBinaries.length > 0) {
@@ -91,61 +203,9 @@ function copyNativeBinariesFromTarget() {
     }
 }
 
-function buildGoProxy() {
-    console.log('Building Go proxy server...');
-
-    try {
-        // Check if Go is installed
-        execSync('go version', { stdio: 'ignore' });
-    } catch {
-        console.warn('Go toolchain not found. Skipping Go proxy build.');
-        return;
-    }
-
-    try {
-        // Kill existing proxy process
-        try {
-            if (process.platform === 'win32') {
-                execSync(`taskkill /F /IM ${getExecutableName('cliproxy-embed')} 2>NUL`, { stdio: 'ignore' });
-            } else {
-                execSync('pkill -9 -f cliproxy-embed', { stdio: 'ignore' });
-            }
-        } catch {
-            // Process not running, ignore
-        }
-
-        // Build the runtime-backed proxy binary using the stable cliproxy-embed filename.
-        console.log('Compiling Go proxy binary...');
-        const embedDir = GO_PROXY_DIR;
-        const proxyBinaryName = getExecutableName('cliproxy-embed');
-
-        execSync(`go build -o ${proxyBinaryName}`, {
-            cwd: embedDir,
-            stdio: 'inherit'
-        });
-
-        // Create output dir if needed
-        ensureBinDir();
-
-        // Copy binary to the managed runtime directory
-        const src = path.join(embedDir, proxyBinaryName);
-        const dest = path.join(BIN_DIR, proxyBinaryName);
-
-        if (fs.existsSync(src)) {
-            copyWithRetry(src, dest);
-            console.log(`Copied ${proxyBinaryName} to managed runtime bin`);
-        } else {
-            console.error(`Go binary not found: ${src}`);
-        }
-
-    } catch (error) {
-        console.error('Failed to build Go proxy:', error);
-        // Don't exit - Go proxy is optional for dev
-    }
-}
-
 function buildNative() {
-    console.log('Building native services...');
+    const buildStart = nowMs();
+    writeStdout('Building native services...');
     const mappings = getNativeBinaryMappings();
     const cargoCommand = resolveCargoCommand();
 
@@ -158,13 +218,23 @@ function buildNative() {
         );
     }
 
+    if (shouldSkipNativeBuild(mappings)) {
+        writeStdout('Skipping Rust rebuild; native sources unchanged.');
+        copyNativeBinariesFromTarget();
+        writeStdout(`Native step finished in ${((nowMs() - buildStart) / 1000).toFixed(2)}s.`);
+        return;
+    }
+
     try {
         // Kill existing services to prevent EBUSY errors
-        console.log('Stopping running services...');
+        writeStdout('Stopping running services...');
         for (const mapping of mappings) {
             try {
                 if (process.platform === 'win32') {
-                    execSync(`taskkill /F /IM ${mapping.output} 2>NUL`, { stdio: 'ignore' });
+                    execSync(
+                        `powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Process -Name '${mapping.output.replace(/\.exe$/i, '')}' -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.Id -Force }"`,
+                        { stdio: 'ignore' }
+                    );
                 } else {
                     const processName = mapping.output.replace(/\.exe$/i, '');
                     execSync(`pkill -9 -f ${processName}`, { stdio: 'ignore' });
@@ -175,11 +245,10 @@ function buildNative() {
         }
 
         // Wait for processes to release locks
-        const end = Date.now() + 1000;
-        while (Date.now() < end);
+        sleepMs(500);
 
         // Build workspace
-        console.log('Compiling Rust binaries...');
+        writeStdout('Compiling Rust binaries...');
 
         // Prepare command
         let buildCmd = `${cargoCommand} build --release`;
@@ -192,7 +261,7 @@ function buildNative() {
             env.CC = 'cl.exe';
             env.CXX = 'cl.exe';
         } catch (e) {
-            console.log('cl.exe not found in PATH. Attempting to locate VS Build Tools...');
+            writeStdout('cl.exe not found in PATH. Attempting to locate VS Build Tools...');
 
             // Try to locate vcvarsall.bat in common locations
             const commonPaths = [
@@ -217,13 +286,13 @@ function buildNative() {
             let vcvarsPath = commonPaths.find(p => fs.existsSync(p));
 
             if (vcvarsPath) {
-                console.log(`Found vcvarsall.bat at: ${vcvarsPath}`);
+                writeStdout(`Found vcvarsall.bat at: ${vcvarsPath}`);
                 // Chain the commands: setup env -> build
                 buildCmd = `call "${vcvarsPath}" x64 && ${cargoCommand} build --release`;
                 delete env.CC;
                 delete env.CXX;
             } else {
-                console.warn('WARNING: vcvarsall.bat not found in common locations. Build may fail if cl.exe is required.');
+                writeStderr('WARNING: vcvarsall.bat not found in common locations. Build may fail if cl.exe is required.');
                 // Try standard fallback
                 env.CC = 'cl.exe';
                 env.CXX = 'cl.exe';
@@ -237,17 +306,18 @@ function buildNative() {
             env: env
         });
 
+        persistNativeBuildStamp();
         copyNativeBinariesFromTarget();
+        writeStdout(`Native step finished in ${((nowMs() - buildStart) / 1000).toFixed(2)}s.`);
 
     } catch (error) {
-        console.error('Failed to build native services:', error);
+        writeStderr(`Failed to build native services: ${error instanceof Error ? error.message : String(error)}`);
         process.exit(1);
     }
 }
 
 if (require.main === module) {
     buildNative();
-    buildGoProxy();
 }
 
 

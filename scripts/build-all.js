@@ -2,6 +2,8 @@ const { spawn } = require('child_process');
 const path = require('path');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
+const STRICT_BUILD = process.env.CI === 'true' || process.env.TENGRA_BUILD_STRICT === 'true';
+const ENFORCE_BUNDLE_BUDGET = process.env.CI === 'true' || process.env.TENGRA_ENFORCE_BUNDLE_BUDGET === 'true';
 
 function writeStdout(message) {
     process.stdout.write(`${message}\n`);
@@ -18,10 +20,13 @@ function writeStderr(message) {
  * @param {string} name A label for the command output.
  * @returns {Promise<void>}
  */
+let activeProcesses = [];
+
 function runCommand(command, args, name) {
     return new Promise((resolve, reject) => {
         const commandLine = [command, ...args].join(' ');
         writeStdout(`[${name}] Starting: ${commandLine}`);
+        const startedAt = Date.now();
         const proc = spawn(commandLine, {
             cwd: PROJECT_ROOT,
             shell: true,
@@ -29,15 +34,19 @@ function runCommand(command, args, name) {
             env: { ...process.env, FORCE_COLOR: '1' }
         });
 
+        activeProcesses.push({ proc, name });
+
         proc.on('error', (error) => {
             writeStderr(`[${name}] Failed to start: ${error.message}`);
             reject(error);
         });
 
         proc.on('close', (code) => {
+            activeProcesses = activeProcesses.filter(p => p.proc !== proc);
             if (code === 0) {
-                writeStdout(`[${name}] Completed successfully.`);
-                resolve();
+                const durationMs = Date.now() - startedAt;
+                writeStdout(`[${name}] Completed successfully in ${(durationMs / 1000).toFixed(2)}s.`);
+                resolve({ name, durationMs });
             } else {
                 writeStderr(`[${name}] Failed with exit code ${code}.`);
                 reject(new Error(`[${name}] failed`));
@@ -46,27 +55,63 @@ function runCommand(command, args, name) {
     });
 }
 
+function cleanup() {
+    if (activeProcesses.length > 0) {
+        writeStdout('\nCleaning up active processes...');
+        activeProcesses.forEach(({ proc, name }) => {
+            try {
+                proc.kill('SIGTERM');
+                writeStdout(`- Terminated: ${name}`);
+            } catch (err) {
+                // Ignore kill errors
+            }
+        });
+    }
+}
+
 async function build() {
     const startTime = Date.now();
-    writeStdout('Starting optimized parallel build...');
+    writeStdout('Starting optimized build orchestration...');
+    writeStdout(`[BuildMode] strict=${STRICT_BUILD} bundleBudget=${ENFORCE_BUNDLE_BUDGET}`);
 
     try {
-        // Run tsc, lint, and vite build in parallel
-        // We also run native build in parallel since it focuses on Rust/Go and the managed runtime,
-        // while Vite focuses on src/ and dist/
-        await Promise.all([
-            runCommand('npx', ['tsc'], 'TypeCheck'),
-            runCommand('npm', ['run', 'lint'], 'Lint'),
+        // Native build is fast and should be done first to avoid blocking others
+        const results = [];
+        results.push(await runCommand('node', ['scripts/compile-native.js'], 'NativeBuild'));
+
+        // Run TypeCheck and ViteBuild in parallel, as they are the main bottlenecks
+        const coreTasks = [
+            runCommand('npm', ['run', 'type-check', '--', '--pretty', 'false'], 'TypeCheck'),
             runCommand('npx', ['vite', 'build'], 'ViteBuild'),
-            runCommand('node', ['scripts/compile-native.js'], 'NativeBuild')
-        ]);
-        
-        await runCommand('node', ['scripts/audit-bundle-size.js'], 'BundleBudget');
+        ];
+
+        if (STRICT_BUILD) {
+            coreTasks.push(runCommand('npm', ['run', 'lint'], 'Lint'));
+        } else {
+            writeStdout('[Lint] Skipped for fast local build. Set TENGRA_BUILD_STRICT=true to enforce.');
+        }
+
+        const parallelResults = await Promise.all(coreTasks);
+        results.push(...parallelResults);
+
+        if (ENFORCE_BUNDLE_BUDGET) {
+            results.push(await runCommand('node', ['scripts/audit-bundle-size.js'], 'BundleBudget'));
+        } else {
+            writeStdout('[BundleBudget] Skipped. Set TENGRA_ENFORCE_BUNDLE_BUDGET=true to enforce.');
+        }
+
+        const sortedByDuration = [...results].sort((a, b) => b.durationMs - a.durationMs);
+        writeStdout('\nBuild step timings:');
+        for (const result of sortedByDuration) {
+            writeStdout(`- ${result.name}: ${(result.durationMs / 1000).toFixed(2)}s`);
+        }
 
         const duration = ((Date.now() - startTime) / 1000).toFixed(2);
         writeStdout(`\nBuild completed successfully in ${duration}s.`);
+        process.exit(0);
     } catch (error) {
-        writeStderr('\nBuild failed.');
+        writeStderr(`\nBuild failed: ${error.message}`);
+        cleanup();
         process.exit(1);
     }
 }

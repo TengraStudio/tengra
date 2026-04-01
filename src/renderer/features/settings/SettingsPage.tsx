@@ -1,6 +1,6 @@
 import { useSettingsLogic } from '@renderer/features/settings/hooks/useSettingsLogic';
 import { SettingsCategory } from '@renderer/features/settings/types';
-import { BarChart, Code, Mic, Palette, Rocket, Settings, Shield, Sparkles, User, Users } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 
 // Tab Components
@@ -17,6 +17,11 @@ import { recordSettingsPageHealthEvent } from '@/store/settings-page-health.stor
 import type { GroupedModels, ModelInfo } from '@/types';
 
 import { ManualSessionModal, ManualSessionModalState } from './components/ManualSessionModal';
+import {
+    findSettingsNavigationItem,
+    getSettingsNavigationItems,
+    groupSettingsNavigationItems,
+} from './settings-navigation';
 
 import '@renderer/features/settings/SettingsPage.css';
 import '@renderer/features/settings/tailwind-semantic-utilities.css';
@@ -26,6 +31,7 @@ export interface SettingsPageProps {
     proxyModels?: ModelInfo[]
     onRefreshModels: (bypassCache?: boolean) => void
     activeTab?: SettingsCategory
+    onTabChange?: (tab: SettingsCategory) => void
     groupedModels?: GroupedModels | null
     searchQuery?: string
 }
@@ -59,6 +65,7 @@ export function SettingsPage({
     proxyModels,
     onRefreshModels,
     activeTab = 'general',
+    onTabChange,
     groupedModels,
     searchQuery: controlledSearchQuery
 }: SettingsPageProps) {
@@ -83,21 +90,7 @@ export function SettingsPage({
     const hasInvalidSearchQuery = (controlledSearchQuery ?? '').trim() !== '' && normalizedSearchQuery === '';
     const searchQuery = normalizedSearchQuery;
 
-    // Define tabs with icons for filtering and sidebar
-    const allTabs = useMemo(() => [
-        { id: 'general', label: t('settings.tabs.general'), icon: Settings, category: t('settings.categories.general') },
-        { id: 'accounts', label: t('settings.tabs.accounts'), icon: User, category: t('settings.categories.security') },
-        { id: 'appearance', label: t('settings.tabs.appearance'), icon: Palette, category: t('settings.categories.visuals') },
-        { id: 'models', label: t('settings.tabs.models'), icon: Sparkles, category: t('settings.categories.ai') },
-        { id: 'statistics', label: t('settings.tabs.statistics'), icon: BarChart, category: t('settings.categories.insights') },
-        { id: 'personas', label: t('settings.tabs.personas'), icon: Users, category: t('settings.categories.customization') },
-        { id: 'speech', label: t('settings.tabs.speech'), icon: Mic, category: t('settings.categories.interaction') },
-        { id: 'voice', label: t('voice.interfaceTitle'), icon: Mic, category: t('settings.categories.interaction') },
-        { id: 'developer', label: t('settings.tabs.developer'), icon: Code, category: t('settings.categories.tools') },
-        { id: 'advanced', label: t('settings.tabs.advanced'), icon: Shield, category: t('settings.categories.security') },
-        { id: 'images', label: t('settings.tabs.images'), icon: Palette, category: t('settings.categories.visuals') },
-        { id: 'about', label: t('settings.tabs.about'), icon: Rocket, category: t('settings.categories.app') }
-    ], [t]);
+    const allTabs = useMemo(() => getSettingsNavigationItems(t), [t]);
 
     const filteredTabs = useMemo(() => {
         if (!searchQuery) { return allTabs; }
@@ -106,6 +99,18 @@ export function SettingsPage({
         );
     }, [searchQuery, allTabs]);
     const isActiveTabVisible = filteredTabs.some(tab => tab.id === activeTab);
+    const groupedTabs = useMemo(() => groupSettingsNavigationItems(filteredTabs), [filteredTabs]);
+    const activeNavigationItem = useMemo(
+        () => findSettingsNavigationItem(allTabs, activeTab),
+        [activeTab, allTabs]
+    );
+
+    const handleSelectTab = useCallback((tab: SettingsCategory) => {
+        if (tab === activeTab) {
+            return;
+        }
+        onTabChange?.(tab);
+    }, [activeTab, onTabChange]);
 
     const [showResetConfirm, setShowResetConfirm] = useState(false);
 
@@ -114,7 +119,7 @@ export function SettingsPage({
         const resetPayload = {
             ollama: { url: 'http://localhost:11434' },
             embeddings: { provider: 'none' as const },
-            general: { language: 'tr' as const, theme: 'dark', resolution: '1920x1080', fontSize: 14, onboardingCompleted: false },
+            general: { language: 'tr' as const, theme: 'dark', resolution: '1920x1080', fontSize: 14 },
             proxy: { enabled: true, url: 'http://127.0.0.1:8317', key: '' }
         };
 
@@ -229,49 +234,156 @@ export function SettingsPage({
 
     return (
         <div className="settings-container">
-            <div className="settings-content flex h-full gap-6">
-                <main className="settings-main flex-1 overflow-y-auto">
-                    <div className={cn("settings-section h-full pr-4 pb-20 w-full", (activeTab === 'models' || activeTab === 'gallery') && "max-w-none")}>
+            <div className="settings-shell flex h-full flex-col gap-6 p-5 lg:flex-row lg:gap-8 lg:p-6">
+                <aside className="settings-rail flex w-full shrink-0 flex-col gap-4 lg:w-[21rem]">
+                    <div className="rounded-[24px] border border-border/70 bg-background/92 p-6">
+                        <p className="mb-3 text-[10px] font-black uppercase tracking-[0.32em] text-muted-foreground/70">
+                            {t('nav.settings')}
+                        </p>
+                        <h1 className="text-[1.65rem] font-black tracking-tight text-foreground">
+                            {t('settings.title')}
+                        </h1>
+                        <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground/90">
+                            {t('settings.subtitle')}
+                        </p>
+                    </div>
+
+                    <div className="min-h-0 rounded-[24px] border border-border/70 bg-background/88 p-3">
                         {searchQuery && (
-                            <div className="mb-4 text-xs text-muted-foreground">
+                            <div className="mb-3 rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-xs text-muted-foreground">
                                 {filteredTabs.length > 0
                                     ? t('settings.searchResults', { count: filteredTabs.length })
                                     : t('settings.noResults')}
                             </div>
                         )}
+
+                        <div className="flex max-h-full flex-col gap-4 overflow-y-auto pr-1" role="tablist" aria-orientation="vertical">
+                            {groupedTabs.length > 0 ? groupedTabs.map(group => (
+                                <div key={group.label} className="space-y-2">
+                                    <p className="px-3 text-[10px] font-black uppercase tracking-[0.28em] text-muted-foreground/50">
+                                        {group.label}
+                                    </p>
+                                    <div className="space-y-1">
+                                        {group.items.map(item => {
+                                            const isActive = item.id === activeTab;
+                                            const Icon = item.icon;
+
+                                            return (
+                                                <button
+                                                    key={item.id}
+                                                    id={`settings-tab-${item.id}`}
+                                                    type="button"
+                                                    role="tab"
+                                                    aria-selected={isActive}
+                                                    aria-controls={`settings-panel-${item.id}`}
+                                                    onClick={() => { handleSelectTab(item.id); }}
+                                                    className={cn(
+                                                        'group flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors duration-150',
+                                                        isActive
+                                                            ? 'border-border bg-foreground/[0.045] text-foreground'
+                                                            : 'border-transparent bg-transparent text-muted-foreground hover:border-border/70 hover:bg-muted/20 hover:text-foreground'
+                                                    )}
+                                                >
+                                                    <span className={cn(
+                                                        'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors',
+                                                        isActive
+                                                            ? 'bg-foreground text-background'
+                                                            : 'bg-muted/25 text-muted-foreground group-hover:bg-muted/40 group-hover:text-foreground'
+                                                    )}>
+                                                        <Icon className="h-4 w-4" />
+                                                    </span>
+                                                    <span className="min-w-0 flex-1">
+                                                        <span className="block truncate text-sm font-semibold">
+                                                            {item.label}
+                                                        </span>
+                                                        <span className="block truncate text-xs text-muted-foreground/75">
+                                                            {item.sectionLabel}
+                                                        </span>
+                                                    </span>
+                                                    <ChevronRight className={cn(
+                                                        'h-4 w-4 shrink-0 transition-transform',
+                                                        isActive ? 'translate-x-0 text-foreground' : 'text-muted-foreground/45 group-hover:translate-x-1'
+                                                    )} />
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )) : (
+                                <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-6 text-sm text-muted-foreground">
+                                    {t('settings.noResults')}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </aside>
+
+                <main className="settings-main min-w-0 flex-1 overflow-y-auto">
+                    <div className="settings-stage flex min-h-full flex-col gap-5 pb-16">
+                        <section className="rounded-[24px] border border-border/70 bg-background/94 px-6 py-6 lg:px-8">
+                            <p className="text-[10px] font-black uppercase tracking-[0.32em] text-muted-foreground/70">
+                                {activeNavigationItem?.sectionLabel ?? t('nav.settings')}
+                            </p>
+                            <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                                <div className="space-y-2">
+                                    <h2 className="text-[2rem] font-black tracking-tight text-foreground">
+                                        {activeNavigationItem?.label ?? t('settings.title')}
+                                    </h2>
+                                    <p className="max-w-2xl text-sm leading-6 text-muted-foreground/90">
+                                        {t('settings.subtitle')}
+                                    </p>
+                                </div>
+                                <div className="rounded-xl border border-border/70 bg-muted/10 px-4 py-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                                    {filteredTabs.length} / {allTabs.length}
+                                </div>
+                            </div>
+                        </section>
+
                         {renderedStatusMessage !== '' && (
-                            <div className="mb-6 px-4 py-2 rounded-xl bg-success/10 border border-success/20 text-success text-xs font-bold animate-in fade-in slide-in-from-top-2 flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                            <div className="rounded-xl border border-success/20 bg-success/10 px-4 py-3 text-xs font-bold text-success animate-in fade-in slide-in-from-top-2">
                                 {renderedStatusMessage}
                             </div>
                         )}
-                        {isLoading && settings === null ? (
-                            <div className="rounded-xl border border-border/60 bg-card/60 p-6 text-sm text-muted-foreground">
-                                {t('common.loading')}
-                            </div>
-                        ) : settingsUiState === 'failure' ? (
-                            <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6 text-sm text-destructive">
-                                {t('errors.unexpected')} ({lastErrorCode ?? settingsPageErrorCodes.saveFailed})
-                            </div>
-                        ) : settings === null ? (
-                            <div className="rounded-xl border border-border/60 bg-card/60 p-6 text-sm text-muted-foreground">
-                                {t('settings.noResults')}
-                            </div>
-                        ) : (searchQuery && !isActiveTabVisible) || hasInvalidSearchQuery ? (
-                            <div className="rounded-xl border border-border/60 bg-card/60 p-6 text-sm text-muted-foreground">
-                                {t('settings.noResults')}
-                            </div>
-                        ) : (
-                            <SettingsTabContent
-                                activeTab={activeTab}
-                                sharedProps={sharedProps}
-                                installedModels={installedModels}
-                                proxyModels={proxyModels}
-                                onRefreshModels={onRefreshModels}
-                                handleFactoryReset={onResetClick}
-                                groupedModels={groupedModels ?? undefined}
-                            />
-                        )}
+
+                        <section
+                            id={`settings-panel-${activeTab}`}
+                            role="tabpanel"
+                            aria-labelledby={`settings-tab-${activeTab}`}
+                            className={cn(
+                                'rounded-[24px] border border-border/70 bg-background/94 p-4 lg:p-6',
+                                (activeTab === 'models' || activeTab === 'gallery') && 'max-w-none'
+                            )}
+                        >
+                            {isLoading && settings === null ? (
+                                <div className="rounded-xl border border-border/60 bg-muted/10 p-6 text-sm text-muted-foreground">
+                                    {t('common.loading')}
+                                </div>
+                            ) : settingsUiState === 'failure' ? (
+                                <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6 text-sm text-destructive">
+                                    {t('errors.unexpected')} ({lastErrorCode ?? settingsPageErrorCodes.saveFailed})
+                                </div>
+                            ) : settings === null ? (
+                                <div className="rounded-xl border border-border/60 bg-muted/10 p-6 text-sm text-muted-foreground">
+                                    {t('settings.noResults')}
+                                </div>
+                            ) : (searchQuery && !isActiveTabVisible) || hasInvalidSearchQuery ? (
+                                <div className="rounded-xl border border-border/60 bg-muted/10 p-6 text-sm text-muted-foreground">
+                                    {t('settings.noResults')}
+                                </div>
+                            ) : (
+                                <div className="settings-section">
+                                    <SettingsTabContent
+                                        activeTab={activeTab}
+                                        sharedProps={sharedProps}
+                                        installedModels={installedModels}
+                                        proxyModels={proxyModels}
+                                        onRefreshModels={onRefreshModels}
+                                        handleFactoryReset={onResetClick}
+                                        groupedModels={groupedModels ?? undefined}
+                                    />
+                                </div>
+                            )}
+                        </section>
                     </div>
                 </main>
             </div>

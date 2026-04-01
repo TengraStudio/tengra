@@ -71,18 +71,26 @@ describe('AuthService (New Multi-Account System)', () => {
 
             const accounts = await authService.getAccountsByProvider('github');
 
-            expect(mockDatabaseService.getLinkedAccounts).toHaveBeenCalledWith('github');
+            expect(mockDatabaseService.getLinkedAccounts).toHaveBeenCalledWith();
             expect(accounts).toHaveLength(1);
             expect(accounts[0]?.provider).toBe('github');
         });
 
         it('should normalize provider names', async () => {
-            await authService.getAccountsByProvider('anthropic');
-            expect(mockDatabaseService.getLinkedAccounts).toHaveBeenCalledWith('claude');
+             const mockAccounts = [
+                { id: '1', provider: 'claude', isActive: true, createdAt: Date.now(), updatedAt: Date.now() },
+                { id: '2', provider: 'codex', isActive: true, createdAt: Date.now(), updatedAt: Date.now() }
+            ];
+            vi.mocked(mockDatabaseService.getLinkedAccounts).mockResolvedValue(mockAccounts);
 
-            // Note: openai and codex are separate providers, not normalized to each other
-            await authService.getAccountsByProvider('openai');
-            expect(mockDatabaseService.getLinkedAccounts).toHaveBeenCalledWith('openai');
+            const anthropicAccounts = await authService.getAccountsByProvider('anthropic');
+            expect(anthropicAccounts).toHaveLength(1);
+            expect(anthropicAccounts[0]?.provider).toBe('claude');
+
+            // Note: openai now normalizes to codex
+            const openaiAccounts = await authService.getAccountsByProvider('openai');
+            expect(openaiAccounts).toHaveLength(1);
+            expect(openaiAccounts[0]?.provider).toBe('codex');
         });
 
         it('should link new account', async () => {

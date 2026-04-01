@@ -13,9 +13,18 @@ export interface ProxyBridge {
         accounts: Array<{ usage: CodexUsage; accountId?: string; email?: string }>;
     }>;
     getClaudeQuota: () => Promise<{ accounts: Array<import('@shared/types/quota').ClaudeQuota> }>;
-    antigravityLogin: () => Promise<{ url: string; state: string }>;
-    codexLogin: () => Promise<{ url: string; state: string }>;
-    claudeLogin: () => Promise<{ url: string; state: string }>;
+    antigravityLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
+    codexLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
+    claudeLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
+    cancelAuth: (provider: 'antigravity' | 'claude' | 'codex', state: string, accountId: string) => Promise<boolean>;
+    getBrowserAuthStatus: (provider: string, state: string, accountId: string) => Promise<{
+        status: string;
+        error?: string;
+        provider?: string;
+        state?: string;
+        accountId?: string;
+        account_id?: string;
+    }>;
     saveClaudeSession: (
         sessionKey: string,
         accountId?: string
@@ -38,9 +47,11 @@ export function createProxyBridge(ipc: IpcRenderer): ProxyBridge {
         getCopilotQuota: () => ipc.invoke('proxy:getCopilotQuota'),
         getCodexUsage: () => ipc.invoke('proxy:getCodexUsage'),
         getClaudeQuota: () => ipc.invoke('proxy:getClaudeQuota'),
-        antigravityLogin: () => ipc.invoke('proxy:antigravityLogin'),
-        codexLogin: () => ipc.invoke('proxy:codexLogin'),
-        claudeLogin: () => ipc.invoke('proxy:claudeLogin'),
+        antigravityLogin: accountId => ipc.invoke('proxy:antigravityLogin', accountId),
+        codexLogin: accountId => ipc.invoke('proxy:codexLogin', accountId),
+        claudeLogin: accountId => ipc.invoke('proxy:claudeLogin', accountId),
+        cancelAuth: (provider, state, accountId) => ipc.invoke('proxy:cancelAuth', provider, state, accountId),
+        getBrowserAuthStatus: (provider, state, accountId) => ipc.invoke('proxy:getAuthStatus', provider, state, accountId),
         saveClaudeSession: (sessionKey, accountId) =>
             ipc.invoke('proxy:saveClaudeSession', sessionKey, accountId),
         checkUsageLimit: (provider, model) => ipc.invoke('usage:checkLimit', provider, model),

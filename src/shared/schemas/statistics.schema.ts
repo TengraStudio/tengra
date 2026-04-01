@@ -23,12 +23,6 @@ export const DetailedStatsSchema = z.object({
     activity: z.array(z.number())
 });
 
-export const TimeTrackingStatsSchema = z.object({
-    totalOnlineTime: z.number(),
-    totalCodingTime: z.number(),
-    workspaceCodingTime: z.record(z.string(), z.number())
-});
-
 export const TokenStatsSchema = z.object({
     totalSent: z.number(),
     totalReceived: z.number(),

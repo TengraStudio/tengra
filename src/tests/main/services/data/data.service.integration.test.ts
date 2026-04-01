@@ -96,6 +96,10 @@ describe('DataService Integration', () => {
         expect(baseDir).toContain('userData');
     });
 
+    it('should centralize logs under userData/logs instead of data/logs', () => {
+        expect(service.getPath('logs')).toBe('/mock/userData/logs');
+    });
+
     it('should return a copy of paths from getAllPaths', () => {
         const paths1 = service.getAllPaths();
         const paths2 = service.getAllPaths();

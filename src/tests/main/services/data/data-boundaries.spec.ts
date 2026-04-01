@@ -33,13 +33,11 @@ describe('Data Model Boundaries Contract', () => {
             isConnected: vi.fn().mockReturnValue(true),
             executeQuery: vi.fn().mockResolvedValue({ rows: [], affected_rows: 1 })
         } as never;
-        const mockTimeTracking = { recordSlowOperation: vi.fn() } as never;
 
         databaseService = new DatabaseService(
             mockDataService,
             mockEventBus,
-            mockDbClient,
-            mockTimeTracking
+            mockDbClient
         );
 
         // We forcefully initialize it and stub out adapter behavior

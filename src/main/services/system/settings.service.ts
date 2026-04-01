@@ -38,7 +38,7 @@ const DEFAULT_SETTINGS: AppSettings = {
         theme: 'graphite',
         resolution: '1280x800',
         fontSize: 14,
-        onboardingCompleted: false,
+
         defaultModel: 'gpt-4o',
         defaultTerminalBackend: 'node-pty',
         lastModel: '',
@@ -280,7 +280,8 @@ export class SettingsService extends BaseService {
 
     private async parseAndRecoverSettings(data: string): Promise<Partial<AppSettings>> {
         try {
-            return safeJsonParse<Partial<AppSettings>>(data, {});
+            const parsed = safeJsonParse<Partial<AppSettings>>(data, {});
+            return this.normalizeLoadedSettings(parsed);
         } catch {
             appLogger.warn('SettingsService', 'JSON.parse failed, attempting recovery...');
 
@@ -297,6 +298,21 @@ export class SettingsService extends BaseService {
                 return {};
             }
         }
+    }
+
+    private normalizeLoadedSettings(loaded: Partial<AppSettings>): Partial<AppSettings> {
+        const loadedRecord = loaded as Record<string, RuntimeValue>;
+        const wrappedData = loadedRecord.data;
+        if (wrappedData && typeof wrappedData === 'object' && !Array.isArray(wrappedData)) {
+            return wrappedData as Partial<AppSettings>;
+        }
+
+        const sanitized = { ...loadedRecord };
+        delete sanitized.success;
+        delete sanitized.data;
+        delete sanitized.error;
+        delete sanitized.message;
+        return sanitized as Partial<AppSettings>;
     }
 
     private async backupCorruptedSettings(
@@ -351,8 +367,8 @@ export class SettingsService extends BaseService {
             github: this.mergeProvider(authAccounts, 'github', loaded.github),
             openai: this.mergeProvider(authAccounts, 'openai', loaded.openai, 'apiKey'),
             anthropic: this.mergeProvider(authAccounts, 'anthropic', loaded.anthropic, 'apiKey'),
-            antigravity: this.mergeProvider(authAccounts, 'antigravity', loaded.antigravity),
-            copilot: this.mergeCopilot(authAccounts, loaded.copilot),
+            antigravity: this.mergeOAuthProviderState(authAccounts, 'antigravity', loaded.antigravity),
+            copilot: this.mergeOAuthProviderState(authAccounts, 'copilot', loaded.copilot),
             groq: this.mergeProvider(authAccounts, 'groq', loaded.groq, 'apiKey'),
             nvidia: this.mergeProvider(authAccounts, 'nvidia', loaded.nvidia, 'apiKey'),
             proxy: this.mergeProxy(authAccounts, loaded.proxy),
@@ -406,20 +422,23 @@ export class SettingsService extends BaseService {
         } as AppSettings[T];
     }
 
-    private mergeCopilot(
+    private mergeOAuthProviderState<T extends 'antigravity' | 'copilot'>(
         authAccounts: LinkedAccount[],
-        loaded?: Partial<AppSettings['copilot']>
-    ): AppSettings['copilot'] {
-        const def = DEFAULT_SETTINGS.copilot;
-        const token =
-            this.findTokenInAuth(authAccounts, 'copilot') ||
-            this.findTokenInAuth(authAccounts, 'github') ||
-            (loaded?.token ?? '');
+        provider: T,
+        loaded?: Partial<AppSettings[T]>
+    ): AppSettings[T] {
+        const def = (DEFAULT_SETTINGS[provider] as Record<string, RuntimeValue> | undefined) ?? {};
+        const loadedObj = (loaded ?? {}) as Record<string, RuntimeValue>;
+        const hasLinkedAccount = authAccounts.some(account =>
+            this.normalizeProviderAlias(account.provider) === provider
+        );
 
         return {
-            connected: loaded?.connected ?? !!def?.connected,
-            token,
-        };
+            ...def,
+            ...loadedObj,
+            connected: hasLinkedAccount || loadedObj.connected === true,
+            token: typeof loadedObj.token === 'string' ? loadedObj.token : undefined,
+        } as AppSettings[T];
     }
 
     private mergeProxy(
@@ -436,6 +455,10 @@ export class SettingsService extends BaseService {
             enabled: loaded?.enabled ?? def.enabled,
             url: loaded?.url ?? def.url,
             key: token,
+            apiKey: loaded?.apiKey,
+            managementPassword: loaded?.managementPassword,
+            port: loaded?.port,
+            authStoreKey: loaded?.authStoreKey,
         };
     }
 
@@ -469,7 +492,8 @@ export class SettingsService extends BaseService {
         const wasModified = endIndex < cleanData.length - 1 || startIndex > 0;
 
         try {
-            return { data: safeJsonParse<Partial<AppSettings>>(jsonCandidate, {}), wasModified };
+            const parsed = safeJsonParse<Partial<AppSettings>>(jsonCandidate, {});
+            return { data: this.normalizeLoadedSettings(parsed), wasModified };
         } catch {
             return null;
         }
@@ -605,11 +629,6 @@ export class SettingsService extends BaseService {
             anthropic_key: settings.anthropic?.apiKey,
             groq_key: settings.groq?.apiKey,
             nvidia_key: settings.nvidia?.apiKey,
-            antigravity_token: (settings.antigravity as Record<string, RuntimeValue> | undefined)
-                ?.token as string | undefined,
-            copilot_token: (settings.copilot as Record<string, RuntimeValue> | undefined)?.token as
-                | string
-                | undefined,
             proxy_key: settings.proxy?.key,
         };
 
@@ -672,12 +691,6 @@ export class SettingsService extends BaseService {
             'copilot_token',
             newSettings.copilot?.token,
             oldSettings.copilot?.token
-        );
-        this.checkTokenMapping(
-            mappings,
-            'antigravity_token',
-            newSettings.antigravity?.token,
-            oldSettings.antigravity?.token
         );
     }
 
@@ -888,6 +901,16 @@ export class SettingsService extends BaseService {
         return '';
     }
 
+    private normalizeProviderAlias(provider: string): string {
+        const normalized = provider.trim().toLowerCase().replace(/(_token|_key|_auth)$/, '');
+        const mappings: Record<string, string> = {
+            google: 'antigravity',
+            gemini: 'antigravity',
+            github: 'copilot',
+        };
+        return mappings[normalized] ?? normalized;
+    }
+
     private deepMergeSettings(
         target: Record<string, RuntimeValue>,
         source: Record<string, RuntimeValue>
@@ -1001,6 +1024,16 @@ export class SettingsService extends BaseService {
         preserveToken('groq', 'apiKey');
         preserveToken('nvidia', 'apiKey');
         preserveToken('proxy', 'key');
+
+        const newProxy = newSettings.proxy;
+        const oldProxy = this.settings.proxy;
+        if (newProxy && oldProxy) {
+            newProxy.apiKey = newProxy.apiKey ?? oldProxy.apiKey;
+            newProxy.managementPassword =
+                newProxy.managementPassword ?? oldProxy.managementPassword;
+            newProxy.authStoreKey = newProxy.authStoreKey ?? oldProxy.authStoreKey;
+            newProxy.port = newProxy.port ?? oldProxy.port;
+        }
     }
 }
 

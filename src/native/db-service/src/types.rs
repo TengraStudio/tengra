@@ -91,11 +91,7 @@ where
         .ok_or_else(|| format!("missing `{canonical_key}`"))
 }
 
-fn serialize_optional_entry<M, T>(
-    map: &mut M,
-    key: &str,
-    value: &Option<T>,
-) -> Result<(), M::Error>
+fn serialize_optional_entry<M, T>(map: &mut M, key: &str, value: &Option<T>) -> Result<(), M::Error>
 where
     M: SerializeMap,
     T: Serialize,
@@ -320,8 +316,7 @@ impl<'de> Deserialize<'de> for UpdateChatRequest {
             folder_id: take_optional(&mut map, "folder_id").map_err(serde::de::Error::custom)?,
             workspace_id: take_optional_alias(&mut map, "workspace_id", legacy_key.as_str())
                 .map_err(serde::de::Error::custom)?,
-            is_pinned: take_optional(&mut map, "is_pinned")
-                .map_err(serde::de::Error::custom)?,
+            is_pinned: take_optional(&mut map, "is_pinned").map_err(serde::de::Error::custom)?,
             is_favorite: take_optional(&mut map, "is_favorite")
                 .map_err(serde::de::Error::custom)?,
             is_archived: take_optional(&mut map, "is_archived")
@@ -684,7 +679,7 @@ fn generate_uuid() -> String {
 
 fn current_timestamp() -> i64 {
     chrono::Utc::now().timestamp_millis()
-} 
+}
 
 fn default_limit() -> usize {
     10

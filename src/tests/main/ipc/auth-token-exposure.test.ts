@@ -2,7 +2,7 @@
  * Security regression test: auth:poll-token must NEVER return access_token to the renderer.
  * AUD-2026-02-27-01
  */
-import { type AuthIpcDependencies,registerAuthIpc } from '@main/ipc/auth';
+import { type AuthIpcDependencies, registerAuthIpc } from '@main/ipc/auth';
 import { ipcMain } from 'electron';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -31,6 +31,7 @@ vi.mock('@main/utils/ipc-batch.util', () => ({
 
 const FAKE_ACCESS_TOKEN = 'ghu_FAKE_ACCESS_TOKEN_12345';
 const FAKE_REFRESH_TOKEN = 'ghr_FAKE_REFRESH_TOKEN_67890';
+const FAKE_SESSION_TOKEN = 'ghs_FAKE_SESSION_TOKEN_ABCDE';
 
 /** Recursively check that a value contains no token strings. */
 function assertNoTokenLeak(value: TestValue, path = 'root'): void {
@@ -71,6 +72,9 @@ describe('AUD-2026-02-27-01: auth:poll-token must not expose access_token', () =
                 waitForGitHubToken: vi.fn().mockResolvedValue({
                     access_token: FAKE_ACCESS_TOKEN,
                     refresh_token: FAKE_REFRESH_TOKEN,
+                    session_token: FAKE_SESSION_TOKEN,
+                    copilot_plan: 'individual',
+                    expires_at: Date.now() + 3600_000,
                     expires_in: 3600,
                     token_type: 'bearer',
                     scope: 'read:user user:email'
@@ -84,7 +88,8 @@ describe('AUD-2026-02-27-01: auth:poll-token must not expose access_token', () =
                 fetchGitHubEmails: vi.fn().mockResolvedValue('test@example.com')
             } as never as AuthIpcDependencies['proxyService'],
             copilotService: {
-                setGithubToken: vi.fn()
+                setGithubToken: vi.fn(),
+                setCopilotToken: vi.fn()
             } as never as AuthIpcDependencies['copilotService'],
             authService: {
                 linkAccount: vi.fn().mockResolvedValue({
@@ -186,5 +191,27 @@ describe('AUD-2026-02-27-01: auth:poll-token must not expose access_token', () =
         for (const key of Object.keys(account!)) {
             expect(ALLOWED_FIELDS.has(key), `Unexpected field "${key}" in account response`).toBe(true);
         }
+    });
+
+    it('should persist Copilot session token metadata without leaking it to the renderer', async () => {
+        const handler = handlers.get('auth:poll-token');
+        const fakeEvent = { sender: { id: 1 } };
+
+        await handler!(fakeEvent, 'device-code-123', 5, 'copilot');
+
+        expect(deps.authService.linkAccount).toHaveBeenCalledWith(
+            'copilot',
+            expect.objectContaining({
+                accessToken: FAKE_ACCESS_TOKEN,
+                refreshToken: FAKE_REFRESH_TOKEN,
+                sessionToken: FAKE_SESSION_TOKEN,
+                metadata: expect.objectContaining({
+                    copilot_plan: 'individual',
+                    plan: 'individual',
+                    token_type: 'bearer'
+                })
+            })
+        );
+        expect(deps.copilotService.setCopilotToken).toHaveBeenCalledWith(FAKE_SESSION_TOKEN);
     });
 });

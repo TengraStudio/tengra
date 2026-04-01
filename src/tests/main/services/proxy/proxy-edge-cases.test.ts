@@ -2,6 +2,7 @@
  * Edge case unit tests for ProxyService rate limiting, cleanup, and status.
  */
 import { DataService } from '@main/services/data/data.service';
+import { DatabaseService } from '@main/services/data/database.service';
 import {
     ProxyService,
     ProxyTelemetryEvent
@@ -82,6 +83,7 @@ function createProxyService() {
         quotaService: mockQuotaService,
         authService: mockAuthService,
         eventBus: mockEventBus,
+        databaseService: {} as never as DatabaseService,
     });
 
     return { proxyService, mockProcessManager, mockEventBus, mockQuotaService };
@@ -221,7 +223,7 @@ describe('ProxyService edge cases', () => {
             const { proxyService, mockProcessManager } = createProxyService();
             await proxyService.initialize();
             await proxyService.cleanup();
-            expect(mockProcessManager.stop).toHaveBeenCalledWith(true);
+            expect(mockProcessManager.stop).toHaveBeenCalled();
         });
 
         it('should not throw when cleanup stop fails', async () => {

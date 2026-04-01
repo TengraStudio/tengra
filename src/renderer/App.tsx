@@ -44,7 +44,7 @@ const UpdateNotification = lazy(() => import('@renderer/components/layout/Update
 const QuickActionBar = lazy(() => import('@renderer/components/layout/QuickActionBar').then(m => ({ default: m.QuickActionBar })));
 const VoiceOverlay = lazy(() => import('@renderer/features/voice/components/VoiceOverlay').then(m => ({ default: m.VoiceOverlay })));
 const DetachedTerminalWindow = lazy(() => import('@renderer/features/terminal/components/DetachedTerminalWindow').then(m => ({ default: m.DetachedTerminalWindow })));
-const OnboardingFlow = lazy(() => import('@renderer/features/onboarding/OnboardingFlow').then(m => ({ default: m.OnboardingFlow })));
+
 
 function useDeferredNonCriticalUi(): boolean {
     const [isReady, setIsReady] = useState(false);
@@ -136,23 +136,15 @@ const SidebarConnector: React.FC<{
     isCollapsed: boolean;
     onChangeView: (view: AppView) => void;
     toggleSidebar: () => void;
-}> = ({ currentView, isCollapsed, onChangeView, toggleSidebar }) => {
-    const { setSettingsCategory } = useAuthSettingsUi();
-
-    const handleOpenSettings = useCallback((category?: SettingsCategory) => {
-        onChangeView('settings');
-        if (category) {
-            setSettingsCategory(category);
-        }
-    }, [onChangeView, setSettingsCategory]);
-
+    onOpenSettings: (category?: SettingsCategory) => void;
+}> = ({ currentView, isCollapsed, onChangeView, toggleSidebar, onOpenSettings }) => {
     return (
         <Sidebar
             currentView={currentView}
             onChangeView={onChangeView}
             isCollapsed={isCollapsed}
             toggleSidebar={toggleSidebar}
-            onOpenSettings={handleOpenSettings}
+            onOpenSettings={onOpenSettings}
             onSearch={() => { }}
         />
     );
@@ -239,6 +231,7 @@ const KeyboardShortcutsConnector: React.FC<{
     setShowSSHManager: (show: boolean) => void;
     setCurrentView: (view: AppView) => void;
     onToggleSidebar: () => void;
+    onOpenSettings: (category?: SettingsCategory) => void;
 }> = ({
     showCommandPalette,
     setShowCommandPalette,
@@ -248,10 +241,10 @@ const KeyboardShortcutsConnector: React.FC<{
     setShowSSHManager,
     setCurrentView,
     onToggleSidebar,
+    onOpenSettings,
 }) => {
     const { createNewChat } = useChatShell();
     const { currentChatId, clearMessages } = useChatHeader();
-    const { setSettingsCategory } = useAuthSettingsUi();
 
     const keyboardShortcutsConfig = useMemo(
         () => ({
@@ -260,8 +253,7 @@ const KeyboardShortcutsConnector: React.FC<{
             },
             onNewChat: createNewChat,
             onOpenSettings: () => {
-                setCurrentView('settings');
-                setSettingsCategory('general');
+                onOpenSettings('general');
             },
             onShowShortcuts: () => {
                 setShowShortcuts(true);
@@ -298,9 +290,9 @@ const KeyboardShortcutsConnector: React.FC<{
             clearMessages,
             createNewChat,
             currentChatId,
+            onOpenSettings,
             onToggleSidebar,
             setCurrentView,
-            setSettingsCategory,
             setShowCommandPalette,
             setShowShortcuts,
             setShowSSHManager,
@@ -341,14 +333,14 @@ const CommandPaletteConnector: React.FC<{
     onClose: () => void;
     setCurrentView: (view: AppView) => void;
     t: (key: string) => string;
-}> = ({ isOpen, onClose, setCurrentView, t }) => {
+    onOpenSettings: (category?: SettingsCategory) => void;
+}> = ({ isOpen, onClose, setCurrentView, t, onOpenSettings }) => {
     const { chats, setCurrentChatId } = useChatLibrary();
     const { clearMessages } = useChatHeader();
     const { createNewChat } = useChatShell();
     const { workspaces } = useWorkspaceLibrary();
     const { setSelectedWorkspace } = useWorkspaceSelection();
     const { models, loadModels, selectedModel, setSelectedModel } = useModel();
-    const { setSettingsCategory } = useAuthSettingsUi();
 
     return (
         <CommandPalette
@@ -368,12 +360,7 @@ const CommandPaletteConnector: React.FC<{
                     setCurrentView('workspace');
                 }
             }}
-            onOpenSettings={(category?: SettingsCategory) => {
-                setCurrentView('settings');
-                if (category) {
-                    setSettingsCategory(category);
-                }
-            }}
+            onOpenSettings={onOpenSettings}
             onOpenSSHManager={() => {
                 window.dispatchEvent(new CustomEvent('app:open-ssh-manager'));
             }}
@@ -524,6 +511,7 @@ function MainApp() {
     const sessionTimeout = useSessionTimeout();
     const { language } = useLanguage();
     const { t } = useTranslation();
+    const { setSettingsCategory } = useAuthSettingsUi();
     const appState = useAppState();
     const {
         currentView,
@@ -536,7 +524,7 @@ function MainApp() {
     const breakpoint = useBreakpoint();
     const settingsSearchQuery = '';
 
-    const [showOnboarding, setShowOnboarding] = useState(false);
+    
     const nonCriticalUiReady = useDeferredNonCriticalUi();
     const [showLanguagePrompt, setShowLanguagePrompt] = useState(() => {
         // Show prompt only on first run if language wasn't explicitly selected
@@ -545,28 +533,7 @@ function MainApp() {
 
     useAppInitialization();
 
-    useEffect(() => {
-        let cancelled = false;
-        void (async () => {
-            try {
-                const settings = await window.electron.getSettings();
-                const shouldShowOnboarding =
-                    localStorage.getItem('Tengra-onboarding-complete') !== 'true' &&
-                    settings.general?.onboardingCompleted !== true;
-                if (!cancelled) {
-                    setShowOnboarding(shouldShowOnboarding);
-                }
-            } catch {
-                if (!cancelled) {
-                    setShowOnboarding(localStorage.getItem('Tengra-onboarding-complete') !== 'true');
-                }
-            }
-        })();
 
-        return () => {
-            cancelled = true;
-        };
-    }, []);
 
     // Auto-collapse sidebar when entering the workspace view.
     useEffect(() => {
@@ -597,6 +564,14 @@ function MainApp() {
     const handleToggleSidebar = useCallback(() => {
         setIsSidebarCollapsed(!isSidebarCollapsed);
     }, [isSidebarCollapsed, setIsSidebarCollapsed]);
+
+    const openSettings = useCallback((category?: SettingsCategory) => {
+        if (category) {
+            setSettingsCategory(category);
+        }
+        setCurrentView('settings');
+    }, [setCurrentView, setSettingsCategory]);
+
     const chatTemplates = useMemo(() => getChatTemplates(t), [t]);
 
     useEffect(() => {
@@ -645,12 +620,14 @@ function MainApp() {
                                     onChangeView={setCurrentView}
                                     isCollapsed={appState.isSidebarCollapsed}
                                     toggleSidebar={handleToggleSidebar}
+                                    onOpenSettings={openSettings}
                                 />
                             }
                             mainContent={
                                 <>
                                     <AppHeader
                                         currentView={appState.currentView}
+                                        onOpenSettings={() => { openSettings(); }}
                                     />
                                     <ErrorFallback
                                         error={error || new Error(t('errors.unexpected'))}
@@ -677,14 +654,7 @@ function MainApp() {
                     />
                 )}
 
-                {showOnboarding && (
-                    <Suspense fallback={null}>
-                        <OnboardingFlow
-                            isOpen={showOnboarding}
-                            onClose={() => setShowOnboarding(false)}
-                        />
-                    </Suspense>
-                )}
+
 
                 <AppModalsConnector
                     t={t}
@@ -716,6 +686,7 @@ function MainApp() {
                             setShowSSHManager={appState.setShowSSHManager}
                             setCurrentView={setCurrentView}
                             onToggleSidebar={handleToggleSidebar}
+                            onOpenSettings={openSettings}
                         />
                         <Suspense fallback={null}>
                             <QuickActionBarConnector
@@ -739,6 +710,7 @@ function MainApp() {
                             }}
                             setCurrentView={setCurrentView}
                             t={t}
+                            onOpenSettings={openSettings}
                         />
                     </Suspense>
                 )}
@@ -752,12 +724,14 @@ function MainApp() {
                                 onChangeView={setCurrentView}
                                 isCollapsed={appState.isSidebarCollapsed}
                                 toggleSidebar={handleToggleSidebar}
+                                onOpenSettings={openSettings}
                             />
                         }
                         mainContent={
                             <>
                                 <AppHeader
                                     currentView={appState.currentView}
+                                    onOpenSettings={() => { openSettings(); }}
                                 />
                                 <DragDropContent
                                     isDragging={appState.isDragging}

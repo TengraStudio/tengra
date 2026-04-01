@@ -267,24 +267,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
                             </div>
                         </div>
                     </div>
-                    <div className="flex items-center justify-between p-5 rounded-2xl border border-border/40 bg-muted/5 group transition-all hover:bg-muted/10">
-                        <div>
-                            <div className="text-sm font-black text-foreground uppercase tracking-tight">
-                                {t('general.onboardingTour')}
-                            </div>
-                            <div className="text-xs font-medium text-muted-foreground/70">
-                                {t('general.onboardingTourDesc')}
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => {
-                                void updateGeneral({ onboardingCompleted: false });
-                            }}
-                            className="px-5 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-black uppercase rounded-xl border border-primary/20 transition-all shadow-sm"
-                        >
-                            {t('general.startTour')}
-                        </button>
-                    </div>
+
                 </div>
 
                 <div className="rounded-2xl border border-border/40 bg-muted/5 p-5 space-y-4">

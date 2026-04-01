@@ -14,15 +14,15 @@ const READY_STATUS: RuntimeBootstrapExecutionResult = {
         platform: 'win32',
         arch: 'x64',
     },
-    entries: [
-        {
-            componentId: 'cliproxy-embed',
+        entries: [
+            {
+            componentId: 'tengra-proxy',
             displayName: 'Embedded Proxy',
             version: '1.0.0',
             status: 'ready',
             requirement: 'required',
             source: 'managed',
-            installPath: '/runtime/bin/cliproxy-embed.exe',
+            installPath: '/runtime/bin/tengra-proxy.exe',
         },
     ],
     summary: {
@@ -37,12 +37,12 @@ const READY_STATUS: RuntimeBootstrapExecutionResult = {
     health: {
         entries: [
             {
-                componentId: 'cliproxy-embed',
+                componentId: 'tengra-proxy',
                 displayName: 'Embedded Proxy',
                 status: 'ready',
                 source: 'managed',
                 requirement: 'required',
-                installPath: '/runtime/bin/cliproxy-embed.exe',
+                installPath: '/runtime/bin/tengra-proxy.exe',
                 message: 'Runtime file is ready',
             },
         ],

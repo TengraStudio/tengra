@@ -6,6 +6,8 @@ const sectionData = {
     "stop": "Stop",
     "showCommands": "Show voice commands",
     "lastHeard": "Last heard",
+    "interfaceTitle": "Voice Interface",
+    "interfaceSubtitle": "Control the app with your voice",
     "status": {
         "idle": "Ready",
         "listening": "Listening...",

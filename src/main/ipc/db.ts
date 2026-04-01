@@ -7,7 +7,7 @@ import { serializeToIpc, validatedAs, validatedToJsonObject } from '@main/utils/
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
 import { DB_CHANNELS } from '@shared/constants/ipc-channels';
-import { DetailedStatsSchema, StatsPeriodSchema, TimeTrackingStatsSchema, TokenStatsSchema } from '@shared/schemas/statistics.schema';
+import { DetailedStatsSchema, StatsPeriodSchema, TokenStatsSchema } from '@shared/schemas/statistics.schema';
 import { Chat, Folder, Message, Prompt } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
 import { DbTokenStats } from '@shared/types/db-api';
@@ -571,18 +571,7 @@ function registerStatsHandlers(databaseService: DatabaseService, validateSender:
         responseSchema: DetailedStatsSchema.nullable()
     }));
 
-    ipcMain.handle('db:getTimeStats', createValidatedIpcHandler('db:getTimeStats', async (event) => {
-        validateSender(event);
-        return await databaseService.getTimeStats();
-    }, {
-        defaultValue: {
-            totalOnlineTime: 0,
-            totalCodingTime: 0,
-            workspaceCodingTime: {}
-        },
-        argsSchema: z.tuple([]),
-        responseSchema: TimeTrackingStatsSchema
-    }));
+
 
     ipcMain.handle('db:getProviderStats', createValidatedIpcHandler('db:getProviderStats', async (event) => {
         validateSender(event);

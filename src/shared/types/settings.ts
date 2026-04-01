@@ -11,7 +11,10 @@ export type ModelGovernanceSettings = {
     [key: string]: JsonValue | undefined;
 };
 
-export type AppSettings = {
+export interface AppSettings {
+
+
+
     ollama: {
         url: string;
         numCtx?: number;
@@ -51,7 +54,7 @@ export type AppSettings = {
         fontFamily?: string;
         highContrast?: boolean;
         reduceMotion?: boolean;
-        onboardingCompleted: boolean;
+
         defaultModel?: string;
         defaultTerminalBackend?: string;
         lastModel?: string;
@@ -84,30 +87,68 @@ export type AppSettings = {
         token?: string;
     };
     openai?: {
-        apiKey: string;
+        apiKeys?: string[];
+        apiKey?: string; // Legacy support - kept for backward compatibility
         accessToken?: string; // For web session auth
         email?: string;
         model: string;
     };
     claude?: {
-        apiKey: string;
+        apiKeys?: string[];
+        apiKey?: string; // Legacy support
         model: string;
     };
     anthropic?: {
-        apiKey: string;
+        apiKeys?: string[];
+        apiKey?: string; // Legacy support
         model: string;
     };
 
     groq?: {
-        apiKey: string;
+        apiKeys?: string[];
+        apiKey?: string; // Legacy support
         model: string;
     };
     nvidia?: {
-        apiKey: string;
+        apiKeys?: string[];
+        apiKey?: string; // Legacy support
         model: string;
     };
     huggingface?: {
         apiKey: string;
+    };
+    // API Key based AI providers
+    gemini?: {
+        apiKeys?: string[];
+        model: string;
+    };
+    mistral?: {
+        apiKeys?: string[];
+        model: string;
+    };
+    together?: {
+        apiKeys?: string[];
+        model: string;
+    };
+    perplexity?: {
+        apiKeys?: string[];
+        model: string;
+    };
+    cohere?: {
+        apiKeys?: string[];
+        model: string;
+    };
+    xai?: {
+        apiKeys?: string[];
+        model: string;
+    };
+    deepseek?: {
+        apiKeys?: string[];
+        model: string;
+    };
+    openrouter?: {
+        apiKeys?: string[];
+        model: string;
     };
     antigravity?: {
         connected: boolean;
@@ -126,6 +167,9 @@ export type AppSettings = {
         enabled: boolean;
         url: string;
         key: string;
+        apiKey?: string;
+        managementPassword?: string;
+        port?: number;
         authStoreKey?: string;
     };
     speech?: {

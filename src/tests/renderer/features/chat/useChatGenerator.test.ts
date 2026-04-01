@@ -34,6 +34,122 @@ const createChunkStream = async function* () {
     yield { content: 'Hello back' };
 };
 
+const createToolTurnStream = async function* () {
+    yield {
+        type: 'tool_calls' as const,
+        tool_calls: [{
+            id: 'tool-call-1',
+            type: 'function' as const,
+            function: {
+                name: 'list_directory',
+                arguments: JSON.stringify({ path: 'C:/Users/agnes/Desktop' }),
+            },
+        }],
+    };
+};
+
+const createFinalAnswerStream = async function* () {
+    yield { content: 'Masaustunde 8 oge var.' };
+};
+
+const createSameToolTurnStream = async function* () {
+    yield {
+        type: 'tool_calls' as const,
+        tool_calls: [{
+            id: 'tool-call-repeated',
+            type: 'function' as const,
+            function: {
+                name: 'get_system_info',
+                arguments: '{}',
+            },
+        }],
+    };
+};
+
+const createPrimitiveArgsToolTurnStream = async function* () {
+    yield {
+        type: 'tool_calls' as const,
+        tool_calls: [{
+            id: 'tool-call-primitive',
+            type: 'function' as const,
+            function: {
+                name: 'get_system_info',
+                arguments: '""',
+            },
+        }],
+    };
+};
+
+const createExecuteCommandToolTurnStream = async function* () {
+    yield {
+        type: 'tool_calls' as const,
+        tool_calls: [{
+            id: 'tool-call-command',
+            type: 'function' as const,
+            function: {
+                name: 'execute_command',
+                arguments: JSON.stringify({ command: 'Get-ChildItem' }),
+            },
+        }],
+    };
+};
+
+const createSplitToolTurnStream = async function* () {
+    yield {
+        type: 'tool_calls' as const,
+        tool_calls: [{
+            id: 'tool-call-1',
+            index: 0,
+            type: 'function' as const,
+            function: {
+                name: 'list_directory',
+                arguments: '',
+            },
+        }],
+    };
+    yield {
+        type: 'tool_calls' as const,
+        tool_calls: [{
+            id: 'tool-call-1',
+            index: 0,
+            type: 'function' as const,
+            function: {
+                name: '',
+                arguments: JSON.stringify({ path: 'C:/Users/agnes/Desktop' }),
+            },
+        }],
+    };
+};
+
+const createInvalidToolTurnStream = async function* () {
+    yield {
+        type: 'tool_calls' as const,
+        tool_calls: [{
+            id: '',
+            type: 'function' as const,
+            function: {
+                name: '',
+                arguments: JSON.stringify({ path: 'C:/Users/agnes/Desktop' }),
+            },
+        }],
+    };
+};
+
+const createInvalidToolWithTextTurnStream = async function* () {
+    yield { content: 'Dizini kontrol ediyorum...' };
+    yield {
+        type: 'tool_calls' as const,
+        tool_calls: [{
+            id: '',
+            type: 'function' as const,
+            function: {
+                name: '',
+                arguments: JSON.stringify({ path: 'C:/Users/agnes/Desktop' }),
+            },
+        }],
+    };
+};
+
 const createInitialChat = (): Chat => ({
     id: 'chat-1',
     title: 'Ping',
@@ -58,7 +174,7 @@ describe('useChatGenerator', () => {
         mockChatStream.mockImplementation(() => createChunkStream());
         mockGetToolDefinitions.mockResolvedValue([]);
         mockAddMessage.mockResolvedValue(undefined);
-        mockUpdateMessage.mockResolvedValue(undefined);
+        mockUpdateMessage.mockResolvedValue({ success: true });
 
         Object.defineProperty(window, 'electron', {
             configurable: true,
@@ -217,5 +333,532 @@ describe('useChatGenerator', () => {
 
         expect(result.current.chats[0]?.messages[0]?.content).toContain('chat.error');
         expect(mockLogError).toHaveBeenCalled();
+    });
+
+    it('keeps internal tool turns out of visible chat state', async () => {
+        mockGetToolDefinitions.mockResolvedValue([{
+            type: 'function',
+            function: {
+                name: 'list_directory',
+                description: 'Lists files',
+                parameters: {
+                    type: 'object',
+                    properties: {
+                        path: { type: 'string' },
+                    },
+                    required: ['path'],
+                },
+            },
+        }]);
+        mockChatStream
+            .mockImplementationOnce(() => createToolTurnStream())
+            .mockImplementationOnce(() => createFinalAnswerStream());
+        mockExecuteTools.mockResolvedValue({
+            toolCallId: 'tool-call-1',
+            name: 'list_directory',
+            success: true,
+            result: [{ name: 'file.txt', isDirectory: false }],
+        });
+
+        const { result } = renderHook(() => {
+            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const chatGenerator = useChatGenerator({
+                chats,
+                setChats,
+                selectedModel: 'model-a',
+                selectedProvider: 'ollama',
+                language: 'tr',
+                t: (key: string) => key,
+                handleSpeak: vi.fn(),
+                autoReadEnabled: false,
+                formatChatError: (err: CatchError) =>
+                    err instanceof Error ? err.message : String(err ?? ''),
+                systemMode: 'agent',
+            });
+
+            return {
+                ...chatGenerator,
+                chats,
+            };
+        });
+
+        await act(async () => {
+            await result.current.generateResponse('chat-1', {
+                ...createUserMessage(),
+                content: 'Masaustumde kac adet dosya var?',
+            });
+        });
+
+        expect(mockChatStream).toHaveBeenCalledTimes(2);
+        expect(result.current.chats[0]?.messages).toHaveLength(1);
+        expect(result.current.chats[0]?.messages[0]).toEqual(
+            expect.objectContaining({
+                role: 'assistant',
+                content: 'Masaustunde 8 oge var.',
+            })
+        );
+        expect(result.current.chats[0]?.messages.some(message => message.role === 'system' || message.role === 'tool')).toBe(false);
+    });
+
+    it('merges split tool call chunks before executing tools', async () => {
+        mockGetToolDefinitions.mockResolvedValue([{
+            type: 'function',
+            function: {
+                name: 'list_directory',
+                description: 'Lists files',
+                parameters: {
+                    type: 'object',
+                    properties: {
+                        path: { type: 'string' },
+                    },
+                    required: ['path'],
+                },
+            },
+        }]);
+        mockChatStream
+            .mockImplementationOnce(() => createSplitToolTurnStream())
+            .mockImplementationOnce(() => createFinalAnswerStream());
+        mockExecuteTools.mockResolvedValue({
+            toolCallId: 'tool-call-1',
+            name: 'list_directory',
+            success: true,
+            result: [{ name: 'file.txt', isDirectory: false }],
+        });
+
+        const { result } = renderHook(() => {
+            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const chatGenerator = useChatGenerator({
+                chats,
+                setChats,
+                selectedModel: 'model-a',
+                selectedProvider: 'copilot',
+                language: 'tr',
+                t: (key: string) => key,
+                handleSpeak: vi.fn(),
+                autoReadEnabled: false,
+                formatChatError: (err: CatchError) =>
+                    err instanceof Error ? err.message : String(err ?? ''),
+                systemMode: 'agent',
+            });
+
+            return {
+                ...chatGenerator,
+                chats,
+            };
+        });
+
+        await act(async () => {
+            await result.current.generateResponse('chat-1', {
+                ...createUserMessage(),
+                content: 'Masaustumde kac adet dosya var?',
+            });
+        });
+
+        expect(mockExecuteTools).toHaveBeenCalledWith(
+            'list_directory',
+            { path: 'C:/Users/agnes/Desktop' },
+            'tool-call-1'
+        );
+    });
+
+    it('normalizes primitive tool arguments to an empty object', async () => {
+        mockGetToolDefinitions.mockResolvedValue([{
+            type: 'function',
+            function: {
+                name: 'get_system_info',
+                description: 'Gets system info',
+                parameters: {
+                    type: 'object',
+                    properties: {},
+                },
+            },
+        }]);
+        mockChatStream
+            .mockImplementationOnce(() => createPrimitiveArgsToolTurnStream())
+            .mockImplementationOnce(() => createFinalAnswerStream());
+        mockExecuteTools.mockResolvedValue({
+            toolCallId: 'tool-call-primitive',
+            name: 'get_system_info',
+            success: true,
+            result: { platform: 'win32' },
+        });
+
+        const { result } = renderHook(() => {
+            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const chatGenerator = useChatGenerator({
+                chats,
+                setChats,
+                selectedModel: 'model-a',
+                selectedProvider: 'copilot',
+                language: 'tr',
+                t: (key: string) => key,
+                handleSpeak: vi.fn(),
+                autoReadEnabled: false,
+                formatChatError: (err: CatchError) =>
+                    err instanceof Error ? err.message : String(err ?? ''),
+                systemMode: 'agent',
+            });
+
+            return {
+                ...chatGenerator,
+                chats,
+            };
+        });
+
+        await act(async () => {
+            await result.current.generateResponse('chat-1', {
+                ...createUserMessage(),
+                content: 'Sistem bilgini soyle',
+            });
+        });
+
+        expect(mockExecuteTools).toHaveBeenCalledWith(
+            'get_system_info',
+            {},
+            'tool-call-primitive'
+        );
+    });
+
+    it('injects active workspace path as cwd for execute_command when missing', async () => {
+        mockGetToolDefinitions.mockResolvedValue([{
+            type: 'function',
+            function: {
+                name: 'execute_command',
+                description: 'Runs shell command',
+                parameters: {
+                    type: 'object',
+                    properties: {
+                        command: { type: 'string' },
+                        cwd: { type: 'string' },
+                    },
+                },
+            },
+        }]);
+        mockChatStream
+            .mockImplementationOnce(() => createExecuteCommandToolTurnStream())
+            .mockImplementationOnce(() => createFinalAnswerStream());
+        mockExecuteTools.mockResolvedValue({
+            toolCallId: 'tool-call-command',
+            name: 'execute_command',
+            success: true,
+            result: 'ok',
+        });
+
+        const { result } = renderHook(() => {
+            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const chatGenerator = useChatGenerator({
+                chats,
+                setChats,
+                selectedModel: 'model-a',
+                selectedProvider: 'copilot',
+                language: 'tr',
+                t: (key: string) => key,
+                handleSpeak: vi.fn(),
+                autoReadEnabled: false,
+                formatChatError: (err: CatchError) =>
+                    err instanceof Error ? err.message : String(err ?? ''),
+                systemMode: 'agent',
+                activeWorkspacePath: 'C:/Users/agnes/Desktop/projects/tengra',
+            });
+
+            return {
+                ...chatGenerator,
+                chats,
+            };
+        });
+
+        await act(async () => {
+            await result.current.generateResponse('chat-1', {
+                ...createUserMessage(),
+                content: 'calistir',
+            });
+        });
+
+        expect(mockExecuteTools).toHaveBeenCalledWith(
+            'execute_command',
+            { command: 'Get-ChildItem', cwd: 'C:/Users/agnes/Desktop/projects/tengra' },
+            'tool-call-command'
+        );
+    });
+
+    it('does not execute malformed tool calls missing id and function name', async () => {
+        mockGetToolDefinitions.mockResolvedValue([
+            {
+                type: 'function',
+                function: {
+                    name: 'list_directory',
+                    description: 'List directory contents',
+                    parameters: {
+                        type: 'object',
+                        properties: { path: { type: 'string' } },
+                    },
+                },
+            },
+        ]);
+        mockChatStream.mockImplementationOnce(() => createInvalidToolTurnStream());
+
+        const { result } = renderHook(() => {
+            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const chatGenerator = useChatGenerator({
+                chats,
+                setChats,
+                selectedModel: 'model-a',
+                selectedProvider: 'copilot',
+                language: 'tr',
+                t: (key: string) => key,
+                handleSpeak: vi.fn(),
+                autoReadEnabled: false,
+                formatChatError: (err: CatchError) =>
+                    err instanceof Error ? err.message : String(err ?? ''),
+                systemMode: 'agent',
+            });
+
+            return {
+                ...chatGenerator,
+                chats,
+            };
+        });
+
+        await act(async () => {
+            await result.current.generateResponse('chat-1', {
+                ...createUserMessage(),
+                content: 'Masaustumdeki dosyalari listele',
+            });
+        });
+
+        expect(mockExecuteTools).not.toHaveBeenCalled();
+        expect(result.current.chats[0]?.messages[0]?.content).toContain('chat.error');
+    });
+
+    it('falls back to streamed text when malformed tool calls arrive with content', async () => {
+        mockGetToolDefinitions.mockResolvedValue([
+            {
+                type: 'function',
+                function: {
+                    name: 'list_directory',
+                    description: 'List directory contents',
+                    parameters: {
+                        type: 'object',
+                        properties: { path: { type: 'string' } },
+                    },
+                },
+            },
+        ]);
+        mockChatStream.mockImplementationOnce(() => createInvalidToolWithTextTurnStream());
+
+        const { result } = renderHook(() => {
+            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const chatGenerator = useChatGenerator({
+                chats,
+                setChats,
+                selectedModel: 'model-a',
+                selectedProvider: 'copilot',
+                language: 'tr',
+                t: (key: string) => key,
+                handleSpeak: vi.fn(),
+                autoReadEnabled: false,
+                formatChatError: (err: CatchError) =>
+                    err instanceof Error ? err.message : String(err ?? ''),
+                systemMode: 'agent',
+            });
+
+            return {
+                ...chatGenerator,
+                chats,
+            };
+        });
+
+        await act(async () => {
+            await result.current.generateResponse('chat-1', {
+                ...createUserMessage(),
+                content: 'Masaustumdeki dosyalari listele',
+            });
+        });
+
+        expect(mockExecuteTools).not.toHaveBeenCalled();
+        expect(result.current.chats[0]?.messages[0]?.content).toContain('Dizini kontrol ediyorum...');
+    });
+
+    it('continues tool loop with synthetic tool error outputs when tool execution fails', async () => {
+        mockGetToolDefinitions.mockResolvedValue([
+            {
+                type: 'function',
+                function: {
+                    name: 'list_directory',
+                    description: 'List directory contents',
+                    parameters: {
+                        type: 'object',
+                        properties: { path: { type: 'string' } },
+                    },
+                },
+            },
+        ]);
+        mockChatStream
+            .mockImplementationOnce(() => createToolTurnStream())
+            .mockImplementationOnce(() => createFinalAnswerStream());
+        mockExecuteTools.mockRejectedValue(new Error('Tool backend unavailable'));
+
+        const { result } = renderHook(() => {
+            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const chatGenerator = useChatGenerator({
+                chats,
+                setChats,
+                selectedModel: 'model-a',
+                selectedProvider: 'copilot',
+                language: 'tr',
+                t: (key: string) => key,
+                handleSpeak: vi.fn(),
+                autoReadEnabled: false,
+                formatChatError: (err: CatchError) =>
+                    err instanceof Error ? err.message : String(err ?? ''),
+                systemMode: 'agent',
+            });
+
+            return {
+                ...chatGenerator,
+                chats,
+            };
+        });
+
+        await act(async () => {
+            await result.current.generateResponse('chat-1', {
+                ...createUserMessage(),
+                content: 'Masaustumdeki dosyalari listele',
+            });
+        });
+
+        expect(mockExecuteTools).toHaveBeenCalledTimes(1);
+        expect(mockChatStream).toHaveBeenCalledTimes(2);
+        expect(result.current.chats[0]?.messages[0]?.content).toContain('Masaustunde 8 oge var.');
+    });
+
+    it('breaks repeated identical tool loop and forces final no-tools answer', async () => {
+        mockGetToolDefinitions.mockResolvedValue([
+            {
+                type: 'function',
+                function: {
+                    name: 'get_system_info',
+                    description: 'Get system info',
+                    parameters: {
+                        type: 'object',
+                        properties: {},
+                    },
+                },
+            },
+        ]);
+        mockChatStream
+            .mockImplementationOnce(() => createSameToolTurnStream())
+            .mockImplementationOnce(() => createSameToolTurnStream())
+            .mockImplementationOnce(() => createSameToolTurnStream())
+            .mockImplementationOnce(() => createFinalAnswerStream());
+        mockExecuteTools.mockResolvedValue({
+            toolCallId: 'tool-call-repeated',
+            name: 'get_system_info',
+            success: true,
+            result: { platform: 'win32' },
+        });
+
+        const { result } = renderHook(() => {
+            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const chatGenerator = useChatGenerator({
+                chats,
+                setChats,
+                selectedModel: 'model-a',
+                selectedProvider: 'codex',
+                language: 'tr',
+                t: (key: string) => key,
+                handleSpeak: vi.fn(),
+                autoReadEnabled: false,
+                formatChatError: (err: CatchError) =>
+                    err instanceof Error ? err.message : String(err ?? ''),
+                systemMode: 'agent',
+            });
+
+            return {
+                ...chatGenerator,
+                chats,
+            };
+        });
+
+        await act(async () => {
+            await result.current.generateResponse('chat-1', {
+                ...createUserMessage(),
+                content: 'Sistemi kontrol et',
+            });
+        });
+
+        expect(mockExecuteTools).toHaveBeenCalledTimes(3);
+        expect(mockChatStream).toHaveBeenCalledTimes(4);
+        expect(mockChatStream.mock.calls[3][0]).toEqual(expect.objectContaining({
+            tools: [],
+        }));
+        expect(result.current.chats[0]?.messages[0]?.content).not.toContain('chat.error');
+        expect(result.current.chats[0]?.messages[0]?.toolCalls).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ id: 'tool-call-repeated' }),
+            ])
+        );
+    });
+
+    it('does not expose planning tools in standard chat agent mode', async () => {
+        mockGetToolDefinitions.mockResolvedValue([
+            {
+                type: 'function',
+                function: {
+                    name: 'propose_plan',
+                    description: 'plan',
+                    parameters: { type: 'object', properties: {} },
+                },
+            },
+            {
+                type: 'function',
+                function: {
+                    name: 'list_directory',
+                    description: 'list',
+                    parameters: { type: 'object', properties: {} },
+                },
+            },
+        ]);
+
+        const { result } = renderHook(() => {
+            const [chats, setChats] = useState<Chat[]>([createInitialChat()]);
+            const chatGenerator = useChatGenerator({
+                chats,
+                setChats,
+                selectedModel: 'model-a',
+                selectedProvider: 'antigravity',
+                language: 'tr',
+                t: (key: string) => key,
+                handleSpeak: vi.fn(),
+                autoReadEnabled: false,
+                formatChatError: (err: CatchError) =>
+                    err instanceof Error ? err.message : String(err ?? ''),
+                systemMode: 'agent',
+            });
+
+            return {
+                ...chatGenerator,
+                chats,
+            };
+        });
+
+        await act(async () => {
+            await result.current.generateResponse('chat-1', createUserMessage());
+        });
+
+        expect(mockChatStream).toHaveBeenCalledWith(expect.objectContaining({
+            tools: [
+                expect.objectContaining({
+                    function: expect.objectContaining({ name: 'list_directory' }),
+                }),
+            ],
+        }));
+        expect(mockChatStream.mock.calls[0][0].tools).not.toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    function: expect.objectContaining({ name: 'propose_plan' }),
+                }),
+            ])
+        );
     });
 });

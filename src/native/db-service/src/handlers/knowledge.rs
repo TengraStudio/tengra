@@ -1,9 +1,6 @@
 //! Knowledge and vector search handlers
 
-use axum::{
-    extract::State,
-    Json,
-};
+use axum::{extract::State, Json};
 use std::sync::Arc;
 
 use crate::database::Database;

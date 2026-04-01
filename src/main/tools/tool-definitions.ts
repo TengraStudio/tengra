@@ -11,7 +11,7 @@ export const toolDefinitions: ToolDefinition[] = [
                 properties: {
                     path: {
                         type: 'string',
-                        description: 'Path of the file to be read (e.g., C:/Users/user/file.txt)'
+                        description: 'Path of the file to be read. Do not guess Windows usernames. For user-specific folders prefer values derived from get_system_info or paths like %USERPROFILE%/Desktop.'
                     }
                 },
                 required: ['path']
@@ -49,7 +49,7 @@ export const toolDefinitions: ToolDefinition[] = [
                 properties: {
                     path: {
                         type: 'string',
-                        description: 'Path of the folder to be listed'
+                        description: 'Path of the folder to be listed. Do not invent paths like C:/Users/user/...; resolve the real home/profile path first when needed.'
                     }
                 },
                 required: ['path']
@@ -100,7 +100,7 @@ export const toolDefinitions: ToolDefinition[] = [
                 properties: {
                     path: {
                         type: 'string',
-                        description: 'Path of the file to be checked'
+                        description: 'Path of the file to be checked. Avoid hardcoded usernames in Windows paths.'
                     }
                 },
                 required: ['path']
@@ -138,7 +138,7 @@ export const toolDefinitions: ToolDefinition[] = [
                 properties: {
                     path: {
                         type: 'string',
-                        description: 'Path to get information for'
+                        description: 'Path to get information for. On Windows, avoid guessing the username segment in C:/Users/... paths.'
                     }
                 },
                 required: ['path']
@@ -245,7 +245,7 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'get_system_info',
-            description: 'Returns system information (hostname, username, OS, etc.).',
+            description: 'Returns system information (hostname, username, OS, etc.). Use this before constructing user-specific filesystem paths on Windows.',
             parameters: {
                 type: 'object',
                 properties: {},

@@ -1,5 +1,6 @@
 import { appLogger } from '@main/logging/logger';
 import { DataService } from '@main/services/data/data.service';
+import { DatabaseService } from '@main/services/data/database.service';
 import {
     PROXY_PERFORMANCE_BUDGETS,
     ProxyService
@@ -70,6 +71,7 @@ describe('ProxyService performance instrumentation', () => {
             quotaService: {} as never as QuotaService,
             authService: mockAuthService,
             eventBus: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), emitCustom: vi.fn() } as never as EventBusService,
+            databaseService: {} as never as DatabaseService,
         });
     });
 

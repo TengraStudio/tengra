@@ -154,9 +154,10 @@ export interface ElectronAPI {
         };
         error?: string;
     }>;
-    antigravityLogin: () => Promise<{ url: string; state: string }>;
-    codexLogin: () => Promise<{ url: string; state: string }>;
-    claudeLogin: () => Promise<{ url: string; state: string }>;
+    antigravityLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
+    codexLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
+    claudeLogin: (accountId?: string) => Promise<{ url: string; state: string; accountId: string }>;
+    cancelAuth: (provider: 'antigravity' | 'claude' | 'codex', state: string, accountId: string) => Promise<boolean>;
 
     saveClaudeSession: (
         sessionKey: string,
@@ -980,7 +981,7 @@ export interface ElectronAPI {
     };
 
     getSettings: () => Promise<AppSettings>;
-    saveSettings: (settings: AppSettings) => Promise<AppSettings>;
+    saveSettings: (settings: Partial<AppSettings>) => Promise<AppSettings>;
 
     huggingface: {
         searchModels: (query: string, limit: number, page: number, sort?: string) => Promise<RuntimeValue>;
@@ -1111,40 +1112,6 @@ export interface ElectronAPI {
         chatToText: (chat: Chat, options: RuntimeValue) => Promise<RuntimeValue>;
         chatToPDF: (chat: Chat, options: RuntimeValue) => Promise<RuntimeValue>;
         getContent: (chat: Chat, options: RuntimeValue) => Promise<RuntimeValue>;
-    };
-
-    ideas: {
-        createSession: (config: RuntimeValue) => Promise<RuntimeValue>;
-        getSession: (id: string) => Promise<RuntimeValue>;
-        getSessions: () => Promise<RuntimeValue[]>;
-        cancelSession: (id: string) => Promise<void>;
-        generateMarketPreview: (categories: string[]) => Promise<RuntimeValue>;
-        startResearch: (sessionId: string) => Promise<void>;
-        startGeneration: (sessionId: string) => Promise<void>;
-        enrichIdea: (ideaId: string) => Promise<RuntimeValue>;
-        getIdea: (id: string) => Promise<RuntimeValue>;
-        getIdeas: (sessionId: string) => Promise<RuntimeValue[]>;
-        regenerateIdea: (ideaId: string) => Promise<RuntimeValue>;
-        approveIdea: (ideaId: string, workspacePath: string, selectedName: string) => Promise<RuntimeValue>;
-        rejectIdea: (ideaId: string) => Promise<void>;
-        canGenerateLogo: () => Promise<boolean>;
-        generateLogo: (ideaId: string, options: RuntimeValue) => Promise<string[]>;
-        queryResearch: (ideaId: string, question: string) => Promise<string>;
-        deepResearch: (topic: string, category: string) => Promise<RuntimeValue>;
-        validateIdea: (title: string, description: string, category: string) => Promise<RuntimeValue>;
-        clearResearchCache: () => Promise<void>;
-        scoreIdea: (ideaId: string) => Promise<RuntimeValue>;
-        rankIdeas: (ideaIds: string[]) => Promise<string[]>;
-        compareIdeas: (ideaId1: string, ideaId2: string) => Promise<RuntimeValue>;
-        quickScore: (title: string, description: string, category: string) => Promise<RuntimeValue>;
-        deleteIdea: (ideaId: string) => Promise<void>;
-        deleteSession: (sessionId: string) => Promise<void>;
-        archiveIdea: (ideaId: string) => Promise<void>;
-        restoreIdea: (ideaId: string) => Promise<void>;
-        getArchivedIdeas: (sessionId?: string) => Promise<RuntimeValue[]>;
-        onResearchProgress: (callback: (progress: RuntimeValue) => void) => () => void;
-        onIdeaProgress: (callback: (progress: RuntimeValue) => void) => () => void;
-        onDeepResearchProgress: (callback: (progress: RuntimeValue) => void) => () => void;
     };
 
     session: {

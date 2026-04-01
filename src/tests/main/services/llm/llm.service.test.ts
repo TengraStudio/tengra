@@ -22,7 +22,8 @@ const mockConfigService = { get: vi.fn().mockReturnValue('') };
 const mockKeyRotationService = {
     getApiKey: vi.fn(),
     initializeProviderKeys: vi.fn(),
-    getCurrentKey: vi.fn().mockReturnValue(null)
+    getCurrentKey: vi.fn().mockReturnValue(null),
+    rotateKey: vi.fn()
 };
 const mockRateLimitService = {
     checkRateLimit: vi.fn(),
@@ -136,29 +137,20 @@ describe('LLMService', () => {
             });
         });
 
-        it('should retry once after token refresh on unauthorized response', async () => {
+        it('should surface unauthorized responses without JS-side refresh retry', async () => {
             service.setOpenAIApiKey('sk-test');
-            mockHttpService.fetch
-                .mockResolvedValueOnce({
-                    ok: false,
-                    status: 401,
-                    text: async () => 'Unauthorized',
-                })
-                .mockResolvedValueOnce({
-                    ok: true,
-                    json: async () => ({
-                        choices: [{ message: { content: 'Retried ok', role: 'assistant' } }],
-                        usage: { completion_tokens: 1 },
-                    }),
-                });
-
-            const response = await service.chatOpenAI([{ role: 'user', content: 'Hi' }], {
-                provider: 'codex',
+            mockHttpService.fetch.mockResolvedValueOnce({
+                ok: false,
+                status: 401,
+                text: async () => 'Unauthorized',
             });
 
-            expect(response.content).toBe('Retried ok');
-            expect(mockTokenService.ensureFreshToken).toHaveBeenCalledWith('codex', true);
-            expect(mockHttpService.fetch).toHaveBeenCalledTimes(2);
+            await expect(service.chatOpenAI([{ role: 'user', content: 'Hi' }], {
+                provider: 'codex',
+            })).rejects.toThrow(ApiError);
+
+            expect(mockTokenService.ensureFreshToken).not.toHaveBeenCalled();
+            expect(mockHttpService.fetch).toHaveBeenCalledTimes(1);
         });
     });
 
@@ -194,11 +186,12 @@ describe('LLMService', () => {
             await service.chat(messages, 'gpt-4o', undefined, 'codex');
 
             expect(mockHttpService.fetch).toHaveBeenCalledWith(
-                expect.stringContaining('http://localhost:8317/api/provider/codex/v1/chat/completions'),
+                expect.stringContaining('http://localhost:8317/v1/chat/completions'),
                 expect.objectContaining({
                     headers: expect.objectContaining({
                         Authorization: 'Bearer test-key'
-                    })
+                    }),
+                    body: expect.stringContaining('"provider":"codex"'),
                 })
             );
         });

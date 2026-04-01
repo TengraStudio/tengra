@@ -1,10 +1,8 @@
 [workspace]
 members = [
-    "token-service",
-    "model-service",
-    "quota-service",
     "memory-service",
-    "db-service"
+    "db-service",
+    "tengra-proxy"
 ]
 resolver = "2"
 

@@ -1,7 +1,6 @@
 import { appLogger } from '@main/logging/logger';
 import { LinkedAccount } from '@main/services/data/database.service';
 import { AuthService } from '@main/services/security/auth.service';
-import { TokenService } from '@main/services/security/token.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { ClaudeQuota, CodexUsage, CopilotQuota, ModelQuotaItem, QuotaInfo, QuotaResponse } from '@shared/types/quota';
@@ -80,22 +79,12 @@ export class QuotaService {
 
     constructor(
         private settingsService: SettingsService,
-        private authService: AuthService,
-        private processManager: import('@main/services/system/process-manager.service').ProcessManagerService,
-        private tokenService: TokenService
+        private authService: AuthService
     ) {
-        this.antigravityHandler = new AntigravityHandler(this.tokenService);
+        this.antigravityHandler = new AntigravityHandler();
         this.codexHandler = new CodexHandler(this.settingsService, this.authService);
         this.claudeHandler = new ClaudeHandler(this.authService);
         this.copilotHandler = new CopilotHandler();
-
-        void this.processManager.startService({
-            name: 'quota-service',
-            executable: 'tengra-quota-service',
-            persistent: true
-        }).catch(err => {
-            appLogger.error('QuotaService', `Failed to start quota service: ${getErrorMessage(err)}`);
-        });
     }
 
     /** Logs a warning if elapsed time exceeds the performance budget. */

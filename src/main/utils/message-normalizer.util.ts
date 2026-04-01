@@ -12,8 +12,16 @@ const MAX_CONTENT_PARTS = 100;
 const MAX_IMAGES = 20;
 
 type OpenCodeInputText = { type: 'input_text'; text: string };
+type OpenCodeOutputText = { type: 'output_text'; text: string };
 type OpenCodeInputImage = { type: 'input_image'; image_url: { url: string } };
-type OpenCodeContentPart = OpenCodeInputText | OpenCodeInputImage;
+type OpenCodeFunctionCall = { type: 'function_call'; call_id: string; name: string; arguments: string };
+type OpenCodeFunctionCallOutput = { type: 'function_call_output'; call_id: string; output: string };
+type OpenCodeContentPart =
+    | OpenCodeInputText
+    | OpenCodeOutputText
+    | OpenCodeInputImage
+    | OpenCodeFunctionCall
+    | OpenCodeFunctionCallOutput;
 
 type NormalizableContentPart = {
     type: string;
@@ -22,11 +30,69 @@ type NormalizableContentPart = {
     source?: { type: 'base64'; media_type: string; data: string };
 };
 
+type ToolCallLike = NonNullable<Message['toolCalls']>[number];
+
 /**
  * Handles message format conversion between different LLM providers.
  * Ensures compatibility across OpenAI, Anthropic, and OpenCode formats.
  */
 export class MessageNormalizer {
+    private static sanitizeToolCalls(toolCalls: Message['toolCalls'] | ChatMessage['tool_calls']): ChatMessage['tool_calls'] {
+        if (!Array.isArray(toolCalls) || toolCalls.length === 0) {
+            return undefined;
+        }
+
+        const normalizedToolCalls = toolCalls
+            .map((toolCall, index) => {
+                const functionName = typeof toolCall.function?.name === 'string'
+                    ? toolCall.function.name.trim()
+                    : '';
+                if (functionName.length === 0) {
+                    return null;
+                }
+
+                const rawArguments = toolCall.function.arguments;
+                const serializedArguments = typeof rawArguments === 'string'
+                    ? rawArguments
+                    : JSON.stringify(rawArguments ?? {});
+
+                return {
+                    ...toolCall,
+                    id: this.resolveToolCallId(toolCall, index),
+                    function: {
+                        ...toolCall.function,
+                        name: functionName,
+                        arguments: serializedArguments,
+                    },
+                };
+            })
+            .filter((toolCall): toolCall is NonNullable<typeof toolCall> => toolCall !== null);
+
+        return normalizedToolCalls.length > 0 ? normalizedToolCalls : undefined;
+    }
+
+    private static resolveToolCallId(toolCall: ToolCallLike, index: number): string {
+        if (typeof toolCall.id === 'string' && toolCall.id.trim().length > 0) {
+            return toolCall.id;
+        }
+
+        const functionName = typeof toolCall.function?.name === 'string' && toolCall.function?.name.trim().length > 0
+            ? toolCall.function.name.trim()
+            : 'tool';
+        return `${functionName}-${index}`;
+    }
+
+    private static sanitizeToolCallId(message: Message | ChatMessage): string | undefined {
+        const rendererToolCallId = (message as Message).toolCallId;
+        if (typeof rendererToolCallId === 'string' && rendererToolCallId.trim().length > 0) {
+            return rendererToolCallId;
+        }
+        const mainToolCallId = (message as ChatMessage).tool_call_id;
+        if (typeof mainToolCallId === 'string' && mainToolCallId.trim().length > 0) {
+            return mainToolCallId;
+        }
+        return undefined;
+    }
     /**
      * Converts generic message objects into OpenAI-compatible format.
      * Enforces a maximum limit on the number of messages processed.
@@ -104,11 +170,16 @@ export class MessageNormalizer {
             };
         }
 
+        const role = message.role as OpenAIMessage['role'];
         return {
-            role: message.role as OpenAIMessage['role'],
+            role,
             content: contentParts,
-            tool_calls: (message as Message).toolCalls,
-            tool_call_id: (message as Message).toolCallId
+            ...(role === 'assistant'
+                ? { tool_calls: this.sanitizeToolCalls((message as Message).toolCalls ?? (message as ChatMessage).tool_calls) }
+                : {}),
+            ...(role === 'tool'
+                ? { tool_call_id: this.sanitizeToolCallId(message) }
+                : {})
         };
     }
 
@@ -121,12 +192,17 @@ export class MessageNormalizer {
      */
     private static normalizeSimpleContent(message: Message | ChatMessage, shouldStripImages: boolean): OpenAIMessage {
         const images = Array.isArray(message.images) ? message.images.filter((img): img is string => !!img) : [];
+        const role = message.role as OpenAIMessage['role'];
+        const toolCallId = this.sanitizeToolCallId(message);
+        const toolCalls = this.sanitizeToolCalls((message as Message).toolCalls ?? (message as ChatMessage).tool_calls);
 
         if (shouldStripImages || images.length === 0) {
             const textContent = typeof message.content === 'string' ? message.content : '';
             return {
-                role: message.role as OpenAIMessage['role'],
+                role,
                 content: textContent,
+                ...(role === 'assistant' ? { tool_calls: toolCalls } : {}),
+                ...(role === 'tool' ? { tool_call_id: toolCallId } : {}),
             };
         }
 
@@ -141,10 +217,10 @@ export class MessageNormalizer {
         this.addImagesToOpenAIParts(parts, images);
 
         return {
-            role: message.role as OpenAIMessage['role'],
+            role,
             content: parts,
-            tool_calls: (message as Message).toolCalls,
-            tool_call_id: (message as Message).toolCallId
+            ...(role === 'assistant' ? { tool_calls: toolCalls } : {}),
+            ...(role === 'tool' ? { tool_call_id: toolCallId } : {})
         };
     }
 
@@ -170,7 +246,12 @@ export class MessageNormalizer {
      * @returns True if valid, false otherwise.
      */
     private static isValidOpenAIMessage(m: OpenAIMessage): boolean {
-        if (m.role === 'tool') { return true; }
+        if (m.role === 'tool') {
+            if (typeof m.tool_call_id !== 'string' || m.tool_call_id.trim().length === 0) {
+                return false;
+            }
+            return typeof m.content === 'string';
+        }
         if (Array.isArray(m.tool_calls) && m.tool_calls.length > 0) { return true; }
         if (typeof m.content === 'string' && m.content.trim() !== '') { return true; }
         if (Array.isArray(m.content) && m.content.length > 0) { return true; }
@@ -257,8 +338,30 @@ export class MessageNormalizer {
 
         for (let i = 0; i < limit; i++) {
             const msg = messages[i];
+            if (msg.role === 'tool') {
+                const toolCallId = this.sanitizeToolCallId(msg);
+                if (!toolCallId) {
+                    continue;
+                }
+                const toolOutput = typeof msg.content === 'string'
+                    ? msg.content
+                    : '';
+                result.push({
+                    role: 'user',
+                    content: [{
+                        type: 'function_call_output',
+                        call_id: toolCallId,
+                        output: toolOutput
+                    }]
+                });
+                continue;
+            }
             const role = (msg.role === 'assistant' ? 'assistant' : 'user') as 'user' | 'assistant';
             const contentParts: OpenCodeContentPart[] = [];
+            const assistantToolCalls = (msg as Message).toolCalls;
+            if (msg.role === 'assistant' && Array.isArray(assistantToolCalls) && assistantToolCalls.length > 0) {
+                this.addAssistantToolCallsToOpenCodeParts(contentParts, assistantToolCalls);
+            }
             this.addContentToOpenCodeParts(contentParts, msg.content, role);
 
             if (contentParts.length > 0) {
@@ -281,10 +384,27 @@ export class MessageNormalizer {
         const textType = role === 'assistant' ? 'output_text' : 'input_text';
 
         if (text) {
-            parts.push({ type: textType as 'input_text', text });
+            parts.push({ type: textType as 'input_text' | 'output_text', text });
         } else if (Array.isArray(content)) {
             // Safe cast assuming compatible structure; validated in loop
             this.processOpenCodeArrayContent(parts, content as NormalizableContentPart[], textType);
+        }
+    }
+
+    private static addAssistantToolCallsToOpenCodeParts(parts: OpenCodeContentPart[], toolCalls: NonNullable<Message['toolCalls']>): void {
+        const limit = Math.min(toolCalls.length, MAX_CONTENT_PARTS);
+        for (let i = 0; i < limit; i++) {
+            const toolCall = toolCalls[i];
+            const callId = this.resolveToolCallId(toolCall, i);
+            if (callId.trim().length === 0 || toolCall.function.name.trim().length === 0) {
+                continue;
+            }
+            parts.push({
+                type: 'function_call',
+                call_id: callId,
+                name: toolCall.function.name,
+                arguments: toolCall.function.arguments
+            });
         }
     }
 

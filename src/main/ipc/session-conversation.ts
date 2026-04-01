@@ -5,7 +5,6 @@ import { appLogger } from '@main/logging/logger';
 import { chatQueueManager, OrchestrationPolicy } from '@main/services/chat-queue.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { ContextRetrievalService } from '@main/services/llm/context-retrieval.service';
-import { CopilotService } from '@main/services/llm/copilot.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { RateLimitService } from '@main/services/security/rate-limit.service';
@@ -14,8 +13,6 @@ import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { CodeIntelligenceService } from '@main/services/workspace/code-intelligence.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { parseAIResponseContent } from '@main/utils/response-parser';
-import { StreamParser } from '@main/utils/stream-parser.util';
 import {
     SESSION_CONVERSATION_CHANNELS,
 } from '@shared/constants/ipc-channels';
@@ -29,7 +26,7 @@ import {
 } from '@shared/schemas/session-conversation-ipc.schema';
 import { Message, ToolDefinition } from '@shared/types/chat';
 import { SystemMode } from '@shared/types/chat';
-import { JsonObject, JsonValue } from '@shared/types/common';
+import { JsonObject } from '@shared/types/common';
 import { SessionCapability, SessionMessageEnvelope, SessionStartOptions } from '@shared/types/session-engine';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { sanitizeObject, sanitizeString } from '@shared/utils/sanitize.util';
@@ -230,7 +227,6 @@ class RAGUtils {
 interface SessionConversationIpcOptions {
     getMainWindow: () => BrowserWindow | null;
     settingsService: SettingsService;
-    copilotService: CopilotService;
     llmService: LLMService;
     proxyService: ProxyService;
     codeIntelligenceService: CodeIntelligenceService;
@@ -277,14 +273,6 @@ class SessionConversationIpcManager {
         const finalMessages = ChatUtils.injectSystemPrompt(sanitized.messages, sanitized.provider, sanitized.model, this.options.settingsService);
 
         try {
-            if (sanitized.provider === 'copilot') {
-                const res = await this.options.copilotService.chat(finalMessages, sanitized.model, sanitized.tools);
-                const content = parseAIResponseContent(res?.content as JsonValue);
-                await this.chatSessionRegistryService.appendMessage(sessionId, this.createAssistantEnvelope(content));
-                await this.chatSessionRegistryService.markCompleted(sessionId);
-                return { content, role: 'assistant' };
-            }
-
             const result = await this.executeGeneralChat(sanitized, finalMessages, sources);
             await this.chatSessionRegistryService.appendMessage(
                 sessionId,
@@ -306,7 +294,7 @@ class SessionConversationIpcManager {
         if (sanitized.provider === 'opencode') {
             const res = await this.options.llmService.chatOpenCode(finalMessages, sanitized.model, sanitized.tools);
             await this.recordTokens(sanitized, res, finalMessages);
-            return { content: res.content, reasoning: res.reasoning_content, images: res.images, role: 'assistant', sources };
+            return { content: res.content, reasoning: res.reasoning_content, images: res.images, role: 'assistant' as const, sources };
         }
 
         const res = await this.options.llmService.chat(finalMessages, sanitized.model, sanitized.tools, sanitized.provider, {
@@ -317,7 +305,7 @@ class SessionConversationIpcManager {
 
         return {
             content: res.content, reasoning: res.reasoning_content, images: res.images, role: 'assistant', sources
-        };
+        } as const;
     }
 
     private async recordTokens(sanitized: { model: string, provider: string, workspaceId?: string, chatId?: string }, res: { promptTokens?: number; completionTokens?: number }, messages: Message[]) {
@@ -401,11 +389,7 @@ class SessionConversationIpcManager {
 
         try {
             await this.chatSessionRegistryService.markStreaming(sanitized.chatId);
-            if (sanitized.provider === 'copilot') {
-                const body = await this.options.copilotService.streamChat(finalMessages, sanitized.model, sanitized.tools);
-                if (!body) { throw new Error('error.copilot.stream_start_failed'); }
-                await this.handleCopilotStream(body as ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>, sanitized.chatId, sanitized.model, event);
-            } else if (sanitized.provider === 'opencode') {
+            if (sanitized.provider === 'opencode') {
                 await this.handleOpencodeStream({ messages: finalMessages, model: sanitized.model, tools: sanitized.tools, chatId: sanitized.chatId, event, signal });
             } else {
                 await this.handleProxyStream({ messages: finalMessages, model: sanitized.model, tools: sanitized.tools, provider: sanitized.provider, chatId: sanitized.chatId, event, systemMode: sanitized.systemMode, workspaceId: sanitized.workspaceId, signal, reasoningEffort });
@@ -564,76 +548,6 @@ class SessionConversationIpcManager {
         const raw = optionsJson?.['reasoningEffort'];
         if (typeof raw !== 'string') { return undefined; }
         return sanitizeString(raw, { maxLength: 20, allowNewlines: false });
-    }
-
-
-    private async handleCopilotStream(streamBody: ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>, chatId: string, model: string, event: IpcMainInvokeEvent) {
-        let fullContent = '';
-        try {
-            const { totalPrompt, totalCompletion, content } = await this.processCopilotStream(streamBody, chatId, event);
-            fullContent = content;
-
-            if (totalPrompt > 0 || totalCompletion > 0) {
-                await this.options.databaseService.addTokenUsage({
-                    chatId,
-                    provider: 'copilot',
-                    model,
-                    tokensSent: totalPrompt,
-                    tokensReceived: totalCompletion
-                });
-            }
-        } catch (error) {
-            appLogger.error('Chat', `[CopilotStream] Error: ${getErrorMessage(error as Error)}`);
-            throw error;
-        } finally {
-            if (fullContent) {
-                await this.options.databaseService.addMessage({
-                    chatId,
-                    role: 'assistant',
-                    content: fullContent,
-                    model,
-                    provider: 'copilot',
-                    timestamp: Date.now()
-                });
-                await this.chatSessionRegistryService.appendMessage(
-                    chatId,
-                    this.createAssistantEnvelope(fullContent, {
-                        model,
-                        provider: 'copilot',
-                    })
-                );
-            }
-        }
-    }
-
-    private async processCopilotStream(streamBody: ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>, chatId: string, event: IpcMainInvokeEvent) {
-        let totalPrompt = 0;
-        let totalCompletion = 0;
-        let fullContent = '';
-
-        for await (const chunk of StreamParser.parseChatStream(streamBody)) {
-            if (chunk.usage) {
-                totalPrompt = chunk.usage.prompt_tokens;
-                totalCompletion = chunk.usage.completion_tokens;
-            }
-            const text = chunk.content ?? chunk.reasoning ?? '';
-            fullContent += text;
-
-            if (chunk.content || chunk.reasoning) {
-                safeSendConversationChunk(event.sender, {
-                    chatId,
-                    content: chunk.content,
-                    reasoning: chunk.reasoning
-                });
-            }
-        }
-
-        // Fallback estimation
-        if (totalCompletion === 0 && fullContent.length > 0) {
-            totalCompletion = estimateTokens(fullContent);
-        }
-
-        return { totalPrompt, totalCompletion, content: fullContent };
     }
 
     private async handleOpencodeStream(params: { messages: Message[], model: string, tools: ToolDefinition[] | undefined, chatId: string, event: IpcMainInvokeEvent, signal?: AbortSignal }) {

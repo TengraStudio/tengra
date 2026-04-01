@@ -10,7 +10,36 @@ import { ipcMain } from 'electron';
  * 
  * @param localImageService - The LocalImageService instance to use.
  */
-export const registerSdCppIpc = (localImageService: LocalImageService) => {
+import { BrowserWindow } from 'electron';
+import { EventBusService } from '@main/services/system/event-bus.service';
+
+/**
+ * Registers SD-CPP related IPC handlers.
+ * 
+ * @param localImageService - The LocalImageService instance to use.
+ * @param getMainWindow - Function to get the main window instance.
+ * @param eventBusService - The event bus service to listen for events.
+ */
+export const registerSdCppIpc = (
+    localImageService: LocalImageService,
+    getMainWindow: () => BrowserWindow | null,
+    eventBusService: EventBusService
+) => {
+    // Forward status and progress events to the renderer
+    eventBusService.on('sd-cpp:status', (status) => {
+        const mainWindow = getMainWindow();
+        if (mainWindow) {
+            mainWindow.webContents.send('sd-cpp:status', status);
+        }
+    });
+
+    eventBusService.on('sd-cpp:progress', (progress) => {
+        const mainWindow = getMainWindow();
+        if (mainWindow) {
+            mainWindow.webContents.send('sd-cpp:progress', progress);
+        }
+    });
+
     /**
      * Get the current status of the SD-CPP runtime
      */

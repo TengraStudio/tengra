@@ -17,11 +17,13 @@ import { AppView } from '@/hooks/useAppState';
 import { useTranslation } from '@/i18n';
 
 interface AppHeaderProps {
-    currentView: AppView;
+    currentView: AppView
+    onOpenSettings: () => void
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
     currentView,
+    onOpenSettings,
 }) => {
     const { currentChatId, currentChatTitle, clearMessages } = useChatHeader();
     const { language } = useAuthLanguage();
@@ -78,6 +80,21 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                             <Eraser className="w-5 h-5 group-hover:rotate-12 transition-transform" />
                         </button>
                     )}
+
+                    <button
+                        onClick={onOpenSettings}
+                        className={`
+                            p-2 rounded-lg transition-colors
+                            ${currentView === 'settings'
+                                ? 'text-primary bg-primary/10'
+                                : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                            }
+                        `}
+                        title={t('nav.settings')}
+                        aria-label={t('nav.settings')}
+                    >
+                        <SettingsIcon className="w-4 h-4" />
+                    </button>
 
                     <div className="h-4 w-px bg-border/50 mx-2" />
 

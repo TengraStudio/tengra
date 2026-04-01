@@ -397,12 +397,22 @@ export class McpPluginService extends BaseService {
             };
         }
 
-        // Check if plugin is enabled (user must explicitly enable MCPs)
+        // Check if plugin is enabled
         const settings = this.settingsService.getSettings();
+        const disabledServers = settings.mcpDisabledServers ?? [];
+        if (disabledServers.includes(pluginName)) {
+            return {
+                success: false,
+                error: interpolateMessage(MCP_PLUGIN_ERROR_MESSAGE.PLUGIN_DISABLED, { pluginName }),
+                messageKey: MCP_PLUGIN_MESSAGE_KEY.PLUGIN_DISABLED,
+                messageParams: { pluginName }
+            };
+        }
+
         const userServers = settings.mcpUserServers ?? [];
         const serverConfig = userServers.find(s => s.id === pluginName || s.name === pluginName);
 
-        // If it's a user server, check if it's enabled
+        // If it's a user server, check if it's explicitly enabled in its own config too
         if (serverConfig && !serverConfig.enabled) {
             return {
                 success: false,

@@ -37,17 +37,6 @@ export function resolveProvider(model: string, provider?: string): string {
 }
 
 /**
- * Maps user-facing provider names to AMP proxy provider identifiers.
- */
-function toAmpProvider(provider: string): string {
-    const p = provider.trim().toLowerCase();
-    if (p === 'claude') { return 'anthropic'; }
-    if (p === 'gemini') { return 'google'; }
-    if (p === 'codex' || p === 'openai' || p === 'anthropic' || p === 'google' || p === 'antigravity') { return p; }
-    return 'openai';
-}
-
-/**
  * Normalizes a model name by stripping provider prefixes.
  */
 export function normalizeModelName(model: string, provider?: string): string {
@@ -141,7 +130,7 @@ export async function getRouteConfig(
     }
 
     if (p.includes('antigravity')) {
-        const proxyUrl = buildProxyBaseUrl('antigravity', deps.proxyService);
+        const proxyUrl = buildProxyBaseUrl(deps.proxyService);
         const proxyKey = await deps.proxyService.getProxyKey();
         return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider, temperature: temp, workspaceRoot };
     }
@@ -154,17 +143,23 @@ export async function getRouteConfig(
     }
 
     if (p.includes('codex') || p.includes('openai')) {
-        const proxyUrl = buildProxyBaseUrl(toAmpProvider(provider), deps.proxyService);
+        const proxyUrl = buildProxyBaseUrl(deps.proxyService);
         const proxyKey = await deps.proxyService.getProxyKey();
         return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider, temperature: temp, workspaceRoot };
+    }
+
+    if (p.includes('copilot') || p.includes('github')) {
+        const proxyUrl = buildProxyBaseUrl(deps.proxyService);
+        const proxyKey = await deps.proxyService.getProxyKey();
+        return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider: 'copilot', temperature: temp, workspaceRoot };
     }
 
     return { model, tools, provider, temperature: temp, workspaceRoot, baseUrl: undefined, apiKey: undefined };
 }
 
 /** Builds the embedded proxy base URL for a given provider. */
-function buildProxyBaseUrl(ampProvider: string, proxyService: ProxyService): string {
+function buildProxyBaseUrl(proxyService: ProxyService): string {
     const proxyStatus = proxyService.getEmbeddedProxyStatus();
     const port = proxyStatus.port ?? 8317;
-    return `http://localhost:${port}/api/provider/${ampProvider}/v1`;
+    return `http://localhost:${port}/v1`;
 }

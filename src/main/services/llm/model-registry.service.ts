@@ -3,9 +3,10 @@ import { BaseService } from '@main/services/base.service';
 import { HuggingFaceService } from '@main/services/llm/huggingface.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
 import { resolveContextWindowForModel } from '@main/services/llm/model-context-window.data';
+import { OllamaService } from '@main/services/llm/ollama.service';
 import { RegionalPreferenceService } from '@main/services/llm/regional-preference.service';
 import { getTokenEstimationService } from '@main/services/llm/token-estimation.service';
-import { ProxyService } from '@main/services/proxy/proxy.service';
+import { ProxyService, ProxyTelemetryEvent } from '@main/services/proxy/proxy.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { TokenService } from '@main/services/security/token.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
@@ -52,6 +53,21 @@ export interface ModelProviderInfo {
     [key: string]: JsonValue | undefined;
 }
 
+interface ProxyCatalogModel {
+    id: string;
+    name?: string;
+    provider: string;
+    description?: string;
+    quotaInfo?: ModelProviderInfo['quotaInfo'];
+    owned_by?: string;
+    ownedBy?: string;
+}
+
+interface ProxyCatalogSnapshot {
+    mappedModels: ModelProviderInfo[];
+    rawModels: ProxyCatalogModel[];
+}
+
 export interface ModelRegistryDependencies {
     processManager: ProcessManagerService;
     jobScheduler: JobSchedulerService;
@@ -60,15 +76,55 @@ export interface ModelRegistryDependencies {
     eventBus: EventBusService;
     authService: AuthService;
     tokenService: TokenService;
+    ollamaService: OllamaService;
     localImageService: LocalImageService;
     huggingFaceService: HuggingFaceService;
 }
 
 /**
- * Aggregates models from native model-service, proxy providers, and local fallbacks.
+ * Aggregates models from tengra-proxy, proxy providers, and local fallbacks.
  * Also keeps token context-window limits in sync with TokenEstimationService.
  */
 export class ModelRegistryService extends BaseService {
+    private static readonly OPENCODE_MODELS_URL = 'https://opencode.ai/zen/v1/models';
+    private static readonly OPENCODE_DEFAULT_API_KEY = 'public';
+    private static readonly OPENCODE_REQUEST_TIMEOUT_MS = 8000;
+    private static readonly OPENCODE_FREE_PRICE = 0;
+    private static readonly OPENCODE_PRICING_RULES: ReadonlyArray<{
+        match: RegExp;
+        input: number;
+        output: number;
+    }> = [
+            { match: /big[\s-_]?pickle/i, input: 0, output: 0 },
+            { match: /minimax[\s-_]?m2\.5[\s-_]?free/i, input: 0, output: 0 },
+            { match: /gpt[\s-_]?5[\s-_]?nano/i, input: 0, output: 0 },
+            { match: /minimax[\s-_]?m2\.5(?![\s-_]?free)/i, input: 0.30, output: 1.20 },
+            { match: /minimax[\s-_]?m2\.1/i, input: 0.30, output: 1.20 },
+            { match: /glm[\s-_]?5/i, input: 1.00, output: 3.20 },
+            { match: /glm[\s-_]?4\.7/i, input: 0.60, output: 2.20 },
+            { match: /glm[\s-_]?4\.6/i, input: 0.60, output: 2.20 },
+            { match: /kimi[\s-_]?k2\.5/i, input: 0.60, output: 3.00 },
+            { match: /kimi[\s-_]?k2[\s-_]?thinking/i, input: 0.40, output: 2.50 },
+            { match: /kimi[\s-_]?k2(?!\.5)/i, input: 0.40, output: 2.50 },
+            { match: /qwen3[\s-_]?coder[\s-_]?480b/i, input: 0.45, output: 1.50 },
+            { match: /gemini[\s-_]?3(\.1)?[\s-_]?pro/i, input: 2.00, output: 12.00 },
+            { match: /gemini[\s-_]?3[\s-_]?flash/i, input: 0.50, output: 3.00 },
+            { match: /gpt[\s-_]?5\.4/i, input: 2.50, output: 15.00 },
+            { match: /gpt[\s-_]?5\.3[\s-_]?codex/i, input: 1.75, output: 14.00 },
+            { match: /gpt[\s-_]?5\.2([\s-_]?codex)?/i, input: 1.75, output: 14.00 },
+            { match: /gpt[\s-_]?5\.1[\s-_]?codex[\s-_]?mini/i, input: 0.25, output: 2.00 },
+            { match: /gpt[\s-_]?5\.1[\s-_]?codex[\s-_]?max/i, input: 1.25, output: 10.00 },
+            { match: /gpt[\s-_]?5\.1([\s-_]?codex)?/i, input: 1.07, output: 8.50 },
+            { match: /gpt[\s-_]?5([\s-_]?codex)?/i, input: 1.07, output: 8.50 },
+            { match: /claude[\s-_]?opus[\s-_]?4\.6/i, input: 5.00, output: 25.00 },
+            { match: /claude[\s-_]?opus[\s-_]?4\.5/i, input: 5.00, output: 25.00 },
+            { match: /claude[\s-_]?opus[\s-_]?4\.1/i, input: 15.00, output: 75.00 },
+            { match: /claude[\s-_]?sonnet[\s-_]?4\.6/i, input: 3.00, output: 15.00 },
+            { match: /claude[\s-_]?sonnet[\s-_]?4\.5/i, input: 3.00, output: 15.00 },
+            { match: /claude[\s-_]?sonnet[\s-_]?4(?![\d.])/i, input: 3.00, output: 15.00 },
+            { match: /claude[\s-_]?haiku[\s-_]?4\.5/i, input: 1.00, output: 5.00 },
+            { match: /claude[\s-_]?haiku[\s-_]?3\.5/i, input: 0.80, output: 4.00 },
+        ];
     private static readonly KNOWN_PROVIDER_IDS: ReadonlySet<string> = new Set([
         'ollama',
         'opencode',
@@ -88,24 +144,29 @@ export class ModelRegistryService extends BaseService {
         FETCH_FAILED: 'MODEL_REGISTRY_FETCH_FAILED',
         MALFORMED_RESPONSE: 'MODEL_REGISTRY_MALFORMED_RESPONSE',
     } as const;
+
     private static readonly PERFORMANCE_BUDGET = {
         cacheRefreshMs: 2000,
         providerFetchMs: 1500,
         maxCachedModels: 5000,
     } as const;
+
     private static readonly UI_MESSAGE_KEYS = {
         ready: 'serviceHealth.modelRegistry.ready',
         empty: 'serviceHealth.modelRegistry.empty',
         failure: 'serviceHealth.modelRegistry.failure',
     } as const;
-    private readonly FETCH_RETRY_POLICY = {
-        maxAttempts: 2,
-        delayMs: 250,
-    } as const;
+
     private static readonly SNAPSHOT_MAX_AGE_MS = 5 * 60 * 1000;
+    private static readonly NVIDIA_RECOVERY_ATTEMPTS = 2;
+    private static readonly NVIDIA_RECOVERY_DELAY_MS = 1500;
+    private static readonly COPILOT_RECOVERY_ATTEMPTS = 2;
+    private static readonly COPILOT_RECOVERY_DELAY_MS = 1500;
+    private static readonly INITIAL_CACHE_WARMUP_DELAY_MS = 15000;
     private cachedModels: ModelProviderInfo[] = [];
     private lastUpdate: number = 0;
     private cacheRefreshPromise: Promise<void> | null = null;
+    private initialWarmupTimeout: ReturnType<typeof setTimeout> | null = null;
     private telemetry = {
         cacheUpdates: 0,
         providerFetchFailures: 0,
@@ -125,9 +186,6 @@ export class ModelRegistryService extends BaseService {
                 await this.updateCache();
             },
             () => {
-                // Get interval from settings, default to 1 hour (3600000 ms)
-                // User asked for capability to set e.g. 5 minutes.
-                // Assuming settings structure has 'modelUpdateInterval' in ms or similar.
                 const settings = this.deps.settingsService.getSettings();
                 return settings.ai?.modelUpdateInterval ?? 60 * 60 * 1000;
             }
@@ -135,17 +193,46 @@ export class ModelRegistryService extends BaseService {
     }
 
     override async initialize(): Promise<void> {
-        // Start the native service process
-        await this.deps.processManager.startService({
-            name: 'model-service',
-            executable: 'tengra-model-service',
-            persistent: true,
+        // Listen for account changes to refresh models
+        this.deps.eventBus.on('account:linked', () => {
+            appLogger.debug('ModelRegistry', 'Account linked, refreshing model cache...');
+            void this.updateCache();
+        });
+        this.deps.eventBus.on('account:updated', () => {
+            appLogger.debug('ModelRegistry', 'Account updated, refreshing model cache...');
+            void this.updateCache();
+        });
+        this.deps.eventBus.on('account:unlinked', () => {
+            appLogger.debug('ModelRegistry', 'Account unlinked, refreshing model cache...');
+            void this.updateCache();
+        });
+        this.deps.eventBus.onCustom(ProxyTelemetryEvent.PROXY_STARTED, () => {
+            appLogger.debug('ModelRegistry', 'Embedded proxy reported ready, refreshing model cache...');
+            void this.updateCache();
         });
 
-        // Initial load if empty
         if (this.cachedModels.length === 0) {
-            appLogger.info('ModelRegistry', 'Initializing model cache...');
-            await this.updateCache();
+            this.scheduleInitialCacheWarmup();
+        }
+    }
+
+    private scheduleInitialCacheWarmup(): void {
+        if (this.initialWarmupTimeout || this.cachedModels.length > 0) {
+            return;
+        }
+
+        appLogger.debug(
+            'ModelRegistry',
+            `Deferring initial model cache warmup by ${ModelRegistryService.INITIAL_CACHE_WARMUP_DELAY_MS}ms`
+        );
+        this.initialWarmupTimeout = setTimeout(() => {
+            this.initialWarmupTimeout = null;
+            appLogger.debug('ModelRegistry', 'Running deferred initial model cache warmup...');
+            void this.updateCache();
+        }, ModelRegistryService.INITIAL_CACHE_WARMUP_DELAY_MS);
+
+        if (typeof this.initialWarmupTimeout.unref === 'function') {
+            this.initialWarmupTimeout.unref();
         }
     }
 
@@ -162,8 +249,9 @@ export class ModelRegistryService extends BaseService {
     private async performCacheUpdate(): Promise<void> {
         this.telemetry.cacheUpdates += 1;
         this.trackTelemetry('model-registry.cache.update.started');
-        appLogger.info('ModelRegistry', 'Updating remote model cache...');
-        this.cachedModels = await this.fetchRemoteModels();
+        appLogger.debug('ModelRegistry', 'Updating remote model cache...');
+        const remoteModels = await this.fetchRemoteModelsWithRecovery();
+        this.cachedModels = this.mergeConnectedProviderModels(remoteModels, this.cachedModels);
         this.lastUpdate = Date.now();
         this.telemetry.lastSuccessfulUpdateAt = this.lastUpdate;
 
@@ -180,7 +268,7 @@ export class ModelRegistryService extends BaseService {
             }
         }
 
-        appLogger.info('ModelRegistry', `Cache updated with ${this.cachedModels.length} models`);
+        appLogger.debug('ModelRegistry', `Cache updated with ${this.cachedModels.length} models`);
         this.trackTelemetry('model-registry.cache.update.completed', {
             modelCount: this.cachedModels.length,
         });
@@ -189,6 +277,116 @@ export class ModelRegistryService extends BaseService {
             count: this.cachedModels.length,
             timestamp: this.lastUpdate,
         });
+    }
+
+    private mergeConnectedProviderModels(
+        nextModels: ModelProviderInfo[],
+        previousModels: ModelProviderInfo[]
+    ): ModelProviderInfo[] {
+        if (!this.shouldPreserveConnectedCopilotModels(nextModels, previousModels)) {
+            return nextModels;
+        }
+
+        const merged = [...nextModels];
+        const seenKeys = new Set(nextModels.map(model => `${model.provider}:${model.id}`));
+        const previousCopilotModels = previousModels.filter(model => this.isCopilotProvider(model.providerCategory ?? model.provider));
+        let preservedCount = 0;
+
+        for (const previousModel of previousCopilotModels) {
+            const modelKey = `${previousModel.provider}:${previousModel.id}`;
+            if (seenKeys.has(modelKey)) {
+                continue;
+            }
+            merged.push(previousModel);
+            seenKeys.add(modelKey);
+            preservedCount += 1;
+        }
+
+        appLogger.debug(
+            'ModelRegistry',
+            `Preserved ${preservedCount} cached Copilot model(s) during transient proxy catalog gap`
+        );
+        return merged;
+    }
+
+    private shouldPreserveConnectedCopilotModels(
+        nextModels: ModelProviderInfo[],
+        previousModels: ModelProviderInfo[]
+    ): boolean {
+        const settings = this.deps.settingsService.getSettings();
+        if (settings.copilot?.connected !== true) {
+            return false;
+        }
+        if (nextModels.some(model => this.isCopilotProvider(model.providerCategory ?? model.provider))) {
+            return false;
+        }
+        return previousModels.some(model => this.isCopilotProvider(model.providerCategory ?? model.provider));
+    }
+
+    private isCopilotProvider(provider: string | undefined): boolean {
+        const normalizedProvider = (provider ?? '').trim().toLowerCase();
+        return normalizedProvider === 'copilot' || normalizedProvider === 'github';
+    }
+
+    private async fetchRemoteModelsWithRecovery(): Promise<ModelProviderInfo[]> {
+        let models = await this.fetchRemoteModels();
+        if (!this.requiresProviderRecovery(models)) {
+            return models;
+        }
+
+        const attempts = this.resolveRecoveryAttemptCount();
+        const delayMs = this.resolveRecoveryDelayMs();
+        for (let attempt = 0; attempt < attempts; attempt += 1) {
+            await this.delay(delayMs);
+            models = await this.fetchRemoteModels();
+            if (!this.requiresProviderRecovery(models)) {
+                return models;
+            }
+        }
+
+        return models;
+    }
+
+    private resolveRecoveryAttemptCount(): number {
+        return Math.max(
+            ModelRegistryService.NVIDIA_RECOVERY_ATTEMPTS,
+            ModelRegistryService.COPILOT_RECOVERY_ATTEMPTS
+        );
+    }
+
+    private resolveRecoveryDelayMs(): number {
+        return Math.max(
+            ModelRegistryService.NVIDIA_RECOVERY_DELAY_MS,
+            ModelRegistryService.COPILOT_RECOVERY_DELAY_MS
+        );
+    }
+
+    private requiresProviderRecovery(models: ModelProviderInfo[]): boolean {
+        return this.requiresNvidiaRecovery(models) || this.requiresCopilotRecovery(models);
+    }
+
+    private requiresNvidiaRecovery(models: ModelProviderInfo[]): boolean {
+        const settings = this.deps.settingsService.getSettings();
+        if (!settings.nvidia?.apiKey?.trim()) {
+            return false;
+        }
+
+        const nvidiaModels = models.filter(model => model.provider === 'nvidia');
+        return nvidiaModels.length <= 1;
+    }
+
+    private requiresCopilotRecovery(models: ModelProviderInfo[]): boolean {
+        const settings = this.deps.settingsService.getSettings();
+        if (settings.copilot?.connected !== true) {
+            return false;
+        }
+
+        const copilotModels = models.filter(model => this.isCopilotProvider(model.providerCategory ?? model.provider));
+        return copilotModels.length === 0;
+    }
+
+    private async delay(ms: number): Promise<void> {
+        await new Promise(resolve => setTimeout(resolve, ms));
     }
 
     private isSnapshotStale(): boolean {
@@ -208,10 +406,20 @@ export class ModelRegistryService extends BaseService {
      */
     /**
      * Get all available models from all sources.
-     * This is a cache-aware wrapper around getRemoteModels.
+     * This is a cache-aware wrapper that merges remote and local installed models.
      */
     async getAllModels(): Promise<ModelProviderInfo[]> {
-        return this.getRemoteModels();
+        const [remoteModels, installedModels] = await Promise.all([
+            this.getRemoteModels(),
+            this.getInstalledModels(),
+        ]);
+
+        const unique = new Map<string, ModelProviderInfo>();
+        for (const model of [...remoteModels, ...installedModels]) {
+            unique.set(`${model.provider}:${model.id}`, model);
+        }
+
+        return Array.from(unique.values());
     }
 
     private getTokenProviderAliases(provider: ModelProviderId): readonly string[] {
@@ -293,76 +501,71 @@ export class ModelRegistryService extends BaseService {
         return undefined;
     }
 
-    private async fetchModelProvider(
-        provider: ModelProviderId,
-        proxyPort?: number,
-        proxyKey?: string,
-        token?: string,
-        plan?: string
-    ): Promise<ModelProviderInfo[]> {
-        return this.fetchFromRustService(provider, token, proxyPort, proxyKey, plan);
-    }
-
-    private async fetchFromRustService(
-        provider: ModelProviderId,
-        token?: string,
-        proxyPort?: number,
-        proxyKey?: string,
-        plan?: string
-    ): Promise<ModelProviderInfo[]> {
+    private async fetchProxyCatalog(): Promise<ProxyCatalogSnapshot> {
         try {
-            const response = await this.fetchRustModelsWithRetry(provider, token, proxyPort, proxyKey, plan);
-
-            appLogger.debug(
-                'ModelRegistry',
-                `Rust response for ${provider}: success=${response.success}, models=${response.models.length}, error=${response.error ?? 'none'}`
-            );
-
-            const hasValidResponseShape =
-                typeof response.success === 'boolean' &&
-                Array.isArray(response.models);
-
-            if (!hasValidResponseShape) {
+            const response = await this.deps.proxyService.getRawModelCatalog();
+            if (!Array.isArray(response.data)) {
                 appLogger.warn(
                     'ModelRegistry',
-                    `[${ModelRegistryService.ERROR_CODES.MALFORMED_RESPONSE}] Ignoring malformed model response for provider ${provider}`
+                    `[${ModelRegistryService.ERROR_CODES.MALFORMED_RESPONSE}] Ignoring malformed proxy model response`
                 );
-                return [];
+                return { mappedModels: [], rawModels: [] };
             }
-
-            if (response.success && response.models.length > 0) {
-                const validModels = response.models.filter(model =>
-                    typeof model.id === 'string' &&
-                    model.id.trim().length > 0 &&
-                    typeof model.provider === 'string' &&
-                    model.provider.trim().length > 0
+            const rawModels = response.data
+                .filter(model =>
+                    typeof model.id === 'string'
+                    && model.id.trim().length > 0
+                    && typeof model.provider === 'string'
+                    && model.provider.trim().length > 0
                 );
-
-                return validModels.map(m => {
-                    const mappedProvider = this.resolveCanonicalProvider(m.provider, provider);
-                    let id = m.id;
-                    if (mappedProvider === 'nvidia' && !id.startsWith('nvidia/')) {
-                        id = `nvidia/${id}`;
-                    }
-                    const normalizedModel: ModelProviderInfo = {
-                        ...m,
-                        id,
-                        provider: mappedProvider,
-                        sourceProvider: provider,
-                        upstreamProvider: m.provider,
-                    };
-                    return this.enrichModelMetadata(normalizedModel);
-                });
-            }
+            return {
+                mappedModels: rawModels.map(model => this.mapProxyModel(model)),
+                rawModels,
+            };
         } catch (e) {
             this.telemetry.providerFetchFailures += 1;
-            this.trackTelemetry('model-registry.provider.fetch.failed', { provider });
+            this.trackTelemetry('model-registry.provider.fetch.failed', { provider: 'proxy' });
             appLogger.debug(
                 'ModelRegistry',
-                `[${ModelRegistryService.ERROR_CODES.FETCH_FAILED}] Failed to fetch ${provider} models from Rust: ${getErrorMessage(e as Error)}`
+                `[${ModelRegistryService.ERROR_CODES.FETCH_FAILED}] Failed to fetch models from tengra-proxy: ${getErrorMessage(e as Error)}`
             );
         }
-        return [];
+        return { mappedModels: [], rawModels: [] };
+    }
+
+    private mapProxyModel(model: ProxyCatalogModel): ModelProviderInfo {
+        const normalizedRawProvider = model.provider.trim().toLowerCase();
+        let requestedProvider: ModelProviderId = 'antigravity';
+        if (normalizedRawProvider === 'ollama') {
+            requestedProvider = 'ollama';
+        } else if (normalizedRawProvider === 'opencode') {
+            requestedProvider = 'opencode';
+        } else if (normalizedRawProvider === 'codex') {
+            requestedProvider = 'codex';
+        } else if (normalizedRawProvider === 'claude' || normalizedRawProvider === 'anthropic') {
+            requestedProvider = 'claude';
+        } else if (normalizedRawProvider === 'copilot' || normalizedRawProvider === 'github') {
+            requestedProvider = 'copilot';
+        } else if (normalizedRawProvider === 'nvidia' || normalizedRawProvider === 'nim' || normalizedRawProvider === 'nim_openai') {
+            requestedProvider = 'nvidia';
+        } else if (normalizedRawProvider === 'openai') {
+            requestedProvider = 'openai';
+        } else if (normalizedRawProvider === 'huggingface') {
+            requestedProvider = 'huggingface';
+        } else if (normalizedRawProvider === 'sd-cpp') {
+            requestedProvider = 'sd-cpp';
+        }
+        const mappedProvider = this.resolveCanonicalProvider(model.provider, requestedProvider);
+        const normalizedId = this.normalizeProxyModelId(mappedProvider, model.id);
+        const normalizedModel: ModelProviderInfo = {
+            id: normalizedId,
+            name: model.name ?? model.id,
+            provider: mappedProvider,
+            sourceProvider: mappedProvider,
+            description: model.description,
+            quotaInfo: model.quotaInfo,
+        };
+        return this.enrichModelMetadata(normalizedModel);
     }
 
     private trackTelemetry(name: SystemEventKey, properties: Record<string, RuntimeValue> = {}): void {
@@ -401,42 +604,6 @@ export class ModelRegistryService extends BaseService {
             lastSuccessfulUpdateAt: this.telemetry.lastSuccessfulUpdateAt,
             lastTelemetryEventAt: this.telemetry.lastTelemetryEventAt,
         };
-    }
-
-    private async fetchRustModelsWithRetry(
-        provider: ModelProviderId,
-        token?: string,
-        proxyPort?: number,
-        proxyKey?: string,
-        plan?: string
-    ): Promise<{
-        success: boolean;
-        models: ModelProviderInfo[];
-        error?: string;
-    }> {
-        let lastError: Error | null = null;
-        for (let attempt = 1; attempt <= this.FETCH_RETRY_POLICY.maxAttempts; attempt++) {
-            try {
-                return await this.deps.processManager.sendRequest<{
-                    success: boolean;
-                    models: ModelProviderInfo[];
-                    error?: string;
-                }>('model-service', {
-                    type: 'FetchModels',
-                    provider,
-                    token,
-                    proxy_port: proxyPort,
-                    proxy_key: proxyKey,
-                    plan,
-                });
-            } catch (error) {
-                lastError = error instanceof Error ? error : new Error(String(error));
-                if (attempt < this.FETCH_RETRY_POLICY.maxAttempts) {
-                    await new Promise(resolve => setTimeout(resolve, this.FETCH_RETRY_POLICY.delayMs));
-                }
-            }
-        }
-        throw (lastError ?? new Error('Unknown model registry fetch error'));
     }
 
     private ensureModelCapabilities(model: ModelProviderInfo): ModelProviderInfo {
@@ -479,47 +646,43 @@ export class ModelRegistryService extends BaseService {
     }
 
     private resolveProviderCategory(provider: string): string {
-        if (provider === 'copilot' || provider === 'github') {
+        const p = provider.toLowerCase();
+        if (p === 'copilot' || p === 'github') {
             return 'copilot';
         }
-        if (provider === 'openai') {
-            return 'openai';
-        }
-        if (provider === 'codex') {
-            return 'codex';
-        }
-        if (provider === 'anthropic' || provider === 'claude') {
-            return 'claude';
-        }
-        if (provider === 'antigravity') {
+        if (p === 'antigravity' || p === 'google' || p === 'gemini') {
             return 'antigravity';
         }
-        if (provider === 'opencode') {
-            return 'opencode';
+        if (p === 'codex' || p === 'openai') {
+            return 'codex';
         }
-        if (provider === 'ollama') {
-            return 'ollama';
+        if (p === 'claude' || p === 'anthropic') {
+            return 'claude';
         }
-        if (provider === 'nvidia') {
-            return 'nvidia';
-        }
-        return 'custom';
+        return p;
     }
 
     private resolveCanonicalProvider(rawProvider: string, requestedProvider: ModelProviderId): string {
         const raw = rawProvider.trim().toLowerCase();
-        const requested = requestedProvider === 'anthropic' ? 'claude' : requestedProvider;
-        if (raw === 'anthropic') {
-            return 'claude';
-        }
+
         if (raw === 'github') {
             return 'copilot';
+        }
+        if (raw === 'google' || raw === 'gemini') {
+            return 'antigravity';
+        }
+        if (raw === 'openai') {
+            return 'codex';
+        }
+        if (raw === 'anthropic') {
+            return 'claude';
         }
         if (raw === 'nvidia_key' || raw === 'nim' || raw === 'nim_openai') {
             return 'nvidia';
         }
+
         if (raw === '' || !ModelRegistryService.KNOWN_PROVIDER_IDS.has(raw)) {
-            return requested;
+            return requestedProvider;
         }
         return raw;
     }
@@ -572,6 +735,10 @@ export class ModelRegistryService extends BaseService {
 
     /** Clears the model cache and resets telemetry counters. */
     override async cleanup(): Promise<void> {
+        if (this.initialWarmupTimeout) {
+            clearTimeout(this.initialWarmupTimeout);
+            this.initialWarmupTimeout = null;
+        }
         this.cachedModels = [];
         this.lastUpdate = 0;
         this.logInfo('Model registry service cleaned up');
@@ -582,6 +749,10 @@ export class ModelRegistryService extends BaseService {
      */
     async getRemoteModels(): Promise<ModelProviderInfo[]> {
         if (this.cachedModels.length === 0) {
+            if (this.initialWarmupTimeout) {
+                clearTimeout(this.initialWarmupTimeout);
+                this.initialWarmupTimeout = null;
+            }
             await this.updateCache();
             return this.cachedModels;
         }
@@ -600,68 +771,29 @@ export class ModelRegistryService extends BaseService {
     }
 
     private async fetchRemoteModels(): Promise<ModelProviderInfo[]> {
-        const proxyPort = this.deps.proxyService.getEmbeddedProxyStatus().port ?? 8317;
-        const proxyKey = await this.deps.proxyService.getProxyKey();
-
-        const promises: Promise<ModelProviderInfo[]>[] = [
-            this.fetchModelProvider('ollama', proxyPort, proxyKey),
-            this.fetchModelProvider('opencode', proxyPort, proxyKey),
-        ];
-
-        const cloudProviders: ModelProviderId[] = [
-            'antigravity',
-            'codex',
-            'claude',
-            'copilot',
-            'nvidia',
-            'openai',
-        ];
-
-        for (const p of cloudProviders) {
-            try {
-                await this.deps.tokenService.ensureFreshToken(p);
-            } catch (err) {
-                appLogger.warn('ModelRegistry', `Token refresh failed for ${p}: ${getErrorMessage(err)}`);
-            }
-
-            const token = await this.resolveProviderToken(p);
-            if (token) {
-                let plan: string | undefined;
-                if (p === 'copilot') {
-                    const account = await this.deps.authService.getActiveAccountFull('copilot');
-                    plan = account?.metadata?.plan as string | undefined;
-                }
-                promises.push(this.fetchModelProvider(p, proxyPort, proxyKey, token, plan));
-            }
-        }
-
-        const results = await Promise.all(promises);
-        const all = results.flat();
-
-        // Add curated static models
-        const nvidiaToken = await this.resolveProviderToken('nvidia');
-        if (nvidiaToken) {
-            all.push(...this.getNvidiaModels());
-        }
+        const proxyCatalog = await this.fetchProxyCatalog();
+        const all = [...proxyCatalog.mappedModels];
+        const openCodeModels = await this.fetchOpenCodeModels();
+        all.push(...openCodeModels);
 
         const openaiToken = await this.resolveProviderToken('openai');
         if (openaiToken) {
             all.push(...this.getOpenAIImageModels());
         }
-        const mergedWithProxy = await this.mergeProxyRegisteredModels(all);
+        const mergedWithProxy = this.mergeProxyRegisteredModels(all, proxyCatalog.rawModels);
 
         const unique = new Map<string, ModelProviderInfo>();
         mergedWithProxy.forEach(m => {
             const key = `${m.provider}:${m.id}`;
             unique.set(key, m);
         });
- 
+
         const allModels = Array.from(unique.values()).map(model => this.enrichModelMetadata(model));
         const missingContext = allModels.filter(
             model => (model.capabilities?.text_generation ?? true) && !model.contextWindow
         );
         if (missingContext.length > 0) {
-            appLogger.info(
+            appLogger.debug(
                 'ModelRegistry',
                 `Context window unresolved for ${missingContext.length}/${allModels.length} models`
             );
@@ -672,68 +804,130 @@ export class ModelRegistryService extends BaseService {
         return RegionalPreferenceService.applyPreferences(allModels, locale);
     }
 
+    private async fetchOpenCodeModels(): Promise<ModelProviderInfo[]> {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(
+            () => controller.abort(),
+            ModelRegistryService.OPENCODE_REQUEST_TIMEOUT_MS
+        );
+
+        try {
+            const apiKey = process.env.OPENCODE_API_KEY?.trim()
+                || ModelRegistryService.OPENCODE_DEFAULT_API_KEY;
+            const hasUserProvidedOpenCodeKey = apiKey.toLowerCase() !== ModelRegistryService.OPENCODE_DEFAULT_API_KEY;
+            const response = await fetch(ModelRegistryService.OPENCODE_MODELS_URL, {
+                method: 'GET',
+                headers: {
+                    Accept: 'application/json',
+                    Authorization: `Bearer ${apiKey}`,
+                },
+                signal: controller.signal,
+            });
+            if (!response.ok) {
+                return [];
+            }
+            const payload = await response.json() as JsonValue;
+            const parsed = this.parseOpenCodeModels(payload);
+            if (hasUserProvidedOpenCodeKey) {
+                return parsed;
+            }
+            return parsed.filter(model => {
+                const pricing = model.pricing as { input?: number; output?: number } | undefined;
+                return pricing?.input === 0 && pricing?.output === 0;
+            });
+        } catch (e) {
+            this.telemetry.providerFetchFailures += 1;
+            this.trackTelemetry('model-registry.provider.fetch.failed', { provider: 'opencode' });
+            appLogger.debug(
+                'ModelRegistry',
+                `[${ModelRegistryService.ERROR_CODES.FETCH_FAILED}] Failed to fetch OpenCode models: ${getErrorMessage(e as Error)}`
+            );
+            return [];
+        } finally {
+            clearTimeout(timeoutId);
+        }
+    }
+
+    private parseOpenCodeModels(payload: JsonValue): ModelProviderInfo[] {
+        if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+            return [];
+        }
+        const rawData = payload['data'];
+        if (!Array.isArray(rawData)) {
+            return [];
+        }
+
+        return rawData
+            .map(item => {
+                if (!item || typeof item !== 'object' || Array.isArray(item)) {
+                    return null;
+                }
+                const rawId = item['id'];
+                const rawName = item['name'];
+                if (typeof rawId !== 'string' || rawId.trim() === '') {
+                    return null;
+                }
+                const id = rawId.trim();
+                const name = typeof rawName === 'string' && rawName.trim() !== '' ? rawName.trim() : id;
+                const pricing = this.resolveOpenCodePricing(id, name);
+                return this.enrichModelMetadata({
+                    id,
+                    name,
+                    provider: 'opencode',
+                    sourceProvider: 'opencode',
+                    pricing,
+                });
+            })
+            .filter((model): model is ModelProviderInfo => model !== null);
+    }
+
+    private resolveOpenCodePricing(id: string, name: string): { input: number; output: number } | undefined {
+        const searchable = `${id} ${name}`.toLowerCase();
+        const matched = ModelRegistryService.OPENCODE_PRICING_RULES.find(rule => rule.match.test(searchable));
+        if (!matched) {
+            return undefined;
+        }
+        if (matched.input === ModelRegistryService.OPENCODE_FREE_PRICE
+            && matched.output === ModelRegistryService.OPENCODE_FREE_PRICE) {
+            return { input: 0, output: 0 };
+        }
+        return { input: matched.input, output: matched.output };
+    }
+
     /**
      * Get locally installed models
      */
     async getInstalledModels(): Promise<ModelProviderInfo[]> {
-        return this.fetchModelProvider('ollama');
+        try {
+            const models = await this.deps.ollamaService.getModels();
+            return models
+                .filter(model => typeof model.name === 'string' && model.name.trim().length > 0)
+                .map(model => this.enrichModelMetadata({
+                    id: `ollama/${model.name}`,
+                    name: model.name,
+                    provider: 'ollama',
+                    sourceProvider: 'ollama',
+                    contextWindow: this.resolveOllamaContextWindow(model.name),
+                    parameters: model.details?.parameter_size,
+                    capabilities: { text_generation: true },
+                }));
+        } catch (error) {
+            this.telemetry.providerFetchFailures += 1;
+            this.trackTelemetry('model-registry.provider.fetch.failed', { provider: 'ollama' });
+            appLogger.debug(
+                'ModelRegistry',
+                `[${ModelRegistryService.ERROR_CODES.FETCH_FAILED}] Failed to fetch installed Ollama models: ${getErrorMessage(error as Error)}`
+            );
+            return [];
+        }
     }
 
-    /**
-     * Curated NVIDIA catalog fallback used when token-based provider fetch is available.
-     */
-    private getNvidiaModels(): ModelProviderInfo[] {
-        return [
-            {
-                id: 'nvidia/meta/llama-3.1-405b-instruct',
-                name: 'Llama 3.1 405B Instruct',
-                provider: 'nvidia',
-                contextWindow: 128000,
-                capabilities: { text_generation: true },
-            },
-            {
-                id: 'nvidia/meta/llama-3.1-70b-instruct',
-                name: 'Llama 3.1 70B Instruct',
-                provider: 'nvidia',
-                contextWindow: 128000,
-                capabilities: { text_generation: true },
-            },
-            {
-                id: 'nvidia/meta/llama-3.1-8b-instruct',
-                name: 'Llama 3.1 8B Instruct',
-                provider: 'nvidia',
-                contextWindow: 128000,
-                capabilities: { text_generation: true },
-            },
-            {
-                id: 'nvidia/nvidia/llama-3.1-nemotron-70b-instruct',
-                name: 'Llama 3.1 Nemotron 70B',
-                provider: 'nvidia',
-                contextWindow: 128000,
-                capabilities: { text_generation: true },
-            },
-            {
-                id: 'nvidia/nvidia/nemotron-4-340b-instruct',
-                name: 'Nemotron-4 340B Instruct',
-                provider: 'nvidia',
-                contextWindow: 128000,
-                capabilities: { text_generation: true },
-            },
-            {
-                id: 'nvidia/mistralai/mixtral-8x22b-instruct-v0.1',
-                name: 'Mixtral 8x22B Instruct v0.1',
-                provider: 'nvidia',
-                contextWindow: 65536,
-                capabilities: { text_generation: true },
-            },
-            {
-                id: 'nvidia/microsoft/phi-3-medium-4k-instruct',
-                name: 'Phi-3 Medium 4K Instruct',
-                provider: 'nvidia',
-                contextWindow: 4096,
-                capabilities: { text_generation: true },
-            },
-        ];
+    private resolveOllamaContextWindow(modelName: string): number | undefined {
+        return resolveContextWindowForModel({
+            id: `ollama/${modelName}`,
+            name: modelName,
+            provider: 'ollama',
+        });
     }
 
     /**
@@ -764,80 +958,83 @@ export class ModelRegistryService extends BaseService {
         ];
     }
 
-    private async mergeProxyRegisteredModels(models: ModelProviderInfo[]): Promise<ModelProviderInfo[]> {
-        try {
-            const proxyModels = await this.deps.proxyService.getModels();
-            if (!Array.isArray(proxyModels.data) || proxyModels.data.length === 0) {
-                return models;
-            }
-
-            const registeredAntigravityImageIds = new Set<string>();
-            for (const proxyModel of proxyModels.data) {
-                const provider = this.resolveProxyModelProvider(proxyModel);
-                if (provider !== 'antigravity') {
-                    continue;
-                }
-                const modelId = typeof proxyModel.id === 'string' ? proxyModel.id.trim().toLowerCase() : '';
-                if (modelId.includes('image')) {
-                    registeredAntigravityImageIds.add(modelId);
-                }
-            }
-
-            const merged = models.filter(model => {
-                if (model.provider !== 'antigravity') {
-                    return true;
-                }
-
-                // Hide specified models as per user request and sanity checks
-                const modelId = model.id.trim().toLowerCase();
-                const idWithoutPrefix = modelId.replace(/^antigravity\//, '');
-                
-                if (idWithoutPrefix === 'gemini-3.1-flash-lite') {
-                    return false;
-                }
-
-                if (!this.isAntigravityImageModel(model)) {
-                    return true;
-                }
-                if (registeredAntigravityImageIds.size === 0) {
-                    return true;
-                }
-                return registeredAntigravityImageIds.has(modelId);
-            });
-            const existing = new Set(models.map(model => `${model.provider}:${model.id}`));
-
-            for (const proxyModel of proxyModels.data) {
-                const provider = this.resolveProxyModelProvider(proxyModel);
-                if (provider !== 'antigravity') {
-                    continue;
-                }
-
-                const modelId = typeof proxyModel.id === 'string' ? proxyModel.id.trim() : '';
-                if (modelId === '') {
-                    continue;
-                }
-
-                const key = `${provider}:${modelId}`;
-                if (existing.has(key)) {
-                    continue;
-                }
-
-                merged.push(this.enrichModelMetadata({
-                    id: modelId,
-                    name: typeof proxyModel.name === 'string' && proxyModel.name.trim() !== '' ? proxyModel.name : modelId,
-                    provider,
-                    sourceProvider: provider,
-                    description: typeof proxyModel.description === 'string' ? proxyModel.description : undefined,
-                    quotaInfo: proxyModel.quotaInfo,
-                }));
-                existing.add(key);
-            }
-
-            return merged;
-        } catch (error) {
-            appLogger.debug('ModelRegistry', `Failed to merge proxy registered models: ${getErrorMessage(error as Error)}`);
+    private mergeProxyRegisteredModels(
+        models: ModelProviderInfo[],
+        proxyModels: ProxyCatalogModel[]
+    ): ModelProviderInfo[] {
+        if (proxyModels.length === 0) {
             return models;
         }
+
+        const registeredImageIdsByProvider: Record<string, Set<string>> = {};
+        for (const proxyModel of proxyModels) {
+            const provider = this.resolveProxyModelProvider(proxyModel);
+            if (!registeredImageIdsByProvider[provider]) {
+                registeredImageIdsByProvider[provider] = new Set();
+            }
+            const modelId = typeof proxyModel.id === 'string' ? proxyModel.id.trim().toLowerCase() : '';
+            if (modelId.includes('image')) {
+                registeredImageIdsByProvider[provider].add(modelId);
+            }
+        }
+
+        const merged = models.filter(model => {
+            const provider = model.provider;
+
+            if (model.capabilities?.image_generation === true || this.isAntigravityImageModel(model)) {
+                const modelId = model.id.trim().toLowerCase();
+                const registeredImageIds = registeredImageIdsByProvider[provider];
+
+                if (registeredImageIds && registeredImageIds.size > 0 && !registeredImageIds.has(modelId)) {
+                    return false;
+                }
+            }
+
+            const modelId = model.id.trim().toLowerCase();
+            const idWithoutPrefix = modelId.replace(/^[a-z-]+\//, '');
+
+            if (idWithoutPrefix === 'gemini-3.1-flash-lite') {
+                return false;
+            }
+
+            return true;
+        });
+        const existing = new Set(merged.map(model => `${model.provider}:${model.id}`));
+
+        for (const proxyModel of proxyModels) {
+            const provider = this.resolveProxyModelProvider(proxyModel);
+            const modelId = typeof proxyModel.id === 'string'
+                ? this.normalizeProxyModelId(provider, proxyModel.id)
+                : '';
+            if (modelId === '') {
+                continue;
+            }
+
+            const key = `${provider}:${modelId}`;
+            if (existing.has(key)) {
+                continue;
+            }
+
+            merged.push(this.enrichModelMetadata({
+                id: modelId,
+                name: typeof proxyModel.name === 'string' && proxyModel.name.trim() !== '' ? proxyModel.name : modelId,
+                provider: provider as ModelProviderId,
+                sourceProvider: provider as ModelProviderId,
+                description: typeof proxyModel.description === 'string' ? proxyModel.description : undefined,
+                quotaInfo: proxyModel.quotaInfo,
+            }));
+            existing.add(key);
+        }
+
+        return merged;
+    }
+
+    private normalizeProxyModelId(provider: string, rawId: string): string {
+        const trimmedId = rawId.trim();
+        if (provider === 'nvidia' && trimmedId !== '' && !trimmedId.startsWith('nvidia/')) {
+            return `nvidia/${trimmedId}`;
+        }
+        return trimmedId;
     }
 
     private isAntigravityImageModel(model: ModelProviderInfo): boolean {
@@ -854,10 +1051,10 @@ export class ModelRegistryService extends BaseService {
         owned_by?: string;
         ownedBy?: string;
         id: string;
-    }): string {
+    }): ModelProviderId {
         const explicitProvider = typeof model.provider === 'string' ? model.provider.trim().toLowerCase() : '';
         if (explicitProvider !== '') {
-            return this.resolveCanonicalProvider(explicitProvider, 'antigravity');
+            return this.resolveCanonicalProvider(explicitProvider, 'antigravity') as ModelProviderId;
         }
 
         const ownedByRaw = typeof model.owned_by === 'string'
@@ -866,10 +1063,31 @@ export class ModelRegistryService extends BaseService {
                 ? model.ownedBy
                 : '';
         const ownedBy = ownedByRaw.trim().toLowerCase();
+
+        // Try to infer provider from ID if ownedBy is missing
+        const fallback = this.inferProviderFromId(model.id);
+
         if (ownedBy !== '') {
-            return this.resolveCanonicalProvider(ownedBy, 'antigravity');
+            return this.resolveCanonicalProvider(ownedBy, fallback) as ModelProviderId;
         }
 
-        return this.resolveCanonicalProvider(model.id, 'antigravity');
+        return this.resolveCanonicalProvider(model.id, fallback) as ModelProviderId;
+    }
+
+    private inferProviderFromId(id: string): ModelProviderId {
+        const lowerId = id.toLowerCase();
+        if (lowerId.includes('gpt') || lowerId.includes('openai') || lowerId.includes('o1') || lowerId.includes('o3')) {
+            return 'codex';
+        }
+        if (lowerId.includes('claude') || lowerId.includes('anthropic')) {
+            return 'claude';
+        }
+        if (lowerId.includes('gemini') || lowerId.includes('google')) {
+            return 'antigravity';
+        }
+        if (lowerId.includes('copilot') || lowerId.includes('github')) {
+            return 'copilot';
+        }
+        return 'antigravity';
     }
 }

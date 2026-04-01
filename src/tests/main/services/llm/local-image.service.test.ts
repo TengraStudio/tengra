@@ -73,6 +73,30 @@ describe('LocalImageService Integration', () => {
     });
 
     describe('Fallback Mechanism', () => {
+        it('should initialize only once even if deferred startup calls it multiple times', async () => {
+            const state = service as never as {
+                state: {
+                    ensureStorageReady: () => Promise<void>;
+                    loadState: () => Promise<void>;
+                    comfyWorkflowTemplates: [];
+                    scheduleTasks: [];
+                };
+            };
+            const ensureStorageReadySpy = vi.spyOn(state.state, 'ensureStorageReady').mockResolvedValue(undefined);
+            const loadStateSpy = vi.spyOn(state.state, 'loadState').mockResolvedValue(undefined);
+            const ensureSDCppReadySpy = vi.spyOn(service, 'ensureSDCppReady').mockResolvedValue({
+                binaryPath: '/path/to/bin',
+                modelPath: '/path/to/model'
+            });
+
+            await service.initialize();
+            await service.initialize();
+
+            expect(ensureStorageReadySpy).toHaveBeenCalledTimes(1);
+            expect(loadStateSpy).toHaveBeenCalledTimes(1);
+            expect(ensureSDCppReadySpy).toHaveBeenCalledTimes(1);
+        });
+
         it('should reject generation when prompt is blank', async () => {
             await expect(service.generateImage({ prompt: '   ' })).rejects.toThrow('Prompt is required');
         }); 

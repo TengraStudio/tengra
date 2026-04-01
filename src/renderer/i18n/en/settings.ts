@@ -14,6 +14,17 @@ const sectionData = {
         "mcpServers": "MCP Servers",
         "accessibility": "Accessibility"
     },
+    "categories": {
+        "general": "General",
+        "security": "Security",
+        "visuals": "Visuals",
+        "ai": "AI",
+        "insights": "Insights",
+        "customization": "Customization",
+        "interaction": "Interaction",
+        "tools": "Tools",
+        "app": "App"
+    },
     "searchPlaceholder": "Search settings...",
     "searchResults": "Found {count} matching setting(s)",
     "noResults": "No settings found",

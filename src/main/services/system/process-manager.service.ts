@@ -214,14 +214,8 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
                 const message = data.toString().trim();
                 const lower = message.toLowerCase();
                 const looksLikeError = /\b(error|failed|fatal|panic|exception)\b/.test(lower);
-                const isKnownProgressLine =
-                    options.name === 'model-service' &&
-                    (lower.includes('scraping page') ||
-                        lower.includes('scraped ') ||
-                        lower.includes('using http auth store on port') ||
-                        lower.includes('starting cliproxyapi'));
 
-                if (looksLikeError && !isKnownProgressLine) {
+                if (looksLikeError) {
                     appLogger.error('ProcessManager', `[${options.name}] stderr: ${message}`);
                     return;
                 }
@@ -401,9 +395,6 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
 
         // Map service names to endpoints
         const endpointMap: Record<string, string> = {
-            'token-service': '/refresh',
-            'quota-service': '/quota',
-            'model-service': '/fetch',
             'memory-service': '/rpc',
         };
 

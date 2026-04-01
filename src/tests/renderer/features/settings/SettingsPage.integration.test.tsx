@@ -21,7 +21,7 @@ const settingsFixture: AppSettings = {
         theme: 'dark',
         resolution: '1920x1080',
         fontSize: 14,
-        onboardingCompleted: true,
+
     },
     proxy: { enabled: true, url: 'http://127.0.0.1:8317', key: '' },
 };

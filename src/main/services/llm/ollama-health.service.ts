@@ -92,7 +92,7 @@ export class OllamaHealthService extends BaseService {
     async checkHealth(): Promise<OllamaStatus> {
         // Prevent race condition: skip if already checking
         if (this.isChecking) {
-            this.logInfo('Health check already in progress, skipping');
+            this.logDebug('Health check already in progress, skipping');
             return this.status;
         }
 

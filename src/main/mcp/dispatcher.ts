@@ -31,10 +31,12 @@ export class McpDispatcher {
         const disabled = settings.mcpDisabledServers ?? [];
 
         return plugins.map(p => ({
+            id: p.id,
             name: p.name,
             description: p.description,
             source: p.source,
             isEnabled: !disabled.includes(p.name),
+            isAlive: p.isAlive,
             actions: p.actions
         }));
     }

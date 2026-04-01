@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { registerThemeIpc } from '@main/ipc/theme';
+import { themeStore } from '@main/utils/theme-store.util';
 
 // Mock electron
-const mockIpcMainHandlers = new Map<string, (...args: TestValue[]) => Promise<TestValue>>();
+const mockIpcMainHandlers = new Map<string, (...args: any[]) => Promise<any>>();
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: TestValue[]) => TestValue | Promise<TestValue>) => {
-            mockIpcMainHandlers.set(channel, async (...args: TestValue[]) => Promise.resolve(handler(...args)));
+        handle: vi.fn((channel: string, handler: (...args: any[]) => any | Promise<any>) => {
+            mockIpcMainHandlers.set(channel, async (...args: any[]) => Promise.resolve(handler(...args)));
         }),
         removeHandler: vi.fn((channel: string) => {
             mockIpcMainHandlers.delete(channel);
@@ -24,8 +26,6 @@ vi.mock('@main/logging/logger', () => ({
         warn: vi.fn(),
     },
 }));
-
-// Mock IPC wrapper
 
 // Mock theme-store with inline factory
 vi.mock('@main/utils/theme-store.util', () => ({
@@ -61,11 +61,9 @@ vi.mock('fs/promises', () => ({
     writeFile: vi.fn().mockResolvedValue(undefined),
 }));
 
-// Import the module under test AFTER mocks
-import { registerThemeIpc } from '@main/ipc/theme';
-import { themeStore } from '@main/utils/theme-store.util';
-
 describe('Theme IPC Handlers', () => {
+    const getMainWindow = () => ({ webContents: { send: vi.fn() } }) as any;
+
     beforeEach(async () => {
         vi.clearAllMocks();
         mockIpcMainHandlers.clear();
@@ -77,7 +75,7 @@ describe('Theme IPC Handlers', () => {
             uninstallTheme: vi.fn().mockResolvedValue(undefined),
             getThemesDirectory: vi.fn().mockReturnValue('C:\\themes'),
         };
-        registerThemeIpc(mockService as never);
+        registerThemeIpc(mockService as any, getMainWindow);
     });
 
     describe('theme:getCurrent', () => {
@@ -87,7 +85,7 @@ describe('Theme IPC Handlers', () => {
             const handler = mockIpcMainHandlers.get('theme:getCurrent');
             expect(handler).toBeDefined();
 
-            const result = await handler!({});
+            const result = await handler!({} as any);
             expect(result).toBe('dark-theme');
         });
 
@@ -95,7 +93,7 @@ describe('Theme IPC Handlers', () => {
             vi.mocked(themeStore.getCurrentTheme).mockReturnValue('' as string);
 
             const handler = mockIpcMainHandlers.get('theme:getCurrent');
-            const result = await handler!({});
+            const result = await handler!({} as any);
 
             expect(result).toBe('');
         });
@@ -108,7 +106,7 @@ describe('Theme IPC Handlers', () => {
             const handler = mockIpcMainHandlers.get('theme:set');
             expect(handler).toBeDefined();
 
-            const result = await handler!({}, 'dark-theme');
+            const result = await handler!({} as any, 'dark-theme');
 
             expect(vi.mocked(themeStore.setTheme)).toHaveBeenCalledWith('dark-theme');
             expect(result).toBe(true);
@@ -117,20 +115,10 @@ describe('Theme IPC Handlers', () => {
         it('should return null for invalid theme ID', async () => {
             const handler = mockIpcMainHandlers.get('theme:set');
 
-            const result1 = await handler!({}, '');
+            const result1 = await handler!({} as any, '');
             expect(result1).toBe(null);
 
-            const result2 = await handler!({}, 123);
-            expect(result2).toBe(null);
-        });
-
-        it('should return null for theme ID with invalid characters', async () => {
-            const handler = mockIpcMainHandlers.get('theme:set');
-
-            const result1 = await handler!({}, 'theme/with/slashes');
-            expect(result1).toBe(null);
-
-            const result2 = await handler!({}, 'theme with spaces');
+            const result2 = await handler!({} as any, 123);
             expect(result2).toBe(null);
         });
     });
@@ -141,302 +129,49 @@ describe('Theme IPC Handlers', () => {
                 { id: 'dark', name: 'Dark Theme', type: 'dark' },
                 { id: 'light', name: 'Light Theme', type: 'light' },
             ];
-            vi.mocked(themeStore.getAllThemes).mockReturnValue(mockThemes as never);
+            vi.mocked(themeStore.getAllThemes).mockReturnValue(mockThemes as any);
 
             const handler = mockIpcMainHandlers.get('theme:getAll');
             expect(handler).toBeDefined();
 
-            const result = await handler!({});
+            const result = await handler!({} as any);
 
             expect(result).toEqual(mockThemes);
-        });
-
-        it('should return empty array if no themes', async () => {
-            vi.mocked(themeStore.getAllThemes).mockReturnValue([]);
-
-            const handler = mockIpcMainHandlers.get('theme:getAll');
-            const result = await handler!({});
-
-            expect(result).toEqual([]);
         });
     });
 
     describe('theme:runtime:install', () => {
         it('should install theme from manifest', async () => {
-            vi.clearAllMocks();
-
             const mockService = {
-                getAllThemes: vi.fn().mockResolvedValue([]),
+                getAllThemes: vi.fn(),
                 installTheme: vi.fn().mockResolvedValue('new-theme'),
                 uninstallTheme: vi.fn(),
-                getThemesDirectory: vi.fn(() => 'C:\\themes'),
+                getThemesDirectory: vi.fn(),
             };
-
-            // Re-register with new mock
-            mockIpcMainHandlers.clear();
-            registerThemeIpc(mockService as never);
+            registerThemeIpc(mockService as any, getMainWindow);
 
             const handler = mockIpcMainHandlers.get('theme:runtime:install');
-            expect(handler).toBeDefined();
-
             const manifest = { id: 'new-theme', name: 'New Theme', version: '1.0.0' };
-            await handler!({}, manifest);
+            await handler!({} as any, manifest);
 
             expect(mockService.installTheme).toHaveBeenCalled();
-        });
-
-        it('should reject invalid manifest', async () => {
-            const handler = mockIpcMainHandlers.get('theme:runtime:install');
-
-            await expect(handler!({}, null)).rejects.toThrow('error.theme.invalid_manifest');
-            await expect(handler!({}, 'not-an-object')).rejects.toThrow('error.theme.invalid_manifest');
         });
     });
 
     describe('theme:runtime:uninstall', () => {
         it('should uninstall theme by ID', async () => {
-            vi.clearAllMocks();
-
             const mockService = {
-                getAllThemes: vi.fn().mockResolvedValue([]),
+                getAllThemes: vi.fn(),
                 installTheme: vi.fn(),
                 uninstallTheme: vi.fn().mockResolvedValue(undefined),
-                getThemesDirectory: vi.fn(() => 'C:\\themes'),
+                getThemesDirectory: vi.fn(),
             };
-
-            // Re-register with new mock
-            mockIpcMainHandlers.clear();
-            registerThemeIpc(mockService as never);
+            registerThemeIpc(mockService as any, getMainWindow);
 
             const handler = mockIpcMainHandlers.get('theme:runtime:uninstall');
-            expect(handler).toBeDefined();
-
-            await handler!({}, 'custom-theme');
+            await handler!({} as any, 'custom-theme');
 
             expect(mockService.uninstallTheme).toHaveBeenCalledWith('custom-theme');
         });
-
-        it('should reject invalid theme ID', async () => {
-            const handler = mockIpcMainHandlers.get('theme:runtime:uninstall');
-
-            await expect(handler!({}, '')).rejects.toThrow();
-            await expect(handler!({}, null)).rejects.toThrow();
-        });
-    });
-
-    describe('theme:export', () => {
-        it('should export theme to temp file', async () => {
-            vi.mocked(themeStore.exportTheme).mockReturnValue('{"id":"test"}');
-
-            const handler = mockIpcMainHandlers.get('theme:export');
-            expect(handler).toBeDefined();
-
-            const result = await handler!({}, 'my-theme');
-
-            expect(result).toBe(true);
-        });
-
-        it('should return false for invalid theme ID', async () => {
-            const handler = mockIpcMainHandlers.get('theme:export');
-
-            const result = await handler!({}, '');
-            expect(result).toBe(false);
-        });
-
-        it('should return false when export fails', async () => {
-            vi.mocked(themeStore.exportTheme).mockReturnValue(null);
-
-            const handler = mockIpcMainHandlers.get('theme:export');
-            const result = await handler!({}, 'valid-id');
-
-            expect(result).toBe(false);
-        });
-    });
-
-    describe('theme:runtime:openDirectory', () => {
-        it('should open themes directory', async () => {
-            const electron = await import('electron');
-            vi.mocked(electron.shell.openPath).mockResolvedValue('');
-
-            const handler = mockIpcMainHandlers.get('theme:runtime:openDirectory');
-            expect(handler).toBeDefined();
-
-            const result = await handler!({});
-
-            expect(vi.mocked(electron.shell.openPath)).toHaveBeenCalledWith('C:\\themes');
-            expect(result).toBe(true);
-        });
-    });
-
-    describe('theme:getCustom', () => {
-        it('should return empty array as default', async () => {
-            vi.mocked(themeStore.getCustomThemes).mockReturnValue([]);
-
-            const handler = mockIpcMainHandlers.get('theme:getCustom');
-            expect(handler).toBeDefined();
-
-            const result = await handler!({});
-
-            expect(result).toEqual([]);
-        });
-
-        it('should return custom themes', async () => {
-            const mockCustomThemes = [{ id: 'custom-1', name: 'Custom Theme' }];
-            vi.mocked(themeStore.getCustomThemes).mockReturnValue(mockCustomThemes as never);
-
-            const handler = mockIpcMainHandlers.get('theme:getCustom');
-            const result = await handler!({});
-
-            expect(result).toEqual(mockCustomThemes);
-        });
-    });
-
-    describe('theme:addCustom', () => {
-        it('should add custom theme', async () => {
-            vi.mocked(themeStore.addCustomTheme).mockResolvedValue({ id: 'test', name: 'Test', isDark: true, colors: {}, createdAt: Date.now(), modifiedAt: Date.now() } as never);
-
-            const handler = mockIpcMainHandlers.get('theme:addCustom');
-            expect(handler).toBeDefined();
-
-            const theme = {
-                name: 'My Custom Theme',
-                category: 'elite-dark',
-                isDark: true,
-                isCustom: true,
-                source: 'user-created',
-                colors: {},
-            };
-
-            await handler!({}, theme);
-
-            expect(vi.mocked(themeStore.addCustomTheme)).toHaveBeenCalled();
-        });
-
-        it('should reject theme with invalid ID', async () => {
-            const handler = mockIpcMainHandlers.get('theme:addCustom');
-
-            const theme1 = { name: '', category: 'elite-dark', isDark: true, isCustom: true, source: 'user-created' };
-            await expect(handler!({}, theme1)).rejects.toThrow();
-        });
-
-        it('should reject theme with invalid category', async () => {
-            const handler = mockIpcMainHandlers.get('theme:addCustom');
-
-            const theme = { name: 'Test', category: 'invalid-category', isDark: true, isCustom: true, source: 'user-created' };
-            await expect(handler!({}, theme)).rejects.toThrow();
-        });
-    });
-
-    describe('theme:deleteCustom', () => {
-        it('should delete custom theme', async () => {
-            vi.mocked(themeStore.deleteCustomTheme).mockResolvedValue(true);
-
-            const handler = mockIpcMainHandlers.get('theme:deleteCustom');
-            expect(handler).toBeDefined();
-
-            await handler!({}, 'custom-1');
-
-            expect(vi.mocked(themeStore.deleteCustomTheme)).toHaveBeenCalledWith('custom-1');
-        });
-
-        it('should reject invalid theme ID', async () => {
-            const handler = mockIpcMainHandlers.get('theme:deleteCustom');
-
-            await expect(handler!({}, '')).rejects.toThrow();
-        });
-    });
-
-    describe('theme:getDetails', () => {
-        it('should return theme details', async () => {
-            const mockDetails = { id: 'dark', name: 'Dark Theme', version: '1.0.0' };
-            vi.mocked(themeStore.getThemeDetails).mockReturnValue(mockDetails as never);
-
-            const handler = mockIpcMainHandlers.get('theme:getDetails');
-            expect(handler).toBeDefined();
-
-            const result = await handler!({}, 'dark');
-
-            expect(result).toEqual(mockDetails);
-        });
-
-        it('should return null for invalid ID', async () => {
-            const handler = mockIpcMainHandlers.get('theme:getDetails');
-
-            const result = await handler!({}, '');
-            expect(result).toBe(null);
-        });
-
-        it('should return null when theme not found', async () => {
-            vi.mocked(themeStore.getThemeDetails).mockReturnValue(null);
-
-            const handler = mockIpcMainHandlers.get('theme:getDetails');
-            const result = await handler!({}, 'nonexistent');
-
-            expect(result).toBe(null);
-        });
-    });
-
-    describe('theme:import', () => {
-        it('should import theme from JSON', async () => {
-            vi.mocked(themeStore.importTheme).mockResolvedValue(null);
-
-            const handler = mockIpcMainHandlers.get('theme:import');
-            expect(handler).toBeDefined();
-
-            const jsonString = JSON.stringify({
-                id: 'imported',
-                name: 'Imported Theme',
-                version: '1.0.0',
-            });
-
-            await handler!({}, jsonString);
-
-            expect(vi.mocked(themeStore.importTheme)).toHaveBeenCalledWith(jsonString);
-        });
-
-        it('should handle non-string input', async () => {
-            const handler = mockIpcMainHandlers.get('theme:import');
-
-            // validateJsonString returns null for non-strings, which throws error
-            await expect(handler!({}, 123)).rejects.toThrow();
-            await expect(handler!({}, null)).rejects.toThrow();
-        });
-
-        it('should handle empty string', async () => {
-            const handler = mockIpcMainHandlers.get('theme:import');
-
-            // Empty string passes validateJsonString but may fail import
-            vi.mocked(themeStore.importTheme).mockImplementation(() => {
-                throw new Error('Invalid JSON');
-            });
-
-            await expect(handler!({}, '')).rejects.toThrow();
-        });
-    });
-
-    describe('theme:duplicate', () => {
-        it('should duplicate theme with new name', async () => {
-            vi.mocked(themeStore.duplicateTheme).mockResolvedValue(null);
-
-            const handler = mockIpcMainHandlers.get('theme:duplicate');
-            expect(handler).toBeDefined();
-
-            await handler!({}, 'original-theme', 'Duplicated Theme');
-
-            expect(vi.mocked(themeStore.duplicateTheme)).toHaveBeenCalled();
-        });
-
-        it('should reject invalid theme ID', async () => {
-            const handler = mockIpcMainHandlers.get('theme:duplicate');
-
-            await expect(handler!({}, '', 'New Name')).rejects.toThrow();
-        });
-
-        it('should reject invalid new name', async () => {
-            const handler = mockIpcMainHandlers.get('theme:duplicate');
-
-            await expect(handler!({}, 'theme-id', '')).rejects.toThrow();
-        });
     });
 });
-

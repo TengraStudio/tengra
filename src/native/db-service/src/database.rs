@@ -65,7 +65,10 @@ fn legacy_workspace_updated_index() -> String {
 
 fn legacy_code_symbols_workspace_path_index() -> String {
     let root = legacy_root();
-    join_segments("_", &[IDX_SEGMENT, CODE_SYMBOLS_SEGMENT, &root, PATH_SEGMENT])
+    join_segments(
+        "_",
+        &[IDX_SEGMENT, CODE_SYMBOLS_SEGMENT, &root, PATH_SEGMENT],
+    )
 }
 
 fn legacy_semantic_fragments_workspace_id_index() -> String {
@@ -87,10 +90,7 @@ fn legacy_semantic_fragments_workspace_path_index() -> String {
 fn rename_workspace_id_to_path_migration_name() -> String {
     let workspace_id = legacy_workspace_id_column();
     let workspace_path = legacy_workspace_path_column();
-    join_segments(
-        "_",
-        &["rename", workspace_id, "to", workspace_path],
-    )
+    join_segments("_", &["rename", workspace_id, "to", workspace_path])
 }
 
 fn rename_workspace_id_to_path_for(segment: &str) -> String {
@@ -152,16 +152,14 @@ impl Database {
 
         for (id, name, sql) in migrations {
             let applied: Option<i32> = conn
-                .query_row(
-                    "SELECT id FROM _migrations WHERE id = ?",
-                    [id],
-                    |row| row.get(0),
-                )
+                .query_row("SELECT id FROM _migrations WHERE id = ?", [id], |row| {
+                    row.get(0)
+                })
                 .optional()?;
 
             if applied.is_none() {
                 tracing::info!("Running migration {}: {}", id, name);
-                
+
                 let mut should_apply = true;
                 if id == 9 {
                     // Conditional migration for renaming projects -> workspaces
@@ -170,7 +168,7 @@ impl Database {
                         [],
                         |row| Ok(row.get::<_, i32>(0)? > 0),
                     ).unwrap_or(false);
-                    
+
                     if !projects_exists {
                         tracing::info!("Table 'projects' not found, skipping rename migration 9");
                         should_apply = false;
@@ -200,7 +198,12 @@ impl Database {
         .context("Failed to inspect sqlite_master")
     }
 
-    fn column_exists(&self, conn: &Connection, table_name: &str, column_name: &str) -> Result<bool> {
+    fn column_exists(
+        &self,
+        conn: &Connection,
+        table_name: &str,
+        column_name: &str,
+    ) -> Result<bool> {
         let pragma_sql = format!("PRAGMA table_info({table_name})");
         let mut stmt = conn.prepare(&pragma_sql)?;
         let rows = stmt.query_map([], |row| row.get::<_, String>(1))?;
@@ -221,12 +224,19 @@ impl Database {
             conn.execute_batch("ALTER TABLE projects RENAME TO workspaces;")?;
         }
 
-        if self.column_exists(conn, "chats", "project_id")? && !self.column_exists(conn, "chats", "workspace_id")? {
+        if self.column_exists(conn, "chats", "project_id")?
+            && !self.column_exists(conn, "chats", "workspace_id")?
+        {
             tracing::warn!("Repairing legacy schema: renaming chats.project_id to workspace_id");
             conn.execute_batch("ALTER TABLE chats RENAME COLUMN project_id TO workspace_id;")?;
         }
 
-        for table_name in [SEMANTIC_FRAGMENTS_SEGMENT, FILE_DIFFS_SEGMENT, TOKEN_USAGE_SEGMENT, CODE_SYMBOLS_SEGMENT] {
+        for table_name in [
+            SEMANTIC_FRAGMENTS_SEGMENT,
+            FILE_DIFFS_SEGMENT,
+            TOKEN_USAGE_SEGMENT,
+            CODE_SYMBOLS_SEGMENT,
+        ] {
             if self.column_exists(conn, table_name, "project_path")?
                 && !self.column_exists(conn, table_name, legacy_workspace_path_column())?
             {
@@ -327,8 +337,7 @@ impl Database {
         let semantic_workspace_id_index = legacy_semantic_fragments_workspace_id_index();
         let semantic_workspace_path_index = legacy_semantic_fragments_workspace_path_index();
         let rename_workspace_path = rename_workspace_id_to_path_migration_name();
-        let rename_workspace_path_file_diffs =
-            rename_workspace_id_to_path_for(FILE_DIFFS_SEGMENT);
+        let rename_workspace_path_file_diffs = rename_workspace_id_to_path_for(FILE_DIFFS_SEGMENT);
         let rename_workspace_path_token_usage =
             rename_workspace_id_to_path_for(TOKEN_USAGE_SEGMENT);
 
@@ -722,14 +731,16 @@ impl Database {
                 is_pinned: row.get::<_, i32>(6)? != 0,
                 is_favorite: row.get::<_, i32>(7)? != 0,
                 is_archived: row.get::<_, i32>(8)? != 0,
-                metadata: row.get::<_, Option<String>>(9)?
+                metadata: row
+                    .get::<_, Option<String>>(9)?
                     .and_then(|s| serde_json::from_str(&s).ok()),
                 created_at: row.get(10)?,
                 updated_at: row.get(11)?,
             })
         })?;
 
-        rows.collect::<Result<Vec<_>, _>>().context("Failed to fetch chats")
+        rows.collect::<Result<Vec<_>, _>>()
+            .context("Failed to fetch chats")
     }
 
     pub async fn get_chat(&self, id: &str) -> Result<Option<Chat>> {
@@ -740,10 +751,8 @@ impl Database {
                     is_archived, metadata, created_at, updated_at
              FROM chats WHERE id = ?"
         );
-        let result = conn.query_row(
-            &query,
-            [id],
-            |row| {
+        let result = conn
+            .query_row(&query, [id], |row| {
                 Ok(Chat {
                     id: row.get(0)?,
                     title: row.get(1)?,
@@ -754,13 +763,14 @@ impl Database {
                     is_pinned: row.get::<_, i32>(6)? != 0,
                     is_favorite: row.get::<_, i32>(7)? != 0,
                     is_archived: row.get::<_, i32>(8)? != 0,
-                    metadata: row.get::<_, Option<String>>(9)?
+                    metadata: row
+                        .get::<_, Option<String>>(9)?
                         .and_then(|s| serde_json::from_str(&s).ok()),
                     created_at: row.get(10)?,
                     updated_at: row.get(11)?,
                 })
-            },
-        ).optional()?;
+            })
+            .optional()?;
         Ok(result)
     }
 
@@ -785,7 +795,9 @@ impl Database {
                 req.workspace_id,
                 req.is_pinned as i32,
                 req.is_favorite as i32,
-                req.metadata.as_ref().map(|m| serde_json::to_string(m).unwrap_or_default()),
+                req.metadata
+                    .as_ref()
+                    .map(|m| serde_json::to_string(m).unwrap_or_default()),
                 now,
                 now
             ],
@@ -854,10 +866,7 @@ impl Database {
 
         values.push(Box::new(id.to_string()));
 
-        let sql = format!(
-            "UPDATE chats SET {} WHERE id = ?",
-            updates.join(", ")
-        );
+        let sql = format!("UPDATE chats SET {} WHERE id = ?", updates.join(", "));
 
         let params: Vec<&dyn rusqlite::ToSql> = values.iter().map(|v| v.as_ref()).collect();
         let affected = conn.execute(&sql, params.as_slice())?;
@@ -880,7 +889,7 @@ impl Database {
         let conn = self.conn.lock().await;
         let mut stmt = conn.prepare(
             "SELECT id, chat_id, role, content, timestamp, provider, model, metadata
-             FROM messages WHERE chat_id = ? ORDER BY timestamp ASC"
+             FROM messages WHERE chat_id = ? ORDER BY timestamp ASC",
         )?;
 
         let rows = stmt.query_map([chat_id], |row| {
@@ -892,12 +901,14 @@ impl Database {
                 timestamp: row.get(4)?,
                 provider: row.get(5)?,
                 model: row.get(6)?,
-                metadata: row.get::<_, Option<String>>(7)?
+                metadata: row
+                    .get::<_, Option<String>>(7)?
                     .and_then(|s| serde_json::from_str(&s).ok()),
             })
         })?;
 
-        rows.collect::<Result<Vec<_>, _>>().context("Failed to fetch messages")
+        rows.collect::<Result<Vec<_>, _>>()
+            .context("Failed to fetch messages")
     }
 
     pub async fn add_message(&self, req: CreateMessageRequest) -> Result<Message> {
@@ -951,10 +962,7 @@ impl Database {
 
         values.push(Box::new(id.to_string()));
 
-        let sql = format!(
-            "UPDATE messages SET {} WHERE id = ?",
-            updates.join(", ")
-        );
+        let sql = format!("UPDATE messages SET {} WHERE id = ?", updates.join(", "));
 
         let params: Vec<&dyn rusqlite::ToSql> = values.iter().map(|v| v.as_ref()).collect();
         let affected = conn.execute(&sql, params.as_slice())?;
@@ -987,16 +995,20 @@ impl Database {
                 title: row.get(1)?,
                 description: row.get(2)?,
                 path: row.get(3)?,
-                mounts: row.get::<_, Option<String>>(4)?
+                mounts: row
+                    .get::<_, Option<String>>(4)?
                     .and_then(|s| serde_json::from_str(&s).ok())
                     .unwrap_or_default(),
-                chat_ids: row.get::<_, Option<String>>(5)?
+                chat_ids: row
+                    .get::<_, Option<String>>(5)?
                     .and_then(|s| serde_json::from_str(&s).ok())
                     .unwrap_or_default(),
-                council_config: row.get::<_, Option<String>>(6)?
+                council_config: row
+                    .get::<_, Option<String>>(6)?
                     .and_then(|s| serde_json::from_str(&s).ok()),
                 status: row.get(7)?,
-                metadata: row.get::<_, Option<String>>(8)?
+                metadata: row
+                    .get::<_, Option<String>>(8)?
                     .and_then(|s| serde_json::from_str(&s).ok()),
                 created_at: row.get(9)?,
                 updated_at: row.get(10)?,
@@ -1015,31 +1027,33 @@ impl Database {
                     status, metadata, created_at, updated_at
              FROM {workspace_table} WHERE id = ?"
         );
-        let result = conn.query_row(
-            &query,
-            [id],
-            |row| {
+        let result = conn
+            .query_row(&query, [id], |row| {
                 Ok(Workspace {
                     id: row.get(0)?,
                     title: row.get(1)?,
                     description: row.get(2)?,
                     path: row.get(3)?,
-                    mounts: row.get::<_, Option<String>>(4)?
+                    mounts: row
+                        .get::<_, Option<String>>(4)?
                         .and_then(|s| serde_json::from_str(&s).ok())
                         .unwrap_or_default(),
-                    chat_ids: row.get::<_, Option<String>>(5)?
+                    chat_ids: row
+                        .get::<_, Option<String>>(5)?
                         .and_then(|s| serde_json::from_str(&s).ok())
                         .unwrap_or_default(),
-                    council_config: row.get::<_, Option<String>>(6)?
+                    council_config: row
+                        .get::<_, Option<String>>(6)?
                         .and_then(|s| serde_json::from_str(&s).ok()),
                     status: row.get(7)?,
-                    metadata: row.get::<_, Option<String>>(8)?
+                    metadata: row
+                        .get::<_, Option<String>>(8)?
                         .and_then(|s| serde_json::from_str(&s).ok()),
                     created_at: row.get(9)?,
                     updated_at: row.get(10)?,
                 })
-            },
-        ).optional()?;
+            })
+            .optional()?;
         Ok(result)
     }
 
@@ -1061,8 +1075,12 @@ impl Database {
                 req.description,
                 req.path,
                 serde_json::to_string(&req.mounts)?,
-                req.council_config.as_ref().map(|c| serde_json::to_string(c).unwrap_or_default()),
-                req.metadata.as_ref().map(|m| serde_json::to_string(m).unwrap_or_default()),
+                req.council_config
+                    .as_ref()
+                    .map(|c| serde_json::to_string(c).unwrap_or_default()),
+                req.metadata
+                    .as_ref()
+                    .map(|m| serde_json::to_string(m).unwrap_or_default()),
                 now,
                 now
             ],
@@ -1150,9 +1168,8 @@ impl Database {
 
     pub async fn get_folders(&self) -> Result<Vec<Folder>> {
         let conn = self.conn.lock().await;
-        let mut stmt = conn.prepare(
-            "SELECT id, name, color, created_at, updated_at FROM folders ORDER BY name"
-        )?;
+        let mut stmt = conn
+            .prepare("SELECT id, name, color, created_at, updated_at FROM folders ORDER BY name")?;
 
         let rows = stmt.query_map([], |row| {
             Ok(Folder {
@@ -1164,7 +1181,8 @@ impl Database {
             })
         })?;
 
-        rows.collect::<Result<Vec<_>, _>>().context("Failed to fetch folders")
+        rows.collect::<Result<Vec<_>, _>>()
+            .context("Failed to fetch folders")
     }
 
     pub async fn create_folder(&self, req: CreateFolderRequest) -> Result<Folder> {
@@ -1204,10 +1222,7 @@ impl Database {
 
         values.push(Box::new(id.to_string()));
 
-        let sql = format!(
-            "UPDATE folders SET {} WHERE id = ?",
-            updates.join(", ")
-        );
+        let sql = format!("UPDATE folders SET {} WHERE id = ?", updates.join(", "));
 
         let params: Vec<&dyn rusqlite::ToSql> = values.iter().map(|v| v.as_ref()).collect();
         let affected = conn.execute(&sql, params.as_slice())?;
@@ -1217,7 +1232,10 @@ impl Database {
     pub async fn delete_folder(&self, id: &str) -> Result<bool> {
         let conn = self.conn.lock().await;
         // Clear folder_id references in chats
-        conn.execute("UPDATE chats SET folder_id = NULL WHERE folder_id = ?", [id])?;
+        conn.execute(
+            "UPDATE chats SET folder_id = NULL WHERE folder_id = ?",
+            [id],
+        )?;
         let affected = conn.execute("DELETE FROM folders WHERE id = ?", [id])?;
         Ok(affected > 0)
     }
@@ -1229,7 +1247,7 @@ impl Database {
     pub async fn get_prompts(&self) -> Result<Vec<Prompt>> {
         let conn = self.conn.lock().await;
         let mut stmt = conn.prepare(
-            "SELECT id, title, content, tags, created_at, updated_at FROM prompts ORDER BY title"
+            "SELECT id, title, content, tags, created_at, updated_at FROM prompts ORDER BY title",
         )?;
 
         let rows = stmt.query_map([], |row| {
@@ -1237,7 +1255,8 @@ impl Database {
                 id: row.get(0)?,
                 title: row.get(1)?,
                 content: row.get(2)?,
-                tags: row.get::<_, Option<String>>(3)?
+                tags: row
+                    .get::<_, Option<String>>(3)?
                     .and_then(|s| serde_json::from_str(&s).ok())
                     .unwrap_or_default(),
                 created_at: row.get(4)?,
@@ -1245,7 +1264,8 @@ impl Database {
             })
         })?;
 
-        rows.collect::<Result<Vec<_>, _>>().context("Failed to fetch prompts")
+        rows.collect::<Result<Vec<_>, _>>()
+            .context("Failed to fetch prompts")
     }
 
     pub async fn create_prompt(&self, req: CreatePromptRequest) -> Result<Prompt> {
@@ -1297,10 +1317,7 @@ impl Database {
 
         values.push(Box::new(id.to_string()));
 
-        let sql = format!(
-            "UPDATE prompts SET {} WHERE id = ?",
-            updates.join(", ")
-        );
+        let sql = format!("UPDATE prompts SET {} WHERE id = ?", updates.join(", "));
 
         let params: Vec<&dyn rusqlite::ToSql> = values.iter().map(|v| v.as_ref()).collect();
         let affected = conn.execute(&sql, params.as_slice())?;
@@ -1321,23 +1338,19 @@ impl Database {
         let conn = self.conn.lock().await;
         let workspace_table = legacy_workspace_table();
 
-        let total_chats: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM chats", [], |row| row.get(0)
-        )?;
-        let total_messages: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM messages", [], |row| row.get(0)
-        )?;
+        let total_chats: i64 =
+            conn.query_row("SELECT COUNT(*) FROM chats", [], |row| row.get(0))?;
+        let total_messages: i64 =
+            conn.query_row("SELECT COUNT(*) FROM messages", [], |row| row.get(0))?;
         let total_workspaces: i64 = conn.query_row(
             &format!("SELECT COUNT(*) FROM {workspace_table}"),
             [],
             |row| row.get(0),
         )?;
-        let total_folders: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM folders", [], |row| row.get(0)
-        )?;
-        let total_prompts: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM prompts", [], |row| row.get(0)
-        )?;
+        let total_folders: i64 =
+            conn.query_row("SELECT COUNT(*) FROM folders", [], |row| row.get(0))?;
+        let total_prompts: i64 =
+            conn.query_row("SELECT COUNT(*) FROM prompts", [], |row| row.get(0))?;
 
         Ok(Stats {
             total_chats,
@@ -1357,7 +1370,10 @@ impl Database {
         let conn = self.conn.lock().await;
         let workspace_path = legacy_workspace_path_column();
 
-        let embedding_blob = req.embedding.as_ref().map(|e| bincode::serialize(e).unwrap_or_default());
+        let embedding_blob = req
+            .embedding
+            .as_ref()
+            .map(|e| bincode::serialize(e).unwrap_or_default());
         let insert_sql = format!(
             "INSERT OR REPLACE INTO code_symbols
              (id, {workspace_path}, file_path, name, line, kind, signature, docstring, embedding, created_at)
@@ -1403,8 +1419,8 @@ impl Database {
         let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
         let rows = stmt.query_map(param_refs.as_slice(), |row| {
             let embedding_blob: Option<Vec<u8>> = row.get(8)?;
-            let embedding: Option<Vec<f32>> = embedding_blob
-                .and_then(|b| bincode::deserialize(&b).ok());
+            let embedding: Option<Vec<f32>> =
+                embedding_blob.and_then(|b| bincode::deserialize(&b).ok());
 
             Ok(CodeSymbol {
                 id: row.get(0)?,
@@ -1467,7 +1483,10 @@ impl Database {
         Ok(())
     }
 
-    pub async fn search_semantic_fragments(&self, req: VectorSearchRequest) -> Result<Vec<SemanticFragment>> {
+    pub async fn search_semantic_fragments(
+        &self,
+        req: VectorSearchRequest,
+    ) -> Result<Vec<SemanticFragment>> {
         let conn = self.open_read_connection()?;
         let workspace_path = legacy_workspace_path_column();
 
@@ -1495,7 +1514,8 @@ impl Database {
                 embedding,
                 source: row.get(3)?,
                 source_id: row.get(4)?,
-                tags: row.get::<_, Option<String>>(5)?
+                tags: row
+                    .get::<_, Option<String>>(5)?
                     .and_then(|s| serde_json::from_str(&s).ok())
                     .unwrap_or_default(),
                 importance: row.get(6)?,
@@ -1527,9 +1547,13 @@ impl Database {
         let conn = self.conn.lock().await;
 
         // Convert JSON params to SQLite params
-        let params: Vec<Box<dyn rusqlite::ToSql>> = req.params.iter().map(|v| {
-            match v {
-                serde_json::Value::Null => Box::new(Option::<String>::None) as Box<dyn rusqlite::ToSql>,
+        let params: Vec<Box<dyn rusqlite::ToSql>> = req
+            .params
+            .iter()
+            .map(|v| match v {
+                serde_json::Value::Null => {
+                    Box::new(Option::<String>::None) as Box<dyn rusqlite::ToSql>
+                }
                 serde_json::Value::Bool(b) => Box::new(*b as i32) as Box<dyn rusqlite::ToSql>,
                 serde_json::Value::Number(n) => {
                     if let Some(i) = n.as_i64() {
@@ -1542,8 +1566,8 @@ impl Database {
                 }
                 serde_json::Value::String(s) => Box::new(s.clone()) as Box<dyn rusqlite::ToSql>,
                 _ => Box::new(v.to_string()) as Box<dyn rusqlite::ToSql>,
-            }
-        }).collect();
+            })
+            .collect();
 
         let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
 
@@ -1566,7 +1590,9 @@ impl Database {
                         rusqlite::types::Value::Integer(i) => serde_json::json!(i),
                         rusqlite::types::Value::Real(f) => serde_json::json!(f),
                         rusqlite::types::Value::Text(s) => serde_json::json!(s),
-                        rusqlite::types::Value::Blob(b) => serde_json::json!(base64::Engine::encode(&base64::engine::general_purpose::STANDARD, b)),
+                        rusqlite::types::Value::Blob(b) => serde_json::json!(
+                            base64::Engine::encode(&base64::engine::general_purpose::STANDARD, b)
+                        ),
                     };
                     obj.insert(name.clone(), json_value);
                 }

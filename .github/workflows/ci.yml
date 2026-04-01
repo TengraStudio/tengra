@@ -189,3 +189,151 @@ jobs:
         name: renderer-preview-${{ github.sha }}
         path: dist/renderer/**
         if-no-files-found: warn
+
+  proxy-e2e:
+    timeout-minutes: 35
+    runs-on: windows-latest
+    needs: [changes]
+    if: needs.changes.outputs.app == 'true'
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Cache Rust artifacts
+      uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: |
+          src/native -> src/native/target
+
+    - name: Build Rust services
+      working-directory: src/native
+      run: cargo build --release -p tengra-db-service -p tengra-proxy
+
+    - name: Run db-service + tengra-proxy smoke
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Stop'
+
+        $dbExe = (Resolve-Path "src/native/target/release/tengra-db-service.exe").Path
+        $proxyExe = (Resolve-Path "src/native/target/release/tengra-proxy.exe").Path
+
+        $servicesDir = Join-Path $env:APPDATA "Tengra\services"
+        $portFile = Join-Path $servicesDir "db-service.port"
+        New-Item -ItemType Directory -Path $servicesDir -Force | Out-Null
+        if (Test-Path $portFile) { Remove-Item $portFile -Force }
+
+        $db = Start-Process -FilePath $dbExe -ArgumentList '--console' -PassThru -WindowStyle Hidden
+        $proxy = $null
+
+        try {
+          $dbPort = $null
+          for ($i = 0; $i -lt 120; $i++) {
+            Start-Sleep -Milliseconds 250
+            if (Test-Path $portFile) {
+              $raw = (Get-Content $portFile -Raw).Trim()
+              if ($raw -match '^\d+$') {
+                $dbPort = [int]$raw
+                break
+              }
+            }
+          }
+
+          if (-not $dbPort) {
+            throw "db-service port file was not created"
+          }
+
+          $dbHealthy = $false
+          for ($i = 0; $i -lt 80; $i++) {
+            try {
+              $dbHealth = Invoke-RestMethod -Uri "http://127.0.0.1:$dbPort/health" -Method Get -TimeoutSec 2
+              if ($dbHealth.success -eq $true) {
+                $dbHealthy = $true
+                break
+              }
+            } catch {
+              Start-Sleep -Milliseconds 250
+            }
+          }
+
+          if (-not $dbHealthy) {
+            throw "db-service health endpoint did not become ready on port $dbPort"
+          }
+
+          $queryBody = @{ sql = 'SELECT 1 AS ok'; params = @() } | ConvertTo-Json
+          $queryResponse = Invoke-RestMethod -Uri "http://127.0.0.1:$dbPort/api/v1/query" -Method Post -Body $queryBody -ContentType 'application/json' -TimeoutSec 4
+          if ($queryResponse.success -ne $true) {
+            throw "db-service query preflight failed"
+          }
+
+          $env:TENGRA_PROXY_DEV_MODE = 'true'
+          $env:TENGRA_PROXY_ALLOW_DEGRADED_STARTUP = 'false'
+          $env:TENGRA_DB_URL = "http://127.0.0.1:$dbPort"
+          $env:TENGRA_GITHUB_CLIENT_ID = 'gh-client-test'
+          $env:TENGRA_GITHUB_CLIENT_SECRET = 'gh-secret-test'
+          $env:TENGRA_GITHUB_REDIRECT_URI = 'http://127.0.0.1:23234/oauth/github/callback'
+          $env:TENGRA_GOOGLE_CLIENT_ID = 'google-client-test'
+          $env:TENGRA_GOOGLE_CLIENT_SECRET = 'google-secret-test'
+          $env:TENGRA_GOOGLE_REDIRECT_URI = 'http://127.0.0.1:23234/oauth/google/callback'
+
+          $proxy = Start-Process -FilePath $proxyExe -PassThru -WindowStyle Hidden
+
+          $proxyHealthy = $false
+          for ($i = 0; $i -lt 100; $i++) {
+            try {
+              $proxyHealth = Invoke-RestMethod -Uri 'http://127.0.0.1:23234/health' -Method Get -TimeoutSec 2
+              if ($proxyHealth.success -eq $true) {
+                $proxyHealthy = $true
+                break
+              }
+            } catch {
+              Start-Sleep -Milliseconds 250
+            }
+          }
+
+          if (-not $proxyHealthy) {
+            throw "tengra-proxy health endpoint did not become ready"
+          }
+
+          $readiness = Invoke-RestMethod -Uri 'http://127.0.0.1:23234/api/auth/providers/readiness' -Method Get -TimeoutSec 4
+          if ($readiness.success -ne $true) {
+            throw "providers readiness endpoint returned unsuccessful response"
+          }
+
+          $oauthStartBody = @{ provider = 'codex' } | ConvertTo-Json
+          $oauthStart = Invoke-RestMethod -Uri 'http://127.0.0.1:23234/api/auth/oauth/start' -Method Post -Body $oauthStartBody -ContentType 'application/json' -TimeoutSec 4
+          if ($oauthStart.success -ne $true) {
+            throw "oauth start endpoint returned unsuccessful response"
+          }
+
+          $apiKeyBody = @{
+            provider     = 'antigravity'
+            api_key      = 'sk-test-integration'
+            email        = 'test@example.com'
+            display_name = 'CI Integration'
+            scope        = 'inference'
+          } | ConvertTo-Json
+          $apiKeyResponse = Invoke-RestMethod -Uri 'http://127.0.0.1:23234/api/auth/api-key/link' -Method Post -Body $apiKeyBody -ContentType 'application/json' -TimeoutSec 4
+          if ($apiKeyResponse.success -ne $true) {
+            throw "api-key link endpoint returned unsuccessful response"
+          }
+
+          if (-not $apiKeyResponse.data.has_access_token) {
+            throw "api-key link response is missing has_access_token=true"
+          }
+
+          Write-Host "db_port=$dbPort"
+          Write-Host "proxy providers readiness count=$($readiness.data.providers.Count)"
+          Write-Host "oauth provider=$($oauthStart.data.oauth_provider)"
+          Write-Host "linked account provider=$($apiKeyResponse.data.provider)"
+        } finally {
+          if ($proxy -and (Get-Process -Id $proxy.Id -ErrorAction SilentlyContinue)) {
+            Stop-Process -Id $proxy.Id
+          }
+          if (Get-Process -Id $db.Id -ErrorAction SilentlyContinue) {
+            Stop-Process -Id $db.Id
+          }
+        }

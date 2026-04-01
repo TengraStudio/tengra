@@ -219,8 +219,7 @@ export function registerSettingsIpc(options: {
     function updateServices(finalSettings: AppSettings, newSettings: AppSettings) {
         if (finalSettings.openai?.apiKey) { llmService.setOpenAIApiKey(finalSettings.openai.apiKey); }
         if (finalSettings.anthropic?.apiKey) { llmService.setAnthropicApiKey(finalSettings.anthropic.apiKey); }
-        if (newSettings.groq) { llmService.setGroqApiKey(newSettings.groq.apiKey); }
-        if (finalSettings.copilot?.token) { copilotService.setCopilotToken(finalSettings.copilot.token); }
+        if (newSettings.groq?.apiKey) { llmService.setGroqApiKey(newSettings.groq.apiKey); }
         if (finalSettings.github?.token) { copilotService.setGithubToken(finalSettings.github.token); }
     }
 

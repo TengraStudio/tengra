@@ -13,7 +13,7 @@ const settingsFixture: AppSettings = {
         theme: 'dark',
         resolution: '1920x1080',
         fontSize: 14,
-        onboardingCompleted: true,
+
     },
     proxy: { enabled: true, url: 'http://127.0.0.1:8317', key: '' },
 };
@@ -22,10 +22,12 @@ const updateSettingsMock = vi.fn<(
     newSettings: AppSettings,
     saveImmediately?: boolean
 ) => Promise<void>>();
+const settingsLoadingRef = { current: false };
 
 vi.mock('@/context/SettingsContext', () => ({
     useSettings: () => ({
         settings: settingsFixture,
+        isLoading: settingsLoadingRef.current,
         updateSettings: updateSettingsMock,
     }),
 }));
@@ -58,6 +60,7 @@ vi.mock('@renderer/features/settings/hooks/useSettingsAuth', () => ({
         connectCopilot: async () => { },
         connectBrowserProvider: async () => { },
         disconnectProvider: async () => { },
+        cancelBrowserAuthForAccount: async () => { },
         handleSaveClaudeSession: async () => ({ success: true }),
         deviceCodeModal: {
             isOpen: false,
@@ -103,6 +106,7 @@ vi.mock('@renderer/features/settings/hooks/useSettingsPersonas', () => ({
 describe('useSettingsLogic', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        settingsLoadingRef.current = false;
         updateSettingsMock.mockResolvedValue(undefined);
     });
 
@@ -146,5 +150,13 @@ describe('useSettingsLogic', () => {
         expect(updateSettingsMock).not.toHaveBeenCalled();
         expect(result.current.settingsUiState).toBe('failure');
         expect(result.current.lastErrorCode).toBe(settingsPageErrorCodes.validation);
+    });
+
+    it('surfaces context loading state so settings page shows loading instead of empty state', () => {
+        settingsLoadingRef.current = true;
+
+        const { result } = renderHook(() => useSettingsLogic());
+
+        expect(result.current.isLoading).toBe(true);
     });
 });

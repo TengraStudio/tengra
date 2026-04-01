@@ -119,11 +119,8 @@ export class PowerManagerService extends BaseService {
         }
         this.isHibernating = true;
         this.logInfo('Hibernating background services due to inactivity...');
-        // Only hibernate truly non-critical heavy services
-        // Example: model-service, embedding-service if they are idle
+        // Only hibernate truly non-critical heavy services.
         this.eventBus.emitCustom('power:hibernation-start', { timestamp: Date.now() });
-        
-        // We could call processManager.stopService('model-service') etc.
     }
 
     private resumeHibernatedServices() {

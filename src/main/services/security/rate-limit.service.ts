@@ -176,8 +176,6 @@ export class RateLimitService extends BaseService {
         this.setLimit('ollama:chat', { requestsPerMinute: 30, maxBurst: 5 }); // Local LLM calls
         this.setLimit('ollama:operation', { requestsPerMinute: 60, maxBurst: 10 }); // General Ollama ops
         this.setLimit('model-registry', { requestsPerMinute: 30, maxBurst: 5 }); // Model registry queries
-        this.setLimit('ideas:generation', { requestsPerMinute: 10, maxBurst: 2 }); // Expensive idea generation
-        this.setLimit('ideas:research', { requestsPerMinute: 20, maxBurst: 3 }); // Research pipeline
         this.setLimit('agent:execution', { requestsPerMinute: 20, maxBurst: 3 }); // Agent task execution
         this.setLimit('code-intelligence', { requestsPerMinute: 30, maxBurst: 5 }); // Code analysis ops
         this.setLimit('embedding', { requestsPerMinute: 100, maxBurst: 20 }); // Embedding generation

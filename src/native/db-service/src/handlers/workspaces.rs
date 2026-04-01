@@ -10,9 +10,7 @@ use crate::database::Database;
 use crate::types::*;
 
 /// GET /api/v1/workspaces - List all workspaces
-pub async fn list_workspaces(
-    State(db): State<Arc<Database>>,
-) -> Json<ApiResponse<Vec<Workspace>>> {
+pub async fn list_workspaces(State(db): State<Arc<Database>>) -> Json<ApiResponse<Vec<Workspace>>> {
     match db.get_workspaces().await {
         Ok(workspaces) => Json(ApiResponse::success(workspaces)),
         Err(e) => Json(ApiResponse::error(e.to_string())),

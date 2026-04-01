@@ -1,24 +1,31 @@
 import * as path from 'path';
 
 import * as dotenv from 'dotenv';
-import { app, BrowserWindow, type Certificate, type Event as ElectronEvent, type WebContents } from 'electron';
+import type { App, BrowserWindow as ElectronBrowserWindow, Certificate, Event as ElectronEvent, WebContents } from 'electron';
+import * as electron from 'electron';
 
 dotenv.config();
+
+const electronModule = electron as Partial<typeof import('electron')>;
+
+if (!electronModule.app || !electronModule.BrowserWindow) {
+    process.stderr.write(
+        'Tengra main process could not access Electron APIs. Clear ELECTRON_RUN_AS_NODE and start the app with Electron.\n'
+    );
+    process.exit(1);
+}
+
+const app: App = electronModule.app;
+const BrowserWindow: typeof ElectronBrowserWindow = electronModule.BrowserWindow;
 
 // Set the application name early
 app.setName('Tengra');
 
-import { ApiServerService } from '@main/api/api-server.service';
 import { appLogger, LogLevel } from '@main/logging/logger';
-import { McpDispatcher } from '@main/mcp/dispatcher';
-import type { PageSpeedService } from '@main/services/analysis/pagespeed.service';
-import type { ScannerService } from '@main/services/analysis/scanner.service';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import type { DockerService } from '@main/services/workspace/docker.service';
 import type { SSHService } from '@main/services/workspace/ssh.service';
-import { registerDeferredIpcHandlers, registerIpcHandlers } from '@main/startup/ipc';
-import { container, createServices, type Services,startDeferredServices } from '@main/startup/services';
-import { ToolExecutor } from '@main/tools/tool-executor';
+import { container, createServices, type Services, startDeferredServices } from '@main/startup/services';
 import { validateEnvironmentVariables } from '@main/utils/env-validator.util';
 import { OPERATION_TIMEOUTS } from '@shared/constants/timeouts';
 import type { StartupMetrics } from '@shared/types/system';
@@ -127,7 +134,8 @@ app.whenReady().then(async () => {
         }
     });
 
-    appLogger.setLevel(app.isPackaged ? LogLevel.INFO : LogLevel.DEBUG);
+    appLogger.setShowDebugLogs(false);
+    appLogger.setLevel(LogLevel.INFO);
     appLogger.installConsoleRedirect();
 
     appLogger.info('Startup', 'Validating environment variables...');
@@ -189,6 +197,11 @@ app.whenReady().then(async () => {
     // Hardened Tool Executor
     // mcpPluginService.initialize() is intentionally deferred to after window creation;
     // McpDispatcher holds the reference and will find plugins populated once deferred init runs.
+    const [{ McpDispatcher }, { ToolExecutor }, { ApiServerService }] = await Promise.all([
+        import('@main/mcp/dispatcher'),
+        import('@main/tools/tool-executor'),
+        import('@main/api/api-server.service'),
+    ]);
     const mcpDispatcher = new McpDispatcher(new Set<string>(), services.settingsService, services.mcpPluginService);
 
     const toolExecutor = new ToolExecutor({
@@ -196,26 +209,18 @@ app.whenReady().then(async () => {
         eventBus: services.eventBusService,
         command: services.commandService,
         web: services.webService,
-        screenshot: services.screenshotService,
-        system: services.systemService,
-        network: services.networkService,
-        notification: services.notificationService,
         docker: container.resolve<DockerService>('dockerService'),
         ssh: container.resolve<SSHService>('sshService'),
-        scanner: container.resolve<ScannerService>('scannerService'),
         embedding: services.embeddingService,
-        utility: services.utilityService,
-        content: services.contentService,
+        memory: services.memoryService,
+        localImage: services.localImageService,
+        system: services.systemService,
+        network: services.networkService,
         file: services.fileManagementService,
-        monitor: services.monitoringService,
-        clipboard: services.clipboardService,
         git: services.gitService,
         security: services.securityService,
         mcp: mcpDispatcher,
         llm: services.llmService,
-        memory: services.memoryService,
-        pageSpeed: container.resolve<PageSpeedService>('pageSpeedService'),
-        localImage: services.localImageService
     });
 
     // Initialize Local API Server
@@ -235,7 +240,13 @@ app.whenReady().then(async () => {
     container.registerInstance('apiServerService', apiServerService);
 
     // Register IPC & Lifecycle
-    await registerIpcHandlers(services, toolExecutor, getMainWindow, allowedFileRoots, mcpDispatcher);
+    const {
+        registerDeferredIpcHandlers,
+        registerIpcHandlers,
+        registerPostInteractiveIpcHandlers,
+        registerPostStartupIpcHandlers,
+    } = await import('@main/startup/ipc');
+    registerIpcHandlers(services, toolExecutor, getMainWindow, allowedFileRoots, mcpDispatcher);
     registerLifecycleHandlers(services.settingsService);
     recordStartupPhase(services, 'ipcReadyTime');
 
@@ -269,6 +280,7 @@ app.whenReady().then(async () => {
     }
 
     let deferredTasksStarted = false;
+    let postInteractiveTasksStarted = false;
     const runDeferredStartupTasks = () => {
         if (deferredTasksStarted) {
             return;
@@ -277,6 +289,7 @@ app.whenReady().then(async () => {
         void Promise.resolve().then(async () => {
             recordStartupPhase(services, 'deferredStartTime');
             await initializeDeferredCoreFeatures(services);
+            registerPostStartupIpcHandlers(services, getMainWindow);
             await registerDeferredIpcHandlers(services, getMainWindow);
 
             // Initialize deferred (non-critical) services first
@@ -297,19 +310,33 @@ app.whenReady().then(async () => {
             appLogger.error('Main', 'Deferred startup tasks failed', error as Error);
         });
     };
+    const runPostInteractiveTasks = () => {
+        if (postInteractiveTasksStarted) {
+            return;
+        }
+        postInteractiveTasksStarted = true;
+        void Promise.resolve().then(() => {
+            registerPostInteractiveIpcHandlers(services, getMainWindow);
+        }).catch(error => {
+            appLogger.error('Main', 'Post-interactive startup tasks failed', error as Error);
+        });
+    };
     mainWindow.once('ready-to-show', () => {
         recordStartupPhase(services, 'readyTime');
-        if (process.env.TENGRA_BENCHMARK) { 
-            appLogger.info('Benchmark', 'BENCHMARK_READY'); 
-            setTimeout(() => app.exit(0), 100); 
+        if (process.env.TENGRA_BENCHMARK) {
+            appLogger.info('Benchmark', 'BENCHMARK_READY');
+            setTimeout(() => app.exit(0), 100);
         }
         setTimeout(runDeferredStartupTasks, 0);
+        setTimeout(runPostInteractiveTasks, OPERATION_TIMEOUTS.DEFERRED_STARTUP);
     });
     mainWindow.webContents.once('did-finish-load', () => {
         services.performanceService.recordStartupEvent('loadTime');
         runDeferredStartupTasks();
+        setTimeout(runPostInteractiveTasks, 0);
     });
     setTimeout(runDeferredStartupTasks, OPERATION_TIMEOUTS.DEFERRED_STARTUP);
+    setTimeout(runPostInteractiveTasks, OPERATION_TIMEOUTS.DEFERRED_STARTUP * 2);
 
 }).catch(e => {
     closeSplashWindow();

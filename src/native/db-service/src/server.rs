@@ -20,17 +20,20 @@ pub fn create_router(db: Arc<Database>, start_time: std::time::Instant) -> Route
 
     Router::new()
         // Health check
-        .route("/health", get({
-            let start = start_time;
-            move || async move {
-                let uptime = start.elapsed().as_secs();
-                axum::Json(ApiResponse::success(HealthResponse {
-                    status: "healthy".to_string(),
-                    version: env!("CARGO_PKG_VERSION").to_string(),
-                    uptime_seconds: uptime,
-                }))
-            }
-        }))
+        .route(
+            "/health",
+            get({
+                let start = start_time;
+                move || async move {
+                    let uptime = start.elapsed().as_secs();
+                    axum::Json(ApiResponse::success(HealthResponse {
+                        status: "healthy".to_string(),
+                        version: env!("CARGO_PKG_VERSION").to_string(),
+                        uptime_seconds: uptime,
+                    }))
+                }
+            }),
+        )
         // Chat routes
         .route("/api/v1/chats", get(chats::list_chats))
         .route("/api/v1/chats", post(chats::create_chat))
@@ -47,12 +50,27 @@ pub fn create_router(db: Arc<Database>, start_time: std::time::Instant) -> Route
         .route("/api/v1/workspaces", post(workspaces::create_workspace))
         .route("/api/v1/workspaces/:id", get(workspaces::get_workspace))
         .route("/api/v1/workspaces/:id", put(workspaces::update_workspace))
-        .route("/api/v1/workspaces/:id", delete(workspaces::delete_workspace))
+        .route(
+            "/api/v1/workspaces/:id",
+            delete(workspaces::delete_workspace),
+        )
         // Knowledge routes
-        .route("/api/v1/knowledge/symbols", post(knowledge::store_code_symbol))
-        .route("/api/v1/knowledge/symbols/search", post(knowledge::search_code_symbols))
-        .route("/api/v1/knowledge/fragments", post(knowledge::store_semantic_fragment))
-        .route("/api/v1/knowledge/fragments/search", post(knowledge::search_semantic_fragments))
+        .route(
+            "/api/v1/knowledge/symbols",
+            post(knowledge::store_code_symbol),
+        )
+        .route(
+            "/api/v1/knowledge/symbols/search",
+            post(knowledge::search_code_symbols),
+        )
+        .route(
+            "/api/v1/knowledge/fragments",
+            post(knowledge::store_semantic_fragment),
+        )
+        .route(
+            "/api/v1/knowledge/fragments/search",
+            post(knowledge::search_semantic_fragments),
+        )
         // Folder routes
         .route("/api/v1/folders", get(system::list_folders))
         .route("/api/v1/folders", post(system::create_folder))

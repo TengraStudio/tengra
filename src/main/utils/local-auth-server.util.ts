@@ -60,6 +60,8 @@ interface ClaudeCallbackParams {
  * Supports Antigravity (Google) and Claude (Anthropic) authentication flows.
  */
 export class LocalAuthServer {
+    private static readonly CODEX_REDIRECT_PORT = 1455;
+    private static readonly CODEX_REDIRECT_PATH = '/auth/callback';
     /** Client ID for Antigravity (Google) OAuth */
     private static readonly CLIENT_ID = process.env['GOOGLE_CLIENT_ID'] ?? '1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com';
     /** Antigravity (Google) Authorization endpoint */
@@ -80,6 +82,10 @@ export class LocalAuthServer {
     private static readonly CLAUDE_TOKEN_ENDPOINT = 'https://api.anthropic.com/v1/oauth/token';
     /** Claude userinfo endpoint (fallback when id_token verification unavailable) */
     private static readonly CLAUDE_USERINFO_ENDPOINT = 'https://api.anthropic.com/v1/me';
+    /** OpenAI Codex authorization endpoint */
+    private static readonly CODEX_AUTH_ENDPOINT = 'https://auth.openai.com/oauth/authorize';
+    /** OpenAI Codex token exchange endpoint */
+    private static readonly CODEX_TOKEN_ENDPOINT = 'https://auth.openai.com/oauth/token';
 
     /**
      * Handles the callback from Antigravity (Google) OAuth.
@@ -351,6 +357,115 @@ export class LocalAuthServer {
     }
 
     /**
+     * Starts the Codex OAuth flow using PKCE.
+     */
+    static async startCodexAuth(
+        clientId: string,
+        onSuccess: (data: AuthCallbackData) => Promise<void> | void,
+        onError: (err: CatchError) => void
+    ): Promise<AuthResult> {
+        return new Promise((resolve, reject) => {
+            if (!clientId.trim()) {
+                reject(new Error('OpenAI OAuth client ID is not configured'));
+                return;
+            }
+
+            let verifier: string;
+            let oauthState: string;
+
+            const server = http.createServer();
+            server.on('error', reject);
+
+            server.on('request', (req, res) => {
+                void (async () => {
+                    try {
+                        const address = server.address() as AddressInfo | null;
+                        if (!address) { return; }
+
+                        const url = new URL(req.url ?? '/', `http://127.0.0.1:${address.port}`);
+                        if (url.pathname !== LocalAuthServer.CODEX_REDIRECT_PATH) {
+                            res.writeHead(404);
+                            res.end();
+                            return;
+                        }
+
+                        const code = url.searchParams.get('code');
+                        const callbackState = url.searchParams.get('state');
+                        const error = url.searchParams.get('error');
+
+                        if (error) {
+                            res.writeHead(400, { 'Content-Type': 'text/html' });
+                            res.end('<h1>Auth Failed</h1><p>Check the app for details.</p><script>window.close()</script>');
+                            onError(new Error(error));
+                            server.close();
+                            return;
+                        }
+
+                        if (!callbackState || callbackState !== oauthState) {
+                            res.writeHead(400, { 'Content-Type': 'text/html' });
+                            res.end('<h1>Auth Failed</h1><p>Invalid state parameter.</p><script>window.close()</script>');
+                            onError(new Error('OAuth state validation failed'));
+                            server.close();
+                            return;
+                        }
+
+                        if (!code) {
+                            res.writeHead(400, { 'Content-Type': 'text/html' });
+                            res.end('<h1>Auth Failed</h1><p>Missing authorization code.</p><script>window.close()</script>');
+                            onError(new Error('Authorization code missing'));
+                            server.close();
+                            return;
+                        }
+
+                        const redirectUri = `http://localhost:${LocalAuthServer.CODEX_REDIRECT_PORT}${LocalAuthServer.CODEX_REDIRECT_PATH}`;
+                        const tokenData = await LocalAuthServer.exchangeCodeForCodexToken(code, verifier, redirectUri, clientId);
+                        await onSuccess(tokenData);
+
+                        res.writeHead(200, { 'Content-Type': 'text/html' });
+                        res.end('<h1>Login Successful!</h1><p>You can close this window and return to Tengra.</p>');
+                        server.close();
+                    } catch (error) {
+                        const err = error as Error;
+                        appLogger.error('LocalAuthServer', `Codex Auth Failed: ${err.message}`, err);
+                        res.writeHead(500, { 'Content-Type': 'text/html' });
+                        res.end(`<h1>Auth Failed</h1><p>Error exchanging token:</p><pre>${err.message}</pre>`);
+                        onError(err);
+                        server.close();
+                    }
+                })();
+            });
+
+            server.listen(LocalAuthServer.CODEX_REDIRECT_PORT, '127.0.0.1', () => {
+                try {
+                    const redirectUri = `http://localhost:${LocalAuthServer.CODEX_REDIRECT_PORT}${LocalAuthServer.CODEX_REDIRECT_PATH}`;
+                    oauthState = crypto.randomBytes(16).toString('hex');
+
+                    verifier = LocalAuthServer.generateCodeVerifier();
+                    const challenge = LocalAuthServer.generateCodeChallenge(verifier);
+
+                    const authUrl = new URL(LocalAuthServer.CODEX_AUTH_ENDPOINT);
+                    authUrl.searchParams.append('client_id', clientId);
+                    authUrl.searchParams.append('response_type', 'code');
+                    authUrl.searchParams.append('redirect_uri', redirectUri);
+                    authUrl.searchParams.append('scope', 'openid profile email offline_access api.connectors.read api.connectors.invoke');
+                    authUrl.searchParams.append('state', oauthState);
+                    authUrl.searchParams.append('code_challenge', challenge);
+                    authUrl.searchParams.append('code_challenge_method', 'S256');
+                    authUrl.searchParams.append('prompt', 'login');
+                    authUrl.searchParams.append('id_token_add_organizations', 'true');
+                    authUrl.searchParams.append('codex_cli_simplified_flow', 'true');
+                    authUrl.searchParams.append('originator', 'Codex');
+
+                    resolve({ url: authUrl.toString(), state: oauthState });
+                } catch (error) {
+                    server.close();
+                    reject(error);
+                }
+            });
+        });
+    }
+
+    /**
      * Generates a random PKCE code verifier.
      */
     private static generateCodeVerifier(): string {
@@ -446,6 +561,55 @@ export class LocalAuthServer {
             });
 
             request.on('error', (err) => reject(err));
+            request.write(body.toString());
+            request.end();
+        });
+    }
+
+    /**
+     * Exchanges an authorization code for OpenAI Codex tokens.
+     */
+    private static async exchangeCodeForCodexToken(
+        code: string,
+        verifier: string,
+        redirectUri: string,
+        clientId: string
+    ): Promise<AuthCallbackData> {
+        const body = new URLSearchParams({
+            client_id: clientId,
+            code,
+            grant_type: 'authorization_code',
+            redirect_uri: redirectUri,
+            code_verifier: verifier
+        });
+
+        return new Promise((resolve, reject) => {
+            const request = net.request({
+                method: 'POST',
+                url: LocalAuthServer.CODEX_TOKEN_ENDPOINT,
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            });
+
+            request.on('response', (response) => {
+                let data = '';
+                response.on('data', chunk => data += chunk);
+                response.on('end', () => {
+                    if (response.statusCode && response.statusCode >= 400) {
+                        reject(new Error(`Token exchange failed: ${response.statusCode} - ${data}`));
+                        return;
+                    }
+                    const json = safeJsonParse<AuthCallbackData>(data, {} as AuthCallbackData);
+                    if (Object.keys(json).length === 0) {
+                        reject(new Error('Malformed token response'));
+                        return;
+                    }
+                    resolve(json);
+                });
+            });
+
+            request.on('error', reject);
             request.write(body.toString());
             request.end();
         });

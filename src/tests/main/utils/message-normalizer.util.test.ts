@@ -31,6 +31,110 @@ describe('MessageNormalizer', () => {
             expect(content[0]).toEqual({ type: 'text', text: 'look' });
             expect(content[1]).toEqual({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,base64data' } });
         });
+
+        it('should preserve tool calls for assistant messages with empty string content', () => {
+            const messages = [
+                {
+                    role: 'assistant',
+                    content: '',
+                    toolCalls: [{
+                        id: '',
+                        type: 'function' as const,
+                        function: {
+                            name: 'list_directory',
+                            arguments: '{"path":"C:/Users/agnes/Desktop"}',
+                        },
+                    }],
+                },
+            ];
+            const normalized = MessageNormalizer.normalizeOpenAIMessages(messages as never, 'gpt-4o');
+            expect(normalized[0]?.tool_calls).toEqual([{
+                id: 'list_directory-0',
+                type: 'function',
+                function: {
+                    name: 'list_directory',
+                    arguments: '{"path":"C:/Users/agnes/Desktop"}',
+                },
+            }]);
+        });
+
+        it('should map assistant tool calls and tool outputs for OpenCode responses input', () => {
+            const normalized = MessageNormalizer.normalizeOpenCodeResponsesMessages([
+                {
+                    id: 'assistant-1',
+                    role: 'assistant',
+                    content: '',
+                    timestamp: new Date(),
+                    toolCalls: [{
+                        id: 'tool-0',
+                        type: 'function',
+                        function: {
+                            name: 'list_directory',
+                            arguments: '{"path":"C:/Users/agnes/Desktop"}',
+                        },
+                    }],
+                },
+                {
+                    id: 'tool-msg-1',
+                    role: 'tool',
+                    content: '{"entries":["a","b"]}',
+                    toolCallId: 'tool-0',
+                    timestamp: new Date(),
+                },
+            ]);
+
+            expect(normalized).toEqual([
+                {
+                    role: 'assistant',
+                    content: [{
+                        type: 'function_call',
+                        call_id: 'tool-0',
+                        name: 'list_directory',
+                        arguments: '{"path":"C:/Users/agnes/Desktop"}',
+                    }],
+                },
+                {
+                    role: 'user',
+                    content: [{
+                        type: 'function_call_output',
+                        call_id: 'tool-0',
+                        output: '{"entries":["a","b"]}',
+                    }],
+                },
+            ]);
+        });
+
+        it('should reject tool role messages without tool_call_id in OpenAI normalization', () => {
+            const normalized = MessageNormalizer.normalizeOpenAIMessages([
+                {
+                    id: 'tool-1',
+                    role: 'tool',
+                    content: '{"ok":true}',
+                    timestamp: new Date(),
+                },
+            ]);
+            expect(normalized).toEqual([]);
+        });
+
+        it('should reject assistant tool calls with empty function names', () => {
+            const normalized = MessageNormalizer.normalizeOpenAIMessages([
+                {
+                    id: 'assistant-1',
+                    role: 'assistant',
+                    content: '',
+                    timestamp: new Date(),
+                    toolCalls: [{
+                        id: '',
+                        type: 'function' as const,
+                        function: {
+                            name: '   ',
+                            arguments: '{"path":"C:/Users"}',
+                        },
+                    }],
+                },
+            ]);
+            expect(normalized).toEqual([]);
+        });
     });
 
     describe('normalizeAnthropicMessages', () => {

@@ -14,9 +14,7 @@ use crate::types::*;
 // ============================================================================
 
 /// GET /api/v1/folders - List all folders
-pub async fn list_folders(
-    State(db): State<Arc<Database>>,
-) -> Json<ApiResponse<Vec<Folder>>> {
+pub async fn list_folders(State(db): State<Arc<Database>>) -> Json<ApiResponse<Vec<Folder>>> {
     match db.get_folders().await {
         Ok(folders) => Json(ApiResponse::success(folders)),
         Err(e) => Json(ApiResponse::error(e.to_string())),
@@ -62,9 +60,7 @@ pub async fn delete_folder(
 // ============================================================================
 
 /// GET /api/v1/prompts - List all prompts
-pub async fn list_prompts(
-    State(db): State<Arc<Database>>,
-) -> Json<ApiResponse<Vec<Prompt>>> {
+pub async fn list_prompts(State(db): State<Arc<Database>>) -> Json<ApiResponse<Vec<Prompt>>> {
     match db.get_prompts().await {
         Ok(prompts) => Json(ApiResponse::success(prompts)),
         Err(e) => Json(ApiResponse::error(e.to_string())),
@@ -110,9 +106,7 @@ pub async fn delete_prompt(
 // ============================================================================
 
 /// GET /api/v1/stats - Get database statistics
-pub async fn get_stats(
-    State(db): State<Arc<Database>>,
-) -> Json<ApiResponse<Stats>> {
+pub async fn get_stats(State(db): State<Arc<Database>>) -> Json<ApiResponse<Stats>> {
     match db.get_stats().await {
         Ok(stats) => Json(ApiResponse::success(stats)),
         Err(e) => Json(ApiResponse::error(e.to_string())),

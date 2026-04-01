@@ -24,7 +24,7 @@ const SETTINGS_FIXTURE: AppSettings = {
         theme: 'dark',
         resolution: '1920x1080',
         fontSize: 14,
-        onboardingCompleted: true,
+
     },
     images: { provider: 'antigravity' },
 };

@@ -20,9 +20,10 @@ export interface SessionConversationStreamChunk {
     content?: string;
     reasoning?: string;
     done?: boolean;
-    type?: 'error' | 'metadata';
+    type?: 'error' | 'metadata' | 'tool_calls' | 'content' | 'reasoning' | 'images';
     sources?: string[];
     toolCalls?: ToolCall[];
+    tool_calls?: ToolCall[];
     error?: string;
 }
 

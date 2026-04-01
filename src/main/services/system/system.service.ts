@@ -255,4 +255,52 @@ Add-Type -TypeDefinition $code
             }
         };
     }
+
+    async getUsage(): Promise<ServiceResponse<{ cpu: number; memory: number }>> {
+        try {
+            const cpuUsage = os.loadavg()[0];
+            const totalMem = os.totalmem();
+            const freeMem = os.freemem();
+            const memUsage = totalMem > 0 ? ((totalMem - freeMem) / totalMem) * 100 : 0;
+
+            return {
+                success: true,
+                result: { cpu: cpuUsage, memory: memUsage }
+            };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
+    async getSystemMonitor(): Promise<ServiceResponse<{ output: string }>> {
+        try {
+            let output = '';
+            if (process.platform === 'win32') {
+                const res = await this.runCommand('wmic', ['cpu', 'get', 'loadpercentage', '/value']);
+                output = res.stdout;
+            } else if (process.platform === 'linux' || process.platform === 'darwin') {
+                const res = await this.runCommand('top', ['-l', '1', '-n', '0']);
+                output = res.stdout;
+            }
+            return { success: true, result: { output } };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
+    async getBatteryStatus(): Promise<ServiceResponse<{ output: string }>> {
+        try {
+            let output = '';
+            if (process.platform === 'win32') {
+                const res = await this.runCommand('powershell', ['-Command', 'Get-CimInstance -ClassName Win32_Battery | Select-Object -Property EstimatedChargeRemaining, BatteryStatus']);
+                output = res.stdout;
+            } else if (process.platform === 'darwin') {
+                const res = await this.runCommand('pmset', ['-g', 'batt']);
+                output = res.stdout;
+            }
+            return { success: true, result: { output } };
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
 }

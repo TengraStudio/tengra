@@ -43,11 +43,6 @@ export interface DbBridge {
         tokenTimeline: { timestamp: number; promptTokens: number; completionTokens: number }[];
         activity: number[];
     }>;
-    getTimeStats: () => Promise<{
-        totalOnlineTime: number;
-        totalCodingTime: number;
-        workspaceCodingTime: Record<string, number>;
-    }>;
     getTokenStats: (period: 'daily' | 'weekly' | 'monthly') => Promise<{
         totalSent: number;
         totalReceived: number;
@@ -110,7 +105,6 @@ export function createDbBridge(ipc: IpcRenderer): DbBridge {
         getMessages: chatId => ipc.invoke('db:getMessages', chatId),
         getStats: () => ipc.invoke('db:getStats'),
         getDetailedStats: period => ipc.invoke('db:getDetailedStats', period),
-        getTimeStats: () => ipc.invoke('db:getTimeStats'),
         getTokenStats: period => ipc.invoke('db:getTokenStats', period),
         addTokenUsage: record => ipc.invoke('db:addTokenUsage', record),
         getWorkspaces: () => ipc.invoke('db:getWorkspaces'),

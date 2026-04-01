@@ -114,9 +114,10 @@ export class Container {
 
         const singletons = Array.from(this.services.values())
             .filter(def => def.scope === Scope.SINGLETON);
+        const criticalSingletons = singletons.filter(def => !this.deferredServices.has(def.name));
 
-        // Instantiate all singletons first
-        for (const def of singletons) {
+        // Instantiate only critical singletons first. Deferred services are created later.
+        for (const def of criticalSingletons) {
             try {
                 this.resolve(def.name);
             } catch (error) {
@@ -125,12 +126,15 @@ export class Container {
             }
         }
 
-        // Run initialize() on them (skip deferred services)
+        // Log deferred services to make startup behavior explicit
         for (const def of singletons) {
             if (this.deferredServices.has(def.name)) {
-                appLogger.info('Container', `Deferring initialization of ${def.name}`);
-                continue;
+                appLogger.info('Container', `Deferring instantiation and initialization of ${def.name}`);
             }
+        }
+
+        // Run initialize() for critical services only
+        for (const def of criticalSingletons) {
             // Cast to LifecycleAware to check for optional initialize() method
             const instance = def.instance as LifecycleAware;
             if (typeof instance.initialize === 'function') {
@@ -224,7 +228,14 @@ export class Container {
             .filter(def => def.scope === Scope.SINGLETON && this.deferredServices.has(def.name));
 
         for (const def of deferred) {
-            const instance = def.instance as LifecycleAware;
+            // Resolve now so services deferred from init() are instantiated on demand.
+            let instance: LifecycleAware;
+            try {
+                instance = this.resolve<LifecycleAware>(def.name);
+            } catch (error) {
+                appLogger.error('Container', `Failed deferred resolve ${def.name}`, error as Error);
+                continue;
+            }
             if (typeof instance?.initialize === 'function') {
                 try {
                     const start = Date.now();

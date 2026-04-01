@@ -74,6 +74,7 @@ const DEFERRED_SERVICE_NAMES: string[] = [
     'telemetryService',
     'usageTrackingService',
     'auditLogService',
+    'timeTrackingService',
     'performanceService',
     'monitoringService',
 
@@ -84,18 +85,17 @@ const DEFERRED_SERVICE_NAMES: string[] = [
     'advancedMemoryService',
     'embeddingService',
     'brainService',
+    'localImageService',
     'codeIntelligenceService',
     'contextRetrievalService',
     'multiModelComparisonService',
     'modelCollaborationService',
     'inlineSuggestionService',
     'promptTemplatesService',
+    'modelRegistryService',
     // Agent services
     'agentService',
     // Workspace & external
-    'marketResearchService',
-    'ideaGeneratorService',
-    'workspaceScaffoldService',
     'backupService',
 ];
 

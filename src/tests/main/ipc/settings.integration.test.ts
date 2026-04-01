@@ -65,8 +65,7 @@ describe('Settings IPC Handlers', () => {
             language: 'en',
             theme: 'system',
             resolution: 'auto',
-            fontSize: 14,
-            onboardingCompleted: true
+            fontSize: 14
         }
     });
 

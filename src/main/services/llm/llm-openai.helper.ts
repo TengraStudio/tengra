@@ -23,8 +23,10 @@ const normalizeToolCalls = (toolCalls: OpenAIMessage['tool_calls']): ToolCall[] 
         return undefined;
     }
 
-    return toolCalls.map((toolCall) => ({
-        id: toolCall.id,
+    return toolCalls.map((toolCall, index) => ({
+        id: toolCall.id && toolCall.id.trim().length > 0
+            ? toolCall.id
+            : `${toolCall.function.name || 'tool'}-${index}`,
         type: 'function',
         function: {
             name: toolCall.function.name,

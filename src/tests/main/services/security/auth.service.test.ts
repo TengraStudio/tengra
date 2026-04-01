@@ -185,18 +185,154 @@ describe('AuthService - Account Management', () => {
         expect(mockSecurityService.decryptSync).toHaveBeenCalledWith('enc:secret-token');
     });
 
-    it('warms linked account cache on initialize and serves provider reads without hitting the DB again', async () => {
-        const account = makeAccount();
-        vi.mocked(mockDatabaseService.getLinkedAccounts).mockResolvedValue([account]);
+    it('refreshes public provider reads from the DB so externally linked accounts become visible immediately', async () => {
+        const initialAccount = makeAccount({
+            id: 'initial-account',
+            provider: 'github'
+        });
+        const updatedAccount = makeAccount({
+            id: 'codex_default',
+            provider: 'codex'
+        });
+        vi.mocked(mockDatabaseService.getLinkedAccounts)
+            .mockResolvedValueOnce([initialAccount])
+            .mockResolvedValueOnce([initialAccount])
+            .mockResolvedValueOnce([initialAccount, updatedAccount]);
 
         await authService.initialize();
-        vi.mocked(mockDatabaseService.getLinkedAccounts).mockClear();
 
-        const accounts = await authService.getAccountsByProvider('github');
+        const accounts = await authService.getAccountsByProvider('codex');
 
         expect(accounts).toHaveLength(1);
-        expect(accounts[0]?.id).toBe(account.id);
-        expect(mockDatabaseService.getLinkedAccounts).not.toHaveBeenCalled();
+        expect(accounts[0]?.id).toBe(updatedAccount.id);
+        expect(mockDatabaseService.getLinkedAccounts).toHaveBeenCalledTimes(3);
+    });
+
+    it('updates the linked account cache after an encryption upgrade so the same account is not re-upgraded', async () => {
+        const legacyAccount = makeAccount({
+            id: 'proxy_key_default',
+            provider: 'proxy_key',
+            accessToken: 'legacy-proxy-token'
+        });
+        vi.mocked(mockDatabaseService.getLinkedAccounts).mockResolvedValue([legacyAccount]);
+        vi.mocked(mockSecurityService.decryptSync).mockImplementation((value: string) => {
+            if (value.startsWith('Tengra:v1:')) {
+                return value.slice('Tengra:v1:'.length);
+            }
+            if (value.startsWith('enc:')) {
+                return value.slice(4);
+            }
+            return value;
+        });
+        vi.mocked(mockSecurityService.encryptSync).mockImplementation((value: string) => `Tengra:v1:${value}`);
+
+        await authService.initialize();
+        vi.mocked(mockDatabaseService.saveLinkedAccount).mockClear();
+
+        await authService.getAllAccountsFull();
+        await authService.getAllAccountsFull();
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        expect(mockDatabaseService.saveLinkedAccount).not.toHaveBeenCalled();
+    });
+
+    it('normalizes snake_case proxy auth updates and links the emitted account id', async () => {
+        vi.mocked(mockDatabaseService.getLinkedAccounts).mockResolvedValue([]);
+
+        await authService.updateFromProxy({
+            provider: 'codex',
+            accountId: 'codex_default',
+            tokenData: {
+                access_token: 'proxy-access-token',
+                refresh_token: 'proxy-refresh-token',
+                session_token: 'proxy-session-token',
+                expires_at: 1234567890,
+                scope: 'openid profile',
+                email: 'codex@example.com',
+            },
+        });
+
+        expect(mockDatabaseService.saveLinkedAccount).toHaveBeenCalledWith(
+            expect.objectContaining({
+                id: 'codex_default',
+                provider: 'codex',
+                email: 'codex@example.com',
+                scope: 'openid profile',
+                expiresAt: 1234567890,
+                accessToken: 'enc:proxy-access-token',
+                refreshToken: 'enc:proxy-refresh-token',
+                sessionToken: 'enc:proxy-session-token',
+            })
+        );
+    });
+
+    it('preserves richer OAuth fields when a sparse provider update arrives for the same account', async () => {
+        const richAccount = makeAccount({
+            id: 'antigravity_existing',
+            provider: 'antigravity',
+            accessToken: 'enc:old-access',
+            refreshToken: 'enc:old-refresh',
+            email: 'agnes@example.com',
+            displayName: 'Agnes',
+            expiresAt: 12345,
+            metadata: {
+                email: 'agnes@example.com',
+                refresh_token: 'old-refresh'
+            }
+        });
+        vi.mocked(mockDatabaseService.getLinkedAccounts).mockResolvedValue([richAccount]);
+        await authService.initialize();
+        vi.mocked(mockDatabaseService.saveLinkedAccount).mockClear();
+
+        await authService.linkAccountWithId('antigravity', 'antigravity_existing', {
+            accessToken: 'new-access'
+        });
+
+        expect(mockDatabaseService.saveLinkedAccount).toHaveBeenCalledWith(
+            expect.objectContaining({
+                id: 'antigravity_existing',
+                provider: 'antigravity',
+                accessToken: 'enc:new-access',
+                refreshToken: 'enc:old-refresh',
+                email: 'agnes@example.com',
+                displayName: 'Agnes',
+                expiresAt: 12345
+            })
+        );
+    });
+
+    it('coalesces sparse OAuth updates into an existing richer account instead of creating a shadow row', async () => {
+        const richAccount = makeAccount({
+            id: 'antigravity_rich',
+            provider: 'antigravity',
+            accessToken: 'enc:old-access',
+            refreshToken: 'enc:old-refresh',
+            email: 'agnes@example.com',
+            displayName: 'Agnes',
+            isActive: true,
+            metadata: {
+                email: 'agnes@example.com',
+                refresh_token: 'old-refresh'
+            }
+        });
+        vi.mocked(mockDatabaseService.getLinkedAccounts).mockResolvedValue([richAccount]);
+        await authService.initialize();
+        vi.mocked(mockDatabaseService.saveLinkedAccount).mockClear();
+
+        await authService.linkAccountWithId('antigravity', 'antigravity_shadow', {
+            accessToken: 'shadow-access'
+        });
+
+        expect(mockDatabaseService.saveLinkedAccount).toHaveBeenCalledWith(
+            expect.objectContaining({
+                id: 'antigravity_rich',
+                provider: 'antigravity',
+                accessToken: 'enc:shadow-access',
+                refreshToken: 'enc:old-refresh',
+                email: 'agnes@example.com',
+                isActive: true
+            })
+        );
     });
 
     it('should return undefined when no active account', async () => {

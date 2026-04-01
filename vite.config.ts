@@ -8,6 +8,8 @@ import electron from 'vite-plugin-electron';
 
 export default defineConfig(({ mode }) => {
     const nodeEnv = process.env.NODE_ENV ?? (mode === 'development' ? 'development' : 'production');
+    const shouldAnalyzeBundle = process.env.TENGRA_ANALYZE_BUNDLE === 'true';
+    const shouldReportCompressedSize = process.env.TENGRA_REPORT_COMPRESSED_SIZE === 'true';
 
     return {
         plugins: [
@@ -110,14 +112,16 @@ export default defineConfig(({ mode }) => {
                     }
                 }
             ]),
-
-            // Bundle analyzer - generates stats.html after build
-            visualizer({
-                filename: 'dist/stats.html',
-                open: false,
-                gzipSize: true,
-                brotliSize: true
-            })
+            ...(shouldAnalyzeBundle
+                ? [
+                    visualizer({
+                        filename: 'dist/stats.html',
+                        open: false,
+                        gzipSize: true,
+                        brotliSize: true
+                    })
+                ]
+                : [])
         ],
         resolve: {
             alias: {
@@ -135,6 +139,20 @@ export default defineConfig(({ mode }) => {
         define: {
             'process.env.NODE_ENV': JSON.stringify(nodeEnv),
             '__BUILD_TIME__': JSON.stringify(new Date().toISOString())
+        },
+        esbuild: {
+            target: 'esnext',
+            keepNames: false,
+            jsx: 'automatic',
+            jsxImportSource: 'react',
+            treeShaking: true,
+            ...(nodeEnv === 'production'
+                ? {
+                    drop: ['console', 'debugger'],
+                    legalComments: 'none',
+                    pure: ['performanceMonitor.mark']
+                }
+                : {})
         },
         build: {
             outDir: 'dist/renderer',
@@ -193,32 +211,8 @@ export default defineConfig(({ mode }) => {
             // Electron desktop dağıtımında bazı vendor/chunk'lar doğal olarak büyük.
             // 500k uyarı eşiği yerine gerçekçi bir eşik kullanıyoruz.
             chunkSizeWarningLimit: 5000,
-            // AGRESIF MİNİFİCATION: esbuild kullan (terser'den 10-20 kat daha hızlı)
-            minify: 'terser',
-            terserOptions: {
-                compress: {
-                    drop_console: true, // console.log'ları production'da kaldır
-                    drop_debugger: true,
-                    pure_funcs: [
-                        'console.log',
-                        'console.info',
-                        'console.debug',
-                        'console.trace',
-                        'performanceMonitor.mark'
-                    ],
-                    passes: 2,
-                    global_defs: {
-                        'process.env.NODE_ENV': JSON.stringify('production')
-                    }
-                },
-                mangle: {
-                    safari10: true,
-                    toplevel: true
-                },
-                format: {
-                    comments: false
-                }
-            },
+            // Build süresi için terser yerine esbuild minifier kullan
+            minify: 'esbuild',
             // CommonJS interop
             commonjsOptions: {
                 include: [/node_modules/],
@@ -232,8 +226,8 @@ export default defineConfig(({ mode }) => {
             sourcemap: false,
             // CSS code splitting
             cssCodeSplit: true,
-            // UZAY OPTİMİZASYONU: Daha agresif tree shaking
-            reportCompressedSize: true
+            // Sıkıştırılmış boyut raporu pahalı; gerektiğinde env ile açılır.
+            reportCompressedSize: shouldReportCompressedSize
         },
         // Optimize deps - pre-bundle for faster dev startup
         optimizeDeps: {
@@ -256,14 +250,6 @@ export default defineConfig(({ mode }) => {
                 jsx: 'automatic',
                 jsxImportSource: 'react'
             }
-        },
-        // Ensure ESM compatibility
-        esbuild: {
-            target: 'esnext',
-            keepNames: false,
-            // Faster transforms
-            legalComments: 'none',
-            treeShaking: true
         },
         test: {
             globals: true,

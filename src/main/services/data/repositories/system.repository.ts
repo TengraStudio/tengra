@@ -17,6 +17,76 @@ const WORKSPACE_COMPAT_ID_COLUMN = WORKSPACE_COMPAT_SCHEMA_VALUES.ID_COLUMN;
 const WORKSPACE_COMPAT_PATH_COLUMN = WORKSPACE_COMPAT_SCHEMA_VALUES.PATH_COLUMN;
 
 export class SystemRepository extends BaseRepository {
+    private parseTimestampValue(value: number | string | null | undefined, fallback: number = Date.now()): number {
+        if (typeof value === 'number' && Number.isFinite(value)) {
+            return value;
+        }
+        if (typeof value === 'string') {
+            const numeric = Number(value);
+            if (Number.isFinite(numeric)) {
+                return numeric;
+            }
+            const parsed = Date.parse(value);
+            if (Number.isFinite(parsed)) {
+                return parsed;
+            }
+        }
+        return fallback;
+    }
+
+    private normalizeProvider(provider: string): string {
+        const normalized = provider.trim().toLowerCase().replace(/(_token|_key|_auth)$/, '');
+        const mappings: Record<string, string> = {
+            proxy: 'proxy_key',
+            proxy_key: 'proxy_key',
+            github: 'github',
+            copilot: 'copilot',
+            copilot_token: 'copilot',
+            openai: 'codex',
+            codex: 'codex',
+            anthropic: 'claude',
+            claude: 'claude',
+            antigravity: 'antigravity',
+            google: 'antigravity',
+            gemini: 'antigravity',
+            nvidia: 'nvidia'
+        };
+        return mappings[normalized] ?? normalized;
+    }
+
+    private getProviderAliases(provider: string): string[] {
+        const normalized = this.normalizeProvider(provider);
+        const aliasGroups: Record<string, string[]> = {
+            codex: ['codex', 'openai'],
+            claude: ['claude', 'anthropic'],
+            antigravity: ['antigravity', 'google', 'gemini'],
+            copilot: ['copilot', 'copilot_token'],
+            github: ['github'],
+            proxy_key: ['proxy', 'proxy_key'],
+            nvidia: ['nvidia']
+        };
+        return aliasGroups[normalized] ?? [normalized];
+    }
+
+    private mapLinkedAccountRow(row: JsonObject): LinkedAccount {
+        return {
+            id: String(row.id),
+            provider: this.normalizeProvider(String(row.provider)),
+            email: row.email as string | undefined,
+            displayName: row.display_name as string | undefined,
+            avatarUrl: row.avatar_url as string | undefined,
+            isActive: Boolean(row.is_active),
+            createdAt: this.parseTimestampValue(row.created_at as number | string | null | undefined),
+            updatedAt: this.parseTimestampValue(row.updated_at as number | string | null | undefined),
+            accessToken: row.access_token as string | undefined,
+            refreshToken: row.refresh_token as string | undefined,
+            sessionToken: row.session_token as string | undefined,
+            scope: row.scope as string | undefined,
+            expiresAt: row.expires_at ? Number(row.expires_at) : undefined,
+            metadata: this.parseJsonField(row.metadata as string | null, {})
+        };
+    }
+
     constructor(adapter: DatabaseAdapter) {
         super(adapter);
     }
@@ -327,15 +397,6 @@ export class SystemRepository extends BaseRepository {
         return (await this.adapter.prepare('SELECT count(*) as count FROM messages').get<{ count: number }>())?.count ?? 0;
     }
 
-    async getTimeStats() {
-        // This will be delegated by DatabaseService, but provided here as fallback
-        return {
-            totalOnlineTime: 0,
-            totalCodingTime: 0,
-            workspaceCodingTime: {}
-        };
-    }
-
     async getMigrationStatus() {
         return { version: 0, lastMigration: 0 };
     }
@@ -437,43 +498,26 @@ export class SystemRepository extends BaseRepository {
         let sql = 'SELECT * FROM linked_accounts';
         const params: SqlValue[] = [];
         if (provider) {
-            sql += ' WHERE provider = ?';
-            params.push(provider);
+            const aliases = this.getProviderAliases(provider);
+            const placeholders = aliases.map(() => '?').join(', ');
+            sql += ` WHERE lower(provider) IN (${placeholders})`;
+            params.push(...aliases);
         }
         const rows = await this.adapter.prepare(sql).all<JsonObject>(...params);
-        return rows.map(row => ({
-            id: String(row.id),
-            provider: String(row.provider),
-            email: row.email as string | undefined,
-            displayName: row.display_name as string | undefined,
-            avatarUrl: row.avatar_url as string | undefined,
-            isActive: Boolean(row.is_active),
-            createdAt: Number(row.created_at),
-            updatedAt: Number(row.updated_at),
-            accessToken: row.access_token as string | undefined,
-            refreshToken: row.refresh_token as string | undefined,
-            sessionToken: row.session_token as string | undefined,
-            scope: row.scope as string | undefined,
-            expiresAt: row.expires_at ? Number(row.expires_at) : undefined,
-            metadata: this.parseJsonField(row.metadata as string | null, {})
-        }));
+        return rows.map(row => this.mapLinkedAccountRow(row));
     }
 
     async getLinkedAccount(id: string): Promise<LinkedAccount | null> {
         const row = await this.adapter.prepare('SELECT * FROM linked_accounts WHERE id = ?').get<JsonObject>(id);
         if (!row) { return null; }
-        return {
-            id: String(row.id),
-            provider: String(row.provider),
-            email: row.email as string | undefined,
-            displayName: row.display_name as string | undefined,
-            isActive: Boolean(row.is_active),
-            createdAt: Number(row.created_at),
-            updatedAt: Number(row.updated_at)
-        };
+        return this.mapLinkedAccountRow(row);
     }
 
     async saveLinkedAccount(account: LinkedAccount): Promise<void> {
+        const now = Date.now();
+        const createdAt = Number.isFinite(account.createdAt) ? account.createdAt : now;
+        const updatedAt = Number.isFinite(account.updatedAt) ? account.updatedAt : now;
+        const provider = this.normalizeProvider(account.provider);
         await this.adapter.prepare(`
             INSERT INTO linked_accounts (
                 id, provider, email, display_name, avatar_url, 
@@ -482,6 +526,7 @@ export class SystemRepository extends BaseRepository {
                 created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET 
+                provider = EXCLUDED.provider,
                 email = EXCLUDED.email, 
                 display_name = EXCLUDED.display_name, 
                 avatar_url = EXCLUDED.avatar_url,
@@ -495,7 +540,7 @@ export class SystemRepository extends BaseRepository {
                 updated_at = EXCLUDED.updated_at
         `).run(
             account.id,
-            account.provider,
+            provider,
             account.email ?? null,
             account.displayName ?? null,
             account.avatarUrl ?? null,
@@ -506,8 +551,8 @@ export class SystemRepository extends BaseRepository {
             account.scope ?? null,
             account.isActive,
             account.metadata ? JSON.stringify(account.metadata) : null,
-            account.createdAt,
-            account.updatedAt
+            createdAt,
+            updatedAt
         );
     }
 
@@ -697,4 +742,3 @@ export class SystemRepository extends BaseRepository {
         await this.adapter.prepare('DELETE FROM agent_templates WHERE id = ?').run(id);
     }
 }
-

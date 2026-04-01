@@ -3,7 +3,7 @@ import { RuntimeBootstrapExecutionResult } from '@shared/types/runtime-manifest'
 import { describe, expect, it } from 'vitest';
 
 function createRuntimeStatus(
-    statuses: Partial<Record<'tengra-db-service' | 'cliproxy-embed', 'ready' | 'missing' | 'not-executable' | 'external' | 'unsupported'>>
+    statuses: Partial<Record<'tengra-db-service' | 'tengra-proxy', 'ready' | 'missing' | 'not-executable' | 'external' | 'unsupported'>>
 ): RuntimeBootstrapExecutionResult {
     return {
         manifestVersion: 'v1.0.0',
@@ -46,7 +46,7 @@ describe('runtime startup gate', () => {
         const decisions = getRuntimeStartupDecisions(
             createRuntimeStatus({
                 'tengra-db-service': 'ready',
-                'cliproxy-embed': 'external',
+                'tengra-proxy': 'external',
             })
         );
 
@@ -60,7 +60,7 @@ describe('runtime startup gate', () => {
         const decisions = getRuntimeStartupDecisions(
             createRuntimeStatus({
                 'tengra-db-service': 'missing',
-                'cliproxy-embed': 'not-executable',
+                'tengra-proxy': 'not-executable',
             })
         );
 

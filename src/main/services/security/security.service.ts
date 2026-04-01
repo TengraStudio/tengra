@@ -52,6 +52,14 @@ export class SecurityService extends BaseService implements ISecurityService {
         this.logInfo('Security service cleaned up');
     }
 
+    getMasterKeyHex(): string | null {
+        if (this.masterKey?.length !== 32) {
+            return null;
+        }
+
+        return this.masterKey.toString('hex');
+    }
+
     private async loadOrCreateMasterKey() {
         try {
             const keyExists = await fs.promises.access(this.keyPath).then(() => true).catch(() => false);

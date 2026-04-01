@@ -69,6 +69,8 @@ export class LocalImageService extends BaseService {
     private readonly scheduler: LocalImageScheduler;
     private readonly sdcpp: SdCppManager;
     private readonly settingsSvc: LocalImageServiceDeps['settingsService'];
+    private initializationPromise: Promise<void> | null = null;
+    private hasInitialized = false;
 
     constructor(deps: LocalImageServiceDeps) {
         super('LocalImageService');
@@ -111,6 +113,19 @@ export class LocalImageService extends BaseService {
      * Triggers non-blocking SD-CPP readiness check if it's the preferred provider.
      */
     override async initialize(): Promise<void> {
+        if (this.hasInitialized) {
+            return;
+        }
+        if (this.initializationPromise) {
+            return this.initializationPromise;
+        }
+        this.initializationPromise = this.performInitialize().finally(() => {
+            this.initializationPromise = null;
+        });
+        return this.initializationPromise;
+    }
+
+    private async performInitialize(): Promise<void> {
         this.logInfo('Initializing LocalImageService');
         void this.cleanupStaleTempFiles().catch(err => {
             this.logWarn('Failed to cleanup stale temp files', err);
@@ -128,6 +143,7 @@ export class LocalImageService extends BaseService {
                 this.logError('Non-blocking SD-CPP readiness check failed', err);
             });
         }
+        this.hasInitialized = true;
     }
 
     /**

@@ -70,16 +70,15 @@ export class DataService extends BaseService {
     constructor() {
         super('DataService');
 
-        // Use standard AppData/tengra/data structure
-        // app.getPath('userData') usually points to AppData/Roaming/tengra (or similar)
-        // We want to organize things cleanly inside it.
+        // Keep durable app state under userData/data, but centralize logs at userData/logs
+        // so Electron/native/runtime logs land in one predictable place.
         const userData = app.getPath('userData');
         this.baseDir = path.join(userData, 'data');
 
         this.paths = {
             db: path.join(userData, 'db'),
             config: path.join(this.baseDir, 'config'),
-            logs: path.join(this.baseDir, 'logs'),
+            logs: path.join(userData, 'logs'),
             models: path.join(this.baseDir, 'models'),
             data: this.baseDir, // Base data directory
             gallery: path.join(this.baseDir, 'gallery'),
@@ -261,6 +260,12 @@ export class DataService extends BaseService {
                 old: path.join(rootPath, 'settings.json'),
                 new: path.join(this.paths.config, 'settings.json'),
                 isDir: false
+            },
+            // Legacy app logs: userData/data/logs -> userData/logs
+            {
+                old: path.join(this.baseDir, 'logs'),
+                new: this.paths.logs,
+                isDir: true
             },
             // Models: root/models -> data/models
             {

@@ -334,7 +334,7 @@ export class AuthAPIService extends BaseService {
         const baseMetadata: JsonObject = { ...(existingMetadata ?? {}) };
 
         if (isClaudeProvider || isCodexProvider) {
-            // Let Rust token-service own Claude/Codex refresh; proxy sees only access token
+            // tengra-proxy owns Claude/Codex refresh; this bridge only exposes access tokens
             delete (baseMetadata as { refresh_token?: RuntimeValue }).refresh_token;
             delete (baseMetadata as { refreshToken?: RuntimeValue }).refreshToken;
         }

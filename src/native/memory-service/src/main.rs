@@ -1,30 +1,42 @@
 // Hide console window on Windows (prevents conhost.exe)
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use axum::{
-    routing::post,
-    Json, Router,
-    extract::State,
-};
 use anyhow::{Context, Result};
+use axum::{extract::State, routing::post, Json, Router};
 use chrono::Utc;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use std::fs;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tokio::sync::Mutex;
-use std::fs;
 use tokio::net::TcpListener;
+use tokio::sync::Mutex;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 enum Request {
-    Init { path: String },
-    InsertVector { id: String, content: String, embedding: Vec<f32>, metadata: Option<String> },
-    SearchVector { embedding: Vec<f32>, limit: i64 },
-    GetCache { hash: String },
-    SetCache { hash: String, response: String, ttl: i64 },
+    Init {
+        path: String,
+    },
+    InsertVector {
+        id: String,
+        content: String,
+        embedding: Vec<f32>,
+        metadata: Option<String>,
+    },
+    SearchVector {
+        embedding: Vec<f32>,
+        limit: i64,
+    },
+    GetCache {
+        hash: String,
+    },
+    SetCache {
+        hash: String,
+        response: String,
+        ttl: i64,
+    },
 }
 
 #[derive(Serialize)]
@@ -68,7 +80,13 @@ impl MemoryService {
         Ok(())
     }
 
-    fn insert_vector(&self, id: &str, content: &str, embedding: &[f32], metadata: Option<&str>) -> Result<()> {
+    fn insert_vector(
+        &self,
+        id: &str,
+        content: &str,
+        embedding: &[f32],
+        metadata: Option<&str>,
+    ) -> Result<()> {
         let conn = self.conn.as_ref().context("Database not initialized")?;
         let embedding_bytes = bincode::serialize(embedding)?;
         let now = Utc::now().timestamp_millis();
@@ -82,11 +100,18 @@ impl MemoryService {
 
     fn search_vector(&self, query_embedding: &[f32], limit: i64) -> Result<Vec<serde_json::Value>> {
         let conn = self.conn.as_ref().context("Database not initialized")?;
-        let mut stmt = conn.prepare("SELECT id, content, embedding, metadata, created_at FROM vectors")?;
+        let mut stmt =
+            conn.prepare("SELECT id, content, embedding, metadata, created_at FROM vectors")?;
         let rows = stmt.query_map([], |row| {
             let embedding_blob: Vec<u8> = row.get(2)?;
             let embedding: Vec<f32> = bincode::deserialize(&embedding_blob).unwrap_or_default();
-            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?, embedding, row.get::<_, Option<String>>(3)?, row.get::<_, i64>(4)?))
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                embedding,
+                row.get::<_, Option<String>>(3)?,
+                row.get::<_, i64>(4)?,
+            ))
         })?;
 
         let mut results = Vec::new();
@@ -106,7 +131,11 @@ impl MemoryService {
     fn get_cache(&self, hash: &str) -> Result<Option<String>> {
         let conn = self.conn.as_ref().context("Database not initialized")?;
         let now = Utc::now().timestamp_millis();
-        conn.execute("DELETE FROM model_cache WHERE created_at + ttl < ?", params![now]).ok();
+        conn.execute(
+            "DELETE FROM model_cache WHERE created_at + ttl < ?",
+            params![now],
+        )
+        .ok();
         let mut stmt = conn.prepare("SELECT response FROM model_cache WHERE hash = ?")?;
         Ok(stmt.query_row(params![hash], |row| row.get(0)).optional()?)
     }
@@ -123,7 +152,11 @@ fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
     let dot_product: f32 = a.iter().zip(b).map(|(x, y)| x * y).sum();
     let norm_a: f32 = a.iter().map(|x| x * x).sum::<f32>().sqrt();
     let norm_b: f32 = b.iter().map(|x| x * x).sum::<f32>().sqrt();
-    if norm_a == 0.0 || norm_b == 0.0 { 0.0 } else { dot_product / (norm_a * norm_b) }
+    if norm_a == 0.0 || norm_b == 0.0 {
+        0.0
+    } else {
+        dot_product / (norm_a * norm_b)
+    }
 }
 
 #[tokio::main]
@@ -142,7 +175,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("Memory service listening on {}", local_addr);
 
     if let Ok(appdata) = std::env::var("APPDATA") {
-        let services_dir = std::path::Path::new(&appdata).join("Tengra").join("services");
+        let services_dir = std::path::Path::new(&appdata)
+            .join("Tengra")
+            .join("services");
         fs::create_dir_all(&services_dir)?;
         let port_file = services_dir.join("memory-service.port");
         fs::write(port_file, port.to_string())?;
@@ -159,32 +194,81 @@ async fn handle_rpc(
     let mut service = service.lock().await;
     let res = match req {
         Request::Init { path } => match service.init(&path) {
-            Ok(_) => Response { success: true, data: None, error: None },
-            Err(e) => Response { success: false, data: None, error: Some(e.to_string()) },
+            Ok(_) => Response {
+                success: true,
+                data: None,
+                error: None,
+            },
+            Err(e) => Response {
+                success: false,
+                data: None,
+                error: Some(e.to_string()),
+            },
         },
-        Request::InsertVector { id, content, embedding, metadata } => {
-            match service.insert_vector(&id, &content, &embedding, metadata.as_deref()) {
-                Ok(_) => Response { success: true, data: None, error: None },
-                Err(e) => Response { success: false, data: None, error: Some(e.to_string()) },
-            }
+        Request::InsertVector {
+            id,
+            content,
+            embedding,
+            metadata,
+        } => match service.insert_vector(&id, &content, &embedding, metadata.as_deref()) {
+            Ok(_) => Response {
+                success: true,
+                data: None,
+                error: None,
+            },
+            Err(e) => Response {
+                success: false,
+                data: None,
+                error: Some(e.to_string()),
+            },
         },
         Request::SearchVector { embedding, limit } => {
             match service.search_vector(&embedding, limit) {
-                Ok(results) => Response { success: true, data: Some(serde_json::Value::Array(results)), error: None },
-                Err(e) => Response { success: false, data: None, error: Some(e.to_string()) },
+                Ok(results) => Response {
+                    success: true,
+                    data: Some(serde_json::Value::Array(results)),
+                    error: None,
+                },
+                Err(e) => Response {
+                    success: false,
+                    data: None,
+                    error: Some(e.to_string()),
+                },
             }
-        },
+        }
         Request::GetCache { hash } => match service.get_cache(&hash) {
-            Ok(Some(res)) => Response { success: true, data: Some(serde_json::json!({ "response": res })), error: None },
-            Ok(None) => Response { success: true, data: None, error: None },
-            Err(e) => Response { success: false, data: None, error: Some(e.to_string()) },
+            Ok(Some(res)) => Response {
+                success: true,
+                data: Some(serde_json::json!({ "response": res })),
+                error: None,
+            },
+            Ok(None) => Response {
+                success: true,
+                data: None,
+                error: None,
+            },
+            Err(e) => Response {
+                success: false,
+                data: None,
+                error: Some(e.to_string()),
+            },
         },
-        Request::SetCache { hash, response, ttl } => match service.set_cache(&hash, &response, ttl) {
-            Ok(_) => Response { success: true, data: None, error: None },
-            Err(e) => Response { success: false, data: None, error: Some(e.to_string()) },
+        Request::SetCache {
+            hash,
+            response,
+            ttl,
+        } => match service.set_cache(&hash, &response, ttl) {
+            Ok(_) => Response {
+                success: true,
+                data: None,
+                error: None,
+            },
+            Err(e) => Response {
+                success: false,
+                data: None,
+                error: Some(e.to_string()),
+            },
         },
     };
     Json(res)
 }
-
-

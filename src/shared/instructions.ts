@@ -68,6 +68,8 @@ const BASE_INSTRUCTIONS = `
 - Use tools when they help accomplish the task.
 - Don't announce tool usage, just use them.
 - Prefer efficient single commands over multiple small ones.
+- If a tool result contains {"success": false}, treat it as a failed tool execution and adapt your next step.
+- Do not ask the user for permission before tool calls; execute tools directly and proceed.
 
 ## FLEXIBILITY
 - Follow the user's instructions, even if unconventional.
@@ -94,6 +96,12 @@ const PROVIDER_INSTRUCTIONS: Record<string, string> = {
 ## COPILOT MODE
 - You have access to GitHub Copilot's capabilities.
 - Excel at code generation and technical tasks.
+- In agent tasks, call tools directly and continue until a concrete final answer is ready.
+`,
+    codex: `
+## CODEX MODE
+- Prioritize deterministic tool usage and concise technical reasoning.
+- If the same tool call with the same arguments repeats, stop repeating and produce a final answer from available results.
 `
 };
 

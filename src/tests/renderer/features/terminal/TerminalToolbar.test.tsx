@@ -79,9 +79,7 @@ function createBaseProps(): ComponentProps<typeof TerminalToolbar> {
         toggleSemanticPanel: vi.fn(),
         hasActiveSession: false,
         activeSemanticIssuesLength: 0,
-        activeSemanticErrorCount: 0,
-        openMultiplexerPanel: vi.fn(),
-        isMultiplexerOpen: false,
+        activeSemanticErrorCount: 0, 
         toggleRecording: vi.fn(),
         activeRecordingTabId: null,
         isMaximized: false,
@@ -169,10 +167,5 @@ describe('TerminalToolbar edge cases', () => {
             screen.getByText('terminal.no_ssh_profiles / terminal.no_containers')
         ).toBeInTheDocument();
     });
-
-    it('disables multiplexer action when there is no active session', () => {
-        render(<TerminalToolbar {...createBaseProps()} />);
-
-        expect(screen.getByTitle('terminal.multiplexerTitle')).toBeDisabled();
-    }); 
+ 
 });

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Sidebar } from '@/components/layout/Sidebar';
 
 vi.mock('@/context/ChatContext', () => ({
-    useChat: () => ({
+    useChatLibrary: () => ({
         chats: [],
         currentChatId: null,
         setCurrentChatId: vi.fn(),
@@ -27,7 +27,7 @@ vi.mock('@/context/ChatContext', () => ({
 }));
 
 vi.mock('@/context/WorkspaceContext', () => ({
-    useWorkspace: () => ({
+    useWorkspaceSelection: () => ({
         selectedWorkspace: null,
     }),
 }));

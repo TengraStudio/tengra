@@ -27,7 +27,7 @@ function createService(provider: 'ollama' | 'openai' | 'llama' | 'none', model?:
                 theme: 'light',
                 resolution: 'auto',
                 fontSize: 14,
-                onboardingCompleted: true
+
             }
         })
     };

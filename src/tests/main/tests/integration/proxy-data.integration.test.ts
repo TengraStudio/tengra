@@ -39,7 +39,8 @@ describe('Proxy-Data Integration', () => {
             processManager: mockProcessManager,
             quotaService: mockQuotaService,
             authService: mockAuthService,
-            eventBus: mockEventBus
+            eventBus: mockEventBus,
+            databaseService: {} as never
         });
     });
 

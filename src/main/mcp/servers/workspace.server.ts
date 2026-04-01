@@ -1,44 +1,8 @@
-import * as os from 'os';
-
-import { buildActions, McpDeps, validatePath, validateString } from '@main/mcp/server-utils';
+import { buildActions, McpDeps } from '@main/mcp/server-utils';
 import { McpService } from '@main/mcp/types';
 
 export function buildWorkspaceServers(deps: McpDeps): McpService[] {
-    // Path validation helper
-    const validateScanPath = (inputPath: string): string => {
-        const validatedInput = validateString(inputPath, 2000);
-        const settings = deps.settings.getSettings();
-        const allowedRoots = settings.allowedFileRoots;
-
-        // Get allowed roots or use home directory
-        const roots = Array.isArray(allowedRoots) && allowedRoots.length > 0
-            ? allowedRoots.filter((r): r is string => typeof r === 'string')
-            : [os.homedir()];
-
-        // Try to validate against each allowed root
-        for (const root of roots) {
-            try {
-                return validatePath(root, validatedInput);
-            } catch {
-                // Continue to next root
-            }
-        }
-
-        throw new Error(`Scan path not allowed. Must be within one of: ${roots.join(', ')}`);
-    };
-
     return [
-        {
-            name: 'scanner',
-            description: 'Workspace scanning (path traversal protected)',
-            actions: buildActions([
-                {
-                    name: 'scanDirectory',
-                    description: 'Scan directory for code files (path traversal protected)',
-                    handler: ({ path }) => deps.scanner.scanDirectory(validateScanPath(path as string))
-                }
-            ], 'scanner', deps.auditLog)
-        },
         {
             name: 'docker',
             description: 'Docker utilities',

@@ -9,11 +9,15 @@ import { TokenService } from '@main/services/security/token.service';
 import { ChatMessage, OpenAIResponse, ToolCall } from '@main/types/llm.types';
 import { MessageNormalizer } from '@main/utils/message-normalizer.util';
 import { StreamChunk, StreamParser } from '@main/utils/stream-parser.util';
+import { XmlToolParser } from '@main/utils/xml-tool-parser.util';
 import { Message, SystemMode, ToolDefinition } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
-import { OpenAIChatCompletion, OpenAIContentPartImage, OpenAIMessage } from '@shared/types/llm-provider-types';
-import { ApiError, AppErrorCode } from '@shared/utils/error.util';
-import { getErrorMessage } from '@shared/utils/error.util';
+import {
+    OpenAIChatCompletion,
+    OpenAIContentPartImage,
+    OpenAIMessage,
+} from '@shared/types/llm-provider-types';
+import { ApiError, AppErrorCode, getErrorMessage } from '@shared/utils/error.util';
 import { Agent } from 'undici';
 
 import { applyReasoningEffort } from './llm-reasoning.service';
@@ -36,6 +40,7 @@ export interface OpenAIBodyOptions {
     temperature?: number;
     systemMode?: SystemMode;
     reasoningEffort?: string;
+    workspaceRoot?: string;
 }
 
 /** Request context for OpenAI-compatible calls. */
@@ -44,11 +49,12 @@ export interface OpenAIRequestContext {
     apiKey: string;
     signal?: AbortSignal;
     provider?: string;
+    includeProviderHint?: boolean;
+    workspaceRoot?: string;
 }
 
 const OPENAI_RETRY_POLICY = {
     requestRetryCount: 2,
-    authRetryCount: 1,
 } as const;
 
 const ERROR_CODES = {
@@ -61,8 +67,10 @@ const normalizeToolCalls = (toolCalls: OpenAIMessage['tool_calls']): ToolCall[] 
         return undefined;
     }
 
-    return toolCalls.map((toolCall) => ({
-        id: toolCall.id,
+    return toolCalls.map((toolCall, index) => ({
+        id: toolCall.id && toolCall.id.trim().length > 0
+            ? toolCall.id
+            : `${toolCall.function.name || 'tool'}-${index}`,
         type: 'function',
         function: {
             name: toolCall.function.name,
@@ -108,8 +116,14 @@ export class LLMOpenAIChatService {
         options: OpenAIBodyOptions,
         requestContext: OpenAIRequestContext
     ): Promise<OpenAIResponse> {
-        const { endpoint, apiKey, signal, provider } = requestContext;
+        const { endpoint, apiKey, signal, provider, includeProviderHint, workspaceRoot } = requestContext;
         const body = this.buildOpenAIBody(messages, options);
+        if (includeProviderHint && provider) {
+            body.provider = provider;
+        }
+        if (includeProviderHint && typeof workspaceRoot === 'string' && workspaceRoot.trim().length > 0) {
+            body.workspaceRoot = workspaceRoot;
+        }
         const requestInit = this.createOpenAIRequest(body, apiKey);
         if (signal) { requestInit.signal = signal; }
 
@@ -122,8 +136,6 @@ export class LLMOpenAIChatService {
         );
 
         if (!response.ok) {
-            const retryResult = await this.tryAuthRetry(response, endpoint, requestInit, provider);
-            if (retryResult) { return retryResult; }
             await this.handleOpenAIError(response);
         }
 
@@ -142,8 +154,14 @@ export class LLMOpenAIChatService {
         options: OpenAIBodyOptions,
         requestContext: OpenAIRequestContext
     ): AsyncGenerator<OpenAIStreamYield> {
-        const { endpoint, apiKey, signal, provider } = requestContext;
+        const { endpoint, apiKey, signal, provider, includeProviderHint, workspaceRoot } = requestContext;
         const body = this.buildOpenAIBody(messages, options);
+        if (includeProviderHint && provider) {
+            body.provider = provider;
+        }
+        if (includeProviderHint && typeof workspaceRoot === 'string' && workspaceRoot.trim().length > 0) {
+            body.workspaceRoot = workspaceRoot;
+        }
         const acceptHeader = provider === 'nvidia' ? 'application/json' : 'text/event-stream';
         const requestInit = this.createOpenAIRequest(body, apiKey, { 'Accept': acceptHeader });
         if (signal) { requestInit.signal = signal; }
@@ -155,8 +173,7 @@ export class LLMOpenAIChatService {
         });
 
         if (!response.ok) {
-            yield* this.handleStreamErrorRetry(response, endpoint, requestInit, options.model, provider);
-            return;
+            await this.handleOpenAIStreamError(response, options.model, provider);
         }
 
         yield* this.handleStreamResponse(response);
@@ -218,17 +235,35 @@ export class LLMOpenAIChatService {
             const choice = json.choices[0];
             const message = choice.message;
 
-            const completion = this.extractTextFromOpenAIMessage(message);
+            let completion = this.extractTextFromOpenAIMessage(message);
+            const variantSummaries = await this.extractVariantsFromChoices(json.choices, json.model);
+
+            // [NEW] XML Tool Call Fallback
+            const parsed = XmlToolParser.parse(completion);
+            if (parsed.toolCalls.length > 0) {
+                appLogger.info('LLMOpenAIChatService', `Extracted ${parsed.toolCalls.length} XML tool calls from completion`);
+                message.tool_calls = [
+                    ...(message.tool_calls || []),
+                    ...parsed.toolCalls.map(tc => ({
+                        id: tc.id,
+                        type: 'function' as const,
+                        function: {
+                            name: tc.function.name,
+                            arguments: tc.function.arguments
+                        }
+                    }))
+                ];
+                completion = parsed.cleanedText;
+            }
+
             const validatedCompletion = this.validateContent(completion);
             const savedImages = await this.saveImagesFromOpenAIMessage(message);
-
-            const variants = await this.extractVariantsFromChoices(json.choices, json.model);
 
             const result: OpenAIResponse = {
                 content: validatedCompletion,
                 role: message.role,
                 images: savedImages,
-                variants: variants.length > 1 ? variants : undefined
+                variants: variantSummaries.length > 1 ? variantSummaries : undefined
             };
 
             if (message.tool_calls) { result.tool_calls = normalizeToolCalls(message.tool_calls); }
@@ -353,60 +388,6 @@ export class LLMOpenAIChatService {
                 }
             };
         });
-    }
-
-    private async tryAuthRetry(
-        response: Response,
-        endpoint: string,
-        requestInit: HttpRequestOptions,
-        provider?: string
-    ): Promise<OpenAIResponse | null> {
-        if ((response.status === 401 || response.status === 403) && provider && this.deps.tokenService) {
-            appLogger.info('LLMOpenAIChatService', `Unauthorized (${response.status}) for ${provider}, attempting refresh...`);
-            try {
-                await this.deps.tokenService.ensureFreshToken(provider, true);
-                const retryResponse = await this.deps.httpService.fetch(endpoint, {
-                    ...requestInit,
-                    retryCount: OPENAI_RETRY_POLICY.authRetryCount,
-                    timeoutMs: 300000
-                } as HttpRequestOptions);
-                if (retryResponse.ok) {
-                    const json = await retryResponse.json() as OpenAIChatCompletion;
-                    return this.processOpenAIResponse(json);
-                }
-            } catch (err) {
-                appLogger.error('LLMOpenAIChatService', `Proactive refresh/retry failed: ${getErrorMessage(err)}`);
-            }
-        }
-        return null;
-    }
-
-    private async *handleStreamErrorRetry(
-        response: Response,
-        endpoint: string,
-        requestInit: HttpRequestOptions,
-        model: string,
-        provider?: string
-    ): AsyncGenerator<OpenAIStreamYield> {
-        if ((response.status === 401 || response.status === 403) && provider && this.deps.tokenService) {
-            appLogger.info('LLMOpenAIChatService', `Unauthorized (${response.status}) for ${provider}, attempting refresh...`);
-            try {
-                await this.deps.tokenService.ensureFreshToken(provider, true);
-                const retryResponse = await this.deps.httpService.fetch(endpoint, {
-                    ...requestInit,
-                    retryCount: OPENAI_RETRY_POLICY.authRetryCount,
-                    timeoutMs: 300000
-                });
-                if (retryResponse.ok) {
-                    yield* this.handleStreamResponse(retryResponse);
-                    return;
-                }
-                await this.handleOpenAIStreamError(retryResponse, model, provider);
-            } catch (err) {
-                appLogger.error('LLMOpenAIChatService', `Proactive refresh/retry failed: ${getErrorMessage(err)}`);
-            }
-        }
-        await this.handleOpenAIStreamError(response, model, provider);
     }
 
     private async *handleStreamResponse(response: Response): AsyncGenerator<OpenAIStreamYield> {

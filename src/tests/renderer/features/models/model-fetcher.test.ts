@@ -2,6 +2,13 @@ import { fetchModels, getSelectableProviderId, groupModels } from '@renderer/fea
 import { describe, expect, it, vi } from 'vitest';
 
 describe('groupModels', () => {
+    it('maps copilot token aliases to copilot provider', () => {
+        expect(getSelectableProviderId({
+            provider: 'copilot_token',
+            providerCategory: 'github_token'
+        })).toBe('copilot');
+    });
+
     it('prefers providerCategory for selectable provider IDs', () => {
         expect(getSelectableProviderId({
             provider: 'openai',
@@ -21,6 +28,41 @@ describe('groupModels', () => {
 
         expect(grouped.nvidia).toBeDefined();
         expect(grouped.nvidia?.models[0]?.provider).toBe('openai');
+    });
+
+    it('groups github_token providerCategory models under copilot', async () => {
+        const mockGetAllModels = vi.fn().mockResolvedValue([
+            {
+                id: 'gpt-4o',
+                name: 'GPT-4o',
+                provider: 'copilot_token',
+                providerCategory: 'github_token'
+            }
+        ]);
+
+        const previousDescriptor = Object.getOwnPropertyDescriptor(window, 'electron');
+        Object.defineProperty(window, 'electron', {
+            configurable: true,
+            value: {
+                modelRegistry: {
+                    getAllModels: mockGetAllModels
+                },
+                log: {
+                    error: vi.fn()
+                }
+            }
+        });
+
+        try {
+            const models = await fetchModels(true);
+            const grouped = groupModels(models);
+            expect(grouped.copilot).toBeDefined();
+            expect(grouped.copilot?.models).toHaveLength(1);
+        } finally {
+            if (previousDescriptor) {
+                Object.defineProperty(window, 'electron', previousDescriptor);
+            }
+        }
     });
 
     it('falls back to provider when providerCategory is missing', () => {

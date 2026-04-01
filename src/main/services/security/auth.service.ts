@@ -152,6 +152,7 @@ export class AuthService extends BaseService {
     private _sessionIdleTtlMs = 24 * 60 * 60 * 1000;
     private linkedAccountsCache: LinkedAccount[] | null = null;
     private linkedAccountsCacheInFlight: Promise<LinkedAccount[]> | null = null;
+    private upgradingAccountIds = new Set<string>();
 
     constructor(
         private databaseService: DatabaseService,
@@ -168,6 +169,7 @@ export class AuthService extends BaseService {
         // Proactively migrate all tokens in DB to new encryption format
         await this.migrateExistingTokens();
         await this.refreshLinkedAccountsCache();
+        await this.cleanupMirroredOAuthAccounts();
     }
 
     async cleanup(): Promise<void> {
@@ -211,7 +213,7 @@ export class AuthService extends BaseService {
      */
     async getAccountsByProvider(provider: string): Promise<LinkedAccountInfo[]> {
         const normalized = this.normalizeProvider(provider);
-        const accounts = await this.getLinkedAccountsCached(normalized);
+        const accounts = await this.getLinkedAccountsFresh(normalized);
         return accounts.map(a => this.toPublicAccount(a));
     }
 
@@ -220,11 +222,11 @@ export class AuthService extends BaseService {
      */
     async getActiveAccount(provider: string): Promise<LinkedAccountInfo | null> {
         const normalized = this.normalizeProvider(provider);
-        const account = await this.getActiveLinkedAccountCached(normalized);
+        const account = await this.getActiveLinkedAccountFresh(normalized);
         if (!account) { return null; }
 
         if (this.isExpired(account)) {
-            appLogger.info('AuthService', `Account expired for ${normalized}: ${account.id}`);
+            appLogger.debug('AuthService', `Account expired for ${normalized}: ${account.id}`);
             return null;
         }
 
@@ -283,7 +285,7 @@ export class AuthService extends BaseService {
         if (!account) { return null; }
 
         if (this.isExpired(account)) {
-            appLogger.info('AuthService', `Account expired for ${normalized}: ${account.id}`);
+            appLogger.debug('AuthService', `Account expired for ${normalized}: ${account.id}`);
             return null;
         }
 
@@ -346,11 +348,23 @@ export class AuthService extends BaseService {
             return this.linkAccount(provider, tokenData);
         }
 
-        const existing = await this.getLinkedAccountCached(accountId);
+        let existing = await this.getLinkedAccountCached(accountId);
         const existingProvider = existing?.provider ? this.normalizeProvider(existing.provider) : undefined;
         const resolvedProvider = existingProvider ?? normalized;
         if (existing?.provider && existingProvider !== normalized) {
             appLogger.warn('AuthService', `Provider mismatch for account ${accountId}: ${existing.provider} vs ${normalized}. Using canonical ${resolvedProvider}.`);
+        }
+
+        if (!existing && this.shouldCoalesceSparseOAuthUpdate(resolvedProvider, tokenData)) {
+            const providerAccounts = await this.getLinkedAccountsCached(resolvedProvider);
+            const preferred = this.selectPreferredRichOAuthAccount(resolvedProvider, providerAccounts);
+            if (preferred) {
+                existing = preferred;
+                appLogger.warn(
+                    'AuthService',
+                    `Coalescing sparse ${resolvedProvider} account update for ${accountId} into existing account ${preferred.id}`
+                );
+            }
         }
 
         const account = this.createNewAccountObject({
@@ -375,7 +389,7 @@ export class AuthService extends BaseService {
         if (!existing && !email) {
             const accounts = await this.getLinkedAccountsCached(provider);
             if (accounts.length > 0) {
-                existing = accounts[0];
+                existing = this.selectPreferredRichOAuthAccount(provider, accounts) ?? accounts[0];
             }
         }
         return existing;
@@ -390,27 +404,63 @@ export class AuthService extends BaseService {
         preferredId?: string
     }): LinkedAccount {
         const { provider, tokenData, existing, now, email, preferredId } = params;
-        const metadata = tokenData.metadata as JsonObject | undefined;
+        const metadata = this.mergeAccountMetadata(existing?.metadata, tokenData.metadata);
+        const metadataEmail = typeof metadata?.email === 'string' ? metadata.email : undefined;
+        const metadataDisplayName = typeof metadata?.displayName === 'string'
+            ? metadata.displayName
+            : typeof metadata?.display_name === 'string'
+                ? metadata.display_name
+                : undefined;
+        const metadataAvatarUrl = typeof metadata?.avatarUrl === 'string'
+            ? metadata.avatarUrl
+            : typeof metadata?.avatar_url === 'string'
+                ? metadata.avatar_url
+                : undefined;
         return {
             id: existing?.id ?? preferredId ?? uuidv4(),
             provider,
-            email,
-            displayName: tokenData.displayName ?? (metadata?.displayName as string | undefined),
-            avatarUrl: tokenData.avatarUrl ?? (metadata?.avatarUrl as string | undefined),
-            accessToken: this.encryptIfPresent(tokenData.accessToken),
-            refreshToken: this.encryptIfPresent(tokenData.refreshToken),
-            sessionToken: this.encryptIfPresent(tokenData.sessionToken),
-            expiresAt: tokenData.expiresAt,
-            scope: tokenData.scope,
+            email: email ?? metadataEmail ?? existing?.email,
+            displayName: tokenData.displayName ?? metadataDisplayName ?? existing?.displayName,
+            avatarUrl: tokenData.avatarUrl ?? metadataAvatarUrl ?? existing?.avatarUrl,
+            accessToken: this.mergeEncryptedToken(existing?.accessToken, tokenData.accessToken),
+            refreshToken: this.mergeEncryptedToken(existing?.refreshToken, tokenData.refreshToken),
+            sessionToken: this.mergeEncryptedToken(existing?.sessionToken, tokenData.sessionToken),
+            expiresAt: tokenData.expiresAt ?? existing?.expiresAt,
+            scope: tokenData.scope ?? existing?.scope,
             isActive: existing?.isActive ?? false,
-            metadata: tokenData.metadata,
+            metadata,
             createdAt: existing?.createdAt ?? now,
             updatedAt: now
         };
     }
 
-    private encryptIfPresent(token?: string): string | undefined {
-        return token ? this.encrypt(token) : undefined;
+    private mergeEncryptedToken(existing: string | undefined, nextToken?: string): string | undefined {
+        const normalized = this.normalizeOptionalToken(nextToken);
+        return normalized ? this.encrypt(normalized) : existing;
+    }
+
+    private normalizeOptionalToken(token?: string): string | undefined {
+        const normalized = token?.trim();
+        return normalized ? normalized : undefined;
+    }
+
+    private mergeAccountMetadata(
+        existing: JsonObject | undefined,
+        incoming: JsonObject | undefined
+    ): JsonObject | undefined {
+        if (!existing && !incoming) {
+            return undefined;
+        }
+        if (!existing) {
+            return incoming;
+        }
+        if (!incoming) {
+            return existing;
+        }
+        return {
+            ...existing,
+            ...incoming
+        };
     }
 
     private async ensureActivation(provider: string, account: LinkedAccount, hadExisting: boolean): Promise<void> {
@@ -547,7 +597,7 @@ export class AuthService extends BaseService {
      * Get all linked accounts across all providers.
      */
     async getAllAccounts(): Promise<LinkedAccountInfo[]> {
-        const accounts = await this.getAllLinkedAccountsCached();
+        const accounts = await this.getAllLinkedAccountsFresh();
         return accounts.map(a => this.toPublicAccount(a));
     }
 
@@ -556,7 +606,7 @@ export class AuthService extends BaseService {
      */
     async hasLinkedAccount(provider: string): Promise<boolean> {
         const normalized = this.normalizeProvider(provider);
-        const accounts = await this.getLinkedAccountsCached(normalized);
+        const accounts = await this.getLinkedAccountsFresh(normalized);
         return accounts.length > 0;
     }
 
@@ -580,10 +630,68 @@ export class AuthService extends BaseService {
         return fullAccounts;
     }
 
+    async reloadLinkedAccountsCache(): Promise<void> {
+        await this.refreshLinkedAccountsCache();
+        await this.cleanupMirroredOAuthAccounts();
+    }
+
+    private async cleanupMirroredOAuthAccounts(): Promise<void> {
+        const accounts = await this.getAllAccountsFull();
+        let changed = false;
+
+        for (const provider of ['antigravity', 'copilot', 'codex', 'claude']) {
+            const providerAccounts = accounts.filter(
+                account => this.normalizeProvider(account.provider) === provider
+            );
+            const shadowAccounts = providerAccounts.filter(account =>
+                this.isMirroredOAuthShadowAccount(account)
+            );
+            const richAccounts = providerAccounts.filter(
+                account => !this.isMirroredOAuthShadowAccount(account)
+            );
+
+            if (shadowAccounts.length === 0 || richAccounts.length === 0) {
+                continue;
+            }
+
+            const preferredActiveAccount = richAccounts.find(account => account.isActive)
+                ?? [...richAccounts].sort((left, right) => right.updatedAt - left.updatedAt)[0];
+
+            if (preferredActiveAccount && !preferredActiveAccount.isActive) {
+                await this.databaseService.setActiveLinkedAccount(provider, preferredActiveAccount.id);
+                this.applyActiveAccountToCache(provider, preferredActiveAccount.id);
+                changed = true;
+            }
+
+            for (const shadowAccount of shadowAccounts) {
+                await this.databaseService.deleteLinkedAccount(shadowAccount.id);
+                this.removeLinkedAccountFromCache(shadowAccount.id);
+                this.eventBus.emit('account:unlinked', {
+                    accountId: shadowAccount.id,
+                    provider: shadowAccount.provider
+                });
+                changed = true;
+            }
+
+            appLogger.info(
+                'AuthService',
+                `Removed ${shadowAccounts.length} mirrored ${provider} account(s) in favor of richer OAuth records`
+            );
+        }
+
+        if (changed) {
+            await this.refreshLinkedAccountsCache();
+        }
+    }
+
     private async getAllLinkedAccountsCached(): Promise<LinkedAccount[]> {
         if (this.linkedAccountsCache) {
             return [...this.linkedAccountsCache];
         }
+        return this.refreshLinkedAccountsCache();
+    }
+
+    private async getAllLinkedAccountsFresh(): Promise<LinkedAccount[]> {
         return this.refreshLinkedAccountsCache();
     }
 
@@ -603,6 +711,15 @@ export class AuthService extends BaseService {
         return accounts.filter(account => this.normalizeProvider(account.provider) === normalized);
     }
 
+    private async getLinkedAccountsFresh(provider?: string): Promise<LinkedAccount[]> {
+        const accounts = await this.getAllLinkedAccountsFresh();
+        if (!provider) {
+            return accounts;
+        }
+        const normalized = this.normalizeProvider(provider);
+        return accounts.filter(account => this.normalizeProvider(account.provider) === normalized);
+    }
+
     private async getLinkedAccountCached(accountId: string): Promise<LinkedAccount | null> {
         const accounts = await this.getAllLinkedAccountsCached();
         return accounts.find(account => account.id === accountId) ?? null;
@@ -618,6 +735,11 @@ export class AuthService extends BaseService {
         }
 
         const accounts = await this.getLinkedAccountsCached(provider);
+        return accounts.find(account => account.isActive) ?? accounts[0] ?? null;
+    }
+
+    private async getActiveLinkedAccountFresh(provider: string): Promise<LinkedAccount | null> {
+        const accounts = await this.getLinkedAccountsFresh(provider);
         return accounts.find(account => account.isActive) ?? accounts[0] ?? null;
     }
 
@@ -664,6 +786,89 @@ export class AuthService extends BaseService {
                 isActive: account.id === accountId
             };
         });
+    }
+
+    private isMirroredOAuthShadowAccount(account: LinkedAccount): boolean {
+        if (!account.accessToken) {
+            return false;
+        }
+
+        if (
+            account.refreshToken
+            || account.sessionToken
+            || account.expiresAt
+            || account.email
+            || account.displayName
+            || account.avatarUrl
+        ) {
+            return false;
+        }
+
+        return !this.hasMeaningfulOAuthMetadata(account.metadata);
+    }
+
+    private hasMeaningfulOAuthMetadata(metadata?: JsonObject): boolean {
+        if (!metadata) {
+            return false;
+        }
+
+        const meaningfulKeys = [
+            'email',
+            'displayName',
+            'display_name',
+            'avatarUrl',
+            'avatar_url',
+            'refreshToken',
+            'refresh_token',
+            'sessionToken',
+            'session_token',
+            'expiresAt',
+            'expires_at',
+        ];
+
+        return meaningfulKeys.some(key => {
+            const value = metadata[key];
+            return typeof value === 'string'
+                ? value.trim().length > 0
+                : typeof value === 'number';
+        });
+    }
+
+    private shouldCoalesceSparseOAuthUpdate(provider: string, tokenData: TokenData): boolean {
+        if (!this.supportsRichOAuthProfile(provider)) {
+            return false;
+        }
+
+        if (tokenData.refreshToken || tokenData.sessionToken || tokenData.expiresAt) {
+            return false;
+        }
+
+        if (tokenData.email || tokenData.displayName || tokenData.avatarUrl) {
+            return false;
+        }
+
+        return !this.hasMeaningfulOAuthMetadata(tokenData.metadata);
+    }
+
+    private supportsRichOAuthProfile(provider: string): boolean {
+        return ['antigravity', 'copilot', 'codex', 'claude'].includes(this.normalizeProvider(provider));
+    }
+
+    private selectPreferredRichOAuthAccount(
+        provider: string,
+        accounts: LinkedAccount[]
+    ): LinkedAccount | undefined {
+        if (!this.supportsRichOAuthProfile(provider)) {
+            return undefined;
+        }
+
+        const richAccounts = accounts.filter(account => !this.isMirroredOAuthShadowAccount(account));
+        if (richAccounts.length === 0) {
+            return undefined;
+        }
+
+        return richAccounts.find(account => account.isActive)
+            ?? [...richAccounts].sort((left, right) => right.updatedAt - left.updatedAt)[0];
     }
 
     detectProvider(providerHint: string | undefined, tokenData?: Partial<TokenData>): string {
@@ -787,6 +992,80 @@ export class AuthService extends BaseService {
         }
 
         return { rotated, failed };
+    }
+
+    /**
+     * Updates authentication data received from the proxy process.
+     * This is a specialized wrapper around linkAccountWithId.
+     */
+    async updateFromProxy(data: Partial<JsonObject>): Promise<void> {
+        const provider = typeof data.provider === 'string' ? data.provider : '';
+        const accountId = typeof data.accountId === 'string' ? data.accountId : '';
+        const tokenDataValue = data.tokenData;
+        const isTokenDataObject = tokenDataValue !== undefined
+            && tokenDataValue !== null
+            && typeof tokenDataValue === 'object'
+            && !Array.isArray(tokenDataValue);
+        const tokenData = isTokenDataObject
+            ? this.normalizeProxyTokenData(tokenDataValue as JsonObject)
+            : undefined;
+
+        if (!provider || !accountId || !tokenData) {
+            throw new ValidationError('Invalid auth update from proxy: missing required fields');
+        }
+
+        appLogger.debug('AuthService', `Updating auth from proxy for ${provider}:${accountId}`);
+        await this.linkAccountWithId(provider, accountId, tokenData);
+    }
+
+    private normalizeProxyTokenData(tokenData: JsonObject): TokenData {
+        const accessToken = typeof tokenData.accessToken === 'string'
+            ? tokenData.accessToken
+            : typeof tokenData.access_token === 'string'
+                ? tokenData.access_token
+                : undefined;
+        const refreshToken = typeof tokenData.refreshToken === 'string'
+            ? tokenData.refreshToken
+            : typeof tokenData.refresh_token === 'string'
+                ? tokenData.refresh_token
+                : undefined;
+        const sessionToken = typeof tokenData.sessionToken === 'string'
+            ? tokenData.sessionToken
+            : typeof tokenData.session_token === 'string'
+                ? tokenData.session_token
+                : undefined;
+        const email = typeof tokenData.email === 'string' ? tokenData.email : undefined;
+        const displayName = typeof tokenData.displayName === 'string'
+            ? tokenData.displayName
+            : typeof tokenData.display_name === 'string'
+                ? tokenData.display_name
+                : undefined;
+        const avatarUrl = typeof tokenData.avatarUrl === 'string'
+            ? tokenData.avatarUrl
+            : typeof tokenData.avatar_url === 'string'
+                ? tokenData.avatar_url
+                : undefined;
+        const expiresAt = typeof tokenData.expiresAt === 'number'
+            ? tokenData.expiresAt
+            : typeof tokenData.expires_at === 'number'
+                ? tokenData.expires_at
+                : undefined;
+        const scope = typeof tokenData.scope === 'string' ? tokenData.scope : undefined;
+        const metadata = typeof tokenData.metadata === 'object' && tokenData.metadata !== null && !Array.isArray(tokenData.metadata)
+            ? tokenData.metadata as JsonObject
+            : tokenData;
+
+        return {
+            accessToken,
+            refreshToken,
+            sessionToken,
+            email,
+            displayName,
+            avatarUrl,
+            expiresAt,
+            scope,
+            metadata
+        };
     }
 
     async revokeAccountTokens(
@@ -1185,6 +1464,10 @@ export class AuthService extends BaseService {
     }
 
     private async checkAndUpgradeEncryption(account: LinkedAccount): Promise<void> {
+        if (this.upgradingAccountIds.has(account.id)) {
+            return;
+        }
+
         let needsUpgrade = false;
         const updated: Partial<LinkedAccount> = {};
 
@@ -1201,8 +1484,19 @@ export class AuthService extends BaseService {
         }
 
         if (needsUpgrade) {
-            appLogger.info('AuthService', `Upgrading encryption format for account ${account.id} (${account.provider})`);
-            await this.databaseService.saveLinkedAccount({ ...account, ...updated });
+            this.upgradingAccountIds.add(account.id);
+            try {
+                const upgradedAccount: LinkedAccount = {
+                    ...account,
+                    ...updated,
+                    updatedAt: Date.now()
+                };
+                appLogger.debug('AuthService', `Upgrading encryption format for account ${account.id} (${account.provider})`);
+                await this.databaseService.saveLinkedAccount(upgradedAccount);
+                this.upsertLinkedAccountCache(upgradedAccount);
+            } finally {
+                this.upgradingAccountIds.delete(account.id);
+            }
         }
     }
 
@@ -1217,7 +1511,7 @@ export class AuthService extends BaseService {
     private toPublicAccount(account: LinkedAccount): LinkedAccountInfo {
         return {
             id: account.id,
-            provider: account.provider,
+            provider: this.normalizeProvider(account.provider),
             email: account.email,
             displayName: account.displayName,
             avatarUrl: account.avatarUrl,
@@ -1234,6 +1528,10 @@ export class AuthService extends BaseService {
     private decrypt(text: string | undefined): string | undefined {
         if (!text) { return undefined; }
         return this.securityService.decryptSync(text) ?? undefined;
+    }
+
+    getRuntimeMasterKeyHex(): string | null {
+        return this.securityService.getMasterKeyHex();
     }
 
     private isExpired(account: LinkedAccount): boolean {
@@ -1266,14 +1564,14 @@ export class AuthService extends BaseService {
             'antigravity_token': 'antigravity',
             'google': 'antigravity',
             'google_token': 'antigravity',
+            'gemini': 'antigravity',
+            'gemini_key': 'antigravity',
             'anthropic': 'claude',
             'anthropic_key': 'claude',
             'claude': 'claude',
-            'openai': 'openai',
-            'openai_key': 'openai',
+            'openai': 'codex',
+            'openai_key': 'codex',
             'codex': 'codex',
-            'gemini': 'gemini',
-            'gemini_key': 'gemini',
             'nvidia': 'nvidia',
             'nvidia_key': 'nvidia'
         };

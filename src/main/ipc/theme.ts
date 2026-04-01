@@ -7,7 +7,7 @@ import { ThemeService } from '@main/services/theme/theme.service';
 import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { themeStore } from '@main/utils/theme-store.util';
 import { CustomTheme, ThemeManifest } from '@shared/types/theme';
-import { ipcMain, IpcMainInvokeEvent, shell } from 'electron';
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent, shell } from 'electron';
 
 const MAX_ID_LENGTH = 64;
 const MAX_NAME_LENGTH = 128;
@@ -108,7 +108,10 @@ function validateCustomThemeInput(value: RuntimeValue): CustomThemeDraft | null 
 /**
  * Registers IPC handlers for theme management
  */
-export function registerThemeIpc(themeService: ThemeService): void {
+export function registerThemeIpc(
+    themeService: ThemeService,
+    getMainWindow: () => BrowserWindow | null
+): void {
     appLogger.info('ThemeIPC', 'Registering theme IPC handlers');
 
     // Runtime theme management
@@ -123,7 +126,15 @@ export function registerThemeIpc(themeService: ThemeService): void {
             if (!themeManifest || typeof themeManifest !== 'object') {
                 throw new Error('error.theme.invalid_manifest');
             }
-            return themeService.installTheme(themeManifest as ThemeManifest);
+            const result = await themeService.installTheme(themeManifest as ThemeManifest);
+            
+            // Notify renderer
+            const mainWindow = getMainWindow();
+            if (mainWindow) {
+                mainWindow.webContents.send('theme:runtime:updated');
+            }
+            
+            return result;
         }
     ));
 
@@ -133,7 +144,15 @@ export function registerThemeIpc(themeService: ThemeService): void {
             if (!themeId) {
                 throw new Error('error.theme.invalid_id');
             }
-            return themeService.uninstallTheme(themeId);
+            const result = await themeService.uninstallTheme(themeId);
+            
+            // Notify renderer
+            const mainWindow = getMainWindow();
+            if (mainWindow) {
+                mainWindow.webContents.send('theme:runtime:updated');
+            }
+            
+            return result;
         }
     ));
 

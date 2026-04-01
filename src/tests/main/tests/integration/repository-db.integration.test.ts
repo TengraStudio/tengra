@@ -89,15 +89,8 @@ describe('Repository-DB Integration', () => {
             })
         } as never;
 
-        const mockTimeTracking = {
-            getTimeStats: vi.fn().mockResolvedValue({
-                totalOnlineTime: 100,
-                totalCodingTime: 50,
-                workspaceCodingTime: {}
-            })
-        } as never;
 
-        dbService = new DatabaseService(dataService, mockEventBus, mockDatabaseClient, mockTimeTracking);
+        dbService = new DatabaseService(dataService, mockEventBus, mockDatabaseClient);
         await dbService.initialize();
 
         folderRepo = new FolderRepository(dbService);

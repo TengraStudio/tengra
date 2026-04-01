@@ -1028,7 +1028,7 @@ export class ApiServerService extends BaseService {
     }
 
     /**
-     * Get available models from model-service
+     * Get available models from tengra-proxy
      */
     private async handleGetModels(res: ServerResponse): Promise<void> {
         try {
@@ -1051,7 +1051,7 @@ export class ApiServerService extends BaseService {
                 this.sendJson(res, 200, {
                     success: false,
                     models: [],
-                    message: 'No models available. Make sure model services are running.'
+                    message: 'No models available. Make sure Tengra runtime services are running.'
                 });
                 return;
             }

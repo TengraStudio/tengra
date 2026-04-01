@@ -18,6 +18,9 @@ export interface ISystemService {
     launchApp(appName: string): Promise<ServiceResponse>;
     getSystemInfo(): Promise<SystemInfo>;
     getProcessList(): Promise<ServiceResponse<{ output: string }>>;
+    getUsage(): Promise<ServiceResponse<{ cpu: number; memory: number }>>;
+    getSystemMonitor(): Promise<ServiceResponse<{ output: string }>>;
+    getBatteryStatus(): Promise<ServiceResponse<{ output: string }>>;
 }
 
 export interface INetworkService {

@@ -6,12 +6,15 @@ import { AuthService } from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
-import { createSafeIpcHandler as baseCreateSafeIpcHandler,createValidatedIpcHandler as baseCreateValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import {
+    createSafeIpcHandler as baseCreateSafeIpcHandler,
+    createValidatedIpcHandler as baseCreateValidatedIpcHandler
+} from '@main/utils/ipc-wrapper.util';
 import { IpcValue } from '@shared/types/common';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
 
-import { providerNameSchema, proxyAccountIdSchema, rateLimitConfigSchema,sessionKeySchema } from './validation';
+import { providerNameSchema, proxyAccountIdSchema, rateLimitConfigSchema, sessionKeySchema } from './validation';
 
 /**
  * Registers IPC handlers for proxy operations including quota retrieval, authentication, and model listing.
@@ -70,15 +73,15 @@ export function registerProxyIpc(
         return serializeToIpc(await proxyService.getClaudeQuota());
     });
 
-    ipcMain.handle('proxy:antigravityLogin', createSafeIpcHandler('proxy:antigravityLogin', async () => {
-        return await proxyService.getAntigravityAuthUrl();
-    }, { url: '', state: '' }));
+    ipcMain.handle('proxy:antigravityLogin', createSafeIpcHandler('proxy:antigravityLogin', async (_event, accountId?: string) => {
+        return await proxyService.getAntigravityAuthUrl(accountId);
+    }, { url: '', state: '', accountId: '' }));
 
-    ipcMain.handle('proxy:claudeLogin', createSafeIpcHandler('proxy:claudeLogin', async () => {
+    ipcMain.handle('proxy:claudeLogin', createSafeIpcHandler('proxy:claudeLogin', async (_event, accountId?: string) => {
         // Try to get OAuth URL (same as anthropicLogin)
         // This will open the browser for OAuth flow
-        return await proxyService.getAnthropicAuthUrl();
-    }, { url: '', state: '' }));
+        return await proxyService.getAnthropicAuthUrl(accountId);
+    }, { url: '', state: '', accountId: '' }));
 
 
 
@@ -96,14 +99,32 @@ export function registerProxyIpc(
 
 
 
-    ipcMain.handle('proxy:anthropicLogin', createSafeIpcHandler('proxy:anthropicLogin', async () => {
+    ipcMain.handle('proxy:anthropicLogin', createSafeIpcHandler('proxy:anthropicLogin', async (_event, accountId?: string) => {
         // Legacy OAuth flow - still available but doesn't capture sessionKey
-        return await proxyService.getAnthropicAuthUrl();
-    }, { url: '', state: '' }));
+        return await proxyService.getAnthropicAuthUrl(accountId);
+    }, { url: '', state: '', accountId: '' }));
 
-    ipcMain.handle('proxy:codexLogin', createSafeIpcHandler('proxy:codexLogin', async () => {
-        return await proxyService.getCodexAuthUrl();
-    }, { url: '', state: '' }));
+    ipcMain.handle('proxy:codexLogin', createSafeIpcHandler('proxy:codexLogin', async (_event, accountId?: string) => {
+        appLogger.info('ProxyIPC', `proxy:codexLogin requested${accountId ? ` for ${accountId}` : ''}`);
+        try {
+            const result = await proxyService.getCodexAuthUrl(accountId);
+            appLogger.info('ProxyIPC', `proxy:codexLogin result: url=${result.url ? 'present' : 'missing'}, state=${result.state ? 'present' : 'missing'}, accountId=${result.accountId ?? 'missing'}`);
+            return result;
+        } catch (error) {
+            appLogger.error('ProxyIPC', `proxy:codexLogin failed: ${(error as Error).message}`);
+            throw error;
+        }
+    }, { url: '', state: '', accountId: '' }));
+
+    ipcMain.handle('proxy:getAuthStatus', createSafeIpcHandler('proxy:getAuthStatus', async (_event, provider: string, state: string, accountId: string) => {
+        appLogger.info('ProxyIPC', `proxy:getAuthStatus requested for ${provider}:${accountId}`);
+        return await proxyService.getBrowserAuthStatus(provider as 'antigravity' | 'claude' | 'codex', state, accountId);
+    }, { status: 'error', error: 'Failed to fetch auth status', accountId: '' }));
+
+    ipcMain.handle('proxy:cancelAuth', createSafeIpcHandler('proxy:cancelAuth', async (_event, provider: string, state: string, accountId: string) => {
+        appLogger.info('ProxyIPC', `proxy:cancelAuth requested for ${provider}:${accountId}`);
+        return await proxyService.cancelBrowserAuth(provider as 'antigravity' | 'claude' | 'codex', state, accountId);
+    }, false));
 
     ipcMain.handle('proxy:getModels', createSafeIpcHandler('proxy:getModels', async () => {
         return await proxyService.getModels();

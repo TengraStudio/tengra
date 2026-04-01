@@ -1,4 +1,4 @@
-@layer utilities {
+
   .tw-text-9 { font-size: 9px; }
   .tw-text-10 { font-size: 10px; }
   .tw-text-11 { font-size: 11px; }
@@ -102,8 +102,8 @@
   @media (width >= 1280px) {
     .tw-xl-grid-cols-360-main { grid-template-columns: 360px minmax(0, 1fr); }
   }
-}
 
-@layer utilities {
+
+
   .tw-flex-2 { flex: 2; }
-}
+

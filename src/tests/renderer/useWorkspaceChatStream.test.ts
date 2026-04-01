@@ -29,6 +29,7 @@ Object.defineProperty(window, 'electron', {
                 onGenerationStatus: vi.fn(),
             },
         },
+        getToolDefinitions: vi.fn().mockResolvedValue([]),
     },
     configurable: true,
     writable: true,
@@ -254,5 +255,55 @@ describe('useWorkspaceChatStream', () => {
 
         expect(result.current.isStreaming).toBe(false);
         expect(result.current.messages[1].content).toBe('Partial \n\n[Error: timeout]');
+    });
+
+    it('accepts snake_case tool_calls chunks from stream bridge', async () => {
+        const { chatStream } = await import('@/lib/chat-stream');
+        const request = {
+            messages: [],
+            model: 'gpt-4o',
+            provider: 'antigravity',
+            tools: [],
+            options: {},
+            chatId: 'chat-tools',
+            workspaceId: 'proj-1',
+        };
+
+        const chunks: Array<{ type?: string; tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>; done?: boolean; chatId?: string }> = [];
+        const consume = (async () => {
+            for await (const chunk of chatStream(request)) {
+                chunks.push(chunk as never);
+            }
+        })();
+
+        await act(async () => {
+            emitChunk({
+                type: 'tool_calls',
+                tool_calls: [
+                    {
+                        id: 'tc-1',
+                        type: 'function',
+                        function: { name: 'list_directory', arguments: '{"path":"C:\\\\Users"}' },
+                    },
+                ],
+                chatId: 'chat-tools',
+            } as never);
+            emitChunk({ done: true, chatId: 'chat-tools' });
+        });
+
+        await consume;
+        expect(chunks).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    type: 'tool_calls',
+                    tool_calls: expect.arrayContaining([
+                        expect.objectContaining({
+                            id: 'tc-1',
+                            function: expect.objectContaining({ name: 'list_directory' }),
+                        }),
+                    ]),
+                }),
+            ])
+        );
     });
 });

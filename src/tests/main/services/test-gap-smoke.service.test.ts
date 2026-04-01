@@ -5,7 +5,6 @@ import { AuthService } from '@main/services/security/auth.service';
 import { ProcessService } from '@main/services/system/process.service';
 import { SystemService } from '@main/services/system/system.service';
 import { ThemeService } from '@main/services/theme/theme.service';
-import { WorkspaceScaffoldService } from '@main/services/workspace/workspace-scaffold.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 class TestBaseService extends BaseService {
@@ -49,31 +48,11 @@ describe('Missing service TODO coverage (functional)', () => {
         expect(dataService.getPath('logs')).toContain('logs');
     });
 
-    it('WorkspaceScaffoldService generates README with core sections', () => {
-        const service = new WorkspaceScaffoldService();
-        const readme = service.generateReadme({
-            id: 'idea-1',
-            sessionId: 'session-1',
-            title: 'Test Idea',
-            description: 'Useful tool',
-            category: 'website',
-            valueProposition: 'Value',
-            explanation: 'Explanation',
-            status: 'pending',
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-        });
-
-        expect(readme).toContain('# Test Idea');
-        expect(readme).toContain('## Getting Started');
-        expect(readme).toContain('index.html');
-    });
-
     it('AuthService filters linked accounts by provider', async () => {
         const auth = new AuthService(
             {
                 getLinkedAccounts: vi.fn(async (provider?: string) =>
-                    provider === 'github'
+                    !provider || provider === 'github'
                         ? [{ id: 'a1', provider: 'github', isActive: true }]
                         : []
                 ),

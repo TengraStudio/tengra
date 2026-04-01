@@ -170,6 +170,7 @@ nul
 # Explicit ignores (added by agent)
 dist/
 node_modules/
+/tmp/
 
 docs/components_checklist.md
 docs/changelog/i18n/.tr.translation.cache.json

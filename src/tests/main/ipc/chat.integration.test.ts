@@ -32,7 +32,6 @@ vi.mock('electron', () => ({
 
 // Mock Services
 const mockSettingsService = { getSettings: vi.fn().mockReturnValue({}) };
-const mockCopilotService = { chat: vi.fn(), streamChat: vi.fn() };
 const mockLLMService = {
     chat: vi.fn(),
     chatStream: vi.fn(),
@@ -76,7 +75,6 @@ describe('Session conversation IPC integration', () => {
         registerSessionConversationIpc({
             getMainWindow: () => mockMainWindow as never,
             settingsService: mockSettingsService as never,
-            copilotService: mockCopilotService as never,
             llmService: mockLLMService as never,
             proxyService: mockProxyService as never,
             codeIntelligenceService: mockCodeIntelligenceService as never,
@@ -201,11 +199,11 @@ describe('Session conversation IPC integration', () => {
         expect(result).toMatchObject({ success: false });
     });
 
-    it('should route session:conversation:complete (copilot provider) to CopilotService', async () => {
+    it('should route session:conversation:complete (copilot provider) through LLMService', async () => {
         initIPC();
         const handler = ipcMainHandlers.get('session:conversation:complete');
 
-        mockCopilotService.chat.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
             content: 'Copilot Response'
         });
 
@@ -217,8 +215,13 @@ describe('Session conversation IPC integration', () => {
             workspaceId: 'proj-1'
         });
 
-
-        expect(mockCopilotService.chat).toHaveBeenCalled();
+        expect(mockLLMService.chat).toHaveBeenCalledWith(
+            expect.any(Array),
+            'gpt-4o',
+            [],
+            'copilot',
+            expect.any(Object)
+        );
         expect(result).toMatchObject({
             success: true,
             data: {
@@ -482,24 +485,28 @@ describe('Session conversation IPC integration', () => {
         expect(mockLLMService.chatStream).toHaveBeenCalled();
     });
 
-    it('should emit error and done when copilot stream startup fails', async () => {
+    it('should stream copilot provider through llmService.chatStream', async () => {
         initIPC();
         const handler = ipcMainHandlers.get('session:conversation:stream');
-        mockCopilotService.streamChat.mockResolvedValue(null);
+        mockLLMService.chatStream.mockReturnValue((async function* () {
+            yield { content: 'copilot-stream' };
+        })());
 
         const result = await handler!(mockEvent, createStreamRequest({ provider: 'copilot' }));
 
         expect(result).toMatchObject({ success: true });
-        expect(mockEvent.sender.send).toHaveBeenCalledWith(
-            'session:conversation:stream-chunk',
+        expect(mockLLMService.chatStream).toHaveBeenCalledWith(
+            expect.any(Array),
+            'gpt-4o',
+            [],
+            'copilot',
             expect.objectContaining({
-                type: 'error',
-                content: 'error.copilot.stream_start_failed',
+                workspaceRoot: undefined,
             })
         );
         expect(mockEvent.sender.send).toHaveBeenCalledWith(
             'session:conversation:stream-chunk',
-            expect.objectContaining({ chatId: 'chat-1', done: true })
+            expect.objectContaining({ chatId: 'chat-1', content: 'copilot-stream' })
         );
     });
 

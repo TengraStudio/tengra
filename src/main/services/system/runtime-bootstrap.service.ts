@@ -6,9 +6,6 @@ import * as fsPromises from 'fs/promises';
 import * as path from 'path';
 
 import { BaseService } from '@main/services/base.service';
-import {
-    startOllama,
-} from '@main/startup/ollama';
 import { NETWORK_DEFAULTS } from '@shared/constants/app-config';
 import { JsonObject } from '@shared/types/common';
 import {
@@ -22,7 +19,7 @@ import {
     RuntimeTargetEnvironment,
 } from '@shared/types/runtime-manifest';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import type { BrowserWindow } from 'electron';
+import { app, type BrowserWindow } from 'electron';
 
 import { RuntimeHealthService } from './runtime-health.service';
 import { RuntimeManifestService } from './runtime-manifest.service';
@@ -33,6 +30,30 @@ import {
     getManagedRuntimeModelsDir,
     getManagedRuntimeTempDir,
 } from './runtime-path.service';
+
+const ELECTRON_CACHE_DIRECTORIES = [
+    'blob_storage',
+    'Cache',
+    'Code Cache',
+    'DawnGraphiteCache',
+    'DawnWebGPUCache',
+    'GPUCache',
+    'Session Storage',
+] as const;
+
+const ELECTRON_CACHE_FILES = [
+    'DevToolsActivePort',
+    'SharedStorage',
+    'SharedStorage-wal',
+] as const;
+
+const LEGACY_SERVICE_ARTIFACTS = [
+    'token-service.log',
+    'tokens.store.json',
+] as const;
+
+const TERMINAL_LOG_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+const IGNORABLE_CLEANUP_ERROR_CODES = new Set(['EBUSY', 'ENOENT', 'EPERM']);
 
 export class RuntimeBootstrapService extends BaseService {
     private readonly allowedDownloadHosts = new Set([
@@ -52,6 +73,7 @@ export class RuntimeBootstrapService extends BaseService {
 
     async initialize(): Promise<void> {
         try {
+            await this.cleanupManagedAppData();
             this.latestExecutionResult = await this.scanManagedRuntime();
             this.logInfo(
                 `Managed runtime scan finished: ready=${this.latestExecutionResult.summary.ready}, installRequired=${this.latestExecutionResult.summary.installRequired}, failed=${this.latestExecutionResult.summary.failed}`
@@ -70,6 +92,7 @@ export class RuntimeBootstrapService extends BaseService {
         options?: { getMainWindow?: () => BrowserWindow | null }
     ): Promise<{ success: boolean; message: string }> {
         if (componentId === 'ollama') {
+            const { startOllama } = await import('@main/startup/ollama');
             const result = await startOllama(options?.getMainWindow ?? (() => null), false);
             return { success: result.success, message: result.message };
         }
@@ -264,6 +287,78 @@ export class RuntimeBootstrapService extends BaseService {
             generatedAt: new Date().toISOString(),
             components: [],
         };
+    }
+
+    private async cleanupManagedAppData(): Promise<void> {
+        const userDataRoot = app.getPath('userData');
+        await this.removeKnownCacheDirectories(userDataRoot);
+        await this.removeKnownCacheFiles(userDataRoot);
+        await this.removeLegacyServiceArtifacts(userDataRoot);
+        await this.removeExpiredTerminalLogs(userDataRoot);
+    }
+
+    private async removeKnownCacheDirectories(userDataRoot: string): Promise<void> {
+        for (const directoryName of ELECTRON_CACHE_DIRECTORIES) {
+            await this.removePathIfPresent(path.join(userDataRoot, directoryName));
+        }
+    }
+
+    private async removeKnownCacheFiles(userDataRoot: string): Promise<void> {
+        for (const fileName of ELECTRON_CACHE_FILES) {
+            await this.removePathIfPresent(path.join(userDataRoot, fileName));
+        }
+    }
+
+    private async removeLegacyServiceArtifacts(userDataRoot: string): Promise<void> {
+        const servicesDir = path.join(userDataRoot, 'services');
+        for (const fileName of LEGACY_SERVICE_ARTIFACTS) {
+            await this.removePathIfPresent(path.join(servicesDir, fileName));
+        }
+    }
+
+    private async removeExpiredTerminalLogs(userDataRoot: string): Promise<void> {
+        const terminalLogsDir = path.join(userDataRoot, 'terminal-logs');
+        try {
+            const entries = await fsPromises.readdir(terminalLogsDir, { withFileTypes: true });
+            const now = Date.now();
+            for (const entry of entries) {
+                if (!entry.isFile() || !entry.name.endsWith('.log')) {
+                    continue;
+                }
+                const filePath = path.join(terminalLogsDir, entry.name);
+                const stat = await fsPromises.stat(filePath);
+                if (now - stat.mtimeMs <= TERMINAL_LOG_RETENTION_MS) {
+                    continue;
+                }
+                await fsPromises.unlink(filePath);
+            }
+        } catch {
+            // Missing terminal log directory is fine.
+        }
+    }
+
+    private async removePathIfPresent(targetPath: string): Promise<void> {
+        try {
+            await fsPromises.rm(targetPath, { recursive: true, force: true });
+        } catch (error) {
+            if (this.isIgnorableCleanupError(error)) {
+                this.logDebug(`Skipping managed app-data cleanup for locked artifact at ${targetPath}`);
+                return;
+            }
+            this.logWarn(
+                `Failed to remove managed app-data artifact at ${targetPath}`,
+                error instanceof Error ? error : undefined
+            );
+        }
+    }
+
+    private isIgnorableCleanupError(error: unknown): boolean {
+        if (!(error instanceof Error)) {
+            return false;
+        }
+
+        const cleanupError = error as Error & { code?: string };
+        return typeof cleanupError.code === 'string' && IGNORABLE_CLEANUP_ERROR_CODES.has(cleanupError.code);
     }
 
     private async cacheManifest(manifestText: string): Promise<void> {

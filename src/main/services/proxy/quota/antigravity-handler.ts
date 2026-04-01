@@ -1,13 +1,10 @@
 import { appLogger } from '@main/logging/logger';
 import { LinkedAccount } from '@main/services/data/database.service';
-import { TokenService } from '@main/services/security/token.service';
 import { JsonObject } from '@shared/types/common';
 import { ModelQuotaItem, QuotaInfo, QuotaResponse } from '@shared/types/quota';
 import axios from 'axios';
 
 export class AntigravityHandler {
-    constructor(private tokenService: TokenService) { }
-
     private static readonly BLOCKED_MODEL_IDS = new Set([
         'chat_23310',
         'chat_20706',
@@ -33,13 +30,7 @@ export class AntigravityHandler {
             if (response.status === 200 && response.data) { return response.data as JsonObject; }
         } catch (error) {
             if (axios.isAxiosError(error) && error.response?.status === 401) {
-                appLogger.warn('QuotaService', 'Antigravity token invalid/expired (401). Triggering forced refresh.');
-                void this.tokenService.ensureFreshToken(account.provider, true).catch(refreshError => {
-                    appLogger.warn(
-                        'QuotaService',
-                        `Forced Antigravity token refresh failed: ${refreshError instanceof Error ? refreshError.message : String(refreshError)}`
-                    );
-                });
+                appLogger.debug('QuotaService', 'Antigravity quota request returned 401; refresh is owned by tengra-proxy.');
             }
         }
         return null;

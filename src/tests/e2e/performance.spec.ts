@@ -318,7 +318,7 @@ function seedManagedRuntimeManifestCache(): void {
                         ],
                     },
                     {
-                        id: 'cliproxy-embed',
+                        id: 'tengra-proxy',
                         displayName: 'Embedded Proxy',
                         version: 'test',
                         kind: 'service',
@@ -328,11 +328,11 @@ function seedManagedRuntimeManifestCache(): void {
                             {
                                 platform: process.platform,
                                 arch: currentArch,
-                                assetName: `cliproxy-embed-${process.platform}-${currentArch}${executableSuffix}`,
-                                downloadUrl: 'https://example.com/cliproxy-embed.zip',
+                                assetName: `tengra-proxy-${process.platform}-${currentArch}${executableSuffix}`,
+                                downloadUrl: 'https://example.com/tengra-proxy.zip',
                                 archiveFormat: 'raw',
                                 sha256: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
-                                executableRelativePath: `cliproxy-embed${executableSuffix}`,
+                                executableRelativePath: `tengra-proxy${executableSuffix}`,
                                 installSubdirectory: 'bin',
                             },
                         ],

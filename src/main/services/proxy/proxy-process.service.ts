@@ -2,21 +2,19 @@ import { ChildProcess, exec, spawn } from 'child_process';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as net from 'net';
-import * as os from 'os';
 import * as path from 'path';
 import { promisify } from 'util';
 
+import { pushLogEntry } from '@main/ipc/logging';
 import { appLogger } from '@main/logging/logger';
-import { validatePort } from '@main/services/proxy/proxy-validation.util';
+import { DatabaseService } from '@main/services/data/database.service';
 import { AuthService } from '@main/services/security/auth.service';
-import { AuthAPIService } from '@main/services/security/auth-api.service';
 import { getManagedRuntimeBinaryPath } from '@main/services/system/runtime-path.service';
 import { SettingsService } from '@main/services/system/settings.service';
-import { OPERATION_TIMEOUTS } from '@shared/constants/timeouts';
+import { getMainWindow } from '@main/startup/window';
 import { JsonObject } from '@shared/types/common';
 import { AppErrorCode, getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import { app } from 'electron';
 
 /**
  * Performance budgets in milliseconds for ProxyProcessManager operations
@@ -47,10 +45,13 @@ export class ProxyProcessManager {
     private currentPort: number = 8317;
     private stdoutBuffer = '';
     private stderrBuffer = '';
-    private authApiKey: string = '';
     private isProxyRunning: boolean = false;
 
-    constructor(private settingsService: SettingsService, private authService: AuthService, private authAPIService: AuthAPIService) { }
+    constructor(
+        private settingsService: SettingsService,
+        private authService: AuthService,
+        private databaseService: DatabaseService
+    ) { }
 
     async start(options?: { port?: number; persistent?: boolean }): Promise<ProxyEmbedStatus> {
         const startTime = performance.now();
@@ -58,193 +59,161 @@ export class ProxyProcessManager {
             return this.getStatus();
         }
 
-        if (options?.port !== undefined) {
-            const portError = validatePort(options.port);
-            if (portError) {
-                appLogger.error('Proxy', `Invalid port: ${portError}`);
-                return { running: false, error: portError, errorCode: AppErrorCode.PROXY_INVALID_CONFIG };
-            }
-        }
+        try {
+            // 1. Ensure binary exists (build if needed)
+            const binaryPath = await this.ensureBinary();
 
-        const binaryPath = this.getBinaryPath();
-        appLogger.info('Proxy', `Starting embedded proxy. Binary: ${binaryPath}`);
+            // 2. Prepare config
+            this.currentPort = options?.port ?? 8317;
+
+            const runtimeConfig = await this.generateConfig(this.currentPort);
+
+            // 3. Spawn process
+            await this.killExistingProxyProcesses();
+            this.spawnProxyProcess(binaryPath, runtimeConfig, options?.persistent);
+
+            // Wait for healthy startup
+            await this.waitForHealthy(this.currentPort);
+
+            appLogger.info('Proxy', `Embedded proxy started successfully on port ${this.currentPort} in ${Math.round(performance.now() - startTime)}ms`);
+            this.isProxyRunning = true;
+
+            const status = this.getStatus();
+            status.binaryPath = binaryPath;
+            return status;
+
+        } catch (error) {
+            appLogger.error('Proxy', `Failed to start embedded proxy: ${getErrorMessage(error)}`);
+            this.stopSync();
+            return {
+                running: false,
+                error: getErrorMessage(error),
+                errorCode: AppErrorCode.PROXY_START_FAILED
+            };
+        }
+    }
+
+    async stop(): Promise<void> {
+        if (!this.child) {
+            return;
+        }
 
         try {
-            await this.ensureBinary();
-        } catch (e) {
-            appLogger.error('Proxy', `Failed to ensure binary: ${getErrorMessage(e)}`);
-            return { running: false, error: `Failed to build or find binary: ${getErrorMessage(e)}`, errorCode: AppErrorCode.PROXY_BINARY_NOT_FOUND };
+            this.child.kill('SIGTERM');
+            const killTimeout = setTimeout(() => {
+                if (this.child) {
+                    this.child.kill('SIGKILL');
+                }
+            }, PROXY_PROCESS_PERFORMANCE_BUDGETS.STOP_MS);
+
+            await new Promise<void>((resolve) => {
+                this.child?.on('exit', () => {
+                    clearTimeout(killTimeout);
+                    resolve();
+                });
+            });
+        } finally {
+            this.flushLogBuffers();
+            this.child = null;
+            this.isProxyRunning = false;
         }
+    }
 
-        this.currentPort = options?.port ?? 8317;
-
-        // 1. Kill any existing proxy processes
-        await this.killExistingProxyProcesses();
-
-        // 2. Verify port is free
-        const isPortTaken = await this.isPortBusy(this.currentPort);
-        if (isPortTaken) {
-            appLogger.warn(
-                'Proxy',
-                `Port ${this.currentPort} is still busy after kill. Retrying in 1s...`
-            );
-            await new Promise(resolve => setTimeout(resolve, OPERATION_TIMEOUTS.RETRY_DELAY));
-            const stillTaken = await this.isPortBusy(this.currentPort);
-            if (stillTaken) {
-                appLogger.error(
-                    'Proxy',
-                    `Port ${this.currentPort} is occupied by another process and could not be freed.`
-                );
-                return { running: false, error: `Port ${this.currentPort} is already in use.`, errorCode: AppErrorCode.PROXY_PORT_IN_USE };
+    stopSync(): void {
+        const child = this.child;
+        this.child = null;
+        this.isProxyRunning = false;
+        this.flushLogBuffers();
+        if (child) {
+            try {
+                child.kill('SIGKILL');
+            } catch {
+                // Ignore errors on sync stop
             }
         }
-
-        // Get the auth API port to pass to the proxy
-        const authAPIPort = this.setupAuthAPI();
-        if (authAPIPort === 0) {
-            appLogger.error('Proxy', 'AuthAPIService not initialized - port is 0');
-            return { running: false, error: 'AuthAPIService not initialized', errorCode: AppErrorCode.PROXY_NOT_INITIALIZED };
-        }
-
-        const runtimeConfig = await this.prepareRuntimeLaunchConfig(this.currentPort);
-
-        // 3. Spawn process
-        this.spawnProxyProcess(binaryPath, runtimeConfig, authAPIPort, options?.persistent);
-
-        this.isProxyRunning = true;
-
-        const elapsed = performance.now() - startTime;
-        if (elapsed > PROXY_PROCESS_PERFORMANCE_BUDGETS.START_MS) {
-            appLogger.warn('Proxy', `start exceeded budget: ${elapsed.toFixed(1)}ms > ${PROXY_PROCESS_PERFORMANCE_BUDGETS.START_MS}ms`);
-        }
-
-        return this.getStatus();
-    }
-
-    private async isPortBusy(port: number): Promise<boolean> {
-        return new Promise(resolve => {
-            const server = net
-                .createServer()
-                .once('error', (err: NodeJS.ErrnoException) => {
-                    if (err.code === 'EADDRINUSE') {
-                        resolve(true);
-                    } else {
-                        resolve(false);
-                    }
-                })
-                .once('listening', () => {
-                    server.close();
-                    resolve(false);
-                })
-                .listen(port, '127.0.0.1');
-        });
-    }
-
-
-    private setupAuthAPI(): number {
-        const authAPIPort = this.authAPIService.getPort();
-        if (authAPIPort === 0) {
-            return 0;
-        }
-
-        this.authApiKey = crypto.randomBytes(32).toString('hex');
-        const authApi = this.authAPIService as { setApiKey?: (key: string) => void };
-        if (authApi.setApiKey) {
-            authApi.setApiKey(this.authApiKey);
-        }
-        return authAPIPort;
     }
 
     private spawnProxyProcess(
         binaryPath: string,
         runtimeConfig: ProxyRuntimeLaunchConfig,
-        authPort: number,
         persistent?: boolean
-    ) {
-        const isDev = !app.isPackaged;
-
-        // In dev mode, we avoid detached to let Electron clean it up properly
-        const shouldDetach = persistent === true && !isDev;
-
-        appLogger.info(
-            'Proxy',
-            `Spawning proxy: ${binaryPath} -port ${runtimeConfig.port} (detached: ${shouldDetach})`
-        );
+    ): void {
+        appLogger.info('Proxy', `Spawning ${binaryPath} with port=${runtimeConfig.port}`);
 
         this.child = spawn(
             binaryPath,
             [
-                '-port',
+                "--proxy",
                 runtimeConfig.port.toString(),
-                '-auth-api-port',
-                authPort.toString(),
-                '-auth-api-key',
-                this.authApiKey,
-                '-proxy-api-key',
-                runtimeConfig.proxyApiKey,
-                '-management-password',
-                runtimeConfig.managementPassword,
             ],
             {
                 cwd: path.dirname(binaryPath),
                 stdio: ['ignore', 'pipe', 'pipe'],
                 windowsHide: true,
-                detached: shouldDetach,
+                env: {
+                    ...process.env,
+                    TENGRA_PROXY_PERSISTENT: persistent ? 'true' : 'false',
+                    TENGRA_DB_SERVICE_TOKEN: process.env.TENGRA_DB_SERVICE_TOKEN || '',
+                    TENGRA_MASTER_KEY_HEX: this.authService.getRuntimeMasterKeyHex() ?? '',
+                    // OS native encryption hint
+                    TENGRA_USE_OS_SECURITY: 'true',
+                }
             }
         );
 
-        if (shouldDetach) {
-            this.child.unref();
-        }
-
-        this.child.stdout?.on(
-            'data',
-            d => (this.stdoutBuffer = this.logProxyChunk(this.stdoutBuffer, d.toString(), 'info'))
-        );
-        this.child.stderr?.on(
-            'data',
-            d => (this.stderrBuffer = this.logProxyChunk(this.stderrBuffer, d.toString(), 'error'))
-        );
-
-        this.child.on('error', err => {
-            appLogger.error('Proxy', `Failed to spawn proxy: ${err.message}`);
+        this.child.stdout?.on('data', (chunk) => {
+            this.stdoutBuffer = this.logProxyChunk(this.stdoutBuffer, chunk.toString(), 'info');
         });
 
-        this.child.on('close', code => {
-            appLogger.warn('Proxy', `Proxy process exited with code ${code}`);
-            this.child = null;
+        this.child.stderr?.on('data', (chunk) => {
+            this.stderrBuffer = this.logProxyChunk(this.stderrBuffer, chunk.toString(), 'error');
+        });
+
+        this.child.on('error', (error) => {
+            appLogger.error('Proxy', `Embedded proxy process error: ${error.message}`);
             this.isProxyRunning = false;
         });
 
-        appLogger.info('Proxy', `Proxy started with PID: ${this.child.pid}`);
+        this.child.on('exit', (code, signal) => {
+            this.isProxyRunning = false;
+            this.flushLogBuffers();
+            this.child = null;
+            if (code !== 0 && code !== null) {
+                appLogger.error('Proxy', `Embedded proxy exited with code ${code} (Signal: ${signal})`);
+            } else {
+                appLogger.info('Proxy', 'Embedded proxy process terminated cleanly');
+            }
+        });
     }
 
-    async stop(force: boolean = false): Promise<ProxyEmbedStatus> {
-        const start = performance.now();
-        if (this.child) {
-            appLogger.info('Proxy', `Stopping proxy (PID: ${this.child.pid})...`);
-            this.child.kill();
-            this.child = null;
+    private async waitForHealthy(port: number, timeoutMs: number = 20000): Promise<void> {
+        const start = Date.now();
+        while (Date.now() - start < timeoutMs) {
+            const isHealthy = await this.pinger(port);
+            if (isHealthy) {
+                return;
+            }
+            await new Promise(r => setTimeout(r, 500));
         }
+        throw new Error(`Timeout waiting for proxy health at port ${port}`);
+    }
 
-        if (force) {
-            await this.killExistingProxyProcesses();
-        }
-
-        this.isProxyRunning = false;
-
-        const elapsed = performance.now() - start;
-        if (elapsed > PROXY_PROCESS_PERFORMANCE_BUDGETS.STOP_MS) {
-            appLogger.warn('Proxy', `stop exceeded budget: ${elapsed.toFixed(1)}ms > ${PROXY_PROCESS_PERFORMANCE_BUDGETS.STOP_MS}ms`);
-        }
-
-        return this.getStatus();
+    private async pinger(port: number): Promise<boolean> {
+        return new Promise((resolve) => {
+            const socket = net.createConnection(port, '127.0.0.1');
+            socket.on('connect', () => {
+                socket.end();
+                resolve(true);
+            });
+            socket.on('error', () => {
+                resolve(false);
+            });
+        });
     }
 
     private async killExistingProxyProcesses(): Promise<void> {
         const execAsync = promisify(exec);
-        const proxyName = process.platform === 'win32' ? 'cliproxy-embed.exe' : 'cliproxy-embed';
-
+        const proxyName = process.platform === 'win32' ? 'tengra-proxy.exe' : 'tengra-proxy';
         try {
             if (process.platform === 'win32') {
                 appLogger.info('Proxy', `Killing existing ${proxyName} instances...`);
@@ -275,11 +244,31 @@ export class ProxyProcessManager {
     }
 
     private getBinaryPath(): string {
-        return getManagedRuntimeBinaryPath('cliproxy-embed');
+        return getManagedRuntimeBinaryPath('tengra-proxy');
     }
 
     private getSourceDir(): string {
-        return path.join(process.cwd(), 'src', 'services', 'cliproxy-runtime');
+        return path.join(process.cwd(), 'src', 'native', 'tengra-proxy');
+    }
+
+    private resolveCargoCommand(): string {
+        const explicitCargo = process.env.CARGO?.trim();
+        if (explicitCargo) {
+            return explicitCargo;
+        }
+
+        const homeDir = process.platform === 'win32'
+            ? process.env.USERPROFILE ?? ''
+            : process.env.HOME ?? '';
+        const localCargo = process.platform === 'win32'
+            ? path.join(homeDir, '.cargo', 'bin', 'cargo.exe')
+            : path.join(homeDir, '.cargo', 'bin', 'cargo');
+
+        if (localCargo && fs.existsSync(localCargo)) {
+            return `"${localCargo}"`;
+        }
+
+        return 'cargo';
     }
 
     private async ensureBinary(): Promise<string> {
@@ -299,18 +288,11 @@ export class ProxyProcessManager {
             throw new Error(`Proxy source not found and binary missing: ${sourceDir}`);
         }
 
-        appLogger.info('Proxy', 'Rebuilding cliproxy-embed binary...');
-        const outputFlag = process.platform === 'win32' ? '-o cliproxy-embed.exe' : '-o cliproxy-embed';
-        const buildCmd = `go build ${outputFlag}`;
+        appLogger.info('Proxy', 'Building tengra-proxy binary...');
+        const buildCmd = `${this.resolveCargoCommand()} build --release`;
         const execAsync = promisify(exec);
 
-        const env = {
-            ...process.env,
-            GOPATH: path.join(os.homedir(), 'go'),
-            GOMODCACHE: path.join(os.homedir(), 'go', 'pkg', 'mod')
-        };
-
-        const { stdout, stderr } = await execAsync(buildCmd, { cwd: sourceDir, env });
+        const { stdout, stderr } = await execAsync(buildCmd, { cwd: sourceDir });
         if (stdout?.trim()) {
             appLogger.info('Proxy:Build', stdout.trim());
         }
@@ -325,8 +307,9 @@ export class ProxyProcessManager {
             await fs.promises.mkdir(binDir, { recursive: true });
         }
 
-        // Move/Copy binary from source dir to the managed runtime directory
-        const builtBinary = path.join(sourceDir, path.basename(binaryPath));
+        // Move/Copy binary from target/release to the managed runtime directory
+        const builtBinaryName = process.platform === 'win32' ? 'tengra-proxy.exe' : 'tengra-proxy';
+        const builtBinary = path.join(sourceDir, 'target', 'release', builtBinaryName);
         const builtExists = await fs.promises.access(builtBinary, fs.constants.F_OK).then(() => true).catch(() => false);
         if (builtExists) {
             await fs.promises.copyFile(builtBinary, binaryPath);
@@ -335,7 +318,7 @@ export class ProxyProcessManager {
 
         const finalExists = await fs.promises.access(binaryPath, fs.constants.F_OK).then(() => true).catch(() => false);
         if (!finalExists) {
-            throw new Error('Failed to build embed binary');
+            throw new Error('Failed to build tengra-proxy binary');
         }
         return binaryPath;
     }
@@ -375,10 +358,13 @@ export class ProxyProcessManager {
             for (const entry of entries) {
                 const fullPath = path.join(dir, entry.name);
                 if (entry.isDirectory()) {
+                    if (entry.name === 'target' || entry.name === 'node_modules') {
+                        continue;
+                    }
                     results.push(...this.collectBuildInputs(fullPath));
                     continue;
                 }
-                if (entry.name.endsWith('.go') || entry.name === 'go.mod' || entry.name === 'go.sum') {
+                if (entry.name.endsWith('.rs') || entry.name === 'Cargo.toml' || entry.name === 'Cargo.lock') {
                     results.push(fullPath);
                 }
             }
@@ -406,185 +392,186 @@ export class ProxyProcessManager {
     }
 
     private processProxyLogLine(line: string, defaultLevel: 'info' | 'error') {
-        const level = this.detectLogLevel(line, defaultLevel);
-
-        if (level === 'error') {
-            appLogger.error('Proxy', line.trim());
-        } else if (level === 'warning') {
-            appLogger.warn('Proxy', line.trim());
-        } else {
-            appLogger.info('Proxy', line.trim());
-        }
-
-        // IPC: Capture direct auth updates from Proxy (stdout)
         if (line.includes('__TENGRA_AUTH_UPDATE__:')) {
             const parts = line.split('__TENGRA_AUTH_UPDATE__:');
-            if (parts.length > 1 && parts[1]) {
-                const jsonContent = parts[1].trim();
+            const jsonContent = parts[1]?.trim();
+            if (jsonContent) {
                 void this.handleAuthUpdateFromProxy(jsonContent);
-                return; // Do not log the token to file
             }
+            return;
         }
+
+        const level = this.detectLogLevel(line, defaultLevel);
+        const message = line.trim();
+
+        if (level === 'error') {
+            appLogger.error('Proxy', message);
+        } else if (level === 'warning') {
+            appLogger.warn('Proxy', message);
+        } else {
+            appLogger.info('Proxy', message);
+        }
+        pushLogEntry(level === 'warning' ? 'warn' : level, 'Proxy', message);
     }
 
     private detectLogLevel(
         line: string,
         defaultLevel: 'info' | 'error'
     ): 'info' | 'warning' | 'error' {
-        if (/level=info|\[INFO\]/i.test(line)) {
+        if (/level=info|\[INFO\]|\[LOG\]/i.test(line)) {
             return 'info';
         }
         if (/level=warn(ing)?|\[WARN\]/i.test(line)) {
             return 'warning';
         }
-        if (/level=error|\[ERROR\]|level=fatal/i.test(line)) {
+        if (/level=error|\[ERROR\]/i.test(line)) {
             return 'error';
-        }
-
-        // Downgrade harmless stderr logs
-        if (defaultLevel === 'error' && !/error|fatal/i.test(line)) {
-            return 'info';
         }
         return defaultLevel;
     }
 
-    /**
-     * Prepare runtime launch inputs for the embedded proxy runtime.
-     */
-    async prepareRuntimeLaunchConfig(port: number): Promise<ProxyRuntimeLaunchConfig> {
-        const start = performance.now();
-        const portError = validatePort(port);
-        if (portError) {
-            throw new Error(`Invalid proxy config port: ${portError}`);
+    private async handleAuthUpdateFromProxy(json: string): Promise<void> {
+        appLogger.debug('Proxy', 'Processing auth update from proxy...');
+        const data = safeJsonParse<JsonObject>(json, {});
+        if (!data) {
+            appLogger.error('Proxy', 'Failed to parse auth update JSON');
+            return;
         }
 
+        try {
+            await this.authService.updateFromProxy(data);
+            await this.authService.reloadLinkedAccountsCache();
+            this.emitRendererAuthUpdate(data);
+        } catch (error) {
+            appLogger.error('Proxy', `Failed to update auth from proxy: ${getErrorMessage(error)}`);
+        }
+    }
+
+    private emitRendererAuthUpdate(data: JsonObject): void {
+        const provider = typeof data.provider === 'string' ? data.provider : '';
+        const accountId = typeof data.accountId === 'string' ? data.accountId : '';
+        if (!provider || !accountId) {
+            return;
+        }
+
+        const mainWindow = getMainWindow();
+        if (!mainWindow || mainWindow.isDestroyed()) {
+            return;
+        }
+
+        mainWindow.webContents.send('auth:account-changed', {
+            type: 'updated',
+            provider,
+            accountId,
+        });
+    }
+
+    private flushLogBuffers(): void {
+        this.flushLogBuffer('info');
+        this.flushLogBuffer('error');
+    }
+
+    private flushLogBuffer(defaultLevel: 'info' | 'error'): void {
+        const remainder = defaultLevel === 'info' ? this.stdoutBuffer.trim() : this.stderrBuffer.trim();
+        if (!remainder) {
+            if (defaultLevel === 'info') {
+                this.stdoutBuffer = '';
+            } else {
+                this.stderrBuffer = '';
+            }
+            return;
+        }
+
+        this.processProxyLogLine(remainder, defaultLevel);
+        if (defaultLevel === 'info') {
+            this.stdoutBuffer = '';
+        } else {
+            this.stderrBuffer = '';
+        }
+    }
+
+    async generateConfig(port: number): Promise<ProxyRuntimeLaunchConfig> {
+        await this.syncProviderCredentialsForProxyStartup();
         const proxyApiKey = await this.ensureProxyApiKey();
         const managementPassword = await this.ensureManagementPassword();
-        const settings = this.settingsService.getSettings();
-        await this.settingsService.saveSettings({
-            proxy: {
-                enabled: settings.proxy?.enabled ?? false,
-                url: settings.proxy?.url ?? `http://127.0.0.1:${port}/v1`,
-                key: proxyApiKey,
-                authStoreKey: managementPassword,
-            },
-        });
 
-        const elapsed = performance.now() - start;
-        if (elapsed > PROXY_PROCESS_PERFORMANCE_BUDGETS.CONFIG_GENERATION_MS) {
-            appLogger.warn('Proxy', `prepareRuntimeLaunchConfig exceeded budget: ${elapsed.toFixed(1)}ms > ${PROXY_PROCESS_PERFORMANCE_BUDGETS.CONFIG_GENERATION_MS}ms`);
+        // Persist proxy key in Database so tengra-proxy can use it
+        try {
+            const now = Date.now();
+            await this.databaseService.exec(`
+                INSERT INTO linked_accounts (id, provider, access_token, metadata, is_active, created_at, updated_at)
+                VALUES ('proxy_key_default', 'proxy_key', '${proxyApiKey}', '{"type":"proxy_key"}', 1, ${now}, ${now})
+                ON CONFLICT(id) DO UPDATE SET provider = EXCLUDED.provider, access_token = EXCLUDED.access_token, metadata = EXCLUDED.metadata, is_active = EXCLUDED.is_active, updated_at = EXCLUDED.updated_at
+            `);
+            appLogger.info('Proxy', 'Proxy API key synchronized to database');
+        } catch (e) {
+            appLogger.error('Proxy', `Failed to synchronize proxy key to DB: ${getErrorMessage(e)}`);
+            // Continue anyway, it might be a transient failure or DB not ready
         }
 
+        const settings = this.settingsService.getSettings();
+        const proxySettings = settings.proxy ?? { enabled: false, url: 'http://localhost:8317/v1', key: '' };
+        const updatedProxy = {
+            ...proxySettings,
+            port,
+            apiKey: proxyApiKey,
+            managementPassword
+        };
+        await this.settingsService.saveSettings({
+            ...settings,
+            // SAFETY: The settings schema for 'proxy' will be expanded to include port, apiKey, and managementPassword.
+            proxy: updatedProxy
+        });
+
         return {
-            managementPassword,
             port,
             proxyApiKey,
+            managementPassword
         };
     }
 
-    /**
-     * @deprecated Use prepareRuntimeLaunchConfig instead
-     */
-    async generateConfig(port: number) {
-        // Kept for backwards compatibility - just prepares runtime launch inputs.
-        await this.prepareRuntimeLaunchConfig(port);
+    private async syncProviderCredentialsForProxyStartup(): Promise<void> {
+        const settings = this.settingsService.getSettings();
+        const providerTokens: Array<{ provider: string; token: string | undefined }> = [
+            { provider: 'openai_key', token: settings.openai?.apiKey },
+            { provider: 'anthropic_key', token: settings.anthropic?.apiKey },
+            { provider: 'groq_key', token: settings.groq?.apiKey },
+            { provider: 'nvidia_key', token: settings.nvidia?.apiKey },
+        ];
+
+        for (const { provider, token } of providerTokens) {
+            const normalizedToken = token?.trim();
+            if (!normalizedToken || normalizedToken.length <= 5 || normalizedToken === 'connected') {
+                continue;
+            }
+
+            try {
+                await this.authService.linkAccount(provider, { accessToken: normalizedToken });
+            } catch (error) {
+                appLogger.warn(
+                    'Proxy',
+                    `Failed to sync ${provider} credential before proxy startup: ${getErrorMessage(error)}`
+                );
+            }
+        }
     }
 
     private async ensureProxyApiKey(): Promise<string> {
         const settings = this.settingsService.getSettings();
-        const proxySettings = settings.proxy ?? {
-            enabled: false,
-            url: `http://127.0.0.1:${this.currentPort}/v1`,
-            key: '',
-        };
-        let proxyApiKey = proxySettings.key.trim();
-
-        if (!proxyApiKey || proxyApiKey.length > 72) {
-            proxyApiKey = crypto.randomBytes(32).toString('base64');
-            await this.settingsService.saveSettings({
-                proxy: {
-                    ...proxySettings,
-                    key: proxyApiKey,
-                },
-            });
+        if (settings.proxy?.apiKey) {
+            return settings.proxy.apiKey;
         }
 
-        return proxyApiKey;
+        const key = crypto.randomBytes(32).toString('hex');
+        return key;
     }
 
     private async ensureManagementPassword(): Promise<string> {
         const settings = this.settingsService.getSettings();
-        const proxySettings = settings.proxy ?? {
-            enabled: false,
-            url: `http://127.0.0.1:${this.currentPort}/v1`,
-            key: '',
-        };
-        let managementPassword = proxySettings.authStoreKey?.trim() ?? '';
-
-        if (!managementPassword || managementPassword.length > 72) {
-            managementPassword = crypto.randomBytes(32).toString('base64');
-            await this.settingsService.saveSettings({
-                proxy: {
-                    ...proxySettings,
-                    authStoreKey: managementPassword,
-                },
-            });
+        if (settings.proxy?.managementPassword) {
+            return settings.proxy.managementPassword;
         }
 
-        return managementPassword;
-    }
-
-    private async handleAuthUpdateFromProxy(jsonString: string) {
-        try {
-            const data = safeJsonParse<JsonObject>(jsonString, {});
-            const provider = (data.type as string) || 'unknown';
-
-            appLogger.info('Proxy', `Received direct auth update for provider: ${provider}`);
-
-            if (provider === 'unknown') {
-                appLogger.warn('Proxy', 'Received auth update with unknown provider type');
-                return;
-            }
-
-            const tokenData = this.constructTokenData(data);
-            await this.authService.linkAccount(provider, tokenData);
-            appLogger.info(
-                'Proxy',
-                `Successfully saved direct auth update to Database for ${provider}`
-            );
-        } catch (e) {
-            appLogger.error('Proxy', `Failed to process direct auth update: ${e}`);
-        }
-    }
-
-    private constructTokenData(data: JsonObject) {
-        return {
-            accessToken: this.getString(data, 'access_token', 'accessToken'),
-            refreshToken: this.getString(data, 'refresh_token', 'refreshToken'),
-            sessionToken: this.getString(data, 'session_token', 'sessionToken', 'session_key'),
-            email: this.getString(data, 'email'),
-            expiresAt: this.getNumber(data, 'expires_at', 'expiresAt'),
-            scope: this.getString(data, 'scope'),
-            metadata: data,
-        };
-    }
-
-    private getString(obj: JsonObject, ...keys: string[]): string | undefined {
-        for (const key of keys) {
-            if (typeof obj[key] === 'string') {
-                return obj[key] as string;
-            }
-        }
-        return undefined;
-    }
-
-    private getNumber(obj: JsonObject, ...keys: string[]): number | undefined {
-        for (const key of keys) {
-            if (typeof obj[key] === 'number') {
-                return obj[key] as number;
-            }
-        }
-        return undefined;
+        return crypto.randomBytes(16).toString('hex');
     }
 }
-

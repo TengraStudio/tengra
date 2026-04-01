@@ -12,7 +12,7 @@ import React, { Suspense, useEffect, useMemo } from 'react';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { renderViewSkeleton } from '@/components/ui/view-skeletons';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth, useAuthSettingsUi } from '@/context/AuthContext';
 import { useTranslation } from '@/i18n';
 import {
     getAnimationDurationMs,
@@ -85,7 +85,7 @@ const WorkspaceSection: React.FC = () => {
  * Settings component wrapper to isolate hook consumption
  */
 const SettingsSection: React.FC = () => {
-    const { settingsCategory } = useAuth();
+    const { settingsCategory, setSettingsCategory } = useAuthSettingsUi();
     const { models, proxyModels, loadModels, groupedModels } = useModel();
 
     const group = groupedModels && (groupedModels as GroupedModels)['ollama'];
@@ -100,6 +100,7 @@ const SettingsSection: React.FC = () => {
             proxyModels={proxyModels}
             loadModels={(bypassCache) => void loadModels(bypassCache)}
             settingsCategory={settingsCategory}
+            onSettingsCategoryChange={setSettingsCategory}
             groupedModels={groupedModels}
         />
     );

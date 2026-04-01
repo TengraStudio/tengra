@@ -5,6 +5,7 @@
  * All network I/O is mocked — no real traffic is sent.
  */
 import { DataService } from '@main/services/data/data.service';
+import { DatabaseService } from '@main/services/data/database.service';
 import {
     ProxyService
 } from '@main/services/proxy/proxy.service';
@@ -62,7 +63,11 @@ function createProxyService(): MockDeps {
         start: vi.fn().mockResolvedValue({ running: true }),
         stop: vi.fn().mockResolvedValue(undefined),
         getStatus: vi.fn().mockReturnValue({ running: false }),
-        generateConfig: vi.fn().mockResolvedValue(undefined),
+        generateConfig: vi.fn().mockResolvedValue({
+            port: 8317,
+            proxyApiKey: 'mock-key',
+            managementPassword: 'mock-pass'
+        }),
     } as never as ProxyProcessManager;
 
     const mockEventBus = {
@@ -95,6 +100,7 @@ function createProxyService(): MockDeps {
         quotaService: mockQuotaService,
         authService: mockAuthService,
         eventBus: mockEventBus,
+        databaseService: {} as never as DatabaseService,
     });
 
     return { proxyService, mockProcessManager, mockEventBus, mockQuotaService };
@@ -382,7 +388,9 @@ describe('ProxyService load/stress tests', () => {
             await expect(deps.proxyService.generateConfig(8080)).rejects.toThrow();
 
             // Service should still be usable
-            vi.mocked(deps.mockProcessManager.generateConfig).mockResolvedValue(undefined);
+            vi.mocked(deps.mockProcessManager.generateConfig).mockResolvedValue({
+                port: 9090, proxyApiKey: 'key', managementPassword: 'pass'
+            });
             await expect(deps.proxyService.generateConfig(9090)).resolves.toBeUndefined();
         });
     });
@@ -422,7 +430,7 @@ describe('ProxyService load/stress tests', () => {
             }
 
             // Simulate recovery
-            vi.mocked(deps.mockProcessManager.stop).mockResolvedValue({ running: false, pid: 0 });
+            vi.mocked(deps.mockProcessManager.stop).mockResolvedValue(undefined);
             await expect(deps.proxyService.stopEmbeddedProxy()).resolves.toBeUndefined();
         });
 

@@ -29,6 +29,8 @@ export interface SdCppBridge {
     batchGenerate: (requests: RuntimeValue[]) => Promise<RuntimeValue>;
     getQueueStats: () => Promise<RuntimeValue>;
     edit: (options: RuntimeValue) => Promise<RuntimeValue>;
+    onSdCppStatus: (callback: (data: RuntimeValue) => void) => () => void;
+    onSdCppProgress: (callback: (data: RuntimeValue) => void) => () => void;
 }
 
 export function createSdCppBridge(ipc: IpcRenderer): SdCppBridge {
@@ -61,5 +63,19 @@ export function createSdCppBridge(ipc: IpcRenderer): SdCppBridge {
         batchGenerate: requests => ipc.invoke('sd-cpp:batchGenerate', requests),
         getQueueStats: () => ipc.invoke('sd-cpp:getQueueStats'),
         edit: options => ipc.invoke('sd-cpp:edit', options),
+        onSdCppStatus: (callback: (data: RuntimeValue) => void) => {
+            const listener = (_event: unknown, data: RuntimeValue) => callback(data);
+            ipc.on('sd-cpp:status', listener);
+            return () => {
+                ipc.removeListener('sd-cpp:status', listener);
+            };
+        },
+        onSdCppProgress: (callback: (data: RuntimeValue) => void) => {
+            const listener = (_event: unknown, data: RuntimeValue) => callback(data);
+            ipc.on('sd-cpp:progress', listener);
+            return () => {
+                ipc.removeListener('sd-cpp:progress', listener);
+            };
+        },
     };
 }

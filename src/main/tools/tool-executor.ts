@@ -2,26 +2,18 @@ import { randomUUID } from 'crypto';
 
 import { appLogger } from '@main/logging/logger';
 import { McpDispatcher } from '@main/mcp/dispatcher';
-import { MonitoringService } from '@main/services/analysis/monitoring.service';
-import { PageSpeedService } from '@main/services/analysis/pagespeed.service';
-import { ScannerService } from '@main/services/analysis/scanner.service';
-import { FileManagementService } from '@main/services/data/file.service';
-import { FileSystemService } from '@main/services/data/filesystem.service';
-import { ContentService } from '@main/services/external/content.service';
-import { UtilityService } from '@main/services/external/utility.service';
 import { WebService } from '@main/services/external/web.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
 import { MemoryService } from '@main/services/llm/memory.service';
+import { FileManagementService } from '@main/services/data/file.service';
+import { FileSystemService } from '@main/services/data/filesystem.service';
 import { SecurityService } from '@main/services/security/security.service';
 import { CommandService } from '@main/services/system/command.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { NetworkService } from '@main/services/system/network.service';
 import { SystemService } from '@main/services/system/system.service';
-import { ClipboardService } from '@main/services/ui/clipboard.service';
-import { NotificationService } from '@main/services/ui/notification.service';
-import { ScreenshotService } from '@main/services/ui/screenshot.service';
 import { DockerService } from '@main/services/workspace/docker.service';
 import { GitService } from '@main/services/workspace/git.service';
 import { SSHService } from '@main/services/workspace/ssh.service';
@@ -43,24 +35,16 @@ export interface ToolExecutorOptions {
     web: WebService;
     docker: DockerService;
     ssh: SSHService;
-    scanner: ScannerService;
     embedding: EmbeddingService;
     memory: MemoryService;
     localImage: LocalImageService;
-    screenshot: ScreenshotService;
     system: SystemService;
     network: NetworkService;
-    notification: NotificationService;
-    utility: UtilityService;
-    content: ContentService;
     file: FileManagementService;
-    monitor: MonitoringService;
-    clipboard: ClipboardService;
     git: GitService;
     security: SecurityService;
     mcp: McpDispatcher;
     llm: LLMService;
-    pageSpeed: PageSpeedService;
 }
 
 export interface ToolExecutionContext {

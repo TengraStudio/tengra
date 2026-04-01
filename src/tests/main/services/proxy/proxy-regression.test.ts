@@ -3,6 +3,7 @@
  * Validates startup→config→stop lifecycle, error propagation, and telemetry.
  */
 import { DataService } from '@main/services/data/data.service';
+import { DatabaseService } from '@main/services/data/database.service';
 import {
     PROXY_PERFORMANCE_BUDGETS,
     ProxyErrorCode,
@@ -69,6 +70,10 @@ function buildService() {
             fetchCodexUsage: vi.fn().mockResolvedValue({}),
             extractCodexUsageFromWham: vi.fn().mockReturnValue(null),
         } as never as QuotaService,
+        databaseService: {
+            exec: vi.fn(),
+            getLinkedAccounts: vi.fn().mockResolvedValue([]),
+        } as never as DatabaseService,
     };
 
     const service = new ProxyService({

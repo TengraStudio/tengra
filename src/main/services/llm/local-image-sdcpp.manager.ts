@@ -10,6 +10,7 @@ import { getManagedRuntimeRoot, getManagedRuntimeTempDir } from '@main/services/
 import { SettingsService } from '@main/services/system/settings.service';
 import { getErrorMessage } from '@shared/utils/error.util';
 import axios from 'axios';
+import { app } from 'electron';
 
 import type { GitHubRelease, GitHubReleaseAsset, ImageGenerationOptions } from './local-image.types';
 
@@ -181,9 +182,10 @@ export class SdCppManager {
 
         const configuredBinary = settings.images?.sdCppBinaryPath?.trim() || process.env.SD_CPP_BINARY?.trim();
         const configuredModel = settings.images?.sdCppModelPath?.trim() || process.env.SD_CPP_MODEL?.trim();
+        const migratedRuntime = await this.migrateLegacyRuntime(binDir, modelDir, configuredBinary, configuredModel);
 
-        let binaryPath = configuredBinary ?? '';
-        let modelPath = configuredModel ?? '';
+        let binaryPath = migratedRuntime.binaryPath;
+        let modelPath = migratedRuntime.modelPath;
 
         if (!binaryPath || !(await this.pathExists(binaryPath))) {
             binaryPath = await this.resolveOrInstallBinary(binDir);
@@ -194,6 +196,109 @@ export class SdCppManager {
 
         await this.persistPaths(binaryPath, modelPath);
         return { binaryPath, modelPath };
+    }
+
+    private async migrateLegacyRuntime(
+        binDir: string,
+        modelDir: string,
+        configuredBinary?: string,
+        configuredModel?: string
+    ): Promise<{ binaryPath: string; modelPath: string }> {
+        const legacyRoot = path.join(app.getPath('userData'), 'ai', 'sd-cpp');
+        let binaryPath = configuredBinary ?? '';
+        let modelPath = configuredModel ?? '';
+
+        if (!(await this.pathExists(legacyRoot))) {
+            return { binaryPath, modelPath };
+        }
+
+        binaryPath = await this.migrateLegacyBinaryPath(legacyRoot, binDir, binaryPath);
+        modelPath = await this.migrateLegacyModelPath(legacyRoot, modelDir, modelPath);
+        await this.removeDirectoryIfEmpty(legacyRoot);
+        return { binaryPath, modelPath };
+    }
+
+    private async migrateLegacyBinaryPath(
+        legacyRoot: string,
+        binDir: string,
+        configuredBinary: string
+    ): Promise<string> {
+        const migratedConfigured = await this.moveLegacyFileIfNeeded(configuredBinary, binDir, legacyRoot);
+        if (migratedConfigured) {
+            return migratedConfigured;
+        }
+
+        for (const candidate of this.getBinaryCandidates()) {
+            const legacyCandidate = path.join(legacyRoot, 'bin', candidate);
+            const migrated = await this.moveLegacyFileIfNeeded(legacyCandidate, binDir, legacyRoot);
+            if (migrated) {
+                return migrated;
+            }
+        }
+
+        return configuredBinary;
+    }
+
+    private async migrateLegacyModelPath(
+        legacyRoot: string,
+        modelDir: string,
+        configuredModel: string
+    ): Promise<string> {
+        const migratedConfigured = await this.moveLegacyFileIfNeeded(configuredModel, modelDir, legacyRoot);
+        if (migratedConfigured) {
+            return migratedConfigured;
+        }
+
+        const legacyModelDir = path.join(legacyRoot, 'models');
+        const legacyModel = await this.findModelFile(legacyModelDir);
+        if (!legacyModel) {
+            return configuredModel;
+        }
+
+        return (await this.moveLegacyFileIfNeeded(legacyModel, modelDir, legacyRoot)) ?? configuredModel;
+    }
+
+    private async moveLegacyFileIfNeeded(
+        sourcePath: string,
+        targetDir: string,
+        legacyRoot: string
+    ): Promise<string | null> {
+        if (!sourcePath || !sourcePath.startsWith(legacyRoot) || !(await this.pathExists(sourcePath))) {
+            return null;
+        }
+
+        const destinationPath = path.join(targetDir, path.basename(sourcePath));
+        if (await this.pathExists(destinationPath)) {
+            await fs.promises.rm(sourcePath, { force: true }).catch(() => undefined);
+            return destinationPath;
+        }
+
+        await fs.promises.mkdir(targetDir, { recursive: true });
+        try {
+            await fs.promises.rename(sourcePath, destinationPath);
+        } catch {
+            await fs.promises.copyFile(sourcePath, destinationPath);
+            await fs.promises.rm(sourcePath, { force: true });
+        }
+        return destinationPath;
+    }
+
+    private async removeDirectoryIfEmpty(targetDir: string): Promise<void> {
+        if (!(await this.pathExists(targetDir))) {
+            return;
+        }
+        const entries = await fs.promises.readdir(targetDir, { withFileTypes: true });
+        for (const entry of entries) {
+            if (!entry.isDirectory()) {
+                return;
+            }
+            await this.removeDirectoryIfEmpty(path.join(targetDir, entry.name));
+        }
+
+        const remainingEntries = await fs.promises.readdir(targetDir);
+        if (remainingEntries.length === 0) {
+            await fs.promises.rmdir(targetDir);
+        }
     }
 
     private async resolveOrInstallBinary(binDir: string): Promise<string> {

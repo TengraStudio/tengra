@@ -27,7 +27,7 @@ import { EventBusService } from '@main/services/system/event-bus.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
 import { serializeToIpc } from '@main/utils/ipc-serializer.util';
 import { createValidatedIpcHandler as baseCreateValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { IpcValue, JsonValue } from '@shared/types/common';
+import { IpcValue, JsonObject, JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
@@ -94,11 +94,13 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
             const tokenData: TokenData = {
                 accessToken: token,
                 refreshToken: response.refresh_token,
-                expiresAt: response.expires_in ? Date.now() + (response.expires_in * 1000) : undefined,
-                scope: appId === 'copilot' ? 'read:user user:email' : 'read:user user:email repo',
+                sessionToken: response.session_token,
+                expiresAt: resolveGitHubTokenExpiry(response),
+                scope: response.scope ?? (appId === 'copilot' ? 'read:user user:email' : 'read:user user:email repo'),
                 email,
                 displayName,
-                avatarUrl
+                avatarUrl,
+                metadata: buildGitHubTokenMetadata(response)
             };
 
             appLogger.info('AuthIPC', `Linking ${provider} account for identity: ${email ?? 'unknown'}`);
@@ -110,6 +112,9 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
 
             if (appId === 'copilot') {
                 copilotService.setGithubToken(token);
+                if (response.session_token) {
+                    copilotService.setCopilotToken(response.session_token);
+                }
             }
 
             // Return only public account metadata — never expose tokens to renderer
@@ -503,4 +508,35 @@ async function fetchGitHubIdentity(proxyService: ProxyService, token: string): P
     }
 
     return { email, displayName, avatarUrl };
+}
+
+function resolveGitHubTokenExpiry(response: Awaited<ReturnType<ProxyService['waitForGitHubToken']>>): number | undefined {
+    if (typeof response.expires_at === 'number') {
+        return response.expires_at;
+    }
+
+    if (typeof response.expires_in === 'number') {
+        return Date.now() + (response.expires_in * 1000);
+    }
+
+    return undefined;
+}
+
+function buildGitHubTokenMetadata(
+    response: Awaited<ReturnType<ProxyService['waitForGitHubToken']>>
+): JsonObject | undefined {
+    const metadata: JsonObject = {};
+
+    if (response.copilot_plan) {
+        metadata.copilot_plan = response.copilot_plan;
+        metadata.plan = response.copilot_plan;
+    }
+    if (response.token_type) {
+        metadata.token_type = response.token_type;
+    }
+    if (typeof response.refresh_token_expires_in === 'number') {
+        metadata.refresh_token_expires_in = response.refresh_token_expires_in;
+    }
+
+    return Object.keys(metadata).length > 0 ? metadata : undefined;
 }

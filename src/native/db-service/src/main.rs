@@ -76,22 +76,34 @@ fn remove_port_file() {
 
 /// Run the database server
 async fn run_server(shutdown_rx: Option<oneshot::Receiver<()>>) -> Result<()> {
+    let logs_dir = resolve_logs_dir();
+    let _ = fs::create_dir_all(&logs_dir);
+    let file_appender = tracing_appender::rolling::daily(logs_dir, "tengra-db-service.log");
+    let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
+
     // Initialize tracing
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::from_default_env()
-                .add_directive("Tengra_db_service=info".parse().unwrap())
+                .add_directive("tengra_db_service=info".parse().unwrap()),
         )
+        .with_writer(non_blocking)
         .init();
+    std::mem::forget(guard);
 
-    tracing::info!("Starting Tengra Database Service v{}", env!("CARGO_PKG_VERSION"));
+    tracing::info!(
+        "Starting Tengra Database Service v{}",
+        env!("CARGO_PKG_VERSION")
+    );
 
     // Initialize database
     let db_path = get_db_path();
     tracing::info!("Database path: {:?}", db_path);
 
     let db = Database::new(&db_path).context("Failed to create database")?;
-    db.initialize().await.context("Failed to initialize database")?;
+    db.initialize()
+        .await
+        .context("Failed to initialize database")?;
 
     let db = Arc::new(db);
     let start_time = std::time::Instant::now();
@@ -109,7 +121,10 @@ async fn run_server(shutdown_rx: Option<oneshot::Receiver<()>>) -> Result<()> {
 
     // Write port file for discovery
     write_port_file(port)?;
-    tracing::info!("Port file written: {}/db-service.port", get_services_dir().display());
+    tracing::info!(
+        "Port file written: {}/db-service.port",
+        get_services_dir().display()
+    );
 
     // Run server with optional shutdown signal
     if let Some(shutdown_rx) = shutdown_rx {
@@ -128,6 +143,18 @@ async fn run_server(shutdown_rx: Option<oneshot::Receiver<()>>) -> Result<()> {
     tracing::info!("Database service stopped");
 
     Ok(())
+}
+
+fn resolve_logs_dir() -> PathBuf {
+    if let Ok(path) = std::env::var("TENGRA_DB_SERVICE_LOG_DIR") {
+        return PathBuf::from(path);
+    }
+
+    if let Ok(appdata) = std::env::var("APPDATA") {
+        return PathBuf::from(appdata).join("Tengra").join("logs");
+    }
+
+    PathBuf::from("logs")
 }
 
 // ============================================================================
@@ -250,7 +277,9 @@ fn main() -> Result<()> {
                 println!("  --uninstall, -u   Uninstall Windows Service");
                 println!("  --help, -h        Show this help message");
                 println!();
-                println!("Without arguments, the service will attempt to run as a Windows Service.");
+                println!(
+                    "Without arguments, the service will attempt to run as a Windows Service."
+                );
                 return Ok(());
             }
             _ => {
@@ -326,9 +355,7 @@ fn uninstall_service() -> Result<()> {
     use std::process::Command;
 
     // Stop the service first
-    let _ = Command::new("sc.exe")
-        .args(["stop", SERVICE_NAME])
-        .output();
+    let _ = Command::new("sc.exe").args(["stop", SERVICE_NAME]).output();
 
     // Wait a bit for service to stop
     std::thread::sleep(Duration::from_secs(2));
@@ -348,5 +375,3 @@ fn uninstall_service() -> Result<()> {
 
     Ok(())
 }
-
-

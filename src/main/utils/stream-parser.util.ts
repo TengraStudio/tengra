@@ -1,3 +1,4 @@
+import { XmlToolParser } from '@main/utils/xml-tool-parser.util';
 import { appLogger } from '@main/logging/logger';
 import { ToolCall } from '@shared/types/chat';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -16,6 +17,20 @@ export interface StreamChunk {
         total_tokens: number;
     };
 }
+
+type OpenCodeToolCallState = {
+    id: string;
+    name: string;
+    arguments: string;
+};
+
+type OpenCodeStreamState = {
+    toolCalls: Map<string, OpenCodeToolCallState>;
+};
+
+type XmlParserState = {
+    buffer: string;
+};
 
 type OpenAIStreamDelta = {
     content?: string;
@@ -38,18 +53,26 @@ export class StreamParser {
         const body = this.getStreamBody(input);
         const decoder = new TextDecoder();
         let buffer = '';
+        const openCodeState = this.createOpenCodeStreamState();
+        const xmlState: XmlParserState = { buffer: '' };
 
         try {
             appLogger.debug('stream-parser.util', `[StreamParser] Starting parse. Input type: ${input.constructor.name}`);
             if (this.isWebStream(body)) {
-                yield* this.parseWebStream(body, decoder, (b) => { buffer = b; }, () => buffer);
+                yield* this.parseWebStream(body, decoder, (b) => { buffer = b; }, () => buffer, openCodeState, xmlState);
             } else {
-                yield* this.parseNodeStream(body, decoder, (b) => { buffer = b; }, () => buffer);
+                yield* this.parseNodeStream(body, decoder, (b) => { buffer = b; }, () => buffer, openCodeState, xmlState);
             }
         } catch (error) {
             appLogger.error('StreamParser', 'Parse error', error as Error);
             throw error;
         }
+    }
+
+    private static createOpenCodeStreamState(): OpenCodeStreamState {
+        return {
+            toolCalls: new Map<string, OpenCodeToolCallState>(),
+        };
     }
 
     private static getStreamBody(input: RuntimeValue): ReadableStream<Uint8Array> | AsyncIterable<Uint8Array> {
@@ -66,7 +89,14 @@ export class StreamParser {
         return typeof maybeWeb.getReader === 'function';
     }
 
-    private static async *parseWebStream(body: ReadableStream<Uint8Array>, decoder: TextDecoder, setBuf: (b: string) => void, getBuf: () => string) {
+    private static async *parseWebStream(
+        body: ReadableStream<Uint8Array>,
+        decoder: TextDecoder,
+        setBuf: (b: string) => void,
+        getBuf: () => string,
+        openCodeState: OpenCodeStreamState,
+        xmlState: XmlParserState
+    ) {
         const reader = body.getReader();
         const MAX_ITERATIONS = 1_000_000;
         let iterationCount = 0;
@@ -76,7 +106,7 @@ export class StreamParser {
                 if (done) { break; }
                 const newContent = decoder.decode(value, { stream: true });
                 setBuf(getBuf() + newContent);
-                yield* this.processBuffer(getBuf(), setBuf);
+                yield* this.processBuffer(getBuf(), setBuf, openCodeState, xmlState);
                 iterationCount++;
             }
         } finally {
@@ -84,16 +114,28 @@ export class StreamParser {
         }
     }
 
-    private static async *parseNodeStream(body: AsyncIterable<Uint8Array>, decoder: TextDecoder, setBuf: (b: string) => void, getBuf: () => string) {
+    private static async *parseNodeStream(
+        body: AsyncIterable<Uint8Array>,
+        decoder: TextDecoder,
+        setBuf: (b: string) => void,
+        getBuf: () => string,
+        openCodeState: OpenCodeStreamState,
+        xmlState: XmlParserState
+    ) {
         appLogger.info('stream-parser.util', '[StreamParser] Using AsyncIterable iteration');
         for await (const value of body) {
             const newContent = decoder.decode(value, { stream: true });
             setBuf(getBuf() + newContent);
-            yield* this.processBuffer(getBuf(), setBuf);
+            yield* this.processBuffer(getBuf(), setBuf, openCodeState, xmlState);
         }
     }
 
-    private static *processBuffer(buffer: string, updateBuffer: (b: string) => void): Generator<StreamChunk> {
+    private static *processBuffer(
+        buffer: string,
+        updateBuffer: (b: string) => void,
+        openCodeState: OpenCodeStreamState,
+        xmlState: XmlParserState
+    ): Generator<StreamChunk> {
         const lines = buffer.split('\n');
         const lastLine = lines.pop();
         appLogger.info('stream-parser.util', `[StreamParser] Processing buffer, lines: ${lines.length}, remaining: ${lastLine?.length ?? 0}`);
@@ -109,7 +151,7 @@ export class StreamParser {
 
             try {
                 const json = safeJsonParse<StreamPayload>(data, { choices: [] });
-                yield* this.handlePayload(json);
+                yield* this.handlePayload(json, openCodeState, xmlState);
             } catch (error) {
                 appLogger.error('stream-parser.util', `[StreamParser] Error parsing JSON: ${getErrorMessage(error)}, data: ${data.slice(0, 50)}...`);
             }
@@ -127,10 +169,10 @@ export class StreamParser {
         return jsonData;
     }
 
-    private static *handlePayload(json: StreamPayload): Generator<StreamChunk> {
+    private static *handlePayload(json: StreamPayload, openCodeState: OpenCodeStreamState, xmlState: XmlParserState): Generator<StreamChunk> {
         // 1. OPENCODE /responses format
         if (json.type?.startsWith('response.')) {
-            yield* this.handleOpenCodePayload(json);
+            yield* this.handleOpenCodePayload(json, openCodeState);
             return;
         }
 
@@ -139,10 +181,12 @@ export class StreamParser {
         }
 
         // 2. STANDARD OpenAI format
-        yield* this.handleOpenAIPayload(json);
+        for (const chunk of this.handleOpenAIPayload(json)) {
+            yield* this.interceptXmlToolCalls(chunk, xmlState);
+        }
     }
 
-    private static *handleOpenCodePayload(json: StreamPayload): Generator<StreamChunk> {
+    private static *handleOpenCodePayload(json: StreamPayload, openCodeState: OpenCodeStreamState): Generator<StreamChunk> {
         const type = json.type;
         appLogger.info('stream-parser.util', `[StreamParser] OpenCode Event: ${type}`);
 
@@ -154,22 +198,45 @@ export class StreamParser {
             return;
         }
 
-        if (!type || !json.delta) { return; }
+        if (!type) { return; }
+        if (
+            !json.delta
+            && type !== 'response.output_item.added'
+            && type !== 'response.output_item.done'
+            && type !== 'response.function_call_arguments.done'
+        ) {
+            return;
+        }
 
-        yield* this.dispatchOpenCodeDelta(json);
+        yield* this.dispatchOpenCodeDelta(json, openCodeState);
     }
 
     private static isOpenCodeDoneEvent(json: StreamPayload): boolean {
         return json.type === 'response.output_item.done' && !!json.item?.content;
     }
 
-    private static *dispatchOpenCodeDelta(json: StreamPayload): Generator<StreamChunk> {
+    private static *dispatchOpenCodeDelta(json: StreamPayload, openCodeState: OpenCodeStreamState): Generator<StreamChunk> {
         if (json.type === 'response.output_text.delta' && json.delta) {
             yield* this.handleOpenCodeText(json.delta);
         } else if (json.type === 'response.reasoning_summary_text.delta' && json.delta) {
             yield* this.handleOpenCodeReasoning(json.delta);
-        } else if (json.type === 'response.function_call_arguments.delta') {
-            yield this.createOpenCodeToolCall(json);
+        } else if (
+            json.type === 'response.function_call_arguments.delta'
+            || json.type === 'response.output_item.added'
+            || json.type === 'response.output_item.done'
+        ) {
+            this.updateOpenCodeToolCallState(json, openCodeState);
+            if (json.type === 'response.output_item.done' && this.isOpenCodeFunctionCallItem(json)) {
+                const toolCall = this.finalizeOpenCodeToolCall(json, openCodeState, false);
+                if (toolCall) {
+                    yield toolCall;
+                }
+            }
+        } else if (json.type === 'response.function_call_arguments.done') {
+            const toolCall = this.finalizeOpenCodeToolCall(json, openCodeState, true);
+            if (toolCall) {
+                yield toolCall;
+            }
         }
     }
 
@@ -191,19 +258,125 @@ export class StreamParser {
         if (text) { yield { content: text }; }
     }
 
-    private static createOpenCodeToolCall(json: StreamPayload): StreamChunk {
-        const args = typeof json.delta === 'string' ? json.delta : JSON.stringify(json.delta);
+    private static updateOpenCodeToolCallState(json: StreamPayload, openCodeState: OpenCodeStreamState): void {
+        const toolCallId = this.resolveOpenCodeToolCallId(json);
+        if (!toolCallId) {
+            return;
+        }
+
+        const current = openCodeState.toolCalls.get(toolCallId) ?? {
+            id: toolCallId,
+            name: '',
+            arguments: '',
+        };
+        const name = this.resolveOpenCodeToolCallName(json);
+        if (name) {
+            current.name = name;
+        }
+
+        const delta = this.resolveOpenCodeToolCallArguments(json);
+        if (delta) {
+            if (json.type === 'response.function_call_arguments.delta') {
+                current.arguments += delta;
+            } else if (delta.length >= current.arguments.length) {
+                current.arguments = delta;
+            }
+        }
+
+        openCodeState.toolCalls.set(toolCallId, current);
+    }
+
+    private static finalizeOpenCodeToolCall(
+        json: StreamPayload,
+        openCodeState: OpenCodeStreamState,
+        shouldUpdateState: boolean
+    ): StreamChunk | null {
+        if (shouldUpdateState) {
+            this.updateOpenCodeToolCallState(json, openCodeState);
+        }
+        const toolCallId = this.resolveOpenCodeToolCallId(json);
+        if (!toolCallId) {
+            return null;
+        }
+
+        const current = openCodeState.toolCalls.get(toolCallId);
+        if (!current || current.arguments.trim() === '') {
+            return null;
+        }
+        if (current.name.trim() === '') {
+            return null;
+        }
+
+        openCodeState.toolCalls.delete(toolCallId);
         return {
             type: 'tool_calls',
             tool_calls: [{
-                id: 'opencode-tc-' + (json.response_id ?? 'unknown'),
+                id: current.id,
                 type: 'function',
                 function: {
-                    name: json.name ?? 'unknown',
-                    arguments: args
+                    name: current.name,
+                    arguments: current.arguments
                 }
             }]
         };
+    }
+
+    private static resolveOpenCodeToolCallId(json: StreamPayload): string | null {
+        const candidate = json.call_id ?? json.item_id ?? json.item?.call_id ?? json.item?.id;
+        if (typeof candidate === 'string' && candidate.trim() !== '') {
+            return candidate.trim();
+        }
+        return null;
+    }
+
+    private static resolveOpenCodeToolCallName(json: StreamPayload): string {
+        const directCandidate = json.name ?? json.item?.name;
+        if (typeof directCandidate === 'string' && directCandidate.trim().length > 0) {
+            return directCandidate.trim();
+        }
+
+        const functionCandidate = json.item?.function;
+        if (
+            functionCandidate
+            && typeof functionCandidate === 'object'
+            && !Array.isArray(functionCandidate)
+            && typeof functionCandidate['name'] === 'string'
+            && functionCandidate['name'].trim().length > 0
+        ) {
+            return functionCandidate['name'].trim();
+        }
+        return '';
+    }
+
+    private static resolveOpenCodeToolCallArguments(json: StreamPayload): string {
+        if (typeof json.delta === 'string') {
+            return json.delta;
+        }
+        if (typeof json.delta?.text === 'string') {
+            return json.delta.text;
+        }
+        if (typeof json.arguments === 'string') {
+            return json.arguments;
+        }
+        if (typeof json.item?.arguments === 'string') {
+            return json.item.arguments;
+        }
+        if (
+            json.item?.function
+            && typeof json.item.function === 'object'
+            && !Array.isArray(json.item.function)
+            && typeof json.item.function.arguments === 'string'
+        ) {
+            return json.item.function.arguments;
+        }
+        if (json.item?.arguments && typeof json.item.arguments === 'object' && !Array.isArray(json.item.arguments)) {
+            return JSON.stringify(json.item.arguments);
+        }
+        return '';
+    }
+
+    private static isOpenCodeFunctionCallItem(json: StreamPayload): boolean {
+        return json.item?.type === 'function_call';
     }
 
     private static *handleOpenAIPayload(json: StreamPayload): Generator<StreamChunk> {
@@ -246,6 +419,44 @@ export class StreamParser {
             usage
         };
     }
+
+    private static *interceptXmlToolCalls(chunk: StreamChunk, xmlState: XmlParserState): Generator<StreamChunk> {
+        if (!chunk.content) {
+            yield chunk;
+            return;
+        }
+
+
+        xmlState.buffer += chunk.content;
+
+        const { toolCalls, cleanedText } = XmlToolParser.parse(xmlState.buffer);
+
+        if (toolCalls.length > 0) {
+            appLogger.info('StreamParser', `Extracted ${toolCalls.length} XML tool calls`);
+            yield {
+                ...chunk,
+                content: '', // XML calls are usually standalone or handled in cleanedText
+                type: 'tool_calls',
+                tool_calls: toolCalls
+            };
+            xmlState.buffer = cleanedText;
+        }
+
+        // If we have potential tags, we buffer to avoid flickering
+        if (XmlToolParser.hasPotentialXmlCall(xmlState.buffer)) {
+            const { content, buffered } = XmlToolParser.stripIncompleteTags(xmlState.buffer);
+            if (content) {
+                yield { ...chunk, content };
+            }
+            xmlState.buffer = buffered;
+        } else {
+            const content = xmlState.buffer;
+            xmlState.buffer = '';
+            if (content) {
+                yield { ...chunk, content };
+            }
+        }
+    }
 }
 
 type StreamItemContent = {
@@ -258,10 +469,22 @@ type StreamPayload = OpenAIStreamPayload & {
     delta?: string | { text?: string };
     message?: string;
     item?: {
+        id?: string;
+        type?: string;
+        call_id?: string;
+        name?: string;
+        arguments?: string;
+        function?: {
+            name?: string;
+            arguments?: string;
+        };
         content?: StreamItemContent[];
     };
     response_id?: string;
+    item_id?: string;
+    call_id?: string;
     name?: string;
+    arguments?: string;
     usage?: {
         prompt_tokens: number;
         completion_tokens: number;

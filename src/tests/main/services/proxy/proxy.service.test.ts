@@ -1,6 +1,5 @@
-
-
 import { DataService } from '@main/services/data/data.service';
+import { DatabaseService } from '@main/services/data/database.service';
 import {
     DeviceCodeResponse,
     PROXY_PERFORMANCE_BUDGETS,
@@ -23,6 +22,7 @@ interface MockProxyRequest {
     setHeader: ReturnType<typeof vi.fn>;
     write: ReturnType<typeof vi.fn>;
     end: ReturnType<typeof vi.fn>;
+    abort: ReturnType<typeof vi.fn>;
 }
 
 interface MockProxyResponse {
@@ -67,6 +67,7 @@ describe('ProxyService', () => {
     let mockProcessManager: ProxyProcessManager;
     let mockQuotaService: QuotaService;
     let mockEventBus: EventBusService;
+    let mockDatabaseService: DatabaseService;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -105,6 +106,12 @@ describe('ProxyService', () => {
             emitCustom: vi.fn(),
         } as never as EventBusService;
 
+        mockDatabaseService = {
+            exec: vi.fn(),
+            getLinkedAccounts: vi.fn().mockResolvedValue([]),
+            saveLinkedAccount: vi.fn().mockResolvedValue(undefined),
+        } as never as DatabaseService;
+
         const mockAuthService = { saveToken: vi.fn(), getToken: vi.fn(), getAuthToken: vi.fn() } as never as AuthService;
 
         proxyService = new ProxyService({
@@ -114,7 +121,8 @@ describe('ProxyService', () => {
             processManager: mockProcessManager,
             quotaService: mockQuotaService,
             authService: mockAuthService,
-            eventBus: mockEventBus
+            eventBus: mockEventBus,
+            databaseService: mockDatabaseService
         });
     });
 
@@ -128,7 +136,8 @@ describe('ProxyService', () => {
                 on: vi.fn().mockReturnThis(),
                 setHeader: vi.fn().mockReturnThis(),
                 write: vi.fn().mockReturnThis(),
-                end: vi.fn().mockReturnThis()
+                end: vi.fn().mockReturnThis(),
+                abort: vi.fn().mockReturnThis()
             };
 
             vi.mocked(net.request).mockReturnValue(mockReq as never);
@@ -149,6 +158,50 @@ describe('ProxyService', () => {
             const res = (await proxyService.initiateGitHubAuth('profile')) as DeviceCodeResponse;
             expect(res.device_code).toBe('123');
         });
+
+        it('should preserve Copilot token hydration fields from proxy poll responses', async () => {
+            const mockReq: MockProxyRequest = {
+                on: vi.fn().mockReturnThis(),
+                setHeader: vi.fn().mockReturnThis(),
+                write: vi.fn().mockReturnThis(),
+                end: vi.fn().mockReturnThis(),
+                abort: vi.fn().mockReturnThis()
+            };
+
+            vi.mocked(net.request).mockReturnValue(mockReq as never);
+
+            mockReq.on.mockImplementation((event: string, cb: ResponseCallback) => {
+                if (event === 'response') {
+                    const response: MockProxyResponse = {
+                        statusCode: 200,
+                        on: vi.fn().mockImplementation((ev: string, evCb: ResponseEventCallback) => {
+                            if (ev === 'data') {
+                                evCb(Buffer.from(JSON.stringify({
+                                    success: true,
+                                    access_token: 'ghu_token',
+                                    refresh_token: 'ghr_token',
+                                    session_token: 'ghs_token',
+                                    expires_at: 1234567890,
+                                    copilot_plan: 'individual',
+                                    token_type: 'bearer',
+                                    scope: 'read:user user:email'
+                                })));
+                            }
+                            if (ev === 'end') { evCb(); }
+                        })
+                    };
+                    cb(response);
+                }
+                return mockReq;
+            });
+
+            const result = await proxyService.waitForGitHubToken('device-code', 5, 'copilot');
+
+            expect(result.refresh_token).toBe('ghr_token');
+            expect(result.session_token).toBe('ghs_token');
+            expect(result.expires_at).toBe(1234567890);
+            expect(result.copilot_plan).toBe('individual');
+        });
     });
 
     describe('getModels', () => {
@@ -157,7 +210,8 @@ describe('ProxyService', () => {
                 on: vi.fn().mockReturnThis(),
                 setHeader: vi.fn().mockReturnThis(),
                 write: vi.fn().mockReturnThis(),
-                end: vi.fn().mockReturnThis()
+                end: vi.fn().mockReturnThis(),
+                abort: vi.fn().mockReturnThis()
             };
 
             vi.mocked(net.request).mockReturnValue(mockReq as never);
@@ -179,6 +233,138 @@ describe('ProxyService', () => {
             const result = await proxyService.getModels();
             expect(result.data).toHaveLength(1);
             expect(result.data[0].id).toBe('gpt-4');
+        });
+
+        it('returns models in deterministic provider/id order after merge', async () => {
+            const mockReq: MockProxyRequest = {
+                on: vi.fn().mockReturnThis(),
+                setHeader: vi.fn().mockReturnThis(),
+                write: vi.fn().mockReturnThis(),
+                end: vi.fn().mockReturnThis(),
+                abort: vi.fn().mockReturnThis()
+            };
+
+            vi.mocked(net.request).mockReturnValue(mockReq as never);
+            vi.mocked(mockQuotaService.getAntigravityAvailableModels).mockResolvedValue([
+                { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'antigravity' }
+            ] as never);
+
+            mockReq.on.mockImplementation((event: string, cb: ResponseCallback) => {
+                if (event === 'response') {
+                    const response: MockProxyResponse = {
+                        statusCode: 200,
+                        on: vi.fn().mockImplementation((ev: string, evCb: ResponseEventCallback) => {
+                            if (ev === 'data') {
+                                evCb(Buffer.from(JSON.stringify({
+                                    data: [
+                                        { id: 'gpt-5', provider: 'codex' },
+                                        { id: 'gpt-4o', provider: 'openai' },
+                                        { id: 'claude-sonnet-4-6', provider: 'claude' }
+                                    ]
+                                })));
+                            }
+                            if (ev === 'end') { evCb(); }
+                        })
+                    };
+                    cb(response);
+                }
+                return mockReq;
+            });
+
+            const result = await proxyService.getModels();
+            const keys = result.data.map(model => `${model.provider}:${model.id}`);
+            expect(keys).toEqual([
+                'antigravity:gemini-2.5-pro',
+                'claude:claude-sonnet-4-6',
+                'codex:gpt-5',
+                'openai:gpt-4o'
+            ]);
+        });
+
+        it('should start the embedded proxy before fetching models when proxy is not running', async () => {
+            const mockReq: MockProxyRequest = {
+                on: vi.fn().mockReturnThis(),
+                setHeader: vi.fn().mockReturnThis(),
+                write: vi.fn().mockReturnThis(),
+                end: vi.fn().mockReturnThis(),
+                abort: vi.fn().mockReturnThis()
+            };
+
+            vi.mocked(net.request).mockReturnValue(mockReq as never);
+            vi.mocked(mockProcessManager.getStatus).mockReturnValue({ running: false });
+
+            mockReq.on.mockImplementation((event: string, cb: ResponseCallback) => {
+                if (event === 'response') {
+                    const response: MockProxyResponse = {
+                        statusCode: 200,
+                        on: vi.fn().mockImplementation((ev: string, evCb: ResponseEventCallback) => {
+                            if (ev === 'data') { evCb(Buffer.from(JSON.stringify({ data: [] }))); }
+                            if (ev === 'end') { evCb(); }
+                        })
+                    };
+                    cb(response);
+                }
+                return mockReq;
+            });
+
+            await proxyService.getModels();
+
+            expect(mockProcessManager.start).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('getBrowserAuthStatus', () => {
+        it('falls back to linked accounts when proxy status request fails', async () => {
+            const mockReq: MockProxyRequest = {
+                on: vi.fn().mockReturnThis(),
+                setHeader: vi.fn().mockReturnThis(),
+                write: vi.fn().mockReturnThis(),
+                end: vi.fn().mockReturnThis(),
+                abort: vi.fn().mockReturnThis()
+            };
+
+            vi.mocked(net.request).mockReturnValue(mockReq as never);
+            mockReq.on.mockImplementation((event: string, cb: ((error: Error) => void) | ResponseCallback) => {
+                if (event === 'error') {
+                    (cb as (error: Error) => void)(new Error('connect ECONNREFUSED'));
+                }
+                return mockReq;
+            });
+
+            vi.mocked(mockDatabaseService.getLinkedAccounts).mockResolvedValue([
+                {
+                    id: 'codex_default',
+                    provider: 'codex',
+                    isActive: true,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                }
+            ] as never);
+
+            const status = await proxyService.getBrowserAuthStatus('codex', 'state-1', 'codex_default');
+            expect(status.status).toBe('ok');
+            expect(status.account).toMatchObject({ id: 'codex_default' });
+        });
+
+        it('times out stalled auth url requests instead of hanging forever', async () => {
+            vi.useFakeTimers();
+            const mockReq: MockProxyRequest = {
+                on: vi.fn().mockReturnThis(),
+                setHeader: vi.fn().mockReturnThis(),
+                write: vi.fn().mockReturnThis(),
+                end: vi.fn().mockReturnThis(),
+                abort: vi.fn().mockReturnThis(),
+            };
+
+            vi.mocked(net.request).mockReturnValue(mockReq as never);
+
+            const pending = proxyService.getCodexAuthUrl();
+            const rejection = expect(pending).rejects.toThrow('timed out');
+
+            await vi.advanceTimersByTimeAsync(15000);
+
+            await rejection;
+            vi.useRealTimers();
         });
     });
 });
@@ -276,6 +462,7 @@ describe('ProxyService input validation', () => {
             quotaService: {} as never as QuotaService,
             authService: mockAuthService,
             eventBus: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), emitCustom: vi.fn() } as never as EventBusService,
+            databaseService: {} as never as DatabaseService,
         });
     });
 

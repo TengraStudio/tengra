@@ -346,7 +346,7 @@ export class LLMService {
 
     private async executeChatOpenAI(messages: Array<Message | ChatMessage>, options: LLMChatOptions): Promise<OpenAIResponse> {
         this.validateMessagesInput(messages);
-        const { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider: requestedProvider, n, signal, systemMode, reasoningEffort } = options;
+        const { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider: requestedProvider, n, signal, systemMode, reasoningEffort, workspaceRoot } = options;
         const provider = this.resolveProvider(model, requestedProvider);
         this.telemetry.openAiRequests += 1;
         this.telemetry.lastRequestAt = Date.now();
@@ -362,7 +362,14 @@ export class LLMService {
             const parsed = await this.openaiChat.executeChat(
                 preparedMessages,
                 { model, tools, provider, stream: false, n, systemMode, reasoningEffort },
-                { endpoint, apiKey: config.apiKey, signal, provider }
+                {
+                    endpoint,
+                    apiKey: config.apiKey,
+                    signal,
+                    provider,
+                    includeProviderHint: this.shouldIncludeProviderHint(config.baseUrl, provider),
+                    workspaceRoot,
+                }
             );
             this.telemetry.lastSuccessAt = Date.now();
             this.telemetry.lastError = null;
@@ -385,7 +392,7 @@ export class LLMService {
 
     private async *executeChatOpenAIStream(messages: Array<Message | ChatMessage>, options: LLMChatOptions): AsyncGenerator<OpenAIStreamYield> {
         this.validateMessagesInput(messages);
-        const { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider: requestedProvider, signal, systemMode, reasoningEffort } = options;
+        const { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider: requestedProvider, signal, systemMode, reasoningEffort, workspaceRoot } = options;
         const provider = this.resolveProvider(model, requestedProvider);
         const sanitized = this.applyLocaleInstructions(this.sanitizeMessages(messages));
         const preparedMessages = this.prepareMessagesForContextWindow(sanitized as Message[], model);
@@ -397,7 +404,14 @@ export class LLMService {
         yield* this.openaiChat.executeChatStream(
             preparedMessages,
             { model, tools, provider, stream: true, systemMode, reasoningEffort },
-            { endpoint, apiKey: config.apiKey, signal, provider }
+            {
+                endpoint,
+                apiKey: config.apiKey,
+                signal,
+                provider,
+                includeProviderHint: this.shouldIncludeProviderHint(config.baseUrl, provider),
+                workspaceRoot,
+            }
         );
     }
 
@@ -680,16 +694,6 @@ export class LLMService {
         return 'openai';
     }
 
-    private toAmpProvider(provider: string): string {
-        const p = provider.trim().toLowerCase();
-        if (p === 'claude') { return 'anthropic'; }
-        if (p === 'gemini') { return 'google'; }
-        if (p === 'codex' || p === 'openai' || p === 'anthropic' || p === 'google' || p === 'antigravity') {
-            return p;
-        }
-        return 'openai';
-    }
-
     private getOpenAISettings(baseUrlOverride?: string, apiKeyOverride?: string, provider?: string) {
         const baseUrl = baseUrlOverride ?? this.openaiBaseUrl;
         const keyProvider = (provider === 'openai' || !provider) ? 'openai' : provider;
@@ -726,10 +730,10 @@ export class LLMService {
         const temp = options?.temperature;
         const workspaceRoot = options?.workspaceRoot;
 
-        const buildProxyBaseUrl = (ampProvider: string) => {
+        const buildProxyBaseUrl = () => {
             const proxyStatus = this.deps.proxyService.getEmbeddedProxyStatus();
             const port = proxyStatus.port ?? 8317;
-            return `http://localhost:${port}/api/provider/${ampProvider}/v1`;
+            return `http://localhost:${port}/v1`;
         };
 
         if (p.includes('nvidia')) {
@@ -737,7 +741,7 @@ export class LLMService {
         }
 
         if (p.includes('antigravity')) {
-            const proxyUrl = buildProxyBaseUrl('antigravity');
+            const proxyUrl = buildProxyBaseUrl();
             const proxyKey = await this.deps.proxyService.getProxyKey();
             return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider, temperature: temp, workspaceRoot };
         }
@@ -750,11 +754,24 @@ export class LLMService {
         }
 
         if (p.includes('codex') || p.includes('openai')) {
-            const proxyUrl = buildProxyBaseUrl(this.toAmpProvider(provider));
+            const proxyUrl = buildProxyBaseUrl();
             const proxyKey = await this.deps.proxyService.getProxyKey();
             return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider, temperature: temp, workspaceRoot };
         }
 
+        if (p.includes('copilot') || p.includes('github')) {
+            const proxyUrl = buildProxyBaseUrl();
+            const proxyKey = await this.deps.proxyService.getProxyKey();
+            return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider: 'copilot', temperature: temp, workspaceRoot };
+        }
+
         return { model, tools, provider, temperature: temp, workspaceRoot, baseUrl: undefined, apiKey: undefined };
+    }
+
+    private shouldIncludeProviderHint(baseUrl: string, provider?: string): boolean {
+        if (!provider) {
+            return false;
+        }
+        return /^https?:\/\/(localhost|127\.0\.0\.1):\d+\/v1$/i.test(baseUrl);
     }
 }
